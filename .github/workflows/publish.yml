@@ -2,14 +2,14 @@ name: Quarto Publish
 
 on:
   push:
-    branches: [ main ]  # 如果你的默认分支叫 master，请把这里的 main 改成 master
-  workflow_dispatch:    # 这个指令允许你在 GitHub 网页上点击按钮手动运行
+    branches: [ main ]  # 当你向 main 分支推送代码时自动触发
+  workflow_dispatch:    # 允许你在 GitHub 网页上点击按钮手动触发
 
 jobs:
   build-deploy:
     runs-on: ubuntu-latest
     permissions:
-      contents: write   # 必须给机器人写入权限，否则它无法将网页推送到仓库
+      contents: write   # 必须开启写入权限，允许机器人把生成的网页推送到仓库
 
     steps:
       - name: 1. 检出代码 (Check out repository)
@@ -18,7 +18,7 @@ jobs:
       - name: 2. 安装 Quarto (Set up Quarto)
         uses: quarto-dev/quarto-actions/setup@v2
 
-      # --- 因为我们的组学教程包含 R 代码，所以必须安装 R 环境 ---
+      # --- 如果你的教程里有 R 代码，请保留下面两步；纯文本可以删掉 ---
       - name: 3. 安装 R 语言环境 (Install R)
         uses: r-lib/actions/setup-r@v2
         with:
@@ -26,12 +26,12 @@ jobs:
 
       - name: 4. 安装基础 R 包 (Install R Packages)
         run: |
-          Rscript -e 'install.packages(c("rmarkdown", "knitr", "ggplot2", "dplyr"))'
+          Rscript -e 'install.packages(c("rmarkdown", "knitr"))'
       # -----------------------------------------------------------
 
       - name: 5. 渲染页面并发布到 GitHub Pages (Render and Publish)
         uses: quarto-dev/quarto-actions/publish@v2
         with:
-          target: gh-pages  # 自动将网页发布到名为 gh-pages 的分支
+          target: gh-pages  # 自动将网页生成到一个叫 gh-pages 的隐藏分支
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
