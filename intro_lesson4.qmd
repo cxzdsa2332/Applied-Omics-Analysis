@@ -101,7 +101,7 @@ conda install -c conda-forge r-ggplot2 r-dplyr
 
 ```{r}
 #| include: false
-# 本地 Mac 使用 conda base 环境；CI 环境使用系统 Python（已通过 pip 安装所需包）
+# Local Mac uses conda base; CI uses system Python (packages installed via pip)
 local_python <- "/opt/anaconda3/bin/python"
 if (file.exists(local_python)) {
   reticulate::use_python(local_python, required = TRUE)
@@ -118,11 +118,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import matplotlib as mpl
 
-# 配置中文字体（依次尝试常见中文字体，找不到则回退到默认）
-mpl.rcParams['font.sans-serif'] = ['Arial Unicode MS', 'SimHei', 'DejaVu Sans']
-mpl.rcParams['axes.unicode_minus'] = False  # 修复负号显示为方块的问题
-
-# 1. 构造模拟基因表达矩阵（行=基因，列=样本）
+# 1. Construct simulated gene expression matrix (rows=genes, columns=samples)
 np.random.seed(42)
 genes = ["TP53", "BRCA1", "MYC", "EGFR", "GAPDH"]
 samples = ["Sample_A", "Sample_B", "Sample_C", "Sample_D"]
@@ -132,26 +128,26 @@ expr_matrix = pd.DataFrame(
     index=genes,
     columns=samples
 )
-print("=== 基因表达矩阵 ===")
+print("=== Gene Expression Matrix ===")
 print(expr_matrix)
 
-# 2. 计算每个基因在所有样本中的均值表达量，并按从高到低排序
+# 2. Compute mean expression per gene across all samples, sorted descending
 mean_expr = expr_matrix.mean(axis=1).sort_values(ascending=False)
-print("\n=== 各基因平均表达量（降序）===")
+print("\n=== Mean Expression per Gene (descending) ===")
 print(mean_expr)
 
-# 3. 筛选平均表达量 > 400 的高表达基因
+# 3. Filter highly expressed genes with mean > 400
 high_expr_genes = mean_expr[mean_expr > 400]
-print(f"\n=== 高表达基因（均值 > 400）===")
+print(f"\n=== Highly Expressed Genes (mean > 400) ===")
 print(high_expr_genes)
 
-# 4. 绘制条形图
+# 4. Plot bar chart
 fig, ax = plt.subplots(figsize=(6, 4))
 mean_expr.plot(kind="bar", ax=ax, color="steelblue", edgecolor="black")
-ax.set_title("各基因平均表达量", fontsize=13)
-ax.set_xlabel("基因", fontsize=11)
-ax.set_ylabel("平均表达量（counts）", fontsize=11)
-ax.axhline(y=400, color="red", linestyle="--", label="阈值 400")
+ax.set_title("Mean Expression per Gene", fontsize=13)
+ax.set_xlabel("Gene", fontsize=11)
+ax.set_ylabel("Mean Expression (counts)", fontsize=11)
+ax.axhline(y=400, color="red", linestyle="--", label="Threshold 400")
 ax.legend()
 plt.tight_layout()
 plt.show()
@@ -170,13 +166,12 @@ plt.show()
 以下代码使用 R 的 `ggplot2` 包，对相同的模拟数据进行可视化，展示 R 在统计作图方面的优雅语法。
 
 ```{r}
-# 加载所需包
 library(ggplot2)
 library(dplyr)
 library(tidyr)
 library(tibble)
 
-# 1. 构造模拟基因表达矩阵
+# 1. Construct simulated gene expression matrix
 set.seed(42)
 genes   <- c("TP53", "BRCA1", "MYC", "EGFR", "GAPDH")
 samples <- c("Sample_A", "Sample_B", "Sample_C", "Sample_D")
@@ -187,20 +182,19 @@ expr_matrix <- matrix(
   dimnames = list(genes, samples)
 )
 
-# 2. 转换为 ggplot2 友好的"长格式"数据框
+# 2. Reshape to long format for ggplot2
 expr_df <- as.data.frame(expr_matrix) %>%
   rownames_to_column("Gene") %>%
   pivot_longer(cols = -Gene, names_to = "Sample", values_to = "Expression")
 
 print(head(expr_df, 10))
 
-# 3. 计算各基因均值（用于标注均值点）
+# 3. Compute mean expression per gene (for mean point overlay)
 gene_means <- expr_df %>%
   group_by(Gene) %>%
   summarise(Mean = mean(Expression), .groups = "drop")
 
-# 4. 绘制箱线图 + 均值点
-# 注意：geom_point 的 x 映射也需与主图保持相同排序规则
+# 4. Plot boxplot + mean points
 p <- ggplot(expr_df, aes(x = reorder(Gene, -Expression), y = Expression, fill = Gene)) +
   geom_boxplot(alpha = 0.7, outlier.shape = 21) +
   geom_point(data = gene_means,
@@ -208,10 +202,10 @@ p <- ggplot(expr_df, aes(x = reorder(Gene, -Expression), y = Expression, fill = 
              shape = 23, size = 3, fill = "red", color = "black") +
   geom_hline(yintercept = 400, linetype = "dashed", color = "darkred", linewidth = 0.8) +
   labs(
-    title    = "各基因表达量分布（箱线图）",
-    subtitle = "红色菱形为均值，虚线为阈值 400",
-    x        = "基因",
-    y        = "表达量（counts）"
+    title    = "Gene Expression Distribution (Boxplot)",
+    subtitle = "Red diamond = mean; dashed line = threshold 400",
+    x        = "Gene",
+    y        = "Expression (counts)"
   ) +
   theme_bw(base_size = 12) +
   theme(legend.position = "none")
@@ -224,6 +218,104 @@ print(p)
 - `pivot_longer`：将"宽格式"矩阵转为"长格式"，是 `ggplot2` 绘图的标准前处理步骤。
 - `reorder(Gene, -Expression)`：按表达量降序排列 X 轴基因，使图表信息更清晰。
 - `theme_bw()`：使用黑白主题，符合学术论文发表规范。
+:::
+
+---
+
+### Jupyter Notebook 实战：交互式探索基因表达数据
+
+Jupyter Notebook 是数据科学中最流行的交互式开发环境。与传统脚本"一次性运行全部代码"不同，Notebook 将代码拆分为一个个**单元格（Cell）**，每次只运行当前格，结果立即显示在代码下方。这种"写一点、看一点"的工作方式，非常适合探索性数据分析（EDA）。
+
+下图展示了一个完整的 Jupyter Notebook 工作流——从环境检查、数据构造到可视化，每个 Cell 独立运行、结果即时呈现：
+
+::: {.callout-tip title="如何在本地打开 Jupyter Notebook"}
+```bash
+# 确保在激活的 conda 环境中
+conda activate bio_env
+
+# 安装 Jupyter（如果还没有）
+conda install jupyter
+
+# 启动 Notebook 服务（会自动打开浏览器）
+jupyter notebook
+```
+浏览器会打开 `http://localhost:8888`，点击 **New → Python 3** 即可新建一个 Notebook。
+:::
+
+以下是一个完整的 Jupyter Notebook 示例，展示了从数据构造到可视化的标准工作流。每个代码块对应 Notebook 中的一个 Cell：
+
+**Cell 1：检查环境，导入依赖**
+
+```python
+import sys
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+
+print(f"Python version: {sys.version}")
+print(f"NumPy  version: {np.__version__}")
+print(f"Pandas version: {pd.__version__}")
+```
+
+**Cell 2：构造数据，立即查看**
+
+```python
+# Construct simulated gene expression matrix
+np.random.seed(42)
+genes   = ["TP53", "BRCA1", "MYC", "EGFR", "GAPDH"]
+samples = ["Control_1", "Control_2", "Treated_1", "Treated_2"]
+
+expr_df = pd.DataFrame(
+    np.random.randint(50, 1000, size=(5, 4)),
+    index=genes,
+    columns=samples
+)
+
+expr_df
+```
+
+**Cell 3：分析，马上看到结果**
+
+```python
+# Compute total sequencing depth per sample (column sum) — simulated library size
+library_size = expr_df.sum(axis=0)
+library_size
+```
+
+**Cell 4：可视化，图表嵌入在代码正下方**
+
+```python
+fig, axes = plt.subplots(1, 2, figsize=(10, 4))
+
+# Left: library size per sample
+library_size.plot(kind="bar", ax=axes[0], color="teal", edgecolor="black")
+axes[0].set_title("Sequencing Library Size per Sample")
+axes[0].set_xlabel("Sample")
+axes[0].set_ylabel("Total counts")
+axes[0].tick_params(axis="x", rotation=30)
+
+# Right: TP53 expression across samples (line plot)
+expr_df.loc["TP53"].plot(
+    kind="line", ax=axes[1], marker="o",
+    color="firebrick", linewidth=2, markersize=8
+)
+axes[1].set_title("TP53 Expression per Sample")
+axes[1].set_xlabel("Sample")
+axes[1].set_ylabel("Expression (counts)")
+axes[1].tick_params(axis="x", rotation=30)
+
+plt.tight_layout()
+plt.show()
+```
+
+::: {.callout-note title="Jupyter Notebook 的核心优势"}
+| 特性 | 说明 |
+|------|------|
+| **Cell 独立运行** | 调试时只需重跑出错的那一格，不必重跑全部代码 |
+| **状态持久化** | 上一格定义的变量，下一格可以直接使用 |
+| **即时可视化** | 图表直接嵌入在代码下方，无需切换窗口 |
+| **Markdown 混写** | Cell 可切换为 Markdown 模式，代码与文字说明穿插排列 |
+| **远程运行** | 在服务器上启动 Jupyter，本地浏览器连接——计算在远端，界面在本地 |
 :::
 
 ---
