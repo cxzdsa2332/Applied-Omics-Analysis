@@ -1,0 +1,117 @@
+---
+title: "基因组 —— 质量控制、变异检测与功能注释"
+date: today
+format:
+  html:
+    code-fold: false
+    toc: true
+    toc-depth: 3
+    number-sections: true
+    theme: cosmo
+---
+
+# 课程引入
+
+本章将带你完成从生物样本“数字信号化”到“生物学意义解读”的全过程。我们将深入探讨（回顾）高通量测序（NGS）的底层原理，并学习如何使用行业标准工具（GATK, Samtools, FastQC）对海量数据进行体检、比对、变异挖掘与功能注释。
+
+---
+
+# 第 1 学时：测序原理与原始数据的数字表现
+
+## 1.1 边合成边测序 (Sequencing by Synthesis, SBS)
+理解目前全球 90% 以上组学数据来源的物理本质。
+
+- **文库构建 (Library Prep)**：DNA 片段化、加接头 (Adapters) 与索引 (Indices/Barcodes)。
+- **簇生成 (Cluster Generation)**：通过桥式 PCR 扩增将单个分子信号放大。
+- **荧光捕获**：四色荧光标记的 dNTP 循环嵌入，激光扫描记录碱基。
+
+
+## 1.2 测序评估指标
+- **单端 (SE) vs 双端 (PE)**：理解 PE150 为何是变异检测的最佳平衡点。
+- **深度 ($C$) 与覆盖度**：$C = \frac{L \times N}{G}$。
+- **练习**：人类基因组 3Gb，若要达到 30X 深度，至少需要多少条 PE150 的 Reads？
+
+## 1.3 FASTQ 格式与质量评分 (Phred Score)
+- **FASTQ 四行结构**：@ID、Sequence、+、Quality。
+- **质量计算**：$Q = -10 \log_{10}(P)$。
+    - $Q20$：99% 准确率。
+    - $Q30$：99.9% 准确率。
+- **ASCII 码转换**：理解为什么质量值在文本中表现为 `!`, `@`, `#` 等符号。
+
+---
+
+# 第 2 学时：数据“体检”与参考基因组比对
+
+## 2.1 使用 FastQC 进行质量评估
+- **末端质量下降**：识别化学反应衰减带来的测序偏好。
+- **GC 含量偏移**：检测潜在的物种污染。
+- **接头污染**：识别需要被切除的非生物序列。
+
+
+## 2.2 序列比对（Alignment）理论
+- **参考基因组 (Reference Genome)**：理解坐标系，对比 hg19 与 hg38 的区别。
+- **BWA 索引与 BWT 算法**：为什么必须先对基因组进行索引（Indexing）才能实现极速比对？
+- **比对逻辑**：全局比对与局部比对的区别。
+
+---
+
+# 第 3 学时：标准数据格式 SAM/BAM 与变异分类
+
+## 3.1 深入解构 SAM/BAM 格式
+- **Header 段**：包含染色体长度 (`@SQ`) 和软件版本 (`@PG`)。
+- **Alignment 段**：
+    - **CIGAR String**：理解 `M` (Match), `I` (In), `D` (Del) 对比对状态的描述。
+    - **FLAG 标志位**：通过位运算快速筛选单端未比对或非唯一比对。
+
+
+## 3.2 变异的物理类型
+- **SNP**：单核苷酸多态性。
+- **Indel**：小片段（通常 <50bp）的插入与缺失。
+- **SV (Structural Variation)**：大片段的倒位、易位与拷贝数变异 (CNV)。
+
+
+---
+
+# 第 4 学时：变异检测算法与 VCF 通用格式
+
+## 4.1 变异检测（Variant Calling）原理
+- **频率法 vs 贝叶斯模型**：理解 GATK HaplotypeCaller 如何通过局部组装（Local Assembly）提高复杂区域的检测精度。
+- **变异过滤**：为什么需要区分种系变异 (Germline) 与体细胞变异 (Somatic)？
+
+## 4.2 VCF (Variant Call Format) 格式解剖
+- **核心 8 列**：`CHROM`, `POS`, `REF`, `ALT`, `QUAL`, `FILTER` 等。
+- **INFO 字段**：包含变异频率 (AF) 和深度 (DP) 等统计信息。
+- **Genotype 字段**：理解 `0/0` (纯合未突变), `0/1` (杂合), `1/1` (纯合突变)。
+
+
+---
+
+# 第 5 学时：功能注释、GATK 最佳实践与可视化
+
+## 5.1 变异功能注释（Annotation）
+- **从坐标到生物学**：判断突变位于外显子还是内含子？
+- **效应评估**：是否产生同义突变、错义突变或提前终止密码子（Nonsense）？
+- **常用工具**：SnpEff, ANNOVAR, VEP。
+
+## 5.2 GATK Best Practices 流程总览
+- **数据处理流**：FASTQ $\rightarrow$ 比对 $\rightarrow$ 排序 $\rightarrow$ 去重 (MarkDuplicates) $\rightarrow$ 变异检测 $\rightarrow$ 质控过滤。
+
+
+## 5.3 交互式可视化检查 (IGV)
+- 载入参考基因组、BAM 与 VCF。
+- **实操技巧**：如何通过肉眼观察序列的“错配颜色”和“覆盖高度”来确认一个突变是否真实。
+
+
+::: {.callout-tip title="💻 课后实验：迷你流水线"}
+```bash
+# 1. 建立索引
+bwa index ref.fa
+
+# 2. 序列比对并转换为排序的BAM
+bwa mem -t 4 ref.fa R1.fq R2.fq | samtools sort -o sample.sorted.bam -
+
+# 3. 标记重复并索引
+samtools index sample.sorted.bam
+
+# 4. 变异检测 (bcftools 示例)
+bcftools mpileup -f ref.fa sample.sorted.bam | bcftools call -mv -Ov -o result.vcf
