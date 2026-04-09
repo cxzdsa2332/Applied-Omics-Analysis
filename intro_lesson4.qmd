@@ -101,7 +101,11 @@ conda install -c conda-forge r-ggplot2 r-dplyr
 
 ```{r}
 #| include: false
-reticulate::use_python("/opt/anaconda3/bin/python", required = TRUE)
+# 本地 Mac 使用 conda base 环境；CI 环境使用系统 Python（已通过 pip 安装所需包）
+local_python <- "/opt/anaconda3/bin/python"
+if (file.exists(local_python)) {
+  reticulate::use_python(local_python, required = TRUE)
+}
 ```
 
 ### Python 示例：基因表达矩阵的基本操作
