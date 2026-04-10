@@ -6,8 +6,9 @@
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
+<meta name="dcterms.date" content="2026-04-10">
 
-<title>12&nbsp; 第二章 课时4 – Introduction to Applied High-throughput Biological Data Analysis</title>
+<title>12&nbsp; 变异检测算法与 VCF 通用格式 – Introduction to Applied High-throughput Biological Data Analysis</title>
 <style>
 /* Default styles provided by pandoc.
 ** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
@@ -22,6 +23,41 @@ ul.task-list li input[type="checkbox"] {
   width: 0.8em;
   margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
   vertical-align: middle;
+}
+/* CSS for syntax highlighting */
+html { -webkit-text-size-adjust: 100%; }
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
 }
 </style>
 
@@ -44,7 +80,7 @@ ul.task-list li input[type="checkbox"] {
 <link href="site_libs/quarto-html/quarto-syntax-highlighting-7f8f88aac4f3542376d5c11b86a4c14d.css" rel="stylesheet" id="quarto-text-highlighting-styles">
 <script src="site_libs/bootstrap/bootstrap.min.js"></script>
 <link href="site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
-<link href="site_libs/bootstrap/bootstrap-44f7debd8c2dff0d4da2b1f1db9c341a.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
+<link href="site_libs/bootstrap/bootstrap-36bf55b16c7cb4b1420f41495cb5446a.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
 <script id="quarto-search-options" type="application/json">{
   "location": "sidebar",
   "copy-button": false,
@@ -73,6 +109,35 @@ ul.task-list li input[type="checkbox"] {
   }
 }</script>
 
+  <script src="https://cdnjs.cloudflare.com/polyfill/v3/polyfill.min.js?features=es6"></script>
+  <script defer="" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js" type="text/javascript"></script>
+
+<script type="text/javascript">
+const typesetMath = (el) => {
+  if (window.MathJax) {
+    // MathJax Typeset
+    window.MathJax.typeset([el]);
+  } else if (window.katex) {
+    // KaTeX Render
+    var mathElements = el.getElementsByClassName("math");
+    var macros = [];
+    for (var i = 0; i < mathElements.length; i++) {
+      var texText = mathElements[i].firstChild;
+      if (mathElements[i].tagName == "SPAN" && texText && texText.data) {
+        window.katex.render(texText.data, mathElements[i], {
+          displayMode: mathElements[i].classList.contains('display'),
+          throwOnError: false,
+          macros: macros,
+          fleqn: false
+        });
+      }
+    }
+  }
+}
+window.Quarto = {
+  typesetMath
+};
+</script>
 
 </head>
 
@@ -85,7 +150,7 @@ ul.task-list li input[type="checkbox"] {
       <button type="button" class="quarto-btn-toggle btn" data-bs-toggle="collapse" role="button" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
         <i class="bi bi-layout-text-sidebar-reverse"></i>
       </button>
-        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="./01-intro.html">第一阶段：基础与基因组</a></li><li class="breadcrumb-item"><a href="./genomics_qc_lesson4.html"><span class="chapter-number">12</span>&nbsp; <span class="chapter-title">第二章 课时4</span></a></li></ol></nav>
+        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="./01-intro.html">第一阶段：基础与基因组</a></li><li class="breadcrumb-item"><a href="./genomics_qc_lesson4.html"><span class="chapter-number">12</span>&nbsp; <span class="chapter-title">变异检测算法与 VCF 通用格式</span></a></li></ol></nav>
         <a class="flex-grow-1" role="navigation" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">      
         </a>
       <button type="button" class="btn quarto-search-button" aria-label="Search" onclick="window.quartoOpenSearch();">
@@ -131,7 +196,7 @@ ul.task-list li input[type="checkbox"] {
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./01-intro.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">2</span>&nbsp; <span class="chapter-title">分子基础与计算生态启蒙</span></span></a>
+ <span class="menu-text"><span class="chapter-number">2</span>&nbsp; <span class="chapter-title">生物信息学入门课程总览</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
@@ -173,31 +238,31 @@ ul.task-list li input[type="checkbox"] {
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./genomics_qc_lesson1.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">9</span>&nbsp; <span class="chapter-title">第二章 课时1</span></span></a>
+ <span class="menu-text"><span class="chapter-number">9</span>&nbsp; <span class="chapter-title">二代测序原理与原始数据的数字表现</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./genomics_qc_lesson2.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">10</span>&nbsp; <span class="chapter-title">第二章 课时2</span></span></a>
+ <span class="menu-text"><span class="chapter-number">10</span>&nbsp; <span class="chapter-title">第 2 学时：数据’体检’与参考基因组比对</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./genomics_qc_lesson3.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">11</span>&nbsp; <span class="chapter-title">第二章 课时3</span></span></a>
+ <span class="menu-text"><span class="chapter-number">11</span>&nbsp; <span class="chapter-title">标准数据格式 SAM/BAM 与变异分类</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./genomics_qc_lesson4.html" class="sidebar-item-text sidebar-link active">
- <span class="menu-text"><span class="chapter-number">12</span>&nbsp; <span class="chapter-title">第二章 课时4</span></span></a>
+ <span class="menu-text"><span class="chapter-number">12</span>&nbsp; <span class="chapter-title">变异检测算法与 VCF 通用格式</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./genomics_qc_lesson5.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">13</span>&nbsp; <span class="chapter-title">第二章 课时5</span></span></a>
+ <span class="menu-text"><span class="chapter-number">13</span>&nbsp; <span class="chapter-title">功能注释、GATK 最佳实践与可视化</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
@@ -535,15 +600,30 @@ ul.task-list li input[type="checkbox"] {
 </nav>
 <div id="quarto-sidebar-glass" class="quarto-sidebar-collapse-item" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item"></div>
 <!-- margin-sidebar -->
-    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar zindex-bottom">
-        
+    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+        <nav id="TOC" role="doc-toc" class="toc-active">
+    <h2 id="toc-title">Table of contents</h2>
+   
+  <ul class="collapse">
+  <li><a href="#变异检测原理" id="toc-变异检测原理" class="nav-link active" data-scroll-target="#变异检测原理"><span class="header-section-number">13</span> 变异检测原理</a>
+  <ul class="collapse">
+  <li><a href="#变异检测的数学基础" id="toc-变异检测的数学基础" class="nav-link" data-scroll-target="#变异检测的数学基础"><span class="header-section-number">13.1</span> 变异检测的数学基础</a></li>
+  <li><a href="#vcf-格式详解" id="toc-vcf-格式详解" class="nav-link" data-scroll-target="#vcf-格式详解"><span class="header-section-number">13.2</span> VCF 格式详解</a></li>
+  <li><a href="#变异过滤策略" id="toc-变异过滤策略" class="nav-link" data-scroll-target="#变异过滤策略"><span class="header-section-number">13.3</span> 变异过滤策略</a></li>
+  <li><a href="#gvcf-格式简介" id="toc-gvcf-格式简介" class="nav-link" data-scroll-target="#gvcf-格式简介"><span class="header-section-number">13.4</span> GVCF 格式简介</a></li>
+  <li><a href="#实践变异检测与-vcf-解析" id="toc-实践变异检测与-vcf-解析" class="nav-link" data-scroll-target="#实践变异检测与-vcf-解析"><span class="header-section-number">13.5</span> 实践：变异检测与 VCF 解析</a></li>
+  <li><a href="#课后自测-post-lesson-quiz" id="toc-课后自测-post-lesson-quiz" class="nav-link" data-scroll-target="#课后自测-post-lesson-quiz"><span class="header-section-number">13.6</span> 课后自测 (Post-Lesson Quiz)</a></li>
+  <li><a href="#总结" id="toc-总结" class="nav-link" data-scroll-target="#总结"><span class="header-section-number">13.7</span> 总结</a></li>
+  </ul></li>
+  </ul>
+<div class="toc-actions"><ul class="collapse"><li><a href="https://github.com/cxzdsa2332/Applied-Omics-Analysis/edit/main/genomics_qc_lesson4.qmd" class="toc-action"><i class="bi bi-github"></i>Edit this page</a></li><li><a href="https://github.com/cxzdsa2332/Applied-Omics-Analysis/issues/new" class="toc-action"><i class="bi empty"></i>Report an issue</a></li><li><a href="https://github.com/cxzdsa2332/Applied-Omics-Analysis/blob/main/genomics_qc_lesson4.qmd" class="toc-action"><i class="bi empty"></i>View source</a></li></ul></div></nav>
     </div>
 <!-- main -->
 <main class="content" id="quarto-document-content">
 
-<header id="title-block-header" class="quarto-title-block default"><nav class="quarto-page-breadcrumbs quarto-title-breadcrumbs d-none d-lg-block" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="./01-intro.html">第一阶段：基础与基因组</a></li><li class="breadcrumb-item"><a href="./genomics_qc_lesson4.html"><span class="chapter-number">12</span>&nbsp; <span class="chapter-title">第二章 课时4</span></a></li></ol></nav>
+<header id="title-block-header" class="quarto-title-block default"><nav class="quarto-page-breadcrumbs quarto-title-breadcrumbs d-none d-lg-block" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="./01-intro.html">第一阶段：基础与基因组</a></li><li class="breadcrumb-item"><a href="./genomics_qc_lesson4.html"><span class="chapter-number">12</span>&nbsp; <span class="chapter-title">变异检测算法与 VCF 通用格式</span></a></li></ol></nav>
 <div class="quarto-title">
-<h1 class="title"><span class="chapter-number">12</span>&nbsp; <span class="chapter-title">第二章 课时4</span></h1>
+<h1 class="title"><span class="chapter-number">12</span>&nbsp; <span class="chapter-title">变异检测算法与 VCF 通用格式</span></h1>
 </div>
 
 
@@ -551,6 +631,12 @@ ul.task-list li input[type="checkbox"] {
 <div class="quarto-title-meta">
 
     
+    <div>
+    <div class="quarto-title-meta-heading">Published</div>
+    <div class="quarto-title-meta-contents">
+      <p class="date">April 10, 2026</p>
+    </div>
+  </div>
   
     
   </div>
@@ -560,8 +646,580 @@ ul.task-list li input[type="checkbox"] {
 </header>
 
 
+<section id="变异检测原理" class="level1" data-number="13">
+<h1 data-number="13"><span class="header-section-number">13</span> 变异检测原理</h1>
+<section id="变异检测的数学基础" class="level2" data-number="13.1">
+<h2 data-number="13.1" class="anchored" data-anchor-id="变异检测的数学基础"><span class="header-section-number">13.1</span> 变异检测的数学基础</h2>
+<p>变异检测的核心是：<strong>在给定的比对数据中，判断某个位置是否存在真实的生物学变异，而不是测序或比对错误</strong>。</p>
+<section id="两种主要算法框架" class="level3" data-number="13.1.1">
+<h3 data-number="13.1.1" class="anchored" data-anchor-id="两种主要算法框架"><span class="header-section-number">13.1.1</span> 两种主要算法框架</h3>
+<p>{{Wiki:Bayesian_inference}}</p>
+<section id="频率法-frequency-based" class="level4" data-number="13.1.1.1">
+<h4 data-number="13.1.1.1" class="anchored" data-anchor-id="频率法-frequency-based"><span class="header-section-number">13.1.1.1</span> 1. 频率法 (Frequency-Based)</h4>
+<p>最简单的方法：计算替代等位体的频率</p>
+<p><span class="math display">\[\text{AF} = \frac{\text{替代等位体数}}{\text{总等位体数}} \times 100\%\]</span></p>
+<p><strong>优点</strong>：快速、直观 <strong>缺点</strong>：不考虑质量信息，假阳性高</p>
+<pre><code>位置: chr1:1000
+参考: A
+比对情况:
+  Read 1: A (Q30)
+  Read 2: A (Q30)
+  Read 3: G (Q15)  &lt;- 可能是错误
+  Read 4: A (Q30)
+
+AF = 1/(1+3) = 25%，但 Read3 质量低，不可信</code></pre>
+</section>
+<section id="贝叶斯模型-bayesian-model" class="level4" data-number="13.1.1.2">
+<h4 data-number="13.1.1.2" class="anchored" data-anchor-id="贝叶斯模型-bayesian-model"><span class="header-section-number">13.1.1.2</span> 贝叶斯模型 (Bayesian Model)</h4>
+<p>根据质量评分和等位体频率联合计算可能性：</p>
+<p><span class="math display">\[P(\text{变异} | \text{数据}) \propto P(\text{数据} | \text{变异}) \times P(\text{变异})\]</span></p>
+<p><strong>优点</strong>：整合所有信息（质量、频率、群体背景） <strong>缺点</strong>：计算复杂</p>
+<p><strong>GATK HaplotypeCaller</strong> 使用贝叶斯方法，步骤：</p>
+<ol type="1">
+<li><strong>局部重组装</strong> (Local Reassembly)：在高变异区域重新组装 read，识别正确的单倍体</li>
+<li><strong>等位体假设检验</strong>：对每个可能的基因型（0/0, 0/1, 1/1）计算似然</li>
+<li><strong>贝叶斯后验</strong>：结合群体等位频率先验，得出最可能的基因型</li>
+<li><strong>变异置信度</strong>：计算 PHRED 质量评分（QUAL）</li>
+</ol>
+<hr>
+</section>
+</section>
+</section>
+<section id="vcf-格式详解" class="level2" data-number="13.2">
+<h2 data-number="13.2" class="anchored" data-anchor-id="vcf-格式详解"><span class="header-section-number">13.2</span> VCF 格式详解</h2>
+<p>{{Wiki:Variant_Call_Format}}</p>
+<section id="vcf-文件结构" class="level3" data-number="13.2.1">
+<h3 data-number="13.2.1" class="anchored" data-anchor-id="vcf-文件结构"><span class="header-section-number">13.2.1</span> VCF 文件结构</h3>
+<p>VCF (Variant Call Format) 是存储变异信息的标准格式。</p>
+<pre><code>##fileformat=VCFv4.2
+##fileDate=20240101
+##source=GATK4.0
+##reference=reference.fasta
+##INFO=&lt;ID=DP,Number=1,Type=Integer,Description="Total depth"&gt;
+##INFO=&lt;ID=AF,Number=A,Type=Float,Description="Allele frequency"&gt;
+##FORMAT=&lt;ID=GT,Number=1,Type=String,Description="Genotype"&gt;
+##FORMAT=&lt;ID=DP,Number=1,Type=Integer,Description="Read depth"&gt;
+##FORMAT=&lt;ID=GQ,Number=1,Type=Integer,Description="Genotype quality"&gt;
+#CHROM  POS     ID      REF     ALT     QUAL    FILTER  INFO    FORMAT  sample1 sample2
+chr1    10000   .       A       G       50      PASS    DP=100;AF=0.5   GT:DP:GQ        0/1:50:40       0/0:50:50
+chr1    10500   rs123   C       T,A     100     PASS    DP=120;AF=0.4,0.1       GT:DP:GQ        0/1:60:45       1/1:60:50</code></pre>
+</section>
+<section id="固定列说明" class="level3" data-number="13.2.2">
+<h3 data-number="13.2.2" class="anchored" data-anchor-id="固定列说明"><span class="header-section-number">13.2.2</span> 固定列说明</h3>
+<table class="caption-top table">
+<thead>
+<tr class="header">
+<th>列号</th>
+<th>列名</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>1</td>
+<td>CHROM</td>
+<td>染色体名称</td>
+</tr>
+<tr class="even">
+<td>2</td>
+<td>POS</td>
+<td>1-based 位置</td>
+</tr>
+<tr class="odd">
+<td>3</td>
+<td>ID</td>
+<td>变异 ID（通常来自 dbSNP，无则用 <code>.</code>）</td>
+</tr>
+<tr class="even">
+<td>4</td>
+<td>REF</td>
+<td>参考等位体（通常是最长的）</td>
+</tr>
+<tr class="odd">
+<td>5</td>
+<td>ALT</td>
+<td>替代等位体（可多个，逗号分隔）</td>
+</tr>
+<tr class="even">
+<td>6</td>
+<td>QUAL</td>
+<td>变异的 PHRED 质量评分 (Phred Scale)</td>
+</tr>
+<tr class="odd">
+<td>7</td>
+<td>FILTER</td>
+<td>过滤标志（PASS 或失败原因）</td>
+</tr>
+<tr class="even">
+<td>8</td>
+<td>INFO</td>
+<td>注释信息（键值对）</td>
+</tr>
+<tr class="odd">
+<td>9+</td>
+<td>FORMAT</td>
+<td>样本数据格式</td>
+</tr>
+<tr class="even">
+<td>10+</td>
+<td>样本</td>
+<td>每个样本的基因型和相关字段</td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="info-字段关键标签" class="level3" data-number="13.2.3">
+<h3 data-number="13.2.3" class="anchored" data-anchor-id="info-字段关键标签"><span class="header-section-number">13.2.3</span> INFO 字段关键标签</h3>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 29%">
+<col style="width: 35%">
+<col style="width: 35%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>标签</th>
+<th>含义</th>
+<th>示例</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><strong>DP</strong></td>
+<td>总覆盖深度</td>
+<td>DP=100</td>
+</tr>
+<tr class="even">
+<td><strong>AF</strong></td>
+<td>替代等位体频率</td>
+<td>AF=0.5</td>
+</tr>
+<tr class="odd">
+<td><strong>AN</strong></td>
+<td>已知等位体数</td>
+<td>AN=200</td>
+</tr>
+<tr class="even">
+<td><strong>AC</strong></td>
+<td>替代等位体计数</td>
+<td>AC=50</td>
+</tr>
+<tr class="odd">
+<td><strong>MQ</strong></td>
+<td>平均映射质量</td>
+<td>MQ=60</td>
+</tr>
+<tr class="even">
+<td><strong>QD</strong></td>
+<td>质量/深度比</td>
+<td>QD=1.5</td>
+</tr>
+<tr class="odd">
+<td><strong>FS</strong></td>
+<td>Fisher 链接不平衡检验值</td>
+<td>FS=10.5</td>
+</tr>
+<tr class="even">
+<td><strong>MQRankSum</strong></td>
+<td>Mapping Quality Rank Sum 检验</td>
+<td>MQRankSum=0.5</td>
+</tr>
+<tr class="odd">
+<td><strong>ReadPosRankSum</strong></td>
+<td>Read Position Rank Sum 检验</td>
+<td>ReadPosRankSum=-2.0</td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="format-和样本字段" class="level3" data-number="13.2.4">
+<h3 data-number="13.2.4" class="anchored" data-anchor-id="format-和样本字段"><span class="header-section-number">13.2.4</span> FORMAT 和样本字段</h3>
+<table class="caption-top table">
+<thead>
+<tr class="header">
+<th>字段</th>
+<th>含义</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><strong>GT</strong></td>
+<td>Genotype（0/0:纯合参考, 0/1:杂合, 1/1:纯合替代）</td>
+</tr>
+<tr class="even">
+<td><strong>GQ</strong></td>
+<td>Genotype Quality（基因型的 PHRED 质量）</td>
+</tr>
+<tr class="odd">
+<td><strong>DP</strong></td>
+<td>该样本的覆盖深度</td>
+</tr>
+<tr class="even">
+<td><strong>AD</strong></td>
+<td>Allele Depth（每个等位体的 read 数）</td>
+</tr>
+<tr class="odd">
+<td><strong>AF</strong></td>
+<td>该样本中替代等位体的频率</td>
+</tr>
+<tr class="even">
+<td><strong>PL</strong></td>
+<td>Phred-Likelihood（各基因型的负对数似然）</td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="基因型解读" class="level3" data-number="13.2.5">
+<h3 data-number="13.2.5" class="anchored" data-anchor-id="基因型解读"><span class="header-section-number">13.2.5</span> 基因型解读</h3>
+<table class="caption-top table">
+<thead>
+<tr class="header">
+<th>基因型</th>
+<th>含义</th>
+<th>常见情况</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>0/0</td>
+<td>纯合参考</td>
+<td>无突变</td>
+</tr>
+<tr class="even">
+<td>0/1</td>
+<td>杂合</td>
+<td>来自一个亲本（胚系变异）</td>
+</tr>
+<tr class="odd">
+<td>1/1</td>
+<td>纯合替代</td>
+<td>来自两个亲本</td>
+</tr>
+<tr class="even">
+<td>./.</td>
+<td>缺失基因型</td>
+<td>覆盖不足或质量差</td>
+</tr>
+<tr class="odd">
+<td>0/2, 1/2</td>
+<td>多等位体</td>
+<td>多个替代等位体</td>
+</tr>
+</tbody>
+</table>
+<hr>
+</section>
+</section>
+<section id="变异过滤策略" class="level2" data-number="13.3">
+<h2 data-number="13.3" class="anchored" data-anchor-id="变异过滤策略"><span class="header-section-number">13.3</span> 变异过滤策略</h2>
+<section id="变异质量过滤" class="level3" data-number="13.3.1">
+<h3 data-number="13.3.1" class="anchored" data-anchor-id="变异质量过滤"><span class="header-section-number">13.3.1</span> 变异质量过滤</h3>
+<p><strong>QUAL 评分</strong>：</p>
+<p><span class="math display">\[\text{QUAL} = -10 \log_{10}(P_{\text{error}})\]</span></p>
+<table class="caption-top table">
+<thead>
+<tr class="header">
+<th>QUAL 范围</th>
+<th>含义</th>
+<th>建议</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>0-10</td>
+<td>极低置信</td>
+<td>丢弃</td>
+</tr>
+<tr class="even">
+<td>10-30</td>
+<td>低置信</td>
+<td>谨慎</td>
+</tr>
+<tr class="odd">
+<td><strong>30-50</strong></td>
+<td><strong>中等置信</strong></td>
+<td><strong>基本过滤</strong></td>
+</tr>
+<tr class="even">
+<td><strong>50+</strong></td>
+<td><strong>高置信</strong></td>
+<td><strong>推荐使用</strong></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="深度过滤" class="level3" data-number="13.3.2">
+<h3 data-number="13.3.2" class="anchored" data-anchor-id="深度过滤"><span class="header-section-number">13.3.2</span> 深度过滤</h3>
+<table class="caption-top table">
+<thead>
+<tr class="header">
+<th>条件</th>
+<th>问题</th>
+<th>过滤阈值</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>深度过低 (&lt; 10X)</td>
+<td>统计功率不足</td>
+<td>DP &gt;= 10</td>
+</tr>
+<tr class="even">
+<td>深度过高 (&gt; 300X)</td>
+<td>可能是重复或污染</td>
+<td>DP &lt;= 300</td>
+</tr>
+<tr class="odd">
+<td>平衡度差</td>
+<td>暗示短 read 或 contamination</td>
+<td>AD_ratio &gt;= 0.25</td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="位置效应过滤" class="level3" data-number="13.3.3">
+<h3 data-number="13.3.3" class="anchored" data-anchor-id="位置效应过滤"><span class="header-section-number">13.3.3</span> 位置效应过滤</h3>
+<table class="caption-top table">
+<thead>
+<tr class="header">
+<th>指标</th>
+<th>阈值</th>
+<th>解释</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><strong>ReadPosRankSum</strong></td>
+<td>&gt; -2.0</td>
+<td>变异位置偏向 read 末端 → 假阳性</td>
+</tr>
+<tr class="even">
+<td><strong>MQRankSum</strong></td>
+<td>&gt; -2.0</td>
+<td>替代等位体的 MAPQ 偏低</td>
+</tr>
+<tr class="odd">
+<td><strong>FS (Fisher Strand)</strong></td>
+<td>&lt; 60</td>
+<td>变异偏向某一条链（测序 bias）</td>
+</tr>
+<tr class="even">
+<td><strong>QD (Quality/Depth)</strong></td>
+<td>&gt;= 2.0</td>
+<td>确保质量与深度相匹配</td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="推荐的过滤管道" class="level3" data-number="13.3.4">
+<h3 data-number="13.3.4" class="anchored" data-anchor-id="推荐的过滤管道"><span class="header-section-number">13.3.4</span> 推荐的过滤管道</h3>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb3"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="co"># 基本高置信变异 (SNP/Indel)</span></span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="ex">QUAL</span> <span class="op">&gt;</span>= 50 AND</span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a><span class="ex">DP</span> <span class="op">&gt;</span>= 10 AND DP <span class="op">&lt;</span>= 300 AND</span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a><span class="ex">QD</span> <span class="op">&gt;</span>= 2.0 AND</span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a><span class="ex">ReadPosRankSum</span> <span class="op">&gt;</span> -2.0 AND</span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a><span class="ex">FS</span> <span class="op">&lt;</span> 60.0</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<hr>
+</section>
+</section>
+<section id="gvcf-格式简介" class="level2" data-number="13.4">
+<h2 data-number="13.4" class="anchored" data-anchor-id="gvcf-格式简介"><span class="header-section-number">13.4</span> GVCF 格式简介</h2>
+<p>GVCF (Genomic VCF) 是 VCF 的扩展，记录<strong>所有位置</strong>的基因型（不仅是变异位置）。</p>
+<p><strong>特点</strong>： - 包含参考匹配块（非变异区域） - 支持多样本联合基因型定型 - 文件更大，但保留完整信息</p>
+<pre><code>##gVCFVersion=v1.4
+#CHROM  POS     ID      REF     ALT     QUAL    FILTER  INFO    FORMAT  sample1
+chr1    10000   .       A       &lt;NON_REF&gt;       .       .       END=10010       GT:DP   0/0:50
+chr1    10011   .       C       T       50      PASS    DP=100  GT:DP:GQ        0/1:50:40
+chr1    10012   .       T       &lt;NON_REF&gt;       .       .       END=10100       GT:DP   0/0:48</code></pre>
+<hr>
+</section>
+<section id="实践变异检测与-vcf-解析" class="level2" data-number="13.5">
+<h2 data-number="13.5" class="anchored" data-anchor-id="实践变异检测与-vcf-解析"><span class="header-section-number">13.5</span> 实践：变异检测与 VCF 解析</h2>
+<section id="python-解析与过滤-vcf" class="level3" data-number="13.5.1">
+<h3 data-number="13.5.1" class="anchored" data-anchor-id="python-解析与过滤-vcf"><span class="header-section-number">13.5.1</span> Python 解析与过滤 VCF</h3>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb5"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> vcf</span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> collections <span class="im">import</span> defaultdict</span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a><span class="kw">class</span> VCFAnalyzer:</span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> <span class="fu">__init__</span>(<span class="va">self</span>, vcf_file):</span>
+<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a>        <span class="co">"""Initialize VCF reader"""</span></span>
+<span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a>        <span class="va">self</span>.vcf_reader <span class="op">=</span> vcf.Reader(filename<span class="op">=</span>vcf_file)</span>
+<span id="cb5-8"><a href="#cb5-8" aria-hidden="true" tabindex="-1"></a>        <span class="va">self</span>.variants <span class="op">=</span> []</span>
+<span id="cb5-9"><a href="#cb5-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-10"><a href="#cb5-10" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> parse_vcf(<span class="va">self</span>):</span>
+<span id="cb5-11"><a href="#cb5-11" aria-hidden="true" tabindex="-1"></a>        <span class="co">"""Parse all variants"""</span></span>
+<span id="cb5-12"><a href="#cb5-12" aria-hidden="true" tabindex="-1"></a>        <span class="cf">for</span> record <span class="kw">in</span> <span class="va">self</span>.vcf_reader:</span>
+<span id="cb5-13"><a href="#cb5-13" aria-hidden="true" tabindex="-1"></a>            <span class="va">self</span>.variants.append(record)</span>
+<span id="cb5-14"><a href="#cb5-14" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-15"><a href="#cb5-15" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> quality_distribution(<span class="va">self</span>):</span>
+<span id="cb5-16"><a href="#cb5-16" aria-hidden="true" tabindex="-1"></a>        <span class="co">"""Analyze QUAL score distribution"""</span></span>
+<span id="cb5-17"><a href="#cb5-17" aria-hidden="true" tabindex="-1"></a>        quals <span class="op">=</span> [v.QUAL <span class="cf">for</span> v <span class="kw">in</span> <span class="va">self</span>.variants <span class="cf">if</span> v.QUAL <span class="kw">is</span> <span class="kw">not</span> <span class="va">None</span>]</span>
+<span id="cb5-18"><a href="#cb5-18" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-19"><a href="#cb5-19" aria-hidden="true" tabindex="-1"></a>        <span class="bu">print</span>(<span class="st">"</span><span class="ch">\n</span><span class="st">=== 质量评分分布 ==="</span>)</span>
+<span id="cb5-20"><a href="#cb5-20" aria-hidden="true" tabindex="-1"></a>        <span class="bu">print</span>(<span class="ss">f"总变异数: </span><span class="sc">{</span><span class="bu">len</span>(<span class="va">self</span>.variants)<span class="sc">}</span><span class="ss">"</span>)</span>
+<span id="cb5-21"><a href="#cb5-21" aria-hidden="true" tabindex="-1"></a>        <span class="bu">print</span>(<span class="ss">f"平均 QUAL: </span><span class="sc">{</span><span class="bu">sum</span>(quals) <span class="op">/</span> <span class="bu">len</span>(quals)<span class="sc">:.2f}</span><span class="ss">"</span>)</span>
+<span id="cb5-22"><a href="#cb5-22" aria-hidden="true" tabindex="-1"></a>        <span class="bu">print</span>(<span class="ss">f"最小 QUAL: </span><span class="sc">{</span><span class="bu">min</span>(quals)<span class="sc">:.2f}</span><span class="ss">"</span>)</span>
+<span id="cb5-23"><a href="#cb5-23" aria-hidden="true" tabindex="-1"></a>        <span class="bu">print</span>(<span class="ss">f"最大 QUAL: </span><span class="sc">{</span><span class="bu">max</span>(quals)<span class="sc">:.2f}</span><span class="ss">"</span>)</span>
+<span id="cb5-24"><a href="#cb5-24" aria-hidden="true" tabindex="-1"></a>        <span class="bu">print</span>(<span class="ss">f"QUAL &gt;= 30: </span><span class="sc">{</span><span class="bu">len</span>([q <span class="cf">for</span> q <span class="kw">in</span> quals <span class="cf">if</span> q <span class="op">&gt;=</span> <span class="dv">30</span>])<span class="sc">}</span><span class="ss"> (</span><span class="sc">{</span><span class="bu">len</span>([q <span class="cf">for</span> q <span class="kw">in</span> quals <span class="cf">if</span> q <span class="op">&gt;=</span> <span class="dv">30</span>]) <span class="op">/</span> <span class="bu">len</span>(quals) <span class="op">*</span> <span class="dv">100</span><span class="sc">:.1f}</span><span class="ss">%)"</span>)</span>
+<span id="cb5-25"><a href="#cb5-25" aria-hidden="true" tabindex="-1"></a>        <span class="bu">print</span>(<span class="ss">f"QUAL &gt;= 50: </span><span class="sc">{</span><span class="bu">len</span>([q <span class="cf">for</span> q <span class="kw">in</span> quals <span class="cf">if</span> q <span class="op">&gt;=</span> <span class="dv">50</span>])<span class="sc">}</span><span class="ss"> (</span><span class="sc">{</span><span class="bu">len</span>([q <span class="cf">for</span> q <span class="kw">in</span> quals <span class="cf">if</span> q <span class="op">&gt;=</span> <span class="dv">50</span>]) <span class="op">/</span> <span class="bu">len</span>(quals) <span class="op">*</span> <span class="dv">100</span><span class="sc">:.1f}</span><span class="ss">%)"</span>)</span>
+<span id="cb5-26"><a href="#cb5-26" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-27"><a href="#cb5-27" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> variant_type_distribution(<span class="va">self</span>):</span>
+<span id="cb5-28"><a href="#cb5-28" aria-hidden="true" tabindex="-1"></a>        <span class="co">"""Count SNP vs Indel"""</span></span>
+<span id="cb5-29"><a href="#cb5-29" aria-hidden="true" tabindex="-1"></a>        snp_count <span class="op">=</span> <span class="dv">0</span></span>
+<span id="cb5-30"><a href="#cb5-30" aria-hidden="true" tabindex="-1"></a>        indel_count <span class="op">=</span> <span class="dv">0</span></span>
+<span id="cb5-31"><a href="#cb5-31" aria-hidden="true" tabindex="-1"></a>        other_count <span class="op">=</span> <span class="dv">0</span></span>
+<span id="cb5-32"><a href="#cb5-32" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-33"><a href="#cb5-33" aria-hidden="true" tabindex="-1"></a>        <span class="cf">for</span> v <span class="kw">in</span> <span class="va">self</span>.variants:</span>
+<span id="cb5-34"><a href="#cb5-34" aria-hidden="true" tabindex="-1"></a>            ref_len <span class="op">=</span> <span class="bu">len</span>(v.REF)</span>
+<span id="cb5-35"><a href="#cb5-35" aria-hidden="true" tabindex="-1"></a>            alt_len <span class="op">=</span> <span class="bu">len</span>(v.ALT[<span class="dv">0</span>]) <span class="cf">if</span> v.ALT <span class="cf">else</span> <span class="dv">0</span></span>
+<span id="cb5-36"><a href="#cb5-36" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-37"><a href="#cb5-37" aria-hidden="true" tabindex="-1"></a>            <span class="cf">if</span> ref_len <span class="op">==</span> alt_len <span class="kw">and</span> ref_len <span class="op">==</span> <span class="dv">1</span>:</span>
+<span id="cb5-38"><a href="#cb5-38" aria-hidden="true" tabindex="-1"></a>                snp_count <span class="op">+=</span> <span class="dv">1</span></span>
+<span id="cb5-39"><a href="#cb5-39" aria-hidden="true" tabindex="-1"></a>            <span class="cf">elif</span> ref_len <span class="op">!=</span> alt_len:</span>
+<span id="cb5-40"><a href="#cb5-40" aria-hidden="true" tabindex="-1"></a>                indel_count <span class="op">+=</span> <span class="dv">1</span></span>
+<span id="cb5-41"><a href="#cb5-41" aria-hidden="true" tabindex="-1"></a>            <span class="cf">else</span>:</span>
+<span id="cb5-42"><a href="#cb5-42" aria-hidden="true" tabindex="-1"></a>                other_count <span class="op">+=</span> <span class="dv">1</span></span>
+<span id="cb5-43"><a href="#cb5-43" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-44"><a href="#cb5-44" aria-hidden="true" tabindex="-1"></a>        <span class="bu">print</span>(<span class="st">"</span><span class="ch">\n</span><span class="st">=== 变异类型分布 ==="</span>)</span>
+<span id="cb5-45"><a href="#cb5-45" aria-hidden="true" tabindex="-1"></a>        <span class="bu">print</span>(<span class="ss">f"SNP: </span><span class="sc">{</span>snp_count<span class="sc">}</span><span class="ss"> (</span><span class="sc">{</span>snp_count <span class="op">/</span> <span class="bu">len</span>(<span class="va">self</span>.variants) <span class="op">*</span> <span class="dv">100</span><span class="sc">:.1f}</span><span class="ss">%)"</span>)</span>
+<span id="cb5-46"><a href="#cb5-46" aria-hidden="true" tabindex="-1"></a>        <span class="bu">print</span>(<span class="ss">f"Indel: </span><span class="sc">{</span>indel_count<span class="sc">}</span><span class="ss"> (</span><span class="sc">{</span>indel_count <span class="op">/</span> <span class="bu">len</span>(<span class="va">self</span>.variants) <span class="op">*</span> <span class="dv">100</span><span class="sc">:.1f}</span><span class="ss">%)"</span>)</span>
+<span id="cb5-47"><a href="#cb5-47" aria-hidden="true" tabindex="-1"></a>        <span class="bu">print</span>(<span class="ss">f"其他: </span><span class="sc">{</span>other_count<span class="sc">}</span><span class="ss">"</span>)</span>
+<span id="cb5-48"><a href="#cb5-48" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-49"><a href="#cb5-49" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> depth_analysis(<span class="va">self</span>):</span>
+<span id="cb5-50"><a href="#cb5-50" aria-hidden="true" tabindex="-1"></a>        <span class="co">"""Analyze DP (depth) distribution"""</span></span>
+<span id="cb5-51"><a href="#cb5-51" aria-hidden="true" tabindex="-1"></a>        depths <span class="op">=</span> []</span>
+<span id="cb5-52"><a href="#cb5-52" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-53"><a href="#cb5-53" aria-hidden="true" tabindex="-1"></a>        <span class="cf">for</span> v <span class="kw">in</span> <span class="va">self</span>.variants:</span>
+<span id="cb5-54"><a href="#cb5-54" aria-hidden="true" tabindex="-1"></a>            <span class="cf">if</span> <span class="st">'DP'</span> <span class="kw">in</span> v.INFO:</span>
+<span id="cb5-55"><a href="#cb5-55" aria-hidden="true" tabindex="-1"></a>                dp <span class="op">=</span> v.INFO[<span class="st">'DP'</span>]</span>
+<span id="cb5-56"><a href="#cb5-56" aria-hidden="true" tabindex="-1"></a>                <span class="cf">if</span> <span class="bu">isinstance</span>(dp, <span class="bu">list</span>):</span>
+<span id="cb5-57"><a href="#cb5-57" aria-hidden="true" tabindex="-1"></a>                    depths.append(dp[<span class="dv">0</span>])</span>
+<span id="cb5-58"><a href="#cb5-58" aria-hidden="true" tabindex="-1"></a>                <span class="cf">else</span>:</span>
+<span id="cb5-59"><a href="#cb5-59" aria-hidden="true" tabindex="-1"></a>                    depths.append(dp)</span>
+<span id="cb5-60"><a href="#cb5-60" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-61"><a href="#cb5-61" aria-hidden="true" tabindex="-1"></a>        <span class="cf">if</span> depths:</span>
+<span id="cb5-62"><a href="#cb5-62" aria-hidden="true" tabindex="-1"></a>            <span class="bu">print</span>(<span class="st">"</span><span class="ch">\n</span><span class="st">=== 覆盖深度分析 ==="</span>)</span>
+<span id="cb5-63"><a href="#cb5-63" aria-hidden="true" tabindex="-1"></a>            <span class="bu">print</span>(<span class="ss">f"平均深度: </span><span class="sc">{</span><span class="bu">sum</span>(depths) <span class="op">/</span> <span class="bu">len</span>(depths)<span class="sc">:.2f}</span><span class="ss">X"</span>)</span>
+<span id="cb5-64"><a href="#cb5-64" aria-hidden="true" tabindex="-1"></a>            <span class="bu">print</span>(<span class="ss">f"中位数深度: </span><span class="sc">{</span><span class="bu">sorted</span>(depths)[<span class="bu">len</span>(depths)<span class="op">//</span><span class="dv">2</span>]<span class="sc">:.2f}</span><span class="ss">X"</span>)</span>
+<span id="cb5-65"><a href="#cb5-65" aria-hidden="true" tabindex="-1"></a>            <span class="bu">print</span>(<span class="ss">f"最小深度: </span><span class="sc">{</span><span class="bu">min</span>(depths)<span class="sc">}</span><span class="ss">X"</span>)</span>
+<span id="cb5-66"><a href="#cb5-66" aria-hidden="true" tabindex="-1"></a>            <span class="bu">print</span>(<span class="ss">f"最大深度: </span><span class="sc">{</span><span class="bu">max</span>(depths)<span class="sc">}</span><span class="ss">X"</span>)</span>
+<span id="cb5-67"><a href="#cb5-67" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-68"><a href="#cb5-68" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> filter_variants(<span class="va">self</span>, qual_min<span class="op">=</span><span class="dv">50</span>, dp_min<span class="op">=</span><span class="dv">10</span>, dp_max<span class="op">=</span><span class="dv">300</span>):</span>
+<span id="cb5-69"><a href="#cb5-69" aria-hidden="true" tabindex="-1"></a>        <span class="co">"""Filter variants based on quality criteria"""</span></span>
+<span id="cb5-70"><a href="#cb5-70" aria-hidden="true" tabindex="-1"></a>        filtered <span class="op">=</span> []</span>
+<span id="cb5-71"><a href="#cb5-71" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-72"><a href="#cb5-72" aria-hidden="true" tabindex="-1"></a>        <span class="cf">for</span> v <span class="kw">in</span> <span class="va">self</span>.variants:</span>
+<span id="cb5-73"><a href="#cb5-73" aria-hidden="true" tabindex="-1"></a>            <span class="co"># Quality check</span></span>
+<span id="cb5-74"><a href="#cb5-74" aria-hidden="true" tabindex="-1"></a>            <span class="cf">if</span> v.QUAL <span class="kw">is</span> <span class="va">None</span> <span class="kw">or</span> v.QUAL <span class="op">&lt;</span> qual_min:</span>
+<span id="cb5-75"><a href="#cb5-75" aria-hidden="true" tabindex="-1"></a>                <span class="cf">continue</span></span>
+<span id="cb5-76"><a href="#cb5-76" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-77"><a href="#cb5-77" aria-hidden="true" tabindex="-1"></a>            <span class="co"># Depth check</span></span>
+<span id="cb5-78"><a href="#cb5-78" aria-hidden="true" tabindex="-1"></a>            <span class="cf">if</span> <span class="st">'DP'</span> <span class="kw">in</span> v.INFO:</span>
+<span id="cb5-79"><a href="#cb5-79" aria-hidden="true" tabindex="-1"></a>                dp <span class="op">=</span> v.INFO[<span class="st">'DP'</span>]</span>
+<span id="cb5-80"><a href="#cb5-80" aria-hidden="true" tabindex="-1"></a>                <span class="cf">if</span> <span class="bu">isinstance</span>(dp, <span class="bu">list</span>):</span>
+<span id="cb5-81"><a href="#cb5-81" aria-hidden="true" tabindex="-1"></a>                    dp <span class="op">=</span> dp[<span class="dv">0</span>]</span>
+<span id="cb5-82"><a href="#cb5-82" aria-hidden="true" tabindex="-1"></a>                <span class="cf">if</span> dp <span class="op">&lt;</span> dp_min <span class="kw">or</span> dp <span class="op">&gt;</span> dp_max:</span>
+<span id="cb5-83"><a href="#cb5-83" aria-hidden="true" tabindex="-1"></a>                    <span class="cf">continue</span></span>
+<span id="cb5-84"><a href="#cb5-84" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-85"><a href="#cb5-85" aria-hidden="true" tabindex="-1"></a>            <span class="co"># QD check (Quality/Depth ratio)</span></span>
+<span id="cb5-86"><a href="#cb5-86" aria-hidden="true" tabindex="-1"></a>            <span class="cf">if</span> <span class="st">'QD'</span> <span class="kw">in</span> v.INFO:</span>
+<span id="cb5-87"><a href="#cb5-87" aria-hidden="true" tabindex="-1"></a>                qd <span class="op">=</span> v.INFO[<span class="st">'QD'</span>]</span>
+<span id="cb5-88"><a href="#cb5-88" aria-hidden="true" tabindex="-1"></a>                <span class="cf">if</span> <span class="bu">isinstance</span>(qd, <span class="bu">list</span>):</span>
+<span id="cb5-89"><a href="#cb5-89" aria-hidden="true" tabindex="-1"></a>                    qd <span class="op">=</span> qd[<span class="dv">0</span>]</span>
+<span id="cb5-90"><a href="#cb5-90" aria-hidden="true" tabindex="-1"></a>                <span class="cf">if</span> qd <span class="op">&lt;</span> <span class="fl">2.0</span>:</span>
+<span id="cb5-91"><a href="#cb5-91" aria-hidden="true" tabindex="-1"></a>                    <span class="cf">continue</span></span>
+<span id="cb5-92"><a href="#cb5-92" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-93"><a href="#cb5-93" aria-hidden="true" tabindex="-1"></a>            filtered.append(v)</span>
+<span id="cb5-94"><a href="#cb5-94" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-95"><a href="#cb5-95" aria-hidden="true" tabindex="-1"></a>        <span class="bu">print</span>(<span class="ss">f"</span><span class="ch">\n</span><span class="ss">=== 过滤结果 ==="</span>)</span>
+<span id="cb5-96"><a href="#cb5-96" aria-hidden="true" tabindex="-1"></a>        <span class="bu">print</span>(<span class="ss">f"原始变异: </span><span class="sc">{</span><span class="bu">len</span>(<span class="va">self</span>.variants)<span class="sc">}</span><span class="ss">"</span>)</span>
+<span id="cb5-97"><a href="#cb5-97" aria-hidden="true" tabindex="-1"></a>        <span class="bu">print</span>(<span class="ss">f"过滤后: </span><span class="sc">{</span><span class="bu">len</span>(filtered)<span class="sc">}</span><span class="ss"> (</span><span class="sc">{</span><span class="bu">len</span>(filtered)<span class="op">/</span><span class="bu">len</span>(<span class="va">self</span>.variants)<span class="op">*</span><span class="dv">100</span><span class="sc">:.1f}</span><span class="ss">%)"</span>)</span>
+<span id="cb5-98"><a href="#cb5-98" aria-hidden="true" tabindex="-1"></a>        <span class="bu">print</span>(<span class="ss">f"已过滤: </span><span class="sc">{</span><span class="bu">len</span>(<span class="va">self</span>.variants) <span class="op">-</span> <span class="bu">len</span>(filtered)<span class="sc">}</span><span class="ss">"</span>)</span>
+<span id="cb5-99"><a href="#cb5-99" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-100"><a href="#cb5-100" aria-hidden="true" tabindex="-1"></a>        <span class="cf">return</span> filtered</span>
+<span id="cb5-101"><a href="#cb5-101" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-102"><a href="#cb5-102" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> genotype_analysis(<span class="va">self</span>):</span>
+<span id="cb5-103"><a href="#cb5-103" aria-hidden="true" tabindex="-1"></a>        <span class="co">"""Analyze genotype distribution"""</span></span>
+<span id="cb5-104"><a href="#cb5-104" aria-hidden="true" tabindex="-1"></a>        gt_counts <span class="op">=</span> defaultdict(<span class="bu">int</span>)</span>
+<span id="cb5-105"><a href="#cb5-105" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-106"><a href="#cb5-106" aria-hidden="true" tabindex="-1"></a>        <span class="cf">for</span> v <span class="kw">in</span> <span class="va">self</span>.variants:</span>
+<span id="cb5-107"><a href="#cb5-107" aria-hidden="true" tabindex="-1"></a>            <span class="cf">for</span> sample <span class="kw">in</span> v.samples:</span>
+<span id="cb5-108"><a href="#cb5-108" aria-hidden="true" tabindex="-1"></a>                gt <span class="op">=</span> sample[<span class="st">'GT'</span>]</span>
+<span id="cb5-109"><a href="#cb5-109" aria-hidden="true" tabindex="-1"></a>                gt_counts[gt] <span class="op">+=</span> <span class="dv">1</span></span>
+<span id="cb5-110"><a href="#cb5-110" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-111"><a href="#cb5-111" aria-hidden="true" tabindex="-1"></a>        <span class="bu">print</span>(<span class="st">"</span><span class="ch">\n</span><span class="st">=== 基因型分布 ==="</span>)</span>
+<span id="cb5-112"><a href="#cb5-112" aria-hidden="true" tabindex="-1"></a>        <span class="cf">for</span> gt, count <span class="kw">in</span> <span class="bu">sorted</span>(gt_counts.items()):</span>
+<span id="cb5-113"><a href="#cb5-113" aria-hidden="true" tabindex="-1"></a>            <span class="bu">print</span>(<span class="ss">f"  </span><span class="sc">{</span>gt<span class="sc">}</span><span class="ss">: </span><span class="sc">{</span>count<span class="sc">}</span><span class="ss">"</span>)</span>
+<span id="cb5-114"><a href="#cb5-114" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-115"><a href="#cb5-115" aria-hidden="true" tabindex="-1"></a><span class="co"># 使用示例</span></span>
+<span id="cb5-116"><a href="#cb5-116" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> <span class="va">__name__</span> <span class="op">==</span> <span class="st">"__main__"</span>:</span>
+<span id="cb5-117"><a href="#cb5-117" aria-hidden="true" tabindex="-1"></a>    analyzer <span class="op">=</span> VCFAnalyzer(<span class="st">"variants.vcf"</span>)</span>
+<span id="cb5-118"><a href="#cb5-118" aria-hidden="true" tabindex="-1"></a>    analyzer.parse_vcf()</span>
+<span id="cb5-119"><a href="#cb5-119" aria-hidden="true" tabindex="-1"></a>    analyzer.quality_distribution()</span>
+<span id="cb5-120"><a href="#cb5-120" aria-hidden="true" tabindex="-1"></a>    analyzer.variant_type_distribution()</span>
+<span id="cb5-121"><a href="#cb5-121" aria-hidden="true" tabindex="-1"></a>    analyzer.depth_analysis()</span>
+<span id="cb5-122"><a href="#cb5-122" aria-hidden="true" tabindex="-1"></a>    analyzer.genotype_analysis()</span>
+<span id="cb5-123"><a href="#cb5-123" aria-hidden="true" tabindex="-1"></a>    filtered <span class="op">=</span> analyzer.filter_variants(qual_min<span class="op">=</span><span class="dv">50</span>, dp_min<span class="op">=</span><span class="dv">10</span>, dp_max<span class="op">=</span><span class="dv">300</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</section>
+<section id="手工计算基因型质量" class="level3" data-number="13.5.2">
+<h3 data-number="13.5.2" class="anchored" data-anchor-id="手工计算基因型质量"><span class="header-section-number">13.5.2</span> 手工计算基因型质量</h3>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb6"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> math</span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> calculate_genotype_quality(pl_values):</span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a>    <span class="co">"""</span></span>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a><span class="co">    PL (Phred-Likelihood) 是各基因型的负对数似然</span></span>
+<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a><span class="co">    GQ = 第二好基因型 - 最好基因型的 PL 值</span></span>
+<span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-8"><a href="#cb6-8" aria-hidden="true" tabindex="-1"></a><span class="co">    例: PL = [0, 30, 100]</span></span>
+<span id="cb6-9"><a href="#cb6-9" aria-hidden="true" tabindex="-1"></a><span class="co">        最好: 0 (0/0)</span></span>
+<span id="cb6-10"><a href="#cb6-10" aria-hidden="true" tabindex="-1"></a><span class="co">        第二好: 30 (0/1)</span></span>
+<span id="cb6-11"><a href="#cb6-11" aria-hidden="true" tabindex="-1"></a><span class="co">        GQ = 30 - 0 = 30</span></span>
+<span id="cb6-12"><a href="#cb6-12" aria-hidden="true" tabindex="-1"></a><span class="co">    """</span></span>
+<span id="cb6-13"><a href="#cb6-13" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> <span class="bu">len</span>(pl_values) <span class="op">&lt;</span> <span class="dv">2</span>:</span>
+<span id="cb6-14"><a href="#cb6-14" aria-hidden="true" tabindex="-1"></a>        <span class="cf">return</span> <span class="dv">0</span></span>
+<span id="cb6-15"><a href="#cb6-15" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-16"><a href="#cb6-16" aria-hidden="true" tabindex="-1"></a>    sorted_pl <span class="op">=</span> <span class="bu">sorted</span>(pl_values)</span>
+<span id="cb6-17"><a href="#cb6-17" aria-hidden="true" tabindex="-1"></a>    gq <span class="op">=</span> sorted_pl[<span class="dv">1</span>] <span class="op">-</span> sorted_pl[<span class="dv">0</span>]</span>
+<span id="cb6-18"><a href="#cb6-18" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> gq</span>
+<span id="cb6-19"><a href="#cb6-19" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-20"><a href="#cb6-20" aria-hidden="true" tabindex="-1"></a><span class="co"># 示例计算</span></span>
+<span id="cb6-21"><a href="#cb6-21" aria-hidden="true" tabindex="-1"></a>pl_example <span class="op">=</span> [<span class="dv">0</span>, <span class="dv">30</span>, <span class="dv">100</span>]  <span class="co"># 假设三个基因型的似然</span></span>
+<span id="cb6-22"><a href="#cb6-22" aria-hidden="true" tabindex="-1"></a>gq <span class="op">=</span> calculate_genotype_quality(pl_example)</span>
+<span id="cb6-23"><a href="#cb6-23" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"PL 值: </span><span class="sc">{</span>pl_example<span class="sc">}</span><span class="ss">"</span>)</span>
+<span id="cb6-24"><a href="#cb6-24" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"GQ = </span><span class="sc">{</span>gq<span class="sc">}</span><span class="ss">"</span>)  <span class="co"># 输出: GQ = 30</span></span>
+<span id="cb6-25"><a href="#cb6-25" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-26"><a href="#cb6-26" aria-hidden="true" tabindex="-1"></a><span class="co"># 解释: 第二好的基因型（0/1）比最好的基因型（0/0）低 30 PHRED</span></span>
+<span id="cb6-27"><a href="#cb6-27" aria-hidden="true" tabindex="-1"></a><span class="co">#      即该位点为杂合的置信度为 99.9%（Q30 = 0.1% 错误率）</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<hr>
+</section>
+</section>
+<section id="课后自测-post-lesson-quiz" class="level2" data-number="13.6">
+<h2 data-number="13.6" class="anchored" data-anchor-id="课后自测-post-lesson-quiz"><span class="header-section-number">13.6</span> 课后自测 (Post-Lesson Quiz)</h2>
+<div class="note">
+<p><strong>标题：</strong> 💭 思考题</p>
+<ol type="1">
+<li><p>为什么 GATK HaplotypeCaller 的变异检测率通常比简单频率法高？</p></li>
+<li><p>解释这条 VCF 记录：<code>chr1 1000 . A G 100 PASS DP=100;AF=0.05 GT:GQ 0/1:40</code></p></li>
+<li><p>深度为 1000X 的位点应该过滤吗？为什么？</p></li>
+</ol>
+<details>
+<summary>
+<strong>参考答案 (Reference Answers)</strong>
+</summary>
+<p><em>1. HaplotypeCaller 使用贝叶斯模型，在高变异密度区域进行局部重组装，避免参考偏差。同时整合质量信息，不仅看频率，还看质量加权的证据强度，因此能更准确地识别真实变异</em></p>
+<p><em>2. chr1 位置 1000 处，参考等位体为 A，替代为 G，质量评分 100（非常可信）。样本 GT=0/1（杂合），GQ=40（99.99% 置信度）。总深度 100，AF=5%（可能是二代测序的胚系变异或三代的体细胞变异）</em></p>
+<p><em>3. 应该过滤。1000X 深度远高于合理范围（通常 10-300X），可能表示：(1) 重复序列导致多倍映射，(2) 污染/混样，(3) 仪器故障。这些情况下的变异通常不可靠</em></p>
+</details>
+</div>
+<hr>
+</section>
+<section id="总结" class="level2" data-number="13.7">
+<h2 data-number="13.7" class="anchored" data-anchor-id="总结"><span class="header-section-number">13.7</span> 总结</h2>
+<p>✓ <strong>变异检测</strong> 的核心是区分真实生物学变异和测序/比对错误 ✓ <strong>贝叶斯模型</strong>（如 GATK）比频率法更准确，考虑质量和先验知识 ✓ <strong>VCF 格式</strong> 是变异信息的标准存储格式，包含质量、基因型、注释等信息 ✓ <strong>过滤策略</strong> 需要综合考虑 QUAL、DP、QD、位置偏差等多个指标 ✓ <strong>GVCF</strong> 记录所有位置的基因型，支持多样本联合分析</p>
 
 
+</section>
+</section>
 
 </main> <!-- /main -->
 <script id="quarto-html-after-body" type="application/javascript">
@@ -966,13 +1624,13 @@ ul.task-list li input[type="checkbox"] {
   </script>
 <nav class="page-navigation">
   <div class="nav-page nav-page-previous">
-      <a href="./genomics_qc_lesson3.html" class="pagination-link" aria-label="第二章 课时3">
-        <i class="bi bi-arrow-left-short"></i> <span class="nav-page-text"><span class="chapter-number">11</span>&nbsp; <span class="chapter-title">第二章 课时3</span></span>
+      <a href="./genomics_qc_lesson3.html" class="pagination-link" aria-label="标准数据格式 SAM/BAM 与变异分类">
+        <i class="bi bi-arrow-left-short"></i> <span class="nav-page-text"><span class="chapter-number">11</span>&nbsp; <span class="chapter-title">标准数据格式 SAM/BAM 与变异分类</span></span>
       </a>          
   </div>
   <div class="nav-page nav-page-next">
-      <a href="./genomics_qc_lesson5.html" class="pagination-link" aria-label="第二章 课时5">
-        <span class="nav-page-text"><span class="chapter-number">13</span>&nbsp; <span class="chapter-title">第二章 课时5</span></span> <i class="bi bi-arrow-right-short"></i>
+      <a href="./genomics_qc_lesson5.html" class="pagination-link" aria-label="功能注释、GATK 最佳实践与可视化">
+        <span class="nav-page-text"><span class="chapter-number">13</span>&nbsp; <span class="chapter-title">功能注释、GATK 最佳实践与可视化</span></span> <i class="bi bi-arrow-right-short"></i>
       </a>
   </div>
 </nav>
@@ -981,4 +1639,4 @@ ul.task-list li input[type="checkbox"] {
 
 
 
-<footer class="footer"><div class="nav-footer"><div class="nav-footer-center"><div class="toc-actions"><ul><li><a href="https://github.com/cxzdsa2332/Applied-Omics-Analysis/edit/main/genomics_qc_lesson4.qmd" class="toc-action"><i class="bi bi-github"></i>Edit this page</a></li><li><a href="https://github.com/cxzdsa2332/Applied-Omics-Analysis/issues/new" class="toc-action"><i class="bi empty"></i>Report an issue</a></li><li><a href="https://github.com/cxzdsa2332/Applied-Omics-Analysis/blob/main/genomics_qc_lesson4.qmd" class="toc-action"><i class="bi empty"></i>View source</a></li></ul></div></div></div></footer></body></html>
+<footer class="footer"><div class="nav-footer"><div class="nav-footer-center"><div class="toc-actions d-sm-block d-md-none"><ul><li><a href="https://github.com/cxzdsa2332/Applied-Omics-Analysis/edit/main/genomics_qc_lesson4.qmd" class="toc-action"><i class="bi bi-github"></i>Edit this page</a></li><li><a href="https://github.com/cxzdsa2332/Applied-Omics-Analysis/issues/new" class="toc-action"><i class="bi empty"></i>Report an issue</a></li><li><a href="https://github.com/cxzdsa2332/Applied-Omics-Analysis/blob/main/genomics_qc_lesson4.qmd" class="toc-action"><i class="bi empty"></i>View source</a></li></ul></div></div></div></footer></body></html>
