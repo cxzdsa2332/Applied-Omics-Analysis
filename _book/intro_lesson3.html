@@ -681,7 +681,13 @@ window.Quarto = {
   <li><a href="#作业数组批量提交多样本任务" id="toc-作业数组批量提交多样本任务" class="nav-link" data-scroll-target="#作业数组批量提交多样本任务"><span class="header-section-number">5.13.4</span> 作业数组：批量提交多样本任务</a></li>
   <li><a href="#最佳实践" id="toc-最佳实践" class="nav-link" data-scroll-target="#最佳实践"><span class="header-section-number">5.13.5</span> 最佳实践</a></li>
   </ul></li>
-  <li><a href="#本章小结" id="toc-本章小结" class="nav-link" data-scroll-target="#本章小结"><span class="header-section-number">5.14</span> 本章小结</a></li>
+  <li><a href="#实战命令行中的项目管理初步" id="toc-实战命令行中的项目管理初步" class="nav-link" data-scroll-target="#实战命令行中的项目管理初步"><span class="header-section-number">5.14</span> 实战：命令行中的项目管理初步</a>
+  <ul class="collapse">
+  <li><a href="#创建标准的项目目录结构" id="toc-创建标准的项目目录结构" class="nav-link" data-scroll-target="#创建标准的项目目录结构"><span class="header-section-number">5.14.1</span> 创建标准的项目目录结构</a></li>
+  <li><a href="#环境配置文件的版本管理" id="toc-环境配置文件的版本管理" class="nav-link" data-scroll-target="#环境配置文件的版本管理"><span class="header-section-number">5.14.2</span> 环境配置文件的版本管理</a></li>
+  <li><a href="#脚本命名和日志管理" id="toc-脚本命名和日志管理" class="nav-link" data-scroll-target="#脚本命名和日志管理"><span class="header-section-number">5.14.3</span> 脚本命名和日志管理</a></li>
+  </ul></li>
+  <li><a href="#本章小结" id="toc-本章小结" class="nav-link" data-scroll-target="#本章小结"><span class="header-section-number">5.15</span> 本章小结</a></li>
   </ul>
 <div class="toc-actions"><ul><li><a href="https://github.com/cxzdsa2332/Applied-Omics-Analysis/edit/main/intro_lesson3.qmd" class="toc-action"><i class="bi bi-github"></i>Edit this page</a></li><li><a href="https://github.com/cxzdsa2332/Applied-Omics-Analysis/issues/new" class="toc-action"><i class="bi empty"></i>Report an issue</a></li><li><a href="https://github.com/cxzdsa2332/Applied-Omics-Analysis/blob/main/intro_lesson3.qmd" class="toc-action"><i class="bi empty"></i>View source</a></li></ul></div></nav>
     </div>
@@ -1638,8 +1644,98 @@ Note
 <hr>
 </section>
 </section>
-<section id="本章小结" class="level2" data-number="5.14">
-<h2 data-number="5.14" class="anchored" data-anchor-id="本章小结"><span class="header-section-number">5.14</span> 本章小结</h2>
+<section id="实战命令行中的项目管理初步" class="level2" data-number="5.14">
+<h2 data-number="5.14" class="anchored" data-anchor-id="实战命令行中的项目管理初步"><span class="header-section-number">5.14</span> 实战：命令行中的项目管理初步</h2>
+<p>掌握了 Linux 命令行的工具后，最后要建立<strong>项目组织的规范</strong>。生物信息学分析涉及复杂的脚本、数据和结果，合理的文件组织能显著提高效率。</p>
+<section id="创建标准的项目目录结构" class="level3" data-number="5.14.1">
+<h3 data-number="5.14.1" class="anchored" data-anchor-id="创建标准的项目目录结构"><span class="header-section-number">5.14.1</span> 创建标准的项目目录结构</h3>
+<p>一个规范的生物信息学项目应该遵循这样的结构：</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb37"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb37-1"><a href="#cb37-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Create project directory structure</span></span>
+<span id="cb37-2"><a href="#cb37-2" aria-hidden="true" tabindex="-1"></a><span class="fu">mkdir</span> <span class="at">-p</span> bio_project/<span class="dt">{data/raw</span><span class="op">,</span><span class="dt">data/processed</span><span class="op">,</span><span class="dt">scripts</span><span class="op">,</span><span class="dt">results/figures</span><span class="op">,</span><span class="dt">results/tables</span><span class="op">,</span><span class="dt">logs}</span></span>
+<span id="cb37-3"><a href="#cb37-3" aria-hidden="true" tabindex="-1"></a><span class="bu">cd</span> bio_project</span>
+<span id="cb37-4"><a href="#cb37-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb37-5"><a href="#cb37-5" aria-hidden="true" tabindex="-1"></a><span class="co"># Create essential files</span></span>
+<span id="cb37-6"><a href="#cb37-6" aria-hidden="true" tabindex="-1"></a><span class="bu">echo</span> <span class="st">"# Bio Analysis Project"</span> <span class="op">&gt;</span> README.md</span>
+<span id="cb37-7"><a href="#cb37-7" aria-hidden="true" tabindex="-1"></a><span class="bu">echo</span> <span class="st">"Project started: </span><span class="va">$(</span><span class="fu">date</span><span class="va">)</span><span class="st">"</span> <span class="op">&gt;</span> logs/project.log</span>
+<span id="cb37-8"><a href="#cb37-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb37-9"><a href="#cb37-9" aria-hidden="true" tabindex="-1"></a><span class="co"># Create a .gitignore for tracking large files</span></span>
+<span id="cb37-10"><a href="#cb37-10" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span> <span class="op">&gt;</span> .gitignore <span class="op">&lt;&lt; 'EOF'</span></span>
+<span id="cb37-11"><a href="#cb37-11" aria-hidden="true" tabindex="-1"></a><span class="st"># Large data files</span></span>
+<span id="cb37-12"><a href="#cb37-12" aria-hidden="true" tabindex="-1"></a><span class="st">data/raw/*.fastq.gz</span></span>
+<span id="cb37-13"><a href="#cb37-13" aria-hidden="true" tabindex="-1"></a><span class="st">data/raw/*.bam</span></span>
+<span id="cb37-14"><a href="#cb37-14" aria-hidden="true" tabindex="-1"></a><span class="st">results/*.sam</span></span>
+<span id="cb37-15"><a href="#cb37-15" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb37-16"><a href="#cb37-16" aria-hidden="true" tabindex="-1"></a><span class="st"># System files</span></span>
+<span id="cb37-17"><a href="#cb37-17" aria-hidden="true" tabindex="-1"></a><span class="st">.DS_Store</span></span>
+<span id="cb37-18"><a href="#cb37-18" aria-hidden="true" tabindex="-1"></a><span class="st">__pycache__/</span></span>
+<span id="cb37-19"><a href="#cb37-19" aria-hidden="true" tabindex="-1"></a><span class="st">*.Rhistory</span></span>
+<span id="cb37-20"><a href="#cb37-20" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb37-21"><a href="#cb37-21" aria-hidden="true" tabindex="-1"></a><span class="st"># IDE files</span></span>
+<span id="cb37-22"><a href="#cb37-22" aria-hidden="true" tabindex="-1"></a><span class="st">.vscode/</span></span>
+<span id="cb37-23"><a href="#cb37-23" aria-hidden="true" tabindex="-1"></a><span class="st">.idea/</span></span>
+<span id="cb37-24"><a href="#cb37-24" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb37-25"><a href="#cb37-25" aria-hidden="true" tabindex="-1"></a><span class="st"># Temporary files</span></span>
+<span id="cb37-26"><a href="#cb37-26" aria-hidden="true" tabindex="-1"></a><span class="st">*.tmp</span></span>
+<span id="cb37-27"><a href="#cb37-27" aria-hidden="true" tabindex="-1"></a><span class="st">*.log</span></span>
+<span id="cb37-28"><a href="#cb37-28" aria-hidden="true" tabindex="-1"></a><span class="op">EOF</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</section>
+<section id="环境配置文件的版本管理" class="level3" data-number="5.14.2">
+<h3 data-number="5.14.2" class="anchored" data-anchor-id="环境配置文件的版本管理"><span class="header-section-number">5.14.2</span> 环境配置文件的版本管理</h3>
+<p>为了让团队成员在不同机器上复现完全相同的分析环境，需要记录依赖版本：</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb38"><pre class="sourceCode yaml code-with-copy"><code class="sourceCode yaml"><span id="cb38-1"><a href="#cb38-1" aria-hidden="true" tabindex="-1"></a><span class="co"># environment.yml - 保存在项目根目录</span></span>
+<span id="cb38-2"><a href="#cb38-2" aria-hidden="true" tabindex="-1"></a><span class="fu">name</span><span class="kw">:</span><span class="at"> bio_project</span></span>
+<span id="cb38-3"><a href="#cb38-3" aria-hidden="true" tabindex="-1"></a><span class="fu">channels</span><span class="kw">:</span></span>
+<span id="cb38-4"><a href="#cb38-4" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="kw">-</span><span class="at"> conda-forge</span></span>
+<span id="cb38-5"><a href="#cb38-5" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="kw">-</span><span class="at"> bioconda</span></span>
+<span id="cb38-6"><a href="#cb38-6" aria-hidden="true" tabindex="-1"></a><span class="fu">dependencies</span><span class="kw">:</span></span>
+<span id="cb38-7"><a href="#cb38-7" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="kw">-</span><span class="at"> python=3.10</span></span>
+<span id="cb38-8"><a href="#cb38-8" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="kw">-</span><span class="at"> r-base=4.3</span></span>
+<span id="cb38-9"><a href="#cb38-9" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="kw">-</span><span class="at"> fastqc</span></span>
+<span id="cb38-10"><a href="#cb38-10" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="kw">-</span><span class="at"> fastp</span></span>
+<span id="cb38-11"><a href="#cb38-11" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="kw">-</span><span class="at"> bwa</span></span>
+<span id="cb38-12"><a href="#cb38-12" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="kw">-</span><span class="at"> samtools</span></span>
+<span id="cb38-13"><a href="#cb38-13" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="kw">-</span><span class="at"> bcftools</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>团队成员可以通过以下命令快速恢复相同环境：</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb39"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb39-1"><a href="#cb39-1" aria-hidden="true" tabindex="-1"></a><span class="ex">conda</span> env create <span class="at">-f</span> environment.yml</span>
+<span id="cb39-2"><a href="#cb39-2" aria-hidden="true" tabindex="-1"></a><span class="ex">conda</span> activate bio_project</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><strong>关键要点</strong>：不要在全局环境中工作，每个项目使用独立的 conda 环境，避免依赖冲突。</p>
+</section>
+<section id="脚本命名和日志管理" class="level3" data-number="5.14.3">
+<h3 data-number="5.14.3" class="anchored" data-anchor-id="脚本命名和日志管理"><span class="header-section-number">5.14.3</span> 脚本命名和日志管理</h3>
+<p>好的脚本命名习惯使流程清晰易追踪：</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb40"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb40-1"><a href="#cb40-1" aria-hidden="true" tabindex="-1"></a><span class="co"># scripts/ 目录下的命名规范</span></span>
+<span id="cb40-2"><a href="#cb40-2" aria-hidden="true" tabindex="-1"></a><span class="ex">01_qc.sh</span>              <span class="co"># 质量控制</span></span>
+<span id="cb40-3"><a href="#cb40-3" aria-hidden="true" tabindex="-1"></a><span class="ex">02_align.sh</span>           <span class="co"># 序列比对</span></span>
+<span id="cb40-4"><a href="#cb40-4" aria-hidden="true" tabindex="-1"></a><span class="ex">03_quantify.sh</span>        <span class="co"># 定量</span></span>
+<span id="cb40-5"><a href="#cb40-5" aria-hidden="true" tabindex="-1"></a><span class="ex">04_statistics.R</span>       <span class="co"># 统计分析</span></span>
+<span id="cb40-6"><a href="#cb40-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb40-7"><a href="#cb40-7" aria-hidden="true" tabindex="-1"></a><span class="co"># 运行脚本时记录日志</span></span>
+<span id="cb40-8"><a href="#cb40-8" aria-hidden="true" tabindex="-1"></a><span class="fu">bash</span> scripts/01_qc.sh <span class="dv">2</span><span class="op">&gt;&amp;</span><span class="dv">1</span> <span class="kw">|</span> <span class="fu">tee</span> logs/01_qc.log</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><strong>提示</strong>：<code>2&gt;&amp;1</code> 将错误输出也重定向到日志，<code>tee</code> 同时显示在屏幕和文件中。</p>
+<div class="callout callout-style-default callout-tip callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+Tip
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p><strong>Project hygiene 建议</strong></p>
+<ol type="1">
+<li><strong>数据读写分离</strong>：<code>data/raw/</code> 存放不可修改的原始数据，<code>data/processed/</code> 存放处理后的数据；</li>
+<li><strong>脚本版本化</strong>：不用 <code>script_final.sh</code>, <code>script_final2.sh</code> 这样的命名，后面的课程会学到更优雅的版本管理方案；</li>
+<li><strong>定期备份</strong>：定期将整个项目目录上传到云端（后面的课程会讲 GitHub）。</li>
+</ol>
+</div>
+</div>
+<p>接下来的课程（Lesson 4）会教你如何使用 <strong>Git + GitHub</strong> 对整个项目进行专业的版本控制和团队协作。</p>
+<hr>
+</section>
+</section>
+<section id="本章小结" class="level2" data-number="5.15">
+<h2 data-number="5.15" class="anchored" data-anchor-id="本章小结"><span class="header-section-number">5.15</span> 本章小结</h2>
 <p>本章构建了生物信息学实践所需的 Linux 完整技能树：</p>
 <pre><code>远程连接 (SSH)
   → 文件系统导航 (ls / cd / pwd)
@@ -1649,8 +1745,11 @@ Note
   → 文本处理 (grep / cut / sort / awk / sed)
   → 管道组合 (|) 与重定向 (&gt; / &gt;&gt;)
   → 软件安装 (conda / mamba)
+  → 版本控制 (Git / GitHub)
   → 大规模计算 (Slurm 作业调度)</code></pre>
-<p>掌握这些技能，你就能在任何 HPC 环境中独立完成从原始 FASTQ 数据到最终分析结果的完整流程。后续章节将在此基础上深入各类组学数据的具体分析方法。</p>
+<p>通过掌握这些技能和工具，你已具备了<strong>数据工程师的能力</strong>——能在任何 HPC 环境中独立完成数据处理和流程自动化。</p>
+<p><strong>现在的问题是</strong>：处理完数据后，分析才刚开始！ - 如何用 Python/R 进行统计检验？ - 如何在一台机器上同时开发多个项目而不互相干扰？ - 如何写出可读、可维护、可分享的代码？ - 如何让全球的人都能复现你的分析？</p>
+<p><strong>下一章（Lesson 4）的任务</strong>是教你构建<strong>专业的编程和开发环境</strong>：掌握 R 与 Python 的”双擎”、用 Conda 隔离项目依赖、在 VS Code 中协调开发、使用 GitHub 和 AI 完成代码撰写和文档。这是从<strong>工程师</strong>到<strong>科学家</strong>的蜕变——你的代码不仅能跑，还能被理解、被审查、被引用。</p>
 
 
 </section>

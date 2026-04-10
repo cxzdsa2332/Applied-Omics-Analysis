@@ -1,2 +1,293 @@
-# 第二章 课时2
+---
+title: "第 2 学时：数据'体检'与参考基因组比对"
+date: today
+format:
+  html:
+    code-fold: false
+    toc: true
+    toc-depth: 2
+    number-sections: true
+    theme: cosmo
+---
 
+# 原始数据质量评估
+
+## 使用 FastQC 进行质量评估
+
+FastQC 是分析 FASTQ 文件的标准工具，自动生成质量报告。
+
+{{Wiki:Quality_control}}
+
+### 主要质量指标解读
+
+| 指标 | 说明 | 正常值 | 问题信号 |
+|------|------|--------|---------|
+| **Per Base Sequence Quality** | 每个位置的平均质量分布 | 大部分 > Q30 | 末端急速下降 → 化学衰减 |
+| **Per Sequence Quality Scores** | 整条 Read 的质量分布 | 单峰分布，峰值 > Q30 | 双峰或低质量尾部 → 混杂样本 |
+| **Per Base N Content** | 每个位置无法判定的碱基比例 | < 1% | > 5% → 测序仪故障 |
+| **Sequence Length Distribution** | Read 长度分布 | 单一长度（如 150bp） | 参差不齐 → adapter 未清理 |
+| **GC Content** | 全局 GC 含量 | 物种基因组 GC%±5% | 严重偏离 → 物种污染 |
+| **Adapter Content** | 接头序列残留 | 不存在或 < 1% | > 10% → adapter 未完全去除 |
+| **Overrepresented Sequences** | 高频重复序列 | 正常序列 | rRNA、高复杂度重复 → 文库构建失败 |
+| **Duplication Levels** | PCR 扩增重复 | 生物学重复 < 20% | > 50% → 文库质量差 |
+
+### FastQC 质量问题处理
+
+| 问题 | 原因 | 解决方案 |
+|------|------|---------|
+| 末端质量下降 | 化学反应衰减（正常） | Trimming 去除低质量末端 |
+| GC 含量偏移 | 物种污染或特定 bias | 检查物种注释；考虑用 contamination 工具 |
+| Adapter 残留 | 文库构建不完全 | 用 Cutadapt/Trimmomatic 去除 |
+| 高 N 含量 | 测序仪不稳定 | 检查样本质量、仪器状态 |
+
+---
+
+## 数据预处理（Preprocessing）
+
+### Quality Filtering 与 Trimming
+
+**目的**：去除低质量碱基、adapter、PCR 引物，减少后续比对的噪音
+
+**主流工具**：
+- **Trimmomatic**：功能全面，支持 SE/PE，可自定义阈值
+- **Cutadapt**：轻量化，专长于 adapter 去除
+- **Fastp**：现代化工具，速度快，自动检测 adapter
+
+### 典型预处理流程
+
+```bash
+# Trimmomatic 示例 (SE)
+trimmomatic SE \
+  input.fastq output_trimmed.fastq \
+  ILLUMINACLIP:adapters.fa:2:30:10 \
+  LEADING:3 TRAILING:3 MINLEN:36
+
+# Fastp 示例 (PE)
+fastp \
+  -i R1.fastq -I R2.fastq \
+  -o R1_clean.fastq -O R2_clean.fastq \
+  --adapter_sequence AGATCGGAAGAGC \
+  --qualified_quality_phred 20 \
+  --length_required 50
+```
+
+---
+
+## 参考基因组与序列比对理论
+
+### 参考基因组的选择
+
+{{Wiki:Reference_genome}}
+
+| 基因组版本 | 发布时间 | 主要改进 | 应用建议 |
+|----------|--------|--------|---------|
+| hg19 (GRCh37) | 2009 | - | 已弃用（但仍有大量既有数据） |
+| **hg38 (GRCh38)** | **2013** | **修复补丁、更高准确性** | **推荐用于新项目** |
+| T2T-CHM13 | 2022 | 填补着丝粒缝隙、完全单倍体 | 长读测序、完整基因组 |
+
+**重要**：hg19 vs hg38 坐标不同，注释数据库必须匹配版本
+
+### 序列比对的核心算法
+
+**Burrows-Wheeler Transform (BWT)**：
+- 将大基因组 (3 Gb) 压缩至 ~2 Gb 内存
+- 支持极快速精确匹配（秒级比对数百万 reads）
+
+{{Wiki:Burrows-Wheeler_transform}}
+
+**比对工具对比**：
+
+| 工具 | 算法 | 速度 | 特点 | 用途 |
+|-----|------|------|------|------|
+| **BWA-MEM** | BWT | 快 | 通用、鲁棒 | 全基因组测序（WGS）、全外显子测序（WES） |
+| Bowtie2 | BWT | 中等 | 局部比对灵活 | RNA-seq、小 RNA |
+| HISAT2 | BWT | 快 | 跳过内含子 | RNA-seq（支持拼接） |
+| Minimap2 | 最小化链接 | 快 | 长读比对 | PacBio、Nanopore |
+
+---
+
+## 实践：FastQC 分析与 BWA 比对
+
+### Python 模拟 FastQC 分析
+
+```python
+import numpy as np
+from collections import Counter
+import matplotlib.pyplot as plt
+
+class FastQCAnalyzer:
+    def __init__(self, fastq_file):
+        self.fastq_file = fastq_file
+        self.reads = []
+        self.qualities = []
+        self.parse_fastq()
+
+    def parse_fastq(self):
+        """Parse FASTQ file"""
+        with open(self.fastq_file, 'r') as f:
+            while True:
+                header = f.readline().strip()
+                if not header:
+                    break
+                seq = f.readline().strip()
+                plus = f.readline().strip()
+                qual = f.readline().strip()
+
+                self.reads.append(seq)
+                self.qualities.append([ord(c) - 33 for c in qual])
+
+    def per_base_quality(self):
+        """Calculate per-position quality"""
+        read_length = len(self.reads[0])
+        per_pos_quality = [[] for _ in range(read_length)]
+
+        for q_list in self.qualities:
+            for pos, q in enumerate(q_list):
+                per_pos_quality[pos].append(q)
+
+        return [np.mean(qs) for qs in per_pos_quality]
+
+    def gc_content(self):
+        """Calculate GC content"""
+        gc_counts = []
+        for seq in self.reads:
+            gc = seq.count('G') + seq.count('C')
+            gc_pct = (gc / len(seq)) * 100
+            gc_counts.append(gc_pct)
+        return gc_counts
+
+    def adapter_screening(self, adapter_seq):
+        """Check adapter contamination"""
+        contaminated = sum(1 for seq in self.reads if adapter_seq in seq)
+        return (contaminated / len(self.reads)) * 100
+
+    def duplication_check(self):
+        """Estimate PCR duplication level"""
+        seq_counts = Counter(self.reads)
+        duplicated = sum(count - 1 for count in seq_counts.values() if count > 1)
+        return (duplicated / len(self.reads)) * 100
+
+    def generate_report(self):
+        """Generate FastQC-like report"""
+        print("\n" + "="*50)
+        print("FastQC 质量报告")
+        print("="*50)
+
+        print(f"\n✓ 基本信息")
+        print(f"  总 Read 数: {len(self.reads)}")
+        print(f"  Read 长度: {len(self.reads[0])} bp")
+
+        print(f"\n✓ 质量指标")
+        qual_array = np.array(self.qualities)
+        print(f"  平均质量: Q{np.mean(qual_array):.2f}")
+        print(f"  Q30+ 比例: {(qual_array >= 30).sum() / qual_array.size * 100:.2f}%")
+
+        print(f"\n✓ Per-Base 质量")
+        per_base_q = self.per_base_quality()
+        print(f"  起点质量: Q{per_base_q[0]:.2f}")
+        print(f"  末端质量: Q{per_base_q[-1]:.2f}")
+        if per_base_q[0] - per_base_q[-1] > 5:
+            print(f"  ⚠️ 检测到末端质量严重下降，建议 trimming")
+
+        print(f"\n✓ GC 含量分析")
+        gc_contents = self.gc_content()
+        print(f"  平均 GC%: {np.mean(gc_contents):.2f}%")
+        print(f"  GC% 标准差: {np.std(gc_contents):.2f}%")
+        if np.std(gc_contents) > 10:
+            print(f"  ⚠️ GC 含量分布异常，可能存在物种污染")
+
+        print(f"\n✓ PCR 重复检查")
+        dup_pct = self.duplication_check()
+        print(f"  重复 Read 比例: {dup_pct:.2f}%")
+        if dup_pct > 20:
+            print(f"  ⚠️ PCR 重复过高，文库质量欠佳")
+
+        print(f"\n✓ Adapter 检查")
+        adapter_pct = self.adapter_screening("AGATCGGAAGAGC")
+        print(f"  Adapter 污染: {adapter_pct:.2f}%")
+        if adapter_pct > 1:
+            print(f"  ⚠️ 检测到 adapter，需要 trimming")
+
+        print("="*50 + "\n")
+
+# 使用示例
+if __name__ == "__main__":
+    # 假设已有 simulated_wgs.fastq（来自 lesson1）
+    analyzer = FastQCAnalyzer("simulated_wgs.fastq")
+    analyzer.generate_report()
+```
+
+### BWA 比对流程（Bash）
+
+```bash
+#!/bin/bash
+
+# 参数
+REF_GENOME="reference.fasta"
+R1="sample_R1.fastq"
+R2="sample_R2.fastq"
+OUTPUT_BAM="sample.bam"
+THREADS=4
+
+# 1. 构建 BWA 索引（仅需一次）
+echo "Step 1: Indexing reference genome..."
+bwa index ${REF_GENOME}
+
+# 2. 序列比对，输出 SAM
+echo "Step 2: Aligning reads..."
+bwa mem -t ${THREADS} \
+    -R "@RG\tID:sample1\tSM:sample1\tLB:lib1\tPL:ILLUMINA" \
+    ${REF_GENOME} ${R1} ${R2} | \
+    samtools view -b -o ${OUTPUT_BAM}.tmp -
+
+# 3. 排序
+echo "Step 3: Sorting BAM..."
+samtools sort -o ${OUTPUT_BAM} ${OUTPUT_BAM}.tmp
+
+# 4. 建立索引
+echo "Step 4: Indexing BAM..."
+samtools index ${OUTPUT_BAM}
+
+# 5. 统计比对统计信息
+echo "Step 5: Alignment statistics..."
+samtools flagstat ${OUTPUT_BAM}
+
+rm ${OUTPUT_BAM}.tmp
+echo "✓ 完成！输出文件: ${OUTPUT_BAM}"
+```
+
+---
+
+## 课后自测 (Post-Lesson Quiz)
+
+:::note
+**标题：** 💭 思考题
+
+1. FastQC 报告中 "Per Base Sequence Quality" 显示质量从位置 140 开始快速下降（从 Q30 降至 Q15），这说明什么？应如何处理？
+
+2. GC 含量分布显示双峰（一峰在 35%，一峰在 55%），可能原因是什么？
+
+3. 为什么需要对参考基因组构建 BWT 索引？这个索引有什么优势？
+
+<details>
+<summary><strong>参考答案 (Reference Answers)</strong></summary>
+
+*1. 说明测序化学反应在 3' 端衰减（正常现象），但衰减程度较大。建议用 Trimmomatic/Fastp 在位置 140 处进行 trimming，去除末端 10 bp 低质量序列*
+
+*2. 可能是两个不同物种或污染物的混合（如混入了人类和大肠杆菌 DNA）。应用分类工具（如 Kraken）检查，或重新提取样本*
+
+*3. BWT 索引将 3Gb 基因组压缩至 ~2Gb 内存空间，支持 O(log n) 的模糊查询，使得数百万 reads 可在分钟级完成比对。不用索引需要逐个线性搜索，耗时数天*
+
+</details>
+
+:::
+
+---
+
+## 总结
+
+✓ **FastQC** 提供全面的质量评估，指导后续预处理
+✓ **Trimming** 去除低质量碱基、adapter，改善下游分析
+✓ **参考基因组** 版本选择重要（hg19 vs hg38）
+✓ **BWT 算法** 使得快速比对成为可能
+✓ **BWA-MEM** 是 WGS/WES 比对的行业标准

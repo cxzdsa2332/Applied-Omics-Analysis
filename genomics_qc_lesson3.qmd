@@ -1,2 +1,386 @@
-# 第二章 课时3
+---
+title: "标准数据格式 SAM/BAM 与变异分类"
+date: today
+format:
+  html:
+    code-fold: false
+    toc: true
+    toc-depth: 2
+    number-sections: true
+    theme: cosmo
+---
 
+# SAM/BAM 格式详解
+
+## SAM 格式结构
+
+SAM (Sequence Alignment/Map) 是存储序列比对结果的标准文本格式。BAM 是 SAM 的二进制压缩版本。
+
+{{Wiki:SAM_(file_format)}}
+
+### Header 段（元信息）
+
+```
+@HD	VN:1.0	SO:coordinate
+@SQ	SN:chr1	LN:249250621
+@SQ	SN:chr2	LN:242193529
+@PG	ID:bwa	PN:bwa	VN:0.7.17	CL:bwa mem -t 4 ref.fa R1.fq R2.fq
+```
+
+| 标签 | 含义 |
+|-----|------|
+| `@HD` | Header 行，版本号 (VN)、排序信息 (SO) |
+| `@SQ` | Sequence Dictionary，每条染色体的名称 (SN) 和长度 (LN) |
+| `@PG` | Program，记录比对工具的版本和参数 |
+| `@RG` | Read Group，样本信息（可选但推荐） |
+
+### Alignment 段（每条 Read 的比对信息）
+
+```
+SRR1234567.1	83	chr1	10000	60	150M	=	10300	450	ACGTACGTACGTACGTACGTACGTACGTACGTACGTACGTACGTACGTACGTACGTACGTACGTAC	IIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIII	NM:i:2	AS:i:140
+```
+
+| 列号 | 字段名 | 说明 |
+|-----|-------|------|
+| 1 | QNAME | Read ID（来自 FASTQ Header） |
+| 2 | FLAG | 比对标志位（二进制编码，详见下表） |
+| 3 | RNAME | 染色体名称 |
+| 4 | POS | 1-based 比对起始位置 |
+| 5 | MAPQ | 比对质量评分（0-60，值越高越可信） |
+| 6 | CIGAR | 比对操作字符串 |
+| 7 | RNEXT | 配对 Read 所在的参考序列（PE 测序） |
+| 8 | PNEXT | 配对 Read 的位置 |
+| 9 | TLEN | 插入片段长度（Template Length） |
+| 10 | SEQ | 比对后的序列 |
+| 11 | QUAL | 质量评分字符串 |
+| 12+ | TAG | 可选字段（NM, AS, MD 等） |
+
+### FLAG 标志位解码
+
+FLAG 是 0-65535 的整数，每个比特位代表一种属性：
+
+{{Wiki:Binary_number}}
+
+| 十进制 | 二进制 | 含义 |
+|-------|-------|------|
+| 1 | 0x001 | Read 已比对 (MAPPED) |
+| 2 | 0x002 | Read 和其配对 Read 都已比对 (PROPERLY_PAIRED) |
+| 4 | 0x004 | Read 未比对 (UNMAPPED) |
+| 8 | 0x008 | 配对 Read 未比对 |
+| 16 | 0x010 | Read 反向互补 (REVERSE_STRAND) |
+| 32 | 0x020 | 配对 Read 反向互补 |
+| 64 | 0x040 | Read1（来自 PE 的第一条） |
+| 128 | 0x080 | Read2（来自 PE 的第二条） |
+| 256 | 0x100 | 未通过质量过滤 (QC_FAILED) |
+| 512 | 0x200 | PCR 或光学重复 (DUPLICATE) |
+
+**常见 FLAG 值**：
+- **0**: 未比对的 SE read
+- **4**: 比对失败
+- **16**: 反向链比对
+- **83**: = 64 + 16 + 2 + 1 = Read1，反向链，正确配对，已比对
+- **163**: = 128 + 32 + 2 + 1 = Read2，反向链，正确配对，已比对
+
+### CIGAR 字符串
+
+CIGAR (Cigar String) 描述 Read 与参考序列的比对状态：
+
+| 操作 | 缩写 | 含义 | 消耗 Query | 消耗 Ref |
+|-----|-----|------|----------|---------|
+| Match/Mismatch | M | 匹配或错配 | 是 | 是 |
+| Insertion | I | 在参考序列上的插入（Query 中有额外碱基） | 是 | 否 |
+| Deletion | D | 从参考序列中的缺失（Query 中缺少碱基） | 否 | 是 |
+| Skip | N | 跳过（RNA-seq 中跳过内含子） | 否 | 是 |
+| Soft Clipping | S | 序列被部分比对（两端未被使用） | 是 | 否 |
+| Hard Clipping | H | 序列被硬切除（数据丢失） | 否 | 否 |
+
+**示例**：
+- `150M`：150 bp 完美匹配
+- `100M5I45M`：100 bp 匹配 + 5 bp 插入 + 45 bp 匹配 = 可能发现 5 bp Indel
+- `10S140M`：前 10 bp 未比对（soft-clipped），后 140 bp 比对
+
+### Mapping Quality (MAPQ)
+
+MAPQ 是条件概率，表示该比对位置出错的可能性：
+
+$$\text{MAPQ} = -10 \log_{10}(P_{\text{error}})$$
+
+| MAPQ | 出错概率 | 含义 |
+|-----|----------|------|
+| 0-10 | 10%-0.1% | 低质量，多个潜在比对位置 |
+| **20** | **1%** | 可接受阈值 |
+| **30+** | **<0.1%** | 高质量，唯一比对 |
+| 60 | 0.0001% | 完美比对 |
+
+**过滤建议**：MAPQ >= 20 用于变异检测
+
+---
+
+## 可选字段与标签
+
+常见的可选标签：
+
+| 标签 | 类型 | 含义 |
+|-----|-----|------|
+| `NM:i` | Integer | 编辑距离（与参考序列的不同碱基数） |
+| `AS:i` | Integer | 比对分值（Smith-Waterman 分值） |
+| `MD:Z` | String | 比对详细信息（用于重建 REF 序列） |
+| `SA:Z` | String | 补充比对（同一 Read 有多个高质量比对） |
+
+**示例**：`NM:i:2` 表示 Read 与参考序列有 2 处差异（包括错配、Indel）
+
+---
+
+## 变异的分类
+
+### 按照规模分类
+
+{{Wiki:Mutation_(genetics)}}
+
+| 变异类型 | 大小 | 特点 | 检测工具 |
+|---------|------|------|---------|
+| **SNP** (Single Nucleotide Polymorphism) | 1 bp | 单碱基替换 | GATK, bcftools |
+| **Indel** (Insertion/Deletion) | 1-50 bp | 小片段插入或缺失 | GATK HaplotypeCaller |
+| **MNP** (Multi-Nucleotide Polymorphism) | 2-10 bp | 多碱基替换 | 通常分解为多个 SNP |
+| **SV** (Structural Variation) | > 50 bp | 大片段重排 | Delly, Manta, LUMPY |
+| **CNV** (Copy Number Variation) | 1 kb+ | 片段拷贝数变化 | CNVnator, CANVAS |
+
+### 按照功能分类
+
+| 分类 | 说明 |
+|-----|------|
+| **同义突变** (Synonymous) | 改变 DNA 但不改变蛋白质（冗余遗传密码） |
+| **错义突变** (Missense) | 改变蛋白质氨基酸序列 |
+| **无义突变** (Nonsense) | 产生终止密码子，导致蛋白质截断 |
+| **移码** (Frameshift) | Indel 非 3 的倍数，导致阅读框改变 |
+| **启动子变异** | 影响基因启动 |
+
+---
+
+## BAM 文件处理与排序
+
+### BAM 文件的优势
+
+- **压缩**：FASTQ 100 GB → BAM 10 GB（10 倍压缩）
+- **可索引**：支持快速随机访问特定区域
+- **标准化**：全球通用格式
+
+### 标准处理流程
+
+```bash
+# 1. SAM 转 BAM
+samtools view -b -h input.sam -o output.bam
+
+# 2. 排序（必须！）
+samtools sort input.bam -o sorted.bam
+
+# 3. 建立索引（.bai）
+samtools index sorted.bam
+
+# 4. 统计信息
+samtools flagstat sorted.bam
+
+# 5. 查看特定区域
+samtools view sorted.bam chr1:10000-20000
+```
+
+### 去重（MarkDuplicates）
+
+PCR 扩增会产生完全相同的 reads（重复），需要标记或去除：
+
+```bash
+# 使用 samtools
+samtools markdup -r input.bam output_dedup.bam
+
+# 使用 GATK（更严格）
+gatk MarkDuplicates \
+  -I input.bam \
+  -O output_dedup.bam \
+  -M dedup_metrics.txt
+```
+
+---
+
+## 实践：SAM/BAM 操作与变异识别
+
+### Python 解析 SAM/BAM
+
+```python
+import pysam
+import numpy as np
+from collections import defaultdict
+
+class SAMAnalyzer:
+    def __init__(self, bam_file):
+        """Initialize with BAM file (indexed)"""
+        self.bam_file = bam_file
+        self.bam = pysam.AlignmentFile(bam_file, "rb")
+
+    def flag_analysis(self):
+        """Analyze FLAG distribution"""
+        flag_counts = defaultdict(int)
+        total_reads = 0
+
+        for read in self.bam.fetch():
+            total_reads += 1
+            flag = read.flag
+
+            # Check key attributes
+            if read.is_read1:
+                flag_counts['Read1'] += 1
+            if read.is_read2:
+                flag_counts['Read2'] += 1
+            if read.is_unmapped:
+                flag_counts['Unmapped'] += 1
+            if read.is_reverse:
+                flag_counts['ReverseStrand'] += 1
+            if read.is_proper_pair:
+                flag_counts['ProperPair'] += 1
+            if read.is_duplicate:
+                flag_counts['Duplicate'] += 1
+
+            if total_reads >= 10000:  # 只分析前 10000 条
+                break
+
+        print("\n=== FLAG 分析 ===")
+        print(f"总 Read 数: {total_reads}")
+        for flag_type, count in sorted(flag_counts.items()):
+            percentage = (count / total_reads) * 100
+            print(f"  {flag_type}: {count} ({percentage:.2f}%)")
+
+    def mapq_distribution(self):
+        """Analyze MAPQ distribution"""
+        mapq_values = []
+        total_reads = 0
+
+        for read in self.bam.fetch():
+            if not read.is_unmapped:
+                mapq_values.append(read.mapping_quality)
+            total_reads += 1
+
+            if total_reads >= 10000:
+                break
+
+        mapq_array = np.array(mapq_values)
+        print("\n=== MAPQ 质量分析 ===")
+        print(f"平均 MAPQ: {np.mean(mapq_array):.2f}")
+        print(f"中位数 MAPQ: {np.median(mapq_array):.2f}")
+        print(f"MAPQ >= 20: {(mapq_array >= 20).sum() / len(mapq_array) * 100:.2f}%")
+        print(f"MAPQ >= 30: {(mapq_array >= 30).sum() / len(mapq_array) * 100:.2f}%")
+
+    def cigar_analysis(self):
+        """Analyze CIGAR operations"""
+        cigar_stats = defaultdict(int)
+        indel_count = 0
+        total_reads = 0
+
+        for read in self.bam.fetch():
+            if not read.is_unmapped and read.cigartuples:
+                for op, length in read.cigartuples:
+                    op_name = ['M', 'I', 'D', 'N', 'S', 'H', '=', 'X'][op]
+                    cigar_stats[op_name] += length
+
+                    # Count Indels
+                    if op in [1, 2]:  # I or D
+                        indel_count += length
+
+            total_reads += 1
+            if total_reads >= 10000:
+                break
+
+        print("\n=== CIGAR 操作统计 ===")
+        for op, count in sorted(cigar_stats.items()):
+            print(f"  {op}: {count} bp")
+        print(f"检测到 Indel: {indel_count} bp")
+
+    def coverage_analysis(self):
+        """Calculate coverage statistics"""
+        coverage = defaultdict(int)
+
+        for pileup in self.bam.pileup():
+            coverage[pileup.reference_name] += pileup.n
+
+        print("\n=== 覆盖度分析 ===")
+        for chrom, reads in sorted(coverage.items()):
+            print(f"  {chrom}: {reads} reads")
+
+    def close(self):
+        """Close BAM file"""
+        self.bam.close()
+
+# 使用示例
+if __name__ == "__main__":
+    analyzer = SAMAnalyzer("sorted.bam")
+    analyzer.flag_analysis()
+    analyzer.mapq_distribution()
+    analyzer.cigar_analysis()
+    analyzer.coverage_analysis()
+    analyzer.close()
+```
+
+### 标志位解码练习
+
+```python
+def decode_flag(flag_value):
+    """Decode SAM FLAG to human-readable format"""
+    flags = {
+        0x001: "MAPPED",
+        0x002: "PROPERLY_PAIRED",
+        0x004: "UNMAPPED",
+        0x008: "MATE_UNMAPPED",
+        0x010: "REVERSE_STRAND",
+        0x020: "MATE_REVERSE",
+        0x040: "READ1",
+        0x080: "READ2",
+        0x100: "QC_FAILED",
+        0x200: "DUPLICATE"
+    }
+
+    result = []
+    for bit, name in sorted(flags.items()):
+        if flag_value & bit:
+            result.append(name)
+
+    return result
+
+# 测试
+print(decode_flag(83))   # Expected: ['MAPPED', 'PROPERLY_PAIRED', 'REVERSE_STRAND', 'READ1']
+print(decode_flag(163))  # Expected: ['MAPPED', 'PROPERLY_PAIRED', 'MATE_REVERSE', 'READ2']
+print(decode_flag(4))    # Expected: ['UNMAPPED']
+```
+
+---
+
+## 课后自测 (Post-Lesson Quiz)
+
+:::note
+**标题：** 💭 思考题
+
+1. FLAG 值为 99 的 Read，应该如何解释？
+
+2. CIGAR 字符串 `80M2D68M` 说明了什么变异？
+
+3. 为什么 Soft-clipping (S) 比 Hard-clipping (H) 更常用？
+
+<details>
+<summary><strong>参考答案 (Reference Answers)</strong></summary>
+
+*1. 99 = 64 + 32 + 2 + 1 = READ1 + MATE_REVERSE + PROPERLY_PAIRED + MAPPED，说明这是 PE 测序的第一条 read，已比对，配对 read 在反向链，两条都比对到了预期位置*
+
+*2. 80 bp 匹配 + 2 bp 删除 + 68 bp 匹配。这表示在比对位置发现了 2 bp 的缺失（deletion），可能对应一个 Indel 变异*
+
+*3. Soft-clipping 保留原始序列信息，便于后续重新分析或注释；Hard-clipping 永久丢弃数据，无法恢复*
+
+</details>
+
+:::
+
+---
+
+## 总结
+
+✓ **SAM/BAM** 是比对数据的标准格式
+✓ **FLAG** 位编码了 read 的所有属性（映射方向、配对情况等）
+✓ **CIGAR** 描述了 read 与参考序列的匹配状态，可用于识别 Indel
+✓ **MAPQ** 质量评分 >= 20 是变异检测的基本过滤标准
+✓ **变异分类** 包括 SNP、Indel、SV、CNV 等多种类型

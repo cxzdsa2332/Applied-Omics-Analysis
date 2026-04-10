@@ -1,2 +1,397 @@
-# 第二章 课时4
+---
+title: "变异检测算法与 VCF 通用格式"
+date: today
+format:
+  html:
+    code-fold: false
+    toc: true
+    toc-depth: 2
+    number-sections: true
+    theme: cosmo
+---
 
+# 变异检测原理
+
+## 变异检测的数学基础
+
+变异检测的核心是：**在给定的比对数据中，判断某个位置是否存在真实的生物学变异，而不是测序或比对错误**。
+
+### 两种主要算法框架
+
+{{Wiki:Bayesian_inference}}
+
+#### 1. 频率法 (Frequency-Based)
+
+最简单的方法：计算替代等位体的频率
+
+$$\text{AF} = \frac{\text{替代等位体数}}{\text{总等位体数}} \times 100\%$$
+
+**优点**：快速、直观
+**缺点**：不考虑质量信息，假阳性高
+
+```
+位置: chr1:1000
+参考: A
+比对情况:
+  Read 1: A (Q30)
+  Read 2: A (Q30)
+  Read 3: G (Q15)  <- 可能是错误
+  Read 4: A (Q30)
+
+AF = 1/(1+3) = 25%，但 Read3 质量低，不可信
+```
+
+#### 贝叶斯模型 (Bayesian Model)
+
+根据质量评分和等位体频率联合计算可能性：
+
+$$P(\text{变异} | \text{数据}) \propto P(\text{数据} | \text{变异}) \times P(\text{变异})$$
+
+**优点**：整合所有信息（质量、频率、群体背景）
+**缺点**：计算复杂
+
+**GATK HaplotypeCaller** 使用贝叶斯方法，步骤：
+
+1. **局部重组装** (Local Reassembly)：在高变异区域重新组装 read，识别正确的单倍体
+2. **等位体假设检验**：对每个可能的基因型（0/0, 0/1, 1/1）计算似然
+3. **贝叶斯后验**：结合群体等位频率先验，得出最可能的基因型
+4. **变异置信度**：计算 PHRED 质量评分（QUAL）
+
+---
+
+## VCF 格式详解
+
+{{Wiki:Variant_Call_Format}}
+
+### VCF 文件结构
+
+VCF (Variant Call Format) 是存储变异信息的标准格式。
+
+```
+##fileformat=VCFv4.2
+##fileDate=20240101
+##source=GATK4.0
+##reference=reference.fasta
+##INFO=<ID=DP,Number=1,Type=Integer,Description="Total depth">
+##INFO=<ID=AF,Number=A,Type=Float,Description="Allele frequency">
+##FORMAT=<ID=GT,Number=1,Type=String,Description="Genotype">
+##FORMAT=<ID=DP,Number=1,Type=Integer,Description="Read depth">
+##FORMAT=<ID=GQ,Number=1,Type=Integer,Description="Genotype quality">
+#CHROM  POS     ID      REF     ALT     QUAL    FILTER  INFO    FORMAT  sample1 sample2
+chr1    10000   .       A       G       50      PASS    DP=100;AF=0.5   GT:DP:GQ        0/1:50:40       0/0:50:50
+chr1    10500   rs123   C       T,A     100     PASS    DP=120;AF=0.4,0.1       GT:DP:GQ        0/1:60:45       1/1:60:50
+```
+
+### 固定列说明
+
+| 列号 | 列名 | 说明 |
+|-----|------|------|
+| 1 | CHROM | 染色体名称 |
+| 2 | POS | 1-based 位置 |
+| 3 | ID | 变异 ID（通常来自 dbSNP，无则用 `.`） |
+| 4 | REF | 参考等位体（通常是最长的） |
+| 5 | ALT | 替代等位体（可多个，逗号分隔） |
+| 6 | QUAL | 变异的 PHRED 质量评分 (Phred Scale) |
+| 7 | FILTER | 过滤标志（PASS 或失败原因） |
+| 8 | INFO | 注释信息（键值对） |
+| 9+ | FORMAT | 样本数据格式 |
+| 10+ | 样本 | 每个样本的基因型和相关字段 |
+
+### INFO 字段关键标签
+
+| 标签 | 含义 | 示例 |
+|-----|------|------|
+| **DP** | 总覆盖深度 | DP=100 |
+| **AF** | 替代等位体频率 | AF=0.5 |
+| **AN** | 已知等位体数 | AN=200 |
+| **AC** | 替代等位体计数 | AC=50 |
+| **MQ** | 平均映射质量 | MQ=60 |
+| **QD** | 质量/深度比 | QD=1.5 |
+| **FS** | Fisher 链接不平衡检验值 | FS=10.5 |
+| **MQRankSum** | Mapping Quality Rank Sum 检验 | MQRankSum=0.5 |
+| **ReadPosRankSum** | Read Position Rank Sum 检验 | ReadPosRankSum=-2.0 |
+
+### FORMAT 和样本字段
+
+| 字段 | 含义 |
+|-----|------|
+| **GT** | Genotype（0/0:纯合参考, 0/1:杂合, 1/1:纯合替代） |
+| **GQ** | Genotype Quality（基因型的 PHRED 质量） |
+| **DP** | 该样本的覆盖深度 |
+| **AD** | Allele Depth（每个等位体的 read 数） |
+| **AF** | 该样本中替代等位体的频率 |
+| **PL** | Phred-Likelihood（各基因型的负对数似然） |
+
+### 基因型解读
+
+| 基因型 | 含义 | 常见情况 |
+|-------|------|---------|
+| 0/0 | 纯合参考 | 无突变 |
+| 0/1 | 杂合 | 来自一个亲本（胚系变异） |
+| 1/1 | 纯合替代 | 来自两个亲本 |
+| ./.| 缺失基因型 | 覆盖不足或质量差 |
+| 0/2, 1/2 | 多等位体 | 多个替代等位体 |
+
+---
+
+## 变异过滤策略
+
+### 变异质量过滤
+
+**QUAL 评分**：
+
+$$\text{QUAL} = -10 \log_{10}(P_{\text{error}})$$
+
+| QUAL 范围 | 含义 | 建议 |
+|----------|------|------|
+| 0-10 | 极低置信 | 丢弃 |
+| 10-30 | 低置信 | 谨慎 |
+| **30-50** | **中等置信** | **基本过滤** |
+| **50+** | **高置信** | **推荐使用** |
+
+### 深度过滤
+
+| 条件 | 问题 | 过滤阈值 |
+|-----|------|---------|
+| 深度过低 (< 10X) | 统计功率不足 | DP >= 10 |
+| 深度过高 (> 300X) | 可能是重复或污染 | DP <= 300 |
+| 平衡度差 | 暗示短 read 或 contamination | AD_ratio >= 0.25 |
+
+### 位置效应过滤
+
+| 指标 | 阈值 | 解释 |
+|-----|------|------|
+| **ReadPosRankSum** | > -2.0 | 变异位置偏向 read 末端 → 假阳性 |
+| **MQRankSum** | > -2.0 | 替代等位体的 MAPQ 偏低 |
+| **FS (Fisher Strand)** | < 60 | 变异偏向某一条链（测序 bias） |
+| **QD (Quality/Depth)** | >= 2.0 | 确保质量与深度相匹配 |
+
+### 推荐的过滤管道
+
+```bash
+# 基本高置信变异 (SNP/Indel)
+QUAL >= 50 AND
+DP >= 10 AND DP <= 300 AND
+QD >= 2.0 AND
+ReadPosRankSum > -2.0 AND
+FS < 60.0
+```
+
+---
+
+## GVCF 格式简介
+
+GVCF (Genomic VCF) 是 VCF 的扩展，记录**所有位置**的基因型（不仅是变异位置）。
+
+**特点**：
+- 包含参考匹配块（非变异区域）
+- 支持多样本联合基因型定型
+- 文件更大，但保留完整信息
+
+```
+##gVCFVersion=v1.4
+#CHROM  POS     ID      REF     ALT     QUAL    FILTER  INFO    FORMAT  sample1
+chr1    10000   .       A       <NON_REF>       .       .       END=10010       GT:DP   0/0:50
+chr1    10011   .       C       T       50      PASS    DP=100  GT:DP:GQ        0/1:50:40
+chr1    10012   .       T       <NON_REF>       .       .       END=10100       GT:DP   0/0:48
+```
+
+---
+
+## 实践：变异检测与 VCF 解析
+
+### Python 解析与过滤 VCF
+
+```python
+import vcf
+from collections import defaultdict
+
+class VCFAnalyzer:
+    def __init__(self, vcf_file):
+        """Initialize VCF reader"""
+        self.vcf_reader = vcf.Reader(filename=vcf_file)
+        self.variants = []
+
+    def parse_vcf(self):
+        """Parse all variants"""
+        for record in self.vcf_reader:
+            self.variants.append(record)
+
+    def quality_distribution(self):
+        """Analyze QUAL score distribution"""
+        quals = [v.QUAL for v in self.variants if v.QUAL is not None]
+
+        print("\n=== 质量评分分布 ===")
+        print(f"总变异数: {len(self.variants)}")
+        print(f"平均 QUAL: {sum(quals) / len(quals):.2f}")
+        print(f"最小 QUAL: {min(quals):.2f}")
+        print(f"最大 QUAL: {max(quals):.2f}")
+        print(f"QUAL >= 30: {len([q for q in quals if q >= 30])} ({len([q for q in quals if q >= 30]) / len(quals) * 100:.1f}%)")
+        print(f"QUAL >= 50: {len([q for q in quals if q >= 50])} ({len([q for q in quals if q >= 50]) / len(quals) * 100:.1f}%)")
+
+    def variant_type_distribution(self):
+        """Count SNP vs Indel"""
+        snp_count = 0
+        indel_count = 0
+        other_count = 0
+
+        for v in self.variants:
+            ref_len = len(v.REF)
+            alt_len = len(v.ALT[0]) if v.ALT else 0
+
+            if ref_len == alt_len and ref_len == 1:
+                snp_count += 1
+            elif ref_len != alt_len:
+                indel_count += 1
+            else:
+                other_count += 1
+
+        print("\n=== 变异类型分布 ===")
+        print(f"SNP: {snp_count} ({snp_count / len(self.variants) * 100:.1f}%)")
+        print(f"Indel: {indel_count} ({indel_count / len(self.variants) * 100:.1f}%)")
+        print(f"其他: {other_count}")
+
+    def depth_analysis(self):
+        """Analyze DP (depth) distribution"""
+        depths = []
+
+        for v in self.variants:
+            if 'DP' in v.INFO:
+                dp = v.INFO['DP']
+                if isinstance(dp, list):
+                    depths.append(dp[0])
+                else:
+                    depths.append(dp)
+
+        if depths:
+            print("\n=== 覆盖深度分析 ===")
+            print(f"平均深度: {sum(depths) / len(depths):.2f}X")
+            print(f"中位数深度: {sorted(depths)[len(depths)//2]:.2f}X")
+            print(f"最小深度: {min(depths)}X")
+            print(f"最大深度: {max(depths)}X")
+
+    def filter_variants(self, qual_min=50, dp_min=10, dp_max=300):
+        """Filter variants based on quality criteria"""
+        filtered = []
+
+        for v in self.variants:
+            # Quality check
+            if v.QUAL is None or v.QUAL < qual_min:
+                continue
+
+            # Depth check
+            if 'DP' in v.INFO:
+                dp = v.INFO['DP']
+                if isinstance(dp, list):
+                    dp = dp[0]
+                if dp < dp_min or dp > dp_max:
+                    continue
+
+            # QD check (Quality/Depth ratio)
+            if 'QD' in v.INFO:
+                qd = v.INFO['QD']
+                if isinstance(qd, list):
+                    qd = qd[0]
+                if qd < 2.0:
+                    continue
+
+            filtered.append(v)
+
+        print(f"\n=== 过滤结果 ===")
+        print(f"原始变异: {len(self.variants)}")
+        print(f"过滤后: {len(filtered)} ({len(filtered)/len(self.variants)*100:.1f}%)")
+        print(f"已过滤: {len(self.variants) - len(filtered)}")
+
+        return filtered
+
+    def genotype_analysis(self):
+        """Analyze genotype distribution"""
+        gt_counts = defaultdict(int)
+
+        for v in self.variants:
+            for sample in v.samples:
+                gt = sample['GT']
+                gt_counts[gt] += 1
+
+        print("\n=== 基因型分布 ===")
+        for gt, count in sorted(gt_counts.items()):
+            print(f"  {gt}: {count}")
+
+# 使用示例
+if __name__ == "__main__":
+    analyzer = VCFAnalyzer("variants.vcf")
+    analyzer.parse_vcf()
+    analyzer.quality_distribution()
+    analyzer.variant_type_distribution()
+    analyzer.depth_analysis()
+    analyzer.genotype_analysis()
+    filtered = analyzer.filter_variants(qual_min=50, dp_min=10, dp_max=300)
+```
+
+### 手工计算基因型质量
+
+```python
+import math
+
+def calculate_genotype_quality(pl_values):
+    """
+    PL (Phred-Likelihood) 是各基因型的负对数似然
+    GQ = 第二好基因型 - 最好基因型的 PL 值
+
+    例: PL = [0, 30, 100]
+        最好: 0 (0/0)
+        第二好: 30 (0/1)
+        GQ = 30 - 0 = 30
+    """
+    if len(pl_values) < 2:
+        return 0
+
+    sorted_pl = sorted(pl_values)
+    gq = sorted_pl[1] - sorted_pl[0]
+    return gq
+
+# 示例计算
+pl_example = [0, 30, 100]  # 假设三个基因型的似然
+gq = calculate_genotype_quality(pl_example)
+print(f"PL 值: {pl_example}")
+print(f"GQ = {gq}")  # 输出: GQ = 30
+
+# 解释: 第二好的基因型（0/1）比最好的基因型（0/0）低 30 PHRED
+#      即该位点为杂合的置信度为 99.9%（Q30 = 0.1% 错误率）
+```
+
+---
+
+## 课后自测 (Post-Lesson Quiz)
+
+:::note
+**标题：** 💭 思考题
+
+1. 为什么 GATK HaplotypeCaller 的变异检测率通常比简单频率法高？
+
+2. 解释这条 VCF 记录：`chr1 1000 . A G 100 PASS DP=100;AF=0.05 GT:GQ 0/1:40`
+
+3. 深度为 1000X 的位点应该过滤吗？为什么？
+
+<details>
+<summary><strong>参考答案 (Reference Answers)</strong></summary>
+
+*1. HaplotypeCaller 使用贝叶斯模型，在高变异密度区域进行局部重组装，避免参考偏差。同时整合质量信息，不仅看频率，还看质量加权的证据强度，因此能更准确地识别真实变异*
+
+*2. chr1 位置 1000 处，参考等位体为 A，替代为 G，质量评分 100（非常可信）。样本 GT=0/1（杂合），GQ=40（99.99% 置信度）。总深度 100，AF=5%（可能是二代测序的胚系变异或三代的体细胞变异）*
+
+*3. 应该过滤。1000X 深度远高于合理范围（通常 10-300X），可能表示：(1) 重复序列导致多倍映射，(2) 污染/混样，(3) 仪器故障。这些情况下的变异通常不可靠*
+
+</details>
+
+:::
+
+---
+
+## 总结
+
+✓ **变异检测** 的核心是区分真实生物学变异和测序/比对错误
+✓ **贝叶斯模型**（如 GATK）比频率法更准确，考虑质量和先验知识
+✓ **VCF 格式** 是变异信息的标准存储格式，包含质量、基因型、注释等信息
+✓ **过滤策略** 需要综合考虑 QUAL、DP、QD、位置偏差等多个指标
+✓ **GVCF** 记录所有位置的基因型，支持多样本联合分析

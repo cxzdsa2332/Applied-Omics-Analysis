@@ -180,7 +180,7 @@ rm -r directory/                # delete directory recursively
 rm -i file.txt                  # prompt before deletion (safer)
 ```
 
-::: {.callout-warning}
+:::warning
 **`rm -rf` 是高危命令**，不可恢复，执行前务必确认路径正确。在 HPC 上误删数据可能意味着数月实验成果的丢失。
 :::
 
@@ -238,7 +238,7 @@ chmod 600 private_key.pem  # owner read/write only (SSH key requirement)
 chown user:group file.txt  # change file owner and group
 ```
 
-::: {.callout-note}
+:::note
 生物信息学中常见场景：下载的工具脚本需要 `chmod +x` 才能运行；共享服务器上的数据目录需要正确设置组权限，使实验室成员都能访问。
 :::
 
@@ -287,7 +287,7 @@ grep "Adapter" fastqc_data.txt | head -20
 bwa mem ref.fa R1.fastq R2.fastq | samtools sort -o sorted.bam
 ```
 
-::: {.callout-tip}
+:::tip
 **管道是省磁盘空间的利器**。在 NGS 分析中，原始 SAM 文件可能高达数百 GB。通过管道直接从 BWA 输出传入 samtools，可以完全跳过写入磁盘这一步。
 :::
 
@@ -388,7 +388,7 @@ tar -xzvf results.tar.gz               # extract archive
 tar -tzvf results.tar.gz               # list contents without extracting
 ```
 
-::: {.callout-note}
+:::note
 **`zcat` + 管道**是生信中的高频组合：直接在不解压文件的情况下统计、搜索或处理 FASTQ 数据，节省大量磁盘 I/O 时间。
 :::
 
@@ -486,13 +486,14 @@ conda env create -f rnaseq_environment.yml   # recreate on another machine
 conda env remove -n rnaseq
 ```
 
-::: {.callout-tip}
+:::tip
 **最佳实践**：为每个项目或分析流程创建独立的 conda 环境，并将 `environment.yml` 提交到 GitHub，确保分析的可重复性。这是现代生物信息学发表要求的一部分。
 :::
 
 ---
 
-::: {.callout-note title="互动学习：终端与文件系统模拟器"}
+:::note
+**标题：** 互动学习：终端与文件系统模拟器
 为了帮助大家建立对命令行和文件目录树的直觉，请在终端中尝试以下命令：
 1. `pwd` — 查看当前位置；
 2. `ls -lh` — 查看当前目录文件详情；
@@ -518,7 +519,7 @@ conda env remove -n rnaseq
 | `/etc/profile` | 所有用户登录时 | 系统级全局配置（需 root 修改）|
 | `/etc/bashrc` | 所有用户交互式 Shell | 系统级别名和函数（需 root 修改）|
 
-::: {.callout-note}
+:::note
 **常见做法**：在 `~/.bash_profile` 末尾加入 `source ~/.bashrc`，确保登录 Shell 和交互式 Shell 的配置完全一致，避免"SSH 登录后命令找不到"的困惑。
 :::
 
@@ -674,7 +675,8 @@ echo $REF_DIR
 # /data/reference/hg38
 ```
 
-::: {.callout-tip title="调试技巧"}
+:::tip
+**标题：** 调试技巧
 如果 `source ~/.bashrc` 后报错，可逐段注释排查：
 
 ```bash
@@ -836,6 +838,103 @@ sbatch array_job.sh               # submits 24 independent jobs automatically
 
 ---
 
+## 实战：命令行中的项目管理初步
+
+掌握了 Linux 命令行的工具后，最后要建立**项目组织的规范**。生物信息学分析涉及复杂的脚本、数据和结果，合理的文件组织能显著提高效率。
+
+### 创建标准的项目目录结构
+
+一个规范的生物信息学项目应该遵循这样的结构：
+
+```bash
+# Create project directory structure
+mkdir -p bio_project/{data/raw,data/processed,scripts,results/figures,results/tables,logs}
+cd bio_project
+
+# Create essential files
+echo "# Bio Analysis Project" > README.md
+echo "Project started: $(date)" > logs/project.log
+
+# Create a .gitignore for tracking large files
+cat > .gitignore << 'EOF'
+# Large data files
+data/raw/*.fastq.gz
+data/raw/*.bam
+results/*.sam
+
+# System files
+.DS_Store
+__pycache__/
+*.Rhistory
+
+# IDE files
+.vscode/
+.idea/
+
+# Temporary files
+*.tmp
+*.log
+EOF
+```
+
+### 环境配置文件的版本管理
+
+为了让团队成员在不同机器上复现完全相同的分析环境，需要记录依赖版本：
+
+```yaml
+# environment.yml - 保存在项目根目录
+name: bio_project
+channels:
+  - conda-forge
+  - bioconda
+dependencies:
+  - python=3.10
+  - r-base=4.3
+  - fastqc
+  - fastp
+  - bwa
+  - samtools
+  - bcftools
+```
+
+团队成员可以通过以下命令快速恢复相同环境：
+
+```bash
+conda env create -f environment.yml
+conda activate bio_project
+```
+
+**关键要点**：不要在全局环境中工作，每个项目使用独立的 conda 环境，避免依赖冲突。
+
+### 脚本命名和日志管理
+
+好的脚本命名习惯使流程清晰易追踪：
+
+```bash
+# scripts/ 目录下的命名规范
+01_qc.sh              # 质量控制
+02_align.sh           # 序列比对
+03_quantify.sh        # 定量
+04_statistics.R       # 统计分析
+
+# 运行脚本时记录日志
+bash scripts/01_qc.sh 2>&1 | tee logs/01_qc.log
+```
+
+**提示**：`2>&1` 将错误输出也重定向到日志，`tee` 同时显示在屏幕和文件中。
+
+:::  {.callout-tip}
+**Project hygiene 建议**
+
+1. **数据读写分离**：`data/raw/` 存放不可修改的原始数据，`data/processed/` 存放处理后的数据；
+2. **脚本版本化**：不用 `script_final.sh`, `script_final2.sh` 这样的命名，后面的课程会学到更优雅的版本管理方案；
+3. **定期备份**：定期将整个项目目录上传到云端（后面的课程会讲 GitHub）。
+:::
+
+接下来的课程（Lesson 4）会教你如何使用 **Git + GitHub** 对整个项目进行专业的版本控制和团队协作。
+
+---
+
 ## 本章小结
 
 本章构建了生物信息学实践所需的 Linux 完整技能树：
@@ -849,7 +948,16 @@ sbatch array_job.sh               # submits 24 independent jobs automatically
   → 文本处理 (grep / cut / sort / awk / sed)
   → 管道组合 (|) 与重定向 (> / >>)
   → 软件安装 (conda / mamba)
+  → 版本控制 (Git / GitHub)
   → 大规模计算 (Slurm 作业调度)
 ```
 
-掌握这些技能，你就能在任何 HPC 环境中独立完成从原始 FASTQ 数据到最终分析结果的完整流程。后续章节将在此基础上深入各类组学数据的具体分析方法。
+通过掌握这些技能和工具，你已具备了**数据工程师的能力**——能在任何 HPC 环境中独立完成数据处理和流程自动化。
+
+**现在的问题是**：处理完数据后，分析才刚开始！
+- 如何用 Python/R 进行统计检验？
+- 如何在一台机器上同时开发多个项目而不互相干扰？
+- 如何写出可读、可维护、可分享的代码？
+- 如何让全球的人都能复现你的分析？
+
+**下一章（Lesson 4）的任务**是教你构建**专业的编程和开发环境**：掌握 R 与 Python 的"双擎"、用 Conda 隔离项目依赖、在 VS Code 中协调开发、使用 GitHub 和 AI 完成代码撰写和文档。这是从**工程师**到**科学家**的蜕变——你的代码不仅能跑，还能被理解、被审查、被引用。

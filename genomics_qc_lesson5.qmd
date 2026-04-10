@@ -1,2 +1,490 @@
-# 第二章 课时5
+---
+title: "功能注释、GATK 最佳实践与可视化"
+date: today
+format:
+  html:
+    code-fold: false
+    toc: true
+    toc-depth: 2
+    number-sections: true
+    theme: cosmo
+---
 
+# 变异功能注释
+
+## 从坐标到生物学意义
+
+变异的可视化检测只是第一步，真正的价值在于理解其**生物学后果**。
+
+### 基因组注释资源
+
+{{Wiki:Gene_annotation}}
+
+变异注释依赖于：
+
+1. **基因组注释文件** (GTF/GFF)
+   - 包含所有已知基因、转录本、外显子、内含子的坐标
+   - 常用数据库：Ensembl, RefSeq, GENCODE
+
+2. **蛋白质序列** (FASTA)
+   - 用于判断同义/错义突变
+
+3. **保守性评分** (Conservation)
+   - PhyloP, GERP：评估碱基的进化保守性
+   - 保守位点突变更可能造成功能损伤
+
+4. **注释数据库**
+   - ClinVar：临床相关变异
+   - gnomAD：全球人群频率
+   - dbSNP：已知 SNP
+   - COSMIC：肿瘤体细胞变异
+
+### 变异的功能效应分类
+
+| 效应类型 | 说明 | 重要性 |
+|---------|------|--------|
+| **同义突变** (Synonymous) | 改变 DNA 不改变蛋白质（如 GCT → GCC，都编码 Ala） | ✓ 通常低 |
+| **错义突变** (Missense) | 改变蛋白质序列（如 ATG (Met) → GTG (Val)） | ✓✓✓ 高 |
+| **无义突变** (Nonsense) | 产生终止密码子，蛋白质截断（如 TGG (Trp) → TAG (Stop)） | ✓✓✓ 非常高 |
+| **移码** (Frameshift) | Indel 非 3 倍数，导致阅读框改变 | ✓✓✓ 非常高 |
+| **剪接位点** (Splice Site) | 影响剪接信号（GT-AG），改变转录本结构 | ✓✓ 高 |
+| **启动子/增强子** (Regulatory) | 影响基因表达调控 | ✓✓ 中等 |
+| **内含子/2kb 外** (Intron/Intergenic) | 不直接编码，功能未知 | ✓ 低 |
+
+### 注释工具对比
+
+{{Wiki:Gene_prediction}}
+
+| 工具 | 算法 | 特点 | 性能 |
+|-----|------|------|------|
+| **SnpEff** | 基因组坐标比对 | 快速、全面的效应预测 | 推荐用于常规注释 |
+| **VEP** (Variant Effect Predictor) | Ensembl API | 功能全面、注释数据丰富 | 最全面但较慢 |
+| **ANNOVAR** | 多库整合 | 轻量化、支持多物种 | 适合快速批量注释 |
+| **CADD** | 机器学习 | 损伤性评分 | 预测变异致病性 |
+
+---
+
+## GATK Best Practices 完整流程
+
+GATK (Genome Analysis Toolkit) 是 Broad Institute 开发的行业标准管道。
+
+{{Wiki:GATK}}
+
+### 完整数据处理流程图
+
+```
+Raw FASTQ
+    ↓
+[FastQC] ← 质量评估
+    ↓
+[Trimmomatic/Fastp] ← 数据清理 (质量过滤、Adapter 去除)
+    ↓
+Clean FASTQ
+    ↓
+[BWA-MEM] ← 比对到参考基因组
+    ↓
+SAM
+    ↓
+[samtools] ← 转 BAM、排序、索引
+    ↓
+Sorted BAM
+    ↓
+[MarkDuplicates] ← 标记 PCR 重复
+    ↓
+Deduped BAM
+    ↓
+[BQSR] ← 碱基质量分数重校正
+    ↓
+Recalibrated BAM
+    ↓
+[HaplotypeCaller] ← 变异检测
+    ↓
+GVCF
+    ↓
+[GenotypeGVCFs] ← 多样本联合基因型定型
+    ↓
+Multi-sample VCF
+    ↓
+[VariantFiltration] ← 质量过滤
+    ↓
+Final VCF
+    ↓
+[SnpEff/VEP] ← 功能注释
+    ↓
+Annotated VCF
+```
+
+### 关键步骤详解
+
+#### Step 1: 数据预处理
+```bash
+# Trimmomatic (质量过滤)
+trimmomatic PE \
+  R1.fastq R2.fastq \
+  R1_paired.fastq R1_unpaired.fastq \
+  R2_paired.fastq R2_unpaired.fastq \
+  ILLUMINACLIP:adapters.fa:2:30:10 \
+  LEADING:3 TRAILING:3 SLIDINGWINDOW:4:20 MINLEN:50
+```
+
+#### Step 2: 序列比对
+```bash
+# BWA-MEM (比对)
+bwa mem -t 4 \
+  -R "@RG\tID:sample1\tSM:sample1\tLB:lib1\tPL:ILLUMINA" \
+  reference.fasta R1.fastq R2.fastq | \
+  samtools view -b | samtools sort -o sorted.bam -
+```
+
+#### Step 3: 去重与排序
+```bash
+# 标记重复
+gatk MarkDuplicates \
+  -I sorted.bam -O dedup.bam \
+  -M dedup_metrics.txt --REMOVE_DUPLICATES true
+
+# 建立索引
+samtools index dedup.bam
+```
+
+#### Step 4: BQSR（碱基质量分数重校正）
+BQSR 是 GATK 的核心创新，通过机器学习校正质量评分的偏差。
+
+**原理**：
+- 真实错误率往往与官方质量评分不符
+- 使用已知变异数据库（dbSNP）作为参考，学习关联模式
+- 根据比对位置、GC 含量、周围碱基等因素重新校正
+
+```bash
+# Step 1: 分析
+gatk BaseRecalibrator \
+  -I dedup.bam -R reference.fasta \
+  --known-sites dbsnp.vcf \
+  -O recal_data.table
+
+# Step 2: 应用
+gatk ApplyBQSR \
+  -I dedup.bam -R reference.fasta \
+  --bqsr-recal-file recal_data.table \
+  -O recalibrated.bam
+```
+
+#### Step 5: 变异检测
+```bash
+# HaplotypeCaller (GVCF 模式)
+gatk HaplotypeCaller \
+  -I recalibrated.bam -R reference.fasta \
+  -O sample.g.vcf.gz \
+  --emit-ref-confidence GVCF
+
+# 多样本联合基因型定型
+gatk GenotypeGVCFs \
+  -R reference.fasta \
+  -V sample1.g.vcf.gz -V sample2.g.vcf.gz \
+  -O cohort.vcf.gz
+```
+
+#### Step 6: 变异过滤
+```bash
+# 应用硬过滤标准
+gatk VariantFiltration \
+  -V cohort.vcf.gz -R reference.fasta \
+  --filter-expression "QUAL < 50.0 || QD < 2.0 || FS > 60.0" \
+  --filter-name "LowQualFilter" \
+  -O filtered.vcf.gz
+```
+
+---
+
+## 变异注释与优先级评估
+
+### SnpEff 注释示例
+
+```bash
+# 基础注释
+snpEff chr hg38 variants.vcf > annotated.vcf
+
+# 详细注释 (HTML 报告)
+snpEff -stats report.html chr hg38 variants.vcf > annotated.vcf
+
+# VEP 注释
+vep --input_file variants.vcf \
+    --output_file annotated.vcf \
+    --assembly GRCh38 \
+    --sift b --polyphen b \
+    --database --cache
+```
+
+### 注释字段解读
+
+注释后的 VCF 会添加 **ANN** 字段：
+
+```
+##ANN=<ID=ANN,Number=.,Type=String,Description="Annotation">
+
+ANN=T|missense_variant|MODERATE|TP53|ENSG00000141510|transcript|ENST00000269305|
+protein_altering|2/7|c.715C>T|p.Arg239Trp|818/2584|79%|...
+```
+
+| 字段 | 含义 |
+|-----|------|
+| T | 替代等位体 |
+| missense_variant | 效应类型（同义/错义/无义等） |
+| MODERATE | 影响程度（HIGH/MODERATE/LOW） |
+| TP53 | 基因名称 |
+| ENSG... | 基因 ID |
+| c.715C>T | 核酸变化 (cDNA) |
+| p.Arg239Trp | 蛋白质变化（单字母：RW，三字母：Arg→Trp） |
+| 79% | 蛋白质位置百分比 |
+
+### 致病性评估
+
+**ACMG 指南** 将变异分为 5 级：
+
+1. **病原性 (Pathogenic)** - 明确导致疾病
+2. **可能病原性 (Likely Pathogenic)** - 很可能导致疾病
+3. **意义不明 (VUS, Variant of Uncertain Significance)** - 无法判断
+4. **可能良性 (Likely Benign)** - 很可能无害
+5. **良性 (Benign)** - 无致病性
+
+**评估标准**：
+- 群体频率（gnomAD, 1000 Genomes）
+- 在致病数据库中的注释（ClinVar）
+- 计算预测（CADD, SIFT, PolyPhen）
+- 功能研究证据
+- 家族聚集性
+
+---
+
+## IGV 交互式可视化
+
+Integrative Genomics Viewer (IGV) 用于直观查看比对和变异。
+
+### IGV 核心功能
+
+1. **加载参考基因组和注释**
+   - 选择 hg38/hg19
+   - 导入 GTF 基因注释
+
+2. **导入 BAM 文件**
+   - 自动显示 read 覆盖度
+   - 颜色编码：
+     - 绿色：正向比对
+     - 红色：反向比对
+     - 灰色：低 MAPQ（质量差）
+     - **彩色错配**：红(A) 蓝(C) 绿(G) 黄(T)，与参考不同时显示
+
+3. **导入 VCF 文件**
+   - 标记变异位置
+   - 显示基因型和注释
+
+4. **肉眼检查技巧**
+   - **覆盖度均匀** → 无明显偏差
+   - **错配位置一致** → 可能真实变异
+   - **错配散布不规则** → 可能测序或比对错误
+   - **配对 reads 距离正确** → 有效比对
+
+---
+
+## 实践：VCF 注释与致病性评估
+
+### Python 整合注释和过滤
+
+```python
+import vcf
+import math
+
+class VariantPrioritizer:
+    def __init__(self, annotated_vcf):
+        """Initialize with annotated VCF (from SnpEff/VEP)"""
+        self.vcf = vcf.Reader(filename=annotated_vcf)
+        self.variants = []
+
+    def parse_snpeff_annotation(self, ann_field):
+        """Parse SnpEff ANN field"""
+        if not ann_field:
+            return None
+
+        # SnpEff ANN format
+        annotations = []
+        for ann in ann_field:
+            parts = ann.split('|')
+            if len(parts) >= 15:
+                annotations.append({
+                    'alt': parts[0],
+                    'effect': parts[1],
+                    'impact': parts[2],
+                    'gene_name': parts[3],
+                    'gene_id': parts[4],
+                    'feature_type': parts[5],
+                    'hgvs_c': parts[9],
+                    'hgvs_p': parts[10]
+                })
+        return annotations
+
+    def classify_impact(self, impact_str):
+        """Convert IMPACT string to numeric score"""
+        impact_scores = {
+            'HIGH': 4,
+            'MODERATE': 3,
+            'LOW': 2,
+            'MODIFIER': 1
+        }
+        return impact_scores.get(impact_str, 0)
+
+    def get_population_frequency(self, info_dict):
+        """Extract population frequency (AF from gnomAD or other sources)"""
+        for key in ['AF', 'gnomAD_AF']:
+            if key in info_dict:
+                af = info_dict[key]
+                if isinstance(af, list):
+                    af = af[0]
+                return float(af) if af else None
+        return None
+
+    def prioritize_variants(self):
+        """Prioritize variants by pathogenicity"""
+        results = []
+
+        for record in self.vcf:
+            variant_info = {
+                'chrom': record.CHROM,
+                'pos': record.POS,
+                'ref': record.REF,
+                'alt': record.ALT[0] if record.ALT else None,
+                'qual': record.QUAL
+            }
+
+            # Parse annotations
+            if 'ANN' in record.INFO:
+                anns = self.parse_snpeff_annotation(record.INFO['ANN'])
+                if anns:
+                    ann = anns[0]  # Use most severe
+                    variant_info['effect'] = ann['effect']
+                    variant_info['impact'] = ann['impact']
+                    variant_info['gene'] = ann['gene_name']
+                    variant_info['hgvs_p'] = ann['hgvs_p']
+                    variant_info['impact_score'] = self.classify_impact(ann['impact'])
+
+            # Get population frequency
+            variant_info['af'] = self.get_population_frequency(record.INFO)
+
+            # Calculate priority score
+            variant_info['priority_score'] = self._calculate_priority(variant_info)
+
+            results.append(variant_info)
+
+        # Sort by priority score (descending)
+        results.sort(key=lambda x: x.get('priority_score', 0), reverse=True)
+        return results
+
+    def _calculate_priority(self, variant):
+        """Calculate variant priority score (0-100)"""
+        score = 0
+
+        # Impact score (max 60)
+        impact_score = variant.get('impact_score', 0)
+        score += impact_score * 15
+
+        # Quality score (max 20)
+        qual = variant.get('qual', 0)
+        if qual:
+            score += min(20, qual / 5)
+
+        # Population frequency (max 20, rare variants score higher)
+        af = variant.get('af')
+        if af:
+            if af < 0.01:
+                score += 20  # Very rare
+            elif af < 0.05:
+                score += 10  # Rare
+            else:
+                score += 0   # Common
+        else:
+            score += 15  # Unknown frequency
+
+        return min(100, score)
+
+    def report_top_variants(self, top_n=10):
+        """Print top N prioritized variants"""
+        variants = self.prioritize_variants()
+
+        print("\n" + "="*80)
+        print("变异优先级排序（致病性从高到低）")
+        print("="*80)
+
+        for i, var in enumerate(variants[:top_n], 1):
+            print(f"\n{i}. {var['chrom']}:{var['pos']} {var['ref']}->{var['alt']}")
+            print(f"   基因: {var.get('gene', 'Unknown')}")
+            print(f"   效应: {var.get('effect', 'Unknown')}")
+            print(f"   影响: {var.get('impact', 'Unknown')}")
+            print(f"   蛋白变化: {var.get('hgvs_p', 'Unknown')}")
+            print(f"   群体频率: {var.get('af', 'Unknown')}")
+            print(f"   质量评分: {var.get('qual', 'N/A')}")
+            print(f"   优先级分数: {var.get('priority_score', 0):.1f}/100")
+
+# 使用示例
+if __name__ == "__main__":
+    prioritizer = VariantPrioritizer("annotated.vcf")
+    prioritizer.report_top_variants(top_n=10)
+```
+
+### R 快速统计
+
+```r
+# 使用 VariantAnnotation 包
+library(VariantAnnotation)
+
+# 读取注释后的 VCF
+vcf <- readVcf("annotated.vcf")
+
+# 基本统计
+print(paste("总变异数:", length(vcf)))
+print(table(elementNROWS(alt(vcf))))  # 等位体个数分布
+
+# QUAL 分布
+qual_scores <- qual(vcf)
+hist(qual_scores, main="质量评分分布", xlab="QUAL")
+
+# 基因型分布
+geno <- geno(vcf)
+gt <- geno$GT
+print(table(gt))  # 基因型计数
+```
+
+---
+
+## 课后自测 (Post-Lesson Quiz)
+
+:::note
+**标题：** 💭 思考题
+
+1. 某个错义突变在 gnomAD 中的频率为 2%，它在 ClinVar 中被注释为 pathogenic。这个变异应该被认为是 pathogenic 还是需要进一步验证？为什么？
+
+2. 为什么 BQSR 步骤需要已知变异数据库（如 dbSNP）？如果没有这个数据库会怎样？
+
+3. 在 IGV 中观察某个变异位点，发现所有显示错配颜色的 reads 都来自反向链，这说明什么？
+
+<details>
+<summary><strong>参考答案 (Reference Answers)</strong></summary>
+
+*1. 应该进一步验证。群体频率 2% 相对较高，暗示该变异可能在某些群体中是常见的多态性（polymorphism）而非致病突变。ACMG 指南明确指出：群体频率 > 0.5% 的变异基本不考虑病原性。应查看：(1) 该变异在不同群体中的频率，(2) ClinVar 中的具体临床表型，(3) 是否有分离分析（segregation analysis）证据支持*
+
+*2. BQSR 的核心逻辑是：已知变异位点应该通过 alignment，而真实错误不应该。通过比较观察错误率与预测错误率的差异，机器学习模型可以学到真实的错误参数。如果没有已知变异库，算法无法区分真实变异和错误，导致不准确的校正*
+
+*3. 可能存在测序 strand bias（链偏差）。某些区域特定链容易产生错误（如边合成边测序时某条链的化学反应异常）。在 VCF FILTER 字段中应该看到 FS (Fisher Strand) 检验值很高（> 60），这样的变异应该被过滤*
+
+</details>
+
+:::
+
+---
+
+## 总结
+
+✓ **变异注释** 将坐标转换为生物学意义（同义/错义/无义等）
+✓ **GATK 最佳实践** 从 FASTQ 到 VCF 的完整标准化流程
+✓ **BQSR** 通过机器学习校正质量评分，提高变异检测准确度
+✓ **功能注释** 使用 SnpEff/VEP 添加基因组背景和保守性信息
+✓ **IGV 可视化** 可直观确认变异的真实性，观察覆盖度和链偏差
+✓ **优先级排序** 综合考虑影响程度、质量、群体频率来识别重要变异

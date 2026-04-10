@@ -50,7 +50,8 @@ format:
 
 **Conda（精简版 Miniconda）** 就是为了解决这个问题而生的。它允许你为每一个独立的研究项目创建一个个相互隔离的"沙盒"（虚拟环境）。在环境 A 中安装的任何软件，都绝对不会影响环境 B。它不仅能管理 Python 包，还能管理 R、C/C++ 库甚至底层的二进制系统组件。
 
-::: {.callout-tip title="概念映射"}
+:::tip
+**标题：** 概念映射
 你可以把 Conda 虚拟环境理解为轻量级的 Docker 容器或虚拟机，它将"代码"与其"运行所需的生态"打包在了一起，实现了计算生物学中最重要的原则之一：**可复现性（Reproducibility）**。
 :::
 
@@ -68,7 +69,7 @@ format:
 
 **最佳实践**：优先用 `conda`（或 `mamba`）安装生信工具；仅当 conda 中找不到某个纯 Python 包时，才在激活的 conda 环境中补充使用 `pip`。
 
-::: {.callout-warning}
+:::warning
 **不要混用**：在同一环境中大量交替使用 `pip` 和 `conda` 安装包，容易导致依赖冲突和环境损坏。
 :::
 
@@ -141,7 +142,7 @@ BiocManager::install("GenomicRanges")  # genomic interval operations
 BiocManager::install("BSgenome")    # reference genome sequences
 ```
 
-::: {.callout-note}
+:::note
 **Bioconductor 版本锁定**：Bioconductor 的版本与 R 版本严格绑定（如 Bioconductor 3.18 对应 R 4.3.x）。升级 R 时必须同步升级 Bioconductor，否则包可能无法安装或运行异常。
 :::
 
@@ -170,83 +171,216 @@ BiocManager::install("BSgenome")    # reference genome sequences
 
 ---
 
-## 版本控制：Git 与 GitHub
+## 全栈工作流：云端 Git + 本地 IDE + 环境管理 + AI 辅助
 
-![Git 版本控制系统（来源：维基百科 Git）](https://upload.wikimedia.org/wikipedia/commons/thumb/e/e0/Git-logo.svg/330px-Git-logo.svg.png)
+现代生物信息学研究已不是单机作业，而是一个**多工具、多人、可复现的工程系统**。本节整合前面学到的知识，演示如何在实际项目中协调：**云端代码库（GitHub）、本地开发环境（VS Code）、依赖管理（conda）和 AI 辅助写作**。
 
-**版本控制（Version Control）**是可重复性研究的核心基础设施，却常被初学者忽视。Git 记录代码的每一次变更，让你随时回退到任意历史版本，并支持多人协作。
+### 架构概览：完整的工作流程
 
-### 为什么生信研究必须使用 Git？
+```
+GitHub 远程库（团队协作 + 备份）
+    ↓ git clone / pull
+本地项目文件夹
+    ├─ 代码编辑（VS Code + 语法高亮 + 调试）
+    ├─ 版本控制（Git GUI 或命令行）
+    ├─ 环境隔离（conda 虚拟环境）
+    ├─ 文档撰写（Markdown + AI 辅助）
+    └─ 运行分析 → 生成结果 → 提交推送
+        ↓ git add / commit / push
+    GitHub 更新（其他协作者 pull）
+```
 
-* **防止代码丢失**：服务器故障、误操作 `rm -rf` 不再是灾难；
-* **追踪分析版本**：`script_v1.py`、`script_v2_final.py`、`script_v2_final_REAL.py` 的混乱将成为历史；
-* **论文可重复性**：顶级期刊（Nature Methods、Genome Biology）越来越要求提交分析代码的 GitHub 链接；
-* **协作与审阅**：与导师、合作者共同开发分析流程。
-
-### Git 核心操作
+### 第一步：从 GitHub 克隆项目到本地
 
 ```bash
-# Configure Git (run once after installation)
-git config --global user.name "Your Name"
-git config --global user.email "your@email.com"
+# Clone a repository from GitHub (creates local copy)
+git clone https://github.com/your_lab/rnaseq_pipeline.git
+cd rnaseq_pipeline
 
-# Initialize a new Git repository in current directory
-git init
+# This local folder now contains:
+# - All analysis scripts
+# - environment.yml (dependencies)
+# - README.md (documentation)
+# - Git history (all commits ever made)
+```
 
-# Clone an existing repository from GitHub
-git clone https://github.com/username/rnaseq-pipeline.git
+### 第二步：用 VS Code 打开项目并配置
 
-# Check what has changed
+在本地已有的项目上工作：
+
+```bash
+# Open project in VS Code
+code rnaseq_pipeline
+
+# Optional: create a Python virtual environment for linting
+# (VS Code will detect and use conda environments automatically)
+```
+
+**VS Code 中的关键配置：**
+
+| 组件 | 作用 |
+|------|------|
+| **Explorer** (左上) | 浏览文件树，快速定位脚本 |
+| **Git Graph 扩展** | 可视化项目的分支和提交历史 |
+| **Python 扩展** | 语法检查、自动补全、调试 |
+| **R 扩展** | R 脚本运行和 RStudio 集成 |
+| **Markdown 预览** | 实时看 README.md 渲染效果 |
+| **Terminal（内置）** | 不离开编辑器运行 bash 命令 |
+
+### 第三步：VS Code 中激活 Conda 环境
+
+```bash
+# In VS Code's integrated terminal
+conda activate myproject
+
+# Now all Python packages in myproject environment are accessible
+python --version
+pip list
+```
+
+VS Code 会自动检测激活的 conda 环境，Python 语言服务器会使用该环境的包进行代码补全。
+
+### 第四步：AI 辅助撰写项目文档
+
+完成分析后，需要撰写清晰的文档供团队和审稿人理解方法。**AI（如 Claude、GitHub Copilot）可大幅加速这一过程**。
+
+#### 使用 AI 撰写 README.md
+
+**初始版本（基本信息）：**
+
+```markdown
+# RNA-seq Pipeline for Cancer Subtypes
+
+## Overview
+This pipeline processes paired-end RNA-seq data from FASTQ to gene expression counts,
+enabling downstream differential expression analysis.
+
+## Quick Start
+\`\`\`bash
+conda env create -f environment.yml
+conda activate rnaseq
+bash scripts/01_qc.sh input_dir output_dir
+\`\`\`
+
+## Inputs & Outputs
+- **Input**: FASTQ files (Illumina paired-end, 150 bp)
+- **Output**: BAM files + count matrices
+```
+
+**使用 AI 辅助完善：**
+
+你可以告诉 AI（如 Claude）：
+> "我写了一个 RNA-seq 分析管道。这是 README 的初稿。请补充以下内容：
+> 1. 详细的方法学（比对器、参数选择）
+> 2. 硬件需求（内存、核数）
+> 3. 故障排除（常见错误）
+> 4. 引用相关论文"
+
+AI 会帮你生成：
+
+```markdown
+## Detailed Methods
+
+### Quality Control
+Uses [FastQC](https://www.bioinformatics.babraham.ac.uk/projects/fastqc/) (v0.11.9)
+for read quality assessment. Reads with mean Q < 20 are removed using [Fastp](https://github.com/OpenGene/fastp).
+
+### Alignment
+Sequences aligned to GRCh38/hg38 using [STAR](https://github.com/alexdobin/STAR) (v2.7.10a)
+with default parameters. BAM files sorted and indexed with Samtools.
+
+### Quantification
+Gene-level counts generated using [featureCounts](http://subread.sourceforge.net/)
+with GFF3 annotation from Ensemble.
+
+## System Requirements
+- **RAM**: ≥ 32 GB (for STAR index)
+- **Storage**: ≥ 1 TB (raw + processed data)
+- **CPU cores**: ≥ 8
+
+## Troubleshooting
+
+### STAR crashes with "out of memory"
+**Solution**: Reduce `--limitBAMsortRAM 10000000000` to 5GB, use server with more RAM
+
+### Mismatched sample IDs
+**Check**: Ensure FASTQ filenames follow pattern `{sample}_{R1,R2}.fastq.gz`
+```
+
+#### 使用 AI 撰写方法学详述
+
+当需要撰写论文的"Methods"部分时，可以：
+
+1. **给 AI 提供参数和脚本片段**
+
+```python
+# Your STAR alignment script excerpt
+STAR --runThreadN 8 \
+  --genomeDir /ref/star_index \
+  --readFilesIn ${sample}_R1.fastq.gz ${sample}_R2.fastq.gz \
+  --readFilesCommand zcat \
+  --outSAMtype BAM SortedByCoordinate \
+  --outFilterType BySJout
+```
+
+2. **AI 自动转化为论文用语**
+
+AI 会生成：
+
+> "Reads were aligned to the human reference genome (GRCh38/hg38) using STAR (v2.7.10a)
+with 8 threads. Unstranded, paired-end library type was specified. BAM files were
+coordinate-sorted and indexed using Samtools (v1.15). Alignment statistics were
+recorded for quality assessment."
+
+这样避免了重复阅读文档和手写的低效。
+
+### 第五步：Git 工作流的完整循环
+
+在 VS Code 的 Source Control 面板中（左边栏 Git 图标），可视化操作：
+
+```bash
+# 1. 查看改动（VS Code Git Panel 已高亮显示）
 git status
-git diff
 
-# Stage and commit changes
-git add analysis_script.py          # stage specific file
-git add .                           # stage all changes
-git commit -m "Add DESeq2 normalization step"
+# 2. 暂存改动（可在 VS Code 中勾选文件）
+git add scripts/04_deseq2.R results/figures/pca_plot.pdf
 
-# Push to remote (GitHub/GitLab)
+# 3. 提交（在 VS Code Message Box 中输入信息）
+git commit -m "Add PCA visualization and DESeq2 normalization
+
+- Implements log2 transformation of count data
+- Filters genes with >50% zero counts
+- Generates scree plot for variance explained
+Fixes #23"
+
+# 4. 推送到 GitHub
 git push origin main
 
-# Pull latest changes from remote
-git pull origin main
-
-# View commit history
-git log --oneline --graph
+# 5. 同事拉取最新版本
+# (Other team members: git pull)
 ```
 
-### 生信项目的推荐 Git 目录结构
+### 避免常见的陷阱
 
-```
-my_rnaseq_project/
-├── README.md              # project description and usage
-├── environment.yml        # conda environment (reproducibility)
-├── data/
-│   ├── raw/               # raw FASTQ files (usually gitignored, too large)
-│   └── processed/         # cleaned data
-├── scripts/
-│   ├── 01_qc.sh           # quality control
-│   ├── 02_align.sh        # alignment
-│   └── 03_deseq2.R        # differential expression
-├── results/
-│   ├── figures/           # output plots
-│   └── tables/            # output tables
-└── .gitignore             # files to exclude from git tracking
-```
+| 陷阱 | 后果 | 预防措施 |
+|------|------|--------|
+| 提交大数据文件（BAM、FASTQ） | GitHub 仓库迅速膨胀，克隆变慢 | 在 `.gitignore` 中明确列出 |
+| 提交敏感信息（API 密钥） | 安全漏洞，即使删除也存在于历史 | 使用 GitHub Secrets 或环境变量，永不提交 |
+| 忽略 `environment.yml` 更新 | 协作者无法复现分析 | 每次安装新包后 `conda env export > environment.yml` |
+| 直接在 `main` 分支开发 | 代码审查困难，主分支不稳定 | 为每个功能创建 `feature/` 分支 |
+| 含糊的提交信息 | 无法追踪改动原因 | 使用清晰的、面向对象的信息（见上面例子） |
 
-`.gitignore` 示例（防止大文件被错误提交）：
+:::tip
+**现代生信研究的金规则**
 
-```
-# Ignore raw sequencing data (too large for Git)
-data/raw/*.fastq.gz
-data/raw/*.bam
+1. **环境 ≈ 代码**：`environment.yml` 与脚本一样重要，必须版本控制
+2. **文档 ≈ 数据**：README 和方法学文档是论文必需，不是事后补充
+3. **AI 是助手，不是替代品**：AI 加速写作，但逻辑和精度由你负责
+4. **定期推送**：不要在本地积累大量未提交的改动，容易丢失
+5. **Code review**：在合并到主分支前让合作者审查，捕捉错误
+:::
 
-# Ignore temporary files
-*.tmp
-*.log
-__pycache__/
-.DS_Store
-```
+通过掌握这个全栈工作流，你已具备在任何团队中进行专业、可复现研究的能力。
 
 ---
 
@@ -330,7 +464,8 @@ plt.tight_layout()
 plt.show()
 ```
 
-::: {.callout-note title="代码解读"}
+:::note
+**标题：** 代码解读
 - `np.random.seed(42)`：固定随机种子，保证结果可复现——这是科研代码的好习惯。
 - `axis=1`：对每一行（基因）求均值，`axis=0` 则是对每一列（样本）求均值。
 - `axhline`：在图中画水平参考线，直观展示筛选阈值。
@@ -390,7 +525,8 @@ p <- ggplot(expr_df, aes(x = reorder(Gene, -Expression), y = Expression, fill = 
 print(p)
 ```
 
-::: {.callout-note title="代码解读"}
+:::note
+**标题：** 代码解读
 - `%>%`（管道符）：R 的 `dplyr` 核心语法，将数据从左往右传递，避免多层嵌套。
 - `pivot_longer`：将"宽格式"矩阵转为"长格式"，是 `ggplot2` 绘图的标准前处理步骤。
 - `reorder(Gene, -Expression)`：按表达量降序排列 X 轴基因，使图表信息更清晰。
@@ -432,7 +568,8 @@ py_run_string("import numpy as np; print('R data in Python:', np.mean(r_data))")
 
 Jupyter Notebook 是数据科学中最流行的交互式开发环境。与传统脚本"一次性运行全部代码"不同，Notebook 将代码拆分为一个个**单元格（Cell）**，每次只运行当前格，结果立即显示在代码下方。这种"写一点、看一点"的工作方式，非常适合探索性数据分析（EDA）。
 
-::: {.callout-tip title="如何在本地打开 Jupyter Notebook"}
+:::tip
+**标题：** 如何在本地打开 Jupyter Notebook
 ```bash
 # Ensure you are in the activated conda environment
 conda activate bio_env
@@ -516,7 +653,8 @@ plt.tight_layout()
 plt.show()
 ```
 
-::: {.callout-note title="Jupyter Notebook 的核心优势"}
+:::note
+**标题：** Jupyter Notebook 的核心优势
 | 特性 | 说明 |
 |------|------|
 | **Cell 独立运行** | 调试时只需重跑出错的那一格，不必重跑全部代码 |
@@ -546,7 +684,7 @@ docker run --rm -v $(pwd):/data biocontainers/samtools:v1.9-4-deb_cv1 \
 docker build -t my_rnaseq_pipeline:v1.0 .
 ```
 
-::: {.callout-note}
+:::note
 **HPC 上使用 Singularity**：大多数 HPC 集群出于安全原因禁止 Docker（需要 root 权限），但支持 **Singularity**（现更名为 Apptainer）。Singularity 可以直接运行 Docker 镜像，且不需要 root 权限：
 
 ```bash
@@ -580,7 +718,8 @@ singularity exec samtools_v1.9.sif samtools --version
 | 基因组区间操作 | **R (GenomicRanges)** | Bioconductor 生态专门优化 |
 | 大规模批量处理 | **Python + Bash** | 脚本化与并行化更灵活 |
 
-::: {.callout-tip title="黄金法则"}
+:::tip
+**标题：** 黄金法则
 不要纠结"哪个语言更好"——真正有竞争力的生信工程师是能熟练在 R 与 Python 之间切换的**双语者**。在同一个 Jupyter Notebook 中，你可以通过 `rpy2` 包同时调用两种语言，或使用 Quarto 文档（就像本课程一样）在同一文件中混写 R 和 Python 代码块。
 :::
 
@@ -601,4 +740,12 @@ singularity exec samtools_v1.9.sif samtools --version
   → 可重复性研究
 ```
 
-掌握这些工具不仅是完成本课程的前提，也是在现代计算生物学领域发表高质量研究的基本工程素养。后续章节将在此环境基础上，直接进入生信数据的处理与分析。
+掌握这些工具不仅是完成本课程的前提，也是在现代计算生物学领域发表高质量研究的基本工程素养。
+
+**现在的问题是**：你有了开发环境和编程能力，但数据从何而来？
+- 全球数百万份基因组和转录组数据存放在哪里？
+- 如何快速找到你感兴趣的数据？
+- FASTQ、BAM、VCF、GFF... 这些文件格式有什么区别？为什么不能通用？
+- 如何优雅地解析这些格式并与自己的分析整合？
+
+**下一章（Lesson 5）的任务**是教你了解**生物数据的生态系统**：NCBI/EBI/DDBJ 三大公共数据库如何一天 24 小时同步全球数据、各种文件格式的历史背景与实际应用、如何用 Python/R 高效地读取这些数据。掌握了这些，你将真正成为一名**数据驱动的生物信息学家**，能够从无尽的数据海洋中获取灵感并转化为科学发现。

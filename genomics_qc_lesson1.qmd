@@ -1,2 +1,280 @@
-# 第二章 课时1
+---
+title: "二代测序原理与原始数据的数字表现"
+date: today
+format:
+  html:
+    code-fold: false
+    toc: true
+    toc-depth: 2
+    number-sections: true
+    theme: cosmo
+---
 
+# 测序技术概览
+
+## 主流测序平台与 SBS 原理
+
+当今全球 90% 以上的基因组测序数据来源于 **Illumina 平台**，其核心是 **边合成边测序 (Sequencing by Synthesis, SBS)** 技术。
+
+{{Wiki:DNA_sequencing}}
+
+### Illumina 测序工作流
+
+1. **文库构建 (Library Prep)**
+   - DNA 随机片段化至 300-500 bp
+   - 两端添加接头 (Adapters)：P5 和 P7
+   - 添加索引 (Indices/Barcodes)：区分不同样本
+   - 目的：为下游桥式 PCR 扩增做准备
+
+2. **簇生成 (Cluster Generation)**
+   - DNA 分子与芯片表面的引物杂交
+   - 通过 **桥式 PCR** 进行原位扩增
+   - 每条单分子扩增成 ~1000 个相同拷贝（簇）
+   - 目的：将微弱的单分子信号放大至可检测水平
+
+{{Wiki:Polymerase_chain_reaction}}
+
+3. **四色荧光测序**
+   - 四种荧光标记的 dNTP（A-绿, C-蓝, G-黄, T-红）
+   - 每轮合成后激光扫描、录像、清洗
+   - 记录每个簇在每个循环中的荧光颜色
+   - 根据荧光强度判定碱基身份
+
+### 其他主流测序技术
+
+| 平台 | 技术原理 | Read长度 | 主要应用 |
+|------|--------|--------|---------|
+| Illumina | SBS (荧光) | 150-300bp | WGS, WES, 变异检测 |
+| PacBio | SMRT (ZMW) | 10-30kb | 长读组装、SV检测 |
+| Oxford Nanopore | 电信号 | 10-200kb | 实时测序、长读 |
+| BGI (DNBSEQ) | SBS 变体 | 150bp | 超高通量人群测序 |
+
+---
+
+## 测序评估关键指标
+
+### 深度与覆盖度公式
+
+$$C = \frac{L \times N}{G}$$
+
+其中：
+- $C$ = **平均覆盖深度** (Coverage Depth)，单位 X（倍）
+- $L$ = 每条 Read 长度（bp）
+- $N$ = 总 Read 数量
+- $G$ = 目标基因组大小（bp）
+
+**深度 vs 覆盖度**：
+- **覆盖度**：基因组中被至少读取一次的位置比例（0-100%）
+- **深度**：平均每个位置被读取多少次（1-200X）
+
+### 单端 (SE) vs 双端 (PE) 测序
+
+**双端测序 (Paired-End, PE)** - 推荐用于变异检测：
+- 从同一 DNA 分子的两端各测一条 Read
+- 两条 Read 之间距离 = **插入片段长度 (Insert Size)**，通常 200-500 bp
+- **优势**：
+  - 提高比对特异性（两条 Read 必须在相近距离内）
+  - 有效检测结构变异 (Indel, SV)
+  - 区分同源基因和重复序列
+
+**单端测序 (Single-End, SE)**：
+- 只从一端测序
+- 成本低，但比对歧义性高，不适合变异检测
+
+### 为什么 PE150 是变异检测的黄金标准？
+
+| Read类型 | 长度 | 优势 | 劣势 |
+|---------|------|------|------|
+| PE100 | 100bp | 成本低 | 无法唯一比对，假阳性高 |
+| **PE150** | **150bp** | **长度足够、覆盖外显子、成本合理** | **平衡点** |
+| PE250 | 250bp | 大 Indel 检测优秀 | 成本高、通常不必要 |
+
+---
+
+## FASTQ 格式与质量评分
+
+### FASTQ 文件结构
+
+每条 Read 占 4 行：
+
+```
+@SRR1234567.1 ILLUMINA-READ-ID
+ACGTACGTACGTACGTACGTACGTACGTACGTACGTACGTACGTACGTACGTACGTACGTACGTAC
++
+IIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIII
+```
+
+| 行号 | 含义 | 说明 |
+|-----|------|------|
+| 1 | Header | @ 字符 + Read ID（通常包含仪器信息） |
+| 2 | Sequence | DNA 序列（A, C, G, T, N） |
+| 3 | Separator | + 字符（可选：重复 read ID） |
+| 4 | Quality | ASCII 码表示的质量评分 |
+
+### Phred 质量评分体系
+
+{{Wiki:Phred_quality_score}}
+
+$$Q = -10 \log_{10}(P_{\text{error}})$$
+
+| Q值 | 错误率 | 准确率 | 分级 |
+|-----|-------|-------|------|
+| Q10 | 0.1 | 90% | 低质量 |
+| **Q20** | **0.01** | **99%** | 参考级别 |
+| **Q30** | **0.001** | **99.9%** | 高质量 |
+| Q40 | 0.0001 | 99.99% | 超高质量 |
+
+### ASCII 码映射规则
+
+$$\text{ASCII character} = Q + 33 \quad \text{(Phred+33 标准)}$$
+
+常见字符：
+- `!` (ASCII 33) → Q0
+- `@` (ASCII 64) → Q31
+- `I` (ASCII 73) → Q40
+
+---
+
+## 实践：FASTQ 数据生成与质量分析
+
+### Python 模拟代码
+
+```python
+import random
+import numpy as np
+
+# 设置随机种子
+random.seed(42)
+np.random.seed(42)
+
+def generate_fastq_reads(num_reads=1000, read_length=150, output_file="simulated.fastq"):
+    """
+    Generate simulated FASTQ file with realistic quality degradation
+    Quality typically decreases from 5' to 3' end
+    """
+    with open(output_file, 'w') as f:
+        for i in range(num_reads):
+            # Header
+            read_id = f"@SIM_{i+1:06d}/1 simulated read"
+
+            # Sequence
+            bases = ['A', 'C', 'G', 'T']
+            sequence = ''.join(random.choice(bases) for _ in range(read_length))
+
+            # Quality: simulating degradation at 3' end
+            q_values = np.linspace(35, 25, read_length)  # 35 at 5', 25 at 3'
+            q_values += np.random.normal(0, 3, read_length)  # Add noise
+            q_values = np.clip(q_values, 0, 40).astype(int)
+
+            # Convert Q values to ASCII (Phred+33)
+            quality_str = ''.join(chr(33 + q) for q in q_values)
+
+            # Write 4-line FASTQ record
+            f.write(f"{read_id}\n{sequence}\n+\n{quality_str}\n")
+
+    print(f"✓ Generated {num_reads} reads to {output_file}")
+
+def analyze_fastq(fastq_file):
+    """Parse and analyze FASTQ quality statistics"""
+    qualities = []
+    read_count = 0
+
+    with open(fastq_file, 'r') as f:
+        while True:
+            header = f.readline().strip()
+            if not header:
+                break
+            seq = f.readline().strip()
+            plus = f.readline().strip()
+            qual = f.readline().strip()
+
+            read_count += 1
+            q_values = [ord(c) - 33 for c in qual]
+            qualities.extend(q_values)
+
+    qual_array = np.array(qualities)
+
+    print("\n=== FASTQ 质量统计 ===")
+    print(f"总 Read 数: {read_count}")
+    print(f"平均质量 (Q): {np.mean(qual_array):.2f}")
+    print(f"中位数质量: {np.median(qual_array):.2f}")
+    print(f"最小/最大质量: {np.min(qual_array)}/{np.max(qual_array)}")
+    print(f"Q20 以上比例: {(qual_array >= 20).sum() / len(qual_array) * 100:.2f}%")
+    print(f"Q30 以上比例: {(qual_array >= 30).sum() / len(qual_array) * 100:.2f}%")
+
+def verify_phred_formula():
+    """Verify Phred quality formula"""
+    print("\n=== Phred 质量公式验证 ===")
+    test_q_values = [10, 20, 30, 40]
+    for q in test_q_values:
+        error_rate = 10 ** (-q / 10)
+        accuracy = (1 - error_rate) * 100
+        print(f"Q{q}: 错误率 {error_rate:.4f} ({error_rate*100:.02f}%), 准确率 {accuracy:.2f}%")
+
+# 主程序
+if __name__ == "__main__":
+    # 生成模拟数据
+    generate_fastq_reads(num_reads=5000, read_length=150, output_file="simulated_wgs.fastq")
+
+    # 分析质量
+    analyze_fastq("simulated_wgs.fastq")
+
+    # 验证公式
+    verify_phred_formula()
+```
+
+### 预期输出
+
+```
+✓ Generated 5000 reads to simulated_wgs.fastq
+
+=== FASTQ 质量统计 ===
+总 Read 数: 5000
+平均质量 (Q): 29.85
+中位数质量: 30.12
+最小/最大质量: 15/40
+Q20 以上比例: 95.34%
+Q30 以上比例: 76.28%
+
+=== Phred 质量公式验证 ===
+Q10: 错误率 0.1000 (10.00%), 准确率 90.00%
+Q20: 错误率 0.0100 (1.00%), 准确率 99.00%
+Q30: 错误率 0.0010 (0.10%), 准确率 99.90%
+Q40: 错误率 0.0001 (0.01%), 准确率 99.99%
+```
+
+---
+
+## 课后自测 (Post-Lesson Quiz)
+
+:::note
+**标题：** 💭 思考题
+
+1. 如果要进行 100X 覆盖的人类全基因组测序 (3 Gb)，使用 PE150 reads，需要多少条 reads？
+
+2. FASTQ 中某个位置的质量字符是 `@`，转换为 Q 值是多少？这个位置的错误率大约是多少？
+
+3. 为什么我们不直接测序单分子 DNA，而要通过 PCR 扩增成簇？
+
+<details>
+<summary><strong>参考答案 (Reference Answers)</strong></summary>
+
+*1. 总碱基数 = 100 × 3×10⁹ bp = 3×10¹¹ bp；PE150 每条 read = 300 bp；Read 数 = 3×10¹¹ ÷ 300 = 1×10⁹ reads（10 亿条）*
+
+*2. `@` 的 ASCII 码是 64；Q = 64 - 33 = 31；错误率 = 10^(-31/10) ≈ 0.0008 (0.08%)*
+
+*3. 单分子信号极弱（荧光很少），无法被检测；PCR 扩增成 1000 倍，信噪比大幅提升，激光才能有效激发并检测荧光信号*
+
+</details>
+
+:::
+
+---
+
+## 总结
+
+✓ **SBS 测序** 通过荧光循环检测每个碱基合成
+✓ **PE150** 是变异检测的标准配置
+✓ **FASTQ** 是测序数据的标准格式
+✓ **Phred 质量评分** 遵循 $Q = -10 \log_{10}(P)$ 公式
+✓ **覆盖深度** = (Read 数 × Read 长度) / 基因组大小

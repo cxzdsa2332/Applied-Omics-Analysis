@@ -6,8 +6,9 @@
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
+<meta name="dcterms.date" content="2026-04-10">
 
-<title>11&nbsp; 第二章 课时3 – Introduction to Applied High-throughput Biological Data Analysis</title>
+<title>11&nbsp; 第 3 学时：标准数据格式 SAM/BAM 与变异分类 – Introduction to Applied High-throughput Biological Data Analysis</title>
 <style>
 /* Default styles provided by pandoc.
 ** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
@@ -22,6 +23,41 @@ ul.task-list li input[type="checkbox"] {
   width: 0.8em;
   margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
   vertical-align: middle;
+}
+/* CSS for syntax highlighting */
+html { -webkit-text-size-adjust: 100%; }
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
 }
 </style>
 
@@ -44,7 +80,7 @@ ul.task-list li input[type="checkbox"] {
 <link href="site_libs/quarto-html/quarto-syntax-highlighting-845c23b38eaddc0f92fda52bfe77a8c8.css" rel="stylesheet" id="quarto-text-highlighting-styles">
 <script src="site_libs/bootstrap/bootstrap.min.js"></script>
 <link href="site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
-<link href="site_libs/bootstrap/bootstrap-ffc4c3fc79587ee79da4865b6a08975e.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
+<link href="site_libs/bootstrap/bootstrap-9e3e5b9121e68b3f077afb32f2c64d95.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
 <script id="quarto-search-options" type="application/json">{
   "location": "sidebar",
   "copy-button": false,
@@ -73,6 +109,35 @@ ul.task-list li input[type="checkbox"] {
   }
 }</script>
 
+  <script src="https://cdnjs.cloudflare.com/polyfill/v3/polyfill.min.js?features=es6"></script>
+  <script defer="" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js" type="text/javascript"></script>
+
+<script type="text/javascript">
+const typesetMath = (el) => {
+  if (window.MathJax) {
+    // MathJax Typeset
+    window.MathJax.typeset([el]);
+  } else if (window.katex) {
+    // KaTeX Render
+    var mathElements = el.getElementsByClassName("math");
+    var macros = [];
+    for (var i = 0; i < mathElements.length; i++) {
+      var texText = mathElements[i].firstChild;
+      if (mathElements[i].tagName == "SPAN" && texText && texText.data) {
+        window.katex.render(texText.data, mathElements[i], {
+          displayMode: mathElements[i].classList.contains('display'),
+          throwOnError: false,
+          macros: macros,
+          fleqn: false
+        });
+      }
+    }
+  }
+}
+window.Quarto = {
+  typesetMath
+};
+</script>
 
 </head>
 
@@ -85,7 +150,7 @@ ul.task-list li input[type="checkbox"] {
       <button type="button" class="quarto-btn-toggle btn" data-bs-toggle="collapse" role="button" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
         <i class="bi bi-layout-text-sidebar-reverse"></i>
       </button>
-        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="./01-intro.html">第一阶段：基础与基因组</a></li><li class="breadcrumb-item"><a href="./genomics_qc_lesson3.html"><span class="chapter-number">11</span>&nbsp; <span class="chapter-title">第二章 课时3</span></a></li></ol></nav>
+        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="./01-intro.html">第一阶段：基础与基因组</a></li><li class="breadcrumb-item"><a href="./genomics_qc_lesson3.html"><span class="chapter-number">11</span>&nbsp; <span class="chapter-title">第 3 学时：标准数据格式 SAM/BAM 与变异分类</span></a></li></ol></nav>
         <a class="flex-grow-1" role="navigation" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">      
         </a>
       <button type="button" class="btn quarto-search-button" aria-label="Search" onclick="window.quartoOpenSearch();">
@@ -131,7 +196,7 @@ ul.task-list li input[type="checkbox"] {
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./01-intro.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">2</span>&nbsp; <span class="chapter-title">分子基础与计算生态启蒙</span></span></a>
+ <span class="menu-text"><span class="chapter-number">2</span>&nbsp; <span class="chapter-title">生物信息学入门课程总览</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
@@ -173,31 +238,31 @@ ul.task-list li input[type="checkbox"] {
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./genomics_qc_lesson1.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">9</span>&nbsp; <span class="chapter-title">第二章 课时1</span></span></a>
+ <span class="menu-text"><span class="chapter-number">9</span>&nbsp; <span class="chapter-title">第 1 学时：测序原理与原始数据的数字表现</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./genomics_qc_lesson2.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">10</span>&nbsp; <span class="chapter-title">第二章 课时2</span></span></a>
+ <span class="menu-text"><span class="chapter-number">10</span>&nbsp; <span class="chapter-title">第 2 学时：数据’体检’与参考基因组比对</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./genomics_qc_lesson3.html" class="sidebar-item-text sidebar-link active">
- <span class="menu-text"><span class="chapter-number">11</span>&nbsp; <span class="chapter-title">第二章 课时3</span></span></a>
+ <span class="menu-text"><span class="chapter-number">11</span>&nbsp; <span class="chapter-title">第 3 学时：标准数据格式 SAM/BAM 与变异分类</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./genomics_qc_lesson4.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">12</span>&nbsp; <span class="chapter-title">第二章 课时4</span></span></a>
+ <span class="menu-text"><span class="chapter-number">12</span>&nbsp; <span class="chapter-title">第 4 学时：变异检测算法与 VCF 通用格式</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./genomics_qc_lesson5.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">13</span>&nbsp; <span class="chapter-title">第二章 课时5</span></span></a>
+ <span class="menu-text"><span class="chapter-number">13</span>&nbsp; <span class="chapter-title">第 5 学时：功能注释、GATK 最佳实践与可视化</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
@@ -524,20 +589,41 @@ ul.task-list li input[type="checkbox"] {
 </li>
       </ul>
   </li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./references.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">参考资料</span></a>
+  </div>
+</li>
     </ul>
     </div>
 </nav>
 <div id="quarto-sidebar-glass" class="quarto-sidebar-collapse-item" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item"></div>
 <!-- margin-sidebar -->
-    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar zindex-bottom">
-        
+    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+        <nav id="TOC" role="doc-toc" class="toc-active">
+    <h2 id="toc-title">Table of contents</h2>
+   
+  <ul class="collapse">
+  <li><a href="#sambam-格式详解" id="toc-sambam-格式详解" class="nav-link active" data-scroll-target="#sambam-格式详解"><span class="header-section-number">12</span> SAM/BAM 格式详解</a>
+  <ul class="collapse">
+  <li><a href="#sam-格式结构" id="toc-sam-格式结构" class="nav-link" data-scroll-target="#sam-格式结构"><span class="header-section-number">12.1</span> 3.1 SAM 格式结构</a></li>
+  <li><a href="#可选字段与标签" id="toc-可选字段与标签" class="nav-link" data-scroll-target="#可选字段与标签"><span class="header-section-number">12.2</span> 3.2 可选字段与标签</a></li>
+  <li><a href="#变异的分类" id="toc-变异的分类" class="nav-link" data-scroll-target="#变异的分类"><span class="header-section-number">12.3</span> 3.3 变异的分类</a></li>
+  <li><a href="#bam-文件处理与排序" id="toc-bam-文件处理与排序" class="nav-link" data-scroll-target="#bam-文件处理与排序"><span class="header-section-number">12.4</span> 3.4 BAM 文件处理与排序</a></li>
+  <li><a href="#实践sambam-操作与变异识别" id="toc-实践sambam-操作与变异识别" class="nav-link" data-scroll-target="#实践sambam-操作与变异识别"><span class="header-section-number">12.5</span> 3.5 实践：SAM/BAM 操作与变异识别</a></li>
+  <li><a href="#知识检查" id="toc-知识检查" class="nav-link" data-scroll-target="#知识检查"><span class="header-section-number">12.6</span> 知识检查</a></li>
+  <li><a href="#总结" id="toc-总结" class="nav-link" data-scroll-target="#总结"><span class="header-section-number">12.7</span> 总结</a></li>
+  </ul></li>
+  </ul>
+<div class="toc-actions"><ul class="collapse"><li><a href="https://github.com/cxzdsa2332/Applied-Omics-Analysis/edit/main/genomics_qc_lesson3.qmd" class="toc-action"><i class="bi bi-github"></i>Edit this page</a></li><li><a href="https://github.com/cxzdsa2332/Applied-Omics-Analysis/issues/new" class="toc-action"><i class="bi empty"></i>Report an issue</a></li><li><a href="https://github.com/cxzdsa2332/Applied-Omics-Analysis/blob/main/genomics_qc_lesson3.qmd" class="toc-action"><i class="bi empty"></i>View source</a></li></ul></div></nav>
     </div>
 <!-- main -->
 <main class="content" id="quarto-document-content">
 
-<header id="title-block-header" class="quarto-title-block default"><nav class="quarto-page-breadcrumbs quarto-title-breadcrumbs d-none d-lg-block" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="./01-intro.html">第一阶段：基础与基因组</a></li><li class="breadcrumb-item"><a href="./genomics_qc_lesson3.html"><span class="chapter-number">11</span>&nbsp; <span class="chapter-title">第二章 课时3</span></a></li></ol></nav>
+<header id="title-block-header" class="quarto-title-block default"><nav class="quarto-page-breadcrumbs quarto-title-breadcrumbs d-none d-lg-block" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="./01-intro.html">第一阶段：基础与基因组</a></li><li class="breadcrumb-item"><a href="./genomics_qc_lesson3.html"><span class="chapter-number">11</span>&nbsp; <span class="chapter-title">第 3 学时：标准数据格式 SAM/BAM 与变异分类</span></a></li></ol></nav>
 <div class="quarto-title">
-<h1 class="title"><span class="chapter-number">11</span>&nbsp; <span class="chapter-title">第二章 课时3</span></h1>
+<h1 class="title"><span class="chapter-number">11</span>&nbsp; <span class="chapter-title">第 3 学时：标准数据格式 SAM/BAM 与变异分类</span></h1>
 </div>
 
 
@@ -545,6 +631,12 @@ ul.task-list li input[type="checkbox"] {
 <div class="quarto-title-meta">
 
     
+    <div>
+    <div class="quarto-title-meta-heading">Published</div>
+    <div class="quarto-title-meta-contents">
+      <p class="date">April 10, 2026</p>
+    </div>
+  </div>
   
     
   </div>
@@ -554,8 +646,635 @@ ul.task-list li input[type="checkbox"] {
 </header>
 
 
+<section id="sambam-格式详解" class="level1" data-number="12">
+<h1 data-number="12"><span class="header-section-number">12</span> SAM/BAM 格式详解</h1>
+<section id="sam-格式结构" class="level2" data-number="12.1">
+<h2 data-number="12.1" class="anchored" data-anchor-id="sam-格式结构"><span class="header-section-number">12.1</span> 3.1 SAM 格式结构</h2>
+<p>SAM (Sequence Alignment/Map) 是存储序列比对结果的标准文本格式。BAM 是 SAM 的二进制压缩版本。</p>
+<p>{{Wiki:SAM_(file_format)}}</p>
+<section id="header-段元信息" class="level3" data-number="12.1.1">
+<h3 data-number="12.1.1" class="anchored" data-anchor-id="header-段元信息"><span class="header-section-number">12.1.1</span> Header 段（元信息）</h3>
+<pre><code>@HD VN:1.0  SO:coordinate
+@SQ SN:chr1 LN:249250621
+@SQ SN:chr2 LN:242193529
+@PG ID:bwa  PN:bwa  VN:0.7.17   CL:bwa mem -t 4 ref.fa R1.fq R2.fq</code></pre>
+<table class="caption-top table">
+<thead>
+<tr class="header">
+<th>标签</th>
+<th>含义</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>@HD</code></td>
+<td>Header 行，版本号 (VN)、排序信息 (SO)</td>
+</tr>
+<tr class="even">
+<td><code>@SQ</code></td>
+<td>Sequence Dictionary，每条染色体的名称 (SN) 和长度 (LN)</td>
+</tr>
+<tr class="odd">
+<td><code>@PG</code></td>
+<td>Program，记录比对工具的版本和参数</td>
+</tr>
+<tr class="even">
+<td><code>@RG</code></td>
+<td>Read Group，样本信息（可选但推荐）</td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="alignment-段每条-read-的比对信息" class="level3" data-number="12.1.2">
+<h3 data-number="12.1.2" class="anchored" data-anchor-id="alignment-段每条-read-的比对信息"><span class="header-section-number">12.1.2</span> Alignment 段（每条 Read 的比对信息）</h3>
+<pre><code>SRR1234567.1    83  chr1    10000   60  150M    =   10300   450 ACGTACGTACGTACGTACGTACGTACGTACGTACGTACGTACGTACGTACGTACGTACGTACGTAC  IIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIII  NM:i:2  AS:i:140</code></pre>
+<table class="caption-top table">
+<thead>
+<tr class="header">
+<th>列号</th>
+<th>字段名</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>1</td>
+<td>QNAME</td>
+<td>Read ID（来自 FASTQ Header）</td>
+</tr>
+<tr class="even">
+<td>2</td>
+<td>FLAG</td>
+<td>比对标志位（二进制编码，详见下表）</td>
+</tr>
+<tr class="odd">
+<td>3</td>
+<td>RNAME</td>
+<td>染色体名称</td>
+</tr>
+<tr class="even">
+<td>4</td>
+<td>POS</td>
+<td>1-based 比对起始位置</td>
+</tr>
+<tr class="odd">
+<td>5</td>
+<td>MAPQ</td>
+<td>比对质量评分（0-60，值越高越可信）</td>
+</tr>
+<tr class="even">
+<td>6</td>
+<td>CIGAR</td>
+<td>比对操作字符串</td>
+</tr>
+<tr class="odd">
+<td>7</td>
+<td>RNEXT</td>
+<td>配对 Read 所在的参考序列（PE 测序）</td>
+</tr>
+<tr class="even">
+<td>8</td>
+<td>PNEXT</td>
+<td>配对 Read 的位置</td>
+</tr>
+<tr class="odd">
+<td>9</td>
+<td>TLEN</td>
+<td>插入片段长度（Template Length）</td>
+</tr>
+<tr class="even">
+<td>10</td>
+<td>SEQ</td>
+<td>比对后的序列</td>
+</tr>
+<tr class="odd">
+<td>11</td>
+<td>QUAL</td>
+<td>质量评分字符串</td>
+</tr>
+<tr class="even">
+<td>12+</td>
+<td>TAG</td>
+<td>可选字段（NM, AS, MD 等）</td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="flag-标志位解码" class="level3" data-number="12.1.3">
+<h3 data-number="12.1.3" class="anchored" data-anchor-id="flag-标志位解码"><span class="header-section-number">12.1.3</span> FLAG 标志位解码</h3>
+<p>FLAG 是 0-65535 的整数，每个比特位代表一种属性：</p>
+<p>{{Wiki:Binary_number}}</p>
+<table class="caption-top table">
+<thead>
+<tr class="header">
+<th>十进制</th>
+<th>二进制</th>
+<th>含义</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>1</td>
+<td>0x001</td>
+<td>Read 已比对 (MAPPED)</td>
+</tr>
+<tr class="even">
+<td>2</td>
+<td>0x002</td>
+<td>Read 和其配对 Read 都已比对 (PROPERLY_PAIRED)</td>
+</tr>
+<tr class="odd">
+<td>4</td>
+<td>0x004</td>
+<td>Read 未比对 (UNMAPPED)</td>
+</tr>
+<tr class="even">
+<td>8</td>
+<td>0x008</td>
+<td>配对 Read 未比对</td>
+</tr>
+<tr class="odd">
+<td>16</td>
+<td>0x010</td>
+<td>Read 反向互补 (REVERSE_STRAND)</td>
+</tr>
+<tr class="even">
+<td>32</td>
+<td>0x020</td>
+<td>配对 Read 反向互补</td>
+</tr>
+<tr class="odd">
+<td>64</td>
+<td>0x040</td>
+<td>Read1（来自 PE 的第一条）</td>
+</tr>
+<tr class="even">
+<td>128</td>
+<td>0x080</td>
+<td>Read2（来自 PE 的第二条）</td>
+</tr>
+<tr class="odd">
+<td>256</td>
+<td>0x100</td>
+<td>未通过质量过滤 (QC_FAILED)</td>
+</tr>
+<tr class="even">
+<td>512</td>
+<td>0x200</td>
+<td>PCR 或光学重复 (DUPLICATE)</td>
+</tr>
+</tbody>
+</table>
+<p><strong>常见 FLAG 值</strong>： - <strong>0</strong>: 未比对的 SE read - <strong>4</strong>: 比对失败 - <strong>16</strong>: 反向链比对 - <strong>83</strong>: = 64 + 16 + 2 + 1 = Read1，反向链，正确配对，已比对 - <strong>163</strong>: = 128 + 32 + 2 + 1 = Read2，反向链，正确配对，已比对</p>
+</section>
+<section id="cigar-字符串" class="level3" data-number="12.1.4">
+<h3 data-number="12.1.4" class="anchored" data-anchor-id="cigar-字符串"><span class="header-section-number">12.1.4</span> CIGAR 字符串</h3>
+<p>CIGAR (Cigar String) 描述 Read 与参考序列的比对状态：</p>
+<table class="caption-top table">
+<thead>
+<tr class="header">
+<th>操作</th>
+<th>缩写</th>
+<th>含义</th>
+<th>消耗 Query</th>
+<th>消耗 Ref</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Match/Mismatch</td>
+<td>M</td>
+<td>匹配或错配</td>
+<td>是</td>
+<td>是</td>
+</tr>
+<tr class="even">
+<td>Insertion</td>
+<td>I</td>
+<td>在参考序列上的插入（Query 中有额外碱基）</td>
+<td>是</td>
+<td>否</td>
+</tr>
+<tr class="odd">
+<td>Deletion</td>
+<td>D</td>
+<td>从参考序列中的缺失（Query 中缺少碱基）</td>
+<td>否</td>
+<td>是</td>
+</tr>
+<tr class="even">
+<td>Skip</td>
+<td>N</td>
+<td>跳过（RNA-seq 中跳过内含子）</td>
+<td>否</td>
+<td>是</td>
+</tr>
+<tr class="odd">
+<td>Soft Clipping</td>
+<td>S</td>
+<td>序列被部分比对（两端未被使用）</td>
+<td>是</td>
+<td>否</td>
+</tr>
+<tr class="even">
+<td>Hard Clipping</td>
+<td>H</td>
+<td>序列被硬切除（数据丢失）</td>
+<td>否</td>
+<td>否</td>
+</tr>
+</tbody>
+</table>
+<p><strong>示例</strong>： - <code>150M</code>：150 bp 完美匹配 - <code>100M5I45M</code>：100 bp 匹配 + 5 bp 插入 + 45 bp 匹配 = 可能发现 5 bp Indel - <code>10S140M</code>：前 10 bp 未比对（soft-clipped），后 140 bp 比对</p>
+</section>
+<section id="mapping-quality-mapq" class="level3" data-number="12.1.5">
+<h3 data-number="12.1.5" class="anchored" data-anchor-id="mapping-quality-mapq"><span class="header-section-number">12.1.5</span> Mapping Quality (MAPQ)</h3>
+<p>MAPQ 是条件概率，表示该比对位置出错的可能性：</p>
+<p><span class="math display">\[\text{MAPQ} = -10 \log_{10}(P_{\text{error}})\]</span></p>
+<table class="caption-top table">
+<thead>
+<tr class="header">
+<th>MAPQ</th>
+<th>出错概率</th>
+<th>含义</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>0-10</td>
+<td>10%-0.1%</td>
+<td>低质量，多个潜在比对位置</td>
+</tr>
+<tr class="even">
+<td><strong>20</strong></td>
+<td><strong>1%</strong></td>
+<td>可接受阈值</td>
+</tr>
+<tr class="odd">
+<td><strong>30+</strong></td>
+<td><strong>&lt;0.1%</strong></td>
+<td>高质量，唯一比对</td>
+</tr>
+<tr class="even">
+<td>60</td>
+<td>0.0001%</td>
+<td>完美比对</td>
+</tr>
+</tbody>
+</table>
+<p><strong>过滤建议</strong>：MAPQ &gt;= 20 用于变异检测</p>
+<hr>
+</section>
+</section>
+<section id="可选字段与标签" class="level2" data-number="12.2">
+<h2 data-number="12.2" class="anchored" data-anchor-id="可选字段与标签"><span class="header-section-number">12.2</span> 3.2 可选字段与标签</h2>
+<p>常见的可选标签：</p>
+<table class="caption-top table">
+<thead>
+<tr class="header">
+<th>标签</th>
+<th>类型</th>
+<th>含义</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>NM:i</code></td>
+<td>Integer</td>
+<td>编辑距离（与参考序列的不同碱基数）</td>
+</tr>
+<tr class="even">
+<td><code>AS:i</code></td>
+<td>Integer</td>
+<td>比对分值（Smith-Waterman 分值）</td>
+</tr>
+<tr class="odd">
+<td><code>MD:Z</code></td>
+<td>String</td>
+<td>比对详细信息（用于重建 REF 序列）</td>
+</tr>
+<tr class="even">
+<td><code>SA:Z</code></td>
+<td>String</td>
+<td>补充比对（同一 Read 有多个高质量比对）</td>
+</tr>
+</tbody>
+</table>
+<p><strong>示例</strong>：<code>NM:i:2</code> 表示 Read 与参考序列有 2 处差异（包括错配、Indel）</p>
+<hr>
+</section>
+<section id="变异的分类" class="level2" data-number="12.3">
+<h2 data-number="12.3" class="anchored" data-anchor-id="变异的分类"><span class="header-section-number">12.3</span> 3.3 变异的分类</h2>
+<section id="按照规模分类" class="level3" data-number="12.3.1">
+<h3 data-number="12.3.1" class="anchored" data-anchor-id="按照规模分类"><span class="header-section-number">12.3.1</span> 按照规模分类</h3>
+<p>{{Wiki:Mutation_(genetics)}}</p>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 30%">
+<col style="width: 20%">
+<col style="width: 20%">
+<col style="width: 30%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>变异类型</th>
+<th>大小</th>
+<th>特点</th>
+<th>检测工具</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><strong>SNP</strong> (Single Nucleotide Polymorphism)</td>
+<td>1 bp</td>
+<td>单碱基替换</td>
+<td>GATK, bcftools</td>
+</tr>
+<tr class="even">
+<td><strong>Indel</strong> (Insertion/Deletion)</td>
+<td>1-50 bp</td>
+<td>小片段插入或缺失</td>
+<td>GATK HaplotypeCaller</td>
+</tr>
+<tr class="odd">
+<td><strong>MNP</strong> (Multi-Nucleotide Polymorphism)</td>
+<td>2-10 bp</td>
+<td>多碱基替换</td>
+<td>通常分解为多个 SNP</td>
+</tr>
+<tr class="even">
+<td><strong>SV</strong> (Structural Variation)</td>
+<td>&gt; 50 bp</td>
+<td>大片段重排</td>
+<td>Delly, Manta, LUMPY</td>
+</tr>
+<tr class="odd">
+<td><strong>CNV</strong> (Copy Number Variation)</td>
+<td>1 kb+</td>
+<td>片段拷贝数变化</td>
+<td>CNVnator, CANVAS</td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="按照功能分类" class="level3" data-number="12.3.2">
+<h3 data-number="12.3.2" class="anchored" data-anchor-id="按照功能分类"><span class="header-section-number">12.3.2</span> 按照功能分类</h3>
+<table class="caption-top table">
+<thead>
+<tr class="header">
+<th>分类</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><strong>同义突变</strong> (Synonymous)</td>
+<td>改变 DNA 但不改变蛋白质（冗余遗传密码）</td>
+</tr>
+<tr class="even">
+<td><strong>错义突变</strong> (Missense)</td>
+<td>改变蛋白质氨基酸序列</td>
+</tr>
+<tr class="odd">
+<td><strong>无义突变</strong> (Nonsense)</td>
+<td>产生终止密码子，导致蛋白质截断</td>
+</tr>
+<tr class="even">
+<td><strong>移码</strong> (Frameshift)</td>
+<td>Indel 非 3 的倍数，导致阅读框改变</td>
+</tr>
+<tr class="odd">
+<td><strong>启动子变异</strong></td>
+<td>影响基因启动</td>
+</tr>
+</tbody>
+</table>
+<hr>
+</section>
+</section>
+<section id="bam-文件处理与排序" class="level2" data-number="12.4">
+<h2 data-number="12.4" class="anchored" data-anchor-id="bam-文件处理与排序"><span class="header-section-number">12.4</span> 3.4 BAM 文件处理与排序</h2>
+<section id="bam-文件的优势" class="level3" data-number="12.4.1">
+<h3 data-number="12.4.1" class="anchored" data-anchor-id="bam-文件的优势"><span class="header-section-number">12.4.1</span> BAM 文件的优势</h3>
+<ul>
+<li><strong>压缩</strong>：FASTQ 100 GB → BAM 10 GB（10 倍压缩）</li>
+<li><strong>可索引</strong>：支持快速随机访问特定区域</li>
+<li><strong>标准化</strong>：全球通用格式</li>
+</ul>
+</section>
+<section id="标准处理流程" class="level3" data-number="12.4.2">
+<h3 data-number="12.4.2" class="anchored" data-anchor-id="标准处理流程"><span class="header-section-number">12.4.2</span> 标准处理流程</h3>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb3"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="co"># 1. SAM 转 BAM</span></span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="ex">samtools</span> view <span class="at">-b</span> <span class="at">-h</span> input.sam <span class="at">-o</span> output.bam</span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a><span class="co"># 2. 排序（必须！）</span></span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a><span class="ex">samtools</span> sort input.bam <span class="at">-o</span> sorted.bam</span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a><span class="co"># 3. 建立索引（.bai）</span></span>
+<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a><span class="ex">samtools</span> index sorted.bam</span>
+<span id="cb3-9"><a href="#cb3-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-10"><a href="#cb3-10" aria-hidden="true" tabindex="-1"></a><span class="co"># 4. 统计信息</span></span>
+<span id="cb3-11"><a href="#cb3-11" aria-hidden="true" tabindex="-1"></a><span class="ex">samtools</span> flagstat sorted.bam</span>
+<span id="cb3-12"><a href="#cb3-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-13"><a href="#cb3-13" aria-hidden="true" tabindex="-1"></a><span class="co"># 5. 查看特定区域</span></span>
+<span id="cb3-14"><a href="#cb3-14" aria-hidden="true" tabindex="-1"></a><span class="ex">samtools</span> view sorted.bam chr1:10000-20000</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</section>
+<section id="去重markduplicates" class="level3" data-number="12.4.3">
+<h3 data-number="12.4.3" class="anchored" data-anchor-id="去重markduplicates"><span class="header-section-number">12.4.3</span> 去重（MarkDuplicates）</h3>
+<p>PCR 扩增会产生完全相同的 reads（重复），需要标记或去除：</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb4"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="co"># 使用 samtools</span></span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a><span class="ex">samtools</span> markdup <span class="at">-r</span> input.bam output_dedup.bam</span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a><span class="co"># 使用 GATK（更严格）</span></span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a><span class="ex">gatk</span> MarkDuplicates <span class="dt">\</span></span>
+<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a>  <span class="at">-I</span> input.bam <span class="dt">\</span></span>
+<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a>  <span class="at">-O</span> output_dedup.bam <span class="dt">\</span></span>
+<span id="cb4-8"><a href="#cb4-8" aria-hidden="true" tabindex="-1"></a>  <span class="at">-M</span> dedup_metrics.txt</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<hr>
+</section>
+</section>
+<section id="实践sambam-操作与变异识别" class="level2" data-number="12.5">
+<h2 data-number="12.5" class="anchored" data-anchor-id="实践sambam-操作与变异识别"><span class="header-section-number">12.5</span> 3.5 实践：SAM/BAM 操作与变异识别</h2>
+<section id="python-解析-sambam" class="level3" data-number="12.5.1">
+<h3 data-number="12.5.1" class="anchored" data-anchor-id="python-解析-sambam"><span class="header-section-number">12.5.1</span> Python 解析 SAM/BAM</h3>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb5"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> pysam</span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> numpy <span class="im">as</span> np</span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> collections <span class="im">import</span> defaultdict</span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a><span class="kw">class</span> SAMAnalyzer:</span>
+<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> <span class="fu">__init__</span>(<span class="va">self</span>, bam_file):</span>
+<span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a>        <span class="co">"""Initialize with BAM file (indexed)"""</span></span>
+<span id="cb5-8"><a href="#cb5-8" aria-hidden="true" tabindex="-1"></a>        <span class="va">self</span>.bam_file <span class="op">=</span> bam_file</span>
+<span id="cb5-9"><a href="#cb5-9" aria-hidden="true" tabindex="-1"></a>        <span class="va">self</span>.bam <span class="op">=</span> pysam.AlignmentFile(bam_file, <span class="st">"rb"</span>)</span>
+<span id="cb5-10"><a href="#cb5-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-11"><a href="#cb5-11" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> flag_analysis(<span class="va">self</span>):</span>
+<span id="cb5-12"><a href="#cb5-12" aria-hidden="true" tabindex="-1"></a>        <span class="co">"""Analyze FLAG distribution"""</span></span>
+<span id="cb5-13"><a href="#cb5-13" aria-hidden="true" tabindex="-1"></a>        flag_counts <span class="op">=</span> defaultdict(<span class="bu">int</span>)</span>
+<span id="cb5-14"><a href="#cb5-14" aria-hidden="true" tabindex="-1"></a>        total_reads <span class="op">=</span> <span class="dv">0</span></span>
+<span id="cb5-15"><a href="#cb5-15" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-16"><a href="#cb5-16" aria-hidden="true" tabindex="-1"></a>        <span class="cf">for</span> read <span class="kw">in</span> <span class="va">self</span>.bam.fetch():</span>
+<span id="cb5-17"><a href="#cb5-17" aria-hidden="true" tabindex="-1"></a>            total_reads <span class="op">+=</span> <span class="dv">1</span></span>
+<span id="cb5-18"><a href="#cb5-18" aria-hidden="true" tabindex="-1"></a>            flag <span class="op">=</span> read.flag</span>
+<span id="cb5-19"><a href="#cb5-19" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-20"><a href="#cb5-20" aria-hidden="true" tabindex="-1"></a>            <span class="co"># Check key attributes</span></span>
+<span id="cb5-21"><a href="#cb5-21" aria-hidden="true" tabindex="-1"></a>            <span class="cf">if</span> read.is_read1:</span>
+<span id="cb5-22"><a href="#cb5-22" aria-hidden="true" tabindex="-1"></a>                flag_counts[<span class="st">'Read1'</span>] <span class="op">+=</span> <span class="dv">1</span></span>
+<span id="cb5-23"><a href="#cb5-23" aria-hidden="true" tabindex="-1"></a>            <span class="cf">if</span> read.is_read2:</span>
+<span id="cb5-24"><a href="#cb5-24" aria-hidden="true" tabindex="-1"></a>                flag_counts[<span class="st">'Read2'</span>] <span class="op">+=</span> <span class="dv">1</span></span>
+<span id="cb5-25"><a href="#cb5-25" aria-hidden="true" tabindex="-1"></a>            <span class="cf">if</span> read.is_unmapped:</span>
+<span id="cb5-26"><a href="#cb5-26" aria-hidden="true" tabindex="-1"></a>                flag_counts[<span class="st">'Unmapped'</span>] <span class="op">+=</span> <span class="dv">1</span></span>
+<span id="cb5-27"><a href="#cb5-27" aria-hidden="true" tabindex="-1"></a>            <span class="cf">if</span> read.is_reverse:</span>
+<span id="cb5-28"><a href="#cb5-28" aria-hidden="true" tabindex="-1"></a>                flag_counts[<span class="st">'ReverseStrand'</span>] <span class="op">+=</span> <span class="dv">1</span></span>
+<span id="cb5-29"><a href="#cb5-29" aria-hidden="true" tabindex="-1"></a>            <span class="cf">if</span> read.is_proper_pair:</span>
+<span id="cb5-30"><a href="#cb5-30" aria-hidden="true" tabindex="-1"></a>                flag_counts[<span class="st">'ProperPair'</span>] <span class="op">+=</span> <span class="dv">1</span></span>
+<span id="cb5-31"><a href="#cb5-31" aria-hidden="true" tabindex="-1"></a>            <span class="cf">if</span> read.is_duplicate:</span>
+<span id="cb5-32"><a href="#cb5-32" aria-hidden="true" tabindex="-1"></a>                flag_counts[<span class="st">'Duplicate'</span>] <span class="op">+=</span> <span class="dv">1</span></span>
+<span id="cb5-33"><a href="#cb5-33" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-34"><a href="#cb5-34" aria-hidden="true" tabindex="-1"></a>            <span class="cf">if</span> total_reads <span class="op">&gt;=</span> <span class="dv">10000</span>:  <span class="co"># 只分析前 10000 条</span></span>
+<span id="cb5-35"><a href="#cb5-35" aria-hidden="true" tabindex="-1"></a>                <span class="cf">break</span></span>
+<span id="cb5-36"><a href="#cb5-36" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-37"><a href="#cb5-37" aria-hidden="true" tabindex="-1"></a>        <span class="bu">print</span>(<span class="st">"</span><span class="ch">\n</span><span class="st">=== FLAG 分析 ==="</span>)</span>
+<span id="cb5-38"><a href="#cb5-38" aria-hidden="true" tabindex="-1"></a>        <span class="bu">print</span>(<span class="ss">f"总 Read 数: </span><span class="sc">{</span>total_reads<span class="sc">}</span><span class="ss">"</span>)</span>
+<span id="cb5-39"><a href="#cb5-39" aria-hidden="true" tabindex="-1"></a>        <span class="cf">for</span> flag_type, count <span class="kw">in</span> <span class="bu">sorted</span>(flag_counts.items()):</span>
+<span id="cb5-40"><a href="#cb5-40" aria-hidden="true" tabindex="-1"></a>            percentage <span class="op">=</span> (count <span class="op">/</span> total_reads) <span class="op">*</span> <span class="dv">100</span></span>
+<span id="cb5-41"><a href="#cb5-41" aria-hidden="true" tabindex="-1"></a>            <span class="bu">print</span>(<span class="ss">f"  </span><span class="sc">{</span>flag_type<span class="sc">}</span><span class="ss">: </span><span class="sc">{</span>count<span class="sc">}</span><span class="ss"> (</span><span class="sc">{</span>percentage<span class="sc">:.2f}</span><span class="ss">%)"</span>)</span>
+<span id="cb5-42"><a href="#cb5-42" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-43"><a href="#cb5-43" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> mapq_distribution(<span class="va">self</span>):</span>
+<span id="cb5-44"><a href="#cb5-44" aria-hidden="true" tabindex="-1"></a>        <span class="co">"""Analyze MAPQ distribution"""</span></span>
+<span id="cb5-45"><a href="#cb5-45" aria-hidden="true" tabindex="-1"></a>        mapq_values <span class="op">=</span> []</span>
+<span id="cb5-46"><a href="#cb5-46" aria-hidden="true" tabindex="-1"></a>        total_reads <span class="op">=</span> <span class="dv">0</span></span>
+<span id="cb5-47"><a href="#cb5-47" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-48"><a href="#cb5-48" aria-hidden="true" tabindex="-1"></a>        <span class="cf">for</span> read <span class="kw">in</span> <span class="va">self</span>.bam.fetch():</span>
+<span id="cb5-49"><a href="#cb5-49" aria-hidden="true" tabindex="-1"></a>            <span class="cf">if</span> <span class="kw">not</span> read.is_unmapped:</span>
+<span id="cb5-50"><a href="#cb5-50" aria-hidden="true" tabindex="-1"></a>                mapq_values.append(read.mapping_quality)</span>
+<span id="cb5-51"><a href="#cb5-51" aria-hidden="true" tabindex="-1"></a>            total_reads <span class="op">+=</span> <span class="dv">1</span></span>
+<span id="cb5-52"><a href="#cb5-52" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-53"><a href="#cb5-53" aria-hidden="true" tabindex="-1"></a>            <span class="cf">if</span> total_reads <span class="op">&gt;=</span> <span class="dv">10000</span>:</span>
+<span id="cb5-54"><a href="#cb5-54" aria-hidden="true" tabindex="-1"></a>                <span class="cf">break</span></span>
+<span id="cb5-55"><a href="#cb5-55" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-56"><a href="#cb5-56" aria-hidden="true" tabindex="-1"></a>        mapq_array <span class="op">=</span> np.array(mapq_values)</span>
+<span id="cb5-57"><a href="#cb5-57" aria-hidden="true" tabindex="-1"></a>        <span class="bu">print</span>(<span class="st">"</span><span class="ch">\n</span><span class="st">=== MAPQ 质量分析 ==="</span>)</span>
+<span id="cb5-58"><a href="#cb5-58" aria-hidden="true" tabindex="-1"></a>        <span class="bu">print</span>(<span class="ss">f"平均 MAPQ: </span><span class="sc">{</span>np<span class="sc">.</span>mean(mapq_array)<span class="sc">:.2f}</span><span class="ss">"</span>)</span>
+<span id="cb5-59"><a href="#cb5-59" aria-hidden="true" tabindex="-1"></a>        <span class="bu">print</span>(<span class="ss">f"中位数 MAPQ: </span><span class="sc">{</span>np<span class="sc">.</span>median(mapq_array)<span class="sc">:.2f}</span><span class="ss">"</span>)</span>
+<span id="cb5-60"><a href="#cb5-60" aria-hidden="true" tabindex="-1"></a>        <span class="bu">print</span>(<span class="ss">f"MAPQ &gt;= 20: </span><span class="sc">{</span>(mapq_array <span class="op">&gt;=</span> <span class="dv">20</span>)<span class="sc">.</span><span class="bu">sum</span>() <span class="op">/</span> <span class="bu">len</span>(mapq_array) <span class="op">*</span> <span class="dv">100</span><span class="sc">:.2f}</span><span class="ss">%"</span>)</span>
+<span id="cb5-61"><a href="#cb5-61" aria-hidden="true" tabindex="-1"></a>        <span class="bu">print</span>(<span class="ss">f"MAPQ &gt;= 30: </span><span class="sc">{</span>(mapq_array <span class="op">&gt;=</span> <span class="dv">30</span>)<span class="sc">.</span><span class="bu">sum</span>() <span class="op">/</span> <span class="bu">len</span>(mapq_array) <span class="op">*</span> <span class="dv">100</span><span class="sc">:.2f}</span><span class="ss">%"</span>)</span>
+<span id="cb5-62"><a href="#cb5-62" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-63"><a href="#cb5-63" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> cigar_analysis(<span class="va">self</span>):</span>
+<span id="cb5-64"><a href="#cb5-64" aria-hidden="true" tabindex="-1"></a>        <span class="co">"""Analyze CIGAR operations"""</span></span>
+<span id="cb5-65"><a href="#cb5-65" aria-hidden="true" tabindex="-1"></a>        cigar_stats <span class="op">=</span> defaultdict(<span class="bu">int</span>)</span>
+<span id="cb5-66"><a href="#cb5-66" aria-hidden="true" tabindex="-1"></a>        indel_count <span class="op">=</span> <span class="dv">0</span></span>
+<span id="cb5-67"><a href="#cb5-67" aria-hidden="true" tabindex="-1"></a>        total_reads <span class="op">=</span> <span class="dv">0</span></span>
+<span id="cb5-68"><a href="#cb5-68" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-69"><a href="#cb5-69" aria-hidden="true" tabindex="-1"></a>        <span class="cf">for</span> read <span class="kw">in</span> <span class="va">self</span>.bam.fetch():</span>
+<span id="cb5-70"><a href="#cb5-70" aria-hidden="true" tabindex="-1"></a>            <span class="cf">if</span> <span class="kw">not</span> read.is_unmapped <span class="kw">and</span> read.cigartuples:</span>
+<span id="cb5-71"><a href="#cb5-71" aria-hidden="true" tabindex="-1"></a>                <span class="cf">for</span> op, length <span class="kw">in</span> read.cigartuples:</span>
+<span id="cb5-72"><a href="#cb5-72" aria-hidden="true" tabindex="-1"></a>                    op_name <span class="op">=</span> [<span class="st">'M'</span>, <span class="st">'I'</span>, <span class="st">'D'</span>, <span class="st">'N'</span>, <span class="st">'S'</span>, <span class="st">'H'</span>, <span class="st">'='</span>, <span class="st">'X'</span>][op]</span>
+<span id="cb5-73"><a href="#cb5-73" aria-hidden="true" tabindex="-1"></a>                    cigar_stats[op_name] <span class="op">+=</span> length</span>
+<span id="cb5-74"><a href="#cb5-74" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-75"><a href="#cb5-75" aria-hidden="true" tabindex="-1"></a>                    <span class="co"># Count Indels</span></span>
+<span id="cb5-76"><a href="#cb5-76" aria-hidden="true" tabindex="-1"></a>                    <span class="cf">if</span> op <span class="kw">in</span> [<span class="dv">1</span>, <span class="dv">2</span>]:  <span class="co"># I or D</span></span>
+<span id="cb5-77"><a href="#cb5-77" aria-hidden="true" tabindex="-1"></a>                        indel_count <span class="op">+=</span> length</span>
+<span id="cb5-78"><a href="#cb5-78" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-79"><a href="#cb5-79" aria-hidden="true" tabindex="-1"></a>            total_reads <span class="op">+=</span> <span class="dv">1</span></span>
+<span id="cb5-80"><a href="#cb5-80" aria-hidden="true" tabindex="-1"></a>            <span class="cf">if</span> total_reads <span class="op">&gt;=</span> <span class="dv">10000</span>:</span>
+<span id="cb5-81"><a href="#cb5-81" aria-hidden="true" tabindex="-1"></a>                <span class="cf">break</span></span>
+<span id="cb5-82"><a href="#cb5-82" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-83"><a href="#cb5-83" aria-hidden="true" tabindex="-1"></a>        <span class="bu">print</span>(<span class="st">"</span><span class="ch">\n</span><span class="st">=== CIGAR 操作统计 ==="</span>)</span>
+<span id="cb5-84"><a href="#cb5-84" aria-hidden="true" tabindex="-1"></a>        <span class="cf">for</span> op, count <span class="kw">in</span> <span class="bu">sorted</span>(cigar_stats.items()):</span>
+<span id="cb5-85"><a href="#cb5-85" aria-hidden="true" tabindex="-1"></a>            <span class="bu">print</span>(<span class="ss">f"  </span><span class="sc">{</span>op<span class="sc">}</span><span class="ss">: </span><span class="sc">{</span>count<span class="sc">}</span><span class="ss"> bp"</span>)</span>
+<span id="cb5-86"><a href="#cb5-86" aria-hidden="true" tabindex="-1"></a>        <span class="bu">print</span>(<span class="ss">f"检测到 Indel: </span><span class="sc">{</span>indel_count<span class="sc">}</span><span class="ss"> bp"</span>)</span>
+<span id="cb5-87"><a href="#cb5-87" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-88"><a href="#cb5-88" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> coverage_analysis(<span class="va">self</span>):</span>
+<span id="cb5-89"><a href="#cb5-89" aria-hidden="true" tabindex="-1"></a>        <span class="co">"""Calculate coverage statistics"""</span></span>
+<span id="cb5-90"><a href="#cb5-90" aria-hidden="true" tabindex="-1"></a>        coverage <span class="op">=</span> defaultdict(<span class="bu">int</span>)</span>
+<span id="cb5-91"><a href="#cb5-91" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-92"><a href="#cb5-92" aria-hidden="true" tabindex="-1"></a>        <span class="cf">for</span> pileup <span class="kw">in</span> <span class="va">self</span>.bam.pileup():</span>
+<span id="cb5-93"><a href="#cb5-93" aria-hidden="true" tabindex="-1"></a>            coverage[pileup.reference_name] <span class="op">+=</span> pileup.n</span>
+<span id="cb5-94"><a href="#cb5-94" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-95"><a href="#cb5-95" aria-hidden="true" tabindex="-1"></a>        <span class="bu">print</span>(<span class="st">"</span><span class="ch">\n</span><span class="st">=== 覆盖度分析 ==="</span>)</span>
+<span id="cb5-96"><a href="#cb5-96" aria-hidden="true" tabindex="-1"></a>        <span class="cf">for</span> chrom, reads <span class="kw">in</span> <span class="bu">sorted</span>(coverage.items()):</span>
+<span id="cb5-97"><a href="#cb5-97" aria-hidden="true" tabindex="-1"></a>            <span class="bu">print</span>(<span class="ss">f"  </span><span class="sc">{</span>chrom<span class="sc">}</span><span class="ss">: </span><span class="sc">{</span>reads<span class="sc">}</span><span class="ss"> reads"</span>)</span>
+<span id="cb5-98"><a href="#cb5-98" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-99"><a href="#cb5-99" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> close(<span class="va">self</span>):</span>
+<span id="cb5-100"><a href="#cb5-100" aria-hidden="true" tabindex="-1"></a>        <span class="co">"""Close BAM file"""</span></span>
+<span id="cb5-101"><a href="#cb5-101" aria-hidden="true" tabindex="-1"></a>        <span class="va">self</span>.bam.close()</span>
+<span id="cb5-102"><a href="#cb5-102" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-103"><a href="#cb5-103" aria-hidden="true" tabindex="-1"></a><span class="co"># 使用示例</span></span>
+<span id="cb5-104"><a href="#cb5-104" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> <span class="va">__name__</span> <span class="op">==</span> <span class="st">"__main__"</span>:</span>
+<span id="cb5-105"><a href="#cb5-105" aria-hidden="true" tabindex="-1"></a>    analyzer <span class="op">=</span> SAMAnalyzer(<span class="st">"sorted.bam"</span>)</span>
+<span id="cb5-106"><a href="#cb5-106" aria-hidden="true" tabindex="-1"></a>    analyzer.flag_analysis()</span>
+<span id="cb5-107"><a href="#cb5-107" aria-hidden="true" tabindex="-1"></a>    analyzer.mapq_distribution()</span>
+<span id="cb5-108"><a href="#cb5-108" aria-hidden="true" tabindex="-1"></a>    analyzer.cigar_analysis()</span>
+<span id="cb5-109"><a href="#cb5-109" aria-hidden="true" tabindex="-1"></a>    analyzer.coverage_analysis()</span>
+<span id="cb5-110"><a href="#cb5-110" aria-hidden="true" tabindex="-1"></a>    analyzer.close()</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</section>
+<section id="标志位解码练习" class="level3" data-number="12.5.2">
+<h3 data-number="12.5.2" class="anchored" data-anchor-id="标志位解码练习"><span class="header-section-number">12.5.2</span> 标志位解码练习</h3>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb6"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> decode_flag(flag_value):</span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a>    <span class="co">"""Decode SAM FLAG to human-readable format"""</span></span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a>    flags <span class="op">=</span> {</span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a>        <span class="bn">0x001</span>: <span class="st">"MAPPED"</span>,</span>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a>        <span class="bn">0x002</span>: <span class="st">"PROPERLY_PAIRED"</span>,</span>
+<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a>        <span class="bn">0x004</span>: <span class="st">"UNMAPPED"</span>,</span>
+<span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a>        <span class="bn">0x008</span>: <span class="st">"MATE_UNMAPPED"</span>,</span>
+<span id="cb6-8"><a href="#cb6-8" aria-hidden="true" tabindex="-1"></a>        <span class="bn">0x010</span>: <span class="st">"REVERSE_STRAND"</span>,</span>
+<span id="cb6-9"><a href="#cb6-9" aria-hidden="true" tabindex="-1"></a>        <span class="bn">0x020</span>: <span class="st">"MATE_REVERSE"</span>,</span>
+<span id="cb6-10"><a href="#cb6-10" aria-hidden="true" tabindex="-1"></a>        <span class="bn">0x040</span>: <span class="st">"READ1"</span>,</span>
+<span id="cb6-11"><a href="#cb6-11" aria-hidden="true" tabindex="-1"></a>        <span class="bn">0x080</span>: <span class="st">"READ2"</span>,</span>
+<span id="cb6-12"><a href="#cb6-12" aria-hidden="true" tabindex="-1"></a>        <span class="bn">0x100</span>: <span class="st">"QC_FAILED"</span>,</span>
+<span id="cb6-13"><a href="#cb6-13" aria-hidden="true" tabindex="-1"></a>        <span class="bn">0x200</span>: <span class="st">"DUPLICATE"</span></span>
+<span id="cb6-14"><a href="#cb6-14" aria-hidden="true" tabindex="-1"></a>    }</span>
+<span id="cb6-15"><a href="#cb6-15" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-16"><a href="#cb6-16" aria-hidden="true" tabindex="-1"></a>    result <span class="op">=</span> []</span>
+<span id="cb6-17"><a href="#cb6-17" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> bit, name <span class="kw">in</span> <span class="bu">sorted</span>(flags.items()):</span>
+<span id="cb6-18"><a href="#cb6-18" aria-hidden="true" tabindex="-1"></a>        <span class="cf">if</span> flag_value <span class="op">&amp;</span> bit:</span>
+<span id="cb6-19"><a href="#cb6-19" aria-hidden="true" tabindex="-1"></a>            result.append(name)</span>
+<span id="cb6-20"><a href="#cb6-20" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-21"><a href="#cb6-21" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> result</span>
+<span id="cb6-22"><a href="#cb6-22" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-23"><a href="#cb6-23" aria-hidden="true" tabindex="-1"></a><span class="co"># 测试</span></span>
+<span id="cb6-24"><a href="#cb6-24" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(decode_flag(<span class="dv">83</span>))   <span class="co"># Expected: ['MAPPED', 'PROPERLY_PAIRED', 'REVERSE_STRAND', 'READ1']</span></span>
+<span id="cb6-25"><a href="#cb6-25" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(decode_flag(<span class="dv">163</span>))  <span class="co"># Expected: ['MAPPED', 'PROPERLY_PAIRED', 'MATE_REVERSE', 'READ2']</span></span>
+<span id="cb6-26"><a href="#cb6-26" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(decode_flag(<span class="dv">4</span>))    <span class="co"># Expected: ['UNMAPPED']</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<hr>
+</section>
+</section>
+<section id="知识检查" class="level2" data-number="12.6">
+<h2 data-number="12.6" class="anchored" data-anchor-id="知识检查"><span class="header-section-number">12.6</span> 知识检查</h2>
+<div class="callout callout-style-default callout-note callout-titled" title="💭 思考题">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Note</span>💭 思考题
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<ol type="1">
+<li><p>FLAG 值为 99 的 Read，应该如何解释？</p></li>
+<li><p>CIGAR 字符串 <code>80M2D68M</code> 说明了什么变异？</p></li>
+<li><p>为什么 Soft-clipping (S) 比 Hard-clipping (H) 更常用？</p></li>
+</ol>
+<details>
+<summary>
+<strong>参考答案</strong>
+</summary>
+<p><em>1. 99 = 64 + 32 + 2 + 1 = READ1 + MATE_REVERSE + PROPERLY_PAIRED + MAPPED，说明这是 PE 测序的第一条 read，已比对，配对 read 在反向链，两条都比对到了预期位置</em></p>
+<p><em>2. 80 bp 匹配 + 2 bp 删除 + 68 bp 匹配。这表示在比对位置发现了 2 bp 的缺失（deletion），可能对应一个 Indel 变异</em></p>
+<p><em>3. Soft-clipping 保留原始序列信息，便于后续重新分析或注释；Hard-clipping 永久丢弃数据，无法恢复</em></p>
+</details>
+</div>
+</div>
+<hr>
+</section>
+<section id="总结" class="level2" data-number="12.7">
+<h2 data-number="12.7" class="anchored" data-anchor-id="总结"><span class="header-section-number">12.7</span> 总结</h2>
+<p>✓ <strong>SAM/BAM</strong> 是比对数据的标准格式 ✓ <strong>FLAG</strong> 位编码了 read 的所有属性（映射方向、配对情况等） ✓ <strong>CIGAR</strong> 描述了 read 与参考序列的匹配状态，可用于识别 Indel ✓ <strong>MAPQ</strong> 质量评分 &gt;= 20 是变异检测的基本过滤标准 ✓ <strong>变异分类</strong> 包括 SNP、Indel、SV、CNV 等多种类型</p>
 
 
+</section>
+</section>
 
 </main> <!-- /main -->
 <script id="quarto-html-after-body" type="application/javascript">
@@ -960,13 +1679,13 @@ ul.task-list li input[type="checkbox"] {
   </script>
 <nav class="page-navigation">
   <div class="nav-page nav-page-previous">
-      <a href="./genomics_qc_lesson2.html" class="pagination-link" aria-label="第二章 课时2">
-        <i class="bi bi-arrow-left-short"></i> <span class="nav-page-text"><span class="chapter-number">10</span>&nbsp; <span class="chapter-title">第二章 课时2</span></span>
+      <a href="./genomics_qc_lesson2.html" class="pagination-link" aria-label="第 2 学时：数据'体检'与参考基因组比对">
+        <i class="bi bi-arrow-left-short"></i> <span class="nav-page-text"><span class="chapter-number">10</span>&nbsp; <span class="chapter-title">第 2 学时：数据’体检’与参考基因组比对</span></span>
       </a>          
   </div>
   <div class="nav-page nav-page-next">
-      <a href="./genomics_qc_lesson4.html" class="pagination-link" aria-label="第二章 课时4">
-        <span class="nav-page-text"><span class="chapter-number">12</span>&nbsp; <span class="chapter-title">第二章 课时4</span></span> <i class="bi bi-arrow-right-short"></i>
+      <a href="./genomics_qc_lesson4.html" class="pagination-link" aria-label="第 4 学时：变异检测算法与 VCF 通用格式">
+        <span class="nav-page-text"><span class="chapter-number">12</span>&nbsp; <span class="chapter-title">第 4 学时：变异检测算法与 VCF 通用格式</span></span> <i class="bi bi-arrow-right-short"></i>
       </a>
   </div>
 </nav>
@@ -975,4 +1694,4 @@ ul.task-list li input[type="checkbox"] {
 
 
 
-<footer class="footer"><div class="nav-footer"><div class="nav-footer-center"><div class="toc-actions"><ul><li><a href="https://github.com/cxzdsa2332/Applied-Omics-Analysis/edit/main/genomics_qc_lesson3.qmd" class="toc-action"><i class="bi bi-github"></i>Edit this page</a></li><li><a href="https://github.com/cxzdsa2332/Applied-Omics-Analysis/issues/new" class="toc-action"><i class="bi empty"></i>Report an issue</a></li><li><a href="https://github.com/cxzdsa2332/Applied-Omics-Analysis/blob/main/genomics_qc_lesson3.qmd" class="toc-action"><i class="bi empty"></i>View source</a></li></ul></div></div></div></footer></body></html>
+<footer class="footer"><div class="nav-footer"><div class="nav-footer-center"><div class="toc-actions d-sm-block d-md-none"><ul><li><a href="https://github.com/cxzdsa2332/Applied-Omics-Analysis/edit/main/genomics_qc_lesson3.qmd" class="toc-action"><i class="bi bi-github"></i>Edit this page</a></li><li><a href="https://github.com/cxzdsa2332/Applied-Omics-Analysis/issues/new" class="toc-action"><i class="bi empty"></i>Report an issue</a></li><li><a href="https://github.com/cxzdsa2332/Applied-Omics-Analysis/blob/main/genomics_qc_lesson3.qmd" class="toc-action"><i class="bi empty"></i>View source</a></li></ul></div></div></div></footer></body></html>
