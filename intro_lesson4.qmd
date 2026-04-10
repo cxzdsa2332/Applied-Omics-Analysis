@@ -268,9 +268,19 @@ R 语言的安装和包管理有其特殊性。
 
 ```{r}
 #| include: false
-# Local Mac uses conda base; CI uses system Python (packages installed via pip)
-local_python <- "/opt/anaconda3/bin/python"
-if (file.exists(local_python)) {
+# Detect OS and use appropriate Python path
+if (.Platform$OS.type == "windows") {
+  # Windows: conda usually at C:\Users\...\anaconda3\python.exe
+  local_python <- Sys.which("python")
+} else {
+  # Mac/Linux: check conda installation
+  local_python <- "/opt/anaconda3/bin/python"
+  if (!file.exists(local_python)) {
+    local_python <- Sys.which("python")
+  }
+}
+
+if (nzchar(local_python)) {
   reticulate::use_python(local_python, required = TRUE)
 }
 ```
