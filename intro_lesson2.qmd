@@ -18,44 +18,331 @@ format:
 
 ## 引言：生物学界的模数转换器
 
-在第一节课中，我们探讨了生命的底层逻辑（中心法则）。今天，我们将正式跨越“湿实验（Wet Lab）”与“干实验（Dry Lab）”的边界，进入高通量测序。理解这台机器的物理极限与数学特性，是我们后续开发或应用所有生物信息学算法的先决条件。
+在第一节课中，我们探讨了生命的底层逻辑（中心法则）。今天，我们将正式跨越"湿实验（Wet Lab）"与"干实验（Dry Lab）"的边界，进入测序技术。理解从样本到序列数据的完整流程，是我们后续开发或应用所有生物信息学算法的先决条件。
 
-## 硬件层的降维：新一代测序（NGS）的核心化学原理
+测序技术本质上是一种**模数转换器（Analog-to-Digital Converter）**：将生物分子的化学结构（模拟信号）转换为计算机可读的碱基序列（数字信号）。这一转换过程经历了三代技术革命，每一代都大幅降低了成本、提高了通量。
 
-以目前市场占有率最高的 Illumina 平台为例，它之所以能实现惊人的“高通量”，核心在于结合了**微流控芯片技术**与**边合成边测序（Sequencing by Synthesis, SBS）**。
+## 经典 DNA 提取：从生物样本到纯净 DNA
 
-### 信号放大：桥式扩增（Bridge Amplification）
-单个DNA分子的荧光信号太弱，高分辨率相机无法稳定捕捉。因此，在测序前，系统会将打断的单一DNA片段固定在芯片（Flow Cell）表面，并通过局部的PCR扩增，让一个片段“克隆”出上千个完全相同的副本，形成一个物理上聚集的**DNA簇（Cluster）**。
-* **工程意义**：这就是一种纯粹的**物理信号放大器**，成千上万个相同分子同时发光，极大提高了光学检测的信噪比。
+测序的第一步是从生物材料中提取高质量的 DNA。这个过程看似简单，却直接决定了后续测序的质量。
 
-### 边合成边测序（SBS）：大规模并行 I/O
-* **可逆终止子（Reversible Terminators）**：这是 SBS 技术的化学灵魂。系统注入带有四种不同颜色荧光标记的脱氧核苷酸（A/T/C/G）。特殊之处在于，这些核苷酸被加上了“终止基团”。
-* **并行读取流**：
-  1. **合成与暂停**：几亿个DNA簇同时连上**一个**配对的荧光碱基，随后反应被迫终止。
-  2. **成像采样**：激光扫描芯片，相机拍下上亿个光点（每个光点的颜色代表该位置当前的碱基类型）。
-  3. **化学刷新**：用化学试剂切除“终止基团”和“荧光基团”，恢复分子的合成能力。
-  4. **循环（Cycle）**：重复上述步骤。每一次循环，所有序列向前延伸1个碱基（即1 bp），产出1个 Byte 的信息。
+*（见 [DNA extraction — Wikipedia](https://en.wikipedia.org/wiki/DNA_extraction)）*
 
-## 测序参数的数学建模
+### 细胞裂解与蛋白质去除
 
-测序本质上是一个**随机采样（Random Sampling）**过程。测序仪并不知道完整的基因组是什么样，它只是盲目地抓取随机的短片段进行读取。
+* **细胞裂解**：使用裂解缓冲液（lysis buffer）破坏细胞膜和核膜，释放细胞内容物。常见方法包括：
+  - 机械破碎：研磨、超声波或匀浆；
+  - 化学裂解：SDS（十二烷基硫酸钠）等去垢剂溶解膜结构。
+* **蛋白质去除**：蛋白酶 K（Proteinase K）消化蛋白质，酚/氯仿提取分离水相（含 DNA）和有机相（含蛋白质）。
 
-### 核心变量定义
-* **$G$ (Genome Size)**：目标基因组的总大小（例如人类约为 $3 \times 10^9 \text{ bp}$）。
-* **$L$ (Read Length)**：单次读取的短片段长度（通常为 $150 \text{ bp}$）。
-* **$N$ (Number of Reads)**：总共测出了多少条序列。
+### DNA 纯化与沉淀
 
-### 测序深度（Depth）
-**深度（Depth）**指的是基因组上平均每个碱基被多少条 Reads 所覆盖。它是评估数据量是否充足的绝对指标。
-$$\text{Depth} (D) = \frac{N \times L}{G}$$
-*(例如：30X 深度意味着平均每个位点被测了30次，这是人类全基因组测序的行业金标准。)*
+* **DNA 沉淀**：在高盐环境下添加异丙醇或乙醇，使 DNA 从溶液中沉淀出来；
+* **洗涤与干燥**：用 70% 乙醇洗涤去除盐分，真空干燥后溶解在 TE 缓冲液中；
+* **质量评估**：使用紫外分光光度计测量 A260/A280 比值（纯净 DNA 约为 1.8），Nanodrop 或 Bioanalyzer 可进一步评估片段完整性。
 
-###  覆盖度（Coverage）与 Lander-Waterman 模型
-**覆盖度（Coverage）**指的是基因组中至少被读取过一次的区域占总基因组的百分比（如 99%）。
-由于打断和采样是完全随机的，Reads 在基因组上的分布服从**泊松分布（Poisson Distribution）**。基于经典的 Lander-Waterman 测序模型，当平均深度为 $D$ 时，某个特定碱基**未被覆盖**的概率为 $e^{-D}$。
-因此，理论覆盖度 $C$ 为：
-$$C = 1 - e^{-D}$$
+### 常见挑战与解决方案
 
-::: {.callout-tip title="算法启示：为何我们需要超高深度？"}
-根据泊松分布，即便平均深度达到了 $1X$，理论覆盖度也仅为 $1 - e^{-1} \approx 63.2\%$，会有超过三分之一的区域成为盲区。这就是为什么我们不能只测 $1X$，而必须通过增加数据量（如 $30X$、$100X$）来通过统计学概率“淹没”这些随机盲区。
+* **RNA 污染**：使用 RNase 处理去除 RNA；
+* **降解问题**：低温操作，避免 DNase 污染；
+* **低产量样本**：如单细胞测序，使用微流控技术优化提取；
+* **FFPE 样本**：福尔马林固定石蜡包埋组织中的 DNA 存在化学修饰，需特殊提取试剂盒。
+
+经典 DNA 提取为后续 PCR 扩增和测序提供了纯净的模板。
+
+## 电泳：DNA 片段的分离与分析
+
+电泳是分子生物学中最常用的分离技术，通过电场让带负电荷的 DNA 在凝胶中迁移，实现按大小分离。
+
+![凝胶电泳装置（来源：维基百科 Gel electrophoresis）](https://upload.wikimedia.org/wikipedia/commons/thumb/a/a6/Gel_electrophoresis_apparatus.JPG/330px-Gel_electrophoresis_apparatus.JPG)
+
+### 琼脂糖凝胶电泳（Agarose Gel Electrophoresis）
+
+* **原理**：DNA 在电场中向阳极迁移，小分子比大分子迁移更快；
+* **凝胶制备**：琼脂糖溶解在 TAE 或 TBE 缓冲液中，形成网状结构；
+* **上样与运行**：DNA 样本混入染料（如溴化乙锭 EtBr，或更安全的 SYBR Green）后上样，通电 30-60 分钟；
+* **可视化**：紫外灯下观察荧光条带，与 DNA Ladder（已知分子量标准）比对，估算片段大小。
+
+### 聚丙烯酰胺凝胶电泳（PAGE）
+
+* **应用**：用于分离较小 DNA 片段（<500 bp），分辨率高于琼脂糖电泳；
+* **变性 vs 非变性**：变性 PAGE（含尿素）可分离单链 DNA，非变性 PAGE 分析双链结构；
+* **测序应用**：早期 Sanger 测序使用变性 PAGE 分离终止片段。
+
+### 毛细管电泳（Capillary Electrophoresis）
+
+* **自动化优势**：在 Sanger 测序中，毛细管电泳替代传统平板电泳，实现高通量分离；
+* **激光检测**：荧光标记的终止片段通过毛细管时，被激光激发，检测器记录荧光信号；
+* **分辨率**：可分辨仅差 1 bp 的片段，是 Sanger 测序读长可达 1000 bp 的技术保障。
+
+电泳不仅是分离工具，还用于 DNA 纯度评估、PCR 产物验证和测序质量控制。
+
+## Sanger 测序：一代测序的核心原理
+
+Sanger 测序是现代测序技术的基石，虽然已被高通量技术取代，但其"链终止法"仍然是理解测序原理的最佳入门，也仍用于克隆验证等小规模应用。
+
+![Sanger 链终止法测序原理图（来源：维基百科 Sanger sequencing）](https://upload.wikimedia.org/wikipedia/commons/thumb/b/b2/Sanger-sequencing.svg/330px-Sanger-sequencing.svg.png)
+
+### Sanger 测序的基本思想
+
+Sanger 测序，也称为**链终止法（Dideoxy Sequencing）**，核心在于：
+
+* 使用正常的四种脱氧核苷酸（dNTPs）和少量的**双脱氧核苷酸（ddNTPs）**；
+* ddNTPs 缺少 3'-OH 羟基，一旦被聚合酶掺入，链条就无法继续延伸（缺少磷酸二酯键形成所需的 3'-OH）；
+* 通过随机掺入不同 ddNTPs，可以产生一系列不同长度的终止片段，每个片段的末端碱基即为对应位置的测序结果。
+
+### 经典流程
+
+1. **模板准备**：将待测 DNA 片段克隆到载体或 PCR 扩增后纯化；
+2. **引物结合**：用一个已知序列的引物与模板退火（anneal），为聚合酶提供起始点；
+3. **链延伸与终止**：在四种 dNTPs 与四种荧光标记 ddNTPs 的混合反应体系中，DNA 聚合酶进行合成，ddNTP 随机掺入导致不同位置终止；
+4. **终止片段生成**：产生一系列长度不同、末端碱基已知的 DNA 片段；
+5. **毛细管电泳分离**：按片段长度分离，每通过检测点时读取末端荧光颜色；
+6. **序列解析**：根据不同片段末端的碱基类型，按长度顺序还原 DNA 序列，输出电泳图谱（Electropherogram/Chromatogram）。
+
+### 自动化与荧光标记
+
+现代自动化系统采用**四色荧光标记**（如 BigDye 染料体系）：
+
+* 每种 ddNTP 连接不同颜色的荧光染料（A=绿，C=蓝，G=黄，T=红）；
+* 所有反应在同一管中完成，毛细管电泳时激光依次激发各片段；
+* 检测器记录荧光峰的颜色和位置，软件将信号解析为碱基序列。
+
+### Sanger 测序的优势与局限
+
+* **优势**：
+  - 单条读长较长（通常 600-1000 bp），准确度高（>99.9%）；
+  - 适合小规模测序、克隆验证和单基因检测；
+  - 读数直观，分析结果易于解释，仍是突变验证的"金标准"。
+* **局限**：
+  - 通量极低，每次测序只能返回一条序列；
+  - 成本较高（约 $5-10/条），不适合大规模基因组测序；
+  - 依赖良好的模板质量和纯度。
+
+## PCR：扩增的核心工具
+
+PCR（聚合酶链反应，Polymerase Chain Reaction）是测序前最重要的核酸扩增技术，也是几乎所有分子生物学实验的基础工具。
+
+![PCR 循环示意图：变性-退火-延伸三步骤（来源：维基百科 Polymerase chain reaction）](https://upload.wikimedia.org/wikipedia/commons/thumb/a/ab/Polymerase_chain_reaction-en.svg/1280px-Polymerase_chain_reaction-en.svg.png)
+
+### 基本原理
+
+PCR 通过反复的**变性-退火-延伸**三步循环，以指数级扩增目标 DNA 片段：
+
+1. **变性（Denaturation，~95°C）**：高温使双链 DNA 解开为两条单链；
+2. **退火（Annealing，50-65°C）**：引物（primer，约 20 bp 的短寡核苷酸）与模板互补结合；
+3. **延伸（Extension，72°C）**：DNA 聚合酶（常用耐热的 Taq 或高保真的 Phusion/Q5）从引物 3' 端开始合成互补链。
+
+经过 n 个循环，目标序列理论上扩增 $2^n$ 倍。30 个循环可将目标序列扩增约 $10^9$ 倍。
+
+### 在测序流程中的角色
+
+* 为 Sanger 测序提供足量、纯净的模板；
+* 在 Illumina 测序中，桥式扩增（bridge PCR）是形成可见 DNA 簇的前提；
+* 文库构建中 PCR 用于连接接头后的扩增，补充文库量；
+* **注意**：PCR 可能引入碱基错误（Taq 错误率约 $10^{-4}$）和扩增偏倚，现代测序实验追求"低循环数"和"高保真聚合酶"，并通过 UMI（Unique Molecular Identifier）等策略校正 PCR 重复。
+
+## 高通量测序（NGS）：二代测序的革命
+
+高通量测序（Next-Generation Sequencing，NGS），又称二代测序，是当前生物信息学数据的主要来源。以 **Illumina 测序平台**为代表，其核心是**边合成边测序（Sequencing by Synthesis, SBS）**。
+
+### 文库构建（Library Preparation）
+
+高通量测序不直接测整条染色体，而需先将 DNA / RNA 构建成"测序友好"的文库：
+
+![基因组文库构建流程图（来源：维基百科 Genomic library）](https://upload.wikimedia.org/wikipedia/commons/thumb/7/7e/Genomic_Library_Construction.png/500px-Genomic_Library_Construction.png)
+
+1. **DNA 断片化**：超声波（Sonication）或酶切（Enzymatic fragmentation）将 DNA 切成 150-300 bp 的片段；
+2. **末端修复与加 A 尾**：补平片段末端，并在 3' 端加 A，便于接头连接；
+3. **接头连接（Adapter Ligation）**：在片段两端连接已知序列的接头（adapter），包含：
+   - 测序引物结合位点；
+   - 流动槽（flow cell）结合序列；
+   - 样品条形码（index/barcode），允许多个样本混合测序（multiplex）；
+4. **文库扩增与纯化**：少量 PCR 扩增文库，磁珠（SPRI beads）纯化去除未连接的接头；
+5. **定量与质检**：Qubit（荧光定量）+ Bioanalyzer/TapeStation（片段长度分布）确保文库质量。
+
+### 桥式扩增：在流动槽上建立测序簇
+
+![Illumina 流动槽上的簇生成（桥式扩增）过程（来源：维基百科 Illumina dye sequencing）](https://upload.wikimedia.org/wikipedia/commons/thumb/6/65/Cluster_Generation.png/330px-Cluster_Generation.png)
+
+文库加载到 Illumina **流动槽（Flow Cell）**后，经历**桥式扩增（Bridge Amplification）**：
+
+1. 文库 DNA 单链通过接头序列与 flow cell 表面的互补引物结合；
+2. 局部 PCR 扩增：DNA 链"弯折"形成桥状结构，另一端接头与附近引物结合，原位扩增；
+3. 反复循环产生约 **1000 个拷贝**的克隆簇（cluster），每个簇直径约 1 μm；
+4. 线性化：裂解一条链，使簇内所有分子方向一致，用于后续测序。
+
+每个簇代表原文库中的一个 DNA 分子，其集体荧光信号强度足够被仪器检测器读取。
+
+### 边合成边测序（Sequencing by Synthesis）
+
+![Illumina 边合成边测序（SBS）：荧光可逆终止子循环成像（来源：维基百科 Illumina dye sequencing）](https://upload.wikimedia.org/wikipedia/commons/thumb/6/65/Cluster_Generation.png/330px-Cluster_Generation.png)
+
+簇形成后，进行荧光可逆终止子测序：
+
+1. 加入四种**荧光可逆终止 dNTPs**（每种碱基一种颜色，3'-OH 被化学保护基团封闭）；
+2. DNA 聚合酶掺入单个互补碱基，合成终止；
+3. **成像**：激光激发整个 flow cell，CCD 相机拍摄每个簇的荧光颜色，记录当前循环的碱基；
+4. **化学切除**：去除荧光基团和保护基，恢复 3'-OH，进入下一轮循环；
+5. 重复 **150-300 个循环**，每循环读取一个碱基，最终获得读长为 150-300 bp 的 reads。
+
+::: {.callout-note}
+**双端测序（Paired-End Sequencing）**：Illumina 平台支持从 DNA 片段两端分别测序，生成 Read 1 和 Read 2。两端读数通过片段长度信息关联，极大提升了基因组拼接和结构变异检测的能力。
 :::
+
+### Illumina 测序的关键参数
+
+| 参数 | 典型值 | 意义 |
+|------|--------|------|
+| 读长（Read Length） | 150 bp（PE）| 每条 read 可覆盖的碱基数 |
+| 通量（Throughput） | 1-6 Tb/次（NovaSeq X） | 单次测序产出的总碱基数 |
+| 错误率 | ~0.1% | 主要为取代错误，高 GC 区域更高 |
+| 测序深度（Coverage） | 30×（WGS）～100×（WES）| 每个位点被读取的平均次数 |
+
+## Phred 质量分数与 FASTQ 格式
+
+测序仪输出的原始数据以 **FASTQ** 格式存储，是生物信息学分析的起点。
+
+### Phred 质量分数
+
+![Phred 质量分数与 DNA 测序峰图（来源：维基百科 Phred quality score）](https://upload.wikimedia.org/wikipedia/commons/thumb/e/e7/Phred_Figure_1.jpg/250px-Phred_Figure_1.jpg)
+
+每个碱基附带一个 **Phred 质量分数（Q score）**，最初由 Phil Green 在开发 Phred 碱基识别软件时提出，定义为：
+
+$$Q = -10 \cdot \log_{10}(P_e)$$
+
+其中 $P_e$ 是碱基识别错误的概率。常用对应关系：
+
+| Q 值 | 错误率 | 准确率 |
+|------|--------|--------|
+| Q10 | 10% | 90% |
+| Q20 | 1% | 99% |
+| Q30 | 0.1% | 99.9% |
+| Q40 | 0.01% | 99.99% |
+
+**Q30 以上**通常是 NGS 数据质量合格的基本要求。
+
+### FASTQ 文件格式
+
+每条 read 占四行：
+
+```
+@SEQ_ID                          # Line 1: read identifier
+ATCGATCGATCGATCG...              # Line 2: nucleotide sequence
++                                # Line 3: separator (+ sign)
+IIIIIIHHHHGGGFFF...              # Line 4: Phred quality scores (ASCII encoded)
+```
+
+质量值通过 ASCII 编码存储：`Q + 33 = ASCII 字符`，例如 Q=40 对应字符 `I`（ASCII 73）。
+
+```python
+# Example: decode Phred quality scores from a FASTQ quality string
+def decode_phred(quality_string, offset=33):
+    """Convert ASCII quality string to list of Phred Q scores."""
+    return [ord(char) - offset for char in quality_string]
+
+quality_str = "IIIIHHHHGGGGFFFF"
+q_scores = decode_phred(quality_str)
+print(q_scores)  # [40, 40, 40, 40, 39, 39, 39, 39, 38, 38, 38, 38, 37, 37, 37, 37]
+
+# Convert Q score to error probability
+import math
+def q_to_prob(q):
+    return 10 ** (-q / 10)
+
+print(f"Q30 error rate: {q_to_prob(30):.4f}")  # Q30 error rate: 0.0010
+print(f"Q20 error rate: {q_to_prob(20):.4f}")  # Q20 error rate: 0.0100
+```
+
+## 第三代测序技术简介
+
+二代测序（NGS）已主导市场，但其读长短（150-300 bp）的局限促使了**第三代测序（Third-Generation Sequencing, TGS）**的兴起，后者可生成数千至数万 bp 的超长读数，在基因组结构变异检测和全长转录本分析中具有独特优势。
+
+### PacBio 单分子实时测序（SMRT）
+
+![PacBio SMRT Cell 测序单元（来源：维基百科 Single-molecule real-time sequencing）](https://upload.wikimedia.org/wikipedia/commons/thumb/0/0f/RSSmrtCell.jpg/250px-RSSmrtCell.jpg)
+
+* **原理**：在零模波导（Zero-Mode Waveguide, ZMW）纳米孔中，单个 DNA 聚合酶实时合成 DNA，荧光标记的 dNTPs 掺入时产生荧光脉冲，直接读取序列；
+* **读长**：平均 15-25 kb，HiFi 模式（CCS，循环共识测序）通过多次环形测序同一分子达到 >99.9% 准确率；
+* **特色**：可同时检测 DNA 甲基化修饰（m6A、5mC），无需额外亚硫酸盐处理。
+
+### Oxford Nanopore 测序
+
+![纳米孔测序原理：DNA 穿过蛋白质纳米孔产生电流变化（来源：维基百科 Nanopore sequencing）](https://upload.wikimedia.org/wikipedia/commons/thumb/e/e7/Transport_of_Alpha-Hemolysin_and_dsDNA_Complex_Towards_a_Solid_State_Nanopore.svg/330px-Transport_of_Alpha-Hemolysin_and_dsDNA_Complex_Towards_a_Solid_State_Nanopore.svg.png)
+
+* **原理**：DNA 或 RNA 单链穿过蛋白质纳米孔（MspA 或 CsgG 衍生孔），不同碱基组合阻断离子电流的程度不同，电流变化信号经神经网络（Guppy/Dorado）解码为碱基序列；
+* **读长**：理论上无上限，已报道单条 read >2 Mb；
+* **优势**：设备便携（MinION 仅 U 盘大小），实时输出（可边测边分析），可直接测 RNA；
+* **局限**：原始错误率相对较高（~5%，但持续改善中），需要较高覆盖深度。
+
+::: {.callout-tip}
+**三代测序技术对比**
+
+| 特性 | Sanger（一代）| Illumina（二代）| PacBio/Nanopore（三代）|
+|------|--------------|----------------|----------------------|
+| 读长 | 600-1000 bp | 150-300 bp | 10 kb - >1 Mb |
+| 通量 | 极低 | 极高 | 中等 |
+| 准确率 | >99.9% | ~99.9% | 92-99.9%（HiFi >99.9%）|
+| 成本/Gb | 极高 | 低 | 中等 |
+| 主要用途 | 克隆验证 | 转录组、基因组 | 结构变异、全长转录本 |
+:::
+
+## 数据生命周期：从样本到信息
+
+高通量测序数据的生命周期可划分为三个阶段，理解这一过程是后续生物信息学分析的框架基础。
+
+### 湿实验阶段（Wet Lab）
+
+原始样本采集、DNA/RNA 提取、文库构建和上机测序。这一阶段决定了数据的基础质量，例如 DNA 纯度、片段长度和测序簇质量。**垃圾进，垃圾出（Garbage in, garbage out）**——生物信息学家无法从劣质数据中挖掘出高质量结论。
+
+### 原始数据阶段（Raw Data）
+
+测序仪输出 FASTQ 文件，包含碱基序列和 Phred 质量分数。这一阶段的主要任务是：
+
+* **质量控制（QC）**：使用 FastQC 检查碱基质量分布、GC 含量、序列重复率等；
+* **接头修剪（Adapter Trimming）**：使用 Trimmomatic 或 Fastp 去除接头序列污染；
+* **低质量过滤**：去除平均质量 <Q20 的 reads 及过短序列（<50 bp）。
+
+```bash
+# Example: run FastQC quality control on raw FASTQ files
+fastqc sample_R1.fastq.gz sample_R2.fastq.gz -o ./qc_results/ -t 4
+
+# Example: trim adapters and low-quality bases with fastp
+fastp \
+  -i sample_R1.fastq.gz -I sample_R2.fastq.gz \
+  -o sample_R1_clean.fastq.gz -O sample_R2_clean.fastq.gz \
+  --detect_adapter_for_pe \
+  --cut_tail --cut_mean_quality 20 \
+  --length_required 50 \
+  --thread 8 \
+  --json fastp_report.json \
+  --html fastp_report.html
+```
+
+### 分析数据阶段（Processed Data）
+
+经过清洗后的数据进入下游分析：
+
+* **比对（Alignment）**：将 reads 映射到参考基因组（STAR、BWA、HISAT2）；
+* **定量（Quantification）**：统计每个基因的 reads 数（featureCounts、Salmon）；
+* **变异检测（Variant Calling）**：识别 SNP、Indel（GATK HaplotypeCaller）；
+* **差异分析**：比较不同条件下的基因表达差异（DESeq2、edgeR）。
+
+最终输出表格、图像和报告，供生物学家解释和决策。
+
+## 本章小结
+
+本章构建了从实验台到计算机的完整知识链条：
+
+```
+生物样本
+  → DNA 提取（纯度与完整性）
+  → 文库构建（断片化、接头连接）
+  → 测序（Sanger / Illumina SBS / 三代）
+  → FASTQ 原始数据（Phred Q Score）
+  → QC 与清洗（FastQC / fastp）
+  → 下游分析（比对 → 定量 → 统计）
+  → 生物学结论
+```
+
+理解这一链条的每个环节，是后续章节深入数学建模和算法设计的必要前提。

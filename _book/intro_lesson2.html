@@ -6,7 +6,7 @@
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
-<meta name="dcterms.date" content="2026-04-09">
+<meta name="dcterms.date" content="2026-04-10">
 
 <title>4&nbsp; 高通量测序原理与生物数据生命周期 – Introduction to Applied High-throughput Biological Data Analysis</title>
 <style>
@@ -23,6 +23,41 @@ ul.task-list li input[type="checkbox"] {
   width: 0.8em;
   margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
   vertical-align: middle;
+}
+/* CSS for syntax highlighting */
+html { -webkit-text-size-adjust: 100%; }
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
 }
 </style>
 
@@ -555,6 +590,12 @@ window.Quarto = {
 </li>
       </ul>
   </li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./references.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">参考资料</span></a>
+  </div>
+</li>
     </ul>
     </div>
 </nav>
@@ -566,17 +607,54 @@ window.Quarto = {
    
   <ul>
   <li><a href="#引言生物学界的模数转换器" id="toc-引言生物学界的模数转换器" class="nav-link active" data-scroll-target="#引言生物学界的模数转换器"><span class="header-section-number">4.1</span> 引言：生物学界的模数转换器</a></li>
-  <li><a href="#硬件层的降维新一代测序ngs的核心化学原理" id="toc-硬件层的降维新一代测序ngs的核心化学原理" class="nav-link" data-scroll-target="#硬件层的降维新一代测序ngs的核心化学原理"><span class="header-section-number">4.2</span> 硬件层的降维：新一代测序（NGS）的核心化学原理</a>
+  <li><a href="#经典-dna-提取从生物样本到纯净-dna" id="toc-经典-dna-提取从生物样本到纯净-dna" class="nav-link" data-scroll-target="#经典-dna-提取从生物样本到纯净-dna"><span class="header-section-number">4.2</span> 经典 DNA 提取：从生物样本到纯净 DNA</a>
   <ul class="collapse">
-  <li><a href="#信号放大桥式扩增bridge-amplification" id="toc-信号放大桥式扩增bridge-amplification" class="nav-link" data-scroll-target="#信号放大桥式扩增bridge-amplification"><span class="header-section-number">4.2.1</span> 信号放大：桥式扩增（Bridge Amplification）</a></li>
-  <li><a href="#边合成边测序sbs大规模并行-io" id="toc-边合成边测序sbs大规模并行-io" class="nav-link" data-scroll-target="#边合成边测序sbs大规模并行-io"><span class="header-section-number">4.2.2</span> 边合成边测序（SBS）：大规模并行 I/O</a></li>
+  <li><a href="#细胞裂解与蛋白质去除" id="toc-细胞裂解与蛋白质去除" class="nav-link" data-scroll-target="#细胞裂解与蛋白质去除"><span class="header-section-number">4.2.1</span> 细胞裂解与蛋白质去除</a></li>
+  <li><a href="#dna-纯化与沉淀" id="toc-dna-纯化与沉淀" class="nav-link" data-scroll-target="#dna-纯化与沉淀"><span class="header-section-number">4.2.2</span> DNA 纯化与沉淀</a></li>
+  <li><a href="#常见挑战与解决方案" id="toc-常见挑战与解决方案" class="nav-link" data-scroll-target="#常见挑战与解决方案"><span class="header-section-number">4.2.3</span> 常见挑战与解决方案</a></li>
   </ul></li>
-  <li><a href="#测序参数的数学建模" id="toc-测序参数的数学建模" class="nav-link" data-scroll-target="#测序参数的数学建模"><span class="header-section-number">4.3</span> 测序参数的数学建模</a>
+  <li><a href="#电泳dna-片段的分离与分析" id="toc-电泳dna-片段的分离与分析" class="nav-link" data-scroll-target="#电泳dna-片段的分离与分析"><span class="header-section-number">4.3</span> 电泳：DNA 片段的分离与分析</a>
   <ul class="collapse">
-  <li><a href="#核心变量定义" id="toc-核心变量定义" class="nav-link" data-scroll-target="#核心变量定义"><span class="header-section-number">4.3.1</span> 核心变量定义</a></li>
-  <li><a href="#测序深度depth" id="toc-测序深度depth" class="nav-link" data-scroll-target="#测序深度depth"><span class="header-section-number">4.3.2</span> 测序深度（Depth）</a></li>
-  <li><a href="#覆盖度coverage与-lander-waterman-模型" id="toc-覆盖度coverage与-lander-waterman-模型" class="nav-link" data-scroll-target="#覆盖度coverage与-lander-waterman-模型"><span class="header-section-number">4.3.3</span> 覆盖度（Coverage）与 Lander-Waterman 模型</a></li>
+  <li><a href="#琼脂糖凝胶电泳agarose-gel-electrophoresis" id="toc-琼脂糖凝胶电泳agarose-gel-electrophoresis" class="nav-link" data-scroll-target="#琼脂糖凝胶电泳agarose-gel-electrophoresis"><span class="header-section-number">4.3.1</span> 琼脂糖凝胶电泳（Agarose Gel Electrophoresis）</a></li>
+  <li><a href="#聚丙烯酰胺凝胶电泳page" id="toc-聚丙烯酰胺凝胶电泳page" class="nav-link" data-scroll-target="#聚丙烯酰胺凝胶电泳page"><span class="header-section-number">4.3.2</span> 聚丙烯酰胺凝胶电泳（PAGE）</a></li>
+  <li><a href="#毛细管电泳capillary-electrophoresis" id="toc-毛细管电泳capillary-electrophoresis" class="nav-link" data-scroll-target="#毛细管电泳capillary-electrophoresis"><span class="header-section-number">4.3.3</span> 毛细管电泳（Capillary Electrophoresis）</a></li>
   </ul></li>
+  <li><a href="#sanger-测序一代测序的核心原理" id="toc-sanger-测序一代测序的核心原理" class="nav-link" data-scroll-target="#sanger-测序一代测序的核心原理"><span class="header-section-number">4.4</span> Sanger 测序：一代测序的核心原理</a>
+  <ul class="collapse">
+  <li><a href="#sanger-测序的基本思想" id="toc-sanger-测序的基本思想" class="nav-link" data-scroll-target="#sanger-测序的基本思想"><span class="header-section-number">4.4.1</span> Sanger 测序的基本思想</a></li>
+  <li><a href="#经典流程" id="toc-经典流程" class="nav-link" data-scroll-target="#经典流程"><span class="header-section-number">4.4.2</span> 经典流程</a></li>
+  <li><a href="#自动化与荧光标记" id="toc-自动化与荧光标记" class="nav-link" data-scroll-target="#自动化与荧光标记"><span class="header-section-number">4.4.3</span> 自动化与荧光标记</a></li>
+  <li><a href="#sanger-测序的优势与局限" id="toc-sanger-测序的优势与局限" class="nav-link" data-scroll-target="#sanger-测序的优势与局限"><span class="header-section-number">4.4.4</span> Sanger 测序的优势与局限</a></li>
+  </ul></li>
+  <li><a href="#pcr扩增的核心工具" id="toc-pcr扩增的核心工具" class="nav-link" data-scroll-target="#pcr扩增的核心工具"><span class="header-section-number">4.5</span> PCR：扩增的核心工具</a>
+  <ul class="collapse">
+  <li><a href="#基本原理" id="toc-基本原理" class="nav-link" data-scroll-target="#基本原理"><span class="header-section-number">4.5.1</span> 基本原理</a></li>
+  <li><a href="#在测序流程中的角色" id="toc-在测序流程中的角色" class="nav-link" data-scroll-target="#在测序流程中的角色"><span class="header-section-number">4.5.2</span> 在测序流程中的角色</a></li>
+  </ul></li>
+  <li><a href="#高通量测序ngs二代测序的革命" id="toc-高通量测序ngs二代测序的革命" class="nav-link" data-scroll-target="#高通量测序ngs二代测序的革命"><span class="header-section-number">4.6</span> 高通量测序（NGS）：二代测序的革命</a>
+  <ul class="collapse">
+  <li><a href="#文库构建library-preparation" id="toc-文库构建library-preparation" class="nav-link" data-scroll-target="#文库构建library-preparation"><span class="header-section-number">4.6.1</span> 文库构建（Library Preparation）</a></li>
+  <li><a href="#桥式扩增在流动槽上建立测序簇" id="toc-桥式扩增在流动槽上建立测序簇" class="nav-link" data-scroll-target="#桥式扩增在流动槽上建立测序簇"><span class="header-section-number">4.6.2</span> 桥式扩增：在流动槽上建立测序簇</a></li>
+  <li><a href="#边合成边测序sequencing-by-synthesis" id="toc-边合成边测序sequencing-by-synthesis" class="nav-link" data-scroll-target="#边合成边测序sequencing-by-synthesis"><span class="header-section-number">4.6.3</span> 边合成边测序（Sequencing by Synthesis）</a></li>
+  <li><a href="#illumina-测序的关键参数" id="toc-illumina-测序的关键参数" class="nav-link" data-scroll-target="#illumina-测序的关键参数"><span class="header-section-number">4.6.4</span> Illumina 测序的关键参数</a></li>
+  </ul></li>
+  <li><a href="#phred-质量分数与-fastq-格式" id="toc-phred-质量分数与-fastq-格式" class="nav-link" data-scroll-target="#phred-质量分数与-fastq-格式"><span class="header-section-number">4.7</span> Phred 质量分数与 FASTQ 格式</a>
+  <ul class="collapse">
+  <li><a href="#phred-质量分数" id="toc-phred-质量分数" class="nav-link" data-scroll-target="#phred-质量分数"><span class="header-section-number">4.7.1</span> Phred 质量分数</a></li>
+  <li><a href="#fastq-文件格式" id="toc-fastq-文件格式" class="nav-link" data-scroll-target="#fastq-文件格式"><span class="header-section-number">4.7.2</span> FASTQ 文件格式</a></li>
+  </ul></li>
+  <li><a href="#第三代测序技术简介" id="toc-第三代测序技术简介" class="nav-link" data-scroll-target="#第三代测序技术简介"><span class="header-section-number">4.8</span> 第三代测序技术简介</a>
+  <ul class="collapse">
+  <li><a href="#pacbio-单分子实时测序smrt" id="toc-pacbio-单分子实时测序smrt" class="nav-link" data-scroll-target="#pacbio-单分子实时测序smrt"><span class="header-section-number">4.8.1</span> PacBio 单分子实时测序（SMRT）</a></li>
+  <li><a href="#oxford-nanopore-测序" id="toc-oxford-nanopore-测序" class="nav-link" data-scroll-target="#oxford-nanopore-测序"><span class="header-section-number">4.8.2</span> Oxford Nanopore 测序</a></li>
+  </ul></li>
+  <li><a href="#数据生命周期从样本到信息" id="toc-数据生命周期从样本到信息" class="nav-link" data-scroll-target="#数据生命周期从样本到信息"><span class="header-section-number">4.9</span> 数据生命周期：从样本到信息</a>
+  <ul class="collapse">
+  <li><a href="#湿实验阶段wet-lab" id="toc-湿实验阶段wet-lab" class="nav-link" data-scroll-target="#湿实验阶段wet-lab"><span class="header-section-number">4.9.1</span> 湿实验阶段（Wet Lab）</a></li>
+  <li><a href="#原始数据阶段raw-data" id="toc-原始数据阶段raw-data" class="nav-link" data-scroll-target="#原始数据阶段raw-data"><span class="header-section-number">4.9.2</span> 原始数据阶段（Raw Data）</a></li>
+  <li><a href="#分析数据阶段processed-data" id="toc-分析数据阶段processed-data" class="nav-link" data-scroll-target="#分析数据阶段processed-data"><span class="header-section-number">4.9.3</span> 分析数据阶段（Processed Data）</a></li>
+  </ul></li>
+  <li><a href="#本章小结" id="toc-本章小结" class="nav-link" data-scroll-target="#本章小结"><span class="header-section-number">4.10</span> 本章小结</a></li>
   </ul>
 <div class="toc-actions"><ul><li><a href="https://github.com/cxzdsa2332/Applied-Omics-Analysis/edit/main/intro_lesson2.qmd" class="toc-action"><i class="bi bi-github"></i>Edit this page</a></li><li><a href="https://github.com/cxzdsa2332/Applied-Omics-Analysis/issues/new" class="toc-action"><i class="bi empty"></i>Report an issue</a></li><li><a href="https://github.com/cxzdsa2332/Applied-Omics-Analysis/blob/main/intro_lesson2.qmd" class="toc-action"><i class="bi empty"></i>View source</a></li></ul></div></nav>
     </div>
@@ -596,7 +674,7 @@ window.Quarto = {
     <div>
     <div class="quarto-title-meta-heading">Published</div>
     <div class="quarto-title-meta-contents">
-      <p class="date">April 9, 2026</p>
+      <p class="date">April 10, 2026</p>
     </div>
   </div>
   
@@ -610,63 +688,492 @@ window.Quarto = {
 
 <section id="引言生物学界的模数转换器" class="level2" data-number="4.1">
 <h2 data-number="4.1" class="anchored" data-anchor-id="引言生物学界的模数转换器"><span class="header-section-number">4.1</span> 引言：生物学界的模数转换器</h2>
-<p>在第一节课中，我们探讨了生命的底层逻辑（中心法则）。今天，我们将正式跨越“湿实验（Wet Lab）”与“干实验（Dry Lab）”的边界，进入高通量测序。理解这台机器的物理极限与数学特性，是我们后续开发或应用所有生物信息学算法的先决条件。</p>
+<p>在第一节课中，我们探讨了生命的底层逻辑（中心法则）。今天，我们将正式跨越”湿实验（Wet Lab）“与”干实验（Dry Lab）“的边界，进入测序技术。理解从样本到序列数据的完整流程，是我们后续开发或应用所有生物信息学算法的先决条件。</p>
+<p>测序技术本质上是一种<strong>模数转换器（Analog-to-Digital Converter）</strong>：将生物分子的化学结构（模拟信号）转换为计算机可读的碱基序列（数字信号）。这一转换过程经历了三代技术革命，每一代都大幅降低了成本、提高了通量。</p>
 </section>
-<section id="硬件层的降维新一代测序ngs的核心化学原理" class="level2" data-number="4.2">
-<h2 data-number="4.2" class="anchored" data-anchor-id="硬件层的降维新一代测序ngs的核心化学原理"><span class="header-section-number">4.2</span> 硬件层的降维：新一代测序（NGS）的核心化学原理</h2>
-<p>以目前市场占有率最高的 Illumina 平台为例，它之所以能实现惊人的“高通量”，核心在于结合了<strong>微流控芯片技术</strong>与<strong>边合成边测序（Sequencing by Synthesis, SBS）</strong>。</p>
-<section id="信号放大桥式扩增bridge-amplification" class="level3" data-number="4.2.1">
-<h3 data-number="4.2.1" class="anchored" data-anchor-id="信号放大桥式扩增bridge-amplification"><span class="header-section-number">4.2.1</span> 信号放大：桥式扩增（Bridge Amplification）</h3>
-<p>单个DNA分子的荧光信号太弱，高分辨率相机无法稳定捕捉。因此，在测序前，系统会将打断的单一DNA片段固定在芯片（Flow Cell）表面，并通过局部的PCR扩增，让一个片段“克隆”出上千个完全相同的副本，形成一个物理上聚集的<strong>DNA簇（Cluster）</strong>。 * <strong>工程意义</strong>：这就是一种纯粹的<strong>物理信号放大器</strong>，成千上万个相同分子同时发光，极大提高了光学检测的信噪比。</p>
-</section>
-<section id="边合成边测序sbs大规模并行-io" class="level3" data-number="4.2.2">
-<h3 data-number="4.2.2" class="anchored" data-anchor-id="边合成边测序sbs大规模并行-io"><span class="header-section-number">4.2.2</span> 边合成边测序（SBS）：大规模并行 I/O</h3>
+<section id="经典-dna-提取从生物样本到纯净-dna" class="level2" data-number="4.2">
+<h2 data-number="4.2" class="anchored" data-anchor-id="经典-dna-提取从生物样本到纯净-dna"><span class="header-section-number">4.2</span> 经典 DNA 提取：从生物样本到纯净 DNA</h2>
+<p>测序的第一步是从生物材料中提取高质量的 DNA。这个过程看似简单，却直接决定了后续测序的质量。</p>
+<p><em>（见 <a href="https://en.wikipedia.org/wiki/DNA_extraction">DNA extraction — Wikipedia</a>）</em></p>
+<section id="细胞裂解与蛋白质去除" class="level3" data-number="4.2.1">
+<h3 data-number="4.2.1" class="anchored" data-anchor-id="细胞裂解与蛋白质去除"><span class="header-section-number">4.2.1</span> 细胞裂解与蛋白质去除</h3>
 <ul>
-<li><strong>可逆终止子（Reversible Terminators）</strong>：这是 SBS 技术的化学灵魂。系统注入带有四种不同颜色荧光标记的脱氧核苷酸（A/T/C/G）。特殊之处在于，这些核苷酸被加上了“终止基团”。</li>
-<li><strong>并行读取流</strong>：
+<li><strong>细胞裂解</strong>：使用裂解缓冲液（lysis buffer）破坏细胞膜和核膜，释放细胞内容物。常见方法包括：
+<ul>
+<li>机械破碎：研磨、超声波或匀浆；</li>
+<li>化学裂解：SDS（十二烷基硫酸钠）等去垢剂溶解膜结构。</li>
+</ul></li>
+<li><strong>蛋白质去除</strong>：蛋白酶 K（Proteinase K）消化蛋白质，酚/氯仿提取分离水相（含 DNA）和有机相（含蛋白质）。</li>
+</ul>
+</section>
+<section id="dna-纯化与沉淀" class="level3" data-number="4.2.2">
+<h3 data-number="4.2.2" class="anchored" data-anchor-id="dna-纯化与沉淀"><span class="header-section-number">4.2.2</span> DNA 纯化与沉淀</h3>
+<ul>
+<li><strong>DNA 沉淀</strong>：在高盐环境下添加异丙醇或乙醇，使 DNA 从溶液中沉淀出来；</li>
+<li><strong>洗涤与干燥</strong>：用 70% 乙醇洗涤去除盐分，真空干燥后溶解在 TE 缓冲液中；</li>
+<li><strong>质量评估</strong>：使用紫外分光光度计测量 A260/A280 比值（纯净 DNA 约为 1.8），Nanodrop 或 Bioanalyzer 可进一步评估片段完整性。</li>
+</ul>
+</section>
+<section id="常见挑战与解决方案" class="level3" data-number="4.2.3">
+<h3 data-number="4.2.3" class="anchored" data-anchor-id="常见挑战与解决方案"><span class="header-section-number">4.2.3</span> 常见挑战与解决方案</h3>
+<ul>
+<li><strong>RNA 污染</strong>：使用 RNase 处理去除 RNA；</li>
+<li><strong>降解问题</strong>：低温操作，避免 DNase 污染；</li>
+<li><strong>低产量样本</strong>：如单细胞测序，使用微流控技术优化提取；</li>
+<li><strong>FFPE 样本</strong>：福尔马林固定石蜡包埋组织中的 DNA 存在化学修饰，需特殊提取试剂盒。</li>
+</ul>
+<p>经典 DNA 提取为后续 PCR 扩增和测序提供了纯净的模板。</p>
+</section>
+</section>
+<section id="电泳dna-片段的分离与分析" class="level2" data-number="4.3">
+<h2 data-number="4.3" class="anchored" data-anchor-id="电泳dna-片段的分离与分析"><span class="header-section-number">4.3</span> 电泳：DNA 片段的分离与分析</h2>
+<p>电泳是分子生物学中最常用的分离技术，通过电场让带负电荷的 DNA 在凝胶中迁移，实现按大小分离。</p>
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="https://upload.wikimedia.org/wikipedia/commons/thumb/a/a6/Gel_electrophoresis_apparatus.JPG/330px-Gel_electrophoresis_apparatus.JPG" class="img-fluid figure-img"></p>
+<figcaption>凝胶电泳装置（来源：维基百科 Gel electrophoresis）</figcaption>
+</figure>
+</div>
+<section id="琼脂糖凝胶电泳agarose-gel-electrophoresis" class="level3" data-number="4.3.1">
+<h3 data-number="4.3.1" class="anchored" data-anchor-id="琼脂糖凝胶电泳agarose-gel-electrophoresis"><span class="header-section-number">4.3.1</span> 琼脂糖凝胶电泳（Agarose Gel Electrophoresis）</h3>
+<ul>
+<li><strong>原理</strong>：DNA 在电场中向阳极迁移，小分子比大分子迁移更快；</li>
+<li><strong>凝胶制备</strong>：琼脂糖溶解在 TAE 或 TBE 缓冲液中，形成网状结构；</li>
+<li><strong>上样与运行</strong>：DNA 样本混入染料（如溴化乙锭 EtBr，或更安全的 SYBR Green）后上样，通电 30-60 分钟；</li>
+<li><strong>可视化</strong>：紫外灯下观察荧光条带，与 DNA Ladder（已知分子量标准）比对，估算片段大小。</li>
+</ul>
+</section>
+<section id="聚丙烯酰胺凝胶电泳page" class="level3" data-number="4.3.2">
+<h3 data-number="4.3.2" class="anchored" data-anchor-id="聚丙烯酰胺凝胶电泳page"><span class="header-section-number">4.3.2</span> 聚丙烯酰胺凝胶电泳（PAGE）</h3>
+<ul>
+<li><strong>应用</strong>：用于分离较小 DNA 片段（&lt;500 bp），分辨率高于琼脂糖电泳；</li>
+<li><strong>变性 vs 非变性</strong>：变性 PAGE（含尿素）可分离单链 DNA，非变性 PAGE 分析双链结构；</li>
+<li><strong>测序应用</strong>：早期 Sanger 测序使用变性 PAGE 分离终止片段。</li>
+</ul>
+</section>
+<section id="毛细管电泳capillary-electrophoresis" class="level3" data-number="4.3.3">
+<h3 data-number="4.3.3" class="anchored" data-anchor-id="毛细管电泳capillary-electrophoresis"><span class="header-section-number">4.3.3</span> 毛细管电泳（Capillary Electrophoresis）</h3>
+<ul>
+<li><strong>自动化优势</strong>：在 Sanger 测序中，毛细管电泳替代传统平板电泳，实现高通量分离；</li>
+<li><strong>激光检测</strong>：荧光标记的终止片段通过毛细管时，被激光激发，检测器记录荧光信号；</li>
+<li><strong>分辨率</strong>：可分辨仅差 1 bp 的片段，是 Sanger 测序读长可达 1000 bp 的技术保障。</li>
+</ul>
+<p>电泳不仅是分离工具，还用于 DNA 纯度评估、PCR 产物验证和测序质量控制。</p>
+</section>
+</section>
+<section id="sanger-测序一代测序的核心原理" class="level2" data-number="4.4">
+<h2 data-number="4.4" class="anchored" data-anchor-id="sanger-测序一代测序的核心原理"><span class="header-section-number">4.4</span> Sanger 测序：一代测序的核心原理</h2>
+<p>Sanger 测序是现代测序技术的基石，虽然已被高通量技术取代，但其”链终止法”仍然是理解测序原理的最佳入门，也仍用于克隆验证等小规模应用。</p>
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="https://upload.wikimedia.org/wikipedia/commons/thumb/b/b2/Sanger-sequencing.svg/330px-Sanger-sequencing.svg.png" class="img-fluid figure-img"></p>
+<figcaption>Sanger 链终止法测序原理图（来源：维基百科 Sanger sequencing）</figcaption>
+</figure>
+</div>
+<section id="sanger-测序的基本思想" class="level3" data-number="4.4.1">
+<h3 data-number="4.4.1" class="anchored" data-anchor-id="sanger-测序的基本思想"><span class="header-section-number">4.4.1</span> Sanger 测序的基本思想</h3>
+<p>Sanger 测序，也称为<strong>链终止法（Dideoxy Sequencing）</strong>，核心在于：</p>
+<ul>
+<li>使用正常的四种脱氧核苷酸（dNTPs）和少量的<strong>双脱氧核苷酸（ddNTPs）</strong>；</li>
+<li>ddNTPs 缺少 3’-OH 羟基，一旦被聚合酶掺入，链条就无法继续延伸（缺少磷酸二酯键形成所需的 3’-OH）；</li>
+<li>通过随机掺入不同 ddNTPs，可以产生一系列不同长度的终止片段，每个片段的末端碱基即为对应位置的测序结果。</li>
+</ul>
+</section>
+<section id="经典流程" class="level3" data-number="4.4.2">
+<h3 data-number="4.4.2" class="anchored" data-anchor-id="经典流程"><span class="header-section-number">4.4.2</span> 经典流程</h3>
 <ol type="1">
-<li><strong>合成与暂停</strong>：几亿个DNA簇同时连上<strong>一个</strong>配对的荧光碱基，随后反应被迫终止。</li>
-<li><strong>成像采样</strong>：激光扫描芯片，相机拍下上亿个光点（每个光点的颜色代表该位置当前的碱基类型）。</li>
-<li><strong>化学刷新</strong>：用化学试剂切除“终止基团”和“荧光基团”，恢复分子的合成能力。</li>
-<li><strong>循环（Cycle）</strong>：重复上述步骤。每一次循环，所有序列向前延伸1个碱基（即1 bp），产出1个 Byte 的信息。</li>
-</ol></li>
-</ul>
+<li><strong>模板准备</strong>：将待测 DNA 片段克隆到载体或 PCR 扩增后纯化；</li>
+<li><strong>引物结合</strong>：用一个已知序列的引物与模板退火（anneal），为聚合酶提供起始点；</li>
+<li><strong>链延伸与终止</strong>：在四种 dNTPs 与四种荧光标记 ddNTPs 的混合反应体系中，DNA 聚合酶进行合成，ddNTP 随机掺入导致不同位置终止；</li>
+<li><strong>终止片段生成</strong>：产生一系列长度不同、末端碱基已知的 DNA 片段；</li>
+<li><strong>毛细管电泳分离</strong>：按片段长度分离，每通过检测点时读取末端荧光颜色；</li>
+<li><strong>序列解析</strong>：根据不同片段末端的碱基类型，按长度顺序还原 DNA 序列，输出电泳图谱（Electropherogram/Chromatogram）。</li>
+</ol>
 </section>
-</section>
-<section id="测序参数的数学建模" class="level2" data-number="4.3">
-<h2 data-number="4.3" class="anchored" data-anchor-id="测序参数的数学建模"><span class="header-section-number">4.3</span> 测序参数的数学建模</h2>
-<p>测序本质上是一个<strong>随机采样（Random Sampling）</strong>过程。测序仪并不知道完整的基因组是什么样，它只是盲目地抓取随机的短片段进行读取。</p>
-<section id="核心变量定义" class="level3" data-number="4.3.1">
-<h3 data-number="4.3.1" class="anchored" data-anchor-id="核心变量定义"><span class="header-section-number">4.3.1</span> 核心变量定义</h3>
+<section id="自动化与荧光标记" class="level3" data-number="4.4.3">
+<h3 data-number="4.4.3" class="anchored" data-anchor-id="自动化与荧光标记"><span class="header-section-number">4.4.3</span> 自动化与荧光标记</h3>
+<p>现代自动化系统采用<strong>四色荧光标记</strong>（如 BigDye 染料体系）：</p>
 <ul>
-<li><strong><span class="math inline">\(G\)</span> (Genome Size)</strong>：目标基因组的总大小（例如人类约为 <span class="math inline">\(3 \times 10^9 \text{ bp}\)</span>）。</li>
-<li><strong><span class="math inline">\(L\)</span> (Read Length)</strong>：单次读取的短片段长度（通常为 <span class="math inline">\(150 \text{ bp}\)</span>）。</li>
-<li><strong><span class="math inline">\(N\)</span> (Number of Reads)</strong>：总共测出了多少条序列。</li>
+<li>每种 ddNTP 连接不同颜色的荧光染料（A=绿，C=蓝，G=黄，T=红）；</li>
+<li>所有反应在同一管中完成，毛细管电泳时激光依次激发各片段；</li>
+<li>检测器记录荧光峰的颜色和位置，软件将信号解析为碱基序列。</li>
 </ul>
 </section>
-<section id="测序深度depth" class="level3" data-number="4.3.2">
-<h3 data-number="4.3.2" class="anchored" data-anchor-id="测序深度depth"><span class="header-section-number">4.3.2</span> 测序深度（Depth）</h3>
-<p><strong>深度（Depth）</strong>指的是基因组上平均每个碱基被多少条 Reads 所覆盖。它是评估数据量是否充足的绝对指标。 <span class="math display">\[\text{Depth} (D) = \frac{N \times L}{G}\]</span> <em>(例如：30X 深度意味着平均每个位点被测了30次，这是人类全基因组测序的行业金标准。)</em></p>
+<section id="sanger-测序的优势与局限" class="level3" data-number="4.4.4">
+<h3 data-number="4.4.4" class="anchored" data-anchor-id="sanger-测序的优势与局限"><span class="header-section-number">4.4.4</span> Sanger 测序的优势与局限</h3>
+<ul>
+<li><strong>优势</strong>：
+<ul>
+<li>单条读长较长（通常 600-1000 bp），准确度高（&gt;99.9%）；</li>
+<li>适合小规模测序、克隆验证和单基因检测；</li>
+<li>读数直观，分析结果易于解释，仍是突变验证的”金标准”。</li>
+</ul></li>
+<li><strong>局限</strong>：
+<ul>
+<li>通量极低，每次测序只能返回一条序列；</li>
+<li>成本较高（约 $5-10/条），不适合大规模基因组测序；</li>
+<li>依赖良好的模板质量和纯度。</li>
+</ul></li>
+</ul>
 </section>
-<section id="覆盖度coverage与-lander-waterman-模型" class="level3" data-number="4.3.3">
-<h3 data-number="4.3.3" class="anchored" data-anchor-id="覆盖度coverage与-lander-waterman-模型"><span class="header-section-number">4.3.3</span> 覆盖度（Coverage）与 Lander-Waterman 模型</h3>
-<p><strong>覆盖度（Coverage）</strong>指的是基因组中至少被读取过一次的区域占总基因组的百分比（如 99%）。 由于打断和采样是完全随机的，Reads 在基因组上的分布服从<strong>泊松分布（Poisson Distribution）</strong>。基于经典的 Lander-Waterman 测序模型，当平均深度为 <span class="math inline">\(D\)</span> 时，某个特定碱基<strong>未被覆盖</strong>的概率为 <span class="math inline">\(e^{-D}\)</span>。 因此，理论覆盖度 <span class="math inline">\(C\)</span> 为： <span class="math display">\[C = 1 - e^{-D}\]</span></p>
-<div class="callout callout-style-default callout-tip callout-titled" title="算法启示：为何我们需要超高深度？">
+</section>
+<section id="pcr扩增的核心工具" class="level2" data-number="4.5">
+<h2 data-number="4.5" class="anchored" data-anchor-id="pcr扩增的核心工具"><span class="header-section-number">4.5</span> PCR：扩增的核心工具</h2>
+<p>PCR（聚合酶链反应，Polymerase Chain Reaction）是测序前最重要的核酸扩增技术，也是几乎所有分子生物学实验的基础工具。</p>
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="https://upload.wikimedia.org/wikipedia/commons/thumb/a/ab/Polymerase_chain_reaction-en.svg/1280px-Polymerase_chain_reaction-en.svg.png" class="img-fluid figure-img"></p>
+<figcaption>PCR 循环示意图：变性-退火-延伸三步骤（来源：维基百科 Polymerase chain reaction）</figcaption>
+</figure>
+</div>
+<section id="基本原理" class="level3" data-number="4.5.1">
+<h3 data-number="4.5.1" class="anchored" data-anchor-id="基本原理"><span class="header-section-number">4.5.1</span> 基本原理</h3>
+<p>PCR 通过反复的<strong>变性-退火-延伸</strong>三步循环，以指数级扩增目标 DNA 片段：</p>
+<ol type="1">
+<li><strong>变性（Denaturation，~95°C）</strong>：高温使双链 DNA 解开为两条单链；</li>
+<li><strong>退火（Annealing，50-65°C）</strong>：引物（primer，约 20 bp 的短寡核苷酸）与模板互补结合；</li>
+<li><strong>延伸（Extension，72°C）</strong>：DNA 聚合酶（常用耐热的 Taq 或高保真的 Phusion/Q5）从引物 3’ 端开始合成互补链。</li>
+</ol>
+<p>经过 n 个循环，目标序列理论上扩增 <span class="math inline">\(2^n\)</span> 倍。30 个循环可将目标序列扩增约 <span class="math inline">\(10^9\)</span> 倍。</p>
+</section>
+<section id="在测序流程中的角色" class="level3" data-number="4.5.2">
+<h3 data-number="4.5.2" class="anchored" data-anchor-id="在测序流程中的角色"><span class="header-section-number">4.5.2</span> 在测序流程中的角色</h3>
+<ul>
+<li>为 Sanger 测序提供足量、纯净的模板；</li>
+<li>在 Illumina 测序中，桥式扩增（bridge PCR）是形成可见 DNA 簇的前提；</li>
+<li>文库构建中 PCR 用于连接接头后的扩增，补充文库量；</li>
+<li><strong>注意</strong>：PCR 可能引入碱基错误（Taq 错误率约 <span class="math inline">\(10^{-4}\)</span>）和扩增偏倚，现代测序实验追求”低循环数”和”高保真聚合酶”，并通过 UMI（Unique Molecular Identifier）等策略校正 PCR 重复。</li>
+</ul>
+</section>
+</section>
+<section id="高通量测序ngs二代测序的革命" class="level2" data-number="4.6">
+<h2 data-number="4.6" class="anchored" data-anchor-id="高通量测序ngs二代测序的革命"><span class="header-section-number">4.6</span> 高通量测序（NGS）：二代测序的革命</h2>
+<p>高通量测序（Next-Generation Sequencing，NGS），又称二代测序，是当前生物信息学数据的主要来源。以 <strong>Illumina 测序平台</strong>为代表，其核心是<strong>边合成边测序（Sequencing by Synthesis, SBS）</strong>。</p>
+<section id="文库构建library-preparation" class="level3" data-number="4.6.1">
+<h3 data-number="4.6.1" class="anchored" data-anchor-id="文库构建library-preparation"><span class="header-section-number">4.6.1</span> 文库构建（Library Preparation）</h3>
+<p>高通量测序不直接测整条染色体，而需先将 DNA / RNA 构建成”测序友好”的文库：</p>
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="https://upload.wikimedia.org/wikipedia/commons/thumb/7/7e/Genomic_Library_Construction.png/500px-Genomic_Library_Construction.png" class="img-fluid figure-img"></p>
+<figcaption>基因组文库构建流程图（来源：维基百科 Genomic library）</figcaption>
+</figure>
+</div>
+<ol type="1">
+<li><strong>DNA 断片化</strong>：超声波（Sonication）或酶切（Enzymatic fragmentation）将 DNA 切成 150-300 bp 的片段；</li>
+<li><strong>末端修复与加 A 尾</strong>：补平片段末端，并在 3’ 端加 A，便于接头连接；</li>
+<li><strong>接头连接（Adapter Ligation）</strong>：在片段两端连接已知序列的接头（adapter），包含：
+<ul>
+<li>测序引物结合位点；</li>
+<li>流动槽（flow cell）结合序列；</li>
+<li>样品条形码（index/barcode），允许多个样本混合测序（multiplex）；</li>
+</ul></li>
+<li><strong>文库扩增与纯化</strong>：少量 PCR 扩增文库，磁珠（SPRI beads）纯化去除未连接的接头；</li>
+<li><strong>定量与质检</strong>：Qubit（荧光定量）+ Bioanalyzer/TapeStation（片段长度分布）确保文库质量。</li>
+</ol>
+</section>
+<section id="桥式扩增在流动槽上建立测序簇" class="level3" data-number="4.6.2">
+<h3 data-number="4.6.2" class="anchored" data-anchor-id="桥式扩增在流动槽上建立测序簇"><span class="header-section-number">4.6.2</span> 桥式扩增：在流动槽上建立测序簇</h3>
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="https://upload.wikimedia.org/wikipedia/commons/thumb/6/65/Cluster_Generation.png/330px-Cluster_Generation.png" class="img-fluid figure-img"></p>
+<figcaption>Illumina 流动槽上的簇生成（桥式扩增）过程（来源：维基百科 Illumina dye sequencing）</figcaption>
+</figure>
+</div>
+<p>文库加载到 Illumina <strong>流动槽（Flow Cell）</strong>后，经历<strong>桥式扩增（Bridge Amplification）</strong>：</p>
+<ol type="1">
+<li>文库 DNA 单链通过接头序列与 flow cell 表面的互补引物结合；</li>
+<li>局部 PCR 扩增：DNA 链”弯折”形成桥状结构，另一端接头与附近引物结合，原位扩增；</li>
+<li>反复循环产生约 <strong>1000 个拷贝</strong>的克隆簇（cluster），每个簇直径约 1 μm；</li>
+<li>线性化：裂解一条链，使簇内所有分子方向一致，用于后续测序。</li>
+</ol>
+<p>每个簇代表原文库中的一个 DNA 分子，其集体荧光信号强度足够被仪器检测器读取。</p>
+</section>
+<section id="边合成边测序sequencing-by-synthesis" class="level3" data-number="4.6.3">
+<h3 data-number="4.6.3" class="anchored" data-anchor-id="边合成边测序sequencing-by-synthesis"><span class="header-section-number">4.6.3</span> 边合成边测序（Sequencing by Synthesis）</h3>
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="https://upload.wikimedia.org/wikipedia/commons/thumb/6/65/Cluster_Generation.png/330px-Cluster_Generation.png" class="img-fluid figure-img"></p>
+<figcaption>Illumina 边合成边测序（SBS）：荧光可逆终止子循环成像（来源：维基百科 Illumina dye sequencing）</figcaption>
+</figure>
+</div>
+<p>簇形成后，进行荧光可逆终止子测序：</p>
+<ol type="1">
+<li>加入四种<strong>荧光可逆终止 dNTPs</strong>（每种碱基一种颜色，3’-OH 被化学保护基团封闭）；</li>
+<li>DNA 聚合酶掺入单个互补碱基，合成终止；</li>
+<li><strong>成像</strong>：激光激发整个 flow cell，CCD 相机拍摄每个簇的荧光颜色，记录当前循环的碱基；</li>
+<li><strong>化学切除</strong>：去除荧光基团和保护基，恢复 3’-OH，进入下一轮循环；</li>
+<li>重复 <strong>150-300 个循环</strong>，每循环读取一个碱基，最终获得读长为 150-300 bp 的 reads。</li>
+</ol>
+<div class="callout callout-style-default callout-note callout-titled">
 <div class="callout-header d-flex align-content-center">
 <div class="callout-icon-container">
 <i class="callout-icon"></i>
 </div>
 <div class="callout-title-container flex-fill">
-<span class="screen-reader-only">Tip</span>算法启示：为何我们需要超高深度？
+Note
 </div>
 </div>
 <div class="callout-body-container callout-body">
-<p>根据泊松分布，即便平均深度达到了 <span class="math inline">\(1X\)</span>，理论覆盖度也仅为 <span class="math inline">\(1 - e^{-1} \approx 63.2\%\)</span>，会有超过三分之一的区域成为盲区。这就是为什么我们不能只测 <span class="math inline">\(1X\)</span>，而必须通过增加数据量（如 <span class="math inline">\(30X\)</span>、<span class="math inline">\(100X\)</span>）来通过统计学概率“淹没”这些随机盲区。</p>
+<p><strong>双端测序（Paired-End Sequencing）</strong>：Illumina 平台支持从 DNA 片段两端分别测序，生成 Read 1 和 Read 2。两端读数通过片段长度信息关联，极大提升了基因组拼接和结构变异检测的能力。</p>
 </div>
 </div>
-
-
 </section>
+<section id="illumina-测序的关键参数" class="level3" data-number="4.6.4">
+<h3 data-number="4.6.4" class="anchored" data-anchor-id="illumina-测序的关键参数"><span class="header-section-number">4.6.4</span> Illumina 测序的关键参数</h3>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 30%">
+<col style="width: 40%">
+<col style="width: 30%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>参数</th>
+<th>典型值</th>
+<th>意义</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>读长（Read Length）</td>
+<td>150 bp（PE）</td>
+<td>每条 read 可覆盖的碱基数</td>
+</tr>
+<tr class="even">
+<td>通量（Throughput）</td>
+<td>1-6 Tb/次（NovaSeq X）</td>
+<td>单次测序产出的总碱基数</td>
+</tr>
+<tr class="odd">
+<td>错误率</td>
+<td>~0.1%</td>
+<td>主要为取代错误，高 GC 区域更高</td>
+</tr>
+<tr class="even">
+<td>测序深度（Coverage）</td>
+<td>30×（WGS）～100×（WES）</td>
+<td>每个位点被读取的平均次数</td>
+</tr>
+</tbody>
+</table>
+</section>
+</section>
+<section id="phred-质量分数与-fastq-格式" class="level2" data-number="4.7">
+<h2 data-number="4.7" class="anchored" data-anchor-id="phred-质量分数与-fastq-格式"><span class="header-section-number">4.7</span> Phred 质量分数与 FASTQ 格式</h2>
+<p>测序仪输出的原始数据以 <strong>FASTQ</strong> 格式存储，是生物信息学分析的起点。</p>
+<section id="phred-质量分数" class="level3" data-number="4.7.1">
+<h3 data-number="4.7.1" class="anchored" data-anchor-id="phred-质量分数"><span class="header-section-number">4.7.1</span> Phred 质量分数</h3>
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="https://upload.wikimedia.org/wikipedia/commons/thumb/e/e7/Phred_Figure_1.jpg/250px-Phred_Figure_1.jpg" class="img-fluid figure-img"></p>
+<figcaption>Phred 质量分数与 DNA 测序峰图（来源：维基百科 Phred quality score）</figcaption>
+</figure>
+</div>
+<p>每个碱基附带一个 <strong>Phred 质量分数（Q score）</strong>，最初由 Phil Green 在开发 Phred 碱基识别软件时提出，定义为：</p>
+<p><span class="math display">\[Q = -10 \cdot \log_{10}(P_e)\]</span></p>
+<p>其中 <span class="math inline">\(P_e\)</span> 是碱基识别错误的概率。常用对应关系：</p>
+<table class="caption-top table">
+<thead>
+<tr class="header">
+<th>Q 值</th>
+<th>错误率</th>
+<th>准确率</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Q10</td>
+<td>10%</td>
+<td>90%</td>
+</tr>
+<tr class="even">
+<td>Q20</td>
+<td>1%</td>
+<td>99%</td>
+</tr>
+<tr class="odd">
+<td>Q30</td>
+<td>0.1%</td>
+<td>99.9%</td>
+</tr>
+<tr class="even">
+<td>Q40</td>
+<td>0.01%</td>
+<td>99.99%</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Q30 以上</strong>通常是 NGS 数据质量合格的基本要求。</p>
+</section>
+<section id="fastq-文件格式" class="level3" data-number="4.7.2">
+<h3 data-number="4.7.2" class="anchored" data-anchor-id="fastq-文件格式"><span class="header-section-number">4.7.2</span> FASTQ 文件格式</h3>
+<p>每条 read 占四行：</p>
+<pre><code>@SEQ_ID                          # Line 1: read identifier
+ATCGATCGATCGATCG...              # Line 2: nucleotide sequence
++                                # Line 3: separator (+ sign)
+IIIIIIHHHHGGGFFF...              # Line 4: Phred quality scores (ASCII encoded)</code></pre>
+<p>质量值通过 ASCII 编码存储：<code>Q + 33 = ASCII 字符</code>，例如 Q=40 对应字符 <code>I</code>（ASCII 73）。</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb2"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Example: decode Phred quality scores from a FASTQ quality string</span></span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> decode_phred(quality_string, offset<span class="op">=</span><span class="dv">33</span>):</span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a>    <span class="co">"""Convert ASCII quality string to list of Phred Q scores."""</span></span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> [<span class="bu">ord</span>(char) <span class="op">-</span> offset <span class="cf">for</span> char <span class="kw">in</span> quality_string]</span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a>quality_str <span class="op">=</span> <span class="st">"IIIIHHHHGGGGFFFF"</span></span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a>q_scores <span class="op">=</span> decode_phred(quality_str)</span>
+<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(q_scores)  <span class="co"># [40, 40, 40, 40, 39, 39, 39, 39, 38, 38, 38, 38, 37, 37, 37, 37]</span></span>
+<span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-10"><a href="#cb2-10" aria-hidden="true" tabindex="-1"></a><span class="co"># Convert Q score to error probability</span></span>
+<span id="cb2-11"><a href="#cb2-11" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> math</span>
+<span id="cb2-12"><a href="#cb2-12" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> q_to_prob(q):</span>
+<span id="cb2-13"><a href="#cb2-13" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> <span class="dv">10</span> <span class="op">**</span> (<span class="op">-</span>q <span class="op">/</span> <span class="dv">10</span>)</span>
+<span id="cb2-14"><a href="#cb2-14" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-15"><a href="#cb2-15" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"Q30 error rate: </span><span class="sc">{</span>q_to_prob(<span class="dv">30</span>)<span class="sc">:.4f}</span><span class="ss">"</span>)  <span class="co"># Q30 error rate: 0.0010</span></span>
+<span id="cb2-16"><a href="#cb2-16" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"Q20 error rate: </span><span class="sc">{</span>q_to_prob(<span class="dv">20</span>)<span class="sc">:.4f}</span><span class="ss">"</span>)  <span class="co"># Q20 error rate: 0.0100</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</section>
+</section>
+<section id="第三代测序技术简介" class="level2" data-number="4.8">
+<h2 data-number="4.8" class="anchored" data-anchor-id="第三代测序技术简介"><span class="header-section-number">4.8</span> 第三代测序技术简介</h2>
+<p>二代测序（NGS）已主导市场，但其读长短（150-300 bp）的局限促使了<strong>第三代测序（Third-Generation Sequencing, TGS）</strong>的兴起，后者可生成数千至数万 bp 的超长读数，在基因组结构变异检测和全长转录本分析中具有独特优势。</p>
+<section id="pacbio-单分子实时测序smrt" class="level3" data-number="4.8.1">
+<h3 data-number="4.8.1" class="anchored" data-anchor-id="pacbio-单分子实时测序smrt"><span class="header-section-number">4.8.1</span> PacBio 单分子实时测序（SMRT）</h3>
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="https://upload.wikimedia.org/wikipedia/commons/thumb/0/0f/RSSmrtCell.jpg/250px-RSSmrtCell.jpg" class="img-fluid figure-img"></p>
+<figcaption>PacBio SMRT Cell 测序单元（来源：维基百科 Single-molecule real-time sequencing）</figcaption>
+</figure>
+</div>
+<ul>
+<li><strong>原理</strong>：在零模波导（Zero-Mode Waveguide, ZMW）纳米孔中，单个 DNA 聚合酶实时合成 DNA，荧光标记的 dNTPs 掺入时产生荧光脉冲，直接读取序列；</li>
+<li><strong>读长</strong>：平均 15-25 kb，HiFi 模式（CCS，循环共识测序）通过多次环形测序同一分子达到 &gt;99.9% 准确率；</li>
+<li><strong>特色</strong>：可同时检测 DNA 甲基化修饰（m6A、5mC），无需额外亚硫酸盐处理。</li>
+</ul>
+</section>
+<section id="oxford-nanopore-测序" class="level3" data-number="4.8.2">
+<h3 data-number="4.8.2" class="anchored" data-anchor-id="oxford-nanopore-测序"><span class="header-section-number">4.8.2</span> Oxford Nanopore 测序</h3>
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="https://upload.wikimedia.org/wikipedia/commons/thumb/e/e7/Transport_of_Alpha-Hemolysin_and_dsDNA_Complex_Towards_a_Solid_State_Nanopore.svg/330px-Transport_of_Alpha-Hemolysin_and_dsDNA_Complex_Towards_a_Solid_State_Nanopore.svg.png" class="img-fluid figure-img"></p>
+<figcaption>纳米孔测序原理：DNA 穿过蛋白质纳米孔产生电流变化（来源：维基百科 Nanopore sequencing）</figcaption>
+</figure>
+</div>
+<ul>
+<li><strong>原理</strong>：DNA 或 RNA 单链穿过蛋白质纳米孔（MspA 或 CsgG 衍生孔），不同碱基组合阻断离子电流的程度不同，电流变化信号经神经网络（Guppy/Dorado）解码为碱基序列；</li>
+<li><strong>读长</strong>：理论上无上限，已报道单条 read &gt;2 Mb；</li>
+<li><strong>优势</strong>：设备便携（MinION 仅 U 盘大小），实时输出（可边测边分析），可直接测 RNA；</li>
+<li><strong>局限</strong>：原始错误率相对较高（~5%，但持续改善中），需要较高覆盖深度。</li>
+</ul>
+<div class="callout callout-style-default callout-tip callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+Tip
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p><strong>三代测序技术对比</strong></p>
+<table class="caption-top table">
+<thead>
+<tr class="header">
+<th>特性</th>
+<th>Sanger（一代）</th>
+<th>Illumina（二代）</th>
+<th>PacBio/Nanopore（三代）</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>读长</td>
+<td>600-1000 bp</td>
+<td>150-300 bp</td>
+<td>10 kb - &gt;1 Mb</td>
+</tr>
+<tr class="even">
+<td>通量</td>
+<td>极低</td>
+<td>极高</td>
+<td>中等</td>
+</tr>
+<tr class="odd">
+<td>准确率</td>
+<td>&gt;99.9%</td>
+<td>~99.9%</td>
+<td>92-99.9%（HiFi &gt;99.9%）</td>
+</tr>
+<tr class="even">
+<td>成本/Gb</td>
+<td>极高</td>
+<td>低</td>
+<td>中等</td>
+</tr>
+<tr class="odd">
+<td>主要用途</td>
+<td>克隆验证</td>
+<td>转录组、基因组</td>
+<td>结构变异、全长转录本</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</section>
+</section>
+<section id="数据生命周期从样本到信息" class="level2" data-number="4.9">
+<h2 data-number="4.9" class="anchored" data-anchor-id="数据生命周期从样本到信息"><span class="header-section-number">4.9</span> 数据生命周期：从样本到信息</h2>
+<p>高通量测序数据的生命周期可划分为三个阶段，理解这一过程是后续生物信息学分析的框架基础。</p>
+<section id="湿实验阶段wet-lab" class="level3" data-number="4.9.1">
+<h3 data-number="4.9.1" class="anchored" data-anchor-id="湿实验阶段wet-lab"><span class="header-section-number">4.9.1</span> 湿实验阶段（Wet Lab）</h3>
+<p>原始样本采集、DNA/RNA 提取、文库构建和上机测序。这一阶段决定了数据的基础质量，例如 DNA 纯度、片段长度和测序簇质量。<strong>垃圾进，垃圾出（Garbage in, garbage out）</strong>——生物信息学家无法从劣质数据中挖掘出高质量结论。</p>
+</section>
+<section id="原始数据阶段raw-data" class="level3" data-number="4.9.2">
+<h3 data-number="4.9.2" class="anchored" data-anchor-id="原始数据阶段raw-data"><span class="header-section-number">4.9.2</span> 原始数据阶段（Raw Data）</h3>
+<p>测序仪输出 FASTQ 文件，包含碱基序列和 Phred 质量分数。这一阶段的主要任务是：</p>
+<ul>
+<li><strong>质量控制（QC）</strong>：使用 FastQC 检查碱基质量分布、GC 含量、序列重复率等；</li>
+<li><strong>接头修剪（Adapter Trimming）</strong>：使用 Trimmomatic 或 Fastp 去除接头序列污染；</li>
+<li><strong>低质量过滤</strong>：去除平均质量 &lt;Q20 的 reads 及过短序列（&lt;50 bp）。</li>
+</ul>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb3"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Example: run FastQC quality control on raw FASTQ files</span></span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="ex">fastqc</span> sample_R1.fastq.gz sample_R2.fastq.gz <span class="at">-o</span> ./qc_results/ <span class="at">-t</span> 4</span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a><span class="co"># Example: trim adapters and low-quality bases with fastp</span></span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a><span class="ex">fastp</span> <span class="dt">\</span></span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a>  <span class="at">-i</span> sample_R1.fastq.gz <span class="at">-I</span> sample_R2.fastq.gz <span class="dt">\</span></span>
+<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a>  <span class="at">-o</span> sample_R1_clean.fastq.gz <span class="at">-O</span> sample_R2_clean.fastq.gz <span class="dt">\</span></span>
+<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a>  <span class="at">--detect_adapter_for_pe</span> <span class="dt">\</span></span>
+<span id="cb3-9"><a href="#cb3-9" aria-hidden="true" tabindex="-1"></a>  <span class="at">--cut_tail</span> <span class="at">--cut_mean_quality</span> 20 <span class="dt">\</span></span>
+<span id="cb3-10"><a href="#cb3-10" aria-hidden="true" tabindex="-1"></a>  <span class="at">--length_required</span> 50 <span class="dt">\</span></span>
+<span id="cb3-11"><a href="#cb3-11" aria-hidden="true" tabindex="-1"></a>  <span class="at">--thread</span> 8 <span class="dt">\</span></span>
+<span id="cb3-12"><a href="#cb3-12" aria-hidden="true" tabindex="-1"></a>  <span class="at">--json</span> fastp_report.json <span class="dt">\</span></span>
+<span id="cb3-13"><a href="#cb3-13" aria-hidden="true" tabindex="-1"></a>  <span class="at">--html</span> fastp_report.html</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</section>
+<section id="分析数据阶段processed-data" class="level3" data-number="4.9.3">
+<h3 data-number="4.9.3" class="anchored" data-anchor-id="分析数据阶段processed-data"><span class="header-section-number">4.9.3</span> 分析数据阶段（Processed Data）</h3>
+<p>经过清洗后的数据进入下游分析：</p>
+<ul>
+<li><strong>比对（Alignment）</strong>：将 reads 映射到参考基因组（STAR、BWA、HISAT2）；</li>
+<li><strong>定量（Quantification）</strong>：统计每个基因的 reads 数（featureCounts、Salmon）；</li>
+<li><strong>变异检测（Variant Calling）</strong>：识别 SNP、Indel（GATK HaplotypeCaller）；</li>
+<li><strong>差异分析</strong>：比较不同条件下的基因表达差异（DESeq2、edgeR）。</li>
+</ul>
+<p>最终输出表格、图像和报告，供生物学家解释和决策。</p>
+</section>
+</section>
+<section id="本章小结" class="level2" data-number="4.10">
+<h2 data-number="4.10" class="anchored" data-anchor-id="本章小结"><span class="header-section-number">4.10</span> 本章小结</h2>
+<p>本章构建了从实验台到计算机的完整知识链条：</p>
+<pre><code>生物样本
+  → DNA 提取（纯度与完整性）
+  → 文库构建（断片化、接头连接）
+  → 测序（Sanger / Illumina SBS / 三代）
+  → FASTQ 原始数据（Phred Q Score）
+  → QC 与清洗（FastQC / fastp）
+  → 下游分析（比对 → 定量 → 统计）
+  → 生物学结论</code></pre>
+<p>理解这一链条的每个环节，是后续章节深入数学建模和算法设计的必要前提。</p>
+
+
 </section>
 
 </main> <!-- /main -->

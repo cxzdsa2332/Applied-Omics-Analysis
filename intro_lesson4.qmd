@@ -16,51 +16,241 @@ format:
     number-sections: true
 ---
 
-## 引言：为什么我们需要“双擎”与环境隔离？
+## 引言：为什么我们需要"双擎"与环境隔离？
 
 在真正开始敲击分析代码之前，我们必须先解决一个工程学问题：**构建一个稳定、可复现的开发环境**。
 在生物信息学领域，没有任何一种语言可以统治一切：
+
+![Python 编程语言（来源：维基百科 Python）](https://upload.wikimedia.org/wikipedia/commons/thumb/c/c3/Python-logo-notext.svg/330px-Python-logo-notext.svg.png)
+
 * **Python**：凭借其强大的文本解析能力、全能的通用编程特性以及无可撼动的深度学习（PyTorch/TensorFlow）生态，主要负责机器学习建模以及核心的流水线（Pipeline）搭建。
+
+![R 编程语言（来源：维基百科 R）](https://upload.wikimedia.org/wikipedia/commons/thumb/1/1b/R_logo.svg/330px-R_logo.svg.png)
+
 * **R 语言**：作为统计学家的母语，它拥有极其严谨的底层统计学模型，以及生信领域无可替代的 **Bioconductor** 生态圈和数据可视化工具（`ggplot2`）。它主要负责下游的差异表达分析、单细胞聚类以及最终的论文出图。
 
-想要在一台服务器上优雅地同时驾驭这两把神兵利器，我们必须依靠现代化的环境管理工具和 IDE (integrated development environment)?。
+想要在一台服务器上优雅地同时驾驭这两把神兵利器，我们必须依靠现代化的环境管理工具和 IDE（Integrated Development Environment）。
+
+---
 
 ## 软件工程的噩梦与解药：Conda 包管理器
 
 对于非计算机专业的初学者，最常犯的毁灭性错误就是：使用 `sudo` 将所有的软件一股脑地安装在 Linux 的全局环境（Base）中。
 
-### 什么是“依赖地狱”（Dependency Hell）？
+### 什么是"依赖地狱"（Dependency Hell）？
+
 假设你要做两个项目：
+
 1. **项目 A（基因组组装）**：依赖于 `Python 2.7` 和 `Numpy 1.10`。
 2. **项目 B（单细胞分析）**：依赖于最新的 `Python 3.10` 和 `Numpy 1.22`。
+
 如果你在同一个全局环境中安装它们，后安装的软件会强制覆盖、升级或降级底层依赖库。结果就是：为了让项目 B 跑起来，项目 A 的代码将全部崩溃。在生信领域，由于开源软件迭代极快且缺乏统一标准，这种版本冲突是致命的。
 
 ### Conda 的隔离哲学
-**Conda（精简版 Miniconda）** 就是为了解决这个问题而生的。
-它允许你为每一个独立的研究项目创建一个个相互隔离的“沙盒”（虚拟环境）。在环境 A 中安装的任何软件，都绝对不会影响环境 B。它不仅能管理 Python 包，还能管理 R、C/C++ 库甚至底层的二进制系统组件。
+
+**Conda（精简版 Miniconda）** 就是为了解决这个问题而生的。它允许你为每一个独立的研究项目创建一个个相互隔离的"沙盒"（虚拟环境）。在环境 A 中安装的任何软件，都绝对不会影响环境 B。它不仅能管理 Python 包，还能管理 R、C/C++ 库甚至底层的二进制系统组件。
 
 ::: {.callout-tip title="概念映射"}
-你可以把 Conda 虚拟环境理解为轻量级的 Docker 容器或虚拟机，它将“代码”与其“运行所需的生态”打包在了一起，实现了计算生物学中最重要的原则之一：**可复现性（Reproducibility）**。
+你可以把 Conda 虚拟环境理解为轻量级的 Docker 容器或虚拟机，它将"代码"与其"运行所需的生态"打包在了一起，实现了计算生物学中最重要的原则之一：**可复现性（Reproducibility）**。
+:::
+
+### pip vs conda：如何选择？
+
+初学者经常困惑：什么时候用 `pip`，什么时候用 `conda`？
+
+| 特性 | `pip` | `conda` |
+|------|-------|---------|
+| 来源 | Python 官方包管理器 | Anaconda 公司开发 |
+| 管理范围 | Python 包 | Python 包 + C/C++ 库 + R + 系统依赖 |
+| 依赖解析 | 较弱，易出现冲突 | 强，可解析非 Python 依赖 |
+| 速度 | 较快 | 默认较慢（推荐用 mamba 替代）|
+| 生信工具 | 部分支持 | 通过 bioconda 频道全面支持 |
+
+**最佳实践**：优先用 `conda`（或 `mamba`）安装生信工具；仅当 conda 中找不到某个纯 Python 包时，才在激活的 conda 环境中补充使用 `pip`。
+
+::: {.callout-warning}
+**不要混用**：在同一环境中大量交替使用 `pip` 和 `conda` 安装包，容易导致依赖冲突和环境损坏。
+:::
+
+### 安装 Conda 与创建环境
+
+```bash
+# Download and install Miniconda (Linux x86_64)
+wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh
+bash Miniconda3-latest-Linux-x86_64.sh
+
+# Install mamba: a faster drop-in replacement for conda (strongly recommended)
+conda install -n base -c conda-forge mamba
+```
+
+---
+
+## 实战演练：构建生信"双擎"沙盒
+
+请在本地或服务器中构建你的第一个生信虚拟环境。
+
+### 激活 Conda 并创建独立环境
+
+我们要创建一个名为 `bio_env` 的环境，并同时指定安装 Python 3.10 和基础的 R 语言。
+
+```bash
+# Create virtual environment with Python and R (-n = name)
+mamba create -n bio_env python=3.10 r-base=4.3 -c conda-forge
+
+# Activate the environment (notice (bio_env) prefix in terminal prompt)
+conda activate bio_env
+```
+
+### 安装核心包
+
+```bash
+# Install Python data science stack
+mamba install -c conda-forge numpy pandas matplotlib seaborn jupyter
+
+# Install R core bioinformatics packages via conda-forge and bioconda
+mamba install -c conda-forge -c bioconda r-ggplot2 r-dplyr r-tidyr r-biocmanager
+
+# Export environment for reproducibility (submit this file to GitHub)
+conda env export > bio_env.yml
+
+# Recreate exact environment on another machine
+conda env create -f bio_env.yml
+```
+
+### R 包的安装：CRAN 与 Bioconductor
+
+R 有两个主要包仓库，安装方式不同：
+
+```r
+# Install packages from CRAN (general statistics and visualization)
+install.packages("ggplot2")
+install.packages("dplyr")
+install.packages("tidyr")
+
+# Set a Chinese mirror for faster downloads (run once)
+options(repos = c(CRAN = "https://mirrors.tuna.tsinghua.edu.cn/CRAN/"))
+
+# Install packages from Bioconductor (bioinformatics-specific packages)
+if (!require("BiocManager", quietly = TRUE))
+    install.packages("BiocManager")
+
+BiocManager::install("DESeq2")      # differential expression
+BiocManager::install("edgeR")       # RNA-seq count analysis
+BiocManager::install("Seurat")      # single-cell analysis
+BiocManager::install("GenomicRanges")  # genomic interval operations
+BiocManager::install("BSgenome")    # reference genome sequences
+```
+
+::: {.callout-note}
+**Bioconductor 版本锁定**：Bioconductor 的版本与 R 版本严格绑定（如 Bioconductor 3.18 对应 R 4.3.x）。升级 R 时必须同步升级 Bioconductor，否则包可能无法安装或运行异常。
 :::
 
 ---
 
-在实际操作命令行之前，让我们通过下方的互动模拟器，直观地体验一下全局安装导致的“依赖冲突”，以及 Conda 虚拟环境是如何完美解决这一痛点的。
----
-
 ## 现代开发工作流：IDE 与 AI 辅助
-虽然生物信息学的大规模计算必须依赖 Linux 服务器，但在日常科研中，探索性数据分析（EDA）、代码调试和高质量图表绘制，往往在本地个人电脑上完成最为高效。我们不需要使用纯文本终端去编写几百行的分析脚本，我们需要可视化的交互式开发环境（IDE）。
+
+虽然生物信息学的大规模计算必须依赖 Linux 服务器，但在日常科研中，探索性数据分析（EDA）、代码调试和高质量图表绘制，往往在本地个人电脑上完成最为高效。
 
 ### 交互式编程：Jupyter Notebook 与 VS Code
-传统的编程模式是“写代码 $\rightarrow$ 运行全部 $\rightarrow$ 看结果”。而数据科学需要的是**探索性数据分析（EDA）**。
-**Jupyter Notebook** 引入了代码块（Cell）的概念，允许你敲几行代码，立刻运行并看到图表结果，然后保留内存状态，继续写下一段。
-* **VS Code (Visual Studio Code)**：目前世界上最强大的开源代码编辑器。它原生集成了对 Jupyter Notebook 的支持，让你可以在本地电脑上，通过 SSH 插件直接编辑和运行远端 Linux 服务器上的代码，完美结合了“本地的图形界面”与“远端的强大算力”。
+
+![Jupyter 项目徽标（来源：维基百科 Project Jupyter）](https://upload.wikimedia.org/wikipedia/commons/thumb/3/38/Jupyter_logo.svg/330px-Jupyter_logo.svg.png)
+
+传统的编程模式是"写代码 $\rightarrow$ 运行全部 $\rightarrow$ 看结果"。而数据科学需要的是**探索性数据分析（EDA）**。**Jupyter Notebook** 引入了代码块（Cell）的概念，允许你敲几行代码，立刻运行并看到图表结果，然后保留内存状态，继续写下一段。
+
+* **VS Code (Visual Studio Code)**：目前世界上最强大的开源代码编辑器。它原生集成了对 Jupyter Notebook 的支持，让你可以在本地电脑上，通过 SSH 插件直接编辑和运行远端 Linux 服务器上的代码，完美结合了"本地的图形界面"与"远端的强大算力"。
+* **RStudio**：R 语言专属的 IDE，提供变量查看器、图形输出面板、包管理界面和内置的 R Markdown/Quarto 支持，是 R 用户的首选工作环境。
+* **JupyterLab**：Jupyter Notebook 的升级版，提供多标签页、文件浏览器和更灵活的界面布局，适合复杂的分析项目。
 
 ### 生产力引擎：AI 辅助编程（AI Pair Programming）
-你可能精通算法逻辑，但记不住庞杂的 R 语言函数语法。在这个时代，像 **GitHub Copilot** 或 **Cursor** 这样的 AI 编程助手已经成为标配。
-* **AI 的作用**：它不是替你做科研，而是替你完成“语法翻译”和“样板代码（Boilerplate）”的编写。你只需要在代码注释中用自然语言写下数据处理逻辑（例如：*“# 提取基因表达矩阵中方差排名前 2000 的基因”*），AI 就能精准补全 Python 或 R 代码。
 
-## R 环境的独特生态（R Studio简介）
+你可能精通算法逻辑，但记不住庞杂的 R 语言函数语法。在这个时代，像 **GitHub Copilot** 或 **Cursor** 这样的 AI 编程助手已经成为标配。
+
+* **AI 的作用**：它不是替你做科研，而是替你完成"语法翻译"和"样板代码（Boilerplate）"的编写。你只需要在代码注释中用自然语言写下数据处理逻辑（例如：*"# 提取基因表达矩阵中方差排名前 2000 的基因"*），AI 就能精准补全 Python 或 R 代码。
+* **Claude Code / ChatGPT**：适合解释错误信息、讨论分析策略和生成文档；Copilot 更擅长行内代码补全。
+
+---
+
+## 版本控制：Git 与 GitHub
+
+![Git 版本控制系统（来源：维基百科 Git）](https://upload.wikimedia.org/wikipedia/commons/thumb/e/e0/Git-logo.svg/330px-Git-logo.svg.png)
+
+**版本控制（Version Control）**是可重复性研究的核心基础设施，却常被初学者忽视。Git 记录代码的每一次变更，让你随时回退到任意历史版本，并支持多人协作。
+
+### 为什么生信研究必须使用 Git？
+
+* **防止代码丢失**：服务器故障、误操作 `rm -rf` 不再是灾难；
+* **追踪分析版本**：`script_v1.py`、`script_v2_final.py`、`script_v2_final_REAL.py` 的混乱将成为历史；
+* **论文可重复性**：顶级期刊（Nature Methods、Genome Biology）越来越要求提交分析代码的 GitHub 链接；
+* **协作与审阅**：与导师、合作者共同开发分析流程。
+
+### Git 核心操作
+
+```bash
+# Configure Git (run once after installation)
+git config --global user.name "Your Name"
+git config --global user.email "your@email.com"
+
+# Initialize a new Git repository in current directory
+git init
+
+# Clone an existing repository from GitHub
+git clone https://github.com/username/rnaseq-pipeline.git
+
+# Check what has changed
+git status
+git diff
+
+# Stage and commit changes
+git add analysis_script.py          # stage specific file
+git add .                           # stage all changes
+git commit -m "Add DESeq2 normalization step"
+
+# Push to remote (GitHub/GitLab)
+git push origin main
+
+# Pull latest changes from remote
+git pull origin main
+
+# View commit history
+git log --oneline --graph
+```
+
+### 生信项目的推荐 Git 目录结构
+
+```
+my_rnaseq_project/
+├── README.md              # project description and usage
+├── environment.yml        # conda environment (reproducibility)
+├── data/
+│   ├── raw/               # raw FASTQ files (usually gitignored, too large)
+│   └── processed/         # cleaned data
+├── scripts/
+│   ├── 01_qc.sh           # quality control
+│   ├── 02_align.sh        # alignment
+│   └── 03_deseq2.R        # differential expression
+├── results/
+│   ├── figures/           # output plots
+│   └── tables/            # output tables
+└── .gitignore             # files to exclude from git tracking
+```
+
+`.gitignore` 示例（防止大文件被错误提交）：
+
+```
+# Ignore raw sequencing data (too large for Git)
+data/raw/*.fastq.gz
+data/raw/*.bam
+
+# Ignore temporary files
+*.tmp
+*.log
+__pycache__/
+.DS_Store
+```
+
+---
+
+## R 环境的独特生态（RStudio 简介）
 
 R 语言的安装和包管理有其特殊性。
 
@@ -69,29 +259,6 @@ R 语言的安装和包管理有其特殊性。
   1. **CRAN (The Comprehensive R Archive Network)**：R 的官方包仓库，存放通用统计和绘图包（如 `ggplot2`, `dplyr`）。
   2. **Bioconductor**：全球最大的计算生物学与生物信息学开源项目仓库。专注于测序数据的处理包（如 `DESeq2`, `Seurat`）。
 * **镜像站（Mirrors）**：由于默认服务器在国外，下载极慢且容易断线。我们需要在配置文件中将下载源替换为国内的高校镜像站（如清华 TUNA 镜像或阿里云镜像）。
-
-## 实战演练：在 本地构建“双擎”沙盒
-
-请在本地中构建你的第一个生信虚拟环境。
-
-### 激活 Conda 并创建独立环境
-我们要创建一个名为 `bio_env` 的环境，并同时指定安装 Python 3.10 和基础的 R 语言。
-```bash
-# 创建虚拟环境（-n 代表名字），按提示输入 y 确认
-conda create -n bio_env python=3.10 r-base
-
-# 激活进入该环境（注意终端提示符前会出现 (bio_env) 字样）
-conda activate bio_env
-```
-
-### 安装核心包
-```bash
-# 在 bio_env 环境中安装 Python 数据科学三件套
-conda install numpy pandas matplotlib
-
-# 安装 R 的核心生信包（通过 conda-forge 频道）
-conda install -c conda-forge r-ggplot2 r-dplyr
-```
 
 ---
 
@@ -222,27 +389,58 @@ print(p)
 
 ---
 
+### R 与 Python 互操作：`reticulate` 包
+
+在某些场景下，你希望在 R 脚本中直接调用 Python 的机器学习库，或在 Python 中使用 R 的统计函数。`reticulate` 包实现了这一无缝桥接：
+
+```r
+library(reticulate)
+
+# Specify which Python environment to use
+use_condaenv("bio_env", required = TRUE)
+
+# Import Python modules directly in R
+np <- import("numpy")
+pd <- import("pandas")
+
+# Call Python functions from R
+arr <- np$array(c(1.0, 2.0, 3.0, 4.0))
+cat("NumPy mean:", np$mean(arr), "\n")  # NumPy mean: 2.5
+
+# Execute Python code string in R
+py_run_string("import sys; print(f'Python version: {sys.version}')")
+
+# Share objects between R and Python
+r_vector <- c(10, 20, 30, 40, 50)
+py$r_data <- r_vector             # pass R object to Python
+py_run_string("import numpy as np; print('R data in Python:', np.mean(r_data))")
+```
+
+---
+
 ### Jupyter Notebook 实战：交互式探索基因表达数据
 
 Jupyter Notebook 是数据科学中最流行的交互式开发环境。与传统脚本"一次性运行全部代码"不同，Notebook 将代码拆分为一个个**单元格（Cell）**，每次只运行当前格，结果立即显示在代码下方。这种"写一点、看一点"的工作方式，非常适合探索性数据分析（EDA）。
 
-下图展示了一个完整的 Jupyter Notebook 工作流——从环境检查、数据构造到可视化，每个 Cell 独立运行、结果即时呈现：
-
 ::: {.callout-tip title="如何在本地打开 Jupyter Notebook"}
 ```bash
-# 确保在激活的 conda 环境中
+# Ensure you are in the activated conda environment
 conda activate bio_env
 
-# 安装 Jupyter（如果还没有）
-conda install jupyter
+# Install Jupyter (if not yet installed)
+mamba install -c conda-forge jupyterlab
 
-# 启动 Notebook 服务（会自动打开浏览器）
-jupyter notebook
+# Launch JupyterLab (recommended over classic Notebook)
+jupyter lab
+
+# Or launch on a remote server and forward port to local browser
+jupyter lab --no-browser --port=8888
+# Then on local machine: ssh -L 8888:localhost:8888 username@server
 ```
 浏览器会打开 `http://localhost:8888`，点击 **New → Python 3** 即可新建一个 Notebook。
 :::
 
-以下是一个完整的 Jupyter Notebook 示例，展示了从数据构造到可视化的标准工作流。每个代码块对应 Notebook 中的一个 Cell：
+以下是一个完整的 Jupyter Notebook 示例，展示了从数据构造到可视化的标准工作流：
 
 **Cell 1：检查环境，导入依赖**
 
@@ -271,7 +469,7 @@ expr_df = pd.DataFrame(
     columns=samples
 )
 
-expr_df
+expr_df  # In Jupyter, last expression is auto-displayed as a table
 ```
 
 **Cell 3：分析，马上看到结果**
@@ -320,7 +518,46 @@ plt.show()
 
 ---
 
-### R vs Python：在生信中如何选择？
+## 进阶：Docker 与容器化——终极可重复性
+
+![Docker 容器化工具（来源：维基百科 Docker）](https://upload.wikimedia.org/wikipedia/commons/thumb/d/dc/Docker_commands_screenshot.webp/330px-Docker_commands_screenshot.webp.png)
+
+Conda 解决了 Python/R 包的版本隔离问题，但无法保证操作系统层面的完全一致性。**Docker** 将整个运行环境（含操作系统、系统库、软件）打包成一个**镜像（Image）**，在任何机器上运行都能得到完全相同的结果。
+
+```bash
+# Pull a pre-built bioinformatics Docker image
+docker pull biocontainers/samtools:v1.9-4-deb_cv1
+
+# Run samtools inside a container (no local installation needed)
+docker run --rm -v $(pwd):/data biocontainers/samtools:v1.9-4-deb_cv1 \
+  samtools view -c /data/alignment.bam
+
+# Build your own image from a Dockerfile
+docker build -t my_rnaseq_pipeline:v1.0 .
+```
+
+::: {.callout-note}
+**HPC 上使用 Singularity**：大多数 HPC 集群出于安全原因禁止 Docker（需要 root 权限），但支持 **Singularity**（现更名为 Apptainer）。Singularity 可以直接运行 Docker 镜像，且不需要 root 权限：
+
+```bash
+singularity pull docker://biocontainers/samtools:v1.9-4-deb_cv1
+singularity exec samtools_v1.9.sif samtools --version
+```
+:::
+
+**可重复性工具选型建议**：
+
+| 需求 | 推荐工具 |
+|------|---------|
+| 开发环境隔离 | Conda / Mamba |
+| 代码版本管理 | Git + GitHub |
+| 分析环境记录 | `conda env export > env.yml` |
+| 跨平台完全一致 | Docker / Singularity |
+| 工作流管理 | Snakemake / Nextflow |
+
+---
+
+## R vs Python：在生信中如何选择？
 
 | 场景 | 推荐语言 | 理由 |
 |------|----------|------|
@@ -330,7 +567,28 @@ plt.show()
 | 流水线搭建与自动化 | **Python** | 通用编程能力更强 |
 | 最终论文出图（精细调整） | **R (ggplot2)** | 语法优雅，出图质量高 |
 | 快速探索、数据清洗 | **两者均可** | 视个人习惯而定 |
+| 基因组区间操作 | **R (GenomicRanges)** | Bioconductor 生态专门优化 |
+| 大规模批量处理 | **Python + Bash** | 脚本化与并行化更灵活 |
 
 ::: {.callout-tip title="黄金法则"}
 不要纠结"哪个语言更好"——真正有竞争力的生信工程师是能熟练在 R 与 Python 之间切换的**双语者**。在同一个 Jupyter Notebook 中，你可以通过 `rpy2` 包同时调用两种语言，或使用 Quarto 文档（就像本课程一样）在同一文件中混写 R 和 Python 代码块。
 :::
+
+---
+
+## 本章小结
+
+本章构建了完整的生信开发工具链：
+
+```
+依赖隔离 (Conda / Mamba 虚拟环境)
+  → 包安装 (pip / conda / BiocManager)
+  → 代码编写 (VS Code / RStudio / JupyterLab)
+  → AI 辅助 (Copilot / Cursor / Claude)
+  → 版本控制 (Git + GitHub)
+  → 环境记录 (environment.yml)
+  → 容器化 (Docker / Singularity)
+  → 可重复性研究
+```
+
+掌握这些工具不仅是完成本课程的前提，也是在现代计算生物学领域发表高质量研究的基本工程素养。后续章节将在此环境基础上，直接进入生信数据的处理与分析。
