@@ -828,23 +828,193 @@ fastp -i raw/${SAMPLE}_R1.fastq.gz -I raw/${SAMPLE}_R2.fastq.gz \
 sbatch array_job.sh               # submits 24 independent jobs automatically
 ```
 
-### 最佳实践
+### 提交作业的最佳实践
 
 - **合理估算资源**：不要请求过多资源（浪费积分/排队时间），也不要请求过少（OOM 失败）；
-- **先测试小任务**：正式提交前用 1-2 个样本验证脚本正确性；
-- **使用 `tmux` + 实时日志**：`tail -f rnaseq_12345.out` 监控运行进度；
+- **先测试小任务**：正式提交前用 1–2 个样本验证脚本逻辑；
 - **清理临时文件**：及时删除中间文件，HPC 磁盘配额有限；
 - **记录软件版本**：使用 `conda env export` 或 `module list` 记录分析环境，保证可重复性。
 
 ---
 
-## 实战：命令行中的项目管理初步
+## 任务运行监控
 
-掌握了 Linux 命令行的工具后，最后要建立**项目组织的规范**。生物信息学分析涉及复杂的脚本、数据和结果，合理的文件组织能显著提高效率。
+提交作业后，如何确认任务正在按预期执行？这一节介绍两种监控路径：一是在终端直接查看系统资源与进程状态，二是借助 Slurm 调度系统的内置监控手段。
 
-### 创建标准的项目目录结构
+### 方法一：直接命令监控
 
-一个规范的生物信息学项目应该遵循这样的结构：
+这类方法适用于以下场景：交互式会话中直接运行程序、在登录节点排查问题、或远程监控系统整体负载。
+
+#### `top` / `htop` — 实时进程监控
+
+```bash
+top                        # classic process monitor (press q to quit)
+top -u $USER               # show only your processes
+
+htop                       # enhanced top: color output, mouse support, tree view
+# Inside htop: F5 = tree view, F6 = sort, F9 = kill, q = quit
+```
+
+`top` 是每台 Linux 服务器的标配；`htop` 需要额外安装（`conda install htop`），但可读性更好。关键指标：
+
+| 字段 | 含义 |
+|------|------|
+| `%CPU` | 当前 CPU 占用率（多核任务可超过 100%）|
+| `%MEM` | 物理内存占用百分比 |
+| `RES` | 实际占用的物理内存（RSS）|
+| `VIRT` | 虚拟内存总量（通常远大于实际）|
+| `S` | 进程状态：R=运行，S=休眠，D=不可中断，Z=僵尸 |
+
+#### `ps` — 快照式进程查询
+
+```bash
+ps aux | grep $USER              # show all your running processes
+ps aux | grep "bwa"              # check if bwa is still running
+ps -p 12345 -o pid,ppid,%cpu,%mem,etime,cmd  # detailed info for a specific PID
+```
+
+#### `watch` — 周期性刷新命令
+
+```bash
+watch -n 10 'squeue -u $USER'        # refresh job queue every 10 seconds
+watch -n 5 'ls -lh results/'         # monitor output directory for new files
+watch -n 30 'df -h /scratch'         # monitor disk usage every 30 seconds
+```
+
+`watch` 本质上是把任意命令变成"仪表盘"——凡是想周期性刷新的命令都可以套用这个模式。
+
+#### 系统资源状态命令
+
+```bash
+free -h                          # memory usage (RAM + swap)
+df -h /data /scratch             # disk usage for key mount points
+iostat -x 2 5                    # disk I/O stats, refresh every 2s for 5 times
+lscpu                            # CPU topology and core count
+cat /proc/meminfo | grep MemAvailable  # available memory in detail
+```
+
+#### `nvidia-smi` — GPU 监控（深度学习任务）
+
+```bash
+nvidia-smi                       # snapshot of GPU usage
+nvidia-smi -l 5                  # refresh every 5 seconds
+nvidia-smi --query-gpu=utilization.gpu,memory.used,memory.free \
+           --format=csv -l 10    # custom fields, CSV format
+```
+
+:::tip
+**标题：** 多窗口监控技巧
+
+在 tmux 中开启多个面板，同时监控不同维度：
+
+```bash
+# Split terminal: left pane watches log, right pane monitors resources
+# Ctrl+b, %  (vertical split)
+# Ctrl+b, "  (horizontal split)
+tail -f slurm-12345.out      # one pane: live log
+watch -n 5 free -h           # other pane: memory over time
+```
+:::
+
+### 方法二：调度系统监控
+
+当任务以批处理方式提交给 Slurm 后，系统本身提供了一套完整的状态跟踪机制，这是 HPC 环境下的**首选监控路径**。
+
+#### 实时状态：`squeue` 与 `sstat`
+
+```bash
+# Check your job queue status
+squeue -u $USER
+squeue -u $USER --format="%.10i %.9P %.20j %.8T %.10M %.6D %R"
+
+# Live resource stats for a RUNNING job (not pending)
+sstat -j 12345 --format=JobID,AveCPU,AveRSS,AveVMSize,MaxRSS
+sstat -j 12345.batch --format=JobID,MaxRSS,AveDiskRead,AveDiskWrite
+```
+
+`sstat` 专用于**正在运行**的作业，实时报告每个步骤（step）的 CPU 和内存消耗，可用于判断资源请求是否合理。
+
+#### 完成后回溯：`sacct`
+
+```bash
+# Basic accounting for a completed job
+sacct -j 12345 --format=JobID,JobName,State,Elapsed,MaxRSS,ExitCode
+
+# All your jobs from the past 7 days
+sacct -u $USER -S $(date -d "7 days ago" +%Y-%m-%d) \
+      --format=JobID,JobName,State,Elapsed,MaxRSS,ReqMem
+
+# Show memory efficiency (requested vs. actual peak usage)
+sacct -j 12345 --format=JobID,ReqMem,MaxRSS,Elapsed
+```
+
+`MaxRSS`（最大实际内存使用量）是最关键的字段——对比 `--mem` 请求量，可以精准校准下次的资源申请。
+
+#### 日志文件追踪
+
+```bash
+# Follow stdout log in real time (like tail -f)
+tail -f slurm-12345.out
+
+# Follow both stdout and stderr simultaneously
+tail -f slurm-12345.out slurm-12345.err
+
+# Search for errors or warnings in completed log
+grep -iE "error|warning|failed|killed" slurm-12345.err
+grep "STAR alignment done" slurm-12345.out   # custom progress marker
+```
+
+:::note
+**标题：** 在脚本中嵌入进度标记
+
+在 Slurm 脚本的关键步骤前后添加 `echo` 输出时间戳，是最简单有效的进度监控手段：
+
+```bash
+echo "[$(date '+%Y-%m-%d %H:%M:%S')] Step 1: QC started"
+fastp ...
+echo "[$(date '+%Y-%m-%d %H:%M:%S')] Step 1: QC finished"
+```
+
+这样 `tail -f` 日志时可以清楚看到每步的耗时，也便于事后用 `grep` 提取时间线。
+:::
+
+#### 邮件通知
+
+在 Slurm 脚本头部加入以下指令，任务完成或失败时自动发送邮件：
+
+```bash
+#SBATCH --mail-type=BEGIN,END,FAIL   # notify on start, finish, or failure
+#SBATCH --mail-user=your@email.com
+```
+
+| 通知类型 | 触发时机 |
+|----------|----------|
+| `BEGIN` | 作业开始运行 |
+| `END` | 作业正常结束 |
+| `FAIL` | 作业因错误终止 |
+| `TIME_LIMIT_90` | 运行时间达到上限的 90% |
+| `ALL` | 以上所有事件 |
+
+:::tip
+**标题：** 监控方法选择指引
+
+| 场景 | 推荐工具 |
+|------|----------|
+| 交互式调试，观察单进程 | `htop` 或 `top -u $USER` |
+| 批量作业是否在排队/运行 | `watch -n 10 'squeue -u $USER'` |
+| 正在运行的作业内存是否超标 | `sstat -j JOBID --format=MaxRSS` |
+| 作业结束后分析资源使用 | `sacct -j JOBID --format=...` |
+| 实时查看程序输出与报错 | `tail -f slurm-JOBID.out` |
+| 无人值守，出错后得到通知 | `#SBATCH --mail-type=FAIL` |
+:::
+
+---
+
+## 实战：命令行项目目录规范
+
+掌握了 Linux 命令行工具与作业监控后，最后要建立**项目组织的规范**。合理的文件结构能显著降低出错率，也是团队协作的基础。
+
+### 标准目录结构
 
 ```bash
 # Create project directory structure
@@ -854,84 +1024,32 @@ cd bio_project
 # Create essential files
 echo "# Bio Analysis Project" > README.md
 echo "Project started: $(date)" > logs/project.log
-
-# Create a .gitignore for tracking large files
-cat > .gitignore << 'EOF'
-# Large data files
-data/raw/*.fastq.gz
-data/raw/*.bam
-results/*.sam
-
-# System files
-.DS_Store
-__pycache__/
-*.Rhistory
-
-# IDE files
-.vscode/
-.idea/
-
-# Temporary files
-*.tmp
-*.log
-EOF
 ```
 
-### 环境配置文件的版本管理
-
-为了让团队成员在不同机器上复现完全相同的分析环境，需要记录依赖版本：
-
-```yaml
-# environment.yml - 保存在项目根目录
-name: bio_project
-channels:
-  - conda-forge
-  - bioconda
-dependencies:
-  - python=3.10
-  - r-base=4.3
-  - fastqc
-  - fastp
-  - bwa
-  - samtools
-  - bcftools
-```
-
-团队成员可以通过以下命令快速恢复相同环境：
+### 脚本命名与日志规范
 
 ```bash
-conda env create -f environment.yml
-conda activate bio_project
-```
+# Recommended naming convention under scripts/
+01_qc.sh              # quality control
+02_align.sh           # sequence alignment
+03_quantify.sh        # quantification
+04_statistics.R       # statistical analysis
 
-**关键要点**：不要在全局环境中工作，每个项目使用独立的 conda 环境，避免依赖冲突。
-
-### 脚本命名和日志管理
-
-好的脚本命名习惯使流程清晰易追踪：
-
-```bash
-# scripts/ 目录下的命名规范
-01_qc.sh              # 质量控制
-02_align.sh           # 序列比对
-03_quantify.sh        # 定量
-04_statistics.R       # 统计分析
-
-# 运行脚本时记录日志
+# Run script and save both stdout and stderr to a log
 bash scripts/01_qc.sh 2>&1 | tee logs/01_qc.log
 ```
 
-**提示**：`2>&1` 将错误输出也重定向到日志，`tee` 同时显示在屏幕和文件中。
+`2>&1` 将标准错误合并到标准输出，`tee` 同时打印到屏幕和文件，便于实时查看与事后检索。
 
-:::  {.callout-tip}
-**Project hygiene 建议**
+:::tip
+**项目卫生（Project Hygiene）建议**
 
-1. **数据读写分离**：`data/raw/` 存放不可修改的原始数据，`data/processed/` 存放处理后的数据；
-2. **脚本版本化**：不用 `script_final.sh`, `script_final2.sh` 这样的命名，后面的课程会学到更优雅的版本管理方案；
-3. **定期备份**：定期将整个项目目录上传到云端（后面的课程会讲 GitHub）。
+1. **数据读写分离**：`data/raw/` 存放不可修改的原始数据，`data/processed/` 存放处理后数据；
+2. **避免版本后缀命名**：不要使用 `script_final.sh`、`script_final2.sh`，后续课程将介绍 Git 版本控制；
+3. **定期同步**：将 `scripts/` 和 `logs/` 提交到 Git，保证分析全程可追溯。
 :::
 
-接下来的课程（Lesson 4）会教你如何使用 **Git + GitHub** 对整个项目进行专业的版本控制和团队协作。
+接下来的课程（Lesson 4）将介绍如何使用 **Git + GitHub** 对整个项目进行专业的版本控制和团队协作。
 
 ---
 
@@ -948,8 +1066,11 @@ bash scripts/01_qc.sh 2>&1 | tee logs/01_qc.log
   → 文本处理 (grep / cut / sort / awk / sed)
   → 管道组合 (|) 与重定向 (> / >>)
   → 软件安装 (conda / mamba)
-  → 版本控制 (Git / GitHub)
   → 大规模计算 (Slurm 作业调度)
+  → 任务监控
+      ├── 直接命令 (top / htop / ps / watch / nvidia-smi)
+      └── 调度系统 (sstat / sacct / tail -f / 邮件通知)
+  → 版本控制 (Git / GitHub)
 ```
 
 通过掌握这些技能和工具，你已具备了**数据工程师的能力**——能在任何 HPC 环境中独立完成数据处理和流程自动化。
