@@ -21,11 +21,11 @@ format:
 在真正开始敲击分析代码之前，我们必须先解决一个工程学问题：**构建一个稳定、可复现的开发环境**。
 在生物信息学领域，没有任何一种语言可以统治一切：
 
-![Python 编程语言（来源：维基百科 Python）](https://upload.wikimedia.org/wikipedia/commons/thumb/c/c3/Python-logo-notext.svg/330px-Python-logo-notext.svg.png)
+![Python 编程语言（来源：维基百科 Python）](https://upload.wikimedia.org/wikipedia/commons/thumb/c/c3/Python-logo-notext.svg/330px-Python-logo-notext.svg.png){width=15%}
 
 * **Python**：凭借其强大的文本解析能力、全能的通用编程特性以及无可撼动的深度学习（PyTorch/TensorFlow）生态，主要负责机器学习建模以及核心的流水线（Pipeline）搭建。
 
-![R 编程语言（来源：维基百科 R）](https://upload.wikimedia.org/wikipedia/commons/thumb/1/1b/R_logo.svg/330px-R_logo.svg.png)
+![R 编程语言（来源：维基百科 R）](https://upload.wikimedia.org/wikipedia/commons/thumb/1/1b/R_logo.svg/330px-R_logo.svg.png){width=15%}
 
 * **R 语言**：作为统计学家的母语，它拥有极其严谨的底层统计学模型，以及生信领域无可替代的 **Bioconductor** 生态圈和数据可视化工具（`ggplot2`）。它主要负责下游的差异表达分析、单细胞聚类以及最终的论文出图。
 
@@ -154,7 +154,7 @@ BiocManager::install("BSgenome")    # reference genome sequences
 
 ### 交互式编程：Jupyter Notebook 与 VS Code
 
-![Jupyter 项目徽标（来源：维基百科 Project Jupyter）](https://upload.wikimedia.org/wikipedia/commons/thumb/3/38/Jupyter_logo.svg/330px-Jupyter_logo.svg.png)
+![Jupyter 项目徽标（来源：维基百科 Project Jupyter）](https://upload.wikimedia.org/wikipedia/commons/thumb/3/38/Jupyter_logo.svg/330px-Jupyter_logo.svg.png){width=15%}
 
 传统的编程模式是"写代码 $\rightarrow$ 运行全部 $\rightarrow$ 看结果"。而数据科学需要的是**探索性数据分析（EDA）**。**Jupyter Notebook** 引入了代码块（Cell）的概念，允许你敲几行代码，立刻运行并看到图表结果，然后保留内存状态，继续写下一段。
 
@@ -269,6 +269,31 @@ bash scripts/01_qc.sh input_dir output_dir
 
 **使用 AI 辅助完善：**
 
+:::info
+**黄金法则："炼化"思维**
+
+近期网络上流行一个 AI 使用梗：有人将公司员工的微信聊天记录、工作群消息批量喂给 AI，让它自动提炼出每位员工的技能标签、工作习惯，输出一份结构化的 `skills.md` 档案。这个操作被戏称为**"炼化"**——将零散的原始信息，经 AI 蒸馏提纯为可复用的结构化知识。
+
+这一思维完全可以迁移到科研文档写作：**你的分析脚本、运行日志、参数配置，就是待炼化的原料**。与其让 AI 凭空编造一份 README，不如把这些"聊天记录"直接喂给它，让它帮你炼出一份准确、专业的文档。
+
+> 低效：「帮我写一个 RNA-seq 流程的 README」
+> 高效：「这是我的分析脚本和运行参数（附上代码），请提炼为 README，包含方法学、硬件需求和故障排除章节」
+
+炼化的质量完全取决于原料的质量——上下文越精准，产出越可用。
+:::
+
+#### 如何为 AI 设定角色与上下文（System Prompt 技巧）
+
+在使用 Claude Code、ChatGPT 或任何 AI 工具时，**开场的角色设定（role-setting）决定了输出的专业程度**。对于生物信息学文档撰写，推荐以下起手式：
+
+```
+你是一名计算生物学博士后，擅长 RNA-seq 数据分析和学术英文写作。
+我将提供分析脚本片段和参数，请帮我将其改写为符合 Nature Methods 投稿风格的 Methods 段落。
+要求：被动语态、过去时、引用具体软件版本号。
+```
+
+这种"角色 + 任务 + 约束"三段式提示词（prompt），可将 AI 的输出从通用科普文字直接拉升到期刊投稿水准。
+
 你可以告诉 AI（如 Claude）：
 > "我写了一个 RNA-seq 分析管道。这是 README 的初稿。请补充以下内容：
 > 1. 详细的方法学（比对器、参数选择）
@@ -334,18 +359,95 @@ recorded for quality assessment."
 
 这样避免了重复阅读文档和手写的低效。
 
-### 第五步：Git 工作流的完整循环
+### 第五步：将本地项目托管到 GitHub
+
+如果你是从**本地新建项目**出发（而非从 GitHub 克隆），需要先完成一次性初始化配置，将本地代码库与远程仓库建立关联。整体思路是：**本地初始化 → 配置 `.gitignore` → 首次提交 → 关联远程仓库 → 推送**。
+
+#### 5.1 初始化本地 Git 仓库
+
+在项目根目录下执行：
+
+```bash
+# Initialize a new local Git repository
+git init
+```
+
+#### 5.2 配置 `.gitignore`
+
+生物信息学项目往往会产生大量缓存文件、原始数据和中间结果，**绝不应上传至远程仓库**。在项目根目录创建 `.gitignore` 文件，内容如下：
+
+```bash
+# R & Quarto cache
+.Rhistory
+.RData
+.Ruserdata
+*_files/
+*_cache/
+
+# Python environment and cache
+__pycache__/
+*.py[cod]
+.ipynb_checkpoints/
+.env
+
+# Raw data and large intermediate outputs (DO NOT upload)
+data/
+results/
+*.csv
+*.tsv
+*.h5ad
+*.rds
+*.Rds
+*.rda
+```
+
+:::warning
+**禁止上传原始数据：** 原始测序数据（FASTQ、BAM）和大型中间结果（`.h5ad`、`.rds`）不应进入版本控制。数据应托管于专用数据仓库（如 NCBI GEO、Zenodo），并在 `README.md` 中注明获取方式。
+:::
+
+#### 5.3 首次暂存与提交
+
+```bash
+# Stage all project files (respecting .gitignore)
+git add .
+
+# Create the initial commit
+git commit -m "Initial commit: project scaffold and configuration"
+```
+
+#### 5.4 关联远程仓库并推送
+
+在 GitHub 上新建一个空仓库（不要勾选"Initialize with README"），然后执行：
+
+```bash
+# Link local repository to the remote (replace with your actual URL)
+git remote add origin <your_remote_repository_URL>
+
+# Rename current branch to main (GitHub default)
+git branch -M main
+
+# Push to remote and set upstream tracking (-u)
+git push -u origin main
+```
+
+:::tip
+**首次推送使用 `--force-with-lease`：** 若远程仓库已有内容（如 GitHub 自动生成的 `README`），可使用 `git push --force-with-lease origin main` 安全覆盖，该命令会在有他人提交时主动报错，避免意外覆盖协作者的工作。
+:::
+
+完成上述步骤后，后续在本地完成修改，即可通过以下标准循环持续同步：
+
+### 第五步（续）：Git 工作流的日常循环
 
 在 VS Code 的 Source Control 面板中（左边栏 Git 图标），可视化操作：
 
 ```bash
-# 1. 查看改动（VS Code Git Panel 已高亮显示）
+# 1. Review changes (highlighted in VS Code Git Panel)
 git status
 
-# 2. 暂存改动（可在 VS Code 中勾选文件）
+# 2. Stage changes (can also be done via VS Code checkboxes)
 git add scripts/04_deseq2.R results/figures/pca_plot.pdf
 
-# 3. 提交（在 VS Code Message Box 中输入信息）
+# 3. Commit (enter message in VS Code Message Box)
 git commit -m "Add PCA visualization and DESeq2 normalization
 
 - Implements log2 transformation of count data
@@ -353,10 +455,10 @@ git commit -m "Add PCA visualization and DESeq2 normalization
 - Generates scree plot for variance explained
 Fixes #23"
 
-# 4. 推送到 GitHub
+# 4. Push to GitHub
 git push origin main
 
-# 5. 同事拉取最新版本
+# 5. Teammates pull the latest version
 # (Other team members: git pull)
 ```
 
@@ -668,7 +770,7 @@ plt.show()
 
 ## 进阶：Docker 与容器化——终极可重复性
 
-![Docker 容器化工具（来源：维基百科 Docker）](https://upload.wikimedia.org/wikipedia/commons/thumb/d/dc/Docker_commands_screenshot.webp/330px-Docker_commands_screenshot.webp.png)
+![Docker 容器化工具（来源：维基百科 Docker）](https://upload.wikimedia.org/wikipedia/commons/thumb/d/dc/Docker_commands_screenshot.webp/330px-Docker_commands_screenshot.webp.png){width=70%}
 
 Conda 解决了 Python/R 包的版本隔离问题，但无法保证操作系统层面的完全一致性。**Docker** 将整个运行环境（含操作系统、系统库、软件）打包成一个**镜像（Image）**，在任何机器上运行都能得到完全相同的结果。
 
