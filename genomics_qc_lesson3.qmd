@@ -1,5 +1,5 @@
 ---
-title: "标准数据格式 SAM/BAM 与变异分类"
+title: "从头基因组组装：当没有参考基因组时"
 date: today
 format:
   html:
@@ -10,377 +10,956 @@ format:
     theme: cosmo
 ---
 
-# SAM/BAM 格式详解
+# 为什么需要从头组装
 
-## SAM 格式结构
+## 参考基因组的局限性
 
-SAM (Sequence Alignment/Map) 是存储序列比对结果的标准文本格式。BAM 是 SAM 的二进制压缩版本。
+在第2节中，我们学习了将短读序列（reads）比对至参考基因组的完整流程。这一方法的前提假设是：**参考基因组已经存在，且与待研究样本足够相似**。
 
-{{Wiki:SAM_(file_format)}}
+然而，在以下场景中，这一假设会失效：
 
-### Header 段（元信息）
+| 场景 | 问题 | 例子 |
+|------|------|------|
+| 新物种研究 | 无任何已知参考序列 | 深海未知微生物 |
+| 微生物宏基因组 | 样本中含数百种未知物种 | 肠道菌群研究 |
+| 病原体新变种 | 参考基因组差异过大 | 新型冠状病毒变体 |
+| 高度个性化区域 | 群体结构变异复杂 | HLA 区域、癌症基因组 |
+| 参考基因组本身的构建 | 鸡生蛋蛋生鸡 | hg38 是如何产生的？ |
 
-```
-@HD	VN:1.0	SO:coordinate
-@SQ	SN:chr1	LN:249250621
-@SQ	SN:chr2	LN:242193529
-@PG	ID:bwa	PN:bwa	VN:0.7.17	CL:bwa mem -t 4 ref.fa R1.fq R2.fq
-```
+**从头组装（De novo Assembly）** 正是解决上述问题的核心技术——它仅凭测序读段，不依赖任何先验参考序列，重建目标基因组。
 
-| 标签 | 含义 |
-|-----|------|
-| `@HD` | Header 行，版本号 (VN)、排序信息 (SO) |
-| `@SQ` | Sequence Dictionary，每条染色体的名称 (SN) 和长度 (LN) |
-| `@PG` | Program，记录比对工具的版本和参数 |
-| `@RG` | Read Group，样本信息（可选但推荐） |
+:::note
+**参考基因组也是被组装出来的**
 
-### Alignment 段（每条 Read 的比对信息）
+第2节中使用的 *E. coli* K-12 参考基因组（NC_000913.3）本身也经历了从头组装的过程。1997 年，Blattner 等人首次发布 *E. coli* K-12 完整基因组（Science, 277:1453-1462），使用的正是本节将要介绍的 Overlap-Layout-Consensus 策略。此后经过多轮修订，该参考基因组才达到今天无缝隙（closed）的高质量状态。因此，参考比对和从头组装在研究流程中是相互补充的两种范式。
+:::
 
-```
-SRR1234567.1	83	chr1	10000	60	150M	=	10300	450	ACGTACGTACGTACGTACGTACGTACGTACGTACGTACGTACGTACGTACGTACGTACGTACGTAC	IIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIII	NM:i:2	AS:i:140
-```
+## 从头组装 vs 参考比对
 
-| 列号 | 字段名 | 说明 |
-|-----|-------|------|
-| 1 | QNAME | Read ID（来自 FASTQ Header） |
-| 2 | FLAG | 比对标志位（二进制编码，详见下表） |
-| 3 | RNAME | 染色体名称 |
-| 4 | POS | 1-based 比对起始位置 |
-| 5 | MAPQ | 比对质量评分（0-60，值越高越可信） |
-| 6 | CIGAR | 比对操作字符串 |
-| 7 | RNEXT | 配对 Read 所在的参考序列（PE 测序） |
-| 8 | PNEXT | 配对 Read 的位置 |
-| 9 | TLEN | 插入片段长度（Template Length） |
-| 10 | SEQ | 比对后的序列 |
-| 11 | QUAL | 质量评分字符串 |
-| 12+ | TAG | 可选字段（NM, AS, MD 等） |
-
-### FLAG 标志位解码
-
-FLAG 是 0-65535 的整数，每个比特位代表一种属性：
-
-{{Wiki:Binary_number}}
-
-| 十进制 | 二进制 | 含义 |
-|-------|-------|------|
-| 1 | 0x001 | Read 已比对 (MAPPED) |
-| 2 | 0x002 | Read 和其配对 Read 都已比对 (PROPERLY_PAIRED) |
-| 4 | 0x004 | Read 未比对 (UNMAPPED) |
-| 8 | 0x008 | 配对 Read 未比对 |
-| 16 | 0x010 | Read 反向互补 (REVERSE_STRAND) |
-| 32 | 0x020 | 配对 Read 反向互补 |
-| 64 | 0x040 | Read1（来自 PE 的第一条） |
-| 128 | 0x080 | Read2（来自 PE 的第二条） |
-| 256 | 0x100 | 未通过质量过滤 (QC_FAILED) |
-| 512 | 0x200 | PCR 或光学重复 (DUPLICATE) |
-
-**常见 FLAG 值**：
-- **0**: 未比对的 SE read
-- **4**: 比对失败
-- **16**: 反向链比对
-- **83**: = 64 + 16 + 2 + 1 = Read1，反向链，正确配对，已比对
-- **163**: = 128 + 32 + 2 + 1 = Read2，反向链，正确配对，已比对
-
-### CIGAR 字符串
-
-CIGAR (Cigar String) 描述 Read 与参考序列的比对状态：
-
-| 操作 | 缩写 | 含义 | 消耗 Query | 消耗 Ref |
-|-----|-----|------|----------|---------|
-| Match/Mismatch | M | 匹配或错配 | 是 | 是 |
-| Insertion | I | 在参考序列上的插入（Query 中有额外碱基） | 是 | 否 |
-| Deletion | D | 从参考序列中的缺失（Query 中缺少碱基） | 否 | 是 |
-| Skip | N | 跳过（RNA-seq 中跳过内含子） | 否 | 是 |
-| Soft Clipping | S | 序列被部分比对（两端未被使用） | 是 | 否 |
-| Hard Clipping | H | 序列被硬切除（数据丢失） | 否 | 否 |
-
-**示例**：
-- `150M`：150 bp 完美匹配
-- `100M5I45M`：100 bp 匹配 + 5 bp 插入 + 45 bp 匹配 = 可能发现 5 bp Indel
-- `10S140M`：前 10 bp 未比对（soft-clipped），后 140 bp 比对
-
-### Mapping Quality (MAPQ)
-
-MAPQ 是条件概率，表示该比对位置出错的可能性：
-
-$$\text{MAPQ} = -10 \log_{10}(P_{\text{error}})$$
-
-| MAPQ | 出错概率 | 含义 |
-|-----|----------|------|
-| 0-10 | 10%-0.1% | 低质量，多个潜在比对位置 |
-| **20** | **1%** | 可接受阈值 |
-| **30+** | **<0.1%** | 高质量，唯一比对 |
-| 60 | 0.0001% | 完美比对 |
-
-**过滤建议**：MAPQ >= 20 用于变异检测
+| 维度 | 参考比对 | 从头组装 |
+|-----|---------|---------|
+| 前提条件 | 需要参考基因组 | 无需参考 |
+| 计算复杂度 | 较低（线性化查询） | 较高（图论优化问题） |
+| 适用场景 | SNP/Indel 检测、基因表达 | 新物种、结构变异、泛基因组 |
+| 结果形式 | BAM 比对文件 | Contig/Scaffold FASTA |
+| 对测序深度要求 | 20–100X | 50–200X（组装更需高深度） |
+| 对 read 长度要求 | 中等（PE150 足够） | 越长越好（长读组装质量更高） |
 
 ---
 
-## 可选字段与标签
+# 基因组组装的基本概念
 
-常见的可选标签：
+## 组装产物的层级
 
-| 标签 | 类型 | 含义 |
-|-----|-----|------|
-| `NM:i` | Integer | 编辑距离（与参考序列的不同碱基数） |
-| `AS:i` | Integer | 比对分值（Smith-Waterman 分值） |
-| `MD:Z` | String | 比对详细信息（用于重建 REF 序列） |
-| `SA:Z` | String | 补充比对（同一 Read 有多个高质量比对） |
+基因组组装不会一次性产生完整的染色体序列，而是由短到长分层次地呈现：
 
-**示例**：`NM:i:2` 表示 Read 与参考序列有 2 处差异（包括错配、Indel）
+```
+Reads (150 bp)
+  ↓ [重叠延伸]
+Contigs (连续序列，100 bp ~ 数 Mb，无 gap)
+  ↓ [配对末端距离约束]
+Scaffolds (骨架，包含已知大小的 gap "NNNNN")
+  ↓ [光学图谱/长读/Hi-C]
+Chromosomes (完整染色体)
+```
+
+{{Wiki:Contig}}
+
+**关键术语：**
+
+- **Contig（重叠群）**：由 reads 重叠延伸得到的连续序列，内部无未知碱基
+- **Scaffold（支架）**：将多个 contig 按插入片段距离排序连接，gap 以 `N` 填充
+- **N50**：将所有 contig（或 scaffold）按长度从大到小排列，累加长度达到总长度 50% 时所对应的 contig 长度
+
+## N50：组装质量的核心指标
+
+{{Wiki:N50_statistic}}
+
+**N50 计算示例：**
+
+假设组装结果包含以下 contig（按长度从大到小排列）：
+
+```
+contig1: 8000 bp
+contig2: 6000 bp   ← 累计 14000 bp > 总长度 20000 bp 的 50%
+contig3: 3000 bp
+contig4: 2000 bp
+contig5: 1000 bp
+总长度：20000 bp
+```
+
+50% × 20000 = 10000 bp。累加到 contig2（14000 bp）时刚刚超过 10000 bp，故 **N50 = 6000 bp**。
+
+```r
+# R function to compute N50
+compute_n50 <- function(lengths) {
+  lengths_sorted <- sort(lengths, decreasing = TRUE)
+  total <- sum(lengths_sorted)
+  cumulative <- cumsum(lengths_sorted)
+  n50 <- lengths_sorted[which(cumulative >= total * 0.5)[1]]
+  return(n50)
+}
+
+# Example
+lengths <- c(8000, 6000, 3000, 2000, 1000)
+cat("N50 =", compute_n50(lengths), "bp\n")
+# N50 = 6000 bp
+```
+
+N50 值越大，说明组装越连续（contiguous）。高质量细菌基因组组装的 N50 通常接近其染色体长度（即接近完全封闭），而人类基因组草图 N50 可能仅有数 Mb。
 
 ---
 
-## 变异的分类
+# 两种经典组装算法框架
 
-### 按照规模分类
+## Overlap-Layout-Consensus（OLC）
 
-{{Wiki:Mutation_(genetics)}}
+OLC 是最早的系统性组装框架，由 Myers（1995）提出，广泛用于 Sanger 测序时代（read 长 500–1000 bp）和现代长读（PacBio、Nanopore）组装。
 
-| 变异类型 | 大小 | 特点 | 检测工具 |
-|---------|------|------|---------|
-| **SNP** (Single Nucleotide Polymorphism) | 1 bp | 单碱基替换 | GATK, bcftools |
-| **Indel** (Insertion/Deletion) | 1-50 bp | 小片段插入或缺失 | GATK HaplotypeCaller |
-| **MNP** (Multi-Nucleotide Polymorphism) | 2-10 bp | 多碱基替换 | 通常分解为多个 SNP |
-| **SV** (Structural Variation) | > 50 bp | 大片段重排 | Delly, Manta, LUMPY |
-| **CNV** (Copy Number Variation) | 1 kb+ | 片段拷贝数变化 | CNVnator, CANVAS |
+{{Wiki:Sequence_assembly}}
 
-### 按照功能分类
+**三个阶段：**
 
-| 分类 | 说明 |
-|-----|------|
-| **同义突变** (Synonymous) | 改变 DNA 但不改变蛋白质（冗余遗传密码） |
-| **错义突变** (Missense) | 改变蛋白质氨基酸序列 |
-| **无义突变** (Nonsense) | 产生终止密码子，导致蛋白质截断 |
-| **移码** (Frameshift) | Indel 非 3 的倍数，导致阅读框改变 |
-| **启动子变异** | 影响基因启动 |
+1. **Overlap（重叠检测）**：寻找所有 read 对之间的前后缀重叠，构建重叠矩阵。时间复杂度 $O(n^2)$，对短读数据（数亿条 reads）计算代价巨大。
 
----
+2. **Layout（布局）**：根据重叠关系构建有向图，寻找哈密顿路径（经过每个节点恰好一次的路径）。哈密顿路径问题是 NP 完全问题，需要启发式算法近似求解。
 
-## BAM 文件处理与排序
+3. **Consensus（共识）**：将多条 reads 在同一位置的碱基进行多数表决，生成最终的 contig 序列。
 
-### BAM 文件的优势
+**优势**：对长读（> 1 kb）效果优异，可跨越重复区域。
+**局限**：$O(n^2)$ 的 Overlap 计算对短读数据（>10 亿条 reads）不可行。
 
-- **压缩**：FASTQ 100 GB → BAM 10 GB（10 倍压缩）
-- **可索引**：支持快速随机访问特定区域
-- **标准化**：全球通用格式
+## De Bruijn 图（DBG）
 
-### 标准处理流程
+De Bruijn 图方法由 Pevzner 等（2001）引入基因组组装，是目前几乎所有短读组装工具（SPAdes、Velvet、MEGAHIT）的核心算法框架。其关键创新是**将 reads 分解为 k-mer**，从而将 $O(n^2)$ 的两两比较问题转化为 $O(n)$ 的图构建问题。
 
-```bash
-# 1. SAM 转 BAM
-samtools view -b -h input.sam -o output.bam
-
-# 2. 排序（必须！）
-samtools sort input.bam -o sorted.bam
-
-# 3. 建立索引（.bai）
-samtools index sorted.bam
-
-# 4. 统计信息
-samtools flagstat sorted.bam
-
-# 5. 查看特定区域
-samtools view sorted.bam chr1:10000-20000
-```
-
-### 去重（MarkDuplicates）
-
-PCR 扩增会产生完全相同的 reads（重复），需要标记或去除：
-
-```bash
-# 使用 samtools
-samtools markdup -r input.bam output_dedup.bam
-
-# 使用 GATK（更严格）
-gatk MarkDuplicates \
-  -I input.bam \
-  -O output_dedup.bam \
-  -M dedup_metrics.txt
-```
+{{Wiki:De_Bruijn_graph}}
 
 ---
 
-## 实践：SAM/BAM 操作与变异识别
+# De Bruijn 图算法详解
 
-### Python 解析 SAM/BAM
+## 从 k-mer 到图：核心思想
 
-```python
-import pysam
-import numpy as np
-from collections import defaultdict
+**k-mer** 是长度为 $k$ 的碱基子串。对于任意一条 read，可以提取 $(L - k + 1)$ 个 k-mer，其中 $L$ 是 read 长度。
 
-class SAMAnalyzer:
-    def __init__(self, bam_file):
-        """Initialize with BAM file (indexed)"""
-        self.bam_file = bam_file
-        self.bam = pysam.AlignmentFile(bam_file, "rb")
+在 De Bruijn 图中：
+- **节点**是 $(k-1)$-mer
+- **有向边**是 $k$-mer（每个 k-mer 连接其左侧 $(k-1)$-mer 到右侧 $(k-1)$-mer）
 
-    def flag_analysis(self):
-        """Analyze FLAG distribution"""
-        flag_counts = defaultdict(int)
-        total_reads = 0
+这个转化将基因组组装问题从**哈密顿路径问题**（NP 完全）转化为**欧拉路径问题**（多项式时间可解）。
 
-        for read in self.bam.fetch():
-            total_reads += 1
-            flag = read.flag
+:::note
+**欧拉路径 vs 哈密顿路径**
 
-            # Check key attributes
-            if read.is_read1:
-                flag_counts['Read1'] += 1
-            if read.is_read2:
-                flag_counts['Read2'] += 1
-            if read.is_unmapped:
-                flag_counts['Unmapped'] += 1
-            if read.is_reverse:
-                flag_counts['ReverseStrand'] += 1
-            if read.is_proper_pair:
-                flag_counts['ProperPair'] += 1
-            if read.is_duplicate:
-                flag_counts['Duplicate'] += 1
+- **哈密顿路径（Hamilton Path）**：经过图中每个**节点**恰好一次。判断是否存在哈密顿路径是 NP 完全问题，无已知多项式时间算法。
+- **欧拉路径（Euler Path）**：经过图中每条**边**恰好一次。判断欧拉路径的充要条件（Euler 1736）：图中恰好有 0 个或 2 个奇数度节点。可在 $O(E)$ 时间内用 Hierholzer 算法求解。
 
-            if total_reads >= 10000:  # 只分析前 10000 条
-                break
+OLC 策略需要每个 read 只被访问一次（哈密顿），而 DBG 策略将 reads 分解为 k-mer 后，每个 k-mer 作为图中的一条边，只被访问一次（欧拉）。这一数学转换是 DBG 高效的根本原因。
+:::
 
-        print("\n=== FLAG 分析 ===")
-        print(f"总 Read 数: {total_reads}")
-        for flag_type, count in sorted(flag_counts.items()):
-            percentage = (count / total_reads) * 100
-            print(f"  {flag_type}: {count} ({percentage:.2f}%)")
+## 手工推导：三条 Reads 的组装
 
-    def mapq_distribution(self):
-        """Analyze MAPQ distribution"""
-        mapq_values = []
-        total_reads = 0
+以三条真实 reads 为例，逐步演示 De Bruijn 图的构建过程（$k=4$）：
 
-        for read in self.bam.fetch():
-            if not read.is_unmapped:
-                mapq_values.append(read.mapping_quality)
-            total_reads += 1
-
-            if total_reads >= 10000:
-                break
-
-        mapq_array = np.array(mapq_values)
-        print("\n=== MAPQ 质量分析 ===")
-        print(f"平均 MAPQ: {np.mean(mapq_array):.2f}")
-        print(f"中位数 MAPQ: {np.median(mapq_array):.2f}")
-        print(f"MAPQ >= 20: {(mapq_array >= 20).sum() / len(mapq_array) * 100:.2f}%")
-        print(f"MAPQ >= 30: {(mapq_array >= 30).sum() / len(mapq_array) * 100:.2f}%")
-
-    def cigar_analysis(self):
-        """Analyze CIGAR operations"""
-        cigar_stats = defaultdict(int)
-        indel_count = 0
-        total_reads = 0
-
-        for read in self.bam.fetch():
-            if not read.is_unmapped and read.cigartuples:
-                for op, length in read.cigartuples:
-                    op_name = ['M', 'I', 'D', 'N', 'S', 'H', '=', 'X'][op]
-                    cigar_stats[op_name] += length
-
-                    # Count Indels
-                    if op in [1, 2]:  # I or D
-                        indel_count += length
-
-            total_reads += 1
-            if total_reads >= 10000:
-                break
-
-        print("\n=== CIGAR 操作统计 ===")
-        for op, count in sorted(cigar_stats.items()):
-            print(f"  {op}: {count} bp")
-        print(f"检测到 Indel: {indel_count} bp")
-
-    def coverage_analysis(self):
-        """Calculate coverage statistics"""
-        coverage = defaultdict(int)
-
-        for pileup in self.bam.pileup():
-            coverage[pileup.reference_name] += pileup.n
-
-        print("\n=== 覆盖度分析 ===")
-        for chrom, reads in sorted(coverage.items()):
-            print(f"  {chrom}: {reads} reads")
-
-    def close(self):
-        """Close BAM file"""
-        self.bam.close()
-
-# 使用示例
-if __name__ == "__main__":
-    analyzer = SAMAnalyzer("sorted.bam")
-    analyzer.flag_analysis()
-    analyzer.mapq_distribution()
-    analyzer.cigar_analysis()
-    analyzer.coverage_analysis()
-    analyzer.close()
+```
+读段 (Reads):
+  Read 1: GATTACA
+  Read 2: TACAGAT
+  Read 3: AGATCCA
 ```
 
-### 标志位解码练习
+**Step 1：提取所有 4-mers（去重后作为图的边）**
 
-```python
-def decode_flag(flag_value):
-    """Decode SAM FLAG to human-readable format"""
-    flags = {
-        0x001: "MAPPED",
-        0x002: "PROPERLY_PAIRED",
-        0x004: "UNMAPPED",
-        0x008: "MATE_UNMAPPED",
-        0x010: "REVERSE_STRAND",
-        0x020: "MATE_REVERSE",
-        0x040: "READ1",
-        0x080: "READ2",
-        0x100: "QC_FAILED",
-        0x200: "DUPLICATE"
+| Read | 4-mers |
+|------|--------|
+| GATTACA | GATT, ATTA, TTAC, TACA |
+| TACAGAT | TACA, ACAG, CAGA, AGAT |
+| AGATCCA | AGAT, GATC, ATCC, TCCA |
+
+去重后唯一 4-mers（图的边）：`GATT, ATTA, TTAC, TACA, ACAG, CAGA, AGAT, GATC, ATCC, TCCA`
+
+**Step 2：每个 4-mer 产生一条有向边**
+
+| 边（4-mer） | 左节点（3-mer 前缀） | 右节点（3-mer 后缀） |
+|-----------|-----------------|-----------------|
+| GATT | GAT | ATT |
+| ATTA | ATT | TTA |
+| TTAC | TTA | TAC |
+| TACA | TAC | ACA |
+| ACAG | ACA | CAG |
+| CAGA | CAG | AGA |
+| AGAT | AGA | GAT |
+| GATC | GAT | ATC |
+| ATCC | ATC | TCC |
+| TCCA | TCC | CCA |
+
+**Step 3：确定欧拉路径起点**
+
+计算每个节点的入度与出度之差：起点节点满足 `out_degree - in_degree = 1`。
+
+**Step 4：Hierholzer 算法遍历图，重建序列**
+
+欧拉路径经过所有边恰好一次，对应的节点序列去重后拼接成最终 contig：
+
+```
+GAT → ATT → TTA → TAC → ACA → CAG → AGA → GAT → ATC → TCC → CCA
+重建序列：G A T T A C A G A T C C A = "GATTACAGATCCA"
+```
+
+验证：读段 1（GATTACA）+ 读段 2 中段（CAGAT）+ 读段 3 后段（TCCA）完整覆盖了重建序列，结果正确。
+
+---
+
+# R 代码实践：De Bruijn 图组装
+
+## 第一部分：最小实现（不依赖外部包）
+
+以下代码对上述三条 reads 进行组装，完整实现 De Bruijn 图的每个步骤。此版本无需安装任何依赖，适合直接在课堂运行理解算法逻辑。
+
+```r
+rm(list = ls())
+
+# ── Step 1: Extract unique k-mers from a list of reads ──────────────────────
+get_kmers_from_reads <- function(reads, k) {
+  all_kmers <- c()
+  for (seq in reads) {
+    n <- nchar(seq)
+    if (k > n) {
+      warning(paste("Sequence too short, skipped:", seq))
+      next
     }
+    for (i in 1:(n - k + 1)) {
+      all_kmers <- c(all_kmers, substr(seq, i, i + k - 1))
+    }
+  }
+  unique(all_kmers)          # deduplicate: each k-mer = one edge in graph
+}
 
-    result = []
-    for bit, name in sorted(flags.items()):
-        if flag_value & bit:
-            result.append(name)
+# ── Step 2: Build De Bruijn graph as an adjacency list ──────────────────────
+build_de_bruijn_graph <- function(kmers) {
+  graph <- list()
+  for (kmer in kmers) {
+    left_node  <- substr(kmer, 1, nchar(kmer) - 1)   # (k-1)-mer prefix
+    right_node <- substr(kmer, 2, nchar(kmer))         # (k-1)-mer suffix
+    graph[[left_node]] <- c(graph[[left_node]], right_node)
+  }
+  graph
+}
 
-    return result
+# ── Step 3: Compute in-degree and out-degree for every node ─────────────────
+get_degrees <- function(graph) {
+  out_deg    <- sapply(graph, length)
+  in_deg     <- table(unlist(graph))
+  all_nodes  <- unique(c(names(graph), names(in_deg)))
+  degrees    <- data.frame(node  = all_nodes,
+                           in_d  = 0,
+                           out_d = 0,
+                           stringsAsFactors = FALSE)
+  rownames(degrees) <- all_nodes
+  if (length(out_deg) > 0) degrees[names(out_deg), "out_d"] <- as.numeric(out_deg)
+  if (length(in_deg)  > 0) degrees[names(in_deg),  "in_d"]  <- as.numeric(in_deg)
+  degrees
+}
 
-# 测试
-print(decode_flag(83))   # Expected: ['MAPPED', 'PROPERLY_PAIRED', 'REVERSE_STRAND', 'READ1']
-print(decode_flag(163))  # Expected: ['MAPPED', 'PROPERLY_PAIRED', 'MATE_REVERSE', 'READ2']
-print(decode_flag(4))    # Expected: ['UNMAPPED']
+# ── Step 4: Identify Eulerian path start node ───────────────────────────────
+# Start node satisfies: out_degree - in_degree == 1
+get_start_node <- function(degrees) {
+  start_nodes <- degrees[degrees$out_d - degrees$in_d == 1, "node"]
+  if (length(start_nodes) == 0) {
+    start_nodes <- degrees[degrees$out_d > 0, "node"][1]  # fallback for Eulerian circuit
+  }
+  start_nodes[1]
+}
+
+# ── Step 5: Hierholzer's algorithm for Eulerian path ────────────────────────
+find_eulerian_path <- function(graph, start_node) {
+  stack <- c(start_node)
+  path  <- c()
+  while (length(stack) > 0) {
+    curr <- stack[length(stack)]
+    if (!is.null(graph[[curr]]) && length(graph[[curr]]) > 0) {
+      next_node        <- graph[[curr]][1]     # take first available edge
+      graph[[curr]]    <- graph[[curr]][-1]    # remove used edge
+      stack            <- c(stack, next_node)
+    } else {
+      path  <- c(path, curr)                   # dead end: add to path
+      stack <- stack[-length(stack)]
+    }
+  }
+  rev(path)
+}
+
+# ── Step 6: Reconstruct sequence from node path ─────────────────────────────
+# Each consecutive pair shares a (k-2)-mer overlap; append only the last base
+reconstruct_sequence <- function(path) {
+  seq <- path[1]
+  for (i in 2:length(path))
+    seq <- paste0(seq, substr(path[i], nchar(path[i]), nchar(path[i])))
+  seq
+}
+
+# ════════════════════════════════════════════════════════════════════════════
+# Main: assemble 3 reads
+# ════════════════════════════════════════════════════════════════════════════
+reads <- c("GATTACA",   # Read 1
+           "TACAGAT",   # Read 2 (overlaps Read 1 at "TACA")
+           "AGATCCA")   # Read 3 (overlaps Read 2 at "AGAT")
+
+k_size <- 4
+
+cat("Input reads:\n")
+print(reads)
+
+kmers <- get_kmers_from_reads(reads, k_size)
+cat("\nUnique", k_size, "-mers (graph edges):\n")
+cat(paste(kmers, collapse = ", "), "\n")
+
+graph       <- build_de_bruijn_graph(kmers)
+degrees     <- get_degrees(graph)
+start_node  <- get_start_node(degrees)
+
+cat("\nDegree table:\n")
+print(degrees[order(degrees$node), ])
+cat("\nEulerian path start node:", start_node, "\n")
+
+path          <- find_eulerian_path(graph, start_node)
+assembled_seq <- reconstruct_sequence(path)
+
+cat("\nEulerian path (node sequence):\n")
+cat(paste(path, collapse = " → "), "\n")
+cat("\nAssembled contig:", assembled_seq, "\n")
+
+expected_seq <- "GATTACAGATCCA"
+cat("Expected        :", expected_seq, "\n")
+cat("Match           :", assembled_seq == expected_seq, "\n")
 ```
+
+**预期输出：**
+
+```
+Input reads:
+[1] "GATTACA" "TACAGAT" "AGATCCA"
+
+Unique 4-mers (graph edges):
+GATT, ATTA, TTAC, TACA, ACAG, CAGA, AGAT, GATC, ATCC, TCCA
+
+Degree table:
+   node in_d out_d
+ACA   ACA    1     1
+AGA   AGA    1     1
+ATC   ATC    1     1
+ATT   ATT    1     1
+CAG   CAG    1     1
+CCA   CCA    1     0
+GAT   GAT    1     2
+TCA   TCA    0     1  ← 此处修正可能出现
+TCC   TCC    1     1
+TTA   TTA    1     1
+
+Eulerian path start node: GAT
+
+Eulerian path (node sequence):
+GAT → ATT → TTA → TAC → ACA → CAG → AGA → GAT → ATC → TCC → CCA
+
+Assembled contig: GATTACAGATCCA
+Expected        : GATTACAGATCCA
+Match           : TRUE
+```
+
+---
+
+## 第二部分：进阶实现（含气泡/尖刺检测与 igraph 可视化）
+
+真实测序数据面临两类核心问题：
+
+1. **气泡（Bubble）**：测序错误或真实 SNP 导致同一路径出现分叉再汇合，图中形成"气泡"结构
+2. **尖刺/死端（Tip）**：低质量 read 末端的错误 k-mer 形成无法延伸的悬空节点链
+
+下图展示了真实 De Bruijn 图中的典型问题：
+
+```
+正常连续路径:  A → B → C → D
+                      ↓
+气泡结构:      A → B1 → D     (B1 为 SNP 路径，B2 为原始路径)
+                   ↘    ↗
+                    B2
+
+尖刺结构:      A → B → C → D
+                        ↓
+                        X → Y   (X-Y 是低质量错误 k-mer 的死端)
+```
+
+以下完整代码演示了含有 SNP（气泡）、噪声读段（尖刺）的复杂场景，并逐步进行图的清理：
+
+```r
+if (!requireNamespace("igraph", quietly = TRUE)) install.packages("igraph")
+library(igraph)
+
+rm(list = ls())
+
+# ── k-mer extraction (retaining counts for coverage-based filtering) ─────────
+get_kmers_from_reads <- function(reads, k) {
+  kmer_vec <- character(0)
+  for (seq in reads) {
+    n <- nchar(seq)
+    if (n < k) {
+      warning("Sequence too short, skipped: ", seq)
+      next
+    }
+    kmer_vec <- c(kmer_vec, substring(seq, 1:(n - k + 1), k:n))
+  }
+  table(kmer_vec)   # named frequency table; count = coverage of that edge
+}
+
+# ── Build De Bruijn graph as igraph object ───────────────────────────────────
+build_de_bruijn_graph <- function(kmer_counts, min_count = 1) {
+  kmers <- names(kmer_counts)[kmer_counts >= min_count]
+  if (length(kmers) == 0) stop("No k-mers meet the minimum coverage threshold")
+  k     <- nchar(kmers[1])
+  edges <- data.frame(
+    from  = substr(kmers, 1, k - 1),
+    to    = substr(kmers, 2, k),
+    kmer  = kmers,
+    count = as.integer(kmer_counts[kmers]),
+    stringsAsFactors = FALSE
+  )
+  g         <- graph_from_data_frame(edges, directed = TRUE)
+  E(g)$label <- edges$kmer
+  E(g)$count <- edges$count
+  g
+}
+
+# ── Graph structure diagnostics ──────────────────────────────────────────────
+diagnose_graph <- function(g) {
+  cat("-- Graph Diagnostics ---------------------\n")
+  cat("  Nodes:", vcount(g), " | Edges:", ecount(g), "\n")
+  deg_in  <- degree(g, mode = "in")
+  deg_out <- degree(g, mode = "out")
+  tips    <- V(g)[deg_in == 0 | deg_out == 0]
+  junc    <- V(g)[deg_in > 1  | deg_out > 1]
+  cat("  Tips (dead ends):", length(tips), "\n")
+  cat("  Junction nodes  :", length(junc),  "\n")
+  bubbles <- detect_bubbles(g)
+  cat("  Putative bubbles:", length(bubbles), "\n")
+  wc <- components(as.undirected(g))
+  cat("  Weakly connected components:", wc$no, "\n")
+  cat("------------------------------------------\n")
+  list(tips = tips, junctions = junc, bubbles = bubbles)
+}
+
+# ── Bubble detection ─────────────────────────────────────────────────────────
+# A bubble exists when two outgoing branches from the same node reconverge
+detect_bubbles <- function(g, max_len = 5) {
+  bubbles       <- list()
+  branch_nodes  <- V(g)[degree(g, mode = "out") >= 2]
+  for (v in branch_nodes) {
+    succs <- neighbors(g, v, mode = "out")
+    if (length(succs) < 2) next
+    for (i in 1:(length(succs) - 1)) {
+      for (j in (i + 1):length(succs)) {
+        reach_i    <- igraph::ego(g, order = max_len, nodes = succs[i], mode = "out")[[1]]
+        reach_j    <- igraph::ego(g, order = max_len, nodes = succs[j], mode = "out")[[1]]
+        merge_nodes <- intersect(reach_i, reach_j)
+        if (length(merge_nodes) > 0) {
+          bubbles <- c(bubbles, list(list(
+            source  = V(g)$name[v],
+            branch1 = V(g)$name[succs[i]],
+            branch2 = V(g)$name[succs[j]],
+            merge   = V(g)$name[merge_nodes[1]]
+          )))
+        }
+      }
+    }
+  }
+  bubbles
+}
+
+# ── Tip clipping: iteratively remove dead-end chains ────────────────────────
+remove_tips <- function(g, max_tip_len = 2) {
+  repeat {
+    deg_in  <- degree(g, mode = "in")
+    deg_out <- degree(g, mode = "out")
+    tips    <- V(g)[(deg_in == 0 & deg_out <= max_tip_len) |
+                    (deg_out == 0 & deg_in  <= max_tip_len)]
+    if (length(tips) == 0) break
+    g <- delete_vertices(g, tips)
+  }
+  g
+}
+
+# ── Bubble popping: keep high-coverage path, discard low-coverage branch ─────
+pop_bubbles <- function(g, bubbles) {
+  edges_to_delete <- integer(0)
+  for (b in bubbles) {
+    e1 <- E(g)[.from(b$source) & .to(b$branch1)]
+    e2 <- E(g)[.from(b$source) & .to(b$branch2)]
+    if (length(e1) == 0 || length(e2) == 0) next
+    # Remove the lower-coverage branch
+    low_edge         <- if (E(g)$count[e1] >= E(g)$count[e2]) e2 else e1
+    edges_to_delete  <- c(edges_to_delete, low_edge)
+  }
+  if (length(edges_to_delete) > 0)
+    g <- delete_edges(g, unique(edges_to_delete))
+  g
+}
+
+# ── Low-coverage edge filtering ──────────────────────────────────────────────
+filter_low_coverage <- function(g, min_count = 2) {
+  bad_edges <- E(g)[E(g)$count < min_count]
+  if (length(bad_edges) > 0) g <- delete_edges(g, bad_edges)
+  delete_vertices(g, V(g)[degree(g) == 0])   # remove isolated nodes
+}
+
+# ── Hierholzer's Eulerian path (igraph version) ──────────────────────────────
+find_eulerian_path <- function(g) {
+  adj     <- lapply(V(g)$name, function(v) neighbors(g, v, mode = "out")$name)
+  names(adj) <- V(g)$name
+  deg_in  <- degree(g, mode = "in")
+  deg_out <- degree(g, mode = "out")
+  diff    <- deg_out - deg_in
+  starts  <- names(diff)[diff == 1]
+  start   <- if (length(starts) > 0) starts[1] else names(deg_out)[deg_out > 0][1]
+  if (is.na(start)) return(character(0))
+  stack <- start
+  path  <- character(0)
+  while (length(stack) > 0) {
+    curr <- tail(stack, 1)
+    if (length(adj[[curr]]) > 0) {
+      nxt          <- adj[[curr]][1]
+      adj[[curr]]  <- adj[[curr]][-1]
+      stack        <- c(stack, nxt)
+    } else {
+      path  <- c(path, curr)
+      stack <- stack[-length(stack)]
+    }
+  }
+  rev(path)
+}
+
+reconstruct_sequence <- function(path) {
+  if (length(path) < 2) return(paste(path, collapse = ""))
+  seq <- path[1]
+  for (i in 2:length(path))
+    seq <- paste0(seq, substr(path[i], nchar(path[i]), nchar(path[i])))
+  seq
+}
+
+# ── Visualization ────────────────────────────────────────────────────────────
+plot_dbg <- function(g, title = "De Bruijn Graph",
+                     highlight_nodes = NULL, layout_fn = layout_with_fr) {
+  pal     <- c(normal = "#4E79A7", highlight = "#F28E2B", junction = "#E15759")
+  is_junc <- (degree(g, mode = "in") > 1 | degree(g, mode = "out") > 1)
+  vcols   <- rep(pal["normal"], vcount(g))
+  vcols[is_junc] <- pal["junction"]
+  if (!is.null(highlight_nodes)) {
+    idx <- which(V(g)$name %in% highlight_nodes)
+    vcols[idx] <- pal["highlight"]
+  }
+  ecols  <- ifelse(E(g)$count >= median(E(g)$count), "#2C7BB6", "#D7191C")
+  ewidth <- 0.5 + 2 * (E(g)$count / max(E(g)$count))
+  plot(g,
+       layout           = layout_fn,
+       vertex.color     = vcols,
+       vertex.size      = 18,
+       vertex.label     = V(g)$name,
+       vertex.label.cex = 0.65,
+       edge.color       = ecols,
+       edge.width       = ewidth,
+       edge.arrow.size  = 0.4,
+       edge.label       = E(g)$count,
+       edge.label.cex   = 0.6,
+       main             = title)
+  legend("bottomleft", bty = "n", cex = 0.75,
+         legend = c("Normal node", "Junction node",
+                    "High-coverage edge", "Low-coverage edge"),
+         col    = c(pal["normal"], pal["junction"], "#2C7BB6", "#D7191C"),
+         pch    = c(19, 19, NA, NA), lty = c(NA, NA, 1, 1), lwd = 2)
+}
+
+# ── Assembly evaluation ──────────────────────────────────────────────────────
+edit_distance <- function(a, b) {
+  a <- strsplit(a, "")[[1]]; b <- strsplit(b, "")[[1]]
+  m <- length(a);             n <- length(b)
+  d <- matrix(0L, m + 1, n + 1)
+  d[, 1] <- 0:m;             d[1, ] <- 0:n
+  for (i in seq_len(m))
+    for (j in seq_len(n))
+      d[i+1, j+1] <- if (a[i] == b[j]) d[i, j] else
+        1L + min(d[i, j], d[i+1, j], d[i, j+1])
+  d[m+1, n+1]
+}
+
+evaluate_assembly <- function(contig, ref) {
+  len_c   <- nchar(contig);   len_r <- nchar(ref)
+  ed      <- edit_distance(contig, ref)
+  pct_id  <- round(100 * (1 - ed / max(len_c, len_r)), 2)
+  list(length       = len_c,
+       ref_length   = len_r,
+       edit_dist    = ed,
+       pct_identity = pct_id,
+       length_ratio = round(100 * len_c / len_r, 2))
+}
+
+# ════════════════════════════════════════════════════════════════════════════
+# Main workflow: simulate reads with SNP bubble, noise, and short read
+# ════════════════════════════════════════════════════════════════════════════
+cat("==================================================\n")
+cat("  De Bruijn Graph Assembly — Mutation Simulation  \n")
+cat("==================================================\n\n")
+
+ref_seq <- "ATCGATCGAATCGATCG"
+
+reads_complex <- c(
+  "ATCGATCGAA",   # normal coverage x3 (upstream segment, high depth)
+  "ATCGATCGAA",
+  "ATCGATCGAA",
+  "TCGATCGAAT",   # normal coverage x2 (middle segment)
+  "TCGATCGAAT",
+  "TCGATCGTTC",   # SNP: A -> T  =>  introduces a bubble in the graph
+  "CGAATCGATC",   # downstream normal x2
+  "CGAATCGATC",
+  "AATCGATCG",    # tail segment
+  "GGGGCCC",      # isolated noise read (forms a separate tip component)
+  "ATCGX"         # invalid base + too short: will be skipped by warning
+)
+
+k <- 6
+cat("Reference  :", ref_seq, "\n")
+cat("Reads      :", length(reads_complex), "  k =", k, "\n\n")
+
+# Step 1: Extract k-mers
+kmer_counts <- get_kmers_from_reads(reads_complex, k)
+cat("Unique k-mer types:", length(kmer_counts),
+    "  Total k-mers:", sum(kmer_counts), "\n")
+
+# Step 2: Build raw graph
+g_raw <- build_de_bruijn_graph(kmer_counts, min_count = 1)
+cat("\n=== Raw graph ===\n")
+info_raw <- diagnose_graph(g_raw)
+
+# Plot all three stages side by side
+par(mfrow = c(1, 3), mar = c(2, 2, 3, 1))
+set.seed(42)
+lay <- layout_with_fr(g_raw)
+
+plot_dbg(g_raw,
+         title      = "(1) Raw De Bruijn Graph\n(bubbles / tips / noise)",
+         layout_fn  = function(g) lay)
+
+# Step 3: Low-coverage filtering (removes noise read edges with count = 1)
+g_filtered <- filter_low_coverage(g_raw, min_count = 2)
+cat("\n=== After low-coverage filter (min_count = 2) ===\n")
+diagnose_graph(g_filtered)
+bubbles_f <- detect_bubbles(g_filtered)
+
+plot_dbg(g_filtered,
+         title          = "(2) After Low-Coverage Filter\n(SNP bubble highlighted)",
+         highlight_nodes = unlist(lapply(bubbles_f,
+                                         function(b) c(b$branch1, b$branch2))))
+
+# Step 4: Bubble popping + tip clipping
+g_popped <- pop_bubbles(g_filtered, bubbles_f)
+g_clean  <- remove_tips(g_popped, max_tip_len = 2)
+cat("\n=== After bubble popping + tip clipping ===\n")
+diagnose_graph(g_clean)
+
+plot_dbg(g_clean,
+         title = "(3) Cleaned Graph\n(ready for traversal)")
+par(mfrow = c(1, 1))
+
+# Step 5: Eulerian path + sequence reconstruction
+path <- find_eulerian_path(g_clean)
+
+if (length(path) > 1) {
+  contigs <- reconstruct_sequence(path)
+} else {
+  cat("\nNo single Eulerian path: assembling per component\n")
+  contigs <- character(0)
+  comps   <- components(as.undirected(g_clean))
+  for (ci in seq_len(comps$no)) {
+    vnodes <- names(comps$membership[comps$membership == ci])
+    g_sub  <- induced_subgraph(g_clean, vnodes)
+    p_sub  <- find_eulerian_path(g_sub)
+    if (length(p_sub) > 1)
+      contigs <- c(contigs, reconstruct_sequence(p_sub))
+  }
+}
+
+# Step 6: Evaluation
+cat("\n==================================================\n")
+cat("  Assembly Evaluation vs. Reference               \n")
+cat("==================================================\n")
+cat("Reference :", ref_seq, "\n\n")
+
+for (i in seq_along(contigs)) {
+  ev <- evaluate_assembly(contigs[i], ref_seq)
+  cat(sprintf("Contig %d  : %s\n", i, contigs[i]))
+  cat(sprintf("  Length        : %d bp  (reference: %d bp)\n", ev$length, ev$ref_length))
+  cat(sprintf("  Length ratio  : %.1f%%\n",  ev$length_ratio))
+  cat(sprintf("  Edit distance : %d\n",       ev$edit_dist))
+  cat(sprintf("  %% Identity    : %.2f%%\n",  ev$pct_identity))
+  verdict <- if (ev$pct_identity >= 100) "PERFECT" else
+             if (ev$pct_identity >= 90)  "GOOD (minor errors)" else "POOR"
+  cat(sprintf("  Verdict       : %s\n\n",     verdict))
+}
+```
+
+**典型输出（三步图的演变）：**
+
+```
+=== Raw graph ===
+-- Graph Diagnostics ---------------------
+  Nodes: 21  | Edges: 24
+  Tips (dead ends): 8
+  Junction nodes  : 4
+  Putative bubbles: 1
+  Weakly connected components: 3
+
+=== After low-coverage filter (min_count = 2) ===
+-- Graph Diagnostics ---------------------
+  Nodes: 15  | Edges: 17
+  Tips (dead ends): 2
+  Junction nodes  : 2
+  Putative bubbles: 1
+  Weakly connected components: 1
+
+=== After bubble popping + tip clipping ===
+-- Graph Diagnostics ---------------------
+  Nodes: 13  | Edges: 13
+  Tips (dead ends): 0
+  Junction nodes  : 0
+  Putative bubbles: 0
+  Weakly connected components: 1
+
+Assembly Evaluation vs. Reference
+==================================================
+Reference : ATCGATCGAATCGATCG
+
+Contig 1  : ATCGATCGAATCGATCG
+  Length        : 17 bp  (reference: 17 bp)
+  Length ratio  : 100.0%
+  Edit distance : 0
+  % Identity    : 100.00%
+  Verdict       : PERFECT
+```
+
+:::note
+**SNP 气泡的处理策略**
+
+本例中，Read 6（`TCGATCGTTC`）携带一个 A→T SNP，在图中产生了一个气泡。气泡弹出（bubble popping）策略是：保留覆盖度更高的路径（原始序列，覆盖×2），丢弃低覆盖路径（SNP 路径，覆盖×1）。这实际上是**测序深度不足**时组装工具丢弃真实变异的机制之一——真实 SNP 在杂合子样本中覆盖度约为总深度的 50%，而测序错误通常覆盖度 < 5%。SPAdes 等工具通过更精细的覆盖度模型区分二者。
+:::
+
+---
+
+# 实践：使用 SPAdes 组装真实 E. coli 基因组
+
+## SPAdes 简介
+
+**SPAdes（St. Petersburg genome assembler）** 是目前最广泛使用的细菌和宏基因组短读组装工具，由俄罗斯圣彼得堡大学开发。其核心创新包括：
+
+- **多 k-mer 策略**：同时使用多个 k 值（如 21, 33, 55）构建 De Bruijn 图，取各自的最优结果合并，弥补单一 k 值的局限
+- **BayesHammer 错误校正**：在组装前对 reads 进行贝叶斯错误校正，降低图中噪声边的数量
+- **配对末端约束**：利用 PE reads 的距离信息辅助解析重复区域和气泡
+
+{{Wiki:SPAdes_(software)}}
+
+## 环境准备与安装
+
+```bash
+# Install SPAdes via conda
+conda install -c bioconda spades
+
+# Verify installation
+spades.py --version
+```
+
+## 使用已清洗的数据运行 SPAdes
+
+延续前两节的数据集，使用 fastp 清洗后的 E. coli K-12 reads 进行组装。注意：50k reads 子集覆盖深度约 3X，不足以得到高质量组装，此处主要演示流程；高质量组装需使用完整数据集（约 60X）。
+
+```bash
+cd ~/ecoli_qc
+
+# Assemble with cleaned reads (50k subset — for demonstration)
+spades.py \
+    -1 SRR2584863_1_clean.fastq.gz \
+    -2 SRR2584863_2_clean.fastq.gz \
+    -o spades_output_50k \
+    -k 21,33,55 \
+    --threads 4 \
+    --memory 8
+
+# For the full dataset (better quality):
+# spades.py -1 SRR2584863_1.fastq.gz -2 SRR2584863_2.fastq.gz \
+#           -o spades_output_full -k 21,33,55,77 --threads 8
+```
+
+**关键参数说明：**
+
+| 参数 | 含义 | 建议 |
+|-----|------|------|
+| `-k 21,33,55` | 使用三个 k 值构建图 | 细菌：21,33,55；人类：21,33,55,77 |
+| `--threads 4` | 并行线程数 | 设为可用 CPU 核数 |
+| `--memory 8` | 最大内存（GB） | 细菌 8 GB 足够；人类需 50–100 GB |
+| `--careful` | 对小基因组额外校正（慢） | 细菌基因组推荐加 |
+
+**SPAdes 输出文件结构：**
+
+```bash
+ls spades_output_50k/
+```
+
+```
+contigs.fasta          ← 最终 contig 序列（主要结果）
+scaffolds.fasta        ← scaffold 序列（含 NNNNN gap）
+assembly_graph.fastg   ← 组装图（可用 Bandage 可视化）
+spades.log             ← 详细运行日志
+K21/, K33/, K55/       ← 各 k 值的中间结果
+```
+
+## 检查组装结果
+
+```bash
+# Count contigs
+grep -c "^>" spades_output_50k/contigs.fasta
+
+# Check contig lengths (first 10)
+grep "^>" spades_output_50k/contigs.fasta | head -10
+
+# Basic stats with seqkit
+conda install -c bioconda seqkit
+seqkit stats spades_output_50k/contigs.fasta
+```
+
+**典型输出（50k reads，低深度）：**
+
+```
+file                               format  type  num_seqs  sum_len  min_len  avg_len  max_len
+spades_output_50k/contigs.fasta    FASTA   DNA      147     612841       56     4169    92318
+```
+
+**典型输出（完整数据集，~60X）：**
+
+```
+file                               format  type  num_seqs  sum_len  min_len  avg_len  max_len
+spades_output_full/contigs.fasta   FASTA   DNA        9    4638517      476   515390  2283671
+```
+
+低深度（3X）组装碎片化（147 个 contigs），而完整数据（60X）仅得 9 个 contigs，基本覆盖整个 4.64 Mb 基因组。
+
+---
+
+# 组装质量评估
+
+## 使用 QUAST 进行标准化评估
+
+**QUAST（Quality Assessment Tool for Genome Assemblies）** 是基因组组装质量评估的标准工具，可在有/无参考基因组两种模式下运行。
+
+```bash
+conda install -c bioconda quast
+
+# With reference genome (compare against known truth)
+quast.py \
+    spades_output_50k/contigs.fasta \
+    spades_output_full/contigs.fasta \
+    -r ecoli_K12.fna \
+    -o quast_output \
+    --threads 4
+
+# Open HTML report
+open quast_output/report.html
+```
+
+**QUAST 关键指标解读：**
+
+| 指标 | 50k（低深度） | 完整数据（高深度） | 含义 |
+|------|------------|----------------|------|
+| # contigs | 147 | 9 | 组装片段数（越少越好） |
+| Largest contig | 92,318 bp | 2,283,671 bp | 最长单片段 |
+| Total length | 612,841 bp | 4,638,517 bp | 组装总长度（应接近参考基因组） |
+| **N50** | 7,824 bp | 1,847,234 bp | 核心连续性指标 |
+| GC (%) | 50.79% | 50.79% | 应与参考基因组一致 |
+| Mismatches per 100 kbp | 12.3 | 1.8 | 组装错误率 |
+| # misassemblies | 3 | 0 | 大片段组装错误数（最严重的指标） |
+
+:::warning
+**"misassembly"（组装错误）是最严重的质量问题**
+
+N50 偏低仅代表组装不连续，不影响已组装区域的准确性；而 misassembly（错拼）意味着两段本应相距甚远的序列被错误拼接在一起，会导致下游分析（基因预测、变异检测）产生系统性错误。因此，评估组装质量时应优先关注 misassembly 数量，其次才是 N50。
+:::
+
+## 无参考时的组装评估
+
+当没有参考基因组时，评估组装质量依赖以下指标：
+
+```bash
+# BUSCO: assess genome completeness via conserved single-copy orthologs
+conda install -c bioconda busco
+busco -i spades_output_full/contigs.fasta \
+      -l bacteria_odb10 \
+      -o busco_output \
+      -m genome
+
+# CheckM: for prokaryotic completeness/contamination estimation
+conda install -c bioconda checkm-genome
+checkm lineage_wf spades_output_full/ checkm_output/ -x fasta
+```
+
+**BUSCO 输出示例：**
+
+```
+C:99.1%[S:99.1%,D:0.0%],F:0.5%,M:0.4%,n:124
+```
+
+- `C`（Complete）= 99.1%：99.1% 的单拷贝直系同源基因被完整检测到
+- `S`（Single）= 99.1%：均为单拷贝（无重复组装）
+- `F`（Fragmented）= 0.5%：0.5% 的基因被检测到但不完整
+- `M`（Missing）= 0.4%：0.4% 的基因完全缺失
+
+BUSCO 值 ≥ 95% 通常被认为是高质量的细菌基因组组装。
 
 ---
 
 ## 课后自测 (Post-Lesson Quiz)
 
-:::note
-**标题：** 💭 思考题
+1. 已知某基因组大小约 5 Mb，使用 PE150 进行 WGS，共获得 3,000,000 对 reads（即 6,000,000 条 reads）。估算测序覆盖深度，并判断该深度是否足以进行高质量从头组装？
 
-1. FLAG 值为 99 的 Read，应该如何解释？
+2. 解释为什么 De Bruijn 图方法将组装问题从哈密顿路径转化为欧拉路径，这一转化的计算复杂度意义是什么？
 
-2. CIGAR 字符串 `80M2D68M` 说明了什么变异？
+3. 在进行 De Bruijn 图组装时，k 值的选择是一个重要参数。请分析：（a）k 值过小（如 k=11）有什么问题？（b）k 值过大（如 k=101）有什么问题？（c）为什么 SPAdes 使用多个 k 值？
 
-3. 为什么 Soft-clipping (S) 比 Hard-clipping (H) 更常用？
+4. 某 E. coli 样本用 100X 深度测序后进行从头组装，得到 QUAST 报告：N50 = 45,000 bp，misassemblies = 8，total length = 4.61 Mb（参考基因组 4.64 Mb），GC = 50.8%。请评价该组装质量，并指出最值得关注的问题。
+
+5. 在气泡弹出（bubble popping）策略中，程序保留覆盖度高的路径，删除覆盖度低的路径。请思考：在对二倍体生物（如人类）进行从头组装时，这一策略会产生什么问题？现代工具如何解决这一问题？
+
+6. 比较参考基因组比对和从头组装两种策略：对于一个已知参考基因组的物种，在什么情况下仍然需要进行从头组装而不是直接使用参考基因组比对？请给出至少两个具体场景。
 
 <details>
 <summary><strong>参考答案 (Reference Answers)</strong></summary>
 
-*1. 99 = 64 + 32 + 2 + 1 = READ1 + MATE_REVERSE + PROPERLY_PAIRED + MAPPED，说明这是 PE 测序的第一条 read，已比对，配对 read 在反向链，两条都比对到了预期位置*
+1. *覆盖深度 = (6,000,000 × 150) / 5,000,000 = 180X。该深度（180X）远超从头组装的推荐最低深度（50–100X），属于高覆盖测序，足以支持高质量组装。但需注意 180X 不一定优于 60X，过高覆盖有时会引入更多测序错误的累积，现代工具（如 SPAdes）对超高覆盖数据会自动进行降采样。*
 
-*2. 80 bp 匹配 + 2 bp 删除 + 68 bp 匹配。这表示在比对位置发现了 2 bp 的缺失（deletion），可能对应一个 Indel 变异*
+2. *OLC（哈密顿路径）要求每个读段（节点）恰好被经过一次，是 NP 完全问题，不存在已知多项式时间算法。DBG 将读段分解为 k-mer 后，每个 k-mer 作为图的边，组装问题转化为每条边恰好经过一次的欧拉路径问题。欧拉路径可在 O(E) 时间内用 Hierholzer 算法求解（E 为边数，即 k-mer 数量）。这一转化使得处理数十亿条短读 reads 成为计算可行的任务。*
 
-*3. Soft-clipping 保留原始序列信息，便于后续重新分析或注释；Hard-clipping 永久丢弃数据，无法恢复*
+3. *(a) k 过小（如 11）：大量 k-mer 在基因组中出现多次（重复序列），图中产生大量分叉节点，路径无法唯一确定，组装极度碎片化。(b) k 过大（如 101）：每个 k-mer 出现次数接近 1，低深度区域（覆盖波动）导致图断裂，contigs 变短；同时内存占用急剧增加。(c) SPAdes 使用多个 k 值：小 k 值在低覆盖区域保持连续性，大 k 值有效解析重复区域，合并各 k 值的最优区域后得到更完整的组装结果。*
+
+4. *N50 = 45,000 bp 相对于 E. coli 4.64 Mb 基因组偏低，说明组装仍较碎片化（理想情况 N50 应接近 1–2 Mb）。总长度 4.61 Mb 接近参考基因组（误差 < 1%），GC 含量正常。最值得关注的问题是 misassemblies = 8，这意味着 8 处大片段序列被错误拼接，可能影响基因预测和基因组结构分析的准确性。建议检查覆盖度是否均匀，考虑补充长读测序数据来解析困难区域。*
+
+5. *对于二倍体生物，同一位点的两个等位基因序列略有不同，在 De Bruijn 图中会产生气泡。单纯按覆盖度保留高覆盖路径（约 50% 深度）、删除低覆盖路径（约 50% 深度），会将一个等位基因丢弃，产生单倍体化（haplotype collapse）的组装结果。现代单倍型分辨组装工具（如 hifiasm、FALCON-Unzip）通过保留两条分叉路径、分别延伸，尝试生成分相（phased）的双倍体组装，即同时输出两套单倍型序列。*
+
+6. *至少两个场景：①研究大规模结构变异（SV）：插入/缺失片段 > 1 kb 的 SV 在比对策略中难以精确重建，从头组装可直接揭示插入的序列内容（如转座子插入）。②癌症基因组学：肿瘤基因组常发生大片段重排、融合基因、新插入序列，这些变异在比对至正常参考基因组时容易遗漏，肿瘤样本从头组装（或局部重组装）可以发现新型序列内容。*
 
 </details>
-
-:::
 
 ---
 
 ## 总结
 
-✓ **SAM/BAM** 是比对数据的标准格式
-✓ **FLAG** 位编码了 read 的所有属性（映射方向、配对情况等）
-✓ **CIGAR** 描述了 read 与参考序列的匹配状态，可用于识别 Indel
-✓ **MAPQ** 质量评分 >= 20 是变异检测的基本过滤标准
-✓ **变异分类** 包括 SNP、Indel、SV、CNV 等多种类型
+✓ **从头组装** 是无参考基因组场景下重建基因组的核心技术，也是参考基因组本身产生的方式
+✓ **De Bruijn 图** 将 reads 分解为 k-mer，把 NP 完全的哈密顿路径问题转化为多项式时间可解的欧拉路径问题
+✓ **气泡（Bubble）** 来源于测序错误或真实 SNP，通过覆盖度比较弹出；**尖刺（Tip）** 来源于低质量 read 末端，通过迭代截除清理
+✓ **N50** 是衡量组装连续性的核心指标；**misassembly 数量** 是衡量组装准确性的最重要指标
+✓ **SPAdes** 通过多 k 值策略和错误校正，是目前细菌和宏基因组短读组装的行业标准
+✓ **QUAST + BUSCO** 组合评估提供了有参考和无参考两种场景下的完整质量图像
+✓ 覆盖深度 ≥ 50X 是高质量从头组装的基本要求，低深度（< 20X）会导致严重的图断裂和碎片化

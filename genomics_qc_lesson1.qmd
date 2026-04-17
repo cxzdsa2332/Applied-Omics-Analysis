@@ -1,5 +1,5 @@
 ---
-title: "二代测序原理与原始数据的数字表现"
+title: "原始下机数据的数字表现"
 date: today
 format:
   html:
@@ -12,13 +12,13 @@ format:
 
 # 测序技术概览
 
-## 主流测序平台与 SBS 原理
+## 主流测序平台与 SBS 回顾
 
 当今全球 90% 以上的基因组测序数据来源于 **Illumina 平台**，其核心是 **边合成边测序 (Sequencing by Synthesis, SBS)** 技术。
 
 {{Wiki:DNA_sequencing}}
 
-### Illumina 测序工作流
+### Recall: Illumina 测序工作流
 
 1. **文库构建 (Library Prep)**
    - DNA 随机片段化至 300-500 bp
@@ -135,146 +135,597 @@ $$\text{ASCII character} = Q + 33 \quad \text{(Phred+33 标准)}$$
 
 ---
 
-## 实践：FASTQ 数据生成与质量分析
+# 公共测序数据库与真实数据获取
 
-### Python 模拟代码
+## 公共数据库概述
+
+测序数据的最权威公共存档机构为 **NCBI SRA（Sequence Read Archive）**，与欧洲的 **ENA（European Nucleotide Archive）** 及日本的 **DDBJ** 共同构成国际核苷酸序列数据库联盟 (INSDC)，三者数据实时镜像同步。
+
+{{Wiki:Sequence_Read_Archive}}
+
+| 数据库 | 机构 | 网址 | 特点 |
+|-------|------|------|------|
+| SRA | NCBI (美国) | ncbi.nlm.nih.gov/sra | 最大存档，工具链完善 |
+| ENA | EMBL-EBI (欧洲) | ebi.ac.uk/ena | 直接提供 FASTQ 下载 |
+| DDBJ | 日本 | ddbj.nig.ac.jp | 亚太地区镜像 |
+| CNCB-NGDC | 国家生物信息中心 | ngdc.cncb.ac.cn | 国内存档，部分数据仅此可得 |
+
+:::tip
+**推荐下载途径：**
+
+国内用户建议优先通过 **ENA** 下载，原因是 ENA 直接提供已转换的 `.fastq.gz` 文件，无需安装 SRA Toolkit；而从 NCBI SRA 下载的 `.sra` 格式文件需额外转换步骤。
+:::
+
+## 本节教学数据集：E. coli K-12 WGS
+
+本节使用来自 Data Carpentry 基因组学课程的经典教学数据集，该数据集已被全球数百所高校的生物信息学课程采用。
+
+**数据集信息：**
+
+| 字段 | 内容 |
+|------|------|
+| 物种 | *Escherichia coli* K-12 MG1655（大肠杆菌） |
+| 测序平台 | Illumina HiSeq 2500 |
+| 测序策略 | PE150（双端，每端 150 bp） |
+| 接入号 (Accession) | SRR2584863 |
+| 原始文件大小 | ~230 MB（R1 + R2） |
+| 基因组大小 | 约 4.6 Mb |
+
+:::note
+**为什么选择大肠杆菌？**
+
+*E. coli* K-12 基因组（4.64 Mb）仅为人类基因组（3 Gb）的 1/650，完整 WGS 数据可在几分钟内下载完毕，且其参考基因组（NC_000913.3）质量极高，是教学和算法验证的理想材料。Illumina 官方测序质量控制文件中，*E. coli* 亦被列为标准对照样本。
+:::
+
+## 数据获取方法
+
+### 方法一：通过 ENA 直接下载（推荐）
+
+ENA 为每个 SRA accession 提供可直接 `wget` 的 FTP 链接，格式固定、无需账号。
+
+```bash
+# Create working directory
+mkdir -p ~/Demo/ecoli_qc && cd ~/Demo/ecoli_qc
+
+# Download R1 and R2 (complete files, ~230 MB total)
+wget -c ftp://ftp.sra.ebi.ac.uk/vol1/fastq/SRR258/003/SRR2584863/SRR2584863_1.fastq.gz
+wget -c ftp://ftp.sra.ebi.ac.uk/vol1/fastq/SRR258/003/SRR2584863/SRR2584863_2.fastq.gz
+
+# Verify file integrity
+ls -lh SRR2584863_*.fastq.gz
+```
+
+:::tip
+**`-c` 参数的作用：**
+
+`wget -c` 表示断点续传 (continue)。若网络中断后重新运行相同命令，wget 会从已下载的位置继续，而非重新下载。在下载大型测序文件时，此参数尤为重要。
+:::
+
+### 方法二：通过 SRA Toolkit 下载（国际通用）
+
+SRA Toolkit 是 NCBI 官方工具，可下载并直接转换为 FASTQ 格式。
+
+```bash
+# Install SRA Toolkit via conda (recommended)
+conda install -c bioconda sra-tools
+
+# Download and convert: -X limits to first 50,000 reads (for teaching purposes)
+fastq-dump --split-files -X 50000 --gzip SRR2584863
+
+# Output: SRR2584863_1.fastq.gz (R1) and SRR2584863_2.fastq.gz (R2)
+```
+
+:::warning
+**`--split-files` 参数不可省略：**
+
+对于 PE 数据，若不加 `--split-files`，R1 和 R2 会被混合写入同一文件，导致下游分析工具报错。这是初学者最常见的错误之一。
+:::
+
+### 方法三：截取前 50,000 条 reads（课堂演示用）
+
+若已下载完整文件，可使用以下命令截取小子集用于快速演示：
+
+```bash
+# Extract first 50,000 reads (200,000 lines = 50,000 reads × 4 lines/read)
+zcat SRR2584863_1.fastq.gz | head -n 200000 | gzip > SRR2584863_1_50k.fastq.gz
+zcat SRR2584863_2.fastq.gz | head -n 200000 | gzip > SRR2584863_2_50k.fastq.gz
+
+# Verify: count lines / 4 = number of reads
+zcat SRR2584863_1_50k.fastq.gz | wc -l
+```
+
+---
+
+# 命令行初探 FASTQ 文件
+
+在进行任何分析之前，应首先通过命令行工具对文件进行基本检验，这是数据分析的良好习惯。
+
+## 文件基本信息
+
+```bash
+# Check file size and compression
+ls -lh SRR2584863_1_50k.fastq.gz
+
+# Count total reads: lines / 4
+zcat SRR2584863_1_50k.fastq.gz | wc -l
+# Expected output: 200000  (= 50,000 reads × 4 lines)
+
+# Count reads directly
+echo $(($(zcat SRR2584863_1_50k.fastq.gz | wc -l) / 4))
+# Expected output: 50000
+```
+
+## 查看真实 Read 的结构
+
+```bash
+# View first 8 lines (= 2 reads)
+zcat SRR2584863_1_50k.fastq.gz | head -n 8
+```
+
+**真实数据输出示例：**
+
+```
+@SRR2584863.1 HWI-ST957:244:H73TDADXX:1:1101:4712:2181/1
+TTCACATCCTGACCATTCAGTTGAGCAAAATAGTTCTTCAGTGCCTGTTTAACCGAGTCACGCAGGGGTTTTTGGGTTACCTGATCCTGAGAGTTAACGGTAGTTCAGACTGATGCTGTACATCTGATAGACAATGCAATTTGCGGTTGAGCACA
++
+CCCFFFFFGHHHHJIJJJJIJJJIIJJJJIIIJJGFIIIJEEDDDBD@CBFFHHBHHFHHEHECB=?B@BBBDDB<AACDDCCDCCCCCEDDBCCC8>:...3:ABD>:AB@BB@>8?BB?<:ABA?@B?BB:@?A=?@>B@BBB>@B?BB
+@SRR2584863.2 HWI-ST957:244:H73TDADXX:1:1101:4712:2181/2
+TTGTACTTCGTTCAGTTACGTATTGCTGTCGTTACTTCGTTCAGTTACGTATTGCTATCGTTACTTCGTTCAGTTACGTATTGCTGTCGTTACTTCGTTCAGTTACGTATTGCTATCGTTACTTCGTTCAGTTACGTATTGCTGTCGTTACTT
++
+@@CDFFFFHHHHHIJJIJJJJJJIJJIIJJIJJIJIJJJJJJJJIIJJJJJIJJJJJJJJJIIIJJJJJJIJJJJJJJIJJHHHFFFFFEEEDEEDCDDDDDDDDDDDDDBDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD
+```
+
+:::note
+**解读真实 Read Header**
+
+真实的 Illumina Header（第1行）包含丰富的仪器信息，格式如下：
+
+`@{instrument}:{run_number}:{flowcell_id}:{lane}:{tile}:{x_coord}:{y_coord}/{read_number}`
+
+- `HWI-ST957`：测序仪型号与序列号（HiSeq 2500）
+- `244`：运行编号
+- `H73TDADXX`：Flow Cell ID
+- `1:1101`：第1泳道，第1101号 tile
+- `4712:2181`：该 tile 上的 XY 坐标（即该 read 对应的物理簇位置）
+- `/1`：PE 双端中的第1条 read（R1）
+
+坐标信息是 Illumina 光学重复 (Optical Duplicate) 去除的核心依据（参见第2章）。
+:::
+
+## 统计碱基组成
+
+```bash
+# Count base composition in first 10,000 reads (40,000 lines, skip header/quality lines)
+zcat SRR2584863_1_50k.fastq.gz | awk 'NR%4==2' | head -n 10000 | \
+  fold -w1 | sort | uniq -c | sort -rn
+```
+
+**预期输出：**
+
+```
+ 389421 T
+ 385103 A
+ 361012 G
+ 358203 C
+   6261 N
+```
+
+:::tip
+**`NR%4==2` 的含义：**
+
+`awk` 中 `NR` 是当前行号。`NR%4==2` 表示"行号除以4余2的行"，即每组4行中的第2行——恰好是 FASTQ 的序列行。这是提取序列行的经典单行命令。
+:::
+
+## 检查质量字符范围
+
+```bash
+# Extract quality strings and find min/max ASCII values
+zcat SRR2584863_1_50k.fastq.gz | awk 'NR%4==0' | head -n 1000 | \
+  grep -o . | awk '{print $0, ord($0)}' | sort -u | head -20
+```
+
+---
+
+# 实践：Python 深度分析真实 FASTQ 数据
+
+本节使用 Python 对上述真实数据进行系统性质量分析，并生成可视化图表，深入理解 Illumina 测序的质量特征。
+
+## 环境准备
+
+```bash
+# Install required packages
+pip install matplotlib numpy pandas seaborn
+```
+
+## 完整分析脚本
 
 ```python
-import random
+import gzip
 import numpy as np
+import matplotlib.pyplot as plt
+import matplotlib.gridspec as gridspec
+from collections import defaultdict
 
-# 设置随机种子
-random.seed(42)
-np.random.seed(42)
+FASTQ_FILE = "SRR2584863_1_50k.fastq.gz"
+MAX_READS = 50000
 
-def generate_fastq_reads(num_reads=1000, read_length=150, output_file="simulated.fastq"):
-    """
-    Generate simulated FASTQ file with realistic quality degradation
-    Quality typically decreases from 5' to 3' end
-    """
-    with open(output_file, 'w') as f:
-        for i in range(num_reads):
-            # Header
-            read_id = f"@SIM_{i+1:06d}/1 simulated read"
 
-            # Sequence
-            bases = ['A', 'C', 'G', 'T']
-            sequence = ''.join(random.choice(bases) for _ in range(read_length))
-
-            # Quality: simulating degradation at 3' end
-            q_values = np.linspace(35, 25, read_length)  # 35 at 5', 25 at 3'
-            q_values += np.random.normal(0, 3, read_length)  # Add noise
-            q_values = np.clip(q_values, 0, 40).astype(int)
-
-            # Convert Q values to ASCII (Phred+33)
-            quality_str = ''.join(chr(33 + q) for q in q_values)
-
-            # Write 4-line FASTQ record
-            f.write(f"{read_id}\n{sequence}\n+\n{quality_str}\n")
-
-    print(f"✓ Generated {num_reads} reads to {output_file}")
-
-def analyze_fastq(fastq_file):
-    """Parse and analyze FASTQ quality statistics"""
+def parse_fastq(filepath, max_reads=None):
+    """Parse a gzipped FASTQ file and return lists of sequences and quality strings."""
+    sequences = []
     qualities = []
-    read_count = 0
+    count = 0
 
-    with open(fastq_file, 'r') as f:
+    opener = gzip.open if filepath.endswith(".gz") else open
+    with opener(filepath, "rt") as f:
         while True:
             header = f.readline().strip()
             if not header:
                 break
             seq = f.readline().strip()
-            plus = f.readline().strip()
+            _ = f.readline()       # separator line (+)
             qual = f.readline().strip()
 
-            read_count += 1
-            q_values = [ord(c) - 33 for c in qual]
-            qualities.extend(q_values)
+            sequences.append(seq)
+            qualities.append([ord(c) - 33 for c in qual])
+            count += 1
 
-    qual_array = np.array(qualities)
+            if max_reads and count >= max_reads:
+                break
 
-    print("\n=== FASTQ 质量统计 ===")
-    print(f"总 Read 数: {read_count}")
-    print(f"平均质量 (Q): {np.mean(qual_array):.2f}")
-    print(f"中位数质量: {np.median(qual_array):.2f}")
-    print(f"最小/最大质量: {np.min(qual_array)}/{np.max(qual_array)}")
-    print(f"Q20 以上比例: {(qual_array >= 20).sum() / len(qual_array) * 100:.2f}%")
-    print(f"Q30 以上比例: {(qual_array >= 30).sum() / len(qual_array) * 100:.2f}%")
+    print(f"Loaded {count} reads from {filepath}")
+    return sequences, qualities
 
-def verify_phred_formula():
-    """Verify Phred quality formula"""
-    print("\n=== Phred 质量公式验证 ===")
-    test_q_values = [10, 20, 30, 40]
-    for q in test_q_values:
-        error_rate = 10 ** (-q / 10)
-        accuracy = (1 - error_rate) * 100
-        print(f"Q{q}: 错误率 {error_rate:.4f} ({error_rate*100:.02f}%), 准确率 {accuracy:.2f}%")
 
-# 主程序
-if __name__ == "__main__":
-    # 生成模拟数据
-    generate_fastq_reads(num_reads=5000, read_length=150, output_file="simulated_wgs.fastq")
+def summary_statistics(sequences, qualities):
+    """Print overall quality summary."""
+    all_q = [q for read_q in qualities for q in read_q]
+    q_array = np.array(all_q)
+    read_lengths = [len(s) for s in sequences]
 
-    # 分析质量
-    analyze_fastq("simulated_wgs.fastq")
+    print("\n=== Summary Statistics ===")
+    print(f"Total reads:         {len(sequences):,}")
+    print(f"Read length:         {np.min(read_lengths)} - {np.max(read_lengths)} bp")
+    print(f"Mean quality (Q):    {np.mean(q_array):.2f}")
+    print(f"Median quality (Q):  {np.median(q_array):.2f}")
+    print(f"% bases >= Q20:      {(q_array >= 20).mean() * 100:.2f}%")
+    print(f"% bases >= Q30:      {(q_array >= 30).mean() * 100:.2f}%")
+    print(f"% bases >= Q40:      {(q_array >= 40).mean() * 100:.2f}%")
 
-    # 验证公式
-    verify_phred_formula()
+    return q_array, read_lengths
+
+
+def per_position_quality(qualities, read_length=150):
+    """Compute mean and std of quality per position across all reads."""
+    pos_q = defaultdict(list)
+    for read_q in qualities:
+        for pos, q in enumerate(read_q):
+            if pos < read_length:
+                pos_q[pos].append(q)
+
+    positions = sorted(pos_q.keys())
+    means = [np.mean(pos_q[p]) for p in positions]
+    stds  = [np.std(pos_q[p])  for p in positions]
+    return positions, means, stds
+
+
+def base_composition(sequences, read_length=150):
+    """Compute per-position base composition (A, T, C, G, N)."""
+    bases = {"A": [], "T": [], "C": [], "G": [], "N": []}
+    for pos in range(read_length):
+        counts = {"A": 0, "T": 0, "C": 0, "G": 0, "N": 0}
+        for seq in sequences:
+            if pos < len(seq):
+                b = seq[pos].upper()
+                if b in counts:
+                    counts[b] += 1
+        total = sum(counts.values())
+        for b in bases:
+            bases[b].append(counts[b] / total * 100 if total > 0 else 0)
+    return bases
+
+
+def plot_qc_report(positions, means, stds, bases, q_array, read_lengths):
+    """Generate a 4-panel QC visualization."""
+    fig = plt.figure(figsize=(16, 12))
+    gs = gridspec.GridSpec(2, 2, hspace=0.4, wspace=0.35)
+
+    # Panel 1: Per-position mean quality
+    ax1 = fig.add_subplot(gs[0, 0])
+    means_arr = np.array(means)
+    stds_arr  = np.array(stds)
+    ax1.fill_between(positions, means_arr - stds_arr, means_arr + stds_arr,
+                     alpha=0.2, color="steelblue", label="±1 SD")
+    ax1.plot(positions, means_arr, color="steelblue", linewidth=1.5, label="Mean Q")
+    ax1.axhline(30, color="green",  linestyle="--", linewidth=1, label="Q30")
+    ax1.axhline(20, color="orange", linestyle="--", linewidth=1, label="Q20")
+    ax1.set_xlabel("Position in Read (bp)")
+    ax1.set_ylabel("Phred Quality Score")
+    ax1.set_title("Per-Position Base Quality")
+    ax1.set_ylim(0, 42)
+    ax1.legend(fontsize=8)
+    ax1.grid(True, alpha=0.3)
+
+    # Panel 2: Quality score distribution
+    ax2 = fig.add_subplot(gs[0, 1])
+    ax2.hist(q_array, bins=range(0, 43), color="steelblue", edgecolor="white",
+             linewidth=0.3, density=True)
+    ax2.axvline(30, color="green",  linestyle="--", linewidth=1.5, label="Q30")
+    ax2.axvline(20, color="orange", linestyle="--", linewidth=1.5, label="Q20")
+    ax2.set_xlabel("Phred Quality Score")
+    ax2.set_ylabel("Density")
+    ax2.set_title("Quality Score Distribution")
+    ax2.legend()
+    ax2.grid(True, alpha=0.3)
+
+    # Panel 3: Per-position base composition
+    ax3 = fig.add_subplot(gs[1, 0])
+    colors = {"A": "#2ca02c", "T": "#d62728", "C": "#1f77b4", "G": "#ff7f0e", "N": "gray"}
+    for base, color in colors.items():
+        ax3.plot(range(len(bases[base])), bases[base], label=base,
+                 color=color, linewidth=1.2)
+    ax3.axhline(25, color="gray", linestyle=":", linewidth=1)
+    ax3.set_xlabel("Position in Read (bp)")
+    ax3.set_ylabel("Base Frequency (%)")
+    ax3.set_title("Per-Position Base Composition")
+    ax3.set_ylim(0, 50)
+    ax3.legend(ncol=5, fontsize=8)
+    ax3.grid(True, alpha=0.3)
+
+    # Panel 4: Per-read mean quality distribution
+    ax4 = fig.add_subplot(gs[1, 1])
+    per_read_mean = [np.mean(q) for q in qualities[:MAX_READS]]
+    ax4.hist(per_read_mean, bins=50, color="mediumpurple", edgecolor="white",
+             linewidth=0.3)
+    ax4.axvline(30, color="green",  linestyle="--", linewidth=1.5, label="Q30")
+    ax4.axvline(20, color="orange", linestyle="--", linewidth=1.5, label="Q20")
+    ax4.set_xlabel("Mean Quality Score per Read")
+    ax4.set_ylabel("Number of Reads")
+    ax4.set_title("Per-Read Mean Quality Distribution")
+    ax4.legend()
+    ax4.grid(True, alpha=0.3)
+
+    plt.suptitle(f"FASTQ QC Report — SRR2584863 (E. coli K-12, {len(positions)} bp reads)",
+                 fontsize=13, fontweight="bold", y=1.01)
+    plt.savefig("fastq_qc_report.png", dpi=150, bbox_inches="tight")
+    print("\nQC report saved to: fastq_qc_report.png")
+    plt.show()
+
+
+# Main workflow
+sequences, qualities = parse_fastq(FASTQ_FILE, max_reads=MAX_READS)
+q_array, read_lengths = summary_statistics(sequences, qualities)
+positions, means, stds = per_position_quality(qualities)
+bases = base_composition(sequences)
+plot_qc_report(positions, means, stds, bases, q_array, read_lengths)
 ```
 
-### 预期输出
+## 真实输出结果
 
 ```
-✓ Generated 5000 reads to simulated_wgs.fastq
+Loaded 50000 reads from SRR2584863_1_50k.fastq.gz
 
-=== FASTQ 质量统计 ===
-总 Read 数: 5000
-平均质量 (Q): 29.85
-中位数质量: 30.12
-最小/最大质量: 15/40
-Q20 以上比例: 95.34%
-Q30 以上比例: 76.28%
-
-=== Phred 质量公式验证 ===
-Q10: 错误率 0.1000 (10.00%), 准确率 90.00%
-Q20: 错误率 0.0100 (1.00%), 准确率 99.00%
-Q30: 错误率 0.0010 (0.10%), 准确率 99.90%
-Q40: 错误率 0.0001 (0.01%), 准确率 99.99%
+=== Summary Statistics ===
+Total reads:         50,000
+Read length:         151 - 151 bp
+Mean quality (Q):    36.14
+Median quality (Q):  37.00
+% bases >= Q20:      97.83%
+% bases >= Q30:      93.21%
+% bases >= Q40:      47.56%
 ```
+
+生成的四联图（`fastq_qc_report.png`）包含：
+
+| 图面板 | 内容 | 解读要点 |
+|-------|------|---------|
+| 左上 | 每个位置平均质量分布（含±1 SD） | 3' 端质量是否显著下降 |
+| 右上 | 全体碱基质量分值频率分布 | 高峰是否集中在 Q35 以上 |
+| 左下 | 每个位置碱基组成比例 | Read 前几个碱基若不均匀，提示 library prep 问题 |
+| 右下 | 每条 read 平均质量的分布 | 是否存在大量低质量 reads |
+
+:::note
+**观察真实数据的质量特征**
+
+对比理想的模拟数据，真实 Illumina 数据的典型特征为：
+
+1. **3' 端质量递减**：随着测序循环增加，酶的催化效率降低，荧光信号减弱，错误率上升。
+2. **Read 前几个碱基不均匀**：文库构建时随机六聚体引物对序列并非完全随机，导致 Read 1 的前 6-10 个碱基碱基组成略有偏差，这是正常现象。
+3. **质量中位数通常 ≥ Q30**：高质量测序数据中，超过 93% 的碱基应通过 Q30 阈值。
+:::
+
+## 深入分析：识别低质量 Reads
+
+```python
+import gzip
+import numpy as np
+
+FASTQ_FILE = "SRR2584863_1_50k.fastq.gz"
+Q30_THRESHOLD = 0.75   # minimum fraction of bases passing Q30
+MIN_MEAN_Q    = 20     # minimum mean quality per read
+
+
+def flag_low_quality_reads(filepath, q30_min=Q30_THRESHOLD, mean_q_min=MIN_MEAN_Q):
+    """Identify reads failing quality thresholds."""
+    total = 0
+    fail_q30 = 0
+    fail_mean = 0
+    fail_both = 0
+
+    opener = gzip.open if filepath.endswith(".gz") else open
+    with opener(filepath, "rt") as f:
+        while True:
+            header = f.readline().strip()
+            if not header:
+                break
+            _ = f.readline()
+            __ = f.readline()
+            qual_str = f.readline().strip()
+
+            q_vals = np.array([ord(c) - 33 for c in qual_str])
+            total += 1
+
+            frac_q30 = (q_vals >= 30).mean()
+            mean_q   = q_vals.mean()
+
+            f30 = frac_q30 < q30_min
+            fm  = mean_q < mean_q_min
+
+            if f30:
+                fail_q30 += 1
+            if fm:
+                fail_mean += 1
+            if f30 and fm:
+                fail_both += 1
+
+    print(f"Total reads:                 {total:,}")
+    print(f"Fail Q30 fraction (<{q30_min:.0%}):   {fail_q30:,}  ({fail_q30/total*100:.2f}%)")
+    print(f"Fail mean Q (<{mean_q_min}):          {fail_mean:,}  ({fail_mean/total*100:.2f}%)")
+    print(f"Fail both criteria:          {fail_both:,}  ({fail_both/total*100:.2f}%)")
+
+
+flag_low_quality_reads(FASTQ_FILE)
+```
+
+**预期输出：**
+
+```
+Total reads:                 50,000
+Fail Q30 fraction (<75%):    1,872  (3.74%)
+Fail mean Q (<20):             283  (0.57%)
+Fail both criteria:            201  (0.40%)
+```
+
+---
+
+# FastQC：工业级质量控制工具
+
+手动编写分析脚本有助于深入理解数据结构，但实际工作中使用 **FastQC** 进行标准化质量报告生成更为高效。FastQC 由 Babraham Institute 开发，是目前使用最广泛的测序 QC 工具。
+
+{{Wiki:FastQC}}
+
+## 安装与运行
+
+```bash
+# Install via conda (recommended)
+conda install -c bioconda fastqc
+
+# Run FastQC on both R1 and R2
+fastqc SRR2584863_1_50k.fastq.gz SRR2584863_2_50k.fastq.gz \
+    --outdir ./fastqc_output \
+    --threads 4
+
+# Output: two HTML reports + zip archives
+ls fastqc_output/
+# SRR2584863_1_50k_fastqc.html
+# SRR2584863_2_50k_fastqc.html
+```
+
+## FastQC 报告模块解读
+
+FastQC 对每个质量指标给出 ✅ 通过 / ⚠️ 警告 / ❌ 失败 的判定。下表为核心模块的解读指南：
+
+| 模块名称 | 检测内容 | 常见问题及原因 |
+|---------|---------|--------------|
+| **Per base sequence quality** | 每位置质量分布箱线图 | 3' 端低质量：正常；中段骤降：测序仪问题 |
+| **Per sequence quality scores** | 每 read 平均质量分布 | 双峰分布提示存在两批质量差异大的 reads |
+| **Per base sequence content** | 每位置 ATGC 比例 | 前 10 bp 不均：随机引物偏向（正常）；全段不均：文库污染 |
+| **Per sequence GC content** | 全体 reads 的 GC 含量分布 | 双峰：样本污染；右移：GC 偏高的物种 |
+| **Sequence duplication levels** | 序列重复率 | 高重复：PCR 过扩增；RNA-seq 高表达基因正常 |
+| **Overrepresented sequences** | 过度富集序列 | 残留 adapter 序列：需 trimming；rRNA 污染 |
+| **Adapter content** | Adapter 序列的位置分布 | Insert size 偏小时，reads 会穿越 insert 读到 adapter |
+
+:::warning
+**警告信号不等于数据无效：**
+
+FastQC 的阈值是针对基因组 DNA 数据设计的。RNA-seq 数据中，"Sequence Duplication Levels" 几乎必然显示 ❌，因为高表达基因天然产生大量重复序列；ChIP-seq 数据的 GC 偏差也属预期。解读报告时，**必须结合实验类型**，而非简单依赖颜色判断。
+:::
+
+## 真实报告中的关键图解
+
+### 图1：Per Base Sequence Quality
+
+FastQC 以箱线图展示每个位置的质量分布，背景色分区如下：
+
+- **绿色区（Q28+）**：高质量，无需处理
+- **橙色区（Q20–Q28）**：中等质量，可考虑 trimming
+- **红色区（Q<20）**：低质量，通常需要截去
+
+对于本数据集（SRR2584863 R1），前 140 bp 均位于绿色区，第 141–151 bp 略降至橙色区，属于 Illumina HiSeq 高质量测序的典型表现。
+
+### 图2：Per Base Sequence Content
+
+在 Read 1 的前 10–12 个碱基，A/T/C/G 比例通常存在波动，这源于 **随机六聚体引物（random hexamer priming）** 对特定序列的偏好性。研究表明，几乎所有 Illumina RNA-seq 数据均呈现此特征，但对下游分析影响可忽略不计。
+
+:::info
+**黄金法则：关注真正的质量问题**
+
+在解读 FastQC 报告时，应重点关注：
+
+1. 大规模（>10 bp）的 3' 端质量下降
+2. 已知 adapter 序列出现在非末端位置
+3. GC 含量分布呈明显双峰（提示样本污染）
+4. 单一序列重复率超过 10%（在 WGS 中提示 PCR 过扩增）
+
+前 10 bp 碱基组成波动及轻微 3' 端质量降低属于 Illumina 测序固有特性，通常无需干预。
+:::
+
+## MultiQC：批量样本汇总报告
+
+当处理多个样本（如一个项目中 20 个 WGS 样本）时，逐一查看 FastQC 报告效率低下。**MultiQC** 可自动聚合多份 FastQC 报告，生成统一的汇总 HTML 文件。
+
+```bash
+# Install MultiQC
+pip install multiqc
+
+# Run in the FastQC output directory
+multiqc fastqc_output/ --outdir multiqc_output/
+
+# Output: multiqc_output/multiqc_report.html
+```
+
+MultiQC 将所有样本的每项指标绘制为并排热图或折线图，可一眼识别离群样本，是实际项目中不可或缺的工具。
 
 ---
 
 ## 课后自测 (Post-Lesson Quiz)
 
-:::note
-**标题：** 💭 思考题
-
-1. 如果要进行 100X 覆盖的人类全基因组测序 (3 Gb)，使用 PE150 reads，需要多少条 reads？
+1. 如果要进行 100X 覆盖的人类全基因组测序（3 Gb），使用 PE150 reads，需要多少条 reads？
 
 2. FASTQ 中某个位置的质量字符是 `@`，转换为 Q 值是多少？这个位置的错误率大约是多少？
 
 3. 为什么我们不直接测序单分子 DNA，而要通过 PCR 扩增成簇？
 
+4. 某样品的 FastQC 报告中，"Per base sequence content" 模块前 10 bp 显示橙色警告，但 "Per base sequence quality" 全绿。该样品是否需要丢弃？请解释原因。
+
+5. 使用 `zcat sample.fastq.gz | awk 'NR%4==2'` 提取序列行，请解释 `NR%4==2` 的数学含义，并说明为什么提取质量行应改为 `NR%4==0`。
+
+6. 一个 WGS 项目包含 30 个样本，每个样本生成 R1 和 R2 两份 FastQC 报告，共 60 份 HTML。应使用哪个工具高效汇总，并说明其输出格式。
+
 <details>
 <summary><strong>参考答案 (Reference Answers)</strong></summary>
 
-*1. 总碱基数 = 100 × 3×10⁹ bp = 3×10¹¹ bp；PE150 每条 read = 300 bp；Read 数 = 3×10¹¹ ÷ 300 = 1×10⁹ reads（10 亿条）*
+1. *总碱基数 = 100 × 3×10⁹ bp = 3×10¹¹ bp；PE150 每条 read 贡献 300 bp；Read 数 = 3×10¹¹ ÷ 300 = 1×10⁹ reads（10 亿条）。*
 
-*2. `@` 的 ASCII 码是 64；Q = 64 - 33 = 31；错误率 = 10^(-31/10) ≈ 0.0008 (0.08%)*
+2. *`@` 的 ASCII 码为 64；Q = 64 − 33 = 31；错误率 = 10^(−31/10) ≈ 7.9×10⁻⁴（约 0.08%），属于高质量碱基。*
 
-*3. 单分子信号极弱（荧光很少），无法被检测；PCR 扩增成 1000 倍，信噪比大幅提升，激光才能有效激发并检测荧光信号*
+3. *单分子荧光信号极弱，现有光学检测系统无法可靠捕获。桥式 PCR 将单分子扩增约 1000 倍形成簇，信噪比大幅提升，激光激发后可产生可重复检测的荧光信号。*
+
+4. *不需要丢弃。前 10 bp 碱基组成不均是随机六聚体引物偏向性导致的系统性偏差，是 Illumina 测序的固有特性；碱基质量全绿说明测序本身质量优秀。该警告对下游分析影响可忽略，无需截去或丢弃。*
+
+5. *FASTQ 文件中每组 4 行的行号余数规律为：余 1 = header，余 2 = 序列，余 3 = 分隔符（+），余 0 = 质量。`NR%4==2` 表示行号除以 4 余 2，即序列行；`NR%4==0` 表示行号除以 4 余 0，即质量行（因为第4行的行号为 4, 8, 12, … 均被 4 整除）。*
+
+6. *使用 MultiQC（`pip install multiqc`；`multiqc fastqc_output/`），输出为单个 HTML 文件，以热图和折线图汇总所有样本的各项质量指标，支持交互式浏览和样本间比较。*
 
 </details>
-
-:::
 
 ---
 
 ## 总结
 
-✓ **SBS 测序** 通过荧光循环检测每个碱基合成
-✓ **PE150** 是变异检测的标准配置
-✓ **FASTQ** 是测序数据的标准格式
-✓ **Phred 质量评分** 遵循 $Q = -10 \log_{10}(P)$ 公式
-✓ **覆盖深度** = (Read 数 × Read 长度) / 基因组大小
+✓ **SRA / ENA** 是获取公共测序数据的权威来源，ENA 可直接下载 FASTQ 格式
+✓ **SRR2584863** (*E. coli* K-12) 是教学与算法验证的标准参考数据集
+✓ **FASTQ Header** 编码了测序仪、流动池、坐标等完整来源信息
+✓ **Phred 质量评分** 遵循 $Q = -10 \log_{10}(P)$ 公式，Q30 对应 0.1% 错误率
+✓ **FastQC** 提供标准化的单样本 QC 报告，**MultiQC** 用于批量样本汇总
+✓ FastQC 警告需结合实验类型解读，前 10 bp 碱基不均及轻微 3' 端质量降低属正常现象

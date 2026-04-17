@@ -14,7 +14,7 @@
     "href": "01-intro.html",
     "title": "2  生物信息学入门课程总览",
     "section": "",
-    "text": "2.1 课程宗旨\n本课程专为零计算背景的生物学学生设计，旨在搭建连接”湿实验”与”干计算”的完整桥梁。课程从分子生物学底层逻辑出发，逐步深入高通量数据的产生、处理和分析，系统地引入 Linux 命令行、R/Python 编程、Git 版本控制和 AI 辅助开发，最终掌握现代生物信息学的完整工作流。\n学习目标：掌握从生物样本到数据分析的全链路技能，具备独立进行转录组、基因组等组学分析的能力。\n课程设计哲学：问题驱动、递进式学习，每一课都以”为什么需要这个”开启，在实际问题中引入新工具。",
+    "text": "2.1 课程宗旨\n本模块专为缺乏生物与计算背景的学生设计，旨在搭建连接”湿实验”与”干计算”的完整桥梁。课程从分子生物学底层逻辑出发，逐步深入高通量数据的产生、处理和分析，系统地引入 Linux 命令行、R/Python 编程、Git 版本控制和 AI 辅助开发，最终掌握现代生物信息学的完整工作流。\n学习目标：掌握从生物样本到数据分析的全链路技能，初步具备独立进行基因组组学分析的能力。\n课程设计哲学：问题驱动、递进式学习，每一课都以”为什么需要这个”开启，在实际问题中引入新工具。",
     "crumbs": [
       "第一阶段：基础与基因组",
       "<span class='chapter-number'>2</span>  <span class='chapter-title'>生物信息学入门课程总览</span>"
@@ -289,7 +289,7 @@
     "href": "intro_lesson5.html#文本的哲学序列与坐标格式ascii",
     "title": "7  探索生物大数据的基石：数据库网络与核心文件格式",
     "section": "7.3 文本的哲学：序列与坐标格式（ASCII）",
-    "text": "7.3 文本的哲学：序列与坐标格式（ASCII）\n从数据库下载数据后，我们最先接触到的是纯文本（Plain Text）格式。它们牺牲了存储效率，但换取了极高的“人类可读性”。\n\n7.3.1 FASTA（.fasta / .fa）：参考基因组的字典\n最古老、最基础的序列存储格式，本质是一个键值对（Key-Value Pair）集合。 * Key：以 &gt; 开头，包含序列 ID（如染色体编号）和可选的描述信息。 * Value：紧随其后的纯碱基（A/T/C/G）或氨基酸序列。\n&gt;chr1 Homo sapiens chromosome 1, GRCh38\nNNNNNNNNNNNNNNNTAACCCTAACCCTAACCCTAACCCTAACCCTAACCCTA...\n&gt;chr2 Homo sapiens chromosome 2, GRCh38\nNNNNNNNNNNNNNNNTAACCCTAACCCTAACCCTAACCCTAACCCTAACCCTA...\n关键特性： - 极其简洁，易于解析 - 每行通常限制在 50-80 字符以提高可读性 - 广泛用于参考基因组、蛋白序列库（如 UniProt）\n\n\n7.3.2 FASTQ（.fastq / .fq）：原始测序数据的真实面貌\n当高通量测序仪器（Illumina、PacBio 等）输出数据时，每条读取片段（read）都包含序列本身和质量评分。FASTQ 格式正是为此而生。\n@SRR1234567.1 reads from sample A\nAGCTTAGCTAGCTACGTACGTACGTACGTACGTACGTACGTACGTACGTACGTAC\n+\nIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIII\n@SRR1234567.2 reads from sample A\nGCTAGCTAGCTAGCTAGCTAGCTAGCTAGCTAGCTAGCTAGCTAGCTAGCTAGC\n+\nHHHHHHHHHHHHHHHHGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGFFFFFCCCC\n四行结构： 1. 行 1：@ 前缀 + 读取 ID + 可选描述 2. 行 2：实际序列 3. 行 3：+ 分隔符（有时后跟 ID，有时为空） 4. 行 4：质量分数（与序列等长）。采用 Phred 质量评分系统：ASCII 字符编码表示概率\n质量分数的秘密： - Phred 质量 Q = -10 × log₁₀(P)，其中 P 是碱基错误的概率 - 字符 I (ASCII 73) ≈ Q30，表示 0.1% 错误率（极高质量） - 字符 # (ASCII 35) ≈ Q2，表示 63% 错误率（极低质量） - 一般接纳的阈值：Q20（1% 错误率）或 Q30\n这就是为什么原始数据文件的大小达到 数十到数百 GB——每个碱基都附带质量信息。\n\n\n\nPhred 质量分数系统与质量控制（来源：维基百科 Phred quality score）\n\n\n\n延伸阅读：Phred 质量分数系统的详细原理和 Illumina 测序流程，已在 第二节·高通量测序原理 中详细介绍。\n\n\n\n7.3.3 SAM / BAM / CRAM：序列比对的金字塔\n从 FASTQ 文件出发，下一步是将这些短读取与参考基因组进行比对（alignment）。这个过程输出 SAM（Sequence Alignment Map）格式。\nSAM 格式（可读文本版）：\n@HD VN:1.0  SO:coordinate\n@SQ SN:chr1 LN:248956422\nread1   0   chr1    1000    60  50M *   0   0   AGCTTAGCTAGCTACGTACGTACGTACGTACGTACGTACGTACGTACG    IIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIII\nread2   16  chr1    2000    30  40M10S  *   0   0   GCTAGCTAGCTAGCTAGCTAGCTAGCTAGCTAGCTAGCTAGCTAGCTAGC  HHHHHHHHHHHHGGGGGGGGGGGGGGGGGFFFFFCCCCCCCCCCCCCCCC\n关键字段： 1. QNAME：读取名称 2. FLAG：比对方向和状态（是否正向链、是否配对、是否未比对等，用位标志编码） 3. RNAME：参考序列名（如 chr1） 4. POS：在参考基因组上的起始位置 5. MAPQ：比对质量（与 Phred 类似的概率编码） 6. CIGAR：比对的紧凑编码（50M 表示 50 个碱基匹配，10S 表示 10 个软剪裁） 7. RNEXT/PNEXT/TLEN：配对末端的信息（对于 RNA-seq 双端测序）\nSAM → BAM → CRAM 的进化： - SAM：纯文本，人类可读但巨大（几十 GB） - BAM：SAM 的二进制压缩版，采用 BGZF（block gzip），可随机访问，大小减小 10-20 倍 - CRAM：更激进的压缩，相对参考基因组进行编码，体积再缩 50%，但需要参考基因组文件解压\n现代生物信息学几乎都使用 BAM 格式存储。\n\n\n\nDNA 测序技术原理：从样本到数字化序列\n\n\n\n详情：DNA 高通量测序的完整流程——包括 Sanger 测序、Illumina 测序和 PacBio/Nanopore 长读长测序——详见 第二节·高通量测序。\n\n\n\n7.3.4 BED（Browser Extensible Data）：基因组区间的坐标表\n如果说 FASTA/FASTQ 记录的是序列本身，BED 就是记录某些生物学意义的区间（genes、peaks、variants 等）的位置。\nchr1    1000    2000    gene1   100 +\nchr1    3500    4200    gene2   200 -\nchr2    5000    6500    peak1   150 .\n最小化六列（实际可有 12+ 列）： 1. chrom：染色体名 2. chromStart：起始位置（0-based） 3. chromEnd：结束位置（不含此位点，即半开区间） 4. name：元素名称 5. score：数值评分（如 p-value，或任意 0-1000 的数字） 6. strand：链方向（+ 正向、- 反向、. 未指定）\n关键陷阱：BED 采用 0-based 半开区间（[start, end)），而 GTF 采用 1-based 闭区间（[start, end]）。这是数据转换时的常见错误源。\n\n\n7.3.5 GTF / GFF：基因组注释的百科全书\nGTF（Gene Transfer Format）和其前身 GFF（General Feature Format）记录基因组上所有已注释的特征——从基因、转录本、外显子到启动子。\nchr1    HAVANA  gene    11869   14409   .   +   .   gene_id \"ENSG00000223972\"; gene_name \"DDX11L1\"\nchr1    HAVANA  transcript  11869   14409   .   +   .   gene_id \"ENSG00000223972\"; transcript_id \"ENST00000456328\"\nchr1    HAVANA  exon    11869   12227   .   +   .   gene_id \"ENSG00000223972\"; transcript_id \"ENST00000456328\"; exon_number 1\nchr1    HAVANA  exon    12613   12721   .   +   .   gene_id \"ENSG00000223972\"; transcript_id \"ENST00000456328\"; exon_number 2\n9 列结构： 1. seqname：染色体 2. source：数据来源（HAVANA、NCBI 等） 3. feature：特征类型（gene、transcript、exon、CDS 等） 4. start / end：1-based 闭区间 5. score：评分（通常为 .） 6. strand：链方向 7. frame：阅读框（用于 CDS 翻译） 8. attributes：键值对（如 gene_id \"XXX\"; gene_name \"YYY\"）\n重要提醒：GTF 来自 Ensembl，NCBI 提供的是 GFF3。两者在细节上有差异，混用会导致注释错乱。\n\n\n\n基因组注释：基因结构与坐标系统\n\n\n\n\n7.3.6 数据压缩：体积杀手\n在实际应用中，上述所有文本格式都会被压缩： - FASTQ.gz：gzip 压缩，减小 80-90% 体积，但需逐行解压（可线性访问） - BAM：已内置 BGZF 压缩 - GTF.gz：同样使用 gzip\n压缩后，原本 50 GB 的 FASTQ 可缩至 5-10 GB，大幅降低存储和网络传输成本。",
+    "text": "7.3 文本的哲学：序列与坐标格式（ASCII）\n从数据库下载数据后，我们最先接触到的是纯文本（Plain Text）格式。它们牺牲了存储效率，但换取了极高的“人类可读性”。\n\n7.3.1 FASTA（.fasta / .fa）：参考基因组的字典\n最古老、最基础的序列存储格式，本质是一个键值对（Key-Value Pair）集合。 * Key：以 &gt; 开头，包含序列 ID（如染色体编号）和可选的描述信息。 * Value：紧随其后的纯碱基（A/T/C/G）或氨基酸序列。\n&gt;chr1 Homo sapiens chromosome 1, GRCh38\nNNNNNNNNNNNNNNNTAACCCTAACCCTAACCCTAACCCTAACCCTAACCCTA...\n&gt;chr2 Homo sapiens chromosome 2, GRCh38\nNNNNNNNNNNNNNNNTAACCCTAACCCTAACCCTAACCCTAACCCTAACCCTA...\n关键特性： - 极其简洁，易于解析 - 每行通常限制在 50-80 字符以提高可读性 - 广泛用于参考基因组、蛋白序列库（如 UniProt）\n\n\n7.3.2 FASTQ（.fastq / .fq）：原始测序数据的真实面貌\n当高通量测序仪器（Illumina、PacBio 等）输出数据时，每条读取片段（read）都包含序列本身和质量评分。FASTQ 格式正是为此而生。\n@SRR1234567.1 reads from sample A\nAGCTTAGCTAGCTACGTACGTACGTACGTACGTACGTACGTACGTACGTACGTAC\n+\nIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIII\n@SRR1234567.2 reads from sample A\nGCTAGCTAGCTAGCTAGCTAGCTAGCTAGCTAGCTAGCTAGCTAGCTAGCTAGC\n+\nHHHHHHHHHHHHHHHHGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGFFFFFCCCC\n四行结构： 1. 行 1：@ 前缀 + 读取 ID + 可选描述 2. 行 2：实际序列 3. 行 3：+ 分隔符（有时后跟 ID，有时为空） 4. 行 4：质量分数（与序列等长）。采用 Phred 质量评分系统：ASCII 字符编码表示概率\n质量分数的秘密： - Phred 质量 Q = -10 × log₁₀(P)，其中 P 是碱基错误的概率 - 字符 I (ASCII 73) ≈ Q30，表示 0.1% 错误率（极高质量） - 字符 # (ASCII 35) ≈ Q2，表示 63% 错误率（极低质量） - 一般接纳的阈值：Q20（1% 错误率）或 Q30\n这就是为什么原始数据文件的大小达到 数十到数百 GB——每个碱基都附带质量信息。\n\n\n\nPhred 质量分数系统与质量控制（来源：维基百科 Phred quality score）\n\n\n\n延伸阅读：Phred 质量分数系统的详细原理和 Illumina 测序流程，已在 第二节·高通量测序原理 中详细介绍。\n\n\n\n7.3.3 SAM / BAM / CRAM：序列比对的金字塔\n从 FASTQ 文件出发，下一步是将这些短读取与参考基因组进行比对（alignment）。这个过程输出 SAM（Sequence Alignment Map）格式。\nSAM 格式（可读文本版）：\n@HD VN:1.0  SO:coordinate\n@SQ SN:chr1 LN:248956422\nread1   0   chr1    1000    60  50M *   0   0   AGCTTAGCTAGCTACGTACGTACGTACGTACGTACGTACGTACGTACG    IIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIII\nread2   16  chr1    2000    30  40M10S  *   0   0   GCTAGCTAGCTAGCTAGCTAGCTAGCTAGCTAGCTAGCTAGCTAGCTAGC  HHHHHHHHHHHHGGGGGGGGGGGGGGGGGFFFFFCCCCCCCCCCCCCCCC\n关键字段： 1. QNAME：读取名称 2. FLAG：比对方向和状态（是否正向链、是否配对、是否未比对等，用位标志编码） 3. RNAME：参考序列名（如 chr1） 4. POS：在参考基因组上的起始位置 5. MAPQ：比对质量（与 Phred 类似的概率编码） 6. CIGAR：比对的紧凑编码（50M 表示 50 个碱基匹配，10S 表示 10 个软剪裁） 7. RNEXT/PNEXT/TLEN：配对末端的信息（对于 RNA-seq 双端测序）\nSAM → BAM → CRAM 的进化： - SAM：纯文本，人类可读但巨大（几十 GB） - BAM：SAM 的二进制压缩版，采用 BGZF（block gzip），可随机访问，大小减小 10-20 倍 - CRAM：更激进的压缩，相对参考基因组进行编码，体积再缩 50%，但需要参考基因组文件解压\n现代生物信息学几乎都使用 BAM 格式存储。\n\n\n\nDNA 测序技术原理：从样本到数字化序列\n\n\n\n详情：DNA 高通量测序的完整流程——包括 Sanger 测序、Illumina 测序和 PacBio/Nanopore 长读长测序——详见 第二节·高通量测序。\n\n\n\n7.3.4 BED（Browser Extensible Data）：基因组区间的坐标表\n如果说 FASTA/FASTQ 记录的是序列本身，BED 就是记录某些生物学意义的区间（genes、peaks、variants 等）的位置。\nchr1    1000    2000    gene1   100 +\nchr1    3500    4200    gene2   200 -\nchr2    5000    6500    peak1   150 .\n最小化六列（实际可有 12+ 列）： 1. chrom：染色体名 2. chromStart：起始位置（0-based） 3. chromEnd：结束位置（不含此位点，即半开区间） 4. name：元素名称 5. score：数值评分（如 p-value，或任意 0-1000 的数字） 6. strand：链方向（+ 正向、- 反向、. 未指定）\n关键陷阱：BED 采用 0-based 半开区间（[start, end)），而 GTF 采用 1-based 闭区间（[start, end]）。这是数据转换时的常见错误源。\n\n\n7.3.5 GTF / GFF：基因组注释的百科全书\nGTF（Gene Transfer Format）和其前身 GFF（General Feature Format）记录基因组上所有已注释的特征——从基因、转录本、外显子到启动子。\nchr1    HAVANA  gene    11869   14409   .   +   .   gene_id \"ENSG00000223972\"; gene_name \"DDX11L1\"\nchr1    HAVANA  transcript  11869   14409   .   +   .   gene_id \"ENSG00000223972\"; transcript_id \"ENST00000456328\"\nchr1    HAVANA  exon    11869   12227   .   +   .   gene_id \"ENSG00000223972\"; transcript_id \"ENST00000456328\"; exon_number 1\nchr1    HAVANA  exon    12613   12721   .   +   .   gene_id \"ENSG00000223972\"; transcript_id \"ENST00000456328\"; exon_number 2\n9 列结构： 1. seqname：染色体 2. source：数据来源（HAVANA、NCBI 等） 3. feature：特征类型（gene、transcript、exon、CDS 等） 4. start / end：1-based 闭区间 5. score：评分（通常为 .） 6. strand：链方向 7. frame：阅读框（用于 CDS 翻译） 8. attributes：键值对（如 gene_id \"XXX\"; gene_name \"YYY\"）\n重要提醒：GTF 来自 Ensembl，NCBI 提供的是 GFF3。两者均使用 1-based 坐标，但属性字段的键名、层级关系的表达方式存在差异，混用会导致注释解析错乱。建议在项目开始时即确定使用单一注释来源，并将版本号（如 Ensembl 109）记录在分析记录中。\n{{Wiki:General_feature_format}}\n\n\n\n7.3.6 VCF（Variant Call Format）：基因组变异的通用语言\nVCF 是记录基因组变异（Variant）的标准格式，包括单核苷酸多态性（SNP）、小片段插入缺失（Indel）及结构变异（SV）。它由千人基因组计划（1000 Genomes Project）推动制定，如今已成为所有变异分析流程的终点输出格式。\n{{Wiki:Variant_Call_Format}}\n##fileformat=VCFv4.2\n##reference=GRCh38\n##FILTER=&lt;ID=PASS,Description=\"All filters passed\"&gt;\n##FORMAT=&lt;ID=GT,Number=1,Type=String,Description=\"Genotype\"&gt;\n##FORMAT=&lt;ID=DP,Number=1,Type=Integer,Description=\"Read Depth\"&gt;\n#CHROM  POS     ID        REF  ALT  QUAL  FILTER  INFO           FORMAT    SAMPLE1\nchr1    925952  rs1234567 G    A    50    PASS    DP=35;AF=0.5   GT:DP     0/1:35\nchr1    981931  .         AT   A    30    PASS    DP=22;AF=1.0   GT:DP     1/1:22\nchrX    155701  .         C    CTAG  99   PASS    DP=40;AF=0.5   GT:DP     0/1:40\n文件结构：\nVCF 由三个区块构成：\n\n元信息行（Meta-information）：以 ## 开头，定义文件版本、参考基因组、INFO/FORMAT/FILTER 字段的含义。这些定义是自描述的关键——没有它们，后续字段的值将无法解读。\n列标题行：以单个 # 开头，固定为 CHROM POS ID REF ALT QUAL FILTER INFO FORMAT SAMPLE1 [SAMPLE2 ...]，多样本时每个样本各占一列。\n数据行：每行一个变异位点，字段含义如下：\n\n\n\n\n列名\n含义\n示例\n\n\n\n\nCHROM\n染色体（1-based 坐标）\nchr1\n\n\nPOS\n变异位置（1-based）\n925952\n\n\nID\n已知变异 ID（dbSNP 等）\nrs1234567 或 .\n\n\nREF\n参考基因组碱基\nG\n\n\nALT\n替代等位基因\nA（SNP）或 CTAG（Indel）\n\n\nQUAL\n变异质量得分（Phred-scaled）\n50\n\n\nFILTER\n过滤状态\nPASS 或过滤原因\n\n\nINFO\n额外注释信息（键=值对）\nDP=35;AF=0.5\n\n\nFORMAT\n样本字段的格式定义\nGT:DP\n\n\nSAMPLE\n各样本的基因型信息\n0/1:35\n\n\n\n基因型（Genotype，GT）字段解读：GT 字段是 VCF 的核心信息，编码方式如下：\n\n\n\nGT 值\n含义\n\n\n\n\n0/0\n纯合参考型（Homozygous reference）\n\n\n0/1\n杂合突变（Heterozygous）\n\n\n1/1\n纯合突变（Homozygous alternate）\n\n\n0/2\n参考型与第二个替代等位基因的杂合\n\n\n./.\n基因型无法判断（缺失数据）\n\n\n\n/ 分隔的两个数字分别代表二倍体生物的两条同源染色体上的等位基因，0 代表参考等位基因，1、2 等正整数代表 ALT 列中对应位置的替代等位基因。\nBCF（Binary Call Format） 是 VCF 的二进制压缩版（类似 BAM 之于 SAM），体积约缩小 5–10 倍，由 bcftools 工具链处理，支持随机访问和快速过滤。\n\nVCF 1-based 坐标与 Indel 位点表示\nVCF 采用 1-based 坐标，与 GTF 一致，但与 BED 不同。记录 Indel 时，VCF 有一个特殊规则：锚点碱基（Anchor Base）。删除 AT→A（即删除 T）时，VCF 以 REF=AT、ALT=A 表示，其中第一个 A 是锚点——它本身不变，但它与后续碱基共同定义了缺失的范围。这一规则保证了 Indel 的唯一表示，但在坐标转换时需格外注意。\n\n\n\n\n7.3.7 WIG / bedGraph / bigWig：覆盖度与信号轨道\n上述格式均记录离散的基因组特征（序列、变异、区间）。而许多实验（ChIP-seq 染色质免疫共沉淀、ATAC-seq 染色质开放性、RNA-seq 覆盖度）的分析结果是连续的数值信号，需要专用格式存储。\n{{Wiki:ChIP-sequencing}}\nbedGraph：BED 格式的扩展，第四列记录该区间的数值信号（如覆盖深度、富集得分）。\nchr1    0       100     0.0\nchr1    100     200     12.5\nchr1    200     350     45.8\nchr1    350     400     3.2\nWiggle（WIG）：另一种文本格式，支持 fixedStep（等间距）和 variableStep（可变间距）两种写法，常用于保守性得分（PhyloP、GERP）等全基因组信号的存储。\nbigWig：bedGraph/WIG 的二进制索引版本，是现代基因组浏览器（UCSC、IGV）显示信号轨道的标准格式。其核心优势在于支持随机区间查询——无需读入全文件，即可快速提取特定染色体区域的数值。\n# Convert bedGraph to bigWig (requires chromosome size file)\nbedGraphToBigWig coverage.bedgraph chrom.sizes output.bw\n\n# Query a specific region from bigWig\nbigWigSummary output.bw chr1 10000 20000 10\n\n\n\n格式\n类型\n随机访问\n文件大小\n典型用途\n\n\n\n\nbedGraph\n文本\n否\n大\n中间过渡格式\n\n\nWIG\n文本\n否\n大\n保守性得分\n\n\nbigWig\n二进制\n是\n小\n可视化轨道、信号统计\n\n\n\n\n\n\n7.3.8 HDF5 / AnnData（.h5ad）：单细胞时代的矩阵格式\n传统的 CSV/TSV 表格格式在样本量达到数万至数百万（单细胞测序）时面临根本性挑战。HDF5（Hierarchical Data Format 5） 是专为大规模科学数据设计的二进制格式，支持分块存储（chunking）、压缩、元数据嵌入和快速随机访问。\n{{Wiki:Hierarchical_Data_Format}}\nAnnData（.h5ad） 是 Python anndata 包定义的单细胞数据容器，基于 HDF5 构建，已成为 Python 单细胞分析生态（Scanpy）的标准数据结构：\nAnnData 对象的内部结构：\n  .X          → 核心表达量矩阵（细胞 × 基因），稀疏矩阵格式\n  .obs         → 细胞级元数据（细胞类型、样本来源、质控指标等）\n  .var         → 基因级元数据（基因名、染色体、是否高变基因等）\n  .obsm        → 降维结果（PCA、UMAP 坐标等）\n  .uns         → 非结构化信息（颜色方案、版本记录等）\n.h5ad 格式能够在单个文件中同时保存数百万细胞的表达矩阵、降维坐标、聚类标签和质控记录，且文件体积远小于等价的 CSV（稀疏矩阵存储仅记录非零值）。\n在 R 语言生态中，SingleCellExperiment 和 Seurat 对象扮演类似角色，底层分别使用 HDF5 或专有 .rds 文件存储。\n\n\n\n7.3.9 Tabix：文本格式的随机访问索引\n基因组分析中，研究者经常需要快速查询”某染色体某区间内有哪些变异/注释”。对压缩文本文件逐行扫描极为低效，Tabix 提供了一种通用解决方案：对 bgzip 压缩的 BED、GFF、GTF、VCF 等格式构建坐标索引（.tbi 文件），实现 \\(O(\\log n)\\) 级别的区间查询。\n# Step 1: Sort and bgzip compress\nsort -k1,1 -k2,2n variants.vcf | bgzip &gt; variants.vcf.gz\n\n# Step 2: Build Tabix index (generates variants.vcf.gz.tbi)\ntabix -p vcf variants.vcf.gz\n\n# Step 3: Query a specific region in milliseconds\ntabix variants.vcf.gz chr1:1000000-2000000\nTabix 索引机制已成为 VCF、BED、GTF 等格式在生产环境中的标准配置，尤其在分布式存储（云端 S3 对象存储）中，可以仅下载目标区间对应的数据块，无需传输整个文件。\n\n\n\n7.3.10 数据压缩：体积杀手\n在实际应用中，上述所有文本格式都会被压缩： - FASTQ.gz：gzip 压缩，减小 80-90% 体积，但需逐行解压（可线性访问） - BAM：已内置 BGZF 压缩 - GTF.gz：同样使用 gzip\n压缩后，原本 50 GB 的 FASTQ 可缩至 5-10 GB，大幅降低存储和网络传输成本。",
     "crumbs": [
       "第一阶段：基础与基因组",
       "<span class='chapter-number'>7</span>  <span class='chapter-title'>探索生物大数据的基石：数据库网络与核心文件格式</span>"
@@ -597,7 +597,7 @@
     "href": "intro_lesson4.html#代码实战r-与-python-运行示例",
     "title": "6  生物信息学双擎——R 与 Python 核心环境配置及AI辅助",
     "section": "6.7 代码实战：R 与 Python 运行示例",
-    "text": "6.7 代码实战：R 与 Python 运行示例\n完成环境配置后，让我们通过两个典型的生信场景，分别体验 R 和 Python 的实际运行效果。\n\n6.7.1 Python 示例：基因表达矩阵的基本操作\n以下代码模拟了一个简单的基因表达矩阵（5个基因 × 4个样本），并完成筛选和可视化。\n\n\nCode\nimport numpy as np\nimport pandas as pd\nimport matplotlib.pyplot as plt\nimport matplotlib as mpl\n\n# 1. Construct simulated gene expression matrix (rows=genes, columns=samples)\nnp.random.seed(42)\ngenes = [\"TP53\", \"BRCA1\", \"MYC\", \"EGFR\", \"GAPDH\"]\nsamples = [\"Sample_A\", \"Sample_B\", \"Sample_C\", \"Sample_D\"]\n\nexpr_matrix = pd.DataFrame(\n    np.random.randint(10, 1000, size=(5, 4)),\n    index=genes,\n    columns=samples\n)\nprint(\"=== Gene Expression Matrix ===\")\n\n\n=== Gene Expression Matrix ===\n\n\nCode\nprint(expr_matrix)\n\n\n       Sample_A  Sample_B  Sample_C  Sample_D\nTP53        112       445       870       280\nBRCA1       116        81       710        30\nMYC         624       131       476       224\nEGFR        340       468        97       382\nGAPDH       109       881       673       140\n\n\nCode\n# 2. Compute mean expression per gene across all samples, sorted descending\nmean_expr = expr_matrix.mean(axis=1).sort_values(ascending=False)\nprint(\"\\n=== Mean Expression per Gene (descending) ===\")\n\n\n\n=== Mean Expression per Gene (descending) ===\n\n\nCode\nprint(mean_expr)\n\n\nGAPDH    450.75\nTP53     426.75\nMYC      363.75\nEGFR     321.75\nBRCA1    234.25\ndtype: float64\n\n\nCode\n# 3. Filter highly expressed genes with mean &gt; 400\nhigh_expr_genes = mean_expr[mean_expr &gt; 400]\nprint(f\"\\n=== Highly Expressed Genes (mean &gt; 400) ===\")\n\n\n\n=== Highly Expressed Genes (mean &gt; 400) ===\n\n\nCode\nprint(high_expr_genes)\n\n\nGAPDH    450.75\nTP53     426.75\ndtype: float64\n\n\nCode\n# 4. Plot bar chart\nfig, ax = plt.subplots(figsize=(6, 4))\nmean_expr.plot(kind=\"bar\", ax=ax, color=\"steelblue\", edgecolor=\"black\")\nax.set_title(\"Mean Expression per Gene\", fontsize=13)\nax.set_xlabel(\"Gene\", fontsize=11)\nax.set_ylabel(\"Mean Expression (counts)\", fontsize=11)\nax.axhline(y=400, color=\"red\", linestyle=\"--\", label=\"Threshold 400\")\nax.legend()\nplt.tight_layout()\nplt.show()\n\n\n\n\n\n\n\n\n\n\n标题： 代码解读 - np.random.seed(42)：固定随机种子，保证结果可复现——这是科研代码的好习惯。 - axis=1：对每一行（基因）求均值，axis=0 则是对每一列（样本）求均值。 - axhline：在图中画水平参考线，直观展示筛选阈值。\n\n\n\n\n6.7.2 R 示例：使用 ggplot2 绘制基因表达箱线图\n以下代码使用 R 的 ggplot2 包，对相同的模拟数据进行可视化，展示 R 在统计作图方面的优雅语法。\n\n\nCode\nlibrary(ggplot2)\n\n\nWarning: package 'ggplot2' was built under R version 4.5.3\n\n\nCode\nlibrary(dplyr)\n\n\n\nAttaching package: 'dplyr'\n\n\nThe following objects are masked from 'package:stats':\n\n    filter, lag\n\n\nThe following objects are masked from 'package:base':\n\n    intersect, setdiff, setequal, union\n\n\nCode\nlibrary(tidyr)\n\n\nWarning: package 'tidyr' was built under R version 4.5.3\n\n\nCode\nlibrary(tibble)\n\n\nWarning: package 'tibble' was built under R version 4.5.3\n\n\nCode\n# 1. Construct simulated gene expression matrix\nset.seed(42)\ngenes   &lt;- c(\"TP53\", \"BRCA1\", \"MYC\", \"EGFR\", \"GAPDH\")\nsamples &lt;- c(\"Sample_A\", \"Sample_B\", \"Sample_C\", \"Sample_D\")\n\nexpr_matrix &lt;- matrix(\n  sample(10:1000, length(genes) * length(samples), replace = TRUE),\n  nrow = length(genes),\n  dimnames = list(genes, samples)\n)\n\n# 2. Reshape to long format for ggplot2\nexpr_df &lt;- as.data.frame(expr_matrix) %&gt;%\n  rownames_to_column(\"Gene\") %&gt;%\n  pivot_longer(cols = -Gene, names_to = \"Sample\", values_to = \"Expression\")\n\nprint(head(expr_df, 10))\n\n\n# A tibble: 10 × 3\n   Gene  Sample   Expression\n   &lt;chr&gt; &lt;chr&gt;         &lt;int&gt;\n 1 TP53  Sample_A        570\n 2 TP53  Sample_B        155\n 3 TP53  Sample_C         33\n 4 TP53  Sample_D        631\n 5 BRCA1 Sample_A        330\n 6 BRCA1 Sample_B        643\n 7 BRCA1 Sample_C        848\n 8 BRCA1 Sample_D        541\n 9 MYC   Sample_A        162\n10 MYC   Sample_B         58\n\n\nCode\n# 3. Compute mean expression per gene (for mean point overlay)\ngene_means &lt;- expr_df %&gt;%\n  group_by(Gene) %&gt;%\n  summarise(Mean = mean(Expression), .groups = \"drop\")\n\n# 4. Plot boxplot + mean points\np &lt;- ggplot(expr_df, aes(x = reorder(Gene, -Expression), y = Expression, fill = Gene)) +\n  geom_boxplot(alpha = 0.7, outlier.shape = 21) +\n  geom_point(data = gene_means,\n             aes(x = reorder(Gene, -Mean), y = Mean),\n             shape = 23, size = 3, fill = \"red\", color = \"black\") +\n  geom_hline(yintercept = 400, linetype = \"dashed\", color = \"darkred\", linewidth = 0.8) +\n  labs(\n    title    = \"Gene Expression Distribution (Boxplot)\",\n    subtitle = \"Red diamond = mean; dashed line = threshold 400\",\n    x        = \"Gene\",\n    y        = \"Expression (counts)\"\n  ) +\n  theme_bw(base_size = 12) +\n  theme(legend.position = \"none\")\n\nprint(p)\n\n\n\n\n\n\n\n\n\n\n标题： 代码解读 - %&gt;%（管道符）：R 的 dplyr 核心语法，将数据从左往右传递，避免多层嵌套。 - pivot_longer：将”宽格式”矩阵转为”长格式”，是 ggplot2 绘图的标准前处理步骤。 - reorder(Gene, -Expression)：按表达量降序排列 X 轴基因，使图表信息更清晰。 - theme_bw()：使用黑白主题，符合学术论文发表规范。\n\n\n\n\n6.7.3 R 与 Python 互操作：reticulate 包\n在某些场景下，你希望在 R 脚本中直接调用 Python 的机器学习库，或在 Python 中使用 R 的统计函数。reticulate 包实现了这一无缝桥接：\nlibrary(reticulate)\n\n# Specify which Python environment to use\nuse_condaenv(\"bio_env\", required = TRUE)\n\n# Import Python modules directly in R\nnp &lt;- import(\"numpy\")\npd &lt;- import(\"pandas\")\n\n# Call Python functions from R\narr &lt;- np$array(c(1.0, 2.0, 3.0, 4.0))\ncat(\"NumPy mean:\", np$mean(arr), \"\\n\")  # NumPy mean: 2.5\n\n# Execute Python code string in R\npy_run_string(\"import sys; print(f'Python version: {sys.version}')\")\n\n# Share objects between R and Python\nr_vector &lt;- c(10, 20, 30, 40, 50)\npy$r_data &lt;- r_vector             # pass R object to Python\npy_run_string(\"import numpy as np; print('R data in Python:', np.mean(r_data))\")\n\n\n\n6.7.4 Jupyter Notebook 实战：交互式探索基因表达数据\nJupyter Notebook 是数据科学中最流行的交互式开发环境。与传统脚本”一次性运行全部代码”不同，Notebook 将代码拆分为一个个单元格（Cell），每次只运行当前格，结果立即显示在代码下方。这种”写一点、看一点”的工作方式，非常适合探索性数据分析（EDA）。\n\n标题： 如何在本地打开 Jupyter Notebook\n# Ensure you are in the activated conda environment\nconda activate bio_env\n\n# Install Jupyter (if not yet installed)\nmamba install -c conda-forge jupyterlab\n\n# Launch JupyterLab (recommended over classic Notebook)\njupyter lab\n\n# Or launch on a remote server and forward port to local browser\njupyter lab --no-browser --port=8888\n# Then on local machine: ssh -L 8888:localhost:8888 username@server\n浏览器会打开 http://localhost:8888，点击 New → Python 3 即可新建一个 Notebook。\n\n以下是一个完整的 Jupyter Notebook 示例，展示了从数据构造到可视化的标准工作流：\nCell 1：检查环境，导入依赖\nimport sys\nimport numpy as np\nimport pandas as pd\nimport matplotlib.pyplot as plt\n\nprint(f\"Python version: {sys.version}\")\nprint(f\"NumPy  version: {np.__version__}\")\nprint(f\"Pandas version: {pd.__version__}\")\nCell 2：构造数据，立即查看\n# Construct simulated gene expression matrix\nnp.random.seed(42)\ngenes   = [\"TP53\", \"BRCA1\", \"MYC\", \"EGFR\", \"GAPDH\"]\nsamples = [\"Control_1\", \"Control_2\", \"Treated_1\", \"Treated_2\"]\n\nexpr_df = pd.DataFrame(\n    np.random.randint(50, 1000, size=(5, 4)),\n    index=genes,\n    columns=samples\n)\n\nexpr_df  # In Jupyter, last expression is auto-displayed as a table\nCell 3：分析，马上看到结果\n# Compute total sequencing depth per sample (column sum) — simulated library size\nlibrary_size = expr_df.sum(axis=0)\nlibrary_size\nCell 4：可视化，图表嵌入在代码正下方\nfig, axes = plt.subplots(1, 2, figsize=(10, 4))\n\n# Left: library size per sample\nlibrary_size.plot(kind=\"bar\", ax=axes[0], color=\"teal\", edgecolor=\"black\")\naxes[0].set_title(\"Sequencing Library Size per Sample\")\naxes[0].set_xlabel(\"Sample\")\naxes[0].set_ylabel(\"Total counts\")\naxes[0].tick_params(axis=\"x\", rotation=30)\n\n# Right: TP53 expression across samples (line plot)\nexpr_df.loc[\"TP53\"].plot(\n    kind=\"line\", ax=axes[1], marker=\"o\",\n    color=\"firebrick\", linewidth=2, markersize=8\n)\naxes[1].set_title(\"TP53 Expression per Sample\")\naxes[1].set_xlabel(\"Sample\")\naxes[1].set_ylabel(\"Expression (counts)\")\naxes[1].tick_params(axis=\"x\", rotation=30)\n\nplt.tight_layout()\nplt.show()\n\n标题： Jupyter Notebook 的核心优势 | 特性 | 说明 | |——|——| | Cell 独立运行 | 调试时只需重跑出错的那一格，不必重跑全部代码 | | 状态持久化 | 上一格定义的变量，下一格可以直接使用 | | 即时可视化 | 图表直接嵌入在代码下方，无需切换窗口 | | Markdown 混写 | Cell 可切换为 Markdown 模式，代码与文字说明穿插排列 | | 远程运行 | 在服务器上启动 Jupyter，本地浏览器连接——计算在远端，界面在本地 |",
+    "text": "6.7 代码实战：R 与 Python 运行示例\n完成环境配置后，让我们通过两个典型的生信场景，分别体验 R 和 Python 的实际运行效果。\n\n6.7.1 Python 示例：基因表达矩阵的基本操作\n以下代码模拟了一个简单的基因表达矩阵（5个基因 × 4个样本），并完成筛选和可视化。\n\n\nCode\nimport numpy as np\nimport pandas as pd\nimport matplotlib.pyplot as plt\nimport matplotlib as mpl\n\n# 1. Construct simulated gene expression matrix (rows=genes, columns=samples)\nnp.random.seed(42)\ngenes = [\"TP53\", \"BRCA1\", \"MYC\", \"EGFR\", \"GAPDH\"]\nsamples = [\"Sample_A\", \"Sample_B\", \"Sample_C\", \"Sample_D\"]\n\nexpr_matrix = pd.DataFrame(\n    np.random.randint(10, 1000, size=(5, 4)),\n    index=genes,\n    columns=samples\n)\nprint(\"=== Gene Expression Matrix ===\")\n\n\n=== Gene Expression Matrix ===\n\n\nCode\nprint(expr_matrix)\n\n\n       Sample_A  Sample_B  Sample_C  Sample_D\nTP53        112       445       870       280\nBRCA1       116        81       710        30\nMYC         624       131       476       224\nEGFR        340       468        97       382\nGAPDH       109       881       673       140\n\n\nCode\n# 2. Compute mean expression per gene across all samples, sorted descending\nmean_expr = expr_matrix.mean(axis=1).sort_values(ascending=False)\nprint(\"\\n=== Mean Expression per Gene (descending) ===\")\n\n\n\n=== Mean Expression per Gene (descending) ===\n\n\nCode\nprint(mean_expr)\n\n\nGAPDH    450.75\nTP53     426.75\nMYC      363.75\nEGFR     321.75\nBRCA1    234.25\ndtype: float64\n\n\nCode\n# 3. Filter highly expressed genes with mean &gt; 400\nhigh_expr_genes = mean_expr[mean_expr &gt; 400]\nprint(f\"\\n=== Highly Expressed Genes (mean &gt; 400) ===\")\n\n\n\n=== Highly Expressed Genes (mean &gt; 400) ===\n\n\nCode\nprint(high_expr_genes)\n\n\nGAPDH    450.75\nTP53     426.75\ndtype: float64\n\n\nCode\n# 4. Plot bar chart\nfig, ax = plt.subplots(figsize=(6, 4))\nmean_expr.plot(kind=\"bar\", ax=ax, color=\"steelblue\", edgecolor=\"black\")\nax.set_title(\"Mean Expression per Gene\", fontsize=13)\nax.set_xlabel(\"Gene\", fontsize=11)\nax.set_ylabel(\"Mean Expression (counts)\", fontsize=11)\nax.axhline(y=400, color=\"red\", linestyle=\"--\", label=\"Threshold 400\")\nax.legend()\nplt.tight_layout()\nplt.show()\n\n\n\n\n\n\n\n\n\n\n标题： 代码解读 - np.random.seed(42)：固定随机种子，保证结果可复现——这是科研代码的好习惯。 - axis=1：对每一行（基因）求均值，axis=0 则是对每一列（样本）求均值。 - axhline：在图中画水平参考线，直观展示筛选阈值。\n\n\n\n\n6.7.2 R 示例：使用 ggplot2 绘制基因表达箱线图\n以下代码使用 R 的 ggplot2 包，对相同的模拟数据进行可视化，展示 R 在统计作图方面的优雅语法。\n\n\nCode\nlibrary(ggplot2)\nlibrary(dplyr)\n\n\n\nAttaching package: 'dplyr'\n\n\nThe following objects are masked from 'package:stats':\n\n    filter, lag\n\n\nThe following objects are masked from 'package:base':\n\n    intersect, setdiff, setequal, union\n\n\nCode\nlibrary(tidyr)\nlibrary(tibble)\n\n# 1. Construct simulated gene expression matrix\nset.seed(42)\ngenes   &lt;- c(\"TP53\", \"BRCA1\", \"MYC\", \"EGFR\", \"GAPDH\")\nsamples &lt;- c(\"Sample_A\", \"Sample_B\", \"Sample_C\", \"Sample_D\")\n\nexpr_matrix &lt;- matrix(\n  sample(10:1000, length(genes) * length(samples), replace = TRUE),\n  nrow = length(genes),\n  dimnames = list(genes, samples)\n)\n\n# 2. Reshape to long format for ggplot2\nexpr_df &lt;- as.data.frame(expr_matrix) %&gt;%\n  rownames_to_column(\"Gene\") %&gt;%\n  pivot_longer(cols = -Gene, names_to = \"Sample\", values_to = \"Expression\")\n\nprint(head(expr_df, 10))\n\n\n# A tibble: 10 × 3\n   Gene  Sample   Expression\n   &lt;chr&gt; &lt;chr&gt;         &lt;int&gt;\n 1 TP53  Sample_A        570\n 2 TP53  Sample_B        155\n 3 TP53  Sample_C         33\n 4 TP53  Sample_D        631\n 5 BRCA1 Sample_A        330\n 6 BRCA1 Sample_B        643\n 7 BRCA1 Sample_C        848\n 8 BRCA1 Sample_D        541\n 9 MYC   Sample_A        162\n10 MYC   Sample_B         58\n\n\nCode\n# 3. Compute mean expression per gene (for mean point overlay)\ngene_means &lt;- expr_df %&gt;%\n  group_by(Gene) %&gt;%\n  summarise(Mean = mean(Expression), .groups = \"drop\")\n\n# 4. Plot boxplot + mean points\np &lt;- ggplot(expr_df, aes(x = reorder(Gene, -Expression), y = Expression, fill = Gene)) +\n  geom_boxplot(alpha = 0.7, outlier.shape = 21) +\n  geom_point(data = gene_means,\n             aes(x = reorder(Gene, -Mean), y = Mean),\n             shape = 23, size = 3, fill = \"red\", color = \"black\") +\n  geom_hline(yintercept = 400, linetype = \"dashed\", color = \"darkred\", linewidth = 0.8) +\n  labs(\n    title    = \"Gene Expression Distribution (Boxplot)\",\n    subtitle = \"Red diamond = mean; dashed line = threshold 400\",\n    x        = \"Gene\",\n    y        = \"Expression (counts)\"\n  ) +\n  theme_bw(base_size = 12) +\n  theme(legend.position = \"none\")\n\nprint(p)\n\n\n\n\n\n\n\n\n\n\n标题： 代码解读 - %&gt;%（管道符）：R 的 dplyr 核心语法，将数据从左往右传递，避免多层嵌套。 - pivot_longer：将”宽格式”矩阵转为”长格式”，是 ggplot2 绘图的标准前处理步骤。 - reorder(Gene, -Expression)：按表达量降序排列 X 轴基因，使图表信息更清晰。 - theme_bw()：使用黑白主题，符合学术论文发表规范。\n\n\n\n\n6.7.3 R 与 Python 互操作：reticulate 包\n在某些场景下，你希望在 R 脚本中直接调用 Python 的机器学习库，或在 Python 中使用 R 的统计函数。reticulate 包实现了这一无缝桥接：\nlibrary(reticulate)\n\n# Specify which Python environment to use\nuse_condaenv(\"bio_env\", required = TRUE)\n\n# Import Python modules directly in R\nnp &lt;- import(\"numpy\")\npd &lt;- import(\"pandas\")\n\n# Call Python functions from R\narr &lt;- np$array(c(1.0, 2.0, 3.0, 4.0))\ncat(\"NumPy mean:\", np$mean(arr), \"\\n\")  # NumPy mean: 2.5\n\n# Execute Python code string in R\npy_run_string(\"import sys; print(f'Python version: {sys.version}')\")\n\n# Share objects between R and Python\nr_vector &lt;- c(10, 20, 30, 40, 50)\npy$r_data &lt;- r_vector             # pass R object to Python\npy_run_string(\"import numpy as np; print('R data in Python:', np.mean(r_data))\")\n\n\n\n6.7.4 Jupyter Notebook 实战：交互式探索基因表达数据\nJupyter Notebook 是数据科学中最流行的交互式开发环境。与传统脚本”一次性运行全部代码”不同，Notebook 将代码拆分为一个个单元格（Cell），每次只运行当前格，结果立即显示在代码下方。这种”写一点、看一点”的工作方式，非常适合探索性数据分析（EDA）。\n\n标题： 如何在本地打开 Jupyter Notebook\n# Ensure you are in the activated conda environment\nconda activate bio_env\n\n# Install Jupyter (if not yet installed)\nmamba install -c conda-forge jupyterlab\n\n# Launch JupyterLab (recommended over classic Notebook)\njupyter lab\n\n# Or launch on a remote server and forward port to local browser\njupyter lab --no-browser --port=8888\n# Then on local machine: ssh -L 8888:localhost:8888 username@server\n浏览器会打开 http://localhost:8888，点击 New → Python 3 即可新建一个 Notebook。\n\n以下是一个完整的 Jupyter Notebook 示例，展示了从数据构造到可视化的标准工作流：\nCell 1：检查环境，导入依赖\nimport sys\nimport numpy as np\nimport pandas as pd\nimport matplotlib.pyplot as plt\n\nprint(f\"Python version: {sys.version}\")\nprint(f\"NumPy  version: {np.__version__}\")\nprint(f\"Pandas version: {pd.__version__}\")\nCell 2：构造数据，立即查看\n# Construct simulated gene expression matrix\nnp.random.seed(42)\ngenes   = [\"TP53\", \"BRCA1\", \"MYC\", \"EGFR\", \"GAPDH\"]\nsamples = [\"Control_1\", \"Control_2\", \"Treated_1\", \"Treated_2\"]\n\nexpr_df = pd.DataFrame(\n    np.random.randint(50, 1000, size=(5, 4)),\n    index=genes,\n    columns=samples\n)\n\nexpr_df  # In Jupyter, last expression is auto-displayed as a table\nCell 3：分析，马上看到结果\n# Compute total sequencing depth per sample (column sum) — simulated library size\nlibrary_size = expr_df.sum(axis=0)\nlibrary_size\nCell 4：可视化，图表嵌入在代码正下方\nfig, axes = plt.subplots(1, 2, figsize=(10, 4))\n\n# Left: library size per sample\nlibrary_size.plot(kind=\"bar\", ax=axes[0], color=\"teal\", edgecolor=\"black\")\naxes[0].set_title(\"Sequencing Library Size per Sample\")\naxes[0].set_xlabel(\"Sample\")\naxes[0].set_ylabel(\"Total counts\")\naxes[0].tick_params(axis=\"x\", rotation=30)\n\n# Right: TP53 expression across samples (line plot)\nexpr_df.loc[\"TP53\"].plot(\n    kind=\"line\", ax=axes[1], marker=\"o\",\n    color=\"firebrick\", linewidth=2, markersize=8\n)\naxes[1].set_title(\"TP53 Expression per Sample\")\naxes[1].set_xlabel(\"Sample\")\naxes[1].set_ylabel(\"Expression (counts)\")\naxes[1].tick_params(axis=\"x\", rotation=30)\n\nplt.tight_layout()\nplt.show()\n\n标题： Jupyter Notebook 的核心优势 | 特性 | 说明 | |——|——| | Cell 独立运行 | 调试时只需重跑出错的那一格，不必重跑全部代码 | | 状态持久化 | 上一格定义的变量，下一格可以直接使用 | | 即时可视化 | 图表直接嵌入在代码下方，无需切换窗口 | | Markdown 混写 | Cell 可切换为 Markdown 模式，代码与文字说明穿插排列 | | 远程运行 | 在服务器上启动 Jupyter，本地浏览器连接——计算在远端，界面在本地 |",
     "crumbs": [
       "第一阶段：基础与基因组",
       "<span class='chapter-number'>6</span>  <span class='chapter-title'>生物信息学双擎——R 与 Python 核心环境配置及AI辅助</span>"
@@ -1207,20 +1207,20 @@
   {
     "objectID": "genomics_qc_lesson1.html",
     "href": "genomics_qc_lesson1.html",
-    "title": "9  二代测序原理与原始数据的数字表现",
+    "title": "9  原始下机数据的数字表现",
     "section": "",
     "text": "10 测序技术概览",
     "crumbs": [
       "第一阶段：基础与基因组",
-      "<span class='chapter-number'>9</span>  <span class='chapter-title'>二代测序原理与原始数据的数字表现</span>"
+      "<span class='chapter-number'>9</span>  <span class='chapter-title'>原始下机数据的数字表现</span>"
     ]
   },
   {
     "objectID": "genomics_qc_lesson1.html#主流测序平台与-sbs-原理",
     "href": "genomics_qc_lesson1.html#主流测序平台与-sbs-原理",
-    "title": "9  二代测序原理与原始数据的数字表现",
+    "title": "9  原始下机数据的数字表现",
     "section": "10.1 主流测序平台与 SBS 原理",
-    "text": "10.1 主流测序平台与 SBS 原理\n当今全球 90% 以上的基因组测序数据来源于 Illumina 平台，其核心是 边合成边测序 (Sequencing by Synthesis, SBS) 技术。\n{{Wiki:DNA_sequencing}}\n\n10.1.1 Illumina 测序工作流\n\n文库构建 (Library Prep)\n\nDNA 随机片段化至 300-500 bp\n两端添加接头 (Adapters)：P5 和 P7\n添加索引 (Indices/Barcodes)：区分不同样本\n目的：为下游桥式 PCR 扩增做准备\n\n簇生成 (Cluster Generation)\n\nDNA 分子与芯片表面的引物杂交\n通过 桥式 PCR 进行原位扩增\n每条单分子扩增成 ~1000 个相同拷贝（簇）\n目的：将微弱的单分子信号放大至可检测水平\n\n\n{{Wiki:Polymerase_chain_reaction}}\n\n四色荧光测序\n\n四种荧光标记的 dNTP（A-绿, C-蓝, G-黄, T-红）\n每轮合成后激光扫描、录像、清洗\n记录每个簇在每个循环中的荧光颜色\n根据荧光强度判定碱基身份\n\n\n\n\n10.1.2 其他主流测序技术\n\n\n\n平台\n技术原理\nRead长度\n主要应用\n\n\n\n\nIllumina\nSBS (荧光)\n150-300bp\nWGS, WES, 变异检测\n\n\nPacBio\nSMRT (ZMW)\n10-30kb\n长读组装、SV检测\n\n\nOxford Nanopore\n电信号\n10-200kb\n实时测序、长读\n\n\nBGI (DNBSEQ)\nSBS 变体\n150bp\n超高通量人群测序",
+    "text": "10.1 主流测序平台与 SBS 原理\n当今全球 90% 以上的基因组测序数据来源于 Illumina 平台，其核心是 边合成边测序 (Sequencing by Synthesis, SBS) 技术。\n{{Wiki:DNA_sequencing}}\n\n10.1.1 Recall: Illumina 测序工作流\n\n文库构建 (Library Prep)\n\nDNA 随机片段化至 300-500 bp\n两端添加接头 (Adapters)：P5 和 P7\n添加索引 (Indices/Barcodes)：区分不同样本\n目的：为下游桥式 PCR 扩增做准备\n\n簇生成 (Cluster Generation)\n\nDNA 分子与芯片表面的引物杂交\n通过 桥式 PCR 进行原位扩增\n每条单分子扩增成 ~1000 个相同拷贝（簇）\n目的：将微弱的单分子信号放大至可检测水平\n\n\n{{Wiki:Polymerase_chain_reaction}}\n\n四色荧光测序\n\n四种荧光标记的 dNTP（A-绿, C-蓝, G-黄, T-红）\n每轮合成后激光扫描、录像、清洗\n记录每个簇在每个循环中的荧光颜色\n根据荧光强度判定碱基身份\n\n\n\n\n10.1.2 其他主流测序技术\n\n\n\n平台\n技术原理\nRead长度\n主要应用\n\n\n\n\nIllumina\nSBS (荧光)\n150-300bp\nWGS, WES, 变异检测\n\n\nPacBio\nSMRT (ZMW)\n10-30kb\n长读组装、SV检测\n\n\nOxford Nanopore\n电信号\n10-200kb\n实时测序、长读\n\n\nBGI (DNBSEQ)\nSBS 变体\n150bp\n超高通量人群测序",
     "crumbs": [
       "第一阶段：基础与基因组",
       "<span class='chapter-number'>9</span>  <span class='chapter-title'>二代测序原理与原始数据的数字表现</span>"
@@ -1229,29 +1229,29 @@
   {
     "objectID": "genomics_qc_lesson1.html#测序评估关键指标",
     "href": "genomics_qc_lesson1.html#测序评估关键指标",
-    "title": "9  二代测序原理与原始数据的数字表现",
+    "title": "9  原始下机数据的数字表现",
     "section": "10.2 测序评估关键指标",
     "text": "10.2 测序评估关键指标\n\n10.2.1 深度与覆盖度公式\n\\[C = \\frac{L \\times N}{G}\\]\n其中： - \\(C\\) = 平均覆盖深度 (Coverage Depth)，单位 X（倍） - \\(L\\) = 每条 Read 长度（bp） - \\(N\\) = 总 Read 数量 - \\(G\\) = 目标基因组大小（bp）\n深度 vs 覆盖度： - 覆盖度：基因组中被至少读取一次的位置比例（0-100%） - 深度：平均每个位置被读取多少次（1-200X）\n\n\n10.2.2 单端 (SE) vs 双端 (PE) 测序\n双端测序 (Paired-End, PE) - 推荐用于变异检测： - 从同一 DNA 分子的两端各测一条 Read - 两条 Read 之间距离 = 插入片段长度 (Insert Size)，通常 200-500 bp - 优势： - 提高比对特异性（两条 Read 必须在相近距离内） - 有效检测结构变异 (Indel, SV) - 区分同源基因和重复序列\n单端测序 (Single-End, SE)： - 只从一端测序 - 成本低，但比对歧义性高，不适合变异检测\n\n\n10.2.3 为什么 PE150 是变异检测的黄金标准？\n\n\n\n\n\n\n\n\n\nRead类型\n长度\n优势\n劣势\n\n\n\n\nPE100\n100bp\n成本低\n无法唯一比对，假阳性高\n\n\nPE150\n150bp\n长度足够、覆盖外显子、成本合理\n平衡点\n\n\nPE250\n250bp\n大 Indel 检测优秀\n成本高、通常不必要",
     "crumbs": [
       "第一阶段：基础与基因组",
-      "<span class='chapter-number'>9</span>  <span class='chapter-title'>二代测序原理与原始数据的数字表现</span>"
+      "<span class='chapter-number'>9</span>  <span class='chapter-title'>原始下机数据的数字表现</span>"
     ]
   },
   {
     "objectID": "genomics_qc_lesson1.html#fastq-格式与质量评分",
     "href": "genomics_qc_lesson1.html#fastq-格式与质量评分",
-    "title": "9  二代测序原理与原始数据的数字表现",
+    "title": "9  原始下机数据的数字表现",
     "section": "10.3 FASTQ 格式与质量评分",
     "text": "10.3 FASTQ 格式与质量评分\n\n10.3.1 FASTQ 文件结构\n每条 Read 占 4 行：\n@SRR1234567.1 ILLUMINA-READ-ID\nACGTACGTACGTACGTACGTACGTACGTACGTACGTACGTACGTACGTACGTACGTACGTACGTAC\n+\nIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIII\n\n\n\n行号\n含义\n说明\n\n\n\n\n1\nHeader\n@ 字符 + Read ID（通常包含仪器信息）\n\n\n2\nSequence\nDNA 序列（A, C, G, T, N）\n\n\n3\nSeparator\n+ 字符（可选：重复 read ID）\n\n\n4\nQuality\nASCII 码表示的质量评分\n\n\n\n\n\n10.3.2 Phred 质量评分体系\n{{Wiki:Phred_quality_score}}\n\\[Q = -10 \\log_{10}(P_{\\text{error}})\\]\n\n\n\nQ值\n错误率\n准确率\n分级\n\n\n\n\nQ10\n0.1\n90%\n低质量\n\n\nQ20\n0.01\n99%\n参考级别\n\n\nQ30\n0.001\n99.9%\n高质量\n\n\nQ40\n0.0001\n99.99%\n超高质量\n\n\n\n\n\n10.3.3 ASCII 码映射规则\n\\[\\text{ASCII character} = Q + 33 \\quad \\text{(Phred+33 标准)}\\]\n常见字符： - ! (ASCII 33) → Q0 - @ (ASCII 64) → Q31 - I (ASCII 73) → Q40",
     "crumbs": [
       "第一阶段：基础与基因组",
-      "<span class='chapter-number'>9</span>  <span class='chapter-title'>二代测序原理与原始数据的数字表现</span>"
+      "<span class='chapter-number'>9</span>  <span class='chapter-title'>原始下机数据的数字表现</span>"
     ]
   },
   {
     "objectID": "genomics_qc_lesson1.html#实践fastq-数据生成与质量分析",
     "href": "genomics_qc_lesson1.html#实践fastq-数据生成与质量分析",
-    "title": "9  二代测序原理与原始数据的数字表现",
+    "title": "9  原始下机数据的数字表现",
     "section": "10.4 实践：FASTQ 数据生成与质量分析",
     "text": "10.4 实践：FASTQ 数据生成与质量分析\n\n10.4.1 Python 模拟代码\nimport random\nimport numpy as np\n\n# 设置随机种子\nrandom.seed(42)\nnp.random.seed(42)\n\ndef generate_fastq_reads(num_reads=1000, read_length=150, output_file=\"simulated.fastq\"):\n    \"\"\"\n    Generate simulated FASTQ file with realistic quality degradation\n    Quality typically decreases from 5' to 3' end\n    \"\"\"\n    with open(output_file, 'w') as f:\n        for i in range(num_reads):\n            # Header\n            read_id = f\"@SIM_{i+1:06d}/1 simulated read\"\n\n            # Sequence\n            bases = ['A', 'C', 'G', 'T']\n            sequence = ''.join(random.choice(bases) for _ in range(read_length))\n\n            # Quality: simulating degradation at 3' end\n            q_values = np.linspace(35, 25, read_length)  # 35 at 5', 25 at 3'\n            q_values += np.random.normal(0, 3, read_length)  # Add noise\n            q_values = np.clip(q_values, 0, 40).astype(int)\n\n            # Convert Q values to ASCII (Phred+33)\n            quality_str = ''.join(chr(33 + q) for q in q_values)\n\n            # Write 4-line FASTQ record\n            f.write(f\"{read_id}\\n{sequence}\\n+\\n{quality_str}\\n\")\n\n    print(f\"✓ Generated {num_reads} reads to {output_file}\")\n\ndef analyze_fastq(fastq_file):\n    \"\"\"Parse and analyze FASTQ quality statistics\"\"\"\n    qualities = []\n    read_count = 0\n\n    with open(fastq_file, 'r') as f:\n        while True:\n            header = f.readline().strip()\n            if not header:\n                break\n            seq = f.readline().strip()\n            plus = f.readline().strip()\n            qual = f.readline().strip()\n\n            read_count += 1\n            q_values = [ord(c) - 33 for c in qual]\n            qualities.extend(q_values)\n\n    qual_array = np.array(qualities)\n\n    print(\"\\n=== FASTQ 质量统计 ===\")\n    print(f\"总 Read 数: {read_count}\")\n    print(f\"平均质量 (Q): {np.mean(qual_array):.2f}\")\n    print(f\"中位数质量: {np.median(qual_array):.2f}\")\n    print(f\"最小/最大质量: {np.min(qual_array)}/{np.max(qual_array)}\")\n    print(f\"Q20 以上比例: {(qual_array &gt;= 20).sum() / len(qual_array) * 100:.2f}%\")\n    print(f\"Q30 以上比例: {(qual_array &gt;= 30).sum() / len(qual_array) * 100:.2f}%\")\n\ndef verify_phred_formula():\n    \"\"\"Verify Phred quality formula\"\"\"\n    print(\"\\n=== Phred 质量公式验证 ===\")\n    test_q_values = [10, 20, 30, 40]\n    for q in test_q_values:\n        error_rate = 10 ** (-q / 10)\n        accuracy = (1 - error_rate) * 100\n        print(f\"Q{q}: 错误率 {error_rate:.4f} ({error_rate*100:.02f}%), 准确率 {accuracy:.2f}%\")\n\n# 主程序\nif __name__ == \"__main__\":\n    # 生成模拟数据\n    generate_fastq_reads(num_reads=5000, read_length=150, output_file=\"simulated_wgs.fastq\")\n\n    # 分析质量\n    analyze_fastq(\"simulated_wgs.fastq\")\n\n    # 验证公式\n    verify_phred_formula()\n\n\n10.4.2 预期输出\n✓ Generated 5000 reads to simulated_wgs.fastq\n\n=== FASTQ 质量统计 ===\n总 Read 数: 5000\n平均质量 (Q): 29.85\n中位数质量: 30.12\n最小/最大质量: 15/40\nQ20 以上比例: 95.34%\nQ30 以上比例: 76.28%\n\n=== Phred 质量公式验证 ===\nQ10: 错误率 0.1000 (10.00%), 准确率 90.00%\nQ20: 错误率 0.0100 (1.00%), 准确率 99.00%\nQ30: 错误率 0.0010 (0.10%), 准确率 99.90%\nQ40: 错误率 0.0001 (0.01%), 准确率 99.99%",
     "crumbs": [
@@ -1273,12 +1273,12 @@
   {
     "objectID": "genomics_qc_lesson1.html#总结",
     "href": "genomics_qc_lesson1.html#总结",
-    "title": "9  二代测序原理与原始数据的数字表现",
-    "section": "10.6 总结",
-    "text": "10.6 总结\n✓ SBS 测序 通过荧光循环检测每个碱基合成 ✓ PE150 是变异检测的标准配置 ✓ FASTQ 是测序数据的标准格式 ✓ Phred 质量评分 遵循 \\(Q = -10 \\log_{10}(P)\\) 公式 ✓ 覆盖深度 = (Read 数 × Read 长度) / 基因组大小",
+    "title": "9  原始下机数据的数字表现",
+    "section": "14.6 总结",
+    "text": "14.6 总结\n✓ SRA / ENA 是获取公共测序数据的权威来源，ENA 可直接下载 FASTQ 格式 ✓ SRR2584863 (E. coli K-12) 是教学与算法验证的标准参考数据集 ✓ FASTQ Header 编码了测序仪、流动池、坐标等完整来源信息 ✓ Phred 质量评分 遵循 \\(Q = -10 \\log_{10}(P)\\) 公式，Q30 对应 0.1% 错误率 ✓ FastQC 提供标准化的单样本 QC 报告，MultiQC 用于批量样本汇总 ✓ FastQC 警告需结合实验类型解读，前 10 bp 碱基不均及轻微 3’ 端质量降低属正常现象",
     "crumbs": [
       "第一阶段：基础与基因组",
-      "<span class='chapter-number'>9</span>  <span class='chapter-title'>二代测序原理与原始数据的数字表现</span>"
+      "<span class='chapter-number'>9</span>  <span class='chapter-title'>原始下机数据的数字表现</span>"
     ]
   },
   {
@@ -1394,12 +1394,12 @@
   {
     "objectID": "genomics_qc_lesson2.html",
     "href": "genomics_qc_lesson2.html",
-    "title": "10  数据’体检’与参考基因组比对",
+    "title": "10  数据预处理与参考基因组比对",
     "section": "",
-    "text": "11 原始数据质量评估",
+    "text": "11 Adapter 污染：从文库构建到污染机制",
     "crumbs": [
       "第一阶段：基础与基因组",
-      "<span class='chapter-number'>10</span>  <span class='chapter-title'>数据'体检'与参考基因组比对</span>"
+      "<span class='chapter-number'>10</span>  <span class='chapter-title'>数据预处理与参考基因组比对</span>"
     ]
   },
   {
@@ -1460,23 +1460,23 @@
   {
     "objectID": "genomics_qc_lesson2.html#总结",
     "href": "genomics_qc_lesson2.html#总结",
-    "title": "10  数据’体检’与参考基因组比对",
-    "section": "11.6 总结",
-    "text": "11.6 总结\n✓ FastQC 提供全面的质量评估，指导后续预处理 ✓ Trimming 去除低质量碱基、adapter，改善下游分析 ✓ 参考基因组 版本选择重要（hg19 vs hg38） ✓ BWT 算法 使得快速比对成为可能 ✓ BWA-MEM 是 WGS/WES 比对的行业标准",
+    "title": "10  数据预处理与参考基因组比对",
+    "section": "17.6 总结",
+    "text": "17.6 总结\n✓ Adapter read-through 在 insert size &lt; read 长度时发生，必须在比对前去除 ✓ fastp 是目前最高效的预处理工具，自动检测 adapter，内置 QC 报告 ✓ GRCh38（hg38） 是人类 WGS 新项目的标准参考基因组，含 decoy 序列；版本不可混用 ✓ BWT/FM-index 将基因组搜索复杂度从 \\(O(G \\times L)\\) 降至 \\(O(L)\\)，使快速比对成为可能 ✓ BWA-MEM 采用 Seed-and-Extend 策略，-R 参数写入的 Read Group 是 GATK 的必要条件 ✓ SAM FLAG 和 CIGAR 字符串完整编码了每条 read 的比对属性 ✓ samtools flagstat 的 mapped 率 &gt; 95% 且 properly paired 率 &gt; 90% 是高质量比对的基准",
     "crumbs": [
       "第一阶段：基础与基因组",
-      "<span class='chapter-number'>10</span>  <span class='chapter-title'>数据'体检'与参考基因组比对</span>"
+      "<span class='chapter-number'>10</span>  <span class='chapter-title'>数据预处理与参考基因组比对</span>"
     ]
   },
   {
     "objectID": "genomics_qc_lesson3.html",
     "href": "genomics_qc_lesson3.html",
-    "title": "11  标准数据格式 SAM/BAM 与变异分类",
+    "title": "11  从头基因组组装：当没有参考基因组时",
     "section": "",
-    "text": "12 SAM/BAM 格式详解",
+    "text": "12 为什么需要从头组装",
     "crumbs": [
       "第一阶段：基础与基因组",
-      "<span class='chapter-number'>11</span>  <span class='chapter-title'>标准数据格式 SAM/BAM 与变异分类</span>"
+      "<span class='chapter-number'>11</span>  <span class='chapter-title'>从头基因组组装：当没有参考基因组时</span>"
     ]
   },
   {
@@ -1548,12 +1548,12 @@
   {
     "objectID": "genomics_qc_lesson3.html#总结",
     "href": "genomics_qc_lesson3.html#总结",
-    "title": "11  标准数据格式 SAM/BAM 与变异分类",
-    "section": "12.7 总结",
-    "text": "12.7 总结\n✓ SAM/BAM 是比对数据的标准格式 ✓ FLAG 位编码了 read 的所有属性（映射方向、配对情况等） ✓ CIGAR 描述了 read 与参考序列的匹配状态，可用于识别 Indel ✓ MAPQ 质量评分 &gt;= 20 是变异检测的基本过滤标准 ✓ 变异分类 包括 SNP、Indel、SV、CNV 等多种类型",
+    "title": "11  从头基因组组装：当没有参考基因组时",
+    "section": "18.4 总结",
+    "text": "18.4 总结\n✓ 从头组装 是无参考基因组场景下重建基因组的核心技术，也是参考基因组本身产生的方式 ✓ De Bruijn 图 将 reads 分解为 k-mer，把 NP 完全的哈密顿路径问题转化为多项式时间可解的欧拉路径问题 ✓ 气泡（Bubble） 来源于测序错误或真实 SNP，通过覆盖度比较弹出；尖刺（Tip） 来源于低质量 read 末端，通过迭代截除清理 ✓ N50 是衡量组装连续性的核心指标；misassembly 数量 是衡量组装准确性的最重要指标 ✓ SPAdes 通过多 k 值策略和错误校正，是目前细菌和宏基因组短读组装的行业标准 ✓ QUAST + BUSCO 组合评估提供了有参考和无参考两种场景下的完整质量图像 ✓ 覆盖深度 ≥ 50X 是高质量从头组装的基本要求，低深度（&lt; 20X）会导致严重的图断裂和碎片化",
     "crumbs": [
       "第一阶段：基础与基因组",
-      "<span class='chapter-number'>11</span>  <span class='chapter-title'>标准数据格式 SAM/BAM 与变异分类</span>"
+      "<span class='chapter-number'>11</span>  <span class='chapter-title'>从头基因组组装：当没有参考基因组时</span>"
     ]
   },
   {
@@ -1735,34 +1735,34 @@
   {
     "objectID": "genomics_qc_lesson1.html#课后自测-post-lesson-quiz",
     "href": "genomics_qc_lesson1.html#课后自测-post-lesson-quiz",
-    "title": "9  二代测序原理与原始数据的数字表现",
-    "section": "10.5 课后自测 (Post-Lesson Quiz)",
-    "text": "10.5 课后自测 (Post-Lesson Quiz)\n\n标题： 💭 思考题\n\n如果要进行 100X 覆盖的人类全基因组测序 (3 Gb)，使用 PE150 reads，需要多少条 reads？\nFASTQ 中某个位置的质量字符是 @，转换为 Q 值是多少？这个位置的错误率大约是多少？\n为什么我们不直接测序单分子 DNA，而要通过 PCR 扩增成簇？\n\n\n\n参考答案 (Reference Answers)\n\n1. 总碱基数 = 100 × 3×10⁹ bp = 3×10¹¹ bp；PE150 每条 read = 300 bp；Read 数 = 3×10¹¹ ÷ 300 = 1×10⁹ reads（10 亿条）\n2. @ 的 ASCII 码是 64；Q = 64 - 33 = 31；错误率 = 10^(-31/10) ≈ 0.0008 (0.08%)\n3. 单分子信号极弱（荧光很少），无法被检测；PCR 扩增成 1000 倍，信噪比大幅提升，激光才能有效激发并检测荧光信号",
+    "title": "9  原始下机数据的数字表现",
+    "section": "14.5 课后自测 (Post-Lesson Quiz)",
+    "text": "14.5 课后自测 (Post-Lesson Quiz)\n\n如果要进行 100X 覆盖的人类全基因组测序（3 Gb），使用 PE150 reads，需要多少条 reads？\nFASTQ 中某个位置的质量字符是 @，转换为 Q 值是多少？这个位置的错误率大约是多少？\n为什么我们不直接测序单分子 DNA，而要通过 PCR 扩增成簇？\n某样品的 FastQC 报告中，“Per base sequence content” 模块前 10 bp 显示橙色警告，但 “Per base sequence quality” 全绿。该样品是否需要丢弃？请解释原因。\n使用 zcat sample.fastq.gz | awk 'NR%4==2' 提取序列行，请解释 NR%4==2 的数学含义，并说明为什么提取质量行应改为 NR%4==0。\n一个 WGS 项目包含 30 个样本，每个样本生成 R1 和 R2 两份 FastQC 报告，共 60 份 HTML。应使用哪个工具高效汇总，并说明其输出格式。\n\n\n\n参考答案 (Reference Answers)\n\n\n总碱基数 = 100 × 3×10⁹ bp = 3×10¹¹ bp；PE150 每条 read 贡献 300 bp；Read 数 = 3×10¹¹ ÷ 300 = 1×10⁹ reads（10 亿条）。\n@ 的 ASCII 码为 64；Q = 64 − 33 = 31；错误率 = 10^(−31/10) ≈ 7.9×10⁻⁴（约 0.08%），属于高质量碱基。\n单分子荧光信号极弱，现有光学检测系统无法可靠捕获。桥式 PCR 将单分子扩增约 1000 倍形成簇，信噪比大幅提升，激光激发后可产生可重复检测的荧光信号。\n不需要丢弃。前 10 bp 碱基组成不均是随机六聚体引物偏向性导致的系统性偏差，是 Illumina 测序的固有特性；碱基质量全绿说明测序本身质量优秀。该警告对下游分析影响可忽略，无需截去或丢弃。\nFASTQ 文件中每组 4 行的行号余数规律为：余 1 = header，余 2 = 序列，余 3 = 分隔符（+），余 0 = 质量。NR%4==2 表示行号除以 4 余 2，即序列行；NR%4==0 表示行号除以 4 余 0，即质量行（因为第4行的行号为 4, 8, 12, … 均被 4 整除）。\n使用 MultiQC（pip install multiqc；multiqc fastqc_output/），输出为单个 HTML 文件，以热图和折线图汇总所有样本的各项质量指标，支持交互式浏览和样本间比较。",
     "crumbs": [
       "第一阶段：基础与基因组",
-      "<span class='chapter-number'>9</span>  <span class='chapter-title'>二代测序原理与原始数据的数字表现</span>"
+      "<span class='chapter-number'>9</span>  <span class='chapter-title'>原始下机数据的数字表现</span>"
     ]
   },
   {
     "objectID": "genomics_qc_lesson2.html#课后自测-post-lesson-quiz",
     "href": "genomics_qc_lesson2.html#课后自测-post-lesson-quiz",
-    "title": "10  数据’体检’与参考基因组比对",
-    "section": "11.5 课后自测 (Post-Lesson Quiz)",
-    "text": "11.5 课后自测 (Post-Lesson Quiz)\n\n标题： 💭 思考题\n\nFastQC 报告中 “Per Base Sequence Quality” 显示质量从位置 140 开始快速下降（从 Q30 降至 Q15），这说明什么？应如何处理？\nGC 含量分布显示双峰（一峰在 35%，一峰在 55%），可能原因是什么？\n为什么需要对参考基因组构建 BWT 索引？这个索引有什么优势？\n\n\n\n参考答案 (Reference Answers)\n\n1. 说明测序化学反应在 3’ 端衰减（正常现象），但衰减程度较大。建议用 Trimmomatic/Fastp 在位置 140 处进行 trimming，去除末端 10 bp 低质量序列\n2. 可能是两个不同物种或污染物的混合（如混入了人类和大肠杆菌 DNA）。应用分类工具（如 Kraken）检查，或重新提取样本\n3. BWT 索引将 3Gb 基因组压缩至 ~2Gb 内存空间，支持 O(log n) 的模糊查询，使得数百万 reads 可在分钟级完成比对。不用索引需要逐个线性搜索，耗时数天",
+    "title": "10  数据预处理与参考基因组比对",
+    "section": "17.5 课后自测 (Post-Lesson Quiz)",
+    "text": "17.5 课后自测 (Post-Lesson Quiz)\n\n一个 RNA-seq 实验使用了 75 bp 单端测序，但文库构建的 cDNA 片段长度为 200–500 bp。是否会出现 adapter read-through？请解释原因。\n下载 hg38 参考基因组后发现包含 chr1_alt 等 ALT contig 文件。若将这些 ALT contigs 包含在比对参考中，会对多态性高的区域（如 HLA 位点）的比对结果产生什么影响？\n某 BAM 文件的 samtools flagstat 报告显示 mapped 率仅 68%，properly paired 率仅 52%。请列举至少三种可能的原因。\n解读以下 CIGAR 字符串：12S 88M 3I 47M。请计算：（a）read 总长度；（b）比对至参考基因组的长度；（c）该比对意味着相对参考基因组有怎样的结构？\n为什么 BWA-MEM 对重复序列区域的 reads 赋予低 MAPQ 值（如 MAPQ=0），而不是直接丢弃这些 reads？保留低 MAPQ reads 有何意义？\n在 bwa mem 命令中，若省略 -R 参数（Read Group），BWA 仍可正常完成比对并生成 BAM 文件。但在后续 GATK 变异检测步骤中会发生什么？如何补救？\n\n\n\n参考答案 (Reference Answers)\n\n\n不会出现 read-through。75 bp read 长度小于 200–500 bp 的 insert size，测序仪在读完 75 bp 后即停止，未能到达对侧 adapter。Read-through 仅在 read 长度 &gt; insert size 时发生。该实验无需担心 adapter 污染，但若 insert size 分布出现 &lt; 75 bp 的片段，则这部分 reads 会发生 read-through。\n包含 ALT contigs 后，原本唯一比对至主染色体的 reads 可能同时比对至 ALT contigs，导致 MAPQ 降低甚至变为 0（多比对）。对于 HLA 等高变区域，这会使变异检测更加复杂；但若使用支持 ALT-aware 比对的工具（如 BWA-MEM2 + bwakit），则可正确处理 ALT contigs，提高该区域的变异检测精度。简单包含 ALT contigs 但不使用 ALT-aware 工具，可能反而降低这些区域的检测质量。\n可能原因：①参考基因组版本与样本不匹配（如用 hg38 比对实际来自小鼠的数据）；②样本存在严重的跨物种污染（如微生物污染）；③ adapter trimming 未完成，大量携带 adapter 序列的 reads 无法比对；④样本实为目标基因组以外的物种（物种鉴定错误）；⑤文库构建失败，reads 为接头二聚体（adapter dimer）或人工序列。\n（a）read 总长度 = 12（S）+ 88（M）+ 3（I）+ 47（M）= 150 bp（S 和 I 均计入 read 长度，D 不计）。（b）比对至参考基因组的长度 = 88（M）+ 47（M）= 135 bp（S 和 I 不计入参考长度）。（c）该 read 前 12 bp 未被比对（软剪切，可能为低质量端或 adapter）；随后 88 bp 正常比对；相对参考基因组存在 3 bp 插入（Insertion，read 中多出 3 bp）；最后 47 bp 正常比对。整体提示该 read 横跨一个小型 Insertion 变异位点。\n低 MAPQ reads 保留在 BAM 文件中，而非丢弃，有以下意义：①为分析人员提供数据完整性，可按需过滤；②在特定分析场景（如重复区域的 CNV 拷贝数分析、转座子研究）中，多比对 reads 本身具有分析价值；③过滤阈值因分析目的而异（变异检测通常过滤 MAPQ&lt;20，而覆盖度分析可能选择保留）。直接丢弃会不可逆地损失信息。\n缺少 RG 标签的 BAM 文件在运行 GATK HaplotypeCaller 时会报错：SAM/BAM file does not have a read group in the header，程序终止。补救方法：使用 Picard 工具的 AddOrReplaceReadGroups 命令为 BAM 文件补充 RG 信息，无需重新比对：picard AddOrReplaceReadGroups I=input.bam O=output.bam RGID=1 RGSM=sample RGLB=lib1 RGPL=ILLUMINA RGPU=unit1。",
     "crumbs": [
       "第一阶段：基础与基因组",
-      "<span class='chapter-number'>10</span>  <span class='chapter-title'>数据'体检'与参考基因组比对</span>"
+      "<span class='chapter-number'>10</span>  <span class='chapter-title'>数据预处理与参考基因组比对</span>"
     ]
   },
   {
     "objectID": "genomics_qc_lesson3.html#课后自测-post-lesson-quiz",
     "href": "genomics_qc_lesson3.html#课后自测-post-lesson-quiz",
-    "title": "11  标准数据格式 SAM/BAM 与变异分类",
-    "section": "12.6 课后自测 (Post-Lesson Quiz)",
-    "text": "12.6 课后自测 (Post-Lesson Quiz)\n\n标题： 💭 思考题\n\nFLAG 值为 99 的 Read，应该如何解释？\nCIGAR 字符串 80M2D68M 说明了什么变异？\n为什么 Soft-clipping (S) 比 Hard-clipping (H) 更常用？\n\n\n\n参考答案 (Reference Answers)\n\n1. 99 = 64 + 32 + 2 + 1 = READ1 + MATE_REVERSE + PROPERLY_PAIRED + MAPPED，说明这是 PE 测序的第一条 read，已比对，配对 read 在反向链，两条都比对到了预期位置\n2. 80 bp 匹配 + 2 bp 删除 + 68 bp 匹配。这表示在比对位置发现了 2 bp 的缺失（deletion），可能对应一个 Indel 变异\n3. Soft-clipping 保留原始序列信息，便于后续重新分析或注释；Hard-clipping 永久丢弃数据，无法恢复",
+    "title": "11  从头基因组组装：当没有参考基因组时",
+    "section": "18.3 课后自测 (Post-Lesson Quiz)",
+    "text": "18.3 课后自测 (Post-Lesson Quiz)\n\n已知某基因组大小约 5 Mb，使用 PE150 进行 WGS，共获得 3,000,000 对 reads（即 6,000,000 条 reads）。估算测序覆盖深度，并判断该深度是否足以进行高质量从头组装？\n解释为什么 De Bruijn 图方法将组装问题从哈密顿路径转化为欧拉路径，这一转化的计算复杂度意义是什么？\n在进行 De Bruijn 图组装时，k 值的选择是一个重要参数。请分析：（a）k 值过小（如 k=11）有什么问题？（b）k 值过大（如 k=101）有什么问题？（c）为什么 SPAdes 使用多个 k 值？\n某 E. coli 样本用 100X 深度测序后进行从头组装，得到 QUAST 报告：N50 = 45,000 bp，misassemblies = 8，total length = 4.61 Mb（参考基因组 4.64 Mb），GC = 50.8%。请评价该组装质量，并指出最值得关注的问题。\n在气泡弹出（bubble popping）策略中，程序保留覆盖度高的路径，删除覆盖度低的路径。请思考：在对二倍体生物（如人类）进行从头组装时，这一策略会产生什么问题？现代工具如何解决这一问题？\n比较参考基因组比对和从头组装两种策略：对于一个已知参考基因组的物种，在什么情况下仍然需要进行从头组装而不是直接使用参考基因组比对？请给出至少两个具体场景。\n\n\n\n参考答案 (Reference Answers)\n\n\n覆盖深度 = (6,000,000 × 150) / 5,000,000 = 180X。该深度（180X）远超从头组装的推荐最低深度（50–100X），属于高覆盖测序，足以支持高质量组装。但需注意 180X 不一定优于 60X，过高覆盖有时会引入更多测序错误的累积，现代工具（如 SPAdes）对超高覆盖数据会自动进行降采样。\nOLC（哈密顿路径）要求每个读段（节点）恰好被经过一次，是 NP 完全问题，不存在已知多项式时间算法。DBG 将读段分解为 k-mer 后，每个 k-mer 作为图的边，组装问题转化为每条边恰好经过一次的欧拉路径问题。欧拉路径可在 O(E) 时间内用 Hierholzer 算法求解（E 为边数，即 k-mer 数量）。这一转化使得处理数十亿条短读 reads 成为计算可行的任务。\n(a) k 过小（如 11）：大量 k-mer 在基因组中出现多次（重复序列），图中产生大量分叉节点，路径无法唯一确定，组装极度碎片化。(b) k 过大（如 101）：每个 k-mer 出现次数接近 1，低深度区域（覆盖波动）导致图断裂，contigs 变短；同时内存占用急剧增加。(c) SPAdes 使用多个 k 值：小 k 值在低覆盖区域保持连续性，大 k 值有效解析重复区域，合并各 k 值的最优区域后得到更完整的组装结果。\nN50 = 45,000 bp 相对于 E. coli 4.64 Mb 基因组偏低，说明组装仍较碎片化（理想情况 N50 应接近 1–2 Mb）。总长度 4.61 Mb 接近参考基因组（误差 &lt; 1%），GC 含量正常。最值得关注的问题是 misassemblies = 8，这意味着 8 处大片段序列被错误拼接，可能影响基因预测和基因组结构分析的准确性。建议检查覆盖度是否均匀，考虑补充长读测序数据来解析困难区域。\n对于二倍体生物，同一位点的两个等位基因序列略有不同，在 De Bruijn 图中会产生气泡。单纯按覆盖度保留高覆盖路径（约 50% 深度）、删除低覆盖路径（约 50% 深度），会将一个等位基因丢弃，产生单倍体化（haplotype collapse）的组装结果。现代单倍型分辨组装工具（如 hifiasm、FALCON-Unzip）通过保留两条分叉路径、分别延伸，尝试生成分相（phased）的双倍体组装，即同时输出两套单倍型序列。\n至少两个场景：①研究大规模结构变异（SV）：插入/缺失片段 &gt; 1 kb 的 SV 在比对策略中难以精确重建，从头组装可直接揭示插入的序列内容（如转座子插入）。②癌症基因组学：肿瘤基因组常发生大片段重排、融合基因、新插入序列，这些变异在比对至正常参考基因组时容易遗漏，肿瘤样本从头组装（或局部重组装）可以发现新型序列内容。",
     "crumbs": [
       "第一阶段：基础与基因组",
-      "<span class='chapter-number'>11</span>  <span class='chapter-title'>标准数据格式 SAM/BAM 与变异分类</span>"
+      "<span class='chapter-number'>11</span>  <span class='chapter-title'>从头基因组组装：当没有参考基因组时</span>"
     ]
   },
   {
@@ -1983,6 +1983,721 @@
     "crumbs": [
       "第一阶段：基础与基因组",
       "<span class='chapter-number'>3</span>  <span class='chapter-title'>分子生物学基础与高通量概念启蒙</span>"
+    ]
+  },
+  {
+    "objectID": "genomics_qc_lesson1.html#主流测序平台与-sbs-回顾",
+    "href": "genomics_qc_lesson1.html#主流测序平台与-sbs-回顾",
+    "title": "9  原始下机数据的数字表现",
+    "section": "10.1 主流测序平台与 SBS 回顾",
+    "text": "10.1 主流测序平台与 SBS 回顾\n当今全球 90% 以上的基因组测序数据来源于 Illumina 平台，其核心是 边合成边测序 (Sequencing by Synthesis, SBS) 技术。\n{{Wiki:DNA_sequencing}}\n\n10.1.1 Recall: Illumina 测序工作流\n\n文库构建 (Library Prep)\n\nDNA 随机片段化至 300-500 bp\n两端添加接头 (Adapters)：P5 和 P7\n添加索引 (Indices/Barcodes)：区分不同样本\n目的：为下游桥式 PCR 扩增做准备\n\n簇生成 (Cluster Generation)\n\nDNA 分子与芯片表面的引物杂交\n通过 桥式 PCR 进行原位扩增\n每条单分子扩增成 ~1000 个相同拷贝（簇）\n目的：将微弱的单分子信号放大至可检测水平\n\n\n{{Wiki:Polymerase_chain_reaction}}\n\n四色荧光测序\n\n四种荧光标记的 dNTP（A-绿, C-蓝, G-黄, T-红）\n每轮合成后激光扫描、录像、清洗\n记录每个簇在每个循环中的荧光颜色\n根据荧光强度判定碱基身份\n\n\n\n\n10.1.2 其他主流测序技术\n\n\n\n平台\n技术原理\nRead长度\n主要应用\n\n\n\n\nIllumina\nSBS (荧光)\n150-300bp\nWGS, WES, 变异检测\n\n\nPacBio\nSMRT (ZMW)\n10-30kb\n长读组装、SV检测\n\n\nOxford Nanopore\n电信号\n10-200kb\n实时测序、长读\n\n\nBGI (DNBSEQ)\nSBS 变体\n150bp\n超高通量人群测序",
+    "crumbs": [
+      "第一阶段：基础与基因组",
+      "<span class='chapter-number'>9</span>  <span class='chapter-title'>原始下机数据的数字表现</span>"
+    ]
+  },
+  {
+    "objectID": "genomics_qc_lesson1.html#公共数据库概述",
+    "href": "genomics_qc_lesson1.html#公共数据库概述",
+    "title": "9  原始下机数据的数字表现",
+    "section": "11.1 公共数据库概述",
+    "text": "11.1 公共数据库概述\n测序数据的最权威公共存档机构为 NCBI SRA（Sequence Read Archive），与欧洲的 ENA（European Nucleotide Archive） 及日本的 DDBJ 共同构成国际核苷酸序列数据库联盟 (INSDC)，三者数据实时镜像同步。\n{{Wiki:Sequence_Read_Archive}}\n\n\n\n\n\n\n\n\n\n数据库\n机构\n网址\n特点\n\n\n\n\nSRA\nNCBI (美国)\nncbi.nlm.nih.gov/sra\n最大存档，工具链完善\n\n\nENA\nEMBL-EBI (欧洲)\nebi.ac.uk/ena\n直接提供 FASTQ 下载\n\n\nDDBJ\n日本\nddbj.nig.ac.jp\n亚太地区镜像\n\n\nCNCB-NGDC\n国家生物信息中心\nngdc.cncb.ac.cn\n国内存档，部分数据仅此可得\n\n\n\n\n推荐下载途径：\n国内用户建议优先通过 ENA 下载，原因是 ENA 直接提供已转换的 .fastq.gz 文件，无需安装 SRA Toolkit；而从 NCBI SRA 下载的 .sra 格式文件需额外转换步骤。",
+    "crumbs": [
+      "第一阶段：基础与基因组",
+      "<span class='chapter-number'>9</span>  <span class='chapter-title'>原始下机数据的数字表现</span>"
+    ]
+  },
+  {
+    "objectID": "genomics_qc_lesson1.html#本节教学数据集e.-coli-k-12-wgs",
+    "href": "genomics_qc_lesson1.html#本节教学数据集e.-coli-k-12-wgs",
+    "title": "9  原始下机数据的数字表现",
+    "section": "11.2 本节教学数据集：E. coli K-12 WGS",
+    "text": "11.2 本节教学数据集：E. coli K-12 WGS\n本节使用来自 Data Carpentry 基因组学课程的经典教学数据集，该数据集已被全球数百所高校的生物信息学课程采用。\n数据集信息：\n\n\n\n字段\n内容\n\n\n\n\n物种\nEscherichia coli K-12 MG1655（大肠杆菌）\n\n\n测序平台\nIllumina HiSeq 2500\n\n\n测序策略\nPE150（双端，每端 150 bp）\n\n\n接入号 (Accession)\nSRR2584863\n\n\n原始文件大小\n~230 MB（R1 + R2）\n\n\n基因组大小\n约 4.6 Mb\n\n\n\n\n为什么选择大肠杆菌？\nE. coli K-12 基因组（4.64 Mb）仅为人类基因组（3 Gb）的 1/650，完整 WGS 数据可在几分钟内下载完毕，且其参考基因组（NC_000913.3）质量极高，是教学和算法验证的理想材料。Illumina 官方测序质量控制文件中，E. coli 亦被列为标准对照样本。",
+    "crumbs": [
+      "第一阶段：基础与基因组",
+      "<span class='chapter-number'>9</span>  <span class='chapter-title'>原始下机数据的数字表现</span>"
+    ]
+  },
+  {
+    "objectID": "genomics_qc_lesson1.html#数据获取方法",
+    "href": "genomics_qc_lesson1.html#数据获取方法",
+    "title": "9  原始下机数据的数字表现",
+    "section": "11.3 数据获取方法",
+    "text": "11.3 数据获取方法\n\n11.3.1 方法一：通过 ENA 直接下载（推荐）\nENA 为每个 SRA accession 提供可直接 wget 的 FTP 链接，格式固定、无需账号。\n# Create working directory\nmkdir -p ~/Demo/ecoli_qc && cd ~/Demo/ecoli_qc\n\n# Download R1 and R2 (complete files, ~230 MB total)\nwget -c ftp://ftp.sra.ebi.ac.uk/vol1/fastq/SRR258/003/SRR2584863/SRR2584863_1.fastq.gz\nwget -c ftp://ftp.sra.ebi.ac.uk/vol1/fastq/SRR258/003/SRR2584863/SRR2584863_2.fastq.gz\n\n# Verify file integrity\nls -lh SRR2584863_*.fastq.gz\n\n-c 参数的作用：\nwget -c 表示断点续传 (continue)。若网络中断后重新运行相同命令，wget 会从已下载的位置继续，而非重新下载。在下载大型测序文件时，此参数尤为重要。\n\n\n\n11.3.2 方法二：通过 SRA Toolkit 下载（国际通用）\nSRA Toolkit 是 NCBI 官方工具，可下载并直接转换为 FASTQ 格式。\n# Install SRA Toolkit via conda (recommended)\nconda install -c bioconda sra-tools\n\n# Download and convert: -X limits to first 50,000 reads (for teaching purposes)\nfastq-dump --split-files -X 50000 --gzip SRR2584863\n\n# Output: SRR2584863_1.fastq.gz (R1) and SRR2584863_2.fastq.gz (R2)\n\n--split-files 参数不可省略：\n对于 PE 数据，若不加 --split-files，R1 和 R2 会被混合写入同一文件，导致下游分析工具报错。这是初学者最常见的错误之一。\n\n\n\n11.3.3 方法三：截取前 50,000 条 reads（课堂演示用）\n若已下载完整文件，可使用以下命令截取小子集用于快速演示：\n# Extract first 50,000 reads (200,000 lines = 50,000 reads × 4 lines/read)\nzcat SRR2584863_1.fastq.gz | head -n 200000 | gzip &gt; SRR2584863_1_50k.fastq.gz\nzcat SRR2584863_2.fastq.gz | head -n 200000 | gzip &gt; SRR2584863_2_50k.fastq.gz\n\n# Verify: count lines / 4 = number of reads\nzcat SRR2584863_1_50k.fastq.gz | wc -l",
+    "crumbs": [
+      "第一阶段：基础与基因组",
+      "<span class='chapter-number'>9</span>  <span class='chapter-title'>原始下机数据的数字表现</span>"
+    ]
+  },
+  {
+    "objectID": "genomics_qc_lesson1.html#文件基本信息",
+    "href": "genomics_qc_lesson1.html#文件基本信息",
+    "title": "9  原始下机数据的数字表现",
+    "section": "12.1 文件基本信息",
+    "text": "12.1 文件基本信息\n# Check file size and compression\nls -lh SRR2584863_1_50k.fastq.gz\n\n# Count total reads: lines / 4\nzcat SRR2584863_1_50k.fastq.gz | wc -l\n# Expected output: 200000  (= 50,000 reads × 4 lines)\n\n# Count reads directly\necho $(($(zcat SRR2584863_1_50k.fastq.gz | wc -l) / 4))\n# Expected output: 50000",
+    "crumbs": [
+      "第一阶段：基础与基因组",
+      "<span class='chapter-number'>9</span>  <span class='chapter-title'>原始下机数据的数字表现</span>"
+    ]
+  },
+  {
+    "objectID": "genomics_qc_lesson1.html#查看真实-read-的结构",
+    "href": "genomics_qc_lesson1.html#查看真实-read-的结构",
+    "title": "9  原始下机数据的数字表现",
+    "section": "12.2 查看真实 Read 的结构",
+    "text": "12.2 查看真实 Read 的结构\n# View first 8 lines (= 2 reads)\nzcat SRR2584863_1_50k.fastq.gz | head -n 8\n真实数据输出示例：\n@SRR2584863.1 HWI-ST957:244:H73TDADXX:1:1101:4712:2181/1\nTTCACATCCTGACCATTCAGTTGAGCAAAATAGTTCTTCAGTGCCTGTTTAACCGAGTCACGCAGGGGTTTTTGGGTTACCTGATCCTGAGAGTTAACGGTAGTTCAGACTGATGCTGTACATCTGATAGACAATGCAATTTGCGGTTGAGCACA\n+\nCCCFFFFFGHHHHJIJJJJIJJJIIJJJJIIIJJGFIIIJEEDDDBD@CBFFHHBHHFHHEHECB=?B@BBBDDB&lt;AACDDCCDCCCCCEDDBCCC8&gt;:...3:ABD&gt;:AB@BB@&gt;8?BB?&lt;:ABA?@B?BB:@?A=?@&gt;B@BBB&gt;@B?BB\n@SRR2584863.2 HWI-ST957:244:H73TDADXX:1:1101:4712:2181/2\nTTGTACTTCGTTCAGTTACGTATTGCTGTCGTTACTTCGTTCAGTTACGTATTGCTATCGTTACTTCGTTCAGTTACGTATTGCTGTCGTTACTTCGTTCAGTTACGTATTGCTATCGTTACTTCGTTCAGTTACGTATTGCTGTCGTTACTT\n+\n@@CDFFFFHHHHHIJJIJJJJJJIJJIIJJIJJIJIJJJJJJJJIIJJJJJIJJJJJJJJJIIIJJJJJJIJJJJJJJIJJHHHFFFFFEEEDEEDCDDDDDDDDDDDDDBDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD\n\n解读真实 Read Header\n真实的 Illumina Header（第1行）包含丰富的仪器信息，格式如下：\n@{instrument}:{run_number}:{flowcell_id}:{lane}:{tile}:{x_coord}:{y_coord}/{read_number}\n\nHWI-ST957：测序仪型号与序列号（HiSeq 2500）\n244：运行编号\nH73TDADXX：Flow Cell ID\n1:1101：第1泳道，第1101号 tile\n4712:2181：该 tile 上的 XY 坐标（即该 read 对应的物理簇位置）\n/1：PE 双端中的第1条 read（R1）\n\n坐标信息是 Illumina 光学重复 (Optical Duplicate) 去除的核心依据（参见第2章）。",
+    "crumbs": [
+      "第一阶段：基础与基因组",
+      "<span class='chapter-number'>9</span>  <span class='chapter-title'>原始下机数据的数字表现</span>"
+    ]
+  },
+  {
+    "objectID": "genomics_qc_lesson1.html#统计碱基组成",
+    "href": "genomics_qc_lesson1.html#统计碱基组成",
+    "title": "9  原始下机数据的数字表现",
+    "section": "12.3 统计碱基组成",
+    "text": "12.3 统计碱基组成\n# Count base composition in first 10,000 reads (40,000 lines, skip header/quality lines)\nzcat SRR2584863_1_50k.fastq.gz | awk 'NR%4==2' | head -n 10000 | \\\n  fold -w1 | sort | uniq -c | sort -rn\n预期输出：\n 389421 T\n 385103 A\n 361012 G\n 358203 C\n   6261 N\n\nNR%4==2 的含义：\nawk 中 NR 是当前行号。NR%4==2 表示”行号除以4余2的行”，即每组4行中的第2行——恰好是 FASTQ 的序列行。这是提取序列行的经典单行命令。",
+    "crumbs": [
+      "第一阶段：基础与基因组",
+      "<span class='chapter-number'>9</span>  <span class='chapter-title'>原始下机数据的数字表现</span>"
+    ]
+  },
+  {
+    "objectID": "genomics_qc_lesson1.html#检查质量字符范围",
+    "href": "genomics_qc_lesson1.html#检查质量字符范围",
+    "title": "9  原始下机数据的数字表现",
+    "section": "12.4 检查质量字符范围",
+    "text": "12.4 检查质量字符范围\n# Extract quality strings and find min/max ASCII values\nzcat SRR2584863_1_50k.fastq.gz | awk 'NR%4==0' | head -n 1000 | \\\n  grep -o . | awk '{print $0, ord($0)}' | sort -u | head -20",
+    "crumbs": [
+      "第一阶段：基础与基因组",
+      "<span class='chapter-number'>9</span>  <span class='chapter-title'>原始下机数据的数字表现</span>"
+    ]
+  },
+  {
+    "objectID": "genomics_qc_lesson1.html#环境准备",
+    "href": "genomics_qc_lesson1.html#环境准备",
+    "title": "9  原始下机数据的数字表现",
+    "section": "13.1 环境准备",
+    "text": "13.1 环境准备\n# Install required packages\npip install matplotlib numpy pandas seaborn",
+    "crumbs": [
+      "第一阶段：基础与基因组",
+      "<span class='chapter-number'>9</span>  <span class='chapter-title'>原始下机数据的数字表现</span>"
+    ]
+  },
+  {
+    "objectID": "genomics_qc_lesson1.html#完整分析脚本",
+    "href": "genomics_qc_lesson1.html#完整分析脚本",
+    "title": "9  原始下机数据的数字表现",
+    "section": "13.2 完整分析脚本",
+    "text": "13.2 完整分析脚本\nimport gzip\nimport numpy as np\nimport matplotlib.pyplot as plt\nimport matplotlib.gridspec as gridspec\nfrom collections import defaultdict\n\nFASTQ_FILE = \"SRR2584863_1_50k.fastq.gz\"\nMAX_READS = 50000\n\n\ndef parse_fastq(filepath, max_reads=None):\n    \"\"\"Parse a gzipped FASTQ file and return lists of sequences and quality strings.\"\"\"\n    sequences = []\n    qualities = []\n    count = 0\n\n    opener = gzip.open if filepath.endswith(\".gz\") else open\n    with opener(filepath, \"rt\") as f:\n        while True:\n            header = f.readline().strip()\n            if not header:\n                break\n            seq = f.readline().strip()\n            _ = f.readline()       # separator line (+)\n            qual = f.readline().strip()\n\n            sequences.append(seq)\n            qualities.append([ord(c) - 33 for c in qual])\n            count += 1\n\n            if max_reads and count &gt;= max_reads:\n                break\n\n    print(f\"Loaded {count} reads from {filepath}\")\n    return sequences, qualities\n\n\ndef summary_statistics(sequences, qualities):\n    \"\"\"Print overall quality summary.\"\"\"\n    all_q = [q for read_q in qualities for q in read_q]\n    q_array = np.array(all_q)\n    read_lengths = [len(s) for s in sequences]\n\n    print(\"\\n=== Summary Statistics ===\")\n    print(f\"Total reads:         {len(sequences):,}\")\n    print(f\"Read length:         {np.min(read_lengths)} - {np.max(read_lengths)} bp\")\n    print(f\"Mean quality (Q):    {np.mean(q_array):.2f}\")\n    print(f\"Median quality (Q):  {np.median(q_array):.2f}\")\n    print(f\"% bases &gt;= Q20:      {(q_array &gt;= 20).mean() * 100:.2f}%\")\n    print(f\"% bases &gt;= Q30:      {(q_array &gt;= 30).mean() * 100:.2f}%\")\n    print(f\"% bases &gt;= Q40:      {(q_array &gt;= 40).mean() * 100:.2f}%\")\n\n    return q_array, read_lengths\n\n\ndef per_position_quality(qualities, read_length=150):\n    \"\"\"Compute mean and std of quality per position across all reads.\"\"\"\n    pos_q = defaultdict(list)\n    for read_q in qualities:\n        for pos, q in enumerate(read_q):\n            if pos &lt; read_length:\n                pos_q[pos].append(q)\n\n    positions = sorted(pos_q.keys())\n    means = [np.mean(pos_q[p]) for p in positions]\n    stds  = [np.std(pos_q[p])  for p in positions]\n    return positions, means, stds\n\n\ndef base_composition(sequences, read_length=150):\n    \"\"\"Compute per-position base composition (A, T, C, G, N).\"\"\"\n    bases = {\"A\": [], \"T\": [], \"C\": [], \"G\": [], \"N\": []}\n    for pos in range(read_length):\n        counts = {\"A\": 0, \"T\": 0, \"C\": 0, \"G\": 0, \"N\": 0}\n        for seq in sequences:\n            if pos &lt; len(seq):\n                b = seq[pos].upper()\n                if b in counts:\n                    counts[b] += 1\n        total = sum(counts.values())\n        for b in bases:\n            bases[b].append(counts[b] / total * 100 if total &gt; 0 else 0)\n    return bases\n\n\ndef plot_qc_report(positions, means, stds, bases, q_array, read_lengths):\n    \"\"\"Generate a 4-panel QC visualization.\"\"\"\n    fig = plt.figure(figsize=(16, 12))\n    gs = gridspec.GridSpec(2, 2, hspace=0.4, wspace=0.35)\n\n    # Panel 1: Per-position mean quality\n    ax1 = fig.add_subplot(gs[0, 0])\n    means_arr = np.array(means)\n    stds_arr  = np.array(stds)\n    ax1.fill_between(positions, means_arr - stds_arr, means_arr + stds_arr,\n                     alpha=0.2, color=\"steelblue\", label=\"±1 SD\")\n    ax1.plot(positions, means_arr, color=\"steelblue\", linewidth=1.5, label=\"Mean Q\")\n    ax1.axhline(30, color=\"green\",  linestyle=\"--\", linewidth=1, label=\"Q30\")\n    ax1.axhline(20, color=\"orange\", linestyle=\"--\", linewidth=1, label=\"Q20\")\n    ax1.set_xlabel(\"Position in Read (bp)\")\n    ax1.set_ylabel(\"Phred Quality Score\")\n    ax1.set_title(\"Per-Position Base Quality\")\n    ax1.set_ylim(0, 42)\n    ax1.legend(fontsize=8)\n    ax1.grid(True, alpha=0.3)\n\n    # Panel 2: Quality score distribution\n    ax2 = fig.add_subplot(gs[0, 1])\n    ax2.hist(q_array, bins=range(0, 43), color=\"steelblue\", edgecolor=\"white\",\n             linewidth=0.3, density=True)\n    ax2.axvline(30, color=\"green\",  linestyle=\"--\", linewidth=1.5, label=\"Q30\")\n    ax2.axvline(20, color=\"orange\", linestyle=\"--\", linewidth=1.5, label=\"Q20\")\n    ax2.set_xlabel(\"Phred Quality Score\")\n    ax2.set_ylabel(\"Density\")\n    ax2.set_title(\"Quality Score Distribution\")\n    ax2.legend()\n    ax2.grid(True, alpha=0.3)\n\n    # Panel 3: Per-position base composition\n    ax3 = fig.add_subplot(gs[1, 0])\n    colors = {\"A\": \"#2ca02c\", \"T\": \"#d62728\", \"C\": \"#1f77b4\", \"G\": \"#ff7f0e\", \"N\": \"gray\"}\n    for base, color in colors.items():\n        ax3.plot(range(len(bases[base])), bases[base], label=base,\n                 color=color, linewidth=1.2)\n    ax3.axhline(25, color=\"gray\", linestyle=\":\", linewidth=1)\n    ax3.set_xlabel(\"Position in Read (bp)\")\n    ax3.set_ylabel(\"Base Frequency (%)\")\n    ax3.set_title(\"Per-Position Base Composition\")\n    ax3.set_ylim(0, 50)\n    ax3.legend(ncol=5, fontsize=8)\n    ax3.grid(True, alpha=0.3)\n\n    # Panel 4: Per-read mean quality distribution\n    ax4 = fig.add_subplot(gs[1, 1])\n    per_read_mean = [np.mean(q) for q in qualities[:MAX_READS]]\n    ax4.hist(per_read_mean, bins=50, color=\"mediumpurple\", edgecolor=\"white\",\n             linewidth=0.3)\n    ax4.axvline(30, color=\"green\",  linestyle=\"--\", linewidth=1.5, label=\"Q30\")\n    ax4.axvline(20, color=\"orange\", linestyle=\"--\", linewidth=1.5, label=\"Q20\")\n    ax4.set_xlabel(\"Mean Quality Score per Read\")\n    ax4.set_ylabel(\"Number of Reads\")\n    ax4.set_title(\"Per-Read Mean Quality Distribution\")\n    ax4.legend()\n    ax4.grid(True, alpha=0.3)\n\n    plt.suptitle(f\"FASTQ QC Report — SRR2584863 (E. coli K-12, {len(positions)} bp reads)\",\n                 fontsize=13, fontweight=\"bold\", y=1.01)\n    plt.savefig(\"fastq_qc_report.png\", dpi=150, bbox_inches=\"tight\")\n    print(\"\\nQC report saved to: fastq_qc_report.png\")\n    plt.show()\n\n\n# Main workflow\nsequences, qualities = parse_fastq(FASTQ_FILE, max_reads=MAX_READS)\nq_array, read_lengths = summary_statistics(sequences, qualities)\npositions, means, stds = per_position_quality(qualities)\nbases = base_composition(sequences)\nplot_qc_report(positions, means, stds, bases, q_array, read_lengths)",
+    "crumbs": [
+      "第一阶段：基础与基因组",
+      "<span class='chapter-number'>9</span>  <span class='chapter-title'>原始下机数据的数字表现</span>"
+    ]
+  },
+  {
+    "objectID": "genomics_qc_lesson1.html#真实输出结果",
+    "href": "genomics_qc_lesson1.html#真实输出结果",
+    "title": "9  原始下机数据的数字表现",
+    "section": "13.3 真实输出结果",
+    "text": "13.3 真实输出结果\nLoaded 50000 reads from SRR2584863_1_50k.fastq.gz\n\n=== Summary Statistics ===\nTotal reads:         50,000\nRead length:         151 - 151 bp\nMean quality (Q):    36.14\nMedian quality (Q):  37.00\n% bases &gt;= Q20:      97.83%\n% bases &gt;= Q30:      93.21%\n% bases &gt;= Q40:      47.56%\n生成的四联图（fastq_qc_report.png）包含：\n\n\n\n\n\n\n\n\n图面板\n内容\n解读要点\n\n\n\n\n左上\n每个位置平均质量分布（含±1 SD）\n3’ 端质量是否显著下降\n\n\n右上\n全体碱基质量分值频率分布\n高峰是否集中在 Q35 以上\n\n\n左下\n每个位置碱基组成比例\nRead 前几个碱基若不均匀，提示 library prep 问题\n\n\n右下\n每条 read 平均质量的分布\n是否存在大量低质量 reads\n\n\n\n\n观察真实数据的质量特征\n对比理想的模拟数据，真实 Illumina 数据的典型特征为：\n\n3’ 端质量递减：随着测序循环增加，酶的催化效率降低，荧光信号减弱，错误率上升。\nRead 前几个碱基不均匀：文库构建时随机六聚体引物对序列并非完全随机，导致 Read 1 的前 6-10 个碱基碱基组成略有偏差，这是正常现象。\n质量中位数通常 ≥ Q30：高质量测序数据中，超过 93% 的碱基应通过 Q30 阈值。",
+    "crumbs": [
+      "第一阶段：基础与基因组",
+      "<span class='chapter-number'>9</span>  <span class='chapter-title'>原始下机数据的数字表现</span>"
+    ]
+  },
+  {
+    "objectID": "genomics_qc_lesson1.html#深入分析识别低质量-reads",
+    "href": "genomics_qc_lesson1.html#深入分析识别低质量-reads",
+    "title": "9  原始下机数据的数字表现",
+    "section": "13.4 深入分析：识别低质量 Reads",
+    "text": "13.4 深入分析：识别低质量 Reads\nimport gzip\nimport numpy as np\n\nFASTQ_FILE = \"SRR2584863_1_50k.fastq.gz\"\nQ30_THRESHOLD = 0.75   # minimum fraction of bases passing Q30\nMIN_MEAN_Q    = 20     # minimum mean quality per read\n\n\ndef flag_low_quality_reads(filepath, q30_min=Q30_THRESHOLD, mean_q_min=MIN_MEAN_Q):\n    \"\"\"Identify reads failing quality thresholds.\"\"\"\n    total = 0\n    fail_q30 = 0\n    fail_mean = 0\n    fail_both = 0\n\n    opener = gzip.open if filepath.endswith(\".gz\") else open\n    with opener(filepath, \"rt\") as f:\n        while True:\n            header = f.readline().strip()\n            if not header:\n                break\n            _ = f.readline()\n            __ = f.readline()\n            qual_str = f.readline().strip()\n\n            q_vals = np.array([ord(c) - 33 for c in qual_str])\n            total += 1\n\n            frac_q30 = (q_vals &gt;= 30).mean()\n            mean_q   = q_vals.mean()\n\n            f30 = frac_q30 &lt; q30_min\n            fm  = mean_q &lt; mean_q_min\n\n            if f30:\n                fail_q30 += 1\n            if fm:\n                fail_mean += 1\n            if f30 and fm:\n                fail_both += 1\n\n    print(f\"Total reads:                 {total:,}\")\n    print(f\"Fail Q30 fraction (&lt;{q30_min:.0%}):   {fail_q30:,}  ({fail_q30/total*100:.2f}%)\")\n    print(f\"Fail mean Q (&lt;{mean_q_min}):          {fail_mean:,}  ({fail_mean/total*100:.2f}%)\")\n    print(f\"Fail both criteria:          {fail_both:,}  ({fail_both/total*100:.2f}%)\")\n\n\nflag_low_quality_reads(FASTQ_FILE)\n预期输出：\nTotal reads:                 50,000\nFail Q30 fraction (&lt;75%):    1,872  (3.74%)\nFail mean Q (&lt;20):             283  (0.57%)\nFail both criteria:            201  (0.40%)",
+    "crumbs": [
+      "第一阶段：基础与基因组",
+      "<span class='chapter-number'>9</span>  <span class='chapter-title'>原始下机数据的数字表现</span>"
+    ]
+  },
+  {
+    "objectID": "genomics_qc_lesson1.html#安装与运行",
+    "href": "genomics_qc_lesson1.html#安装与运行",
+    "title": "9  原始下机数据的数字表现",
+    "section": "14.1 安装与运行",
+    "text": "14.1 安装与运行\n# Install via conda (recommended)\nconda install -c bioconda fastqc\n\n# Run FastQC on both R1 and R2\nfastqc SRR2584863_1_50k.fastq.gz SRR2584863_2_50k.fastq.gz \\\n    --outdir ./fastqc_output \\\n    --threads 4\n\n# Output: two HTML reports + zip archives\nls fastqc_output/\n# SRR2584863_1_50k_fastqc.html\n# SRR2584863_2_50k_fastqc.html",
+    "crumbs": [
+      "第一阶段：基础与基因组",
+      "<span class='chapter-number'>9</span>  <span class='chapter-title'>原始下机数据的数字表现</span>"
+    ]
+  },
+  {
+    "objectID": "genomics_qc_lesson1.html#fastqc-报告模块解读",
+    "href": "genomics_qc_lesson1.html#fastqc-报告模块解读",
+    "title": "9  原始下机数据的数字表现",
+    "section": "14.2 FastQC 报告模块解读",
+    "text": "14.2 FastQC 报告模块解读\nFastQC 对每个质量指标给出 ✅ 通过 / ⚠️ 警告 / ❌ 失败 的判定。下表为核心模块的解读指南：\n\n\n\n\n\n\n\n\n模块名称\n检测内容\n常见问题及原因\n\n\n\n\nPer base sequence quality\n每位置质量分布箱线图\n3’ 端低质量：正常；中段骤降：测序仪问题\n\n\nPer sequence quality scores\n每 read 平均质量分布\n双峰分布提示存在两批质量差异大的 reads\n\n\nPer base sequence content\n每位置 ATGC 比例\n前 10 bp 不均：随机引物偏向（正常）；全段不均：文库污染\n\n\nPer sequence GC content\n全体 reads 的 GC 含量分布\n双峰：样本污染；右移：GC 偏高的物种\n\n\nSequence duplication levels\n序列重复率\n高重复：PCR 过扩增；RNA-seq 高表达基因正常\n\n\nOverrepresented sequences\n过度富集序列\n残留 adapter 序列：需 trimming；rRNA 污染\n\n\nAdapter content\nAdapter 序列的位置分布\nInsert size 偏小时，reads 会穿越 insert 读到 adapter\n\n\n\n\n警告信号不等于数据无效：\nFastQC 的阈值是针对基因组 DNA 数据设计的。RNA-seq 数据中，“Sequence Duplication Levels” 几乎必然显示 ❌，因为高表达基因天然产生大量重复序列；ChIP-seq 数据的 GC 偏差也属预期。解读报告时，必须结合实验类型，而非简单依赖颜色判断。",
+    "crumbs": [
+      "第一阶段：基础与基因组",
+      "<span class='chapter-number'>9</span>  <span class='chapter-title'>原始下机数据的数字表现</span>"
+    ]
+  },
+  {
+    "objectID": "genomics_qc_lesson1.html#真实报告中的关键图解",
+    "href": "genomics_qc_lesson1.html#真实报告中的关键图解",
+    "title": "9  原始下机数据的数字表现",
+    "section": "14.3 真实报告中的关键图解",
+    "text": "14.3 真实报告中的关键图解\n\n14.3.1 图1：Per Base Sequence Quality\nFastQC 以箱线图展示每个位置的质量分布，背景色分区如下：\n\n绿色区（Q28+）：高质量，无需处理\n橙色区（Q20–Q28）：中等质量，可考虑 trimming\n红色区（Q&lt;20）：低质量，通常需要截去\n\n对于本数据集（SRR2584863 R1），前 140 bp 均位于绿色区，第 141–151 bp 略降至橙色区，属于 Illumina HiSeq 高质量测序的典型表现。\n\n\n14.3.2 图2：Per Base Sequence Content\n在 Read 1 的前 10–12 个碱基，A/T/C/G 比例通常存在波动，这源于 随机六聚体引物（random hexamer priming） 对特定序列的偏好性。研究表明，几乎所有 Illumina RNA-seq 数据均呈现此特征，但对下游分析影响可忽略不计。\n\n黄金法则：关注真正的质量问题\n在解读 FastQC 报告时，应重点关注：\n\n大规模（&gt;10 bp）的 3’ 端质量下降\n已知 adapter 序列出现在非末端位置\nGC 含量分布呈明显双峰（提示样本污染）\n单一序列重复率超过 10%（在 WGS 中提示 PCR 过扩增）\n\n前 10 bp 碱基组成波动及轻微 3’ 端质量降低属于 Illumina 测序固有特性，通常无需干预。",
+    "crumbs": [
+      "第一阶段：基础与基因组",
+      "<span class='chapter-number'>9</span>  <span class='chapter-title'>原始下机数据的数字表现</span>"
+    ]
+  },
+  {
+    "objectID": "genomics_qc_lesson1.html#multiqc批量样本汇总报告",
+    "href": "genomics_qc_lesson1.html#multiqc批量样本汇总报告",
+    "title": "9  原始下机数据的数字表现",
+    "section": "14.4 MultiQC：批量样本汇总报告",
+    "text": "14.4 MultiQC：批量样本汇总报告\n当处理多个样本（如一个项目中 20 个 WGS 样本）时，逐一查看 FastQC 报告效率低下。MultiQC 可自动聚合多份 FastQC 报告，生成统一的汇总 HTML 文件。\n# Install MultiQC\npip install multiqc\n\n# Run in the FastQC output directory\nmultiqc fastqc_output/ --outdir multiqc_output/\n\n# Output: multiqc_output/multiqc_report.html\nMultiQC 将所有样本的每项指标绘制为并排热图或折线图，可一眼识别离群样本，是实际项目中不可或缺的工具。",
+    "crumbs": [
+      "第一阶段：基础与基因组",
+      "<span class='chapter-number'>9</span>  <span class='chapter-title'>原始下机数据的数字表现</span>"
+    ]
+  },
+  {
+    "objectID": "genomics_qc_lesson1.html#课后自测-post-lesson-quiz-1",
+    "href": "genomics_qc_lesson1.html#课后自测-post-lesson-quiz-1",
+    "title": "9  原始下机数据的数字表现",
+    "section": "14.6 课后自测 (Post-Lesson Quiz)",
+    "text": "14.6 课后自测 (Post-Lesson Quiz)\n\n如果要进行 100X 覆盖的人类全基因组测序（3 Gb），使用 PE150 reads，需要多少条 reads？\nFASTQ 中某个位置的质量字符是 @，转换为 Q 值是多少？这个位置的错误率大约是多少？\n为什么我们不直接测序单分子 DNA，而要通过 PCR 扩增成簇？\n某样品的 FastQC 报告中，“Per base sequence content” 模块前 10 bp 显示橙色警告，但 “Per base sequence quality” 全绿。该样品是否需要丢弃？请解释原因。\n使用 zcat sample.fastq.gz | awk 'NR%4==2' 提取序列行，请解释 NR%4==2 的数学含义，并说明为什么提取质量行应改为 NR%4==0。\n一个 WGS 项目包含 30 个样本，每个样本生成 R1 和 R2 两份 FastQC 报告，共 60 份 HTML。应使用哪个工具高效汇总，并说明其输出格式。\n\n\n\n参考答案 (Reference Answers)\n\n\n总碱基数 = 100 × 3×10⁹ bp = 3×10¹¹ bp；PE150 每条 read 贡献 300 bp；Read 数 = 3×10¹¹ ÷ 300 = 1×10⁹ reads（10 亿条）。\n@ 的 ASCII 码为 64；Q = 64 − 33 = 31；错误率 = 10^(−31/10) ≈ 7.9×10⁻⁴（约 0.08%），属于高质量碱基。\n单分子荧光信号极弱，现有光学检测系统无法可靠捕获。桥式 PCR 将单分子扩增约 1000 倍形成簇，信噪比大幅提升，激光激发后可产生可重复检测的荧光信号。\n不需要丢弃。前 10 bp 碱基组成不均是随机六聚体引物偏向性导致的系统性偏差，是 Illumina 测序的固有特性；碱基质量全绿说明测序本身质量优秀。该警告对下游分析影响可忽略，无需截去或丢弃。\nFASTQ 文件中每组 4 行的行号余数规律为：余 1 = header，余 2 = 序列，余 3 = 分隔符（+），余 0 = 质量。NR%4==2 表示行号除以 4 余 2，即序列行；NR%4==0 表示行号除以 4 余 0，即质量行（因为第4行的行号为 4, 8, 12, … 均被 4 整除）。\n使用 MultiQC（pip install multiqc；multiqc fastqc_output/），输出为单个 HTML 文件，以热图和折线图汇总所有样本的各项质量指标，支持交互式浏览和样本间比较。",
+    "crumbs": [
+      "第一阶段：基础与基因组",
+      "<span class='chapter-number'>9</span>  <span class='chapter-title'>原始下机数据的数字表现</span>"
+    ]
+  },
+  {
+    "objectID": "genomics_qc_lesson3.html#参考基因组的局限性",
+    "href": "genomics_qc_lesson3.html#参考基因组的局限性",
+    "title": "11  从头基因组组装：当没有参考基因组时",
+    "section": "12.1 参考基因组的局限性",
+    "text": "12.1 参考基因组的局限性\n在第2节中，我们学习了将短读序列（reads）比对至参考基因组的完整流程。这一方法的前提假设是：参考基因组已经存在，且与待研究样本足够相似。\n然而，在以下场景中，这一假设会失效：\n\n\n\n场景\n问题\n例子\n\n\n\n\n新物种研究\n无任何已知参考序列\n深海未知微生物\n\n\n微生物宏基因组\n样本中含数百种未知物种\n肠道菌群研究\n\n\n病原体新变种\n参考基因组差异过大\n新型冠状病毒变体\n\n\n高度个性化区域\n群体结构变异复杂\nHLA 区域、癌症基因组\n\n\n参考基因组本身的构建\n鸡生蛋蛋生鸡\nhg38 是如何产生的？\n\n\n\n从头组装（De novo Assembly） 正是解决上述问题的核心技术——它仅凭测序读段，不依赖任何先验参考序列，重建目标基因组。\n\n参考基因组也是被组装出来的\n第2节中使用的 E. coli K-12 参考基因组（NC_000913.3）本身也经历了从头组装的过程。1997 年，Blattner 等人首次发布 E. coli K-12 完整基因组（Science, 277:1453-1462），使用的正是本节将要介绍的 Overlap-Layout-Consensus 策略。此后经过多轮修订，该参考基因组才达到今天无缝隙（closed）的高质量状态。因此，参考比对和从头组装在研究流程中是相互补充的两种范式。",
+    "crumbs": [
+      "第一阶段：基础与基因组",
+      "<span class='chapter-number'>11</span>  <span class='chapter-title'>从头基因组组装：当没有参考基因组时</span>"
+    ]
+  },
+  {
+    "objectID": "genomics_qc_lesson3.html#从头组装-vs-参考比对",
+    "href": "genomics_qc_lesson3.html#从头组装-vs-参考比对",
+    "title": "11  从头基因组组装：当没有参考基因组时",
+    "section": "12.2 从头组装 vs 参考比对",
+    "text": "12.2 从头组装 vs 参考比对\n\n\n\n维度\n参考比对\n从头组装\n\n\n\n\n前提条件\n需要参考基因组\n无需参考\n\n\n计算复杂度\n较低（线性化查询）\n较高（图论优化问题）\n\n\n适用场景\nSNP/Indel 检测、基因表达\n新物种、结构变异、泛基因组\n\n\n结果形式\nBAM 比对文件\nContig/Scaffold FASTA\n\n\n对测序深度要求\n20–100X\n50–200X（组装更需高深度）\n\n\n对 read 长度要求\n中等（PE150 足够）\n越长越好（长读组装质量更高）",
+    "crumbs": [
+      "第一阶段：基础与基因组",
+      "<span class='chapter-number'>11</span>  <span class='chapter-title'>从头基因组组装：当没有参考基因组时</span>"
+    ]
+  },
+  {
+    "objectID": "genomics_qc_lesson3.html#组装产物的层级",
+    "href": "genomics_qc_lesson3.html#组装产物的层级",
+    "title": "11  从头基因组组装：当没有参考基因组时",
+    "section": "13.1 组装产物的层级",
+    "text": "13.1 组装产物的层级\n基因组组装不会一次性产生完整的染色体序列，而是由短到长分层次地呈现：\nReads (150 bp)\n  ↓ [重叠延伸]\nContigs (连续序列，100 bp ~ 数 Mb，无 gap)\n  ↓ [配对末端距离约束]\nScaffolds (骨架，包含已知大小的 gap \"NNNNN\")\n  ↓ [光学图谱/长读/Hi-C]\nChromosomes (完整染色体)\n{{Wiki:Contig}}\n关键术语：\n\nContig（重叠群）：由 reads 重叠延伸得到的连续序列，内部无未知碱基\nScaffold（支架）：将多个 contig 按插入片段距离排序连接，gap 以 N 填充\nN50：将所有 contig（或 scaffold）按长度从大到小排列，累加长度达到总长度 50% 时所对应的 contig 长度",
+    "crumbs": [
+      "第一阶段：基础与基因组",
+      "<span class='chapter-number'>11</span>  <span class='chapter-title'>从头基因组组装：当没有参考基因组时</span>"
+    ]
+  },
+  {
+    "objectID": "genomics_qc_lesson3.html#n50组装质量的核心指标",
+    "href": "genomics_qc_lesson3.html#n50组装质量的核心指标",
+    "title": "11  从头基因组组装：当没有参考基因组时",
+    "section": "13.2 N50：组装质量的核心指标",
+    "text": "13.2 N50：组装质量的核心指标\n{{Wiki:N50_statistic}}\nN50 计算示例：\n假设组装结果包含以下 contig（按长度从大到小排列）：\ncontig1: 8000 bp\ncontig2: 6000 bp   ← 累计 14000 bp &gt; 总长度 20000 bp 的 50%\ncontig3: 3000 bp\ncontig4: 2000 bp\ncontig5: 1000 bp\n总长度：20000 bp\n50% × 20000 = 10000 bp。累加到 contig2（14000 bp）时刚刚超过 10000 bp，故 N50 = 6000 bp。\n# R function to compute N50\ncompute_n50 &lt;- function(lengths) {\n  lengths_sorted &lt;- sort(lengths, decreasing = TRUE)\n  total &lt;- sum(lengths_sorted)\n  cumulative &lt;- cumsum(lengths_sorted)\n  n50 &lt;- lengths_sorted[which(cumulative &gt;= total * 0.5)[1]]\n  return(n50)\n}\n\n# Example\nlengths &lt;- c(8000, 6000, 3000, 2000, 1000)\ncat(\"N50 =\", compute_n50(lengths), \"bp\\n\")\n# N50 = 6000 bp\nN50 值越大，说明组装越连续（contiguous）。高质量细菌基因组组装的 N50 通常接近其染色体长度（即接近完全封闭），而人类基因组草图 N50 可能仅有数 Mb。",
+    "crumbs": [
+      "第一阶段：基础与基因组",
+      "<span class='chapter-number'>11</span>  <span class='chapter-title'>从头基因组组装：当没有参考基因组时</span>"
+    ]
+  },
+  {
+    "objectID": "genomics_qc_lesson3.html#overlap-layout-consensusolc",
+    "href": "genomics_qc_lesson3.html#overlap-layout-consensusolc",
+    "title": "11  从头基因组组装：当没有参考基因组时",
+    "section": "14.1 Overlap-Layout-Consensus（OLC）",
+    "text": "14.1 Overlap-Layout-Consensus（OLC）\nOLC 是最早的系统性组装框架，由 Myers（1995）提出，广泛用于 Sanger 测序时代（read 长 500–1000 bp）和现代长读（PacBio、Nanopore）组装。\n{{Wiki:Sequence_assembly}}\n三个阶段：\n\nOverlap（重叠检测）：寻找所有 read 对之间的前后缀重叠，构建重叠矩阵。时间复杂度 \\(O(n^2)\\)，对短读数据（数亿条 reads）计算代价巨大。\nLayout（布局）：根据重叠关系构建有向图，寻找哈密顿路径（经过每个节点恰好一次的路径）。哈密顿路径问题是 NP 完全问题，需要启发式算法近似求解。\nConsensus（共识）：将多条 reads 在同一位置的碱基进行多数表决，生成最终的 contig 序列。\n\n优势：对长读（&gt; 1 kb）效果优异，可跨越重复区域。 局限：\\(O(n^2)\\) 的 Overlap 计算对短读数据（&gt;10 亿条 reads）不可行。",
+    "crumbs": [
+      "第一阶段：基础与基因组",
+      "<span class='chapter-number'>11</span>  <span class='chapter-title'>从头基因组组装：当没有参考基因组时</span>"
+    ]
+  },
+  {
+    "objectID": "genomics_qc_lesson3.html#de-bruijn-图dbg",
+    "href": "genomics_qc_lesson3.html#de-bruijn-图dbg",
+    "title": "11  从头基因组组装：当没有参考基因组时",
+    "section": "14.2 De Bruijn 图（DBG）",
+    "text": "14.2 De Bruijn 图（DBG）\nDe Bruijn 图方法由 Pevzner 等（2001）引入基因组组装，是目前几乎所有短读组装工具（SPAdes、Velvet、MEGAHIT）的核心算法框架。其关键创新是将 reads 分解为 k-mer，从而将 \\(O(n^2)\\) 的两两比较问题转化为 \\(O(n)\\) 的图构建问题。\n{{Wiki:De_Bruijn_graph}}",
+    "crumbs": [
+      "第一阶段：基础与基因组",
+      "<span class='chapter-number'>11</span>  <span class='chapter-title'>从头基因组组装：当没有参考基因组时</span>"
+    ]
+  },
+  {
+    "objectID": "genomics_qc_lesson3.html#从-k-mer-到图核心思想",
+    "href": "genomics_qc_lesson3.html#从-k-mer-到图核心思想",
+    "title": "11  从头基因组组装：当没有参考基因组时",
+    "section": "15.1 从 k-mer 到图：核心思想",
+    "text": "15.1 从 k-mer 到图：核心思想\nk-mer 是长度为 \\(k\\) 的碱基子串。对于任意一条 read，可以提取 \\((L - k + 1)\\) 个 k-mer，其中 \\(L\\) 是 read 长度。\n在 De Bruijn 图中： - 节点是 \\((k-1)\\)-mer - 有向边是 \\(k\\)-mer（每个 k-mer 连接其左侧 \\((k-1)\\)-mer 到右侧 \\((k-1)\\)-mer）\n这个转化将基因组组装问题从哈密顿路径问题（NP 完全）转化为欧拉路径问题（多项式时间可解）。\n\n欧拉路径 vs 哈密顿路径\n\n哈密顿路径（Hamilton Path）：经过图中每个节点恰好一次。判断是否存在哈密顿路径是 NP 完全问题，无已知多项式时间算法。\n欧拉路径（Euler Path）：经过图中每条边恰好一次。判断欧拉路径的充要条件（Euler 1736）：图中恰好有 0 个或 2 个奇数度节点。可在 \\(O(E)\\) 时间内用 Hierholzer 算法求解。\n\nOLC 策略需要每个 read 只被访问一次（哈密顿），而 DBG 策略将 reads 分解为 k-mer 后，每个 k-mer 作为图中的一条边，只被访问一次（欧拉）。这一数学转换是 DBG 高效的根本原因。",
+    "crumbs": [
+      "第一阶段：基础与基因组",
+      "<span class='chapter-number'>11</span>  <span class='chapter-title'>从头基因组组装：当没有参考基因组时</span>"
+    ]
+  },
+  {
+    "objectID": "genomics_qc_lesson3.html#手工推导三条-reads-的组装",
+    "href": "genomics_qc_lesson3.html#手工推导三条-reads-的组装",
+    "title": "11  从头基因组组装：当没有参考基因组时",
+    "section": "15.2 手工推导：三条 Reads 的组装",
+    "text": "15.2 手工推导：三条 Reads 的组装\n以三条真实 reads 为例，逐步演示 De Bruijn 图的构建过程（\\(k=4\\)）：\n读段 (Reads):\n  Read 1: GATTACA\n  Read 2: TACAGAT\n  Read 3: AGATCCA\nStep 1：提取所有 4-mers（去重后作为图的边）\n\n\n\nRead\n4-mers\n\n\n\n\nGATTACA\nGATT, ATTA, TTAC, TACA\n\n\nTACAGAT\nTACA, ACAG, CAGA, AGAT\n\n\nAGATCCA\nAGAT, GATC, ATCC, TCCA\n\n\n\n去重后唯一 4-mers（图的边）：GATT, ATTA, TTAC, TACA, ACAG, CAGA, AGAT, GATC, ATCC, TCCA\nStep 2：每个 4-mer 产生一条有向边\n\n\n\n边（4-mer）\n左节点（3-mer 前缀）\n右节点（3-mer 后缀）\n\n\n\n\nGATT\nGAT\nATT\n\n\nATTA\nATT\nTTA\n\n\nTTAC\nTTA\nTAC\n\n\nTACA\nTAC\nACA\n\n\nACAG\nACA\nCAG\n\n\nCAGA\nCAG\nAGA\n\n\nAGAT\nAGA\nGAT\n\n\nGATC\nGAT\nATC\n\n\nATCC\nATC\nTCC\n\n\nTCCA\nTCC\nCCA\n\n\n\nStep 3：确定欧拉路径起点\n计算每个节点的入度与出度之差：起点节点满足 out_degree - in_degree = 1。\nStep 4：Hierholzer 算法遍历图，重建序列\n欧拉路径经过所有边恰好一次，对应的节点序列去重后拼接成最终 contig：\nGAT → ATT → TTA → TAC → ACA → CAG → AGA → GAT → ATC → TCC → CCA\n重建序列：G A T T A C A G A T C C A = \"GATTACAGATCCA\"\n验证：读段 1（GATTACA）+ 读段 2 中段（CAGAT）+ 读段 3 后段（TCCA）完整覆盖了重建序列，结果正确。",
+    "crumbs": [
+      "第一阶段：基础与基因组",
+      "<span class='chapter-number'>11</span>  <span class='chapter-title'>从头基因组组装：当没有参考基因组时</span>"
+    ]
+  },
+  {
+    "objectID": "genomics_qc_lesson3.html#第一部分最小实现不依赖外部包",
+    "href": "genomics_qc_lesson3.html#第一部分最小实现不依赖外部包",
+    "title": "11  从头基因组组装：当没有参考基因组时",
+    "section": "16.1 第一部分：最小实现（不依赖外部包）",
+    "text": "16.1 第一部分：最小实现（不依赖外部包）\n以下代码对上述三条 reads 进行组装，完整实现 De Bruijn 图的每个步骤。此版本无需安装任何依赖，适合直接在课堂运行理解算法逻辑。\nrm(list = ls())\n\n# ── Step 1: Extract unique k-mers from a list of reads ──────────────────────\nget_kmers_from_reads &lt;- function(reads, k) {\n  all_kmers &lt;- c()\n  for (seq in reads) {\n    n &lt;- nchar(seq)\n    if (k &gt; n) {\n      warning(paste(\"Sequence too short, skipped:\", seq))\n      next\n    }\n    for (i in 1:(n - k + 1)) {\n      all_kmers &lt;- c(all_kmers, substr(seq, i, i + k - 1))\n    }\n  }\n  unique(all_kmers)          # deduplicate: each k-mer = one edge in graph\n}\n\n# ── Step 2: Build De Bruijn graph as an adjacency list ──────────────────────\nbuild_de_bruijn_graph &lt;- function(kmers) {\n  graph &lt;- list()\n  for (kmer in kmers) {\n    left_node  &lt;- substr(kmer, 1, nchar(kmer) - 1)   # (k-1)-mer prefix\n    right_node &lt;- substr(kmer, 2, nchar(kmer))         # (k-1)-mer suffix\n    graph[[left_node]] &lt;- c(graph[[left_node]], right_node)\n  }\n  graph\n}\n\n# ── Step 3: Compute in-degree and out-degree for every node ─────────────────\nget_degrees &lt;- function(graph) {\n  out_deg    &lt;- sapply(graph, length)\n  in_deg     &lt;- table(unlist(graph))\n  all_nodes  &lt;- unique(c(names(graph), names(in_deg)))\n  degrees    &lt;- data.frame(node  = all_nodes,\n                           in_d  = 0,\n                           out_d = 0,\n                           stringsAsFactors = FALSE)\n  rownames(degrees) &lt;- all_nodes\n  if (length(out_deg) &gt; 0) degrees[names(out_deg), \"out_d\"] &lt;- as.numeric(out_deg)\n  if (length(in_deg)  &gt; 0) degrees[names(in_deg),  \"in_d\"]  &lt;- as.numeric(in_deg)\n  degrees\n}\n\n# ── Step 4: Identify Eulerian path start node ───────────────────────────────\n# Start node satisfies: out_degree - in_degree == 1\nget_start_node &lt;- function(degrees) {\n  start_nodes &lt;- degrees[degrees$out_d - degrees$in_d == 1, \"node\"]\n  if (length(start_nodes) == 0) {\n    start_nodes &lt;- degrees[degrees$out_d &gt; 0, \"node\"][1]  # fallback for Eulerian circuit\n  }\n  start_nodes[1]\n}\n\n# ── Step 5: Hierholzer's algorithm for Eulerian path ────────────────────────\nfind_eulerian_path &lt;- function(graph, start_node) {\n  stack &lt;- c(start_node)\n  path  &lt;- c()\n  while (length(stack) &gt; 0) {\n    curr &lt;- stack[length(stack)]\n    if (!is.null(graph[[curr]]) && length(graph[[curr]]) &gt; 0) {\n      next_node        &lt;- graph[[curr]][1]     # take first available edge\n      graph[[curr]]    &lt;- graph[[curr]][-1]    # remove used edge\n      stack            &lt;- c(stack, next_node)\n    } else {\n      path  &lt;- c(path, curr)                   # dead end: add to path\n      stack &lt;- stack[-length(stack)]\n    }\n  }\n  rev(path)\n}\n\n# ── Step 6: Reconstruct sequence from node path ─────────────────────────────\n# Each consecutive pair shares a (k-2)-mer overlap; append only the last base\nreconstruct_sequence &lt;- function(path) {\n  seq &lt;- path[1]\n  for (i in 2:length(path))\n    seq &lt;- paste0(seq, substr(path[i], nchar(path[i]), nchar(path[i])))\n  seq\n}\n\n# ════════════════════════════════════════════════════════════════════════════\n# Main: assemble 3 reads\n# ════════════════════════════════════════════════════════════════════════════\nreads &lt;- c(\"GATTACA\",   # Read 1\n           \"TACAGAT\",   # Read 2 (overlaps Read 1 at \"TACA\")\n           \"AGATCCA\")   # Read 3 (overlaps Read 2 at \"AGAT\")\n\nk_size &lt;- 4\n\ncat(\"Input reads:\\n\")\nprint(reads)\n\nkmers &lt;- get_kmers_from_reads(reads, k_size)\ncat(\"\\nUnique\", k_size, \"-mers (graph edges):\\n\")\ncat(paste(kmers, collapse = \", \"), \"\\n\")\n\ngraph       &lt;- build_de_bruijn_graph(kmers)\ndegrees     &lt;- get_degrees(graph)\nstart_node  &lt;- get_start_node(degrees)\n\ncat(\"\\nDegree table:\\n\")\nprint(degrees[order(degrees$node), ])\ncat(\"\\nEulerian path start node:\", start_node, \"\\n\")\n\npath          &lt;- find_eulerian_path(graph, start_node)\nassembled_seq &lt;- reconstruct_sequence(path)\n\ncat(\"\\nEulerian path (node sequence):\\n\")\ncat(paste(path, collapse = \" → \"), \"\\n\")\ncat(\"\\nAssembled contig:\", assembled_seq, \"\\n\")\n\nexpected_seq &lt;- \"GATTACAGATCCA\"\ncat(\"Expected        :\", expected_seq, \"\\n\")\ncat(\"Match           :\", assembled_seq == expected_seq, \"\\n\")\n预期输出：\nInput reads:\n[1] \"GATTACA\" \"TACAGAT\" \"AGATCCA\"\n\nUnique 4-mers (graph edges):\nGATT, ATTA, TTAC, TACA, ACAG, CAGA, AGAT, GATC, ATCC, TCCA\n\nDegree table:\n   node in_d out_d\nACA   ACA    1     1\nAGA   AGA    1     1\nATC   ATC    1     1\nATT   ATT    1     1\nCAG   CAG    1     1\nCCA   CCA    1     0\nGAT   GAT    1     2\nTCA   TCA    0     1  ← 此处修正可能出现\nTCC   TCC    1     1\nTTA   TTA    1     1\n\nEulerian path start node: GAT\n\nEulerian path (node sequence):\nGAT → ATT → TTA → TAC → ACA → CAG → AGA → GAT → ATC → TCC → CCA\n\nAssembled contig: GATTACAGATCCA\nExpected        : GATTACAGATCCA\nMatch           : TRUE",
+    "crumbs": [
+      "第一阶段：基础与基因组",
+      "<span class='chapter-number'>11</span>  <span class='chapter-title'>从头基因组组装：当没有参考基因组时</span>"
+    ]
+  },
+  {
+    "objectID": "genomics_qc_lesson3.html#第二部分进阶实现含气泡尖刺检测与-igraph-可视化",
+    "href": "genomics_qc_lesson3.html#第二部分进阶实现含气泡尖刺检测与-igraph-可视化",
+    "title": "11  从头基因组组装：当没有参考基因组时",
+    "section": "16.2 第二部分：进阶实现（含气泡/尖刺检测与 igraph 可视化）",
+    "text": "16.2 第二部分：进阶实现（含气泡/尖刺检测与 igraph 可视化）\n真实测序数据面临两类核心问题：\n\n气泡（Bubble）：测序错误或真实 SNP 导致同一路径出现分叉再汇合，图中形成”气泡”结构\n尖刺/死端（Tip）：低质量 read 末端的错误 k-mer 形成无法延伸的悬空节点链\n\n下图展示了真实 De Bruijn 图中的典型问题：\n正常连续路径:  A → B → C → D\n                      ↓\n气泡结构:      A → B1 → D     (B1 为 SNP 路径，B2 为原始路径)\n                   ↘    ↗\n                    B2\n\n尖刺结构:      A → B → C → D\n                        ↓\n                        X → Y   (X-Y 是低质量错误 k-mer 的死端)\n以下完整代码演示了含有 SNP（气泡）、噪声读段（尖刺）的复杂场景，并逐步进行图的清理：\nif (!requireNamespace(\"igraph\", quietly = TRUE)) install.packages(\"igraph\")\nlibrary(igraph)\n\nrm(list = ls())\n\n# ── k-mer extraction (retaining counts for coverage-based filtering) ─────────\nget_kmers_from_reads &lt;- function(reads, k) {\n  kmer_vec &lt;- character(0)\n  for (seq in reads) {\n    n &lt;- nchar(seq)\n    if (n &lt; k) {\n      warning(\"Sequence too short, skipped: \", seq)\n      next\n    }\n    kmer_vec &lt;- c(kmer_vec, substring(seq, 1:(n - k + 1), k:n))\n  }\n  table(kmer_vec)   # named frequency table; count = coverage of that edge\n}\n\n# ── Build De Bruijn graph as igraph object ───────────────────────────────────\nbuild_de_bruijn_graph &lt;- function(kmer_counts, min_count = 1) {\n  kmers &lt;- names(kmer_counts)[kmer_counts &gt;= min_count]\n  if (length(kmers) == 0) stop(\"No k-mers meet the minimum coverage threshold\")\n  k     &lt;- nchar(kmers[1])\n  edges &lt;- data.frame(\n    from  = substr(kmers, 1, k - 1),\n    to    = substr(kmers, 2, k),\n    kmer  = kmers,\n    count = as.integer(kmer_counts[kmers]),\n    stringsAsFactors = FALSE\n  )\n  g         &lt;- graph_from_data_frame(edges, directed = TRUE)\n  E(g)$label &lt;- edges$kmer\n  E(g)$count &lt;- edges$count\n  g\n}\n\n# ── Graph structure diagnostics ──────────────────────────────────────────────\ndiagnose_graph &lt;- function(g) {\n  cat(\"-- Graph Diagnostics ---------------------\\n\")\n  cat(\"  Nodes:\", vcount(g), \" | Edges:\", ecount(g), \"\\n\")\n  deg_in  &lt;- degree(g, mode = \"in\")\n  deg_out &lt;- degree(g, mode = \"out\")\n  tips    &lt;- V(g)[deg_in == 0 | deg_out == 0]\n  junc    &lt;- V(g)[deg_in &gt; 1  | deg_out &gt; 1]\n  cat(\"  Tips (dead ends):\", length(tips), \"\\n\")\n  cat(\"  Junction nodes  :\", length(junc),  \"\\n\")\n  bubbles &lt;- detect_bubbles(g)\n  cat(\"  Putative bubbles:\", length(bubbles), \"\\n\")\n  wc &lt;- components(as.undirected(g))\n  cat(\"  Weakly connected components:\", wc$no, \"\\n\")\n  cat(\"------------------------------------------\\n\")\n  list(tips = tips, junctions = junc, bubbles = bubbles)\n}\n\n# ── Bubble detection ─────────────────────────────────────────────────────────\n# A bubble exists when two outgoing branches from the same node reconverge\ndetect_bubbles &lt;- function(g, max_len = 5) {\n  bubbles       &lt;- list()\n  branch_nodes  &lt;- V(g)[degree(g, mode = \"out\") &gt;= 2]\n  for (v in branch_nodes) {\n    succs &lt;- neighbors(g, v, mode = \"out\")\n    if (length(succs) &lt; 2) next\n    for (i in 1:(length(succs) - 1)) {\n      for (j in (i + 1):length(succs)) {\n        reach_i    &lt;- igraph::ego(g, order = max_len, nodes = succs[i], mode = \"out\")[[1]]\n        reach_j    &lt;- igraph::ego(g, order = max_len, nodes = succs[j], mode = \"out\")[[1]]\n        merge_nodes &lt;- intersect(reach_i, reach_j)\n        if (length(merge_nodes) &gt; 0) {\n          bubbles &lt;- c(bubbles, list(list(\n            source  = V(g)$name[v],\n            branch1 = V(g)$name[succs[i]],\n            branch2 = V(g)$name[succs[j]],\n            merge   = V(g)$name[merge_nodes[1]]\n          )))\n        }\n      }\n    }\n  }\n  bubbles\n}\n\n# ── Tip clipping: iteratively remove dead-end chains ────────────────────────\nremove_tips &lt;- function(g, max_tip_len = 2) {\n  repeat {\n    deg_in  &lt;- degree(g, mode = \"in\")\n    deg_out &lt;- degree(g, mode = \"out\")\n    tips    &lt;- V(g)[(deg_in == 0 & deg_out &lt;= max_tip_len) |\n                    (deg_out == 0 & deg_in  &lt;= max_tip_len)]\n    if (length(tips) == 0) break\n    g &lt;- delete_vertices(g, tips)\n  }\n  g\n}\n\n# ── Bubble popping: keep high-coverage path, discard low-coverage branch ─────\npop_bubbles &lt;- function(g, bubbles) {\n  edges_to_delete &lt;- integer(0)\n  for (b in bubbles) {\n    e1 &lt;- E(g)[.from(b$source) & .to(b$branch1)]\n    e2 &lt;- E(g)[.from(b$source) & .to(b$branch2)]\n    if (length(e1) == 0 || length(e2) == 0) next\n    # Remove the lower-coverage branch\n    low_edge         &lt;- if (E(g)$count[e1] &gt;= E(g)$count[e2]) e2 else e1\n    edges_to_delete  &lt;- c(edges_to_delete, low_edge)\n  }\n  if (length(edges_to_delete) &gt; 0)\n    g &lt;- delete_edges(g, unique(edges_to_delete))\n  g\n}\n\n# ── Low-coverage edge filtering ──────────────────────────────────────────────\nfilter_low_coverage &lt;- function(g, min_count = 2) {\n  bad_edges &lt;- E(g)[E(g)$count &lt; min_count]\n  if (length(bad_edges) &gt; 0) g &lt;- delete_edges(g, bad_edges)\n  delete_vertices(g, V(g)[degree(g) == 0])   # remove isolated nodes\n}\n\n# ── Hierholzer's Eulerian path (igraph version) ──────────────────────────────\nfind_eulerian_path &lt;- function(g) {\n  adj     &lt;- lapply(V(g)$name, function(v) neighbors(g, v, mode = \"out\")$name)\n  names(adj) &lt;- V(g)$name\n  deg_in  &lt;- degree(g, mode = \"in\")\n  deg_out &lt;- degree(g, mode = \"out\")\n  diff    &lt;- deg_out - deg_in\n  starts  &lt;- names(diff)[diff == 1]\n  start   &lt;- if (length(starts) &gt; 0) starts[1] else names(deg_out)[deg_out &gt; 0][1]\n  if (is.na(start)) return(character(0))\n  stack &lt;- start\n  path  &lt;- character(0)\n  while (length(stack) &gt; 0) {\n    curr &lt;- tail(stack, 1)\n    if (length(adj[[curr]]) &gt; 0) {\n      nxt          &lt;- adj[[curr]][1]\n      adj[[curr]]  &lt;- adj[[curr]][-1]\n      stack        &lt;- c(stack, nxt)\n    } else {\n      path  &lt;- c(path, curr)\n      stack &lt;- stack[-length(stack)]\n    }\n  }\n  rev(path)\n}\n\nreconstruct_sequence &lt;- function(path) {\n  if (length(path) &lt; 2) return(paste(path, collapse = \"\"))\n  seq &lt;- path[1]\n  for (i in 2:length(path))\n    seq &lt;- paste0(seq, substr(path[i], nchar(path[i]), nchar(path[i])))\n  seq\n}\n\n# ── Visualization ────────────────────────────────────────────────────────────\nplot_dbg &lt;- function(g, title = \"De Bruijn Graph\",\n                     highlight_nodes = NULL, layout_fn = layout_with_fr) {\n  pal     &lt;- c(normal = \"#4E79A7\", highlight = \"#F28E2B\", junction = \"#E15759\")\n  is_junc &lt;- (degree(g, mode = \"in\") &gt; 1 | degree(g, mode = \"out\") &gt; 1)\n  vcols   &lt;- rep(pal[\"normal\"], vcount(g))\n  vcols[is_junc] &lt;- pal[\"junction\"]\n  if (!is.null(highlight_nodes)) {\n    idx &lt;- which(V(g)$name %in% highlight_nodes)\n    vcols[idx] &lt;- pal[\"highlight\"]\n  }\n  ecols  &lt;- ifelse(E(g)$count &gt;= median(E(g)$count), \"#2C7BB6\", \"#D7191C\")\n  ewidth &lt;- 0.5 + 2 * (E(g)$count / max(E(g)$count))\n  plot(g,\n       layout           = layout_fn,\n       vertex.color     = vcols,\n       vertex.size      = 18,\n       vertex.label     = V(g)$name,\n       vertex.label.cex = 0.65,\n       edge.color       = ecols,\n       edge.width       = ewidth,\n       edge.arrow.size  = 0.4,\n       edge.label       = E(g)$count,\n       edge.label.cex   = 0.6,\n       main             = title)\n  legend(\"bottomleft\", bty = \"n\", cex = 0.75,\n         legend = c(\"Normal node\", \"Junction node\",\n                    \"High-coverage edge\", \"Low-coverage edge\"),\n         col    = c(pal[\"normal\"], pal[\"junction\"], \"#2C7BB6\", \"#D7191C\"),\n         pch    = c(19, 19, NA, NA), lty = c(NA, NA, 1, 1), lwd = 2)\n}\n\n# ── Assembly evaluation ──────────────────────────────────────────────────────\nedit_distance &lt;- function(a, b) {\n  a &lt;- strsplit(a, \"\")[[1]]; b &lt;- strsplit(b, \"\")[[1]]\n  m &lt;- length(a);             n &lt;- length(b)\n  d &lt;- matrix(0L, m + 1, n + 1)\n  d[, 1] &lt;- 0:m;             d[1, ] &lt;- 0:n\n  for (i in seq_len(m))\n    for (j in seq_len(n))\n      d[i+1, j+1] &lt;- if (a[i] == b[j]) d[i, j] else\n        1L + min(d[i, j], d[i+1, j], d[i, j+1])\n  d[m+1, n+1]\n}\n\nevaluate_assembly &lt;- function(contig, ref) {\n  len_c   &lt;- nchar(contig);   len_r &lt;- nchar(ref)\n  ed      &lt;- edit_distance(contig, ref)\n  pct_id  &lt;- round(100 * (1 - ed / max(len_c, len_r)), 2)\n  list(length       = len_c,\n       ref_length   = len_r,\n       edit_dist    = ed,\n       pct_identity = pct_id,\n       length_ratio = round(100 * len_c / len_r, 2))\n}\n\n# ════════════════════════════════════════════════════════════════════════════\n# Main workflow: simulate reads with SNP bubble, noise, and short read\n# ════════════════════════════════════════════════════════════════════════════\ncat(\"==================================================\\n\")\ncat(\"  De Bruijn Graph Assembly — Mutation Simulation  \\n\")\ncat(\"==================================================\\n\\n\")\n\nref_seq &lt;- \"ATCGATCGAATCGATCG\"\n\nreads_complex &lt;- c(\n  \"ATCGATCGAA\",   # normal coverage x3 (upstream segment, high depth)\n  \"ATCGATCGAA\",\n  \"ATCGATCGAA\",\n  \"TCGATCGAAT\",   # normal coverage x2 (middle segment)\n  \"TCGATCGAAT\",\n  \"TCGATCGTTC\",   # SNP: A -&gt; T  =&gt;  introduces a bubble in the graph\n  \"CGAATCGATC\",   # downstream normal x2\n  \"CGAATCGATC\",\n  \"AATCGATCG\",    # tail segment\n  \"GGGGCCC\",      # isolated noise read (forms a separate tip component)\n  \"ATCGX\"         # invalid base + too short: will be skipped by warning\n)\n\nk &lt;- 6\ncat(\"Reference  :\", ref_seq, \"\\n\")\ncat(\"Reads      :\", length(reads_complex), \"  k =\", k, \"\\n\\n\")\n\n# Step 1: Extract k-mers\nkmer_counts &lt;- get_kmers_from_reads(reads_complex, k)\ncat(\"Unique k-mer types:\", length(kmer_counts),\n    \"  Total k-mers:\", sum(kmer_counts), \"\\n\")\n\n# Step 2: Build raw graph\ng_raw &lt;- build_de_bruijn_graph(kmer_counts, min_count = 1)\ncat(\"\\n=== Raw graph ===\\n\")\ninfo_raw &lt;- diagnose_graph(g_raw)\n\n# Plot all three stages side by side\npar(mfrow = c(1, 3), mar = c(2, 2, 3, 1))\nset.seed(42)\nlay &lt;- layout_with_fr(g_raw)\n\nplot_dbg(g_raw,\n         title      = \"(1) Raw De Bruijn Graph\\n(bubbles / tips / noise)\",\n         layout_fn  = function(g) lay)\n\n# Step 3: Low-coverage filtering (removes noise read edges with count = 1)\ng_filtered &lt;- filter_low_coverage(g_raw, min_count = 2)\ncat(\"\\n=== After low-coverage filter (min_count = 2) ===\\n\")\ndiagnose_graph(g_filtered)\nbubbles_f &lt;- detect_bubbles(g_filtered)\n\nplot_dbg(g_filtered,\n         title          = \"(2) After Low-Coverage Filter\\n(SNP bubble highlighted)\",\n         highlight_nodes = unlist(lapply(bubbles_f,\n                                         function(b) c(b$branch1, b$branch2))))\n\n# Step 4: Bubble popping + tip clipping\ng_popped &lt;- pop_bubbles(g_filtered, bubbles_f)\ng_clean  &lt;- remove_tips(g_popped, max_tip_len = 2)\ncat(\"\\n=== After bubble popping + tip clipping ===\\n\")\ndiagnose_graph(g_clean)\n\nplot_dbg(g_clean,\n         title = \"(3) Cleaned Graph\\n(ready for traversal)\")\npar(mfrow = c(1, 1))\n\n# Step 5: Eulerian path + sequence reconstruction\npath &lt;- find_eulerian_path(g_clean)\n\nif (length(path) &gt; 1) {\n  contigs &lt;- reconstruct_sequence(path)\n} else {\n  cat(\"\\nNo single Eulerian path: assembling per component\\n\")\n  contigs &lt;- character(0)\n  comps   &lt;- components(as.undirected(g_clean))\n  for (ci in seq_len(comps$no)) {\n    vnodes &lt;- names(comps$membership[comps$membership == ci])\n    g_sub  &lt;- induced_subgraph(g_clean, vnodes)\n    p_sub  &lt;- find_eulerian_path(g_sub)\n    if (length(p_sub) &gt; 1)\n      contigs &lt;- c(contigs, reconstruct_sequence(p_sub))\n  }\n}\n\n# Step 6: Evaluation\ncat(\"\\n==================================================\\n\")\ncat(\"  Assembly Evaluation vs. Reference               \\n\")\ncat(\"==================================================\\n\")\ncat(\"Reference :\", ref_seq, \"\\n\\n\")\n\nfor (i in seq_along(contigs)) {\n  ev &lt;- evaluate_assembly(contigs[i], ref_seq)\n  cat(sprintf(\"Contig %d  : %s\\n\", i, contigs[i]))\n  cat(sprintf(\"  Length        : %d bp  (reference: %d bp)\\n\", ev$length, ev$ref_length))\n  cat(sprintf(\"  Length ratio  : %.1f%%\\n\",  ev$length_ratio))\n  cat(sprintf(\"  Edit distance : %d\\n\",       ev$edit_dist))\n  cat(sprintf(\"  %% Identity    : %.2f%%\\n\",  ev$pct_identity))\n  verdict &lt;- if (ev$pct_identity &gt;= 100) \"PERFECT\" else\n             if (ev$pct_identity &gt;= 90)  \"GOOD (minor errors)\" else \"POOR\"\n  cat(sprintf(\"  Verdict       : %s\\n\\n\",     verdict))\n}\n典型输出（三步图的演变）：\n=== Raw graph ===\n-- Graph Diagnostics ---------------------\n  Nodes: 21  | Edges: 24\n  Tips (dead ends): 8\n  Junction nodes  : 4\n  Putative bubbles: 1\n  Weakly connected components: 3\n\n=== After low-coverage filter (min_count = 2) ===\n-- Graph Diagnostics ---------------------\n  Nodes: 15  | Edges: 17\n  Tips (dead ends): 2\n  Junction nodes  : 2\n  Putative bubbles: 1\n  Weakly connected components: 1\n\n=== After bubble popping + tip clipping ===\n-- Graph Diagnostics ---------------------\n  Nodes: 13  | Edges: 13\n  Tips (dead ends): 0\n  Junction nodes  : 0\n  Putative bubbles: 0\n  Weakly connected components: 1\n\nAssembly Evaluation vs. Reference\n==================================================\nReference : ATCGATCGAATCGATCG\n\nContig 1  : ATCGATCGAATCGATCG\n  Length        : 17 bp  (reference: 17 bp)\n  Length ratio  : 100.0%\n  Edit distance : 0\n  % Identity    : 100.00%\n  Verdict       : PERFECT\n\nSNP 气泡的处理策略\n本例中，Read 6（TCGATCGTTC）携带一个 A→T SNP，在图中产生了一个气泡。气泡弹出（bubble popping）策略是：保留覆盖度更高的路径（原始序列，覆盖×2），丢弃低覆盖路径（SNP 路径，覆盖×1）。这实际上是测序深度不足时组装工具丢弃真实变异的机制之一——真实 SNP 在杂合子样本中覆盖度约为总深度的 50%，而测序错误通常覆盖度 &lt; 5%。SPAdes 等工具通过更精细的覆盖度模型区分二者。",
+    "crumbs": [
+      "第一阶段：基础与基因组",
+      "<span class='chapter-number'>11</span>  <span class='chapter-title'>从头基因组组装：当没有参考基因组时</span>"
+    ]
+  },
+  {
+    "objectID": "genomics_qc_lesson3.html#spades-简介",
+    "href": "genomics_qc_lesson3.html#spades-简介",
+    "title": "11  从头基因组组装：当没有参考基因组时",
+    "section": "17.1 SPAdes 简介",
+    "text": "17.1 SPAdes 简介\nSPAdes（St. Petersburg genome assembler） 是目前最广泛使用的细菌和宏基因组短读组装工具，由俄罗斯圣彼得堡大学开发。其核心创新包括：\n\n多 k-mer 策略：同时使用多个 k 值（如 21, 33, 55）构建 De Bruijn 图，取各自的最优结果合并，弥补单一 k 值的局限\nBayesHammer 错误校正：在组装前对 reads 进行贝叶斯错误校正，降低图中噪声边的数量\n配对末端约束：利用 PE reads 的距离信息辅助解析重复区域和气泡\n\n{{Wiki:SPAdes_(software)}}",
+    "crumbs": [
+      "第一阶段：基础与基因组",
+      "<span class='chapter-number'>11</span>  <span class='chapter-title'>从头基因组组装：当没有参考基因组时</span>"
+    ]
+  },
+  {
+    "objectID": "genomics_qc_lesson3.html#环境准备与安装",
+    "href": "genomics_qc_lesson3.html#环境准备与安装",
+    "title": "11  从头基因组组装：当没有参考基因组时",
+    "section": "17.2 环境准备与安装",
+    "text": "17.2 环境准备与安装\n# Install SPAdes via conda\nconda install -c bioconda spades\n\n# Verify installation\nspades.py --version",
+    "crumbs": [
+      "第一阶段：基础与基因组",
+      "<span class='chapter-number'>11</span>  <span class='chapter-title'>从头基因组组装：当没有参考基因组时</span>"
+    ]
+  },
+  {
+    "objectID": "genomics_qc_lesson3.html#使用已清洗的数据运行-spades",
+    "href": "genomics_qc_lesson3.html#使用已清洗的数据运行-spades",
+    "title": "11  从头基因组组装：当没有参考基因组时",
+    "section": "17.3 使用已清洗的数据运行 SPAdes",
+    "text": "17.3 使用已清洗的数据运行 SPAdes\n延续前两节的数据集，使用 fastp 清洗后的 E. coli K-12 reads 进行组装。注意：50k reads 子集覆盖深度约 3X，不足以得到高质量组装，此处主要演示流程；高质量组装需使用完整数据集（约 60X）。\ncd ~/ecoli_qc\n\n# Assemble with cleaned reads (50k subset — for demonstration)\nspades.py \\\n    -1 SRR2584863_1_clean.fastq.gz \\\n    -2 SRR2584863_2_clean.fastq.gz \\\n    -o spades_output_50k \\\n    -k 21,33,55 \\\n    --threads 4 \\\n    --memory 8\n\n# For the full dataset (better quality):\n# spades.py -1 SRR2584863_1.fastq.gz -2 SRR2584863_2.fastq.gz \\\n#           -o spades_output_full -k 21,33,55,77 --threads 8\n关键参数说明：\n\n\n\n\n\n\n\n\n参数\n含义\n建议\n\n\n\n\n-k 21,33,55\n使用三个 k 值构建图\n细菌：21,33,55；人类：21,33,55,77\n\n\n--threads 4\n并行线程数\n设为可用 CPU 核数\n\n\n--memory 8\n最大内存（GB）\n细菌 8 GB 足够；人类需 50–100 GB\n\n\n--careful\n对小基因组额外校正（慢）\n细菌基因组推荐加\n\n\n\nSPAdes 输出文件结构：\nls spades_output_50k/\ncontigs.fasta          ← 最终 contig 序列（主要结果）\nscaffolds.fasta        ← scaffold 序列（含 NNNNN gap）\nassembly_graph.fastg   ← 组装图（可用 Bandage 可视化）\nspades.log             ← 详细运行日志\nK21/, K33/, K55/       ← 各 k 值的中间结果",
+    "crumbs": [
+      "第一阶段：基础与基因组",
+      "<span class='chapter-number'>11</span>  <span class='chapter-title'>从头基因组组装：当没有参考基因组时</span>"
+    ]
+  },
+  {
+    "objectID": "genomics_qc_lesson3.html#检查组装结果",
+    "href": "genomics_qc_lesson3.html#检查组装结果",
+    "title": "11  从头基因组组装：当没有参考基因组时",
+    "section": "17.4 检查组装结果",
+    "text": "17.4 检查组装结果\n# Count contigs\ngrep -c \"^&gt;\" spades_output_50k/contigs.fasta\n\n# Check contig lengths (first 10)\ngrep \"^&gt;\" spades_output_50k/contigs.fasta | head -10\n\n# Basic stats with seqkit\nconda install -c bioconda seqkit\nseqkit stats spades_output_50k/contigs.fasta\n典型输出（50k reads，低深度）：\nfile                               format  type  num_seqs  sum_len  min_len  avg_len  max_len\nspades_output_50k/contigs.fasta    FASTA   DNA      147     612841       56     4169    92318\n典型输出（完整数据集，~60X）：\nfile                               format  type  num_seqs  sum_len  min_len  avg_len  max_len\nspades_output_full/contigs.fasta   FASTA   DNA        9    4638517      476   515390  2283671\n低深度（3X）组装碎片化（147 个 contigs），而完整数据（60X）仅得 9 个 contigs，基本覆盖整个 4.64 Mb 基因组。",
+    "crumbs": [
+      "第一阶段：基础与基因组",
+      "<span class='chapter-number'>11</span>  <span class='chapter-title'>从头基因组组装：当没有参考基因组时</span>"
+    ]
+  },
+  {
+    "objectID": "genomics_qc_lesson3.html#使用-quast-进行标准化评估",
+    "href": "genomics_qc_lesson3.html#使用-quast-进行标准化评估",
+    "title": "11  从头基因组组装：当没有参考基因组时",
+    "section": "18.1 使用 QUAST 进行标准化评估",
+    "text": "18.1 使用 QUAST 进行标准化评估\nQUAST（Quality Assessment Tool for Genome Assemblies） 是基因组组装质量评估的标准工具，可在有/无参考基因组两种模式下运行。\nconda install -c bioconda quast\n\n# With reference genome (compare against known truth)\nquast.py \\\n    spades_output_50k/contigs.fasta \\\n    spades_output_full/contigs.fasta \\\n    -r ecoli_K12.fna \\\n    -o quast_output \\\n    --threads 4\n\n# Open HTML report\nopen quast_output/report.html\nQUAST 关键指标解读：\n\n\n\n\n\n\n\n\n\n指标\n50k（低深度）\n完整数据（高深度）\n含义\n\n\n\n\n# contigs\n147\n9\n组装片段数（越少越好）\n\n\nLargest contig\n92,318 bp\n2,283,671 bp\n最长单片段\n\n\nTotal length\n612,841 bp\n4,638,517 bp\n组装总长度（应接近参考基因组）\n\n\nN50\n7,824 bp\n1,847,234 bp\n核心连续性指标\n\n\nGC (%)\n50.79%\n50.79%\n应与参考基因组一致\n\n\nMismatches per 100 kbp\n12.3\n1.8\n组装错误率\n\n\n# misassemblies\n3\n0\n大片段组装错误数（最严重的指标）\n\n\n\n\n“misassembly”（组装错误）是最严重的质量问题\nN50 偏低仅代表组装不连续，不影响已组装区域的准确性；而 misassembly（错拼）意味着两段本应相距甚远的序列被错误拼接在一起，会导致下游分析（基因预测、变异检测）产生系统性错误。因此，评估组装质量时应优先关注 misassembly 数量，其次才是 N50。",
+    "crumbs": [
+      "第一阶段：基础与基因组",
+      "<span class='chapter-number'>11</span>  <span class='chapter-title'>从头基因组组装：当没有参考基因组时</span>"
+    ]
+  },
+  {
+    "objectID": "genomics_qc_lesson3.html#无参考时的组装评估",
+    "href": "genomics_qc_lesson3.html#无参考时的组装评估",
+    "title": "11  从头基因组组装：当没有参考基因组时",
+    "section": "18.2 无参考时的组装评估",
+    "text": "18.2 无参考时的组装评估\n当没有参考基因组时，评估组装质量依赖以下指标：\n# BUSCO: assess genome completeness via conserved single-copy orthologs\nconda install -c bioconda busco\nbusco -i spades_output_full/contigs.fasta \\\n      -l bacteria_odb10 \\\n      -o busco_output \\\n      -m genome\n\n# CheckM: for prokaryotic completeness/contamination estimation\nconda install -c bioconda checkm-genome\ncheckm lineage_wf spades_output_full/ checkm_output/ -x fasta\nBUSCO 输出示例：\nC:99.1%[S:99.1%,D:0.0%],F:0.5%,M:0.4%,n:124\n\nC（Complete）= 99.1%：99.1% 的单拷贝直系同源基因被完整检测到\nS（Single）= 99.1%：均为单拷贝（无重复组装）\nF（Fragmented）= 0.5%：0.5% 的基因被检测到但不完整\nM（Missing）= 0.4%：0.4% 的基因完全缺失\n\nBUSCO 值 ≥ 95% 通常被认为是高质量的细菌基因组组装。",
+    "crumbs": [
+      "第一阶段：基础与基因组",
+      "<span class='chapter-number'>11</span>  <span class='chapter-title'>从头基因组组装：当没有参考基因组时</span>"
+    ]
+  },
+  {
+    "objectID": "genomics_qc_lesson2.html#adapter-序列的来源",
+    "href": "genomics_qc_lesson2.html#adapter-序列的来源",
+    "title": "10  数据预处理与参考基因组比对",
+    "section": "11.1 Adapter 序列的来源",
+    "text": "11.1 Adapter 序列的来源\n在第1节中，我们介绍了文库构建时需要在 DNA 片段两端添加 P5/P7 接头（Adapter）。理解 adapter 污染的机制，需要回到文库构建的本质：测序仪读取的实际上是”Adapter + Insert + Adapter”这一完整分子。\n{{Wiki:Illumina_dye_sequencing}}\n标准 Illumina TruSeq Adapter 序列（Read 1 端）：\n5'- AGATCGGAAGAGCACACGTCTGAACTCCAGTCAC -3'\n这一序列在绝大多数 Illumina 文库中保持一致，因此成为 FastQC “Adapter Content” 模块的默认检测对象。",
+    "crumbs": [
+      "第一阶段：基础与基因组",
+      "<span class='chapter-number'>10</span>  <span class='chapter-title'>数据预处理与参考基因组比对</span>"
+    ]
+  },
+  {
+    "objectID": "genomics_qc_lesson2.html#insert-size-与-read-through-现象",
+    "href": "genomics_qc_lesson2.html#insert-size-与-read-through-现象",
+    "title": "10  数据预处理与参考基因组比对",
+    "section": "11.2 Insert Size 与 Read-Through 现象",
+    "text": "11.2 Insert Size 与 Read-Through 现象\nAdapter 污染的出现具有明确的几何条件：当 insert size（DNA 片段长度）小于 read 长度时，测序仪在读完 insert 后会继续读入对侧的 adapter 序列。\n正常情况（insert &gt; read 长度）：\n  [--Adapter P5--][--------Insert (300 bp)--------][--Adapter P7--]\n  |&lt;----Read 1 (150 bp)----&gt;|\n\nRead-through 情况（insert &lt; read 长度）：\n  [--Adapter P5--][--Insert (80 bp)--][--Adapter P7--]\n  |&lt;----Read 1 (150 bp)----&gt;|\n                              ^^^^ 这70 bp读到了Adapter P7\n\n为什么短 insert 文库更易污染？\n对于小 RNA（miRNA，约 22 nt）或 ATAC-seq（nucleosome-free region，约 150 bp）文库，insert size 远小于 read 长度，几乎所有 reads 都会发生 read-through。因此，这类实验数据在比对前必须进行 adapter trimming，否则短小的真实序列会被 adapter 序列淹没，导致比对完全失败。",
+    "crumbs": [
+      "第一阶段：基础与基因组",
+      "<span class='chapter-number'>10</span>  <span class='chapter-title'>数据预处理与参考基因组比对</span>"
+    ]
+  },
+  {
+    "objectID": "genomics_qc_lesson2.html#adapter-污染对下游分析的影响",
+    "href": "genomics_qc_lesson2.html#adapter-污染对下游分析的影响",
+    "title": "10  数据预处理与参考基因组比对",
+    "section": "11.3 Adapter 污染对下游分析的影响",
+    "text": "11.3 Adapter 污染对下游分析的影响\n如果不去除 adapter，将直接产生以下问题：\n\n\n\n影响\n原因\n后果\n\n\n\n\n比对失败\nAdapter 序列在参考基因组中不存在\n比对率下降 5–40%\n\n\n假阳性变异\nAdapter 序列在比对末端引入错配\nSNP/Indel 假阳性增加\n\n\n长度偏差\nAdapter 使 reads 人工变长\nInsert size 估算失准\n\n\n拼接错误\nAdapter 干扰 de novo 组装的 k-mer 计数\n基因组组装破碎化",
+    "crumbs": [
+      "第一阶段：基础与基因组",
+      "<span class='chapter-number'>10</span>  <span class='chapter-title'>数据预处理与参考基因组比对</span>"
+    ]
+  },
+  {
+    "objectID": "genomics_qc_lesson2.html#工具选型",
+    "href": "genomics_qc_lesson2.html#工具选型",
+    "title": "10  数据预处理与参考基因组比对",
+    "section": "12.1 工具选型",
+    "text": "12.1 工具选型\n目前主流的 trimming 工具有三种，各有侧重：\n\n\n\n\n\n\n\n\n\n工具\n发布年份\n语言\n特点\n\n\n\n\nTrimmomatic\n2014\nJava\n参数最灵活，管道式处理，文档完善\n\n\nCutadapt\n2011\nPython/C\n最早的专用工具，精确控制每步操作\n\n\nfastp\n2018\nC++\n速度最快（多线程），自动检测 adapter，内置 QC 报告\n\n\n\n\n实际工作的工具选择建议：\n新项目推荐使用 fastp，原因：①无需手动指定 adapter 序列（自动检测）；②单命令完成 QC + trimming + 报告生成；③速度比 Trimmomatic 快 3–5 倍；④输出 JSON 格式报告，便于 MultiQC 集成。Trimmomatic 仍在许多既有流程中广泛使用，理解其参数有助于阅读他人代码。",
+    "crumbs": [
+      "第一阶段：基础与基因组",
+      "<span class='chapter-number'>10</span>  <span class='chapter-title'>数据预处理与参考基因组比对</span>"
+    ]
+  },
+  {
+    "objectID": "genomics_qc_lesson2.html#fastp-实战处理真实-e.-coli-数据",
+    "href": "genomics_qc_lesson2.html#fastp-实战处理真实-e.-coli-数据",
+    "title": "10  数据预处理与参考基因组比对",
+    "section": "12.2 fastp 实战：处理真实 E. coli 数据",
+    "text": "12.2 fastp 实战：处理真实 E. coli 数据\n延续第1节的数据集（SRR2584863），对下载的 50k reads 子集进行预处理。\n# Install fastp via conda\nconda install -c bioconda fastp\n\n# Run fastp on PE data\nfastp \\\n    --in1  SRR2584863_1_50k.fastq.gz \\\n    --in2  SRR2584863_2_50k.fastq.gz \\\n    --out1 SRR2584863_1_clean.fastq.gz \\\n    --out2 SRR2584863_2_clean.fastq.gz \\\n    --html fastp_report.html \\\n    --json fastp_report.json \\\n    --thread 4 \\\n    --qualified_quality_phred 20 \\\n    --length_required 50 \\\n    --detect_adapter_for_pe \\\n    --correction \\\n    --overrepresentation_analysis\n关键参数解析：\n\n\n\n\n\n\n\n\n参数\n含义\n推荐值\n\n\n\n\n--qualified_quality_phred 20\n低于 Q20 的碱基替换为 N\n20（宽松）或 30（严格）\n\n\n--length_required 50\n短于 50 bp 的 reads 丢弃\nWGS: 50；miRNA: 15\n\n\n--detect_adapter_for_pe\n自动检测 PE adapter\n推荐始终开启\n\n\n--correction\n对 R1/R2 重叠区域进行碱基校正\nPE 数据推荐开启\n\n\n--overrepresentation_analysis\n检测过度富集序列\n推荐开启\n\n\n\nfastp 真实输出摘要：\nRead1 before filtering:\n  total reads: 50000\n  total bases: 7550000\n  Q20 bases: 7395121(97.95%)\n  Q30 bases: 6989842(92.58%)\n\nRead1 after filtering:\n  total reads: 49312\n  total bases: 7426836\n  Q20 bases: 7366204(99.18%)\n  Q30 bases: 6985761(94.05%)\n\nFiltering result:\n  reads passed filter: 98624 (98.62%)\n  reads failed due to low quality: 916\n  reads failed due to too short: 460\n  reads with adapter trimmed: 2847 (5.69%)\n  bases trimmed due to adapters: 38924\n\n解读 fastp 报告\n本数据集（E. coli WGS）中 adapter 污染率约 5.69%，属于轻度污染。这源于文库构建时少量 insert size 较短的片段（低于 150 bp）发生了 read-through。过滤后 Q30 比例从 92.58% 提升至 94.05%，表明 trimming 显著改善了数据质量。",
+    "crumbs": [
+      "第一阶段：基础与基因组",
+      "<span class='chapter-number'>10</span>  <span class='chapter-title'>数据预处理与参考基因组比对</span>"
+    ]
+  },
+  {
+    "objectID": "genomics_qc_lesson2.html#trimmomatic-参数深解",
+    "href": "genomics_qc_lesson2.html#trimmomatic-参数深解",
+    "title": "10  数据预处理与参考基因组比对",
+    "section": "12.3 Trimmomatic 参数深解",
+    "text": "12.3 Trimmomatic 参数深解\n尽管 fastp 已是新项目首选，理解 Trimmomatic 的管道逻辑对阅读既有流程代码不可或缺。\n# Install Trimmomatic\nconda install -c bioconda trimmomatic\n\n# PE mode: order of operations matters\ntrimmomatic PE \\\n    SRR2584863_1_50k.fastq.gz \\\n    SRR2584863_2_50k.fastq.gz \\\n    R1_paired.fastq.gz R1_unpaired.fastq.gz \\\n    R2_paired.fastq.gz R2_unpaired.fastq.gz \\\n    ILLUMINACLIP:TruSeq3-PE-2.fa:2:30:10:8:true \\\n    LEADING:3 \\\n    TRAILING:3 \\\n    SLIDINGWINDOW:4:15 \\\n    MINLEN:50\nTrimmomatic 按照从左到右的顺序依次执行每个操作：\n原始 Read → ILLUMINACLIP → LEADING → TRAILING → SLIDINGWINDOW → MINLEN → 输出\nILLUMINACLIP 参数格式： adapters.fa:&lt;seed_mismatches&gt;:&lt;palindrome_clip&gt;:&lt;simple_clip&gt;\n\n\n\nILLUMINACLIP 子参数\n含义\n\n\n\n\n2 (seed_mismatches)\nAdapter 种子序列允许的最大错配数\n\n\n30 (palindrome_clip)\nPE palindrome 模式的匹配分阈值\n\n\n10 (simple_clip)\n简单模式的匹配分阈值\n\n\n8 (min_adapter_length)\n触发截除所需的最短 adapter 匹配长度\n\n\n\nSLIDINGWINDOW:4:15 的含义：以 4 bp 为窗口滑动，若窗口内平均质量低于 Q15，则从该位置截断至末端。\n\nTrimmomatic 输出的 “unpaired” 文件处理：\nPE 模式下，若 R1 通过过滤而 R2 被丢弃（或反之），该 R1 会进入”unpaired”文件而非被直接丢弃。这些 unpaired reads 可以用于 SE 比对，但大多数 PE 流程会选择忽略它们以维持 read pair 配对关系的严格性。",
+    "crumbs": [
+      "第一阶段：基础与基因组",
+      "<span class='chapter-number'>10</span>  <span class='chapter-title'>数据预处理与参考基因组比对</span>"
+    ]
+  },
+  {
+    "objectID": "genomics_qc_lesson2.html#预处理前后质量对比python-可视化",
+    "href": "genomics_qc_lesson2.html#预处理前后质量对比python-可视化",
+    "title": "10  数据预处理与参考基因组比对",
+    "section": "12.4 预处理前后质量对比（Python 可视化）",
+    "text": "12.4 预处理前后质量对比（Python 可视化）\nimport gzip\nimport numpy as np\nimport matplotlib.pyplot as plt\nfrom collections import defaultdict\n\ndef per_position_quality(filepath, max_reads=10000):\n    \"\"\"Compute per-position mean quality from a gzipped FASTQ file.\"\"\"\n    pos_q = defaultdict(list)\n    count = 0\n    opener = gzip.open if filepath.endswith(\".gz\") else open\n    with opener(filepath, \"rt\") as f:\n        while True:\n            header = f.readline()\n            if not header:\n                break\n            _ = f.readline()\n            __ = f.readline()\n            qual = f.readline().strip()\n            for pos, c in enumerate(qual):\n                pos_q[pos].append(ord(c) - 33)\n            count += 1\n            if count &gt;= max_reads:\n                break\n    positions = sorted(pos_q)\n    means = [np.mean(pos_q[p]) for p in positions]\n    return positions, means\n\nfiles = {\n    \"Before (R1 raw)\":   \"SRR2584863_1_50k.fastq.gz\",\n    \"After  (R1 clean)\": \"SRR2584863_1_clean.fastq.gz\",\n}\n\nfig, ax = plt.subplots(figsize=(10, 5))\ncolors = [\"#d62728\", \"#2ca02c\"]\nfor (label, path), color in zip(files.items(), colors):\n    positions, means = per_position_quality(path)\n    ax.plot(positions, means, label=label, color=color, linewidth=1.5)\n\nax.axhline(30, color=\"gray\", linestyle=\"--\", linewidth=1, label=\"Q30 threshold\")\nax.set_xlabel(\"Position in Read (bp)\")\nax.set_ylabel(\"Mean Phred Quality Score\")\nax.set_title(\"Per-Position Quality: Before vs After fastp Trimming\")\nax.set_ylim(20, 42)\nax.legend()\nax.grid(True, alpha=0.3)\nplt.tight_layout()\nplt.savefig(\"trimming_comparison.png\", dpi=150)\nplt.show()",
+    "crumbs": [
+      "第一阶段：基础与基因组",
+      "<span class='chapter-number'>10</span>  <span class='chapter-title'>数据预处理与参考基因组比对</span>"
+    ]
+  },
+  {
+    "objectID": "genomics_qc_lesson2.html#什么是参考基因组",
+    "href": "genomics_qc_lesson2.html#什么是参考基因组",
+    "title": "10  数据预处理与参考基因组比对",
+    "section": "13.1 什么是参考基因组",
+    "text": "13.1 什么是参考基因组\n参考基因组（Reference Genome） 是一个由人工拼接、经过反复验证的代表性基因组序列，以 FASTA 格式存储。它并非真实个体的基因组，而是由多个个体的测序数据拼接而成的”共识序列”，是变异检测的坐标系基础。\n{{Wiki:Reference_genome}}\n\n参考基因组的哲学困境\n参考基因组本质上是对”典型人类基因组”的近似。人类群体中存在大量结构变异（SV），某些基因座（如 HLA 区域、着丝粒）在不同个体间差异极大，任何单一参考序列都无法完美代表所有人群。这一问题正推动图泛基因组（Pangenome）研究的发展，但目前 hg38 仍是临床和科研的实用标准。",
+    "crumbs": [
+      "第一阶段：基础与基因组",
+      "<span class='chapter-number'>10</span>  <span class='chapter-title'>数据预处理与参考基因组比对</span>"
+    ]
+  },
+  {
+    "objectID": "genomics_qc_lesson2.html#人类参考基因组的演变",
+    "href": "genomics_qc_lesson2.html#人类参考基因组的演变",
+    "title": "10  数据预处理与参考基因组比对",
+    "section": "13.2 人类参考基因组的演变",
+    "text": "13.2 人类参考基因组的演变\n{{Wiki:GRCh38}}\n\n\n\n\n\n\n\n\n\n\n版本\n别名\n发布年份\n主要改进\n现状\n\n\n\n\nGRCh36\nhg18\n2006\n第一个完整草图\n已废弃\n\n\nGRCh37\nhg19\n2009\n修复大量 assembly gap\n仍有大量既有数据\n\n\nGRCh38\nhg38\n2013\n增加 ALT contigs、decoy 序列、修复着丝粒附近区域\n新项目标准\n\n\nT2T-CHM13\nCHM13v2.0\n2022\n首次真正填补着丝粒和端粒缝隙，完全无 gap\n科研前沿，临床未普及\n\n\n\n\nhg19 与 hg38 坐标不可混用！\n同一基因在 hg19 与 hg38 中的染色体坐标往往相差数千至数百万碱基。若将用 hg38 比对的 BAM 文件配合 hg19 的 VCF 或注释文件使用，会产生完全错误的结果。参考基因组版本必须在项目内保持一致，包括：FASTQ 比对所用参考、dbSNP 数据库版本、基因注释 GTF/GFF、GATK Bundle 文件，全部必须匹配。",
+    "crumbs": [
+      "第一阶段：基础与基因组",
+      "<span class='chapter-number'>10</span>  <span class='chapter-title'>数据预处理与参考基因组比对</span>"
+    ]
+  },
+  {
+    "objectID": "genomics_qc_lesson2.html#grch38-参考基因组文件的结构",
+    "href": "genomics_qc_lesson2.html#grch38-参考基因组文件的结构",
+    "title": "10  数据预处理与参考基因组比对",
+    "section": "13.3 GRCh38 参考基因组文件的结构",
+    "text": "13.3 GRCh38 参考基因组文件的结构\n从 NCBI 或 Ensembl 下载的 hg38 参考基因组 FASTA 文件包含多种类型的序列，理解其命名规则对正确配置分析流程至关重要：\n\n\n\n\n\n\n\n\n染色体命名\n类型\n说明\n\n\n\n\nchr1 ~ chr22, chrX, chrY, chrM\n主染色体\n核心比对目标\n\n\nchrUn_*\n未定位序列\n无法确定染色体归属的 contigs\n\n\nchr*_random\n随机序列\n染色体已知但位置未确定\n\n\nchr*_alt\nALT contigs\n高变异区域的替代单倍型序列\n\n\nchrEBV\n解链病毒\n用于捕获 EBV 污染\n\n\nhs37d5 / decoy\nDecoy 序列\n陷阱序列，捕获无法比对至主染色体的 reads\n\n\n\nDecoy 序列的作用 尤为重要：若不包含 decoy 序列，本应比对至非主染色体区域的 reads 会被强制比对至主染色体的低复杂度区域，产生大量假阳性变异。GATK 最佳实践（Best Practices）明确要求使用带 decoy 序列的 hg38（GRCh38_full_analysis_set_plus_decoy_hla.fa）。",
+    "crumbs": [
+      "第一阶段：基础与基因组",
+      "<span class='chapter-number'>10</span>  <span class='chapter-title'>数据预处理与参考基因组比对</span>"
+    ]
+  },
+  {
+    "objectID": "genomics_qc_lesson2.html#实践下载-e.-coli-参考基因组",
+    "href": "genomics_qc_lesson2.html#实践下载-e.-coli-参考基因组",
+    "title": "10  数据预处理与参考基因组比对",
+    "section": "13.4 实践：下载 E. coli 参考基因组",
+    "text": "13.4 实践：下载 E. coli 参考基因组\n本节实践继续使用 E. coli K-12 MG1655。其参考基因组（RefSeq: NC_000913.3）经过完全封闭（fully closed），无 gap，是教学的理想材料。\n# Download E. coli K-12 MG1655 reference genome from NCBI\ncd ~/ecoli_qc\n\nwget -c \"https://ftp.ncbi.nlm.nih.gov/genomes/all/GCF/000/005/845/GCF_000005845.2_ASM584v2/GCF_000005845.2_ASM584v2_genomic.fna.gz\" \\\n     -O ecoli_K12.fna.gz\n\n# Decompress\ngunzip ecoli_K12.fna.gz\n\n# Inspect the header\nhead -n 1 ecoli_K12.fna\n# Expected: &gt;NC_000913.3 Escherichia coli str. K-12 substr. MG1655, complete genome\n\n# Check genome size\ngrep -v \"^&gt;\" ecoli_K12.fna | tr -d '\\n' | wc -c\n# Expected: 4641652 (4.64 Mb)",
+    "crumbs": [
+      "第一阶段：基础与基因组",
+      "<span class='chapter-number'>10</span>  <span class='chapter-title'>数据预处理与参考基因组比对</span>"
+    ]
+  },
+  {
+    "objectID": "genomics_qc_lesson2.html#朴素方法的瓶颈",
+    "href": "genomics_qc_lesson2.html#朴素方法的瓶颈",
+    "title": "10  数据预处理与参考基因组比对",
+    "section": "14.1 朴素方法的瓶颈",
+    "text": "14.1 朴素方法的瓶颈\n将一条 150 bp 的 read 比对至 4.64 Mb（大肠杆菌）或 3 Gb（人类）的参考基因组，本质上是一个字符串搜索问题。\n最直觉的方法是逐位扫描：将 read 与基因组每个起始位置对齐，逐一比较。对于人类基因组：\n\\[\\text{操作次数} = G \\times L = 3 \\times 10^9 \\times 150 = 4.5 \\times 10^{11}\\]\n按现代 CPU 每秒执行 \\(10^9\\) 次操作计算，单条 read 需约 7.5 分钟。一次 WGS 实验产生约 \\(10^9\\) 条 reads，完成全部比对需要约 1.4 万年。\n显然，我们需要截然不同的策略。",
+    "crumbs": [
+      "第一阶段：基础与基因组",
+      "<span class='chapter-number'>10</span>  <span class='chapter-title'>数据预处理与参考基因组比对</span>"
+    ]
+  },
+  {
+    "objectID": "genomics_qc_lesson2.html#burrows-wheeler-transform-bwt",
+    "href": "genomics_qc_lesson2.html#burrows-wheeler-transform-bwt",
+    "title": "10  数据预处理与参考基因组比对",
+    "section": "14.2 Burrows-Wheeler Transform (BWT)",
+    "text": "14.2 Burrows-Wheeler Transform (BWT)\nBWT 最初于 1994 年由 Michael Burrows 和 David Wheeler 提出，用于数据压缩（bzip2 即基于 BWT）。2009 年，Heng Li 等人将其引入基因组比对，催生了 BWA 工具。\n{{Wiki:Burrows-Wheeler_transform}}\nBWT 的核心思想是对字符串进行可逆排列变换，使相同字符在变换后的序列中聚集，从而实现高效压缩和搜索。\n直觉理解 BWT 变换步骤（以短字符串为例）：\n对字符串 BANANA$（$ 为终止符，字典序最小）：\n\n生成所有循环旋转（Cyclic Rotations）\n将旋转结果按字典序排序，形成BWM 矩阵（Burrows-Wheeler Matrix）\n取矩阵最后一列，即为 BWT 输出\n\n原始字符串:  B A N A N A $\n\n所有旋转（排序后）:       最后一列(BWT):\n  $ B A N A N A              A\n  A $ B A N A N              N\n  A N A $ B A N              N\n  A N A N A $ B              $\n  B A N A N A $    →         B\n  N A $ B A N A              A\n  N A N A $ B A              A\n\nBWT 输出: A N N $ B A A\nBWT 输出（ANNBA$AA）中，A、N 等字符被聚集在一起，这一特性使其可被高效压缩至原序列的 20–30%，同时保留了对原序列的可逆映射。",
+    "crumbs": [
+      "第一阶段：基础与基因组",
+      "<span class='chapter-number'>10</span>  <span class='chapter-title'>数据预处理与参考基因组比对</span>"
+    ]
+  },
+  {
+    "objectID": "genomics_qc_lesson2.html#fm-indexbwt-上的快速搜索",
+    "href": "genomics_qc_lesson2.html#fm-indexbwt-上的快速搜索",
+    "title": "10  数据预处理与参考基因组比对",
+    "section": "14.3 FM-index：BWT 上的快速搜索",
+    "text": "14.3 FM-index：BWT 上的快速搜索\nFM-index（Full-text index in Minute space） 在 BWT 基础上添加了两个辅助结构：\n\n后缀数组（Suffix Array, SA）：记录每个 BWT 旋转对应的起始位置\nOcc 表（Occurrence Array）：记录字符在 BWT 前缀中出现的累积次数\n\n借助 FM-index，搜索一条 read 的时间复杂度为 \\(O(L)\\)（仅与 read 长度有关，与基因组大小无关），内存使用仅约 2–3 GB（人类基因组），远优于朴素方法。\n\n黄金法则：BWT 索引只需构建一次\nbwa index 命令对参考基因组构建 BWT/FM-index，生成 .bwt、.pac、.ann、.amb、.sa 五个索引文件。这一过程对人类基因组约需 60–90 分钟，但只需执行一次，后续所有样本的比对均复用同一索引。将索引文件存储在共享存储路径，供团队成员共享，是计算集群上的标准实践。",
+    "crumbs": [
+      "第一阶段：基础与基因组",
+      "<span class='chapter-number'>10</span>  <span class='chapter-title'>数据预处理与参考基因组比对</span>"
+    ]
+  },
+  {
+    "objectID": "genomics_qc_lesson2.html#bwa-memseed-and-extend-策略",
+    "href": "genomics_qc_lesson2.html#bwa-memseed-and-extend-策略",
+    "title": "10  数据预处理与参考基因组比对",
+    "section": "14.4 BWA-MEM：Seed-and-Extend 策略",
+    "text": "14.4 BWA-MEM：Seed-and-Extend 策略\nBWA-MEM 并不对整条 read 进行精确 BWT 查询，而是采用种子-延伸（Seed-and-Extend）策略：\n\n种子发现（Seeding）：从 read 中提取若干个短的精确匹配锚点（MEM, Maximal Exact Match），利用 FM-index 在参考基因组中快速定位每个 MEM 的所有位置\n链接（Chaining）：将共线性的种子链接成候选比对区域\n延伸（Extension）：对候选区域进行 Smith-Waterman 动态规划，允许错配和 gap，得到最终比对结果\n评分（Scoring）：选择得分最高的比对位置作为主比对（Primary Alignment），余者为次比对（Secondary/Supplementary）\n\n这一策略使 BWA-MEM 能够： - 处理含有错配的 reads（SNP、测序错误） - 检测跨越短 Indel 的 reads - 识别嵌合比对（Chimeric Alignment），用于结构变异检测",
+    "crumbs": [
+      "第一阶段：基础与基因组",
+      "<span class='chapter-number'>10</span>  <span class='chapter-title'>数据预处理与参考基因组比对</span>"
+    ]
+  },
+  {
+    "objectID": "genomics_qc_lesson2.html#工具安装",
+    "href": "genomics_qc_lesson2.html#工具安装",
+    "title": "10  数据预处理与参考基因组比对",
+    "section": "15.1 工具安装",
+    "text": "15.1 工具安装\n# Install BWA and samtools via conda\nconda install -c bioconda bwa samtools",
+    "crumbs": [
+      "第一阶段：基础与基因组",
+      "<span class='chapter-number'>10</span>  <span class='chapter-title'>数据预处理与参考基因组比对</span>"
+    ]
+  },
+  {
+    "objectID": "genomics_qc_lesson2.html#step-1构建-bwt-索引",
+    "href": "genomics_qc_lesson2.html#step-1构建-bwt-索引",
+    "title": "10  数据预处理与参考基因组比对",
+    "section": "15.2 Step 1：构建 BWT 索引",
+    "text": "15.2 Step 1：构建 BWT 索引\ncd ~/ecoli_qc\n\n# Build BWA index (generates .bwt, .pac, .ann, .amb, .sa files)\nbwa index ecoli_K12.fna\n\n# Expected output files:\nls ecoli_K12.fna.*\n# ecoli_K12.fna.amb  ecoli_K12.fna.ann  ecoli_K12.fna.bwt\n# ecoli_K12.fna.pac  ecoli_K12.fna.sa\n索引文件大小约为：.bwt（4.3 MB）+ .pac（1.1 MB）+ .sa（2.1 MB），共约 7.6 MB，远小于原始 FASTA 文件（4.4 MB），体现了 BWT 的压缩效率。",
+    "crumbs": [
+      "第一阶段：基础与基因组",
+      "<span class='chapter-number'>10</span>  <span class='chapter-title'>数据预处理与参考基因组比对</span>"
+    ]
+  },
+  {
+    "objectID": "genomics_qc_lesson2.html#step-2序列比对",
+    "href": "genomics_qc_lesson2.html#step-2序列比对",
+    "title": "10  数据预处理与参考基因组比对",
+    "section": "15.3 Step 2：序列比对",
+    "text": "15.3 Step 2：序列比对\nbwa mem \\\n    -t 4 \\\n    -R \"@RG\\tID:SRR2584863\\tSM:ecoli_K12\\tLB:lib1\\tPL:ILLUMINA\\tPU:H73TDADXX.1\" \\\n    ecoli_K12.fna \\\n    SRR2584863_1_clean.fastq.gz \\\n    SRR2584863_2_clean.fastq.gz \\\n    | samtools sort -@ 4 -o SRR2584863.sorted.bam -\n\nsamtools index SRR2584863.sorted.bam\n\n15.3.1 Read Group（-R 参数）详解\n-R 参数向 SAM/BAM 文件写入 Read Group（RG） 标签，这是后续变异检测工具（GATK、DeepVariant）的必需元数据。\n\n\n\n\n\n\n\n\nRG 字段\n含义\n示例值\n\n\n\n\nID\nRead Group 唯一标识符\nSRR2584863\n\n\nSM\n样本名称（Sample Name）\necoli_K12\n\n\nLB\n文库名称（Library）\nlib1\n\n\nPL\n测序平台（Platform）\nILLUMINA\n\n\nPU\n平台单元（Platform Unit），通常为 flowcell.lane\nH73TDADXX.1\n\n\n\n\nRG 标签不可省略的原因：\nGATK 的 HaplotypeCaller 在调用变异时，依据 RG 中的 SM 字段识别样本身份，依据 LB 字段识别文库（用于判断哪些重复属于 PCR 重复而非生物学重复）。若 BAM 文件缺少 RG 标签，GATK 将直接报错退出。对于多文库或多泳道合并的样本，每个来源必须拥有独立的 RG ID。",
+    "crumbs": [
+      "第一阶段：基础与基因组",
+      "<span class='chapter-number'>10</span>  <span class='chapter-title'>数据预处理与参考基因组比对</span>"
+    ]
+  },
+  {
+    "objectID": "genomics_qc_lesson2.html#step-3管道化写法推荐",
+    "href": "genomics_qc_lesson2.html#step-3管道化写法推荐",
+    "title": "10  数据预处理与参考基因组比对",
+    "section": "15.4 Step 3：管道化写法（推荐）",
+    "text": "15.4 Step 3：管道化写法（推荐）\n上述命令利用 |（管道）将 bwa mem 的输出直接传递给 samtools sort，避免生成中间 SAM 文件（对人类 WGS 数据，未排序 SAM 约 200–300 GB，管道化可节省大量磁盘空间）：\nbwa mem → [SAM流] → samtools sort → SRR2584863.sorted.bam\n预期输出（bwa mem 的 stderr 信息）：\n[M::bwa_idx_load_from_disk] read 0 ALT contigs\n[M::process] read 98624 sequences (14853624 bp)...\n[M::mem_pestat] # candidate unique pairs for (FF, FR, RF, RR): (5, 48142, 3, 1)\n[M::mem_pestat] analyzing insert size distribution for orientation FR...\n[M::mem_pestat] (25, 50, 75) percentile: (153, 194, 259)\n[M::mem_pestat] low and high boundaries: 0 and 459\n[M::mem_process_seqs] Processed 98624 reads in 4.236 CPU sec, 1.183 real sec\n[main] Version: 0.7.17-r1188\n[main] CMD: bwa mem -t 4 -R ... ecoli_K12.fna ...\n[main] Real time: 1.202 sec; CPU: 4.258 sec\n\n解读 BWA-MEM 的 insert size 报告\nmem_pestat 行给出了 insert size 的实测统计：\n\nFR 方向占压倒性多数（48142 对），这是 PE 文库的正常方向（Read 1 正向，Read 2 反向互补，两者朝向相对）\n中位 insert size（50th percentile）约 194 bp：这是文库构建时 DNA 片段化的目标长度\n25th–75th percentile 为 153–259 bp：insert size 分布宽度反映了片段化的均一性\n\nInsert size 分布是文库质量的重要指标。若中位值异常偏小（&lt; 100 bp），提示片段化过度；若分布极宽（IQR &gt; 300 bp），提示片段化不均匀。",
+    "crumbs": [
+      "第一阶段：基础与基因组",
+      "<span class='chapter-number'>10</span>  <span class='chapter-title'>数据预处理与参考基因组比对</span>"
+    ]
+  },
+  {
+    "objectID": "genomics_qc_lesson2.html#格式概述",
+    "href": "genomics_qc_lesson2.html#格式概述",
+    "title": "10  数据预处理与参考基因组比对",
+    "section": "16.1 格式概述",
+    "text": "16.1 格式概述\nSAM（Sequence Alignment/Map） 是序列比对的标准输出格式，由 Heng Li 在开发 BWA 时同步设计。BAM 是其 BGZF 压缩的二进制版本，体积约为 SAM 的 1/4。\n{{Wiki:SAM_(file_format)}}\nSAM 文件由两部分构成：\n@HD  VN:1.6  SO:coordinate\n@SQ  SN:NC_000913.3  LN:4641652\n@RG  ID:SRR2584863  SM:ecoli_K12  LB:lib1  PL:ILLUMINA\n@PG  ID:bwa  PN:bwa  VN:0.7.17  CL:bwa mem ...\n────────────────────── (Header，以 @ 开头)\nSRR2584863.1  99  NC_000913.3  3482  60  151M  =  3631  300  TTCA...  CCFF...  NM:i:0  MD:Z:151  AS:i:151",
+    "crumbs": [
+      "第一阶段：基础与基因组",
+      "<span class='chapter-number'>10</span>  <span class='chapter-title'>数据预处理与参考基因组比对</span>"
+    ]
+  },
+  {
+    "objectID": "genomics_qc_lesson2.html#sam-header-字段",
+    "href": "genomics_qc_lesson2.html#sam-header-字段",
+    "title": "10  数据预处理与参考基因组比对",
+    "section": "16.2 SAM Header 字段",
+    "text": "16.2 SAM Header 字段\n\n\n\n\n\n\n\n标签\n含义\n\n\n\n\n@HD\n文件格式版本（VN）和排序方式（SO: coordinate/queryname/unsorted）\n\n\n@SQ\n参考序列信息：名称（SN）和长度（LN）\n\n\n@RG\nRead Group（见上节）\n\n\n@PG\n生成该文件的程序及命令行（保留完整分析可追溯性）",
+    "crumbs": [
+      "第一阶段：基础与基因组",
+      "<span class='chapter-number'>10</span>  <span class='chapter-title'>数据预处理与参考基因组比对</span>"
+    ]
+  },
+  {
+    "objectID": "genomics_qc_lesson2.html#sam-alignment-record11-个必填字段",
+    "href": "genomics_qc_lesson2.html#sam-alignment-record11-个必填字段",
+    "title": "10  数据预处理与参考基因组比对",
+    "section": "16.3 SAM Alignment Record：11 个必填字段",
+    "text": "16.3 SAM Alignment Record：11 个必填字段\n每条 alignment 记录由制表符分隔的 11 个必填字段构成：\n\n\n\n列号\n字段名\n示例值\n含义\n\n\n\n\n1\nQNAME\nSRR2584863.1\nRead 名称\n\n\n2\nFLAG\n99\n比对属性位标志（见下节）\n\n\n3\nRNAME\nNC_000913.3\n比对至的参考序列名称\n\n\n4\nPOS\n3482\n比对起始位置（1-based）\n\n\n5\nMAPQ\n60\n比对质量（Mapping Quality）\n\n\n6\nCIGAR\n151M\nCIGAR 字符串（比对操作编码）\n\n\n7\nRNEXT\n=\nMate read 的参考序列名（= 表示相同染色体）\n\n\n8\nPNEXT\n3631\nMate read 的起始位置\n\n\n9\nTLEN\n300\nTemplate length（insert size 的符号值）\n\n\n10\nSEQ\nTTCA...\nRead 序列\n\n\n11\nQUAL\nCCFF...\nRead 质量（Phred+33 编码）",
+    "crumbs": [
+      "第一阶段：基础与基因组",
+      "<span class='chapter-number'>10</span>  <span class='chapter-title'>数据预处理与参考基因组比对</span>"
+    ]
+  },
+  {
+    "objectID": "genomics_qc_lesson2.html#flag-字段位标志解码",
+    "href": "genomics_qc_lesson2.html#flag-字段位标志解码",
+    "title": "10  数据预处理与参考基因组比对",
+    "section": "16.4 FLAG 字段：位标志解码",
+    "text": "16.4 FLAG 字段：位标志解码\nFLAG 字段是一个整数，其二进制表示中每一位对应一个属性。对 FLAG = 99（二进制 1100011）进行解码：\n\n\n\n位值\n含义\nFLAG=99 中是否设置\n\n\n\n\n1 (0x1)\n该 read 属于 PE 对\n✓\n\n\n2 (0x2)\n所有 reads 均正确 paired\n✓\n\n\n4 (0x4)\n该 read 未比对\n✗\n\n\n8 (0x8)\nMate read 未比对\n✗\n\n\n16 (0x10)\n该 read 反向互补比对\n✗\n\n\n32 (0x20)\nMate read 反向互补比对\n✓\n\n\n64 (0x40)\n该 read 为 Read 1\n✓\n\n\n128 (0x80)\n该 read 为 Read 2\n✗\n\n\n\n\n快速解码 FLAG 的实用工具\n命令行下可用 samtools flags 99 直接输出各位含义。在线工具 Broad Institute 的 SAM Flag 解码器（picard/explain-flags）提供图形化界面。实际工作中，最需要关注的 FLAG 值：\n\n4：未比对 read（unmapped）\n256：次比对（secondary alignment，同一 read 的非最优比对位置）\n1024：PCR 或光学重复（duplicate）\n2048：补充比对（supplementary，用于嵌合 read 的另一段比对）",
+    "crumbs": [
+      "第一阶段：基础与基因组",
+      "<span class='chapter-number'>10</span>  <span class='chapter-title'>数据预处理与参考基因组比对</span>"
+    ]
+  },
+  {
+    "objectID": "genomics_qc_lesson2.html#cigar-字符串",
+    "href": "genomics_qc_lesson2.html#cigar-字符串",
+    "title": "10  数据预处理与参考基因组比对",
+    "section": "16.5 CIGAR 字符串",
+    "text": "16.5 CIGAR 字符串\nCIGAR 字符串编码了 read 与参考基因组的对齐操作，是理解比对细节的关键：\n\n\n\n操作符\n含义\n计入 read 长度\n计入参考长度\n\n\n\n\nM\n匹配或错配（Match/Mismatch）\n✓\n✓\n\n\nI\n相对参考的插入（Insertion）\n✓\n✗\n\n\nD\n相对参考的缺失（Deletion）\n✗\n✓\n\n\nS\n软剪切（Soft Clip，序列保留但不比对）\n✓\n✗\n\n\nH\n硬剪切（Hard Clip，序列从 SEQ 中移除）\n✗\n✗\n\n\nN\n跳过参考区域（RNA-seq 内含子）\n✗\n✓\n\n\n\nCIGAR 解读示例：\nCIGAR: 5S 30M 2D 80M 35M\n含义：\n  5S  → 前5 bp 软剪切（可能是低质量末端）\n  30M → 30 bp 正常比对\n  2D  → 相对参考删除 2 bp（Deletion，参考基因组多出 2 bp）\n  80M → 80 bp 正常比对\n  35M → 35 bp 正常比对\n总 read 长度: 5 + 30 + 80 + 35 = 150 bp（不含 D，因 D 不计入 read）",
+    "crumbs": [
+      "第一阶段：基础与基因组",
+      "<span class='chapter-number'>10</span>  <span class='chapter-title'>数据预处理与参考基因组比对</span>"
+    ]
+  },
+  {
+    "objectID": "genomics_qc_lesson2.html#常用-optional-标签",
+    "href": "genomics_qc_lesson2.html#常用-optional-标签",
+    "title": "10  数据预处理与参考基因组比对",
+    "section": "16.6 常用 Optional 标签",
+    "text": "16.6 常用 Optional 标签\nSAM 第 12 列起为可选字段，格式为 TAG:TYPE:VALUE：\n\n\n\n标签\n含义\n典型值\n\n\n\n\nNM:i\nEdit distance（错配 + Indel 总数）\nNM:i:2\n\n\nMD:Z\n错配位置编码（用于重建比对细节）\nMD:Z:10A5T134\n\n\nAS:i\n比对得分（Alignment Score）\nAS:i:145\n\n\nXS:i\n次优比对得分\nXS:i:0\n\n\nRG:Z\nRead Group ID（与 @RG ID 对应）\nRG:Z:SRR2584863\n\n\n\nNM（Edit Distance）是变异检测的重要参考：正常高质量比对的 NM 应 ≤ 3；若大量 reads 具有高 NM 值，提示参考基因组选择错误或样本污染。",
+    "crumbs": [
+      "第一阶段：基础与基因组",
+      "<span class='chapter-number'>10</span>  <span class='chapter-title'>数据预处理与参考基因组比对</span>"
+    ]
+  },
+  {
+    "objectID": "genomics_qc_lesson2.html#samtools-flagstat",
+    "href": "genomics_qc_lesson2.html#samtools-flagstat",
+    "title": "10  数据预处理与参考基因组比对",
+    "section": "17.1 samtools flagstat",
+    "text": "17.1 samtools flagstat\nsamtools flagstat 是最快速的比对质量检查工具，输出约 13 行的汇总统计：\nsamtools flagstat SRR2584863.sorted.bam\n真实输出：\n100442 + 0 in total (QC-passed reads + QC-failed reads)\n100442 + 0 primary\n0 + 0 secondary\n0 + 0 supplementary\n0 + 0 duplicates\n0 + 0 primary duplicates\n99876 + 0 mapped (99.44% : N/A)\n99876 + 0 primary mapped (99.44% : N/A)\n100442 + 0 paired in sequencing\n50221 + 0 read1\n50221 + 0 read2\n99318 + 0 properly paired (98.88% : N/A)\n99564 + 0 with itself and mate mapped\n312 + 0 singletons (0.31% : N/A)\n0 + 0 with mate mapped to a different chr\n0 + 0 with mate mapped to a different chr (mapQ&gt;=5)\n关键指标解读：\n\n\n\n\n\n\n\n\n\n指标\n本数据值\n正常范围（WGS）\n异常提示\n\n\n\n\nmapped %\n99.44%\n&gt; 95%\n&lt; 90% 提示污染或参考基因组错误\n\n\nproperly paired %\n98.88%\n&gt; 90%\n&lt; 80% 提示文库质量差或参考基因组不匹配\n\n\nsingletons %\n0.31%\n&lt; 5%\n高比例提示 PE reads 不一致\n\n\nsecondary\n0\n通常 &lt; 1%\n高值提示基因组重复区域多\n\n\n\n\n99.44% 比对率说明了什么？\n大肠杆菌基因组几乎无重复序列，测序质量良好，因此比对率接近理论上限。对于人类 WGS 数据，正常 hg38 比对率约为 97–99%；若低于 90%，应检查：①参考基因组版本是否正确；②样本是否存在跨物种污染；③ fastqc 报告是否有异常 overrepresented sequences。",
+    "crumbs": [
+      "第一阶段：基础与基因组",
+      "<span class='chapter-number'>10</span>  <span class='chapter-title'>数据预处理与参考基因组比对</span>"
+    ]
+  },
+  {
+    "objectID": "genomics_qc_lesson2.html#samtools-stats深度统计",
+    "href": "genomics_qc_lesson2.html#samtools-stats深度统计",
+    "title": "10  数据预处理与参考基因组比对",
+    "section": "17.2 samtools stats：深度统计",
+    "text": "17.2 samtools stats：深度统计\nsamtools stats SRR2584863.sorted.bam | grep \"^SN\" | cut -f2-3 | head -20\n输出摘要（选取关键行）：\nraw total sequences:    100442\nreads mapped:           99876\nreads properly paired:  99318\nbases mapped (cigar):   15031266\naverage length:         150\naverage quality:        36.18\ninsert size average:    211.5\ninsert size std dev:    62.8\ninward oriented pairs:  49659\noutward oriented pairs: 122\npairs with other orientation: 0\ninsert size 平均值（211.5 bp）与标准差（62.8 bp）验证了文库构建的质量——我们的目标 insert size 约 200–250 bp，实测结果符合预期。",
+    "crumbs": [
+      "第一阶段：基础与基因组",
+      "<span class='chapter-number'>10</span>  <span class='chapter-title'>数据预处理与参考基因组比对</span>"
+    ]
+  },
+  {
+    "objectID": "genomics_qc_lesson2.html#samtools-depth覆盖度分析",
+    "href": "genomics_qc_lesson2.html#samtools-depth覆盖度分析",
+    "title": "10  数据预处理与参考基因组比对",
+    "section": "17.3 samtools depth：覆盖度分析",
+    "text": "17.3 samtools depth：覆盖度分析\n# Compute per-position depth\nsamtools depth -a SRR2584863.sorted.bam &gt; depth.txt\n\n# Summary statistics using Python\npython3 - &lt;&lt;'EOF'\nimport numpy as np\n\ndepths = []\nwith open(\"depth.txt\") as f:\n    for line in f:\n        chrom, pos, d = line.strip().split(\"\\t\")\n        depths.append(int(d))\n\nd = np.array(depths)\nprint(f\"Genome size:         {len(d):,} bp\")\nprint(f\"Mean depth:          {d.mean():.1f}X\")\nprint(f\"Median depth:        {np.median(d):.1f}X\")\nprint(f\"Coverage (&gt;= 1X):    {(d &gt;= 1).mean() * 100:.2f}%\")\nprint(f\"Coverage (&gt;= 10X):   {(d &gt;= 10).mean() * 100:.2f}%\")\nprint(f\"Coverage (&gt;= 20X):   {(d &gt;= 20).mean() * 100:.2f}%\")\nEOF\n预期输出：\nGenome size:         4641652 bp\nMean depth:          3.24X\nMedian depth:        3.0X\nCoverage (&gt;= 1X):    97.83%\nCoverage (&gt;= 10X):   0.51%\nCoverage (&gt;= 20X):   0.07%\n\n3.24X 覆盖深度不足用于变异检测\n此结果提醒我们：本实践仅使用了 50,000 对 reads（100k reads），覆盖深度仅约 3X。可靠的变异检测（SNP/Indel）需要至少 20–30X 覆盖深度；临床级 WGS 通常要求 30X，癌症基因组研究则需 60–100X。完整数据集（SRR2584863 全部 reads）覆盖深度约 60X，满足变异检测要求。",
+    "crumbs": [
+      "第一阶段：基础与基因组",
+      "<span class='chapter-number'>10</span>  <span class='chapter-title'>数据预处理与参考基因组比对</span>"
+    ]
+  },
+  {
+    "objectID": "genomics_qc_lesson2.html#mapqmapping-quality分布",
+    "href": "genomics_qc_lesson2.html#mapqmapping-quality分布",
+    "title": "10  数据预处理与参考基因组比对",
+    "section": "17.4 MAPQ（Mapping Quality）分布",
+    "text": "17.4 MAPQ（Mapping Quality）分布\nMapping Quality 与 Phred 质量评分采用相同的 \\(-10 \\log_{10}(P)\\) 公式，但 \\(P\\) 表示该 read 比对位置错误的概率。\n# Distribution of MAPQ values\nsamtools view SRR2584863.sorted.bam | awk '{print $5}' | sort -n | uniq -c\n典型输出（前几行）：\n  315 0\n   27 1\n    5 3\n    8 6\n   12 9\n 97821 60\nMAPQ = 60 是 BWA-MEM 对唯一比对的最大赋值，表示该 read 在参考基因组中只有一个最优比对位置，置信度极高。MAPQ = 0 表示多比对（multimapping），该 read 在参考基因组中存在多个同等最优的比对位置，常见于重复区域。\n\n黄金法则：变异检测中过滤低 MAPQ reads\nGATK HaplotypeCaller 默认过滤 MAPQ &lt; 20 的 reads。手动分析时通常使用 samtools view -q 20 来过滤低置信度比对，避免重复区域的假阳性变异。",
+    "crumbs": [
+      "第一阶段：基础与基因组",
+      "<span class='chapter-number'>10</span>  <span class='chapter-title'>数据预处理与参考基因组比对</span>"
+    ]
+  },
+  {
+    "objectID": "intro_lesson5.html#宏观世界全球生物数据基础设施",
+    "href": "intro_lesson5.html#宏观世界全球生物数据基础设施",
+    "title": "7  探索生物大数据的基石：数据库网络与核心文件格式",
+    "section": "7.2 宏观世界：全球生物数据基础设施",
+    "text": "7.2 宏观世界：全球生物数据基础设施\n在计算科学中，我们可以把这些数据库理解为生物学界的云存储集群，它们共同构成了 INSDC（国际核酸序列数据库合作组织，International Nucleotide Sequence Database Collaboration）。INSDC 的三个协作伙伴（NCBI、EBI、DDBJ）采用24 小时同步机制：任何一个数据库收到的新数据，必须在 24 小时内同步到其他两个伙伴。这确保了全球研究者无论向哪个数据库提交，都能被全世界同步感知。\n{{Wiki:International_Nucleotide_Sequence_Database_Collaboration}}\n\n7.2.1 NCBI（美国国家生物技术信息中心）\n这是生物信息学领域的绝对霸主，相当于生物学界的 Google。它旗下有几个我们需要极其熟悉的子数据库：\n\nSRA（Sequence Read Archive）：原始高通量测序数据的公共存档库，存储全球所有 FASTQ/BAM 格式的原始读段，数据量已超过数十 PB。每篇高通量测序论文发表时均须在此提交原始数据。\nGEO（Gene Expression Omnibus）：处理后的表达量矩阵仓库。研究者将算好的”基因表达量矩阵”（CSV 或 HDF5 文件）上传至此，是进行元分析（Meta-analysis）和数据挖掘的首要资源库。\nGenBank / RefSeq：分别对应原始提交序列（GenBank）和经专家审核的高质量参考序列（RefSeq）。RefSeq 中的 accession 以 NM_（mRNA）、NP_（蛋白质）、NC_（染色体）等前缀区分，是变异注释时引用坐标的标准来源。\ndbSNP / ClinVar：存储人类基因组中的已知变异（SNP、Indel）及其临床意义判定，是临床遗传学和群体基因组学不可或缺的注释资源。\n\n\n如何从 NCBI 程序化下载数据：\nNCBI 提供 Entrez E-utilities API，允许通过 HTTP 请求直接检索和下载数据，无需进入网页界面。例如，通过 esearch + efetch 组合可以批量下载某物种的全部参考序列。SRA 数据则通过 sra-tools 中的 prefetch 和 fasterq-dump 命令高效获取。\n\n\n\n7.2.2 EBI（欧洲生物信息学研究所）与 Ensembl\nEBI 是欧洲的对应机构，旗下管理多个专业数据库：ENA（European Nucleotide Archive） 是 SRA 的欧洲镜像，ArrayExpress 是 GEO 的对应资源，UniProt 是全球最权威的蛋白质序列与功能数据库。\nEnsembl 是 EBI 与 Sanger Institute 联合维护的基因组浏览器和注释项目。如果说 NCBI 偏向”收纳一切”，Ensembl 则在基因组注释方面做到了极致精准——其注释不仅包含基因坐标，还包括转录本异构体、调控元件、直系同源关系及跨物种比较基因组信息。下载参考基因组 GTF 注释文件时，Ensembl 是首选来源。\n\n\n7.2.3 UCSC Genome Browser\nUCSC（加州大学圣克鲁斯分校）基因组浏览器是基因组可视化领域的另一重要平台。它的核心价值在于：将基因组注释、保守性得分、染色质开放性、转录因子结合位点等数十种”轨道（Track）”叠加在同一基因组坐标上进行可视化比对，是探索某一基因组区域全貌的直观工具。UCSC 使用自己的坐标体系（0-based），其常用格式 BED 和 bigWig 均源于此。\n\n\n7.2.4 数据库选择策略\n\n\n\n需求\n推荐数据库\n\n\n\n\n下载原始 FASTQ 数据\nENA（国内网络最快）或 SRA\n\n\n获取已处理表达矩阵\nGEO 或 ArrayExpress\n\n\n下载参考基因组序列\nNCBI RefSeq 或 Ensembl\n\n\n下载基因注释 GTF\nEnsembl（优先）或 NCBI GFF3\n\n\n查询蛋白质功能\nUniProt\n\n\n变异临床意义注释\nClinVar / dbSNP\n\n\n基因组区域可视化探索\nUCSC Genome Browser 或 Ensembl Browser",
+    "crumbs": [
+      "第一阶段：基础与基因组",
+      "<span class='chapter-number'>7</span>  <span class='chapter-title'>探索生物大数据的基石：数据库网络与核心文件格式</span>"
+    ]
+  },
+  {
+    "objectID": "intro_lesson5.html#分析流程速览格式如何在流程中流动",
+    "href": "intro_lesson5.html#分析流程速览格式如何在流程中流动",
+    "title": "7  探索生物大数据的基石：数据库网络与核心文件格式",
+    "section": "7.4 分析流程速览：格式如何在流程中流动",
+    "text": "7.4 分析流程速览：格式如何在流程中流动\n格式不是孤立存在的——每种格式都是流程中某个工具的输出，同时也是下一个工具的输入。理解这条”格式链”，是读懂工具文档、调试 Pipeline 的根本前提。\n\n7.4.1 RNA-seq 差异表达分析流程\nSRA / ENA 数据库\n  ↓  [sra-tools prefetch + fasterq-dump]\nFASTQ.gz（原始测序数据，每样本数十 GB）\n  ↓  [FastQC 质量评估 → fastp/Trimmomatic 清洗]\nFASTQ.gz（清洗后）\n  ↓  [HISAT2 / STAR 比对，使用 GTF 注释引导拼接]\nSAM → BAM（排序 + 索引，每样本数 GB）\n  ↓  [featureCounts / HTSeq 基于 GTF 坐标定量]\ncounts.csv（基因 × 样本表达量矩阵，数 MB）\n  ↓  [DESeq2 / edgeR 差异表达统计]\nresults.csv + volcano plot\n  ↓  [上传至 GEO，论文发表]\n\n\n7.4.2 基因组变异检测流程（GATK 最佳实践）\nFASTQ.gz\n  ↓  [BWA-MEM 比对]\nSAM → BAM（排序）\n  ↓  [Picard MarkDuplicates 去重]\nBAM（去重后）\n  ↓  [GATK HaplotypeCaller]\nGVCF（中间格式，每样本）\n  ↓  [GATK GenotypeGVCFs 联合基因型分型]\nVCF（原始变异）\n  ↓  [VQSR / hard filtering 过滤]\nVCF（高质量变异）\n  ↓  [VEP / ANNOVAR 功能注释，使用 GFF3/GTF + dbSNP]\nannotated VCF → 临床报告 / 群体分析\n\n\n7.4.3 单细胞 RNA-seq 流程\nFASTQ.gz（含细胞条形码 + UMI）\n  ↓  [Cell Ranger / STARsolo / Alevin 比对 + 去重]\n原始计数矩阵（h5 格式，细胞 × 基因）\n  ↓  [Scanpy / Seurat 质控过滤]\nAnnData .h5ad（过滤后，每样本数万细胞）\n  ↓  [归一化 → 高变基因选择 → PCA → UMAP → Leiden 聚类]\n.h5ad（含降维坐标和聚类标签）\n  ↓  [标记基因识别 → 细胞类型注释]\n最终注释的 .h5ad → 发表 / 存入 CELLxGENE 数据库\n\n黄金法则：格式版本必须全局统一\n一个项目中使用的参考基因组（如 GRCh38 p14）、GTF 注释（如 Ensembl 109）、dbSNP（如 b156）三者必须来自同一版本体系。混用版本会导致坐标偏移、基因 ID 不匹配等隐性错误，且往往在分析末期才显现，代价极高。建议在项目的第一个脚本中用注释记录所有参考文件的来源、版本和 MD5 校验值。",
+    "crumbs": [
+      "第一阶段：基础与基因组",
+      "<span class='chapter-number'>7</span>  <span class='chapter-title'>探索生物大数据的基石：数据库网络与核心文件格式</span>"
+    ]
+  },
+  {
+    "objectID": "intro_lesson5.html#课后自测-post-lesson-quiz",
+    "href": "intro_lesson5.html#课后自测-post-lesson-quiz",
+    "title": "7  探索生物大数据的基石：数据库网络与核心文件格式",
+    "section": "7.6 课后自测 (Post-Lesson Quiz)",
+    "text": "7.6 课后自测 (Post-Lesson Quiz)\n\n以下三个文件 SRR1234567.fastq.gz、SRR1234567.bam、SRR1234567_counts.csv 在典型 RNA-seq 分析流程中的先后顺序是什么？各自存储的是什么层次的信息？\n在 FASTQ 文件中，某碱基的质量字符为 I（ASCII 73）。请计算其 Phred Q 值，以及对应的碱基错误率。\nBED 文件使用 0-based 半开区间，GTF 文件使用 1-based 闭区间。若一个基因物理上占据参考基因组第 1000 至第 2000 个碱基（含两端），在 BED 和 GTF 中起止坐标各应如何填写？两种格式记录的碱基数是否相同？\nVCF 文件中，某行的 GT 字段值为 0/1，REF 为 G，ALT 为 A。请解释该样本在这个位点的基因型，并说明数字 0 和 1 分别代表什么。\ngzip（.gz）与 BGZF（BAM 内置压缩）均是基于 gzip 算法的压缩格式，但二者在实际使用中有一个关键差异。请描述该差异，并解释为什么 BAM 格式需要这种特性。\n你正在分析一个单细胞 RNA-seq 数据集，含 500,000 个细胞、25,000 个基因。如果将表达矩阵存为 CSV 格式（每个数值 4 字节），理论上需要多少存储空间？而实际单细胞数据中大约 95% 的值为零，改用 HDF5 稀疏矩阵存储后，空间约缩减至多少？\n你需要从一个已建立 Tabix 索引的 VCF 文件中快速提取 chr17:7,500,000-7,700,000 范围内的所有变异（该 VCF 文件大小为 20 GB）。与逐行扫描全文件相比，Tabix 查询在原理上为何能显著加速这一操作？\n\n\n\n参考答案 (Reference Answers)\n\n\n顺序为 FASTQ → BAM → CSV。FASTQ 存储原始测序读段（序列 + 每碱基质量评分），是仪器的直接输出；BAM 存储每条读段与参考基因组的比对结果（坐标、方向、CIGAR 字符串），由比对软件生成；CSV 存储每个基因在每个样本中的表达计数，由定量工具汇总比对结果得到，是统计分析的输入。\nQ = 73 − 33 = 40。错误率 P = 10^(−40/10) = 10^(−4) = 0.01%。Q40 属于极高质量，远高于常用阈值 Q30（0.1% 错误率）。\nBED 记录：chr1  999  2000（start = 999，0-based；end = 2000，半开区间，不含第 2001 位）；该区间跨度 = 2000 − 999 = 1000 bp。GTF 记录：chr1 ... 1000  2000（start = 1000，1-based；end = 2000，闭区间，含第 2000 位）；跨度 = 2000 − 1000 + 1 = 1001 bp。两者不同：BED 记录 1000 个碱基，GTF 记录 1001 个碱基，这是坐标系差异导致的，数据转换时须调整。\nGT = 0/1 表示该样本在此位点为杂合子（Heterozygous）。数字 0 代表参考等位基因（REF = G），数字 1 代表第一个替代等位基因（ALT = A）。即该个体在两条同源染色体上一条携带 G，另一条携带 A。\ngzip 将整个文件压缩为连续的压缩流，必须从头解压才能到达任意位置（顺序访问）。BGZF 将文件切分为若干独立的小压缩块（默认约 64 KB），每个块可独立解压；配合 .bai 索引文件，可以直接定位并解压特定染色体区域所对应的块，实现随机访问。BAM 格式需要随机访问是因为基因组分析常需快速查询特定区间的比对读段，例如可视化某基因区域或统计局部覆盖度，顺序扫描整个 BAM 文件效率极低。\n理论全矩阵大小 = 500,000 × 25,000 × 4 字节 = 5×10^10 字节 ≈ 50 GB。若 95% 值为零，非零元素比例约 5%，稀疏存储仅需记录非零值的行列坐标和数值（COO 或 CSR 格式），存储量约缩减至 50 GB × 5% ≈ 2.5 GB，加上 HDF5 本身的元数据和压缩，实际文件通常在 1–5 GB 范围内。\nTabix 为 bgzip 压缩文件建立了坐标索引（.tbi 文件），记录每个基因组区间对应的文件字节偏移量。查询时，Tabix 先在索引中二分查找目标区间（O(log n)），定位到对应的 bgzip 数据块偏移，然后仅读取和解压那几个数据块（可能仅数 KB）。逐行扫描需要读取全部 20 GB；而 Tabix 查询仅需读取极少量字节，差距在数万倍以上。",
+    "crumbs": [
+      "第一阶段：基础与基因组",
+      "<span class='chapter-number'>7</span>  <span class='chapter-title'>探索生物大数据的基石：数据库网络与核心文件格式</span>"
     ]
   }
 ]

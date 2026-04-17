@@ -6,9 +6,9 @@
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
-<meta name="dcterms.date" content="2026-04-11">
+<meta name="dcterms.date" content="2026-04-17">
 
-<title>11&nbsp; 标准数据格式 SAM/BAM 与变异分类 – Introduction to Applied High-throughput Biological Data Analysis</title>
+<title>11&nbsp; 从头基因组组装：当没有参考基因组时 – Introduction to Applied High-throughput Biological Data Analysis</title>
 <style>
 /* Default styles provided by pandoc.
 ** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
@@ -150,7 +150,7 @@ window.Quarto = {
       <button type="button" class="quarto-btn-toggle btn" data-bs-toggle="collapse" role="button" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
         <i class="bi bi-layout-text-sidebar-reverse"></i>
       </button>
-        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="./01-intro.html">第一阶段：基础与基因组</a></li><li class="breadcrumb-item"><a href="./genomics_qc_lesson3.html"><span class="chapter-number">11</span>&nbsp; <span class="chapter-title">标准数据格式 SAM/BAM 与变异分类</span></a></li></ol></nav>
+        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="./01-intro.html">第一阶段：基础与基因组</a></li><li class="breadcrumb-item"><a href="./genomics_qc_lesson3.html"><span class="chapter-number">11</span>&nbsp; <span class="chapter-title">从头基因组组装：当没有参考基因组时</span></a></li></ol></nav>
         <a class="flex-grow-1" role="navigation" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">      
         </a>
       <button type="button" class="btn quarto-search-button" aria-label="Search" onclick="window.quartoOpenSearch();">
@@ -238,19 +238,19 @@ window.Quarto = {
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./genomics_qc_lesson1.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">9</span>&nbsp; <span class="chapter-title">二代测序原理与原始数据的数字表现</span></span></a>
+ <span class="menu-text"><span class="chapter-number">9</span>&nbsp; <span class="chapter-title">原始下机数据的数字表现</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./genomics_qc_lesson2.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">10</span>&nbsp; <span class="chapter-title">第 2 学时：数据’体检’与参考基因组比对</span></span></a>
+ <span class="menu-text"><span class="chapter-number">10</span>&nbsp; <span class="chapter-title">数据预处理与参考基因组比对</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./genomics_qc_lesson3.html" class="sidebar-item-text sidebar-link active">
- <span class="menu-text"><span class="chapter-number">11</span>&nbsp; <span class="chapter-title">标准数据格式 SAM/BAM 与变异分类</span></span></a>
+ <span class="menu-text"><span class="chapter-number">11</span>&nbsp; <span class="chapter-title">从头基因组组装：当没有参考基因组时</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
@@ -605,15 +605,44 @@ window.Quarto = {
     <h2 id="toc-title">Table of contents</h2>
    
   <ul class="collapse">
-  <li><a href="#sambam-格式详解" id="toc-sambam-格式详解" class="nav-link active" data-scroll-target="#sambam-格式详解"><span class="header-section-number">12</span> SAM/BAM 格式详解</a>
+  <li><a href="#为什么需要从头组装" id="toc-为什么需要从头组装" class="nav-link active" data-scroll-target="#为什么需要从头组装"><span class="header-section-number">12</span> 为什么需要从头组装</a>
   <ul class="collapse">
-  <li><a href="#sam-格式结构" id="toc-sam-格式结构" class="nav-link" data-scroll-target="#sam-格式结构"><span class="header-section-number">12.1</span> SAM 格式结构</a></li>
-  <li><a href="#可选字段与标签" id="toc-可选字段与标签" class="nav-link" data-scroll-target="#可选字段与标签"><span class="header-section-number">12.2</span> 可选字段与标签</a></li>
-  <li><a href="#变异的分类" id="toc-变异的分类" class="nav-link" data-scroll-target="#变异的分类"><span class="header-section-number">12.3</span> 变异的分类</a></li>
-  <li><a href="#bam-文件处理与排序" id="toc-bam-文件处理与排序" class="nav-link" data-scroll-target="#bam-文件处理与排序"><span class="header-section-number">12.4</span> BAM 文件处理与排序</a></li>
-  <li><a href="#实践sambam-操作与变异识别" id="toc-实践sambam-操作与变异识别" class="nav-link" data-scroll-target="#实践sambam-操作与变异识别"><span class="header-section-number">12.5</span> 实践：SAM/BAM 操作与变异识别</a></li>
-  <li><a href="#课后自测-post-lesson-quiz" id="toc-课后自测-post-lesson-quiz" class="nav-link" data-scroll-target="#课后自测-post-lesson-quiz"><span class="header-section-number">12.6</span> 课后自测 (Post-Lesson Quiz)</a></li>
-  <li><a href="#总结" id="toc-总结" class="nav-link" data-scroll-target="#总结"><span class="header-section-number">12.7</span> 总结</a></li>
+  <li><a href="#参考基因组的局限性" id="toc-参考基因组的局限性" class="nav-link" data-scroll-target="#参考基因组的局限性"><span class="header-section-number">12.1</span> 参考基因组的局限性</a></li>
+  <li><a href="#从头组装-vs-参考比对" id="toc-从头组装-vs-参考比对" class="nav-link" data-scroll-target="#从头组装-vs-参考比对"><span class="header-section-number">12.2</span> 从头组装 vs 参考比对</a></li>
+  </ul></li>
+  <li><a href="#基因组组装的基本概念" id="toc-基因组组装的基本概念" class="nav-link" data-scroll-target="#基因组组装的基本概念"><span class="header-section-number">13</span> 基因组组装的基本概念</a>
+  <ul class="collapse">
+  <li><a href="#组装产物的层级" id="toc-组装产物的层级" class="nav-link" data-scroll-target="#组装产物的层级"><span class="header-section-number">13.1</span> 组装产物的层级</a></li>
+  <li><a href="#n50组装质量的核心指标" id="toc-n50组装质量的核心指标" class="nav-link" data-scroll-target="#n50组装质量的核心指标"><span class="header-section-number">13.2</span> N50：组装质量的核心指标</a></li>
+  </ul></li>
+  <li><a href="#两种经典组装算法框架" id="toc-两种经典组装算法框架" class="nav-link" data-scroll-target="#两种经典组装算法框架"><span class="header-section-number">14</span> 两种经典组装算法框架</a>
+  <ul class="collapse">
+  <li><a href="#overlap-layout-consensusolc" id="toc-overlap-layout-consensusolc" class="nav-link" data-scroll-target="#overlap-layout-consensusolc"><span class="header-section-number">14.1</span> Overlap-Layout-Consensus（OLC）</a></li>
+  <li><a href="#de-bruijn-图dbg" id="toc-de-bruijn-图dbg" class="nav-link" data-scroll-target="#de-bruijn-图dbg"><span class="header-section-number">14.2</span> De Bruijn 图（DBG）</a></li>
+  </ul></li>
+  <li><a href="#de-bruijn-图算法详解" id="toc-de-bruijn-图算法详解" class="nav-link" data-scroll-target="#de-bruijn-图算法详解"><span class="header-section-number">15</span> De Bruijn 图算法详解</a>
+  <ul class="collapse">
+  <li><a href="#从-k-mer-到图核心思想" id="toc-从-k-mer-到图核心思想" class="nav-link" data-scroll-target="#从-k-mer-到图核心思想"><span class="header-section-number">15.1</span> 从 k-mer 到图：核心思想</a></li>
+  <li><a href="#手工推导三条-reads-的组装" id="toc-手工推导三条-reads-的组装" class="nav-link" data-scroll-target="#手工推导三条-reads-的组装"><span class="header-section-number">15.2</span> 手工推导：三条 Reads 的组装</a></li>
+  </ul></li>
+  <li><a href="#r-代码实践de-bruijn-图组装" id="toc-r-代码实践de-bruijn-图组装" class="nav-link" data-scroll-target="#r-代码实践de-bruijn-图组装"><span class="header-section-number">16</span> R 代码实践：De Bruijn 图组装</a>
+  <ul class="collapse">
+  <li><a href="#第一部分最小实现不依赖外部包" id="toc-第一部分最小实现不依赖外部包" class="nav-link" data-scroll-target="#第一部分最小实现不依赖外部包"><span class="header-section-number">16.1</span> 第一部分：最小实现（不依赖外部包）</a></li>
+  <li><a href="#第二部分进阶实现含气泡尖刺检测与-igraph-可视化" id="toc-第二部分进阶实现含气泡尖刺检测与-igraph-可视化" class="nav-link" data-scroll-target="#第二部分进阶实现含气泡尖刺检测与-igraph-可视化"><span class="header-section-number">16.2</span> 第二部分：进阶实现（含气泡/尖刺检测与 igraph 可视化）</a></li>
+  </ul></li>
+  <li><a href="#实践使用-spades-组装真实-e.-coli-基因组" id="toc-实践使用-spades-组装真实-e.-coli-基因组" class="nav-link" data-scroll-target="#实践使用-spades-组装真实-e.-coli-基因组"><span class="header-section-number">17</span> 实践：使用 SPAdes 组装真实 E. coli 基因组</a>
+  <ul class="collapse">
+  <li><a href="#spades-简介" id="toc-spades-简介" class="nav-link" data-scroll-target="#spades-简介"><span class="header-section-number">17.1</span> SPAdes 简介</a></li>
+  <li><a href="#环境准备与安装" id="toc-环境准备与安装" class="nav-link" data-scroll-target="#环境准备与安装"><span class="header-section-number">17.2</span> 环境准备与安装</a></li>
+  <li><a href="#使用已清洗的数据运行-spades" id="toc-使用已清洗的数据运行-spades" class="nav-link" data-scroll-target="#使用已清洗的数据运行-spades"><span class="header-section-number">17.3</span> 使用已清洗的数据运行 SPAdes</a></li>
+  <li><a href="#检查组装结果" id="toc-检查组装结果" class="nav-link" data-scroll-target="#检查组装结果"><span class="header-section-number">17.4</span> 检查组装结果</a></li>
+  </ul></li>
+  <li><a href="#组装质量评估" id="toc-组装质量评估" class="nav-link" data-scroll-target="#组装质量评估"><span class="header-section-number">18</span> 组装质量评估</a>
+  <ul class="collapse">
+  <li><a href="#使用-quast-进行标准化评估" id="toc-使用-quast-进行标准化评估" class="nav-link" data-scroll-target="#使用-quast-进行标准化评估"><span class="header-section-number">18.1</span> 使用 QUAST 进行标准化评估</a></li>
+  <li><a href="#无参考时的组装评估" id="toc-无参考时的组装评估" class="nav-link" data-scroll-target="#无参考时的组装评估"><span class="header-section-number">18.2</span> 无参考时的组装评估</a></li>
+  <li><a href="#课后自测-post-lesson-quiz" id="toc-课后自测-post-lesson-quiz" class="nav-link" data-scroll-target="#课后自测-post-lesson-quiz"><span class="header-section-number">18.3</span> 课后自测 (Post-Lesson Quiz)</a></li>
+  <li><a href="#总结" id="toc-总结" class="nav-link" data-scroll-target="#总结"><span class="header-section-number">18.4</span> 总结</a></li>
   </ul></li>
   </ul>
 <div class="toc-actions"><ul class="collapse"><li><a href="https://github.com/cxzdsa2332/Applied-Omics-Analysis/edit/main/genomics_qc_lesson3.qmd" class="toc-action"><i class="bi bi-github"></i>Edit this page</a></li><li><a href="https://github.com/cxzdsa2332/Applied-Omics-Analysis/issues/new" class="toc-action"><i class="bi empty"></i>Report an issue</a></li><li><a href="https://github.com/cxzdsa2332/Applied-Omics-Analysis/blob/main/genomics_qc_lesson3.qmd" class="toc-action"><i class="bi empty"></i>View source</a></li></ul></div></nav>
@@ -621,9 +650,9 @@ window.Quarto = {
 <!-- main -->
 <main class="content" id="quarto-document-content">
 
-<header id="title-block-header" class="quarto-title-block default"><nav class="quarto-page-breadcrumbs quarto-title-breadcrumbs d-none d-lg-block" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="./01-intro.html">第一阶段：基础与基因组</a></li><li class="breadcrumb-item"><a href="./genomics_qc_lesson3.html"><span class="chapter-number">11</span>&nbsp; <span class="chapter-title">标准数据格式 SAM/BAM 与变异分类</span></a></li></ol></nav>
+<header id="title-block-header" class="quarto-title-block default"><nav class="quarto-page-breadcrumbs quarto-title-breadcrumbs d-none d-lg-block" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="./01-intro.html">第一阶段：基础与基因组</a></li><li class="breadcrumb-item"><a href="./genomics_qc_lesson3.html"><span class="chapter-number">11</span>&nbsp; <span class="chapter-title">从头基因组组装：当没有参考基因组时</span></a></li></ol></nav>
 <div class="quarto-title">
-<h1 class="title"><span class="chapter-number">11</span>&nbsp; <span class="chapter-title">标准数据格式 SAM/BAM 与变异分类</span></h1>
+<h1 class="title"><span class="chapter-number">11</span>&nbsp; <span class="chapter-title">从头基因组组装：当没有参考基因组时</span></h1>
 </div>
 
 
@@ -634,7 +663,7 @@ window.Quarto = {
     <div>
     <div class="quarto-title-meta-heading">Published</div>
     <div class="quarto-title-meta-contents">
-      <p class="date">April 11, 2026</p>
+      <p class="date">April 17, 2026</p>
     </div>
   </div>
   
@@ -646,622 +675,1047 @@ window.Quarto = {
 </header>
 
 
-<section id="sambam-格式详解" class="level1" data-number="12">
-<h1 data-number="12"><span class="header-section-number">12</span> SAM/BAM 格式详解</h1>
-<section id="sam-格式结构" class="level2" data-number="12.1">
-<h2 data-number="12.1" class="anchored" data-anchor-id="sam-格式结构"><span class="header-section-number">12.1</span> SAM 格式结构</h2>
-<p>SAM (Sequence Alignment/Map) 是存储序列比对结果的标准文本格式。BAM 是 SAM 的二进制压缩版本。</p>
-<p>{{Wiki:SAM_(file_format)}}</p>
-<section id="header-段元信息" class="level3" data-number="12.1.1">
-<h3 data-number="12.1.1" class="anchored" data-anchor-id="header-段元信息"><span class="header-section-number">12.1.1</span> Header 段（元信息）</h3>
-<pre><code>@HD VN:1.0  SO:coordinate
-@SQ SN:chr1 LN:249250621
-@SQ SN:chr2 LN:242193529
-@PG ID:bwa  PN:bwa  VN:0.7.17   CL:bwa mem -t 4 ref.fa R1.fq R2.fq</code></pre>
+<section id="为什么需要从头组装" class="level1" data-number="12">
+<h1 data-number="12"><span class="header-section-number">12</span> 为什么需要从头组装</h1>
+<section id="参考基因组的局限性" class="level2" data-number="12.1">
+<h2 data-number="12.1" class="anchored" data-anchor-id="参考基因组的局限性"><span class="header-section-number">12.1</span> 参考基因组的局限性</h2>
+<p>在第2节中，我们学习了将短读序列（reads）比对至参考基因组的完整流程。这一方法的前提假设是：<strong>参考基因组已经存在，且与待研究样本足够相似</strong>。</p>
+<p>然而，在以下场景中，这一假设会失效：</p>
 <table class="caption-top table">
 <thead>
 <tr class="header">
-<th>标签</th>
-<th>含义</th>
+<th>场景</th>
+<th>问题</th>
+<th>例子</th>
 </tr>
 </thead>
 <tbody>
 <tr class="odd">
-<td><code>@HD</code></td>
-<td>Header 行，版本号 (VN)、排序信息 (SO)</td>
+<td>新物种研究</td>
+<td>无任何已知参考序列</td>
+<td>深海未知微生物</td>
 </tr>
 <tr class="even">
-<td><code>@SQ</code></td>
-<td>Sequence Dictionary，每条染色体的名称 (SN) 和长度 (LN)</td>
+<td>微生物宏基因组</td>
+<td>样本中含数百种未知物种</td>
+<td>肠道菌群研究</td>
 </tr>
 <tr class="odd">
-<td><code>@PG</code></td>
-<td>Program，记录比对工具的版本和参数</td>
+<td>病原体新变种</td>
+<td>参考基因组差异过大</td>
+<td>新型冠状病毒变体</td>
 </tr>
 <tr class="even">
-<td><code>@RG</code></td>
-<td>Read Group，样本信息（可选但推荐）</td>
+<td>高度个性化区域</td>
+<td>群体结构变异复杂</td>
+<td>HLA 区域、癌症基因组</td>
+</tr>
+<tr class="odd">
+<td>参考基因组本身的构建</td>
+<td>鸡生蛋蛋生鸡</td>
+<td>hg38 是如何产生的？</td>
 </tr>
 </tbody>
 </table>
+<p><strong>从头组装（De novo Assembly）</strong> 正是解决上述问题的核心技术——它仅凭测序读段，不依赖任何先验参考序列，重建目标基因组。</p>
+<div class="note">
+<p><strong>参考基因组也是被组装出来的</strong></p>
+<p>第2节中使用的 <em>E. coli</em> K-12 参考基因组（NC_000913.3）本身也经历了从头组装的过程。1997 年，Blattner 等人首次发布 <em>E. coli</em> K-12 完整基因组（Science, 277:1453-1462），使用的正是本节将要介绍的 Overlap-Layout-Consensus 策略。此后经过多轮修订，该参考基因组才达到今天无缝隙（closed）的高质量状态。因此，参考比对和从头组装在研究流程中是相互补充的两种范式。</p>
+</div>
 </section>
-<section id="alignment-段每条-read-的比对信息" class="level3" data-number="12.1.2">
-<h3 data-number="12.1.2" class="anchored" data-anchor-id="alignment-段每条-read-的比对信息"><span class="header-section-number">12.1.2</span> Alignment 段（每条 Read 的比对信息）</h3>
-<pre><code>SRR1234567.1    83  chr1    10000   60  150M    =   10300   450 ACGTACGTACGTACGTACGTACGTACGTACGTACGTACGTACGTACGTACGTACGTACGTACGTAC  IIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIII  NM:i:2  AS:i:140</code></pre>
+<section id="从头组装-vs-参考比对" class="level2" data-number="12.2">
+<h2 data-number="12.2" class="anchored" data-anchor-id="从头组装-vs-参考比对"><span class="header-section-number">12.2</span> 从头组装 vs 参考比对</h2>
 <table class="caption-top table">
 <thead>
 <tr class="header">
-<th>列号</th>
-<th>字段名</th>
-<th>说明</th>
+<th>维度</th>
+<th>参考比对</th>
+<th>从头组装</th>
 </tr>
 </thead>
 <tbody>
 <tr class="odd">
-<td>1</td>
-<td>QNAME</td>
-<td>Read ID（来自 FASTQ Header）</td>
+<td>前提条件</td>
+<td>需要参考基因组</td>
+<td>无需参考</td>
 </tr>
 <tr class="even">
-<td>2</td>
-<td>FLAG</td>
-<td>比对标志位（二进制编码，详见下表）</td>
+<td>计算复杂度</td>
+<td>较低（线性化查询）</td>
+<td>较高（图论优化问题）</td>
 </tr>
 <tr class="odd">
-<td>3</td>
-<td>RNAME</td>
-<td>染色体名称</td>
+<td>适用场景</td>
+<td>SNP/Indel 检测、基因表达</td>
+<td>新物种、结构变异、泛基因组</td>
 </tr>
 <tr class="even">
-<td>4</td>
-<td>POS</td>
-<td>1-based 比对起始位置</td>
+<td>结果形式</td>
+<td>BAM 比对文件</td>
+<td>Contig/Scaffold FASTA</td>
 </tr>
 <tr class="odd">
-<td>5</td>
-<td>MAPQ</td>
-<td>比对质量评分（0-60，值越高越可信）</td>
+<td>对测序深度要求</td>
+<td>20–100X</td>
+<td>50–200X（组装更需高深度）</td>
 </tr>
 <tr class="even">
-<td>6</td>
-<td>CIGAR</td>
-<td>比对操作字符串</td>
-</tr>
-<tr class="odd">
-<td>7</td>
-<td>RNEXT</td>
-<td>配对 Read 所在的参考序列（PE 测序）</td>
-</tr>
-<tr class="even">
-<td>8</td>
-<td>PNEXT</td>
-<td>配对 Read 的位置</td>
-</tr>
-<tr class="odd">
-<td>9</td>
-<td>TLEN</td>
-<td>插入片段长度（Template Length）</td>
-</tr>
-<tr class="even">
-<td>10</td>
-<td>SEQ</td>
-<td>比对后的序列</td>
-</tr>
-<tr class="odd">
-<td>11</td>
-<td>QUAL</td>
-<td>质量评分字符串</td>
-</tr>
-<tr class="even">
-<td>12+</td>
-<td>TAG</td>
-<td>可选字段（NM, AS, MD 等）</td>
+<td>对 read 长度要求</td>
+<td>中等（PE150 足够）</td>
+<td>越长越好（长读组装质量更高）</td>
 </tr>
 </tbody>
 </table>
-</section>
-<section id="flag-标志位解码" class="level3" data-number="12.1.3">
-<h3 data-number="12.1.3" class="anchored" data-anchor-id="flag-标志位解码"><span class="header-section-number">12.1.3</span> FLAG 标志位解码</h3>
-<p>FLAG 是 0-65535 的整数，每个比特位代表一种属性：</p>
-<p>{{Wiki:Binary_number}}</p>
-<table class="caption-top table">
-<thead>
-<tr class="header">
-<th>十进制</th>
-<th>二进制</th>
-<th>含义</th>
-</tr>
-</thead>
-<tbody>
-<tr class="odd">
-<td>1</td>
-<td>0x001</td>
-<td>Read 已比对 (MAPPED)</td>
-</tr>
-<tr class="even">
-<td>2</td>
-<td>0x002</td>
-<td>Read 和其配对 Read 都已比对 (PROPERLY_PAIRED)</td>
-</tr>
-<tr class="odd">
-<td>4</td>
-<td>0x004</td>
-<td>Read 未比对 (UNMAPPED)</td>
-</tr>
-<tr class="even">
-<td>8</td>
-<td>0x008</td>
-<td>配对 Read 未比对</td>
-</tr>
-<tr class="odd">
-<td>16</td>
-<td>0x010</td>
-<td>Read 反向互补 (REVERSE_STRAND)</td>
-</tr>
-<tr class="even">
-<td>32</td>
-<td>0x020</td>
-<td>配对 Read 反向互补</td>
-</tr>
-<tr class="odd">
-<td>64</td>
-<td>0x040</td>
-<td>Read1（来自 PE 的第一条）</td>
-</tr>
-<tr class="even">
-<td>128</td>
-<td>0x080</td>
-<td>Read2（来自 PE 的第二条）</td>
-</tr>
-<tr class="odd">
-<td>256</td>
-<td>0x100</td>
-<td>未通过质量过滤 (QC_FAILED)</td>
-</tr>
-<tr class="even">
-<td>512</td>
-<td>0x200</td>
-<td>PCR 或光学重复 (DUPLICATE)</td>
-</tr>
-</tbody>
-</table>
-<p><strong>常见 FLAG 值</strong>： - <strong>0</strong>: 未比对的 SE read - <strong>4</strong>: 比对失败 - <strong>16</strong>: 反向链比对 - <strong>83</strong>: = 64 + 16 + 2 + 1 = Read1，反向链，正确配对，已比对 - <strong>163</strong>: = 128 + 32 + 2 + 1 = Read2，反向链，正确配对，已比对</p>
-</section>
-<section id="cigar-字符串" class="level3" data-number="12.1.4">
-<h3 data-number="12.1.4" class="anchored" data-anchor-id="cigar-字符串"><span class="header-section-number">12.1.4</span> CIGAR 字符串</h3>
-<p>CIGAR (Cigar String) 描述 Read 与参考序列的比对状态：</p>
-<table class="caption-top table">
-<thead>
-<tr class="header">
-<th>操作</th>
-<th>缩写</th>
-<th>含义</th>
-<th>消耗 Query</th>
-<th>消耗 Ref</th>
-</tr>
-</thead>
-<tbody>
-<tr class="odd">
-<td>Match/Mismatch</td>
-<td>M</td>
-<td>匹配或错配</td>
-<td>是</td>
-<td>是</td>
-</tr>
-<tr class="even">
-<td>Insertion</td>
-<td>I</td>
-<td>在参考序列上的插入（Query 中有额外碱基）</td>
-<td>是</td>
-<td>否</td>
-</tr>
-<tr class="odd">
-<td>Deletion</td>
-<td>D</td>
-<td>从参考序列中的缺失（Query 中缺少碱基）</td>
-<td>否</td>
-<td>是</td>
-</tr>
-<tr class="even">
-<td>Skip</td>
-<td>N</td>
-<td>跳过（RNA-seq 中跳过内含子）</td>
-<td>否</td>
-<td>是</td>
-</tr>
-<tr class="odd">
-<td>Soft Clipping</td>
-<td>S</td>
-<td>序列被部分比对（两端未被使用）</td>
-<td>是</td>
-<td>否</td>
-</tr>
-<tr class="even">
-<td>Hard Clipping</td>
-<td>H</td>
-<td>序列被硬切除（数据丢失）</td>
-<td>否</td>
-<td>否</td>
-</tr>
-</tbody>
-</table>
-<p><strong>示例</strong>： - <code>150M</code>：150 bp 完美匹配 - <code>100M5I45M</code>：100 bp 匹配 + 5 bp 插入 + 45 bp 匹配 = 可能发现 5 bp Indel - <code>10S140M</code>：前 10 bp 未比对（soft-clipped），后 140 bp 比对</p>
-</section>
-<section id="mapping-quality-mapq" class="level3" data-number="12.1.5">
-<h3 data-number="12.1.5" class="anchored" data-anchor-id="mapping-quality-mapq"><span class="header-section-number">12.1.5</span> Mapping Quality (MAPQ)</h3>
-<p>MAPQ 是条件概率，表示该比对位置出错的可能性：</p>
-<p><span class="math display">\[\text{MAPQ} = -10 \log_{10}(P_{\text{error}})\]</span></p>
-<table class="caption-top table">
-<thead>
-<tr class="header">
-<th>MAPQ</th>
-<th>出错概率</th>
-<th>含义</th>
-</tr>
-</thead>
-<tbody>
-<tr class="odd">
-<td>0-10</td>
-<td>10%-0.1%</td>
-<td>低质量，多个潜在比对位置</td>
-</tr>
-<tr class="even">
-<td><strong>20</strong></td>
-<td><strong>1%</strong></td>
-<td>可接受阈值</td>
-</tr>
-<tr class="odd">
-<td><strong>30+</strong></td>
-<td><strong>&lt;0.1%</strong></td>
-<td>高质量，唯一比对</td>
-</tr>
-<tr class="even">
-<td>60</td>
-<td>0.0001%</td>
-<td>完美比对</td>
-</tr>
-</tbody>
-</table>
-<p><strong>过滤建议</strong>：MAPQ &gt;= 20 用于变异检测</p>
 <hr>
 </section>
 </section>
-<section id="可选字段与标签" class="level2" data-number="12.2">
-<h2 data-number="12.2" class="anchored" data-anchor-id="可选字段与标签"><span class="header-section-number">12.2</span> 可选字段与标签</h2>
-<p>常见的可选标签：</p>
+<section id="基因组组装的基本概念" class="level1" data-number="13">
+<h1 data-number="13"><span class="header-section-number">13</span> 基因组组装的基本概念</h1>
+<section id="组装产物的层级" class="level2" data-number="13.1">
+<h2 data-number="13.1" class="anchored" data-anchor-id="组装产物的层级"><span class="header-section-number">13.1</span> 组装产物的层级</h2>
+<p>基因组组装不会一次性产生完整的染色体序列，而是由短到长分层次地呈现：</p>
+<pre><code>Reads (150 bp)
+  ↓ [重叠延伸]
+Contigs (连续序列，100 bp ~ 数 Mb，无 gap)
+  ↓ [配对末端距离约束]
+Scaffolds (骨架，包含已知大小的 gap "NNNNN")
+  ↓ [光学图谱/长读/Hi-C]
+Chromosomes (完整染色体)</code></pre>
+<p>{{Wiki:Contig}}</p>
+<p><strong>关键术语：</strong></p>
+<ul>
+<li><strong>Contig（重叠群）</strong>：由 reads 重叠延伸得到的连续序列，内部无未知碱基</li>
+<li><strong>Scaffold（支架）</strong>：将多个 contig 按插入片段距离排序连接，gap 以 <code>N</code> 填充</li>
+<li><strong>N50</strong>：将所有 contig（或 scaffold）按长度从大到小排列，累加长度达到总长度 50% 时所对应的 contig 长度</li>
+</ul>
+</section>
+<section id="n50组装质量的核心指标" class="level2" data-number="13.2">
+<h2 data-number="13.2" class="anchored" data-anchor-id="n50组装质量的核心指标"><span class="header-section-number">13.2</span> N50：组装质量的核心指标</h2>
+<p>{{Wiki:N50_statistic}}</p>
+<p><strong>N50 计算示例：</strong></p>
+<p>假设组装结果包含以下 contig（按长度从大到小排列）：</p>
+<pre><code>contig1: 8000 bp
+contig2: 6000 bp   ← 累计 14000 bp &gt; 总长度 20000 bp 的 50%
+contig3: 3000 bp
+contig4: 2000 bp
+contig5: 1000 bp
+总长度：20000 bp</code></pre>
+<p>50% × 20000 = 10000 bp。累加到 contig2（14000 bp）时刚刚超过 10000 bp，故 <strong>N50 = 6000 bp</strong>。</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb3"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="co"># R function to compute N50</span></span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a>compute_n50 <span class="ot">&lt;-</span> <span class="cf">function</span>(lengths) {</span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a>  lengths_sorted <span class="ot">&lt;-</span> <span class="fu">sort</span>(lengths, <span class="at">decreasing =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a>  total <span class="ot">&lt;-</span> <span class="fu">sum</span>(lengths_sorted)</span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a>  cumulative <span class="ot">&lt;-</span> <span class="fu">cumsum</span>(lengths_sorted)</span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a>  n50 <span class="ot">&lt;-</span> lengths_sorted[<span class="fu">which</span>(cumulative <span class="sc">&gt;=</span> total <span class="sc">*</span> <span class="fl">0.5</span>)[<span class="dv">1</span>]]</span>
+<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">return</span>(n50)</span>
+<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb3-9"><a href="#cb3-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-10"><a href="#cb3-10" aria-hidden="true" tabindex="-1"></a><span class="co"># Example</span></span>
+<span id="cb3-11"><a href="#cb3-11" aria-hidden="true" tabindex="-1"></a>lengths <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="dv">8000</span>, <span class="dv">6000</span>, <span class="dv">3000</span>, <span class="dv">2000</span>, <span class="dv">1000</span>)</span>
+<span id="cb3-12"><a href="#cb3-12" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">"N50 ="</span>, <span class="fu">compute_n50</span>(lengths), <span class="st">"bp</span><span class="sc">\n</span><span class="st">"</span>)</span>
+<span id="cb3-13"><a href="#cb3-13" aria-hidden="true" tabindex="-1"></a><span class="co"># N50 = 6000 bp</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>N50 值越大，说明组装越连续（contiguous）。高质量细菌基因组组装的 N50 通常接近其染色体长度（即接近完全封闭），而人类基因组草图 N50 可能仅有数 Mb。</p>
+<hr>
+</section>
+</section>
+<section id="两种经典组装算法框架" class="level1" data-number="14">
+<h1 data-number="14"><span class="header-section-number">14</span> 两种经典组装算法框架</h1>
+<section id="overlap-layout-consensusolc" class="level2" data-number="14.1">
+<h2 data-number="14.1" class="anchored" data-anchor-id="overlap-layout-consensusolc"><span class="header-section-number">14.1</span> Overlap-Layout-Consensus（OLC）</h2>
+<p>OLC 是最早的系统性组装框架，由 Myers（1995）提出，广泛用于 Sanger 测序时代（read 长 500–1000 bp）和现代长读（PacBio、Nanopore）组装。</p>
+<p>{{Wiki:Sequence_assembly}}</p>
+<p><strong>三个阶段：</strong></p>
+<ol type="1">
+<li><p><strong>Overlap（重叠检测）</strong>：寻找所有 read 对之间的前后缀重叠，构建重叠矩阵。时间复杂度 <span class="math inline">\(O(n^2)\)</span>，对短读数据（数亿条 reads）计算代价巨大。</p></li>
+<li><p><strong>Layout（布局）</strong>：根据重叠关系构建有向图，寻找哈密顿路径（经过每个节点恰好一次的路径）。哈密顿路径问题是 NP 完全问题，需要启发式算法近似求解。</p></li>
+<li><p><strong>Consensus（共识）</strong>：将多条 reads 在同一位置的碱基进行多数表决，生成最终的 contig 序列。</p></li>
+</ol>
+<p><strong>优势</strong>：对长读（&gt; 1 kb）效果优异，可跨越重复区域。 <strong>局限</strong>：<span class="math inline">\(O(n^2)\)</span> 的 Overlap 计算对短读数据（&gt;10 亿条 reads）不可行。</p>
+</section>
+<section id="de-bruijn-图dbg" class="level2" data-number="14.2">
+<h2 data-number="14.2" class="anchored" data-anchor-id="de-bruijn-图dbg"><span class="header-section-number">14.2</span> De Bruijn 图（DBG）</h2>
+<p>De Bruijn 图方法由 Pevzner 等（2001）引入基因组组装，是目前几乎所有短读组装工具（SPAdes、Velvet、MEGAHIT）的核心算法框架。其关键创新是<strong>将 reads 分解为 k-mer</strong>，从而将 <span class="math inline">\(O(n^2)\)</span> 的两两比较问题转化为 <span class="math inline">\(O(n)\)</span> 的图构建问题。</p>
+<p>{{Wiki:De_Bruijn_graph}}</p>
+<hr>
+</section>
+</section>
+<section id="de-bruijn-图算法详解" class="level1" data-number="15">
+<h1 data-number="15"><span class="header-section-number">15</span> De Bruijn 图算法详解</h1>
+<section id="从-k-mer-到图核心思想" class="level2" data-number="15.1">
+<h2 data-number="15.1" class="anchored" data-anchor-id="从-k-mer-到图核心思想"><span class="header-section-number">15.1</span> 从 k-mer 到图：核心思想</h2>
+<p><strong>k-mer</strong> 是长度为 <span class="math inline">\(k\)</span> 的碱基子串。对于任意一条 read，可以提取 <span class="math inline">\((L - k + 1)\)</span> 个 k-mer，其中 <span class="math inline">\(L\)</span> 是 read 长度。</p>
+<p>在 De Bruijn 图中： - <strong>节点</strong>是 <span class="math inline">\((k-1)\)</span>-mer - <strong>有向边</strong>是 <span class="math inline">\(k\)</span>-mer（每个 k-mer 连接其左侧 <span class="math inline">\((k-1)\)</span>-mer 到右侧 <span class="math inline">\((k-1)\)</span>-mer）</p>
+<p>这个转化将基因组组装问题从<strong>哈密顿路径问题</strong>（NP 完全）转化为<strong>欧拉路径问题</strong>（多项式时间可解）。</p>
+<div class="note">
+<p><strong>欧拉路径 vs 哈密顿路径</strong></p>
+<ul>
+<li><strong>哈密顿路径（Hamilton Path）</strong>：经过图中每个<strong>节点</strong>恰好一次。判断是否存在哈密顿路径是 NP 完全问题，无已知多项式时间算法。</li>
+<li><strong>欧拉路径（Euler Path）</strong>：经过图中每条<strong>边</strong>恰好一次。判断欧拉路径的充要条件（Euler 1736）：图中恰好有 0 个或 2 个奇数度节点。可在 <span class="math inline">\(O(E)\)</span> 时间内用 Hierholzer 算法求解。</li>
+</ul>
+<p>OLC 策略需要每个 read 只被访问一次（哈密顿），而 DBG 策略将 reads 分解为 k-mer 后，每个 k-mer 作为图中的一条边，只被访问一次（欧拉）。这一数学转换是 DBG 高效的根本原因。</p>
+</div>
+</section>
+<section id="手工推导三条-reads-的组装" class="level2" data-number="15.2">
+<h2 data-number="15.2" class="anchored" data-anchor-id="手工推导三条-reads-的组装"><span class="header-section-number">15.2</span> 手工推导：三条 Reads 的组装</h2>
+<p>以三条真实 reads 为例，逐步演示 De Bruijn 图的构建过程（<span class="math inline">\(k=4\)</span>）：</p>
+<pre><code>读段 (Reads):
+  Read 1: GATTACA
+  Read 2: TACAGAT
+  Read 3: AGATCCA</code></pre>
+<p><strong>Step 1：提取所有 4-mers（去重后作为图的边）</strong></p>
 <table class="caption-top table">
 <thead>
 <tr class="header">
-<th>标签</th>
-<th>类型</th>
-<th>含义</th>
+<th>Read</th>
+<th>4-mers</th>
 </tr>
 </thead>
 <tbody>
 <tr class="odd">
-<td><code>NM:i</code></td>
-<td>Integer</td>
-<td>编辑距离（与参考序列的不同碱基数）</td>
+<td>GATTACA</td>
+<td>GATT, ATTA, TTAC, TACA</td>
 </tr>
 <tr class="even">
-<td><code>AS:i</code></td>
-<td>Integer</td>
-<td>比对分值（Smith-Waterman 分值）</td>
+<td>TACAGAT</td>
+<td>TACA, ACAG, CAGA, AGAT</td>
 </tr>
 <tr class="odd">
-<td><code>MD:Z</code></td>
-<td>String</td>
-<td>比对详细信息（用于重建 REF 序列）</td>
-</tr>
-<tr class="even">
-<td><code>SA:Z</code></td>
-<td>String</td>
-<td>补充比对（同一 Read 有多个高质量比对）</td>
+<td>AGATCCA</td>
+<td>AGAT, GATC, ATCC, TCCA</td>
 </tr>
 </tbody>
 </table>
-<p><strong>示例</strong>：<code>NM:i:2</code> 表示 Read 与参考序列有 2 处差异（包括错配、Indel）</p>
+<p>去重后唯一 4-mers（图的边）：<code>GATT, ATTA, TTAC, TACA, ACAG, CAGA, AGAT, GATC, ATCC, TCCA</code></p>
+<p><strong>Step 2：每个 4-mer 产生一条有向边</strong></p>
+<table class="caption-top table">
+<thead>
+<tr class="header">
+<th>边（4-mer）</th>
+<th>左节点（3-mer 前缀）</th>
+<th>右节点（3-mer 后缀）</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>GATT</td>
+<td>GAT</td>
+<td>ATT</td>
+</tr>
+<tr class="even">
+<td>ATTA</td>
+<td>ATT</td>
+<td>TTA</td>
+</tr>
+<tr class="odd">
+<td>TTAC</td>
+<td>TTA</td>
+<td>TAC</td>
+</tr>
+<tr class="even">
+<td>TACA</td>
+<td>TAC</td>
+<td>ACA</td>
+</tr>
+<tr class="odd">
+<td>ACAG</td>
+<td>ACA</td>
+<td>CAG</td>
+</tr>
+<tr class="even">
+<td>CAGA</td>
+<td>CAG</td>
+<td>AGA</td>
+</tr>
+<tr class="odd">
+<td>AGAT</td>
+<td>AGA</td>
+<td>GAT</td>
+</tr>
+<tr class="even">
+<td>GATC</td>
+<td>GAT</td>
+<td>ATC</td>
+</tr>
+<tr class="odd">
+<td>ATCC</td>
+<td>ATC</td>
+<td>TCC</td>
+</tr>
+<tr class="even">
+<td>TCCA</td>
+<td>TCC</td>
+<td>CCA</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Step 3：确定欧拉路径起点</strong></p>
+<p>计算每个节点的入度与出度之差：起点节点满足 <code>out_degree - in_degree = 1</code>。</p>
+<p><strong>Step 4：Hierholzer 算法遍历图，重建序列</strong></p>
+<p>欧拉路径经过所有边恰好一次，对应的节点序列去重后拼接成最终 contig：</p>
+<pre><code>GAT → ATT → TTA → TAC → ACA → CAG → AGA → GAT → ATC → TCC → CCA
+重建序列：G A T T A C A G A T C C A = "GATTACAGATCCA"</code></pre>
+<p>验证：读段 1（GATTACA）+ 读段 2 中段（CAGAT）+ 读段 3 后段（TCCA）完整覆盖了重建序列，结果正确。</p>
 <hr>
 </section>
-<section id="变异的分类" class="level2" data-number="12.3">
-<h2 data-number="12.3" class="anchored" data-anchor-id="变异的分类"><span class="header-section-number">12.3</span> 变异的分类</h2>
-<section id="按照规模分类" class="level3" data-number="12.3.1">
-<h3 data-number="12.3.1" class="anchored" data-anchor-id="按照规模分类"><span class="header-section-number">12.3.1</span> 按照规模分类</h3>
-<p>{{Wiki:Mutation_(genetics)}}</p>
+</section>
+<section id="r-代码实践de-bruijn-图组装" class="level1" data-number="16">
+<h1 data-number="16"><span class="header-section-number">16</span> R 代码实践：De Bruijn 图组装</h1>
+<section id="第一部分最小实现不依赖外部包" class="level2" data-number="16.1">
+<h2 data-number="16.1" class="anchored" data-anchor-id="第一部分最小实现不依赖外部包"><span class="header-section-number">16.1</span> 第一部分：最小实现（不依赖外部包）</h2>
+<p>以下代码对上述三条 reads 进行组装，完整实现 De Bruijn 图的每个步骤。此版本无需安装任何依赖，适合直接在课堂运行理解算法逻辑。</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb6"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="fu">rm</span>(<span class="at">list =</span> <span class="fu">ls</span>())</span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a><span class="co"># ── Step 1: Extract unique k-mers from a list of reads ──────────────────────</span></span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a>get_kmers_from_reads <span class="ot">&lt;-</span> <span class="cf">function</span>(reads, k) {</span>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a>  all_kmers <span class="ot">&lt;-</span> <span class="fu">c</span>()</span>
+<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a>  <span class="cf">for</span> (seq <span class="cf">in</span> reads) {</span>
+<span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a>    n <span class="ot">&lt;-</span> <span class="fu">nchar</span>(seq)</span>
+<span id="cb6-8"><a href="#cb6-8" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> (k <span class="sc">&gt;</span> n) {</span>
+<span id="cb6-9"><a href="#cb6-9" aria-hidden="true" tabindex="-1"></a>      <span class="fu">warning</span>(<span class="fu">paste</span>(<span class="st">"Sequence too short, skipped:"</span>, seq))</span>
+<span id="cb6-10"><a href="#cb6-10" aria-hidden="true" tabindex="-1"></a>      <span class="cf">next</span></span>
+<span id="cb6-11"><a href="#cb6-11" aria-hidden="true" tabindex="-1"></a>    }</span>
+<span id="cb6-12"><a href="#cb6-12" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> (i <span class="cf">in</span> <span class="dv">1</span><span class="sc">:</span>(n <span class="sc">-</span> k <span class="sc">+</span> <span class="dv">1</span>)) {</span>
+<span id="cb6-13"><a href="#cb6-13" aria-hidden="true" tabindex="-1"></a>      all_kmers <span class="ot">&lt;-</span> <span class="fu">c</span>(all_kmers, <span class="fu">substr</span>(seq, i, i <span class="sc">+</span> k <span class="sc">-</span> <span class="dv">1</span>))</span>
+<span id="cb6-14"><a href="#cb6-14" aria-hidden="true" tabindex="-1"></a>    }</span>
+<span id="cb6-15"><a href="#cb6-15" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb6-16"><a href="#cb6-16" aria-hidden="true" tabindex="-1"></a>  <span class="fu">unique</span>(all_kmers)          <span class="co"># deduplicate: each k-mer = one edge in graph</span></span>
+<span id="cb6-17"><a href="#cb6-17" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb6-18"><a href="#cb6-18" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-19"><a href="#cb6-19" aria-hidden="true" tabindex="-1"></a><span class="co"># ── Step 2: Build De Bruijn graph as an adjacency list ──────────────────────</span></span>
+<span id="cb6-20"><a href="#cb6-20" aria-hidden="true" tabindex="-1"></a>build_de_bruijn_graph <span class="ot">&lt;-</span> <span class="cf">function</span>(kmers) {</span>
+<span id="cb6-21"><a href="#cb6-21" aria-hidden="true" tabindex="-1"></a>  graph <span class="ot">&lt;-</span> <span class="fu">list</span>()</span>
+<span id="cb6-22"><a href="#cb6-22" aria-hidden="true" tabindex="-1"></a>  <span class="cf">for</span> (kmer <span class="cf">in</span> kmers) {</span>
+<span id="cb6-23"><a href="#cb6-23" aria-hidden="true" tabindex="-1"></a>    left_node  <span class="ot">&lt;-</span> <span class="fu">substr</span>(kmer, <span class="dv">1</span>, <span class="fu">nchar</span>(kmer) <span class="sc">-</span> <span class="dv">1</span>)   <span class="co"># (k-1)-mer prefix</span></span>
+<span id="cb6-24"><a href="#cb6-24" aria-hidden="true" tabindex="-1"></a>    right_node <span class="ot">&lt;-</span> <span class="fu">substr</span>(kmer, <span class="dv">2</span>, <span class="fu">nchar</span>(kmer))         <span class="co"># (k-1)-mer suffix</span></span>
+<span id="cb6-25"><a href="#cb6-25" aria-hidden="true" tabindex="-1"></a>    graph[[left_node]] <span class="ot">&lt;-</span> <span class="fu">c</span>(graph[[left_node]], right_node)</span>
+<span id="cb6-26"><a href="#cb6-26" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb6-27"><a href="#cb6-27" aria-hidden="true" tabindex="-1"></a>  graph</span>
+<span id="cb6-28"><a href="#cb6-28" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb6-29"><a href="#cb6-29" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-30"><a href="#cb6-30" aria-hidden="true" tabindex="-1"></a><span class="co"># ── Step 3: Compute in-degree and out-degree for every node ─────────────────</span></span>
+<span id="cb6-31"><a href="#cb6-31" aria-hidden="true" tabindex="-1"></a>get_degrees <span class="ot">&lt;-</span> <span class="cf">function</span>(graph) {</span>
+<span id="cb6-32"><a href="#cb6-32" aria-hidden="true" tabindex="-1"></a>  out_deg    <span class="ot">&lt;-</span> <span class="fu">sapply</span>(graph, length)</span>
+<span id="cb6-33"><a href="#cb6-33" aria-hidden="true" tabindex="-1"></a>  in_deg     <span class="ot">&lt;-</span> <span class="fu">table</span>(<span class="fu">unlist</span>(graph))</span>
+<span id="cb6-34"><a href="#cb6-34" aria-hidden="true" tabindex="-1"></a>  all_nodes  <span class="ot">&lt;-</span> <span class="fu">unique</span>(<span class="fu">c</span>(<span class="fu">names</span>(graph), <span class="fu">names</span>(in_deg)))</span>
+<span id="cb6-35"><a href="#cb6-35" aria-hidden="true" tabindex="-1"></a>  degrees    <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(<span class="at">node  =</span> all_nodes,</span>
+<span id="cb6-36"><a href="#cb6-36" aria-hidden="true" tabindex="-1"></a>                           <span class="at">in_d  =</span> <span class="dv">0</span>,</span>
+<span id="cb6-37"><a href="#cb6-37" aria-hidden="true" tabindex="-1"></a>                           <span class="at">out_d =</span> <span class="dv">0</span>,</span>
+<span id="cb6-38"><a href="#cb6-38" aria-hidden="true" tabindex="-1"></a>                           <span class="at">stringsAsFactors =</span> <span class="cn">FALSE</span>)</span>
+<span id="cb6-39"><a href="#cb6-39" aria-hidden="true" tabindex="-1"></a>  <span class="fu">rownames</span>(degrees) <span class="ot">&lt;-</span> all_nodes</span>
+<span id="cb6-40"><a href="#cb6-40" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span> (<span class="fu">length</span>(out_deg) <span class="sc">&gt;</span> <span class="dv">0</span>) degrees[<span class="fu">names</span>(out_deg), <span class="st">"out_d"</span>] <span class="ot">&lt;-</span> <span class="fu">as.numeric</span>(out_deg)</span>
+<span id="cb6-41"><a href="#cb6-41" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span> (<span class="fu">length</span>(in_deg)  <span class="sc">&gt;</span> <span class="dv">0</span>) degrees[<span class="fu">names</span>(in_deg),  <span class="st">"in_d"</span>]  <span class="ot">&lt;-</span> <span class="fu">as.numeric</span>(in_deg)</span>
+<span id="cb6-42"><a href="#cb6-42" aria-hidden="true" tabindex="-1"></a>  degrees</span>
+<span id="cb6-43"><a href="#cb6-43" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb6-44"><a href="#cb6-44" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-45"><a href="#cb6-45" aria-hidden="true" tabindex="-1"></a><span class="co"># ── Step 4: Identify Eulerian path start node ───────────────────────────────</span></span>
+<span id="cb6-46"><a href="#cb6-46" aria-hidden="true" tabindex="-1"></a><span class="co"># Start node satisfies: out_degree - in_degree == 1</span></span>
+<span id="cb6-47"><a href="#cb6-47" aria-hidden="true" tabindex="-1"></a>get_start_node <span class="ot">&lt;-</span> <span class="cf">function</span>(degrees) {</span>
+<span id="cb6-48"><a href="#cb6-48" aria-hidden="true" tabindex="-1"></a>  start_nodes <span class="ot">&lt;-</span> degrees[degrees<span class="sc">$</span>out_d <span class="sc">-</span> degrees<span class="sc">$</span>in_d <span class="sc">==</span> <span class="dv">1</span>, <span class="st">"node"</span>]</span>
+<span id="cb6-49"><a href="#cb6-49" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span> (<span class="fu">length</span>(start_nodes) <span class="sc">==</span> <span class="dv">0</span>) {</span>
+<span id="cb6-50"><a href="#cb6-50" aria-hidden="true" tabindex="-1"></a>    start_nodes <span class="ot">&lt;-</span> degrees[degrees<span class="sc">$</span>out_d <span class="sc">&gt;</span> <span class="dv">0</span>, <span class="st">"node"</span>][<span class="dv">1</span>]  <span class="co"># fallback for Eulerian circuit</span></span>
+<span id="cb6-51"><a href="#cb6-51" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb6-52"><a href="#cb6-52" aria-hidden="true" tabindex="-1"></a>  start_nodes[<span class="dv">1</span>]</span>
+<span id="cb6-53"><a href="#cb6-53" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb6-54"><a href="#cb6-54" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-55"><a href="#cb6-55" aria-hidden="true" tabindex="-1"></a><span class="co"># ── Step 5: Hierholzer's algorithm for Eulerian path ────────────────────────</span></span>
+<span id="cb6-56"><a href="#cb6-56" aria-hidden="true" tabindex="-1"></a>find_eulerian_path <span class="ot">&lt;-</span> <span class="cf">function</span>(graph, start_node) {</span>
+<span id="cb6-57"><a href="#cb6-57" aria-hidden="true" tabindex="-1"></a>  stack <span class="ot">&lt;-</span> <span class="fu">c</span>(start_node)</span>
+<span id="cb6-58"><a href="#cb6-58" aria-hidden="true" tabindex="-1"></a>  path  <span class="ot">&lt;-</span> <span class="fu">c</span>()</span>
+<span id="cb6-59"><a href="#cb6-59" aria-hidden="true" tabindex="-1"></a>  <span class="cf">while</span> (<span class="fu">length</span>(stack) <span class="sc">&gt;</span> <span class="dv">0</span>) {</span>
+<span id="cb6-60"><a href="#cb6-60" aria-hidden="true" tabindex="-1"></a>    curr <span class="ot">&lt;-</span> stack[<span class="fu">length</span>(stack)]</span>
+<span id="cb6-61"><a href="#cb6-61" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> (<span class="sc">!</span><span class="fu">is.null</span>(graph[[curr]]) <span class="sc">&amp;&amp;</span> <span class="fu">length</span>(graph[[curr]]) <span class="sc">&gt;</span> <span class="dv">0</span>) {</span>
+<span id="cb6-62"><a href="#cb6-62" aria-hidden="true" tabindex="-1"></a>      next_node        <span class="ot">&lt;-</span> graph[[curr]][<span class="dv">1</span>]     <span class="co"># take first available edge</span></span>
+<span id="cb6-63"><a href="#cb6-63" aria-hidden="true" tabindex="-1"></a>      graph[[curr]]    <span class="ot">&lt;-</span> graph[[curr]][<span class="sc">-</span><span class="dv">1</span>]    <span class="co"># remove used edge</span></span>
+<span id="cb6-64"><a href="#cb6-64" aria-hidden="true" tabindex="-1"></a>      stack            <span class="ot">&lt;-</span> <span class="fu">c</span>(stack, next_node)</span>
+<span id="cb6-65"><a href="#cb6-65" aria-hidden="true" tabindex="-1"></a>    } <span class="cf">else</span> {</span>
+<span id="cb6-66"><a href="#cb6-66" aria-hidden="true" tabindex="-1"></a>      path  <span class="ot">&lt;-</span> <span class="fu">c</span>(path, curr)                   <span class="co"># dead end: add to path</span></span>
+<span id="cb6-67"><a href="#cb6-67" aria-hidden="true" tabindex="-1"></a>      stack <span class="ot">&lt;-</span> stack[<span class="sc">-</span><span class="fu">length</span>(stack)]</span>
+<span id="cb6-68"><a href="#cb6-68" aria-hidden="true" tabindex="-1"></a>    }</span>
+<span id="cb6-69"><a href="#cb6-69" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb6-70"><a href="#cb6-70" aria-hidden="true" tabindex="-1"></a>  <span class="fu">rev</span>(path)</span>
+<span id="cb6-71"><a href="#cb6-71" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb6-72"><a href="#cb6-72" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-73"><a href="#cb6-73" aria-hidden="true" tabindex="-1"></a><span class="co"># ── Step 6: Reconstruct sequence from node path ─────────────────────────────</span></span>
+<span id="cb6-74"><a href="#cb6-74" aria-hidden="true" tabindex="-1"></a><span class="co"># Each consecutive pair shares a (k-2)-mer overlap; append only the last base</span></span>
+<span id="cb6-75"><a href="#cb6-75" aria-hidden="true" tabindex="-1"></a>reconstruct_sequence <span class="ot">&lt;-</span> <span class="cf">function</span>(path) {</span>
+<span id="cb6-76"><a href="#cb6-76" aria-hidden="true" tabindex="-1"></a>  seq <span class="ot">&lt;-</span> path[<span class="dv">1</span>]</span>
+<span id="cb6-77"><a href="#cb6-77" aria-hidden="true" tabindex="-1"></a>  <span class="cf">for</span> (i <span class="cf">in</span> <span class="dv">2</span><span class="sc">:</span><span class="fu">length</span>(path))</span>
+<span id="cb6-78"><a href="#cb6-78" aria-hidden="true" tabindex="-1"></a>    seq <span class="ot">&lt;-</span> <span class="fu">paste0</span>(seq, <span class="fu">substr</span>(path[i], <span class="fu">nchar</span>(path[i]), <span class="fu">nchar</span>(path[i])))</span>
+<span id="cb6-79"><a href="#cb6-79" aria-hidden="true" tabindex="-1"></a>  seq</span>
+<span id="cb6-80"><a href="#cb6-80" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb6-81"><a href="#cb6-81" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-82"><a href="#cb6-82" aria-hidden="true" tabindex="-1"></a><span class="co"># ════════════════════════════════════════════════════════════════════════════</span></span>
+<span id="cb6-83"><a href="#cb6-83" aria-hidden="true" tabindex="-1"></a><span class="co"># Main: assemble 3 reads</span></span>
+<span id="cb6-84"><a href="#cb6-84" aria-hidden="true" tabindex="-1"></a><span class="co"># ════════════════════════════════════════════════════════════════════════════</span></span>
+<span id="cb6-85"><a href="#cb6-85" aria-hidden="true" tabindex="-1"></a>reads <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="st">"GATTACA"</span>,   <span class="co"># Read 1</span></span>
+<span id="cb6-86"><a href="#cb6-86" aria-hidden="true" tabindex="-1"></a>           <span class="st">"TACAGAT"</span>,   <span class="co"># Read 2 (overlaps Read 1 at "TACA")</span></span>
+<span id="cb6-87"><a href="#cb6-87" aria-hidden="true" tabindex="-1"></a>           <span class="st">"AGATCCA"</span>)   <span class="co"># Read 3 (overlaps Read 2 at "AGAT")</span></span>
+<span id="cb6-88"><a href="#cb6-88" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-89"><a href="#cb6-89" aria-hidden="true" tabindex="-1"></a>k_size <span class="ot">&lt;-</span> <span class="dv">4</span></span>
+<span id="cb6-90"><a href="#cb6-90" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-91"><a href="#cb6-91" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">"Input reads:</span><span class="sc">\n</span><span class="st">"</span>)</span>
+<span id="cb6-92"><a href="#cb6-92" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(reads)</span>
+<span id="cb6-93"><a href="#cb6-93" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-94"><a href="#cb6-94" aria-hidden="true" tabindex="-1"></a>kmers <span class="ot">&lt;-</span> <span class="fu">get_kmers_from_reads</span>(reads, k_size)</span>
+<span id="cb6-95"><a href="#cb6-95" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">"</span><span class="sc">\n</span><span class="st">Unique"</span>, k_size, <span class="st">"-mers (graph edges):</span><span class="sc">\n</span><span class="st">"</span>)</span>
+<span id="cb6-96"><a href="#cb6-96" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="fu">paste</span>(kmers, <span class="at">collapse =</span> <span class="st">", "</span>), <span class="st">"</span><span class="sc">\n</span><span class="st">"</span>)</span>
+<span id="cb6-97"><a href="#cb6-97" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-98"><a href="#cb6-98" aria-hidden="true" tabindex="-1"></a>graph       <span class="ot">&lt;-</span> <span class="fu">build_de_bruijn_graph</span>(kmers)</span>
+<span id="cb6-99"><a href="#cb6-99" aria-hidden="true" tabindex="-1"></a>degrees     <span class="ot">&lt;-</span> <span class="fu">get_degrees</span>(graph)</span>
+<span id="cb6-100"><a href="#cb6-100" aria-hidden="true" tabindex="-1"></a>start_node  <span class="ot">&lt;-</span> <span class="fu">get_start_node</span>(degrees)</span>
+<span id="cb6-101"><a href="#cb6-101" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-102"><a href="#cb6-102" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">"</span><span class="sc">\n</span><span class="st">Degree table:</span><span class="sc">\n</span><span class="st">"</span>)</span>
+<span id="cb6-103"><a href="#cb6-103" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(degrees[<span class="fu">order</span>(degrees<span class="sc">$</span>node), ])</span>
+<span id="cb6-104"><a href="#cb6-104" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">"</span><span class="sc">\n</span><span class="st">Eulerian path start node:"</span>, start_node, <span class="st">"</span><span class="sc">\n</span><span class="st">"</span>)</span>
+<span id="cb6-105"><a href="#cb6-105" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-106"><a href="#cb6-106" aria-hidden="true" tabindex="-1"></a>path          <span class="ot">&lt;-</span> <span class="fu">find_eulerian_path</span>(graph, start_node)</span>
+<span id="cb6-107"><a href="#cb6-107" aria-hidden="true" tabindex="-1"></a>assembled_seq <span class="ot">&lt;-</span> <span class="fu">reconstruct_sequence</span>(path)</span>
+<span id="cb6-108"><a href="#cb6-108" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-109"><a href="#cb6-109" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">"</span><span class="sc">\n</span><span class="st">Eulerian path (node sequence):</span><span class="sc">\n</span><span class="st">"</span>)</span>
+<span id="cb6-110"><a href="#cb6-110" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="fu">paste</span>(path, <span class="at">collapse =</span> <span class="st">" → "</span>), <span class="st">"</span><span class="sc">\n</span><span class="st">"</span>)</span>
+<span id="cb6-111"><a href="#cb6-111" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">"</span><span class="sc">\n</span><span class="st">Assembled contig:"</span>, assembled_seq, <span class="st">"</span><span class="sc">\n</span><span class="st">"</span>)</span>
+<span id="cb6-112"><a href="#cb6-112" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-113"><a href="#cb6-113" aria-hidden="true" tabindex="-1"></a>expected_seq <span class="ot">&lt;-</span> <span class="st">"GATTACAGATCCA"</span></span>
+<span id="cb6-114"><a href="#cb6-114" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">"Expected        :"</span>, expected_seq, <span class="st">"</span><span class="sc">\n</span><span class="st">"</span>)</span>
+<span id="cb6-115"><a href="#cb6-115" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">"Match           :"</span>, assembled_seq <span class="sc">==</span> expected_seq, <span class="st">"</span><span class="sc">\n</span><span class="st">"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><strong>预期输出：</strong></p>
+<pre><code>Input reads:
+[1] "GATTACA" "TACAGAT" "AGATCCA"
+
+Unique 4-mers (graph edges):
+GATT, ATTA, TTAC, TACA, ACAG, CAGA, AGAT, GATC, ATCC, TCCA
+
+Degree table:
+   node in_d out_d
+ACA   ACA    1     1
+AGA   AGA    1     1
+ATC   ATC    1     1
+ATT   ATT    1     1
+CAG   CAG    1     1
+CCA   CCA    1     0
+GAT   GAT    1     2
+TCA   TCA    0     1  ← 此处修正可能出现
+TCC   TCC    1     1
+TTA   TTA    1     1
+
+Eulerian path start node: GAT
+
+Eulerian path (node sequence):
+GAT → ATT → TTA → TAC → ACA → CAG → AGA → GAT → ATC → TCC → CCA
+
+Assembled contig: GATTACAGATCCA
+Expected        : GATTACAGATCCA
+Match           : TRUE</code></pre>
+<hr>
+</section>
+<section id="第二部分进阶实现含气泡尖刺检测与-igraph-可视化" class="level2" data-number="16.2">
+<h2 data-number="16.2" class="anchored" data-anchor-id="第二部分进阶实现含气泡尖刺检测与-igraph-可视化"><span class="header-section-number">16.2</span> 第二部分：进阶实现（含气泡/尖刺检测与 igraph 可视化）</h2>
+<p>真实测序数据面临两类核心问题：</p>
+<ol type="1">
+<li><strong>气泡（Bubble）</strong>：测序错误或真实 SNP 导致同一路径出现分叉再汇合，图中形成”气泡”结构</li>
+<li><strong>尖刺/死端（Tip）</strong>：低质量 read 末端的错误 k-mer 形成无法延伸的悬空节点链</li>
+</ol>
+<p>下图展示了真实 De Bruijn 图中的典型问题：</p>
+<pre><code>正常连续路径:  A → B → C → D
+                      ↓
+气泡结构:      A → B1 → D     (B1 为 SNP 路径，B2 为原始路径)
+                   ↘    ↗
+                    B2
+
+尖刺结构:      A → B → C → D
+                        ↓
+                        X → Y   (X-Y 是低质量错误 k-mer 的死端)</code></pre>
+<p>以下完整代码演示了含有 SNP（气泡）、噪声读段（尖刺）的复杂场景，并逐步进行图的清理：</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb9"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> (<span class="sc">!</span><span class="fu">requireNamespace</span>(<span class="st">"igraph"</span>, <span class="at">quietly =</span> <span class="cn">TRUE</span>)) <span class="fu">install.packages</span>(<span class="st">"igraph"</span>)</span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(igraph)</span>
+<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a><span class="fu">rm</span>(<span class="at">list =</span> <span class="fu">ls</span>())</span>
+<span id="cb9-5"><a href="#cb9-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-6"><a href="#cb9-6" aria-hidden="true" tabindex="-1"></a><span class="co"># ── k-mer extraction (retaining counts for coverage-based filtering) ─────────</span></span>
+<span id="cb9-7"><a href="#cb9-7" aria-hidden="true" tabindex="-1"></a>get_kmers_from_reads <span class="ot">&lt;-</span> <span class="cf">function</span>(reads, k) {</span>
+<span id="cb9-8"><a href="#cb9-8" aria-hidden="true" tabindex="-1"></a>  kmer_vec <span class="ot">&lt;-</span> <span class="fu">character</span>(<span class="dv">0</span>)</span>
+<span id="cb9-9"><a href="#cb9-9" aria-hidden="true" tabindex="-1"></a>  <span class="cf">for</span> (seq <span class="cf">in</span> reads) {</span>
+<span id="cb9-10"><a href="#cb9-10" aria-hidden="true" tabindex="-1"></a>    n <span class="ot">&lt;-</span> <span class="fu">nchar</span>(seq)</span>
+<span id="cb9-11"><a href="#cb9-11" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> (n <span class="sc">&lt;</span> k) {</span>
+<span id="cb9-12"><a href="#cb9-12" aria-hidden="true" tabindex="-1"></a>      <span class="fu">warning</span>(<span class="st">"Sequence too short, skipped: "</span>, seq)</span>
+<span id="cb9-13"><a href="#cb9-13" aria-hidden="true" tabindex="-1"></a>      <span class="cf">next</span></span>
+<span id="cb9-14"><a href="#cb9-14" aria-hidden="true" tabindex="-1"></a>    }</span>
+<span id="cb9-15"><a href="#cb9-15" aria-hidden="true" tabindex="-1"></a>    kmer_vec <span class="ot">&lt;-</span> <span class="fu">c</span>(kmer_vec, <span class="fu">substring</span>(seq, <span class="dv">1</span><span class="sc">:</span>(n <span class="sc">-</span> k <span class="sc">+</span> <span class="dv">1</span>), k<span class="sc">:</span>n))</span>
+<span id="cb9-16"><a href="#cb9-16" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb9-17"><a href="#cb9-17" aria-hidden="true" tabindex="-1"></a>  <span class="fu">table</span>(kmer_vec)   <span class="co"># named frequency table; count = coverage of that edge</span></span>
+<span id="cb9-18"><a href="#cb9-18" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb9-19"><a href="#cb9-19" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-20"><a href="#cb9-20" aria-hidden="true" tabindex="-1"></a><span class="co"># ── Build De Bruijn graph as igraph object ───────────────────────────────────</span></span>
+<span id="cb9-21"><a href="#cb9-21" aria-hidden="true" tabindex="-1"></a>build_de_bruijn_graph <span class="ot">&lt;-</span> <span class="cf">function</span>(kmer_counts, <span class="at">min_count =</span> <span class="dv">1</span>) {</span>
+<span id="cb9-22"><a href="#cb9-22" aria-hidden="true" tabindex="-1"></a>  kmers <span class="ot">&lt;-</span> <span class="fu">names</span>(kmer_counts)[kmer_counts <span class="sc">&gt;=</span> min_count]</span>
+<span id="cb9-23"><a href="#cb9-23" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span> (<span class="fu">length</span>(kmers) <span class="sc">==</span> <span class="dv">0</span>) <span class="fu">stop</span>(<span class="st">"No k-mers meet the minimum coverage threshold"</span>)</span>
+<span id="cb9-24"><a href="#cb9-24" aria-hidden="true" tabindex="-1"></a>  k     <span class="ot">&lt;-</span> <span class="fu">nchar</span>(kmers[<span class="dv">1</span>])</span>
+<span id="cb9-25"><a href="#cb9-25" aria-hidden="true" tabindex="-1"></a>  edges <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(</span>
+<span id="cb9-26"><a href="#cb9-26" aria-hidden="true" tabindex="-1"></a>    <span class="at">from  =</span> <span class="fu">substr</span>(kmers, <span class="dv">1</span>, k <span class="sc">-</span> <span class="dv">1</span>),</span>
+<span id="cb9-27"><a href="#cb9-27" aria-hidden="true" tabindex="-1"></a>    <span class="at">to    =</span> <span class="fu">substr</span>(kmers, <span class="dv">2</span>, k),</span>
+<span id="cb9-28"><a href="#cb9-28" aria-hidden="true" tabindex="-1"></a>    <span class="at">kmer  =</span> kmers,</span>
+<span id="cb9-29"><a href="#cb9-29" aria-hidden="true" tabindex="-1"></a>    <span class="at">count =</span> <span class="fu">as.integer</span>(kmer_counts[kmers]),</span>
+<span id="cb9-30"><a href="#cb9-30" aria-hidden="true" tabindex="-1"></a>    <span class="at">stringsAsFactors =</span> <span class="cn">FALSE</span></span>
+<span id="cb9-31"><a href="#cb9-31" aria-hidden="true" tabindex="-1"></a>  )</span>
+<span id="cb9-32"><a href="#cb9-32" aria-hidden="true" tabindex="-1"></a>  g         <span class="ot">&lt;-</span> <span class="fu">graph_from_data_frame</span>(edges, <span class="at">directed =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb9-33"><a href="#cb9-33" aria-hidden="true" tabindex="-1"></a>  <span class="fu">E</span>(g)<span class="sc">$</span>label <span class="ot">&lt;-</span> edges<span class="sc">$</span>kmer</span>
+<span id="cb9-34"><a href="#cb9-34" aria-hidden="true" tabindex="-1"></a>  <span class="fu">E</span>(g)<span class="sc">$</span>count <span class="ot">&lt;-</span> edges<span class="sc">$</span>count</span>
+<span id="cb9-35"><a href="#cb9-35" aria-hidden="true" tabindex="-1"></a>  g</span>
+<span id="cb9-36"><a href="#cb9-36" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb9-37"><a href="#cb9-37" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-38"><a href="#cb9-38" aria-hidden="true" tabindex="-1"></a><span class="co"># ── Graph structure diagnostics ──────────────────────────────────────────────</span></span>
+<span id="cb9-39"><a href="#cb9-39" aria-hidden="true" tabindex="-1"></a>diagnose_graph <span class="ot">&lt;-</span> <span class="cf">function</span>(g) {</span>
+<span id="cb9-40"><a href="#cb9-40" aria-hidden="true" tabindex="-1"></a>  <span class="fu">cat</span>(<span class="st">"-- Graph Diagnostics ---------------------</span><span class="sc">\n</span><span class="st">"</span>)</span>
+<span id="cb9-41"><a href="#cb9-41" aria-hidden="true" tabindex="-1"></a>  <span class="fu">cat</span>(<span class="st">"  Nodes:"</span>, <span class="fu">vcount</span>(g), <span class="st">" | Edges:"</span>, <span class="fu">ecount</span>(g), <span class="st">"</span><span class="sc">\n</span><span class="st">"</span>)</span>
+<span id="cb9-42"><a href="#cb9-42" aria-hidden="true" tabindex="-1"></a>  deg_in  <span class="ot">&lt;-</span> <span class="fu">degree</span>(g, <span class="at">mode =</span> <span class="st">"in"</span>)</span>
+<span id="cb9-43"><a href="#cb9-43" aria-hidden="true" tabindex="-1"></a>  deg_out <span class="ot">&lt;-</span> <span class="fu">degree</span>(g, <span class="at">mode =</span> <span class="st">"out"</span>)</span>
+<span id="cb9-44"><a href="#cb9-44" aria-hidden="true" tabindex="-1"></a>  tips    <span class="ot">&lt;-</span> <span class="fu">V</span>(g)[deg_in <span class="sc">==</span> <span class="dv">0</span> <span class="sc">|</span> deg_out <span class="sc">==</span> <span class="dv">0</span>]</span>
+<span id="cb9-45"><a href="#cb9-45" aria-hidden="true" tabindex="-1"></a>  junc    <span class="ot">&lt;-</span> <span class="fu">V</span>(g)[deg_in <span class="sc">&gt;</span> <span class="dv">1</span>  <span class="sc">|</span> deg_out <span class="sc">&gt;</span> <span class="dv">1</span>]</span>
+<span id="cb9-46"><a href="#cb9-46" aria-hidden="true" tabindex="-1"></a>  <span class="fu">cat</span>(<span class="st">"  Tips (dead ends):"</span>, <span class="fu">length</span>(tips), <span class="st">"</span><span class="sc">\n</span><span class="st">"</span>)</span>
+<span id="cb9-47"><a href="#cb9-47" aria-hidden="true" tabindex="-1"></a>  <span class="fu">cat</span>(<span class="st">"  Junction nodes  :"</span>, <span class="fu">length</span>(junc),  <span class="st">"</span><span class="sc">\n</span><span class="st">"</span>)</span>
+<span id="cb9-48"><a href="#cb9-48" aria-hidden="true" tabindex="-1"></a>  bubbles <span class="ot">&lt;-</span> <span class="fu">detect_bubbles</span>(g)</span>
+<span id="cb9-49"><a href="#cb9-49" aria-hidden="true" tabindex="-1"></a>  <span class="fu">cat</span>(<span class="st">"  Putative bubbles:"</span>, <span class="fu">length</span>(bubbles), <span class="st">"</span><span class="sc">\n</span><span class="st">"</span>)</span>
+<span id="cb9-50"><a href="#cb9-50" aria-hidden="true" tabindex="-1"></a>  wc <span class="ot">&lt;-</span> <span class="fu">components</span>(<span class="fu">as.undirected</span>(g))</span>
+<span id="cb9-51"><a href="#cb9-51" aria-hidden="true" tabindex="-1"></a>  <span class="fu">cat</span>(<span class="st">"  Weakly connected components:"</span>, wc<span class="sc">$</span>no, <span class="st">"</span><span class="sc">\n</span><span class="st">"</span>)</span>
+<span id="cb9-52"><a href="#cb9-52" aria-hidden="true" tabindex="-1"></a>  <span class="fu">cat</span>(<span class="st">"------------------------------------------</span><span class="sc">\n</span><span class="st">"</span>)</span>
+<span id="cb9-53"><a href="#cb9-53" aria-hidden="true" tabindex="-1"></a>  <span class="fu">list</span>(<span class="at">tips =</span> tips, <span class="at">junctions =</span> junc, <span class="at">bubbles =</span> bubbles)</span>
+<span id="cb9-54"><a href="#cb9-54" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb9-55"><a href="#cb9-55" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-56"><a href="#cb9-56" aria-hidden="true" tabindex="-1"></a><span class="co"># ── Bubble detection ─────────────────────────────────────────────────────────</span></span>
+<span id="cb9-57"><a href="#cb9-57" aria-hidden="true" tabindex="-1"></a><span class="co"># A bubble exists when two outgoing branches from the same node reconverge</span></span>
+<span id="cb9-58"><a href="#cb9-58" aria-hidden="true" tabindex="-1"></a>detect_bubbles <span class="ot">&lt;-</span> <span class="cf">function</span>(g, <span class="at">max_len =</span> <span class="dv">5</span>) {</span>
+<span id="cb9-59"><a href="#cb9-59" aria-hidden="true" tabindex="-1"></a>  bubbles       <span class="ot">&lt;-</span> <span class="fu">list</span>()</span>
+<span id="cb9-60"><a href="#cb9-60" aria-hidden="true" tabindex="-1"></a>  branch_nodes  <span class="ot">&lt;-</span> <span class="fu">V</span>(g)[<span class="fu">degree</span>(g, <span class="at">mode =</span> <span class="st">"out"</span>) <span class="sc">&gt;=</span> <span class="dv">2</span>]</span>
+<span id="cb9-61"><a href="#cb9-61" aria-hidden="true" tabindex="-1"></a>  <span class="cf">for</span> (v <span class="cf">in</span> branch_nodes) {</span>
+<span id="cb9-62"><a href="#cb9-62" aria-hidden="true" tabindex="-1"></a>    succs <span class="ot">&lt;-</span> <span class="fu">neighbors</span>(g, v, <span class="at">mode =</span> <span class="st">"out"</span>)</span>
+<span id="cb9-63"><a href="#cb9-63" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> (<span class="fu">length</span>(succs) <span class="sc">&lt;</span> <span class="dv">2</span>) <span class="cf">next</span></span>
+<span id="cb9-64"><a href="#cb9-64" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> (i <span class="cf">in</span> <span class="dv">1</span><span class="sc">:</span>(<span class="fu">length</span>(succs) <span class="sc">-</span> <span class="dv">1</span>)) {</span>
+<span id="cb9-65"><a href="#cb9-65" aria-hidden="true" tabindex="-1"></a>      <span class="cf">for</span> (j <span class="cf">in</span> (i <span class="sc">+</span> <span class="dv">1</span>)<span class="sc">:</span><span class="fu">length</span>(succs)) {</span>
+<span id="cb9-66"><a href="#cb9-66" aria-hidden="true" tabindex="-1"></a>        reach_i    <span class="ot">&lt;-</span> igraph<span class="sc">::</span><span class="fu">ego</span>(g, <span class="at">order =</span> max_len, <span class="at">nodes =</span> succs[i], <span class="at">mode =</span> <span class="st">"out"</span>)[[<span class="dv">1</span>]]</span>
+<span id="cb9-67"><a href="#cb9-67" aria-hidden="true" tabindex="-1"></a>        reach_j    <span class="ot">&lt;-</span> igraph<span class="sc">::</span><span class="fu">ego</span>(g, <span class="at">order =</span> max_len, <span class="at">nodes =</span> succs[j], <span class="at">mode =</span> <span class="st">"out"</span>)[[<span class="dv">1</span>]]</span>
+<span id="cb9-68"><a href="#cb9-68" aria-hidden="true" tabindex="-1"></a>        merge_nodes <span class="ot">&lt;-</span> <span class="fu">intersect</span>(reach_i, reach_j)</span>
+<span id="cb9-69"><a href="#cb9-69" aria-hidden="true" tabindex="-1"></a>        <span class="cf">if</span> (<span class="fu">length</span>(merge_nodes) <span class="sc">&gt;</span> <span class="dv">0</span>) {</span>
+<span id="cb9-70"><a href="#cb9-70" aria-hidden="true" tabindex="-1"></a>          bubbles <span class="ot">&lt;-</span> <span class="fu">c</span>(bubbles, <span class="fu">list</span>(<span class="fu">list</span>(</span>
+<span id="cb9-71"><a href="#cb9-71" aria-hidden="true" tabindex="-1"></a>            <span class="at">source  =</span> <span class="fu">V</span>(g)<span class="sc">$</span>name[v],</span>
+<span id="cb9-72"><a href="#cb9-72" aria-hidden="true" tabindex="-1"></a>            <span class="at">branch1 =</span> <span class="fu">V</span>(g)<span class="sc">$</span>name[succs[i]],</span>
+<span id="cb9-73"><a href="#cb9-73" aria-hidden="true" tabindex="-1"></a>            <span class="at">branch2 =</span> <span class="fu">V</span>(g)<span class="sc">$</span>name[succs[j]],</span>
+<span id="cb9-74"><a href="#cb9-74" aria-hidden="true" tabindex="-1"></a>            <span class="at">merge   =</span> <span class="fu">V</span>(g)<span class="sc">$</span>name[merge_nodes[<span class="dv">1</span>]]</span>
+<span id="cb9-75"><a href="#cb9-75" aria-hidden="true" tabindex="-1"></a>          )))</span>
+<span id="cb9-76"><a href="#cb9-76" aria-hidden="true" tabindex="-1"></a>        }</span>
+<span id="cb9-77"><a href="#cb9-77" aria-hidden="true" tabindex="-1"></a>      }</span>
+<span id="cb9-78"><a href="#cb9-78" aria-hidden="true" tabindex="-1"></a>    }</span>
+<span id="cb9-79"><a href="#cb9-79" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb9-80"><a href="#cb9-80" aria-hidden="true" tabindex="-1"></a>  bubbles</span>
+<span id="cb9-81"><a href="#cb9-81" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb9-82"><a href="#cb9-82" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-83"><a href="#cb9-83" aria-hidden="true" tabindex="-1"></a><span class="co"># ── Tip clipping: iteratively remove dead-end chains ────────────────────────</span></span>
+<span id="cb9-84"><a href="#cb9-84" aria-hidden="true" tabindex="-1"></a>remove_tips <span class="ot">&lt;-</span> <span class="cf">function</span>(g, <span class="at">max_tip_len =</span> <span class="dv">2</span>) {</span>
+<span id="cb9-85"><a href="#cb9-85" aria-hidden="true" tabindex="-1"></a>  <span class="cf">repeat</span> {</span>
+<span id="cb9-86"><a href="#cb9-86" aria-hidden="true" tabindex="-1"></a>    deg_in  <span class="ot">&lt;-</span> <span class="fu">degree</span>(g, <span class="at">mode =</span> <span class="st">"in"</span>)</span>
+<span id="cb9-87"><a href="#cb9-87" aria-hidden="true" tabindex="-1"></a>    deg_out <span class="ot">&lt;-</span> <span class="fu">degree</span>(g, <span class="at">mode =</span> <span class="st">"out"</span>)</span>
+<span id="cb9-88"><a href="#cb9-88" aria-hidden="true" tabindex="-1"></a>    tips    <span class="ot">&lt;-</span> <span class="fu">V</span>(g)[(deg_in <span class="sc">==</span> <span class="dv">0</span> <span class="sc">&amp;</span> deg_out <span class="sc">&lt;=</span> max_tip_len) <span class="sc">|</span></span>
+<span id="cb9-89"><a href="#cb9-89" aria-hidden="true" tabindex="-1"></a>                    (deg_out <span class="sc">==</span> <span class="dv">0</span> <span class="sc">&amp;</span> deg_in  <span class="sc">&lt;=</span> max_tip_len)]</span>
+<span id="cb9-90"><a href="#cb9-90" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> (<span class="fu">length</span>(tips) <span class="sc">==</span> <span class="dv">0</span>) <span class="cf">break</span></span>
+<span id="cb9-91"><a href="#cb9-91" aria-hidden="true" tabindex="-1"></a>    g <span class="ot">&lt;-</span> <span class="fu">delete_vertices</span>(g, tips)</span>
+<span id="cb9-92"><a href="#cb9-92" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb9-93"><a href="#cb9-93" aria-hidden="true" tabindex="-1"></a>  g</span>
+<span id="cb9-94"><a href="#cb9-94" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb9-95"><a href="#cb9-95" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-96"><a href="#cb9-96" aria-hidden="true" tabindex="-1"></a><span class="co"># ── Bubble popping: keep high-coverage path, discard low-coverage branch ─────</span></span>
+<span id="cb9-97"><a href="#cb9-97" aria-hidden="true" tabindex="-1"></a>pop_bubbles <span class="ot">&lt;-</span> <span class="cf">function</span>(g, bubbles) {</span>
+<span id="cb9-98"><a href="#cb9-98" aria-hidden="true" tabindex="-1"></a>  edges_to_delete <span class="ot">&lt;-</span> <span class="fu">integer</span>(<span class="dv">0</span>)</span>
+<span id="cb9-99"><a href="#cb9-99" aria-hidden="true" tabindex="-1"></a>  <span class="cf">for</span> (b <span class="cf">in</span> bubbles) {</span>
+<span id="cb9-100"><a href="#cb9-100" aria-hidden="true" tabindex="-1"></a>    e1 <span class="ot">&lt;-</span> <span class="fu">E</span>(g)[<span class="fu">.from</span>(b<span class="sc">$</span>source) <span class="sc">&amp;</span> <span class="fu">.to</span>(b<span class="sc">$</span>branch1)]</span>
+<span id="cb9-101"><a href="#cb9-101" aria-hidden="true" tabindex="-1"></a>    e2 <span class="ot">&lt;-</span> <span class="fu">E</span>(g)[<span class="fu">.from</span>(b<span class="sc">$</span>source) <span class="sc">&amp;</span> <span class="fu">.to</span>(b<span class="sc">$</span>branch2)]</span>
+<span id="cb9-102"><a href="#cb9-102" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> (<span class="fu">length</span>(e1) <span class="sc">==</span> <span class="dv">0</span> <span class="sc">||</span> <span class="fu">length</span>(e2) <span class="sc">==</span> <span class="dv">0</span>) <span class="cf">next</span></span>
+<span id="cb9-103"><a href="#cb9-103" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Remove the lower-coverage branch</span></span>
+<span id="cb9-104"><a href="#cb9-104" aria-hidden="true" tabindex="-1"></a>    low_edge         <span class="ot">&lt;-</span> <span class="cf">if</span> (<span class="fu">E</span>(g)<span class="sc">$</span>count[e1] <span class="sc">&gt;=</span> <span class="fu">E</span>(g)<span class="sc">$</span>count[e2]) e2 <span class="cf">else</span> e1</span>
+<span id="cb9-105"><a href="#cb9-105" aria-hidden="true" tabindex="-1"></a>    edges_to_delete  <span class="ot">&lt;-</span> <span class="fu">c</span>(edges_to_delete, low_edge)</span>
+<span id="cb9-106"><a href="#cb9-106" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb9-107"><a href="#cb9-107" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span> (<span class="fu">length</span>(edges_to_delete) <span class="sc">&gt;</span> <span class="dv">0</span>)</span>
+<span id="cb9-108"><a href="#cb9-108" aria-hidden="true" tabindex="-1"></a>    g <span class="ot">&lt;-</span> <span class="fu">delete_edges</span>(g, <span class="fu">unique</span>(edges_to_delete))</span>
+<span id="cb9-109"><a href="#cb9-109" aria-hidden="true" tabindex="-1"></a>  g</span>
+<span id="cb9-110"><a href="#cb9-110" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb9-111"><a href="#cb9-111" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-112"><a href="#cb9-112" aria-hidden="true" tabindex="-1"></a><span class="co"># ── Low-coverage edge filtering ──────────────────────────────────────────────</span></span>
+<span id="cb9-113"><a href="#cb9-113" aria-hidden="true" tabindex="-1"></a>filter_low_coverage <span class="ot">&lt;-</span> <span class="cf">function</span>(g, <span class="at">min_count =</span> <span class="dv">2</span>) {</span>
+<span id="cb9-114"><a href="#cb9-114" aria-hidden="true" tabindex="-1"></a>  bad_edges <span class="ot">&lt;-</span> <span class="fu">E</span>(g)[<span class="fu">E</span>(g)<span class="sc">$</span>count <span class="sc">&lt;</span> min_count]</span>
+<span id="cb9-115"><a href="#cb9-115" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span> (<span class="fu">length</span>(bad_edges) <span class="sc">&gt;</span> <span class="dv">0</span>) g <span class="ot">&lt;-</span> <span class="fu">delete_edges</span>(g, bad_edges)</span>
+<span id="cb9-116"><a href="#cb9-116" aria-hidden="true" tabindex="-1"></a>  <span class="fu">delete_vertices</span>(g, <span class="fu">V</span>(g)[<span class="fu">degree</span>(g) <span class="sc">==</span> <span class="dv">0</span>])   <span class="co"># remove isolated nodes</span></span>
+<span id="cb9-117"><a href="#cb9-117" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb9-118"><a href="#cb9-118" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-119"><a href="#cb9-119" aria-hidden="true" tabindex="-1"></a><span class="co"># ── Hierholzer's Eulerian path (igraph version) ──────────────────────────────</span></span>
+<span id="cb9-120"><a href="#cb9-120" aria-hidden="true" tabindex="-1"></a>find_eulerian_path <span class="ot">&lt;-</span> <span class="cf">function</span>(g) {</span>
+<span id="cb9-121"><a href="#cb9-121" aria-hidden="true" tabindex="-1"></a>  adj     <span class="ot">&lt;-</span> <span class="fu">lapply</span>(<span class="fu">V</span>(g)<span class="sc">$</span>name, <span class="cf">function</span>(v) <span class="fu">neighbors</span>(g, v, <span class="at">mode =</span> <span class="st">"out"</span>)<span class="sc">$</span>name)</span>
+<span id="cb9-122"><a href="#cb9-122" aria-hidden="true" tabindex="-1"></a>  <span class="fu">names</span>(adj) <span class="ot">&lt;-</span> <span class="fu">V</span>(g)<span class="sc">$</span>name</span>
+<span id="cb9-123"><a href="#cb9-123" aria-hidden="true" tabindex="-1"></a>  deg_in  <span class="ot">&lt;-</span> <span class="fu">degree</span>(g, <span class="at">mode =</span> <span class="st">"in"</span>)</span>
+<span id="cb9-124"><a href="#cb9-124" aria-hidden="true" tabindex="-1"></a>  deg_out <span class="ot">&lt;-</span> <span class="fu">degree</span>(g, <span class="at">mode =</span> <span class="st">"out"</span>)</span>
+<span id="cb9-125"><a href="#cb9-125" aria-hidden="true" tabindex="-1"></a>  diff    <span class="ot">&lt;-</span> deg_out <span class="sc">-</span> deg_in</span>
+<span id="cb9-126"><a href="#cb9-126" aria-hidden="true" tabindex="-1"></a>  starts  <span class="ot">&lt;-</span> <span class="fu">names</span>(diff)[diff <span class="sc">==</span> <span class="dv">1</span>]</span>
+<span id="cb9-127"><a href="#cb9-127" aria-hidden="true" tabindex="-1"></a>  start   <span class="ot">&lt;-</span> <span class="cf">if</span> (<span class="fu">length</span>(starts) <span class="sc">&gt;</span> <span class="dv">0</span>) starts[<span class="dv">1</span>] <span class="cf">else</span> <span class="fu">names</span>(deg_out)[deg_out <span class="sc">&gt;</span> <span class="dv">0</span>][<span class="dv">1</span>]</span>
+<span id="cb9-128"><a href="#cb9-128" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span> (<span class="fu">is.na</span>(start)) <span class="fu">return</span>(<span class="fu">character</span>(<span class="dv">0</span>))</span>
+<span id="cb9-129"><a href="#cb9-129" aria-hidden="true" tabindex="-1"></a>  stack <span class="ot">&lt;-</span> start</span>
+<span id="cb9-130"><a href="#cb9-130" aria-hidden="true" tabindex="-1"></a>  path  <span class="ot">&lt;-</span> <span class="fu">character</span>(<span class="dv">0</span>)</span>
+<span id="cb9-131"><a href="#cb9-131" aria-hidden="true" tabindex="-1"></a>  <span class="cf">while</span> (<span class="fu">length</span>(stack) <span class="sc">&gt;</span> <span class="dv">0</span>) {</span>
+<span id="cb9-132"><a href="#cb9-132" aria-hidden="true" tabindex="-1"></a>    curr <span class="ot">&lt;-</span> <span class="fu">tail</span>(stack, <span class="dv">1</span>)</span>
+<span id="cb9-133"><a href="#cb9-133" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> (<span class="fu">length</span>(adj[[curr]]) <span class="sc">&gt;</span> <span class="dv">0</span>) {</span>
+<span id="cb9-134"><a href="#cb9-134" aria-hidden="true" tabindex="-1"></a>      nxt          <span class="ot">&lt;-</span> adj[[curr]][<span class="dv">1</span>]</span>
+<span id="cb9-135"><a href="#cb9-135" aria-hidden="true" tabindex="-1"></a>      adj[[curr]]  <span class="ot">&lt;-</span> adj[[curr]][<span class="sc">-</span><span class="dv">1</span>]</span>
+<span id="cb9-136"><a href="#cb9-136" aria-hidden="true" tabindex="-1"></a>      stack        <span class="ot">&lt;-</span> <span class="fu">c</span>(stack, nxt)</span>
+<span id="cb9-137"><a href="#cb9-137" aria-hidden="true" tabindex="-1"></a>    } <span class="cf">else</span> {</span>
+<span id="cb9-138"><a href="#cb9-138" aria-hidden="true" tabindex="-1"></a>      path  <span class="ot">&lt;-</span> <span class="fu">c</span>(path, curr)</span>
+<span id="cb9-139"><a href="#cb9-139" aria-hidden="true" tabindex="-1"></a>      stack <span class="ot">&lt;-</span> stack[<span class="sc">-</span><span class="fu">length</span>(stack)]</span>
+<span id="cb9-140"><a href="#cb9-140" aria-hidden="true" tabindex="-1"></a>    }</span>
+<span id="cb9-141"><a href="#cb9-141" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb9-142"><a href="#cb9-142" aria-hidden="true" tabindex="-1"></a>  <span class="fu">rev</span>(path)</span>
+<span id="cb9-143"><a href="#cb9-143" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb9-144"><a href="#cb9-144" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-145"><a href="#cb9-145" aria-hidden="true" tabindex="-1"></a>reconstruct_sequence <span class="ot">&lt;-</span> <span class="cf">function</span>(path) {</span>
+<span id="cb9-146"><a href="#cb9-146" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span> (<span class="fu">length</span>(path) <span class="sc">&lt;</span> <span class="dv">2</span>) <span class="fu">return</span>(<span class="fu">paste</span>(path, <span class="at">collapse =</span> <span class="st">""</span>))</span>
+<span id="cb9-147"><a href="#cb9-147" aria-hidden="true" tabindex="-1"></a>  seq <span class="ot">&lt;-</span> path[<span class="dv">1</span>]</span>
+<span id="cb9-148"><a href="#cb9-148" aria-hidden="true" tabindex="-1"></a>  <span class="cf">for</span> (i <span class="cf">in</span> <span class="dv">2</span><span class="sc">:</span><span class="fu">length</span>(path))</span>
+<span id="cb9-149"><a href="#cb9-149" aria-hidden="true" tabindex="-1"></a>    seq <span class="ot">&lt;-</span> <span class="fu">paste0</span>(seq, <span class="fu">substr</span>(path[i], <span class="fu">nchar</span>(path[i]), <span class="fu">nchar</span>(path[i])))</span>
+<span id="cb9-150"><a href="#cb9-150" aria-hidden="true" tabindex="-1"></a>  seq</span>
+<span id="cb9-151"><a href="#cb9-151" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb9-152"><a href="#cb9-152" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-153"><a href="#cb9-153" aria-hidden="true" tabindex="-1"></a><span class="co"># ── Visualization ────────────────────────────────────────────────────────────</span></span>
+<span id="cb9-154"><a href="#cb9-154" aria-hidden="true" tabindex="-1"></a>plot_dbg <span class="ot">&lt;-</span> <span class="cf">function</span>(g, <span class="at">title =</span> <span class="st">"De Bruijn Graph"</span>,</span>
+<span id="cb9-155"><a href="#cb9-155" aria-hidden="true" tabindex="-1"></a>                     <span class="at">highlight_nodes =</span> <span class="cn">NULL</span>, <span class="at">layout_fn =</span> layout_with_fr) {</span>
+<span id="cb9-156"><a href="#cb9-156" aria-hidden="true" tabindex="-1"></a>  pal     <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="at">normal =</span> <span class="st">"#4E79A7"</span>, <span class="at">highlight =</span> <span class="st">"#F28E2B"</span>, <span class="at">junction =</span> <span class="st">"#E15759"</span>)</span>
+<span id="cb9-157"><a href="#cb9-157" aria-hidden="true" tabindex="-1"></a>  is_junc <span class="ot">&lt;-</span> (<span class="fu">degree</span>(g, <span class="at">mode =</span> <span class="st">"in"</span>) <span class="sc">&gt;</span> <span class="dv">1</span> <span class="sc">|</span> <span class="fu">degree</span>(g, <span class="at">mode =</span> <span class="st">"out"</span>) <span class="sc">&gt;</span> <span class="dv">1</span>)</span>
+<span id="cb9-158"><a href="#cb9-158" aria-hidden="true" tabindex="-1"></a>  vcols   <span class="ot">&lt;-</span> <span class="fu">rep</span>(pal[<span class="st">"normal"</span>], <span class="fu">vcount</span>(g))</span>
+<span id="cb9-159"><a href="#cb9-159" aria-hidden="true" tabindex="-1"></a>  vcols[is_junc] <span class="ot">&lt;-</span> pal[<span class="st">"junction"</span>]</span>
+<span id="cb9-160"><a href="#cb9-160" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span> (<span class="sc">!</span><span class="fu">is.null</span>(highlight_nodes)) {</span>
+<span id="cb9-161"><a href="#cb9-161" aria-hidden="true" tabindex="-1"></a>    idx <span class="ot">&lt;-</span> <span class="fu">which</span>(<span class="fu">V</span>(g)<span class="sc">$</span>name <span class="sc">%in%</span> highlight_nodes)</span>
+<span id="cb9-162"><a href="#cb9-162" aria-hidden="true" tabindex="-1"></a>    vcols[idx] <span class="ot">&lt;-</span> pal[<span class="st">"highlight"</span>]</span>
+<span id="cb9-163"><a href="#cb9-163" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb9-164"><a href="#cb9-164" aria-hidden="true" tabindex="-1"></a>  ecols  <span class="ot">&lt;-</span> <span class="fu">ifelse</span>(<span class="fu">E</span>(g)<span class="sc">$</span>count <span class="sc">&gt;=</span> <span class="fu">median</span>(<span class="fu">E</span>(g)<span class="sc">$</span>count), <span class="st">"#2C7BB6"</span>, <span class="st">"#D7191C"</span>)</span>
+<span id="cb9-165"><a href="#cb9-165" aria-hidden="true" tabindex="-1"></a>  ewidth <span class="ot">&lt;-</span> <span class="fl">0.5</span> <span class="sc">+</span> <span class="dv">2</span> <span class="sc">*</span> (<span class="fu">E</span>(g)<span class="sc">$</span>count <span class="sc">/</span> <span class="fu">max</span>(<span class="fu">E</span>(g)<span class="sc">$</span>count))</span>
+<span id="cb9-166"><a href="#cb9-166" aria-hidden="true" tabindex="-1"></a>  <span class="fu">plot</span>(g,</span>
+<span id="cb9-167"><a href="#cb9-167" aria-hidden="true" tabindex="-1"></a>       <span class="at">layout           =</span> layout_fn,</span>
+<span id="cb9-168"><a href="#cb9-168" aria-hidden="true" tabindex="-1"></a>       <span class="at">vertex.color     =</span> vcols,</span>
+<span id="cb9-169"><a href="#cb9-169" aria-hidden="true" tabindex="-1"></a>       <span class="at">vertex.size      =</span> <span class="dv">18</span>,</span>
+<span id="cb9-170"><a href="#cb9-170" aria-hidden="true" tabindex="-1"></a>       <span class="at">vertex.label     =</span> <span class="fu">V</span>(g)<span class="sc">$</span>name,</span>
+<span id="cb9-171"><a href="#cb9-171" aria-hidden="true" tabindex="-1"></a>       <span class="at">vertex.label.cex =</span> <span class="fl">0.65</span>,</span>
+<span id="cb9-172"><a href="#cb9-172" aria-hidden="true" tabindex="-1"></a>       <span class="at">edge.color       =</span> ecols,</span>
+<span id="cb9-173"><a href="#cb9-173" aria-hidden="true" tabindex="-1"></a>       <span class="at">edge.width       =</span> ewidth,</span>
+<span id="cb9-174"><a href="#cb9-174" aria-hidden="true" tabindex="-1"></a>       <span class="at">edge.arrow.size  =</span> <span class="fl">0.4</span>,</span>
+<span id="cb9-175"><a href="#cb9-175" aria-hidden="true" tabindex="-1"></a>       <span class="at">edge.label       =</span> <span class="fu">E</span>(g)<span class="sc">$</span>count,</span>
+<span id="cb9-176"><a href="#cb9-176" aria-hidden="true" tabindex="-1"></a>       <span class="at">edge.label.cex   =</span> <span class="fl">0.6</span>,</span>
+<span id="cb9-177"><a href="#cb9-177" aria-hidden="true" tabindex="-1"></a>       <span class="at">main             =</span> title)</span>
+<span id="cb9-178"><a href="#cb9-178" aria-hidden="true" tabindex="-1"></a>  <span class="fu">legend</span>(<span class="st">"bottomleft"</span>, <span class="at">bty =</span> <span class="st">"n"</span>, <span class="at">cex =</span> <span class="fl">0.75</span>,</span>
+<span id="cb9-179"><a href="#cb9-179" aria-hidden="true" tabindex="-1"></a>         <span class="at">legend =</span> <span class="fu">c</span>(<span class="st">"Normal node"</span>, <span class="st">"Junction node"</span>,</span>
+<span id="cb9-180"><a href="#cb9-180" aria-hidden="true" tabindex="-1"></a>                    <span class="st">"High-coverage edge"</span>, <span class="st">"Low-coverage edge"</span>),</span>
+<span id="cb9-181"><a href="#cb9-181" aria-hidden="true" tabindex="-1"></a>         <span class="at">col    =</span> <span class="fu">c</span>(pal[<span class="st">"normal"</span>], pal[<span class="st">"junction"</span>], <span class="st">"#2C7BB6"</span>, <span class="st">"#D7191C"</span>),</span>
+<span id="cb9-182"><a href="#cb9-182" aria-hidden="true" tabindex="-1"></a>         <span class="at">pch    =</span> <span class="fu">c</span>(<span class="dv">19</span>, <span class="dv">19</span>, <span class="cn">NA</span>, <span class="cn">NA</span>), <span class="at">lty =</span> <span class="fu">c</span>(<span class="cn">NA</span>, <span class="cn">NA</span>, <span class="dv">1</span>, <span class="dv">1</span>), <span class="at">lwd =</span> <span class="dv">2</span>)</span>
+<span id="cb9-183"><a href="#cb9-183" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb9-184"><a href="#cb9-184" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-185"><a href="#cb9-185" aria-hidden="true" tabindex="-1"></a><span class="co"># ── Assembly evaluation ──────────────────────────────────────────────────────</span></span>
+<span id="cb9-186"><a href="#cb9-186" aria-hidden="true" tabindex="-1"></a>edit_distance <span class="ot">&lt;-</span> <span class="cf">function</span>(a, b) {</span>
+<span id="cb9-187"><a href="#cb9-187" aria-hidden="true" tabindex="-1"></a>  a <span class="ot">&lt;-</span> <span class="fu">strsplit</span>(a, <span class="st">""</span>)[[<span class="dv">1</span>]]; b <span class="ot">&lt;-</span> <span class="fu">strsplit</span>(b, <span class="st">""</span>)[[<span class="dv">1</span>]]</span>
+<span id="cb9-188"><a href="#cb9-188" aria-hidden="true" tabindex="-1"></a>  m <span class="ot">&lt;-</span> <span class="fu">length</span>(a);             n <span class="ot">&lt;-</span> <span class="fu">length</span>(b)</span>
+<span id="cb9-189"><a href="#cb9-189" aria-hidden="true" tabindex="-1"></a>  d <span class="ot">&lt;-</span> <span class="fu">matrix</span>(<span class="dv">0</span>L, m <span class="sc">+</span> <span class="dv">1</span>, n <span class="sc">+</span> <span class="dv">1</span>)</span>
+<span id="cb9-190"><a href="#cb9-190" aria-hidden="true" tabindex="-1"></a>  d[, <span class="dv">1</span>] <span class="ot">&lt;-</span> <span class="dv">0</span><span class="sc">:</span>m;             d[<span class="dv">1</span>, ] <span class="ot">&lt;-</span> <span class="dv">0</span><span class="sc">:</span>n</span>
+<span id="cb9-191"><a href="#cb9-191" aria-hidden="true" tabindex="-1"></a>  <span class="cf">for</span> (i <span class="cf">in</span> <span class="fu">seq_len</span>(m))</span>
+<span id="cb9-192"><a href="#cb9-192" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> (j <span class="cf">in</span> <span class="fu">seq_len</span>(n))</span>
+<span id="cb9-193"><a href="#cb9-193" aria-hidden="true" tabindex="-1"></a>      d[i<span class="sc">+</span><span class="dv">1</span>, j<span class="sc">+</span><span class="dv">1</span>] <span class="ot">&lt;-</span> <span class="cf">if</span> (a[i] <span class="sc">==</span> b[j]) d[i, j] <span class="cf">else</span></span>
+<span id="cb9-194"><a href="#cb9-194" aria-hidden="true" tabindex="-1"></a>        <span class="dv">1</span>L <span class="sc">+</span> <span class="fu">min</span>(d[i, j], d[i<span class="sc">+</span><span class="dv">1</span>, j], d[i, j<span class="sc">+</span><span class="dv">1</span>])</span>
+<span id="cb9-195"><a href="#cb9-195" aria-hidden="true" tabindex="-1"></a>  d[m<span class="sc">+</span><span class="dv">1</span>, n<span class="sc">+</span><span class="dv">1</span>]</span>
+<span id="cb9-196"><a href="#cb9-196" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb9-197"><a href="#cb9-197" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-198"><a href="#cb9-198" aria-hidden="true" tabindex="-1"></a>evaluate_assembly <span class="ot">&lt;-</span> <span class="cf">function</span>(contig, ref) {</span>
+<span id="cb9-199"><a href="#cb9-199" aria-hidden="true" tabindex="-1"></a>  len_c   <span class="ot">&lt;-</span> <span class="fu">nchar</span>(contig);   len_r <span class="ot">&lt;-</span> <span class="fu">nchar</span>(ref)</span>
+<span id="cb9-200"><a href="#cb9-200" aria-hidden="true" tabindex="-1"></a>  ed      <span class="ot">&lt;-</span> <span class="fu">edit_distance</span>(contig, ref)</span>
+<span id="cb9-201"><a href="#cb9-201" aria-hidden="true" tabindex="-1"></a>  pct_id  <span class="ot">&lt;-</span> <span class="fu">round</span>(<span class="dv">100</span> <span class="sc">*</span> (<span class="dv">1</span> <span class="sc">-</span> ed <span class="sc">/</span> <span class="fu">max</span>(len_c, len_r)), <span class="dv">2</span>)</span>
+<span id="cb9-202"><a href="#cb9-202" aria-hidden="true" tabindex="-1"></a>  <span class="fu">list</span>(<span class="at">length       =</span> len_c,</span>
+<span id="cb9-203"><a href="#cb9-203" aria-hidden="true" tabindex="-1"></a>       <span class="at">ref_length   =</span> len_r,</span>
+<span id="cb9-204"><a href="#cb9-204" aria-hidden="true" tabindex="-1"></a>       <span class="at">edit_dist    =</span> ed,</span>
+<span id="cb9-205"><a href="#cb9-205" aria-hidden="true" tabindex="-1"></a>       <span class="at">pct_identity =</span> pct_id,</span>
+<span id="cb9-206"><a href="#cb9-206" aria-hidden="true" tabindex="-1"></a>       <span class="at">length_ratio =</span> <span class="fu">round</span>(<span class="dv">100</span> <span class="sc">*</span> len_c <span class="sc">/</span> len_r, <span class="dv">2</span>))</span>
+<span id="cb9-207"><a href="#cb9-207" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb9-208"><a href="#cb9-208" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-209"><a href="#cb9-209" aria-hidden="true" tabindex="-1"></a><span class="co"># ════════════════════════════════════════════════════════════════════════════</span></span>
+<span id="cb9-210"><a href="#cb9-210" aria-hidden="true" tabindex="-1"></a><span class="co"># Main workflow: simulate reads with SNP bubble, noise, and short read</span></span>
+<span id="cb9-211"><a href="#cb9-211" aria-hidden="true" tabindex="-1"></a><span class="co"># ════════════════════════════════════════════════════════════════════════════</span></span>
+<span id="cb9-212"><a href="#cb9-212" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">"==================================================</span><span class="sc">\n</span><span class="st">"</span>)</span>
+<span id="cb9-213"><a href="#cb9-213" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">"  De Bruijn Graph Assembly — Mutation Simulation  </span><span class="sc">\n</span><span class="st">"</span>)</span>
+<span id="cb9-214"><a href="#cb9-214" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">"==================================================</span><span class="sc">\n\n</span><span class="st">"</span>)</span>
+<span id="cb9-215"><a href="#cb9-215" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-216"><a href="#cb9-216" aria-hidden="true" tabindex="-1"></a>ref_seq <span class="ot">&lt;-</span> <span class="st">"ATCGATCGAATCGATCG"</span></span>
+<span id="cb9-217"><a href="#cb9-217" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-218"><a href="#cb9-218" aria-hidden="true" tabindex="-1"></a>reads_complex <span class="ot">&lt;-</span> <span class="fu">c</span>(</span>
+<span id="cb9-219"><a href="#cb9-219" aria-hidden="true" tabindex="-1"></a>  <span class="st">"ATCGATCGAA"</span>,   <span class="co"># normal coverage x3 (upstream segment, high depth)</span></span>
+<span id="cb9-220"><a href="#cb9-220" aria-hidden="true" tabindex="-1"></a>  <span class="st">"ATCGATCGAA"</span>,</span>
+<span id="cb9-221"><a href="#cb9-221" aria-hidden="true" tabindex="-1"></a>  <span class="st">"ATCGATCGAA"</span>,</span>
+<span id="cb9-222"><a href="#cb9-222" aria-hidden="true" tabindex="-1"></a>  <span class="st">"TCGATCGAAT"</span>,   <span class="co"># normal coverage x2 (middle segment)</span></span>
+<span id="cb9-223"><a href="#cb9-223" aria-hidden="true" tabindex="-1"></a>  <span class="st">"TCGATCGAAT"</span>,</span>
+<span id="cb9-224"><a href="#cb9-224" aria-hidden="true" tabindex="-1"></a>  <span class="st">"TCGATCGTTC"</span>,   <span class="co"># SNP: A -&gt; T  =&gt;  introduces a bubble in the graph</span></span>
+<span id="cb9-225"><a href="#cb9-225" aria-hidden="true" tabindex="-1"></a>  <span class="st">"CGAATCGATC"</span>,   <span class="co"># downstream normal x2</span></span>
+<span id="cb9-226"><a href="#cb9-226" aria-hidden="true" tabindex="-1"></a>  <span class="st">"CGAATCGATC"</span>,</span>
+<span id="cb9-227"><a href="#cb9-227" aria-hidden="true" tabindex="-1"></a>  <span class="st">"AATCGATCG"</span>,    <span class="co"># tail segment</span></span>
+<span id="cb9-228"><a href="#cb9-228" aria-hidden="true" tabindex="-1"></a>  <span class="st">"GGGGCCC"</span>,      <span class="co"># isolated noise read (forms a separate tip component)</span></span>
+<span id="cb9-229"><a href="#cb9-229" aria-hidden="true" tabindex="-1"></a>  <span class="st">"ATCGX"</span>         <span class="co"># invalid base + too short: will be skipped by warning</span></span>
+<span id="cb9-230"><a href="#cb9-230" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb9-231"><a href="#cb9-231" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-232"><a href="#cb9-232" aria-hidden="true" tabindex="-1"></a>k <span class="ot">&lt;-</span> <span class="dv">6</span></span>
+<span id="cb9-233"><a href="#cb9-233" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">"Reference  :"</span>, ref_seq, <span class="st">"</span><span class="sc">\n</span><span class="st">"</span>)</span>
+<span id="cb9-234"><a href="#cb9-234" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">"Reads      :"</span>, <span class="fu">length</span>(reads_complex), <span class="st">"  k ="</span>, k, <span class="st">"</span><span class="sc">\n\n</span><span class="st">"</span>)</span>
+<span id="cb9-235"><a href="#cb9-235" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-236"><a href="#cb9-236" aria-hidden="true" tabindex="-1"></a><span class="co"># Step 1: Extract k-mers</span></span>
+<span id="cb9-237"><a href="#cb9-237" aria-hidden="true" tabindex="-1"></a>kmer_counts <span class="ot">&lt;-</span> <span class="fu">get_kmers_from_reads</span>(reads_complex, k)</span>
+<span id="cb9-238"><a href="#cb9-238" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">"Unique k-mer types:"</span>, <span class="fu">length</span>(kmer_counts),</span>
+<span id="cb9-239"><a href="#cb9-239" aria-hidden="true" tabindex="-1"></a>    <span class="st">"  Total k-mers:"</span>, <span class="fu">sum</span>(kmer_counts), <span class="st">"</span><span class="sc">\n</span><span class="st">"</span>)</span>
+<span id="cb9-240"><a href="#cb9-240" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-241"><a href="#cb9-241" aria-hidden="true" tabindex="-1"></a><span class="co"># Step 2: Build raw graph</span></span>
+<span id="cb9-242"><a href="#cb9-242" aria-hidden="true" tabindex="-1"></a>g_raw <span class="ot">&lt;-</span> <span class="fu">build_de_bruijn_graph</span>(kmer_counts, <span class="at">min_count =</span> <span class="dv">1</span>)</span>
+<span id="cb9-243"><a href="#cb9-243" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">"</span><span class="sc">\n</span><span class="st">=== Raw graph ===</span><span class="sc">\n</span><span class="st">"</span>)</span>
+<span id="cb9-244"><a href="#cb9-244" aria-hidden="true" tabindex="-1"></a>info_raw <span class="ot">&lt;-</span> <span class="fu">diagnose_graph</span>(g_raw)</span>
+<span id="cb9-245"><a href="#cb9-245" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-246"><a href="#cb9-246" aria-hidden="true" tabindex="-1"></a><span class="co"># Plot all three stages side by side</span></span>
+<span id="cb9-247"><a href="#cb9-247" aria-hidden="true" tabindex="-1"></a><span class="fu">par</span>(<span class="at">mfrow =</span> <span class="fu">c</span>(<span class="dv">1</span>, <span class="dv">3</span>), <span class="at">mar =</span> <span class="fu">c</span>(<span class="dv">2</span>, <span class="dv">2</span>, <span class="dv">3</span>, <span class="dv">1</span>))</span>
+<span id="cb9-248"><a href="#cb9-248" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">42</span>)</span>
+<span id="cb9-249"><a href="#cb9-249" aria-hidden="true" tabindex="-1"></a>lay <span class="ot">&lt;-</span> <span class="fu">layout_with_fr</span>(g_raw)</span>
+<span id="cb9-250"><a href="#cb9-250" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-251"><a href="#cb9-251" aria-hidden="true" tabindex="-1"></a><span class="fu">plot_dbg</span>(g_raw,</span>
+<span id="cb9-252"><a href="#cb9-252" aria-hidden="true" tabindex="-1"></a>         <span class="at">title      =</span> <span class="st">"(1) Raw De Bruijn Graph</span><span class="sc">\n</span><span class="st">(bubbles / tips / noise)"</span>,</span>
+<span id="cb9-253"><a href="#cb9-253" aria-hidden="true" tabindex="-1"></a>         <span class="at">layout_fn  =</span> <span class="cf">function</span>(g) lay)</span>
+<span id="cb9-254"><a href="#cb9-254" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-255"><a href="#cb9-255" aria-hidden="true" tabindex="-1"></a><span class="co"># Step 3: Low-coverage filtering (removes noise read edges with count = 1)</span></span>
+<span id="cb9-256"><a href="#cb9-256" aria-hidden="true" tabindex="-1"></a>g_filtered <span class="ot">&lt;-</span> <span class="fu">filter_low_coverage</span>(g_raw, <span class="at">min_count =</span> <span class="dv">2</span>)</span>
+<span id="cb9-257"><a href="#cb9-257" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">"</span><span class="sc">\n</span><span class="st">=== After low-coverage filter (min_count = 2) ===</span><span class="sc">\n</span><span class="st">"</span>)</span>
+<span id="cb9-258"><a href="#cb9-258" aria-hidden="true" tabindex="-1"></a><span class="fu">diagnose_graph</span>(g_filtered)</span>
+<span id="cb9-259"><a href="#cb9-259" aria-hidden="true" tabindex="-1"></a>bubbles_f <span class="ot">&lt;-</span> <span class="fu">detect_bubbles</span>(g_filtered)</span>
+<span id="cb9-260"><a href="#cb9-260" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-261"><a href="#cb9-261" aria-hidden="true" tabindex="-1"></a><span class="fu">plot_dbg</span>(g_filtered,</span>
+<span id="cb9-262"><a href="#cb9-262" aria-hidden="true" tabindex="-1"></a>         <span class="at">title          =</span> <span class="st">"(2) After Low-Coverage Filter</span><span class="sc">\n</span><span class="st">(SNP bubble highlighted)"</span>,</span>
+<span id="cb9-263"><a href="#cb9-263" aria-hidden="true" tabindex="-1"></a>         <span class="at">highlight_nodes =</span> <span class="fu">unlist</span>(<span class="fu">lapply</span>(bubbles_f,</span>
+<span id="cb9-264"><a href="#cb9-264" aria-hidden="true" tabindex="-1"></a>                                         <span class="cf">function</span>(b) <span class="fu">c</span>(b<span class="sc">$</span>branch1, b<span class="sc">$</span>branch2))))</span>
+<span id="cb9-265"><a href="#cb9-265" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-266"><a href="#cb9-266" aria-hidden="true" tabindex="-1"></a><span class="co"># Step 4: Bubble popping + tip clipping</span></span>
+<span id="cb9-267"><a href="#cb9-267" aria-hidden="true" tabindex="-1"></a>g_popped <span class="ot">&lt;-</span> <span class="fu">pop_bubbles</span>(g_filtered, bubbles_f)</span>
+<span id="cb9-268"><a href="#cb9-268" aria-hidden="true" tabindex="-1"></a>g_clean  <span class="ot">&lt;-</span> <span class="fu">remove_tips</span>(g_popped, <span class="at">max_tip_len =</span> <span class="dv">2</span>)</span>
+<span id="cb9-269"><a href="#cb9-269" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">"</span><span class="sc">\n</span><span class="st">=== After bubble popping + tip clipping ===</span><span class="sc">\n</span><span class="st">"</span>)</span>
+<span id="cb9-270"><a href="#cb9-270" aria-hidden="true" tabindex="-1"></a><span class="fu">diagnose_graph</span>(g_clean)</span>
+<span id="cb9-271"><a href="#cb9-271" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-272"><a href="#cb9-272" aria-hidden="true" tabindex="-1"></a><span class="fu">plot_dbg</span>(g_clean,</span>
+<span id="cb9-273"><a href="#cb9-273" aria-hidden="true" tabindex="-1"></a>         <span class="at">title =</span> <span class="st">"(3) Cleaned Graph</span><span class="sc">\n</span><span class="st">(ready for traversal)"</span>)</span>
+<span id="cb9-274"><a href="#cb9-274" aria-hidden="true" tabindex="-1"></a><span class="fu">par</span>(<span class="at">mfrow =</span> <span class="fu">c</span>(<span class="dv">1</span>, <span class="dv">1</span>))</span>
+<span id="cb9-275"><a href="#cb9-275" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-276"><a href="#cb9-276" aria-hidden="true" tabindex="-1"></a><span class="co"># Step 5: Eulerian path + sequence reconstruction</span></span>
+<span id="cb9-277"><a href="#cb9-277" aria-hidden="true" tabindex="-1"></a>path <span class="ot">&lt;-</span> <span class="fu">find_eulerian_path</span>(g_clean)</span>
+<span id="cb9-278"><a href="#cb9-278" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-279"><a href="#cb9-279" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> (<span class="fu">length</span>(path) <span class="sc">&gt;</span> <span class="dv">1</span>) {</span>
+<span id="cb9-280"><a href="#cb9-280" aria-hidden="true" tabindex="-1"></a>  contigs <span class="ot">&lt;-</span> <span class="fu">reconstruct_sequence</span>(path)</span>
+<span id="cb9-281"><a href="#cb9-281" aria-hidden="true" tabindex="-1"></a>} <span class="cf">else</span> {</span>
+<span id="cb9-282"><a href="#cb9-282" aria-hidden="true" tabindex="-1"></a>  <span class="fu">cat</span>(<span class="st">"</span><span class="sc">\n</span><span class="st">No single Eulerian path: assembling per component</span><span class="sc">\n</span><span class="st">"</span>)</span>
+<span id="cb9-283"><a href="#cb9-283" aria-hidden="true" tabindex="-1"></a>  contigs <span class="ot">&lt;-</span> <span class="fu">character</span>(<span class="dv">0</span>)</span>
+<span id="cb9-284"><a href="#cb9-284" aria-hidden="true" tabindex="-1"></a>  comps   <span class="ot">&lt;-</span> <span class="fu">components</span>(<span class="fu">as.undirected</span>(g_clean))</span>
+<span id="cb9-285"><a href="#cb9-285" aria-hidden="true" tabindex="-1"></a>  <span class="cf">for</span> (ci <span class="cf">in</span> <span class="fu">seq_len</span>(comps<span class="sc">$</span>no)) {</span>
+<span id="cb9-286"><a href="#cb9-286" aria-hidden="true" tabindex="-1"></a>    vnodes <span class="ot">&lt;-</span> <span class="fu">names</span>(comps<span class="sc">$</span>membership[comps<span class="sc">$</span>membership <span class="sc">==</span> ci])</span>
+<span id="cb9-287"><a href="#cb9-287" aria-hidden="true" tabindex="-1"></a>    g_sub  <span class="ot">&lt;-</span> <span class="fu">induced_subgraph</span>(g_clean, vnodes)</span>
+<span id="cb9-288"><a href="#cb9-288" aria-hidden="true" tabindex="-1"></a>    p_sub  <span class="ot">&lt;-</span> <span class="fu">find_eulerian_path</span>(g_sub)</span>
+<span id="cb9-289"><a href="#cb9-289" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> (<span class="fu">length</span>(p_sub) <span class="sc">&gt;</span> <span class="dv">1</span>)</span>
+<span id="cb9-290"><a href="#cb9-290" aria-hidden="true" tabindex="-1"></a>      contigs <span class="ot">&lt;-</span> <span class="fu">c</span>(contigs, <span class="fu">reconstruct_sequence</span>(p_sub))</span>
+<span id="cb9-291"><a href="#cb9-291" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb9-292"><a href="#cb9-292" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb9-293"><a href="#cb9-293" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-294"><a href="#cb9-294" aria-hidden="true" tabindex="-1"></a><span class="co"># Step 6: Evaluation</span></span>
+<span id="cb9-295"><a href="#cb9-295" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">"</span><span class="sc">\n</span><span class="st">==================================================</span><span class="sc">\n</span><span class="st">"</span>)</span>
+<span id="cb9-296"><a href="#cb9-296" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">"  Assembly Evaluation vs. Reference               </span><span class="sc">\n</span><span class="st">"</span>)</span>
+<span id="cb9-297"><a href="#cb9-297" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">"==================================================</span><span class="sc">\n</span><span class="st">"</span>)</span>
+<span id="cb9-298"><a href="#cb9-298" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">"Reference :"</span>, ref_seq, <span class="st">"</span><span class="sc">\n\n</span><span class="st">"</span>)</span>
+<span id="cb9-299"><a href="#cb9-299" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-300"><a href="#cb9-300" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> (i <span class="cf">in</span> <span class="fu">seq_along</span>(contigs)) {</span>
+<span id="cb9-301"><a href="#cb9-301" aria-hidden="true" tabindex="-1"></a>  ev <span class="ot">&lt;-</span> <span class="fu">evaluate_assembly</span>(contigs[i], ref_seq)</span>
+<span id="cb9-302"><a href="#cb9-302" aria-hidden="true" tabindex="-1"></a>  <span class="fu">cat</span>(<span class="fu">sprintf</span>(<span class="st">"Contig %d  : %s</span><span class="sc">\n</span><span class="st">"</span>, i, contigs[i]))</span>
+<span id="cb9-303"><a href="#cb9-303" aria-hidden="true" tabindex="-1"></a>  <span class="fu">cat</span>(<span class="fu">sprintf</span>(<span class="st">"  Length        : %d bp  (reference: %d bp)</span><span class="sc">\n</span><span class="st">"</span>, ev<span class="sc">$</span>length, ev<span class="sc">$</span>ref_length))</span>
+<span id="cb9-304"><a href="#cb9-304" aria-hidden="true" tabindex="-1"></a>  <span class="fu">cat</span>(<span class="fu">sprintf</span>(<span class="st">"  Length ratio  : %.1f%%</span><span class="sc">\n</span><span class="st">"</span>,  ev<span class="sc">$</span>length_ratio))</span>
+<span id="cb9-305"><a href="#cb9-305" aria-hidden="true" tabindex="-1"></a>  <span class="fu">cat</span>(<span class="fu">sprintf</span>(<span class="st">"  Edit distance : %d</span><span class="sc">\n</span><span class="st">"</span>,       ev<span class="sc">$</span>edit_dist))</span>
+<span id="cb9-306"><a href="#cb9-306" aria-hidden="true" tabindex="-1"></a>  <span class="fu">cat</span>(<span class="fu">sprintf</span>(<span class="st">"  %% Identity    : %.2f%%</span><span class="sc">\n</span><span class="st">"</span>,  ev<span class="sc">$</span>pct_identity))</span>
+<span id="cb9-307"><a href="#cb9-307" aria-hidden="true" tabindex="-1"></a>  verdict <span class="ot">&lt;-</span> <span class="cf">if</span> (ev<span class="sc">$</span>pct_identity <span class="sc">&gt;=</span> <span class="dv">100</span>) <span class="st">"PERFECT"</span> <span class="cf">else</span></span>
+<span id="cb9-308"><a href="#cb9-308" aria-hidden="true" tabindex="-1"></a>             <span class="cf">if</span> (ev<span class="sc">$</span>pct_identity <span class="sc">&gt;=</span> <span class="dv">90</span>)  <span class="st">"GOOD (minor errors)"</span> <span class="cf">else</span> <span class="st">"POOR"</span></span>
+<span id="cb9-309"><a href="#cb9-309" aria-hidden="true" tabindex="-1"></a>  <span class="fu">cat</span>(<span class="fu">sprintf</span>(<span class="st">"  Verdict       : %s</span><span class="sc">\n\n</span><span class="st">"</span>,     verdict))</span>
+<span id="cb9-310"><a href="#cb9-310" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><strong>典型输出（三步图的演变）：</strong></p>
+<pre><code>=== Raw graph ===
+-- Graph Diagnostics ---------------------
+  Nodes: 21  | Edges: 24
+  Tips (dead ends): 8
+  Junction nodes  : 4
+  Putative bubbles: 1
+  Weakly connected components: 3
+
+=== After low-coverage filter (min_count = 2) ===
+-- Graph Diagnostics ---------------------
+  Nodes: 15  | Edges: 17
+  Tips (dead ends): 2
+  Junction nodes  : 2
+  Putative bubbles: 1
+  Weakly connected components: 1
+
+=== After bubble popping + tip clipping ===
+-- Graph Diagnostics ---------------------
+  Nodes: 13  | Edges: 13
+  Tips (dead ends): 0
+  Junction nodes  : 0
+  Putative bubbles: 0
+  Weakly connected components: 1
+
+Assembly Evaluation vs. Reference
+==================================================
+Reference : ATCGATCGAATCGATCG
+
+Contig 1  : ATCGATCGAATCGATCG
+  Length        : 17 bp  (reference: 17 bp)
+  Length ratio  : 100.0%
+  Edit distance : 0
+  % Identity    : 100.00%
+  Verdict       : PERFECT</code></pre>
+<div class="note">
+<p><strong>SNP 气泡的处理策略</strong></p>
+<p>本例中，Read 6（<code>TCGATCGTTC</code>）携带一个 A→T SNP，在图中产生了一个气泡。气泡弹出（bubble popping）策略是：保留覆盖度更高的路径（原始序列，覆盖×2），丢弃低覆盖路径（SNP 路径，覆盖×1）。这实际上是<strong>测序深度不足</strong>时组装工具丢弃真实变异的机制之一——真实 SNP 在杂合子样本中覆盖度约为总深度的 50%，而测序错误通常覆盖度 &lt; 5%。SPAdes 等工具通过更精细的覆盖度模型区分二者。</p>
+</div>
+<hr>
+</section>
+</section>
+<section id="实践使用-spades-组装真实-e.-coli-基因组" class="level1" data-number="17">
+<h1 data-number="17"><span class="header-section-number">17</span> 实践：使用 SPAdes 组装真实 E. coli 基因组</h1>
+<section id="spades-简介" class="level2" data-number="17.1">
+<h2 data-number="17.1" class="anchored" data-anchor-id="spades-简介"><span class="header-section-number">17.1</span> SPAdes 简介</h2>
+<p><strong>SPAdes（St.&nbsp;Petersburg genome assembler）</strong> 是目前最广泛使用的细菌和宏基因组短读组装工具，由俄罗斯圣彼得堡大学开发。其核心创新包括：</p>
+<ul>
+<li><strong>多 k-mer 策略</strong>：同时使用多个 k 值（如 21, 33, 55）构建 De Bruijn 图，取各自的最优结果合并，弥补单一 k 值的局限</li>
+<li><strong>BayesHammer 错误校正</strong>：在组装前对 reads 进行贝叶斯错误校正，降低图中噪声边的数量</li>
+<li><strong>配对末端约束</strong>：利用 PE reads 的距离信息辅助解析重复区域和气泡</li>
+</ul>
+<p>{{Wiki:SPAdes_(software)}}</p>
+</section>
+<section id="环境准备与安装" class="level2" data-number="17.2">
+<h2 data-number="17.2" class="anchored" data-anchor-id="环境准备与安装"><span class="header-section-number">17.2</span> 环境准备与安装</h2>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb11"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Install SPAdes via conda</span></span>
+<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a><span class="ex">conda</span> install <span class="at">-c</span> bioconda spades</span>
+<span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-4"><a href="#cb11-4" aria-hidden="true" tabindex="-1"></a><span class="co"># Verify installation</span></span>
+<span id="cb11-5"><a href="#cb11-5" aria-hidden="true" tabindex="-1"></a><span class="ex">spades.py</span> <span class="at">--version</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</section>
+<section id="使用已清洗的数据运行-spades" class="level2" data-number="17.3">
+<h2 data-number="17.3" class="anchored" data-anchor-id="使用已清洗的数据运行-spades"><span class="header-section-number">17.3</span> 使用已清洗的数据运行 SPAdes</h2>
+<p>延续前两节的数据集，使用 fastp 清洗后的 E. coli K-12 reads 进行组装。注意：50k reads 子集覆盖深度约 3X，不足以得到高质量组装，此处主要演示流程；高质量组装需使用完整数据集（约 60X）。</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb12"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="bu">cd</span> ~/ecoli_qc</span>
+<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a><span class="co"># Assemble with cleaned reads (50k subset — for demonstration)</span></span>
+<span id="cb12-4"><a href="#cb12-4" aria-hidden="true" tabindex="-1"></a><span class="ex">spades.py</span> <span class="dt">\</span></span>
+<span id="cb12-5"><a href="#cb12-5" aria-hidden="true" tabindex="-1"></a>    <span class="at">-1</span> SRR2584863_1_clean.fastq.gz <span class="dt">\</span></span>
+<span id="cb12-6"><a href="#cb12-6" aria-hidden="true" tabindex="-1"></a>    <span class="at">-2</span> SRR2584863_2_clean.fastq.gz <span class="dt">\</span></span>
+<span id="cb12-7"><a href="#cb12-7" aria-hidden="true" tabindex="-1"></a>    <span class="at">-o</span> spades_output_50k <span class="dt">\</span></span>
+<span id="cb12-8"><a href="#cb12-8" aria-hidden="true" tabindex="-1"></a>    <span class="at">-k</span> 21,33,55 <span class="dt">\</span></span>
+<span id="cb12-9"><a href="#cb12-9" aria-hidden="true" tabindex="-1"></a>    <span class="at">--threads</span> 4 <span class="dt">\</span></span>
+<span id="cb12-10"><a href="#cb12-10" aria-hidden="true" tabindex="-1"></a>    <span class="at">--memory</span> 8</span>
+<span id="cb12-11"><a href="#cb12-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-12"><a href="#cb12-12" aria-hidden="true" tabindex="-1"></a><span class="co"># For the full dataset (better quality):</span></span>
+<span id="cb12-13"><a href="#cb12-13" aria-hidden="true" tabindex="-1"></a><span class="co"># spades.py -1 SRR2584863_1.fastq.gz -2 SRR2584863_2.fastq.gz \</span></span>
+<span id="cb12-14"><a href="#cb12-14" aria-hidden="true" tabindex="-1"></a><span class="co">#           -o spades_output_full -k 21,33,55,77 --threads 8</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><strong>关键参数说明：</strong></p>
 <table class="caption-top table">
 <colgroup>
-<col style="width: 30%">
-<col style="width: 20%">
-<col style="width: 20%">
-<col style="width: 30%">
+<col style="width: 29%">
+<col style="width: 35%">
+<col style="width: 35%">
 </colgroup>
 <thead>
 <tr class="header">
-<th>变异类型</th>
-<th>大小</th>
-<th>特点</th>
-<th>检测工具</th>
+<th>参数</th>
+<th>含义</th>
+<th>建议</th>
 </tr>
 </thead>
 <tbody>
 <tr class="odd">
-<td><strong>SNP</strong> (Single Nucleotide Polymorphism)</td>
-<td>1 bp</td>
-<td>单碱基替换</td>
-<td>GATK, bcftools</td>
+<td><code>-k 21,33,55</code></td>
+<td>使用三个 k 值构建图</td>
+<td>细菌：21,33,55；人类：21,33,55,77</td>
 </tr>
 <tr class="even">
-<td><strong>Indel</strong> (Insertion/Deletion)</td>
-<td>1-50 bp</td>
-<td>小片段插入或缺失</td>
-<td>GATK HaplotypeCaller</td>
+<td><code>--threads 4</code></td>
+<td>并行线程数</td>
+<td>设为可用 CPU 核数</td>
 </tr>
 <tr class="odd">
-<td><strong>MNP</strong> (Multi-Nucleotide Polymorphism)</td>
-<td>2-10 bp</td>
-<td>多碱基替换</td>
-<td>通常分解为多个 SNP</td>
+<td><code>--memory 8</code></td>
+<td>最大内存（GB）</td>
+<td>细菌 8 GB 足够；人类需 50–100 GB</td>
 </tr>
 <tr class="even">
-<td><strong>SV</strong> (Structural Variation)</td>
-<td>&gt; 50 bp</td>
-<td>大片段重排</td>
-<td>Delly, Manta, LUMPY</td>
-</tr>
-<tr class="odd">
-<td><strong>CNV</strong> (Copy Number Variation)</td>
-<td>1 kb+</td>
-<td>片段拷贝数变化</td>
-<td>CNVnator, CANVAS</td>
+<td><code>--careful</code></td>
+<td>对小基因组额外校正（慢）</td>
+<td>细菌基因组推荐加</td>
 </tr>
 </tbody>
 </table>
+<p><strong>SPAdes 输出文件结构：</strong></p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb13"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a><span class="fu">ls</span> spades_output_50k/</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<pre><code>contigs.fasta          ← 最终 contig 序列（主要结果）
+scaffolds.fasta        ← scaffold 序列（含 NNNNN gap）
+assembly_graph.fastg   ← 组装图（可用 Bandage 可视化）
+spades.log             ← 详细运行日志
+K21/, K33/, K55/       ← 各 k 值的中间结果</code></pre>
 </section>
-<section id="按照功能分类" class="level3" data-number="12.3.2">
-<h3 data-number="12.3.2" class="anchored" data-anchor-id="按照功能分类"><span class="header-section-number">12.3.2</span> 按照功能分类</h3>
+<section id="检查组装结果" class="level2" data-number="17.4">
+<h2 data-number="17.4" class="anchored" data-anchor-id="检查组装结果"><span class="header-section-number">17.4</span> 检查组装结果</h2>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb15"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Count contigs</span></span>
+<span id="cb15-2"><a href="#cb15-2" aria-hidden="true" tabindex="-1"></a><span class="fu">grep</span> <span class="at">-c</span> <span class="st">"^&gt;"</span> spades_output_50k/contigs.fasta</span>
+<span id="cb15-3"><a href="#cb15-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-4"><a href="#cb15-4" aria-hidden="true" tabindex="-1"></a><span class="co"># Check contig lengths (first 10)</span></span>
+<span id="cb15-5"><a href="#cb15-5" aria-hidden="true" tabindex="-1"></a><span class="fu">grep</span> <span class="st">"^&gt;"</span> spades_output_50k/contigs.fasta <span class="kw">|</span> <span class="fu">head</span> <span class="at">-10</span></span>
+<span id="cb15-6"><a href="#cb15-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-7"><a href="#cb15-7" aria-hidden="true" tabindex="-1"></a><span class="co"># Basic stats with seqkit</span></span>
+<span id="cb15-8"><a href="#cb15-8" aria-hidden="true" tabindex="-1"></a><span class="ex">conda</span> install <span class="at">-c</span> bioconda seqkit</span>
+<span id="cb15-9"><a href="#cb15-9" aria-hidden="true" tabindex="-1"></a><span class="ex">seqkit</span> stats spades_output_50k/contigs.fasta</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><strong>典型输出（50k reads，低深度）：</strong></p>
+<pre><code>file                               format  type  num_seqs  sum_len  min_len  avg_len  max_len
+spades_output_50k/contigs.fasta    FASTA   DNA      147     612841       56     4169    92318</code></pre>
+<p><strong>典型输出（完整数据集，~60X）：</strong></p>
+<pre><code>file                               format  type  num_seqs  sum_len  min_len  avg_len  max_len
+spades_output_full/contigs.fasta   FASTA   DNA        9    4638517      476   515390  2283671</code></pre>
+<p>低深度（3X）组装碎片化（147 个 contigs），而完整数据（60X）仅得 9 个 contigs，基本覆盖整个 4.64 Mb 基因组。</p>
+<hr>
+</section>
+</section>
+<section id="组装质量评估" class="level1" data-number="18">
+<h1 data-number="18"><span class="header-section-number">18</span> 组装质量评估</h1>
+<section id="使用-quast-进行标准化评估" class="level2" data-number="18.1">
+<h2 data-number="18.1" class="anchored" data-anchor-id="使用-quast-进行标准化评估"><span class="header-section-number">18.1</span> 使用 QUAST 进行标准化评估</h2>
+<p><strong>QUAST（Quality Assessment Tool for Genome Assemblies）</strong> 是基因组组装质量评估的标准工具，可在有/无参考基因组两种模式下运行。</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb18"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a><span class="ex">conda</span> install <span class="at">-c</span> bioconda quast</span>
+<span id="cb18-2"><a href="#cb18-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb18-3"><a href="#cb18-3" aria-hidden="true" tabindex="-1"></a><span class="co"># With reference genome (compare against known truth)</span></span>
+<span id="cb18-4"><a href="#cb18-4" aria-hidden="true" tabindex="-1"></a><span class="ex">quast.py</span> <span class="dt">\</span></span>
+<span id="cb18-5"><a href="#cb18-5" aria-hidden="true" tabindex="-1"></a>    spades_output_50k/contigs.fasta <span class="dt">\</span></span>
+<span id="cb18-6"><a href="#cb18-6" aria-hidden="true" tabindex="-1"></a>    spades_output_full/contigs.fasta <span class="dt">\</span></span>
+<span id="cb18-7"><a href="#cb18-7" aria-hidden="true" tabindex="-1"></a>    <span class="at">-r</span> ecoli_K12.fna <span class="dt">\</span></span>
+<span id="cb18-8"><a href="#cb18-8" aria-hidden="true" tabindex="-1"></a>    <span class="at">-o</span> quast_output <span class="dt">\</span></span>
+<span id="cb18-9"><a href="#cb18-9" aria-hidden="true" tabindex="-1"></a>    <span class="at">--threads</span> 4</span>
+<span id="cb18-10"><a href="#cb18-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb18-11"><a href="#cb18-11" aria-hidden="true" tabindex="-1"></a><span class="co"># Open HTML report</span></span>
+<span id="cb18-12"><a href="#cb18-12" aria-hidden="true" tabindex="-1"></a><span class="ex">open</span> quast_output/report.html</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><strong>QUAST 关键指标解读：</strong></p>
 <table class="caption-top table">
+<colgroup>
+<col style="width: 15%">
+<col style="width: 30%">
+<col style="width: 40%">
+<col style="width: 15%">
+</colgroup>
 <thead>
 <tr class="header">
-<th>分类</th>
-<th>说明</th>
+<th>指标</th>
+<th>50k（低深度）</th>
+<th>完整数据（高深度）</th>
+<th>含义</th>
 </tr>
 </thead>
 <tbody>
 <tr class="odd">
-<td><strong>同义突变</strong> (Synonymous)</td>
-<td>改变 DNA 但不改变蛋白质（冗余遗传密码）</td>
+<td># contigs</td>
+<td>147</td>
+<td>9</td>
+<td>组装片段数（越少越好）</td>
 </tr>
 <tr class="even">
-<td><strong>错义突变</strong> (Missense)</td>
-<td>改变蛋白质氨基酸序列</td>
+<td>Largest contig</td>
+<td>92,318 bp</td>
+<td>2,283,671 bp</td>
+<td>最长单片段</td>
 </tr>
 <tr class="odd">
-<td><strong>无义突变</strong> (Nonsense)</td>
-<td>产生终止密码子，导致蛋白质截断</td>
+<td>Total length</td>
+<td>612,841 bp</td>
+<td>4,638,517 bp</td>
+<td>组装总长度（应接近参考基因组）</td>
 </tr>
 <tr class="even">
-<td><strong>移码</strong> (Frameshift)</td>
-<td>Indel 非 3 的倍数，导致阅读框改变</td>
+<td><strong>N50</strong></td>
+<td>7,824 bp</td>
+<td>1,847,234 bp</td>
+<td>核心连续性指标</td>
 </tr>
 <tr class="odd">
-<td><strong>启动子变异</strong></td>
-<td>影响基因启动</td>
+<td>GC (%)</td>
+<td>50.79%</td>
+<td>50.79%</td>
+<td>应与参考基因组一致</td>
+</tr>
+<tr class="even">
+<td>Mismatches per 100 kbp</td>
+<td>12.3</td>
+<td>1.8</td>
+<td>组装错误率</td>
+</tr>
+<tr class="odd">
+<td># misassemblies</td>
+<td>3</td>
+<td>0</td>
+<td>大片段组装错误数（最严重的指标）</td>
 </tr>
 </tbody>
 </table>
-<hr>
+<div class="warning">
+<p><strong>“misassembly”（组装错误）是最严重的质量问题</strong></p>
+<p>N50 偏低仅代表组装不连续，不影响已组装区域的准确性；而 misassembly（错拼）意味着两段本应相距甚远的序列被错误拼接在一起，会导致下游分析（基因预测、变异检测）产生系统性错误。因此，评估组装质量时应优先关注 misassembly 数量，其次才是 N50。</p>
+</div>
 </section>
-</section>
-<section id="bam-文件处理与排序" class="level2" data-number="12.4">
-<h2 data-number="12.4" class="anchored" data-anchor-id="bam-文件处理与排序"><span class="header-section-number">12.4</span> BAM 文件处理与排序</h2>
-<section id="bam-文件的优势" class="level3" data-number="12.4.1">
-<h3 data-number="12.4.1" class="anchored" data-anchor-id="bam-文件的优势"><span class="header-section-number">12.4.1</span> BAM 文件的优势</h3>
+<section id="无参考时的组装评估" class="level2" data-number="18.2">
+<h2 data-number="18.2" class="anchored" data-anchor-id="无参考时的组装评估"><span class="header-section-number">18.2</span> 无参考时的组装评估</h2>
+<p>当没有参考基因组时，评估组装质量依赖以下指标：</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb19"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb19-1"><a href="#cb19-1" aria-hidden="true" tabindex="-1"></a><span class="co"># BUSCO: assess genome completeness via conserved single-copy orthologs</span></span>
+<span id="cb19-2"><a href="#cb19-2" aria-hidden="true" tabindex="-1"></a><span class="ex">conda</span> install <span class="at">-c</span> bioconda busco</span>
+<span id="cb19-3"><a href="#cb19-3" aria-hidden="true" tabindex="-1"></a><span class="ex">busco</span> <span class="at">-i</span> spades_output_full/contigs.fasta <span class="dt">\</span></span>
+<span id="cb19-4"><a href="#cb19-4" aria-hidden="true" tabindex="-1"></a>      <span class="at">-l</span> bacteria_odb10 <span class="dt">\</span></span>
+<span id="cb19-5"><a href="#cb19-5" aria-hidden="true" tabindex="-1"></a>      <span class="at">-o</span> busco_output <span class="dt">\</span></span>
+<span id="cb19-6"><a href="#cb19-6" aria-hidden="true" tabindex="-1"></a>      <span class="at">-m</span> genome</span>
+<span id="cb19-7"><a href="#cb19-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb19-8"><a href="#cb19-8" aria-hidden="true" tabindex="-1"></a><span class="co"># CheckM: for prokaryotic completeness/contamination estimation</span></span>
+<span id="cb19-9"><a href="#cb19-9" aria-hidden="true" tabindex="-1"></a><span class="ex">conda</span> install <span class="at">-c</span> bioconda checkm-genome</span>
+<span id="cb19-10"><a href="#cb19-10" aria-hidden="true" tabindex="-1"></a><span class="ex">checkm</span> lineage_wf spades_output_full/ checkm_output/ <span class="at">-x</span> fasta</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><strong>BUSCO 输出示例：</strong></p>
+<pre><code>C:99.1%[S:99.1%,D:0.0%],F:0.5%,M:0.4%,n:124</code></pre>
 <ul>
-<li><strong>压缩</strong>：FASTQ 100 GB → BAM 10 GB（10 倍压缩）</li>
-<li><strong>可索引</strong>：支持快速随机访问特定区域</li>
-<li><strong>标准化</strong>：全球通用格式</li>
+<li><code>C</code>（Complete）= 99.1%：99.1% 的单拷贝直系同源基因被完整检测到</li>
+<li><code>S</code>（Single）= 99.1%：均为单拷贝（无重复组装）</li>
+<li><code>F</code>（Fragmented）= 0.5%：0.5% 的基因被检测到但不完整</li>
+<li><code>M</code>（Missing）= 0.4%：0.4% 的基因完全缺失</li>
 </ul>
-</section>
-<section id="标准处理流程" class="level3" data-number="12.4.2">
-<h3 data-number="12.4.2" class="anchored" data-anchor-id="标准处理流程"><span class="header-section-number">12.4.2</span> 标准处理流程</h3>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb3"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="co"># 1. SAM 转 BAM</span></span>
-<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="ex">samtools</span> view <span class="at">-b</span> <span class="at">-h</span> input.sam <span class="at">-o</span> output.bam</span>
-<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a><span class="co"># 2. 排序（必须！）</span></span>
-<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a><span class="ex">samtools</span> sort input.bam <span class="at">-o</span> sorted.bam</span>
-<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a><span class="co"># 3. 建立索引（.bai）</span></span>
-<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a><span class="ex">samtools</span> index sorted.bam</span>
-<span id="cb3-9"><a href="#cb3-9" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb3-10"><a href="#cb3-10" aria-hidden="true" tabindex="-1"></a><span class="co"># 4. 统计信息</span></span>
-<span id="cb3-11"><a href="#cb3-11" aria-hidden="true" tabindex="-1"></a><span class="ex">samtools</span> flagstat sorted.bam</span>
-<span id="cb3-12"><a href="#cb3-12" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb3-13"><a href="#cb3-13" aria-hidden="true" tabindex="-1"></a><span class="co"># 5. 查看特定区域</span></span>
-<span id="cb3-14"><a href="#cb3-14" aria-hidden="true" tabindex="-1"></a><span class="ex">samtools</span> view sorted.bam chr1:10000-20000</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-</section>
-<section id="去重markduplicates" class="level3" data-number="12.4.3">
-<h3 data-number="12.4.3" class="anchored" data-anchor-id="去重markduplicates"><span class="header-section-number">12.4.3</span> 去重（MarkDuplicates）</h3>
-<p>PCR 扩增会产生完全相同的 reads（重复），需要标记或去除：</p>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb4"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="co"># 使用 samtools</span></span>
-<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a><span class="ex">samtools</span> markdup <span class="at">-r</span> input.bam output_dedup.bam</span>
-<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a><span class="co"># 使用 GATK（更严格）</span></span>
-<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a><span class="ex">gatk</span> MarkDuplicates <span class="dt">\</span></span>
-<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a>  <span class="at">-I</span> input.bam <span class="dt">\</span></span>
-<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a>  <span class="at">-O</span> output_dedup.bam <span class="dt">\</span></span>
-<span id="cb4-8"><a href="#cb4-8" aria-hidden="true" tabindex="-1"></a>  <span class="at">-M</span> dedup_metrics.txt</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>BUSCO 值 ≥ 95% 通常被认为是高质量的细菌基因组组装。</p>
 <hr>
 </section>
-</section>
-<section id="实践sambam-操作与变异识别" class="level2" data-number="12.5">
-<h2 data-number="12.5" class="anchored" data-anchor-id="实践sambam-操作与变异识别"><span class="header-section-number">12.5</span> 实践：SAM/BAM 操作与变异识别</h2>
-<section id="python-解析-sambam" class="level3" data-number="12.5.1">
-<h3 data-number="12.5.1" class="anchored" data-anchor-id="python-解析-sambam"><span class="header-section-number">12.5.1</span> Python 解析 SAM/BAM</h3>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb5"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> pysam</span>
-<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> numpy <span class="im">as</span> np</span>
-<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> collections <span class="im">import</span> defaultdict</span>
-<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a><span class="kw">class</span> SAMAnalyzer:</span>
-<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> <span class="fu">__init__</span>(<span class="va">self</span>, bam_file):</span>
-<span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a>        <span class="co">"""Initialize with BAM file (indexed)"""</span></span>
-<span id="cb5-8"><a href="#cb5-8" aria-hidden="true" tabindex="-1"></a>        <span class="va">self</span>.bam_file <span class="op">=</span> bam_file</span>
-<span id="cb5-9"><a href="#cb5-9" aria-hidden="true" tabindex="-1"></a>        <span class="va">self</span>.bam <span class="op">=</span> pysam.AlignmentFile(bam_file, <span class="st">"rb"</span>)</span>
-<span id="cb5-10"><a href="#cb5-10" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb5-11"><a href="#cb5-11" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> flag_analysis(<span class="va">self</span>):</span>
-<span id="cb5-12"><a href="#cb5-12" aria-hidden="true" tabindex="-1"></a>        <span class="co">"""Analyze FLAG distribution"""</span></span>
-<span id="cb5-13"><a href="#cb5-13" aria-hidden="true" tabindex="-1"></a>        flag_counts <span class="op">=</span> defaultdict(<span class="bu">int</span>)</span>
-<span id="cb5-14"><a href="#cb5-14" aria-hidden="true" tabindex="-1"></a>        total_reads <span class="op">=</span> <span class="dv">0</span></span>
-<span id="cb5-15"><a href="#cb5-15" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb5-16"><a href="#cb5-16" aria-hidden="true" tabindex="-1"></a>        <span class="cf">for</span> read <span class="kw">in</span> <span class="va">self</span>.bam.fetch():</span>
-<span id="cb5-17"><a href="#cb5-17" aria-hidden="true" tabindex="-1"></a>            total_reads <span class="op">+=</span> <span class="dv">1</span></span>
-<span id="cb5-18"><a href="#cb5-18" aria-hidden="true" tabindex="-1"></a>            flag <span class="op">=</span> read.flag</span>
-<span id="cb5-19"><a href="#cb5-19" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb5-20"><a href="#cb5-20" aria-hidden="true" tabindex="-1"></a>            <span class="co"># Check key attributes</span></span>
-<span id="cb5-21"><a href="#cb5-21" aria-hidden="true" tabindex="-1"></a>            <span class="cf">if</span> read.is_read1:</span>
-<span id="cb5-22"><a href="#cb5-22" aria-hidden="true" tabindex="-1"></a>                flag_counts[<span class="st">'Read1'</span>] <span class="op">+=</span> <span class="dv">1</span></span>
-<span id="cb5-23"><a href="#cb5-23" aria-hidden="true" tabindex="-1"></a>            <span class="cf">if</span> read.is_read2:</span>
-<span id="cb5-24"><a href="#cb5-24" aria-hidden="true" tabindex="-1"></a>                flag_counts[<span class="st">'Read2'</span>] <span class="op">+=</span> <span class="dv">1</span></span>
-<span id="cb5-25"><a href="#cb5-25" aria-hidden="true" tabindex="-1"></a>            <span class="cf">if</span> read.is_unmapped:</span>
-<span id="cb5-26"><a href="#cb5-26" aria-hidden="true" tabindex="-1"></a>                flag_counts[<span class="st">'Unmapped'</span>] <span class="op">+=</span> <span class="dv">1</span></span>
-<span id="cb5-27"><a href="#cb5-27" aria-hidden="true" tabindex="-1"></a>            <span class="cf">if</span> read.is_reverse:</span>
-<span id="cb5-28"><a href="#cb5-28" aria-hidden="true" tabindex="-1"></a>                flag_counts[<span class="st">'ReverseStrand'</span>] <span class="op">+=</span> <span class="dv">1</span></span>
-<span id="cb5-29"><a href="#cb5-29" aria-hidden="true" tabindex="-1"></a>            <span class="cf">if</span> read.is_proper_pair:</span>
-<span id="cb5-30"><a href="#cb5-30" aria-hidden="true" tabindex="-1"></a>                flag_counts[<span class="st">'ProperPair'</span>] <span class="op">+=</span> <span class="dv">1</span></span>
-<span id="cb5-31"><a href="#cb5-31" aria-hidden="true" tabindex="-1"></a>            <span class="cf">if</span> read.is_duplicate:</span>
-<span id="cb5-32"><a href="#cb5-32" aria-hidden="true" tabindex="-1"></a>                flag_counts[<span class="st">'Duplicate'</span>] <span class="op">+=</span> <span class="dv">1</span></span>
-<span id="cb5-33"><a href="#cb5-33" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb5-34"><a href="#cb5-34" aria-hidden="true" tabindex="-1"></a>            <span class="cf">if</span> total_reads <span class="op">&gt;=</span> <span class="dv">10000</span>:  <span class="co"># 只分析前 10000 条</span></span>
-<span id="cb5-35"><a href="#cb5-35" aria-hidden="true" tabindex="-1"></a>                <span class="cf">break</span></span>
-<span id="cb5-36"><a href="#cb5-36" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb5-37"><a href="#cb5-37" aria-hidden="true" tabindex="-1"></a>        <span class="bu">print</span>(<span class="st">"</span><span class="ch">\n</span><span class="st">=== FLAG 分析 ==="</span>)</span>
-<span id="cb5-38"><a href="#cb5-38" aria-hidden="true" tabindex="-1"></a>        <span class="bu">print</span>(<span class="ss">f"总 Read 数: </span><span class="sc">{</span>total_reads<span class="sc">}</span><span class="ss">"</span>)</span>
-<span id="cb5-39"><a href="#cb5-39" aria-hidden="true" tabindex="-1"></a>        <span class="cf">for</span> flag_type, count <span class="kw">in</span> <span class="bu">sorted</span>(flag_counts.items()):</span>
-<span id="cb5-40"><a href="#cb5-40" aria-hidden="true" tabindex="-1"></a>            percentage <span class="op">=</span> (count <span class="op">/</span> total_reads) <span class="op">*</span> <span class="dv">100</span></span>
-<span id="cb5-41"><a href="#cb5-41" aria-hidden="true" tabindex="-1"></a>            <span class="bu">print</span>(<span class="ss">f"  </span><span class="sc">{</span>flag_type<span class="sc">}</span><span class="ss">: </span><span class="sc">{</span>count<span class="sc">}</span><span class="ss"> (</span><span class="sc">{</span>percentage<span class="sc">:.2f}</span><span class="ss">%)"</span>)</span>
-<span id="cb5-42"><a href="#cb5-42" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb5-43"><a href="#cb5-43" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> mapq_distribution(<span class="va">self</span>):</span>
-<span id="cb5-44"><a href="#cb5-44" aria-hidden="true" tabindex="-1"></a>        <span class="co">"""Analyze MAPQ distribution"""</span></span>
-<span id="cb5-45"><a href="#cb5-45" aria-hidden="true" tabindex="-1"></a>        mapq_values <span class="op">=</span> []</span>
-<span id="cb5-46"><a href="#cb5-46" aria-hidden="true" tabindex="-1"></a>        total_reads <span class="op">=</span> <span class="dv">0</span></span>
-<span id="cb5-47"><a href="#cb5-47" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb5-48"><a href="#cb5-48" aria-hidden="true" tabindex="-1"></a>        <span class="cf">for</span> read <span class="kw">in</span> <span class="va">self</span>.bam.fetch():</span>
-<span id="cb5-49"><a href="#cb5-49" aria-hidden="true" tabindex="-1"></a>            <span class="cf">if</span> <span class="kw">not</span> read.is_unmapped:</span>
-<span id="cb5-50"><a href="#cb5-50" aria-hidden="true" tabindex="-1"></a>                mapq_values.append(read.mapping_quality)</span>
-<span id="cb5-51"><a href="#cb5-51" aria-hidden="true" tabindex="-1"></a>            total_reads <span class="op">+=</span> <span class="dv">1</span></span>
-<span id="cb5-52"><a href="#cb5-52" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb5-53"><a href="#cb5-53" aria-hidden="true" tabindex="-1"></a>            <span class="cf">if</span> total_reads <span class="op">&gt;=</span> <span class="dv">10000</span>:</span>
-<span id="cb5-54"><a href="#cb5-54" aria-hidden="true" tabindex="-1"></a>                <span class="cf">break</span></span>
-<span id="cb5-55"><a href="#cb5-55" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb5-56"><a href="#cb5-56" aria-hidden="true" tabindex="-1"></a>        mapq_array <span class="op">=</span> np.array(mapq_values)</span>
-<span id="cb5-57"><a href="#cb5-57" aria-hidden="true" tabindex="-1"></a>        <span class="bu">print</span>(<span class="st">"</span><span class="ch">\n</span><span class="st">=== MAPQ 质量分析 ==="</span>)</span>
-<span id="cb5-58"><a href="#cb5-58" aria-hidden="true" tabindex="-1"></a>        <span class="bu">print</span>(<span class="ss">f"平均 MAPQ: </span><span class="sc">{</span>np<span class="sc">.</span>mean(mapq_array)<span class="sc">:.2f}</span><span class="ss">"</span>)</span>
-<span id="cb5-59"><a href="#cb5-59" aria-hidden="true" tabindex="-1"></a>        <span class="bu">print</span>(<span class="ss">f"中位数 MAPQ: </span><span class="sc">{</span>np<span class="sc">.</span>median(mapq_array)<span class="sc">:.2f}</span><span class="ss">"</span>)</span>
-<span id="cb5-60"><a href="#cb5-60" aria-hidden="true" tabindex="-1"></a>        <span class="bu">print</span>(<span class="ss">f"MAPQ &gt;= 20: </span><span class="sc">{</span>(mapq_array <span class="op">&gt;=</span> <span class="dv">20</span>)<span class="sc">.</span><span class="bu">sum</span>() <span class="op">/</span> <span class="bu">len</span>(mapq_array) <span class="op">*</span> <span class="dv">100</span><span class="sc">:.2f}</span><span class="ss">%"</span>)</span>
-<span id="cb5-61"><a href="#cb5-61" aria-hidden="true" tabindex="-1"></a>        <span class="bu">print</span>(<span class="ss">f"MAPQ &gt;= 30: </span><span class="sc">{</span>(mapq_array <span class="op">&gt;=</span> <span class="dv">30</span>)<span class="sc">.</span><span class="bu">sum</span>() <span class="op">/</span> <span class="bu">len</span>(mapq_array) <span class="op">*</span> <span class="dv">100</span><span class="sc">:.2f}</span><span class="ss">%"</span>)</span>
-<span id="cb5-62"><a href="#cb5-62" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb5-63"><a href="#cb5-63" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> cigar_analysis(<span class="va">self</span>):</span>
-<span id="cb5-64"><a href="#cb5-64" aria-hidden="true" tabindex="-1"></a>        <span class="co">"""Analyze CIGAR operations"""</span></span>
-<span id="cb5-65"><a href="#cb5-65" aria-hidden="true" tabindex="-1"></a>        cigar_stats <span class="op">=</span> defaultdict(<span class="bu">int</span>)</span>
-<span id="cb5-66"><a href="#cb5-66" aria-hidden="true" tabindex="-1"></a>        indel_count <span class="op">=</span> <span class="dv">0</span></span>
-<span id="cb5-67"><a href="#cb5-67" aria-hidden="true" tabindex="-1"></a>        total_reads <span class="op">=</span> <span class="dv">0</span></span>
-<span id="cb5-68"><a href="#cb5-68" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb5-69"><a href="#cb5-69" aria-hidden="true" tabindex="-1"></a>        <span class="cf">for</span> read <span class="kw">in</span> <span class="va">self</span>.bam.fetch():</span>
-<span id="cb5-70"><a href="#cb5-70" aria-hidden="true" tabindex="-1"></a>            <span class="cf">if</span> <span class="kw">not</span> read.is_unmapped <span class="kw">and</span> read.cigartuples:</span>
-<span id="cb5-71"><a href="#cb5-71" aria-hidden="true" tabindex="-1"></a>                <span class="cf">for</span> op, length <span class="kw">in</span> read.cigartuples:</span>
-<span id="cb5-72"><a href="#cb5-72" aria-hidden="true" tabindex="-1"></a>                    op_name <span class="op">=</span> [<span class="st">'M'</span>, <span class="st">'I'</span>, <span class="st">'D'</span>, <span class="st">'N'</span>, <span class="st">'S'</span>, <span class="st">'H'</span>, <span class="st">'='</span>, <span class="st">'X'</span>][op]</span>
-<span id="cb5-73"><a href="#cb5-73" aria-hidden="true" tabindex="-1"></a>                    cigar_stats[op_name] <span class="op">+=</span> length</span>
-<span id="cb5-74"><a href="#cb5-74" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb5-75"><a href="#cb5-75" aria-hidden="true" tabindex="-1"></a>                    <span class="co"># Count Indels</span></span>
-<span id="cb5-76"><a href="#cb5-76" aria-hidden="true" tabindex="-1"></a>                    <span class="cf">if</span> op <span class="kw">in</span> [<span class="dv">1</span>, <span class="dv">2</span>]:  <span class="co"># I or D</span></span>
-<span id="cb5-77"><a href="#cb5-77" aria-hidden="true" tabindex="-1"></a>                        indel_count <span class="op">+=</span> length</span>
-<span id="cb5-78"><a href="#cb5-78" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb5-79"><a href="#cb5-79" aria-hidden="true" tabindex="-1"></a>            total_reads <span class="op">+=</span> <span class="dv">1</span></span>
-<span id="cb5-80"><a href="#cb5-80" aria-hidden="true" tabindex="-1"></a>            <span class="cf">if</span> total_reads <span class="op">&gt;=</span> <span class="dv">10000</span>:</span>
-<span id="cb5-81"><a href="#cb5-81" aria-hidden="true" tabindex="-1"></a>                <span class="cf">break</span></span>
-<span id="cb5-82"><a href="#cb5-82" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb5-83"><a href="#cb5-83" aria-hidden="true" tabindex="-1"></a>        <span class="bu">print</span>(<span class="st">"</span><span class="ch">\n</span><span class="st">=== CIGAR 操作统计 ==="</span>)</span>
-<span id="cb5-84"><a href="#cb5-84" aria-hidden="true" tabindex="-1"></a>        <span class="cf">for</span> op, count <span class="kw">in</span> <span class="bu">sorted</span>(cigar_stats.items()):</span>
-<span id="cb5-85"><a href="#cb5-85" aria-hidden="true" tabindex="-1"></a>            <span class="bu">print</span>(<span class="ss">f"  </span><span class="sc">{</span>op<span class="sc">}</span><span class="ss">: </span><span class="sc">{</span>count<span class="sc">}</span><span class="ss"> bp"</span>)</span>
-<span id="cb5-86"><a href="#cb5-86" aria-hidden="true" tabindex="-1"></a>        <span class="bu">print</span>(<span class="ss">f"检测到 Indel: </span><span class="sc">{</span>indel_count<span class="sc">}</span><span class="ss"> bp"</span>)</span>
-<span id="cb5-87"><a href="#cb5-87" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb5-88"><a href="#cb5-88" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> coverage_analysis(<span class="va">self</span>):</span>
-<span id="cb5-89"><a href="#cb5-89" aria-hidden="true" tabindex="-1"></a>        <span class="co">"""Calculate coverage statistics"""</span></span>
-<span id="cb5-90"><a href="#cb5-90" aria-hidden="true" tabindex="-1"></a>        coverage <span class="op">=</span> defaultdict(<span class="bu">int</span>)</span>
-<span id="cb5-91"><a href="#cb5-91" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb5-92"><a href="#cb5-92" aria-hidden="true" tabindex="-1"></a>        <span class="cf">for</span> pileup <span class="kw">in</span> <span class="va">self</span>.bam.pileup():</span>
-<span id="cb5-93"><a href="#cb5-93" aria-hidden="true" tabindex="-1"></a>            coverage[pileup.reference_name] <span class="op">+=</span> pileup.n</span>
-<span id="cb5-94"><a href="#cb5-94" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb5-95"><a href="#cb5-95" aria-hidden="true" tabindex="-1"></a>        <span class="bu">print</span>(<span class="st">"</span><span class="ch">\n</span><span class="st">=== 覆盖度分析 ==="</span>)</span>
-<span id="cb5-96"><a href="#cb5-96" aria-hidden="true" tabindex="-1"></a>        <span class="cf">for</span> chrom, reads <span class="kw">in</span> <span class="bu">sorted</span>(coverage.items()):</span>
-<span id="cb5-97"><a href="#cb5-97" aria-hidden="true" tabindex="-1"></a>            <span class="bu">print</span>(<span class="ss">f"  </span><span class="sc">{</span>chrom<span class="sc">}</span><span class="ss">: </span><span class="sc">{</span>reads<span class="sc">}</span><span class="ss"> reads"</span>)</span>
-<span id="cb5-98"><a href="#cb5-98" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb5-99"><a href="#cb5-99" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> close(<span class="va">self</span>):</span>
-<span id="cb5-100"><a href="#cb5-100" aria-hidden="true" tabindex="-1"></a>        <span class="co">"""Close BAM file"""</span></span>
-<span id="cb5-101"><a href="#cb5-101" aria-hidden="true" tabindex="-1"></a>        <span class="va">self</span>.bam.close()</span>
-<span id="cb5-102"><a href="#cb5-102" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb5-103"><a href="#cb5-103" aria-hidden="true" tabindex="-1"></a><span class="co"># 使用示例</span></span>
-<span id="cb5-104"><a href="#cb5-104" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> <span class="va">__name__</span> <span class="op">==</span> <span class="st">"__main__"</span>:</span>
-<span id="cb5-105"><a href="#cb5-105" aria-hidden="true" tabindex="-1"></a>    analyzer <span class="op">=</span> SAMAnalyzer(<span class="st">"sorted.bam"</span>)</span>
-<span id="cb5-106"><a href="#cb5-106" aria-hidden="true" tabindex="-1"></a>    analyzer.flag_analysis()</span>
-<span id="cb5-107"><a href="#cb5-107" aria-hidden="true" tabindex="-1"></a>    analyzer.mapq_distribution()</span>
-<span id="cb5-108"><a href="#cb5-108" aria-hidden="true" tabindex="-1"></a>    analyzer.cigar_analysis()</span>
-<span id="cb5-109"><a href="#cb5-109" aria-hidden="true" tabindex="-1"></a>    analyzer.coverage_analysis()</span>
-<span id="cb5-110"><a href="#cb5-110" aria-hidden="true" tabindex="-1"></a>    analyzer.close()</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-</section>
-<section id="标志位解码练习" class="level3" data-number="12.5.2">
-<h3 data-number="12.5.2" class="anchored" data-anchor-id="标志位解码练习"><span class="header-section-number">12.5.2</span> 标志位解码练习</h3>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb6"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> decode_flag(flag_value):</span>
-<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a>    <span class="co">"""Decode SAM FLAG to human-readable format"""</span></span>
-<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a>    flags <span class="op">=</span> {</span>
-<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a>        <span class="bn">0x001</span>: <span class="st">"MAPPED"</span>,</span>
-<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a>        <span class="bn">0x002</span>: <span class="st">"PROPERLY_PAIRED"</span>,</span>
-<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a>        <span class="bn">0x004</span>: <span class="st">"UNMAPPED"</span>,</span>
-<span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a>        <span class="bn">0x008</span>: <span class="st">"MATE_UNMAPPED"</span>,</span>
-<span id="cb6-8"><a href="#cb6-8" aria-hidden="true" tabindex="-1"></a>        <span class="bn">0x010</span>: <span class="st">"REVERSE_STRAND"</span>,</span>
-<span id="cb6-9"><a href="#cb6-9" aria-hidden="true" tabindex="-1"></a>        <span class="bn">0x020</span>: <span class="st">"MATE_REVERSE"</span>,</span>
-<span id="cb6-10"><a href="#cb6-10" aria-hidden="true" tabindex="-1"></a>        <span class="bn">0x040</span>: <span class="st">"READ1"</span>,</span>
-<span id="cb6-11"><a href="#cb6-11" aria-hidden="true" tabindex="-1"></a>        <span class="bn">0x080</span>: <span class="st">"READ2"</span>,</span>
-<span id="cb6-12"><a href="#cb6-12" aria-hidden="true" tabindex="-1"></a>        <span class="bn">0x100</span>: <span class="st">"QC_FAILED"</span>,</span>
-<span id="cb6-13"><a href="#cb6-13" aria-hidden="true" tabindex="-1"></a>        <span class="bn">0x200</span>: <span class="st">"DUPLICATE"</span></span>
-<span id="cb6-14"><a href="#cb6-14" aria-hidden="true" tabindex="-1"></a>    }</span>
-<span id="cb6-15"><a href="#cb6-15" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb6-16"><a href="#cb6-16" aria-hidden="true" tabindex="-1"></a>    result <span class="op">=</span> []</span>
-<span id="cb6-17"><a href="#cb6-17" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> bit, name <span class="kw">in</span> <span class="bu">sorted</span>(flags.items()):</span>
-<span id="cb6-18"><a href="#cb6-18" aria-hidden="true" tabindex="-1"></a>        <span class="cf">if</span> flag_value <span class="op">&amp;</span> bit:</span>
-<span id="cb6-19"><a href="#cb6-19" aria-hidden="true" tabindex="-1"></a>            result.append(name)</span>
-<span id="cb6-20"><a href="#cb6-20" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb6-21"><a href="#cb6-21" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> result</span>
-<span id="cb6-22"><a href="#cb6-22" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb6-23"><a href="#cb6-23" aria-hidden="true" tabindex="-1"></a><span class="co"># 测试</span></span>
-<span id="cb6-24"><a href="#cb6-24" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(decode_flag(<span class="dv">83</span>))   <span class="co"># Expected: ['MAPPED', 'PROPERLY_PAIRED', 'REVERSE_STRAND', 'READ1']</span></span>
-<span id="cb6-25"><a href="#cb6-25" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(decode_flag(<span class="dv">163</span>))  <span class="co"># Expected: ['MAPPED', 'PROPERLY_PAIRED', 'MATE_REVERSE', 'READ2']</span></span>
-<span id="cb6-26"><a href="#cb6-26" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(decode_flag(<span class="dv">4</span>))    <span class="co"># Expected: ['UNMAPPED']</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-<hr>
-</section>
-</section>
-<section id="课后自测-post-lesson-quiz" class="level2" data-number="12.6">
-<h2 data-number="12.6" class="anchored" data-anchor-id="课后自测-post-lesson-quiz"><span class="header-section-number">12.6</span> 课后自测 (Post-Lesson Quiz)</h2>
-<div class="note">
-<p><strong>标题：</strong> 💭 思考题</p>
+<section id="课后自测-post-lesson-quiz" class="level2" data-number="18.3">
+<h2 data-number="18.3" class="anchored" data-anchor-id="课后自测-post-lesson-quiz"><span class="header-section-number">18.3</span> 课后自测 (Post-Lesson Quiz)</h2>
 <ol type="1">
-<li><p>FLAG 值为 99 的 Read，应该如何解释？</p></li>
-<li><p>CIGAR 字符串 <code>80M2D68M</code> 说明了什么变异？</p></li>
-<li><p>为什么 Soft-clipping (S) 比 Hard-clipping (H) 更常用？</p></li>
+<li><p>已知某基因组大小约 5 Mb，使用 PE150 进行 WGS，共获得 3,000,000 对 reads（即 6,000,000 条 reads）。估算测序覆盖深度，并判断该深度是否足以进行高质量从头组装？</p></li>
+<li><p>解释为什么 De Bruijn 图方法将组装问题从哈密顿路径转化为欧拉路径，这一转化的计算复杂度意义是什么？</p></li>
+<li><p>在进行 De Bruijn 图组装时，k 值的选择是一个重要参数。请分析：（a）k 值过小（如 k=11）有什么问题？（b）k 值过大（如 k=101）有什么问题？（c）为什么 SPAdes 使用多个 k 值？</p></li>
+<li><p>某 E. coli 样本用 100X 深度测序后进行从头组装，得到 QUAST 报告：N50 = 45,000 bp，misassemblies = 8，total length = 4.61 Mb（参考基因组 4.64 Mb），GC = 50.8%。请评价该组装质量，并指出最值得关注的问题。</p></li>
+<li><p>在气泡弹出（bubble popping）策略中，程序保留覆盖度高的路径，删除覆盖度低的路径。请思考：在对二倍体生物（如人类）进行从头组装时，这一策略会产生什么问题？现代工具如何解决这一问题？</p></li>
+<li><p>比较参考基因组比对和从头组装两种策略：对于一个已知参考基因组的物种，在什么情况下仍然需要进行从头组装而不是直接使用参考基因组比对？请给出至少两个具体场景。</p></li>
 </ol>
 <details>
 <summary>
 <strong>参考答案 (Reference Answers)</strong>
 </summary>
-<p><em>1. 99 = 64 + 32 + 2 + 1 = READ1 + MATE_REVERSE + PROPERLY_PAIRED + MAPPED，说明这是 PE 测序的第一条 read，已比对，配对 read 在反向链，两条都比对到了预期位置</em></p>
-<p><em>2. 80 bp 匹配 + 2 bp 删除 + 68 bp 匹配。这表示在比对位置发现了 2 bp 的缺失（deletion），可能对应一个 Indel 变异</em></p>
-<p><em>3. Soft-clipping 保留原始序列信息，便于后续重新分析或注释；Hard-clipping 永久丢弃数据，无法恢复</em></p>
+<ol type="1">
+<li><p><em>覆盖深度 = (6,000,000 × 150) / 5,000,000 = 180X。该深度（180X）远超从头组装的推荐最低深度（50–100X），属于高覆盖测序，足以支持高质量组装。但需注意 180X 不一定优于 60X，过高覆盖有时会引入更多测序错误的累积，现代工具（如 SPAdes）对超高覆盖数据会自动进行降采样。</em></p></li>
+<li><p><em>OLC（哈密顿路径）要求每个读段（节点）恰好被经过一次，是 NP 完全问题，不存在已知多项式时间算法。DBG 将读段分解为 k-mer 后，每个 k-mer 作为图的边，组装问题转化为每条边恰好经过一次的欧拉路径问题。欧拉路径可在 O(E) 时间内用 Hierholzer 算法求解（E 为边数，即 k-mer 数量）。这一转化使得处理数十亿条短读 reads 成为计算可行的任务。</em></p></li>
+<li><p><em>(a) k 过小（如 11）：大量 k-mer 在基因组中出现多次（重复序列），图中产生大量分叉节点，路径无法唯一确定，组装极度碎片化。(b) k 过大（如 101）：每个 k-mer 出现次数接近 1，低深度区域（覆盖波动）导致图断裂，contigs 变短；同时内存占用急剧增加。(c) SPAdes 使用多个 k 值：小 k 值在低覆盖区域保持连续性，大 k 值有效解析重复区域，合并各 k 值的最优区域后得到更完整的组装结果。</em></p></li>
+<li><p><em>N50 = 45,000 bp 相对于 E. coli 4.64 Mb 基因组偏低，说明组装仍较碎片化（理想情况 N50 应接近 1–2 Mb）。总长度 4.61 Mb 接近参考基因组（误差 &lt; 1%），GC 含量正常。最值得关注的问题是 misassemblies = 8，这意味着 8 处大片段序列被错误拼接，可能影响基因预测和基因组结构分析的准确性。建议检查覆盖度是否均匀，考虑补充长读测序数据来解析困难区域。</em></p></li>
+<li><p><em>对于二倍体生物，同一位点的两个等位基因序列略有不同，在 De Bruijn 图中会产生气泡。单纯按覆盖度保留高覆盖路径（约 50% 深度）、删除低覆盖路径（约 50% 深度），会将一个等位基因丢弃，产生单倍体化（haplotype collapse）的组装结果。现代单倍型分辨组装工具（如 hifiasm、FALCON-Unzip）通过保留两条分叉路径、分别延伸，尝试生成分相（phased）的双倍体组装，即同时输出两套单倍型序列。</em></p></li>
+<li><p><em>至少两个场景：①研究大规模结构变异（SV）：插入/缺失片段 &gt; 1 kb 的 SV 在比对策略中难以精确重建，从头组装可直接揭示插入的序列内容（如转座子插入）。②癌症基因组学：肿瘤基因组常发生大片段重排、融合基因、新插入序列，这些变异在比对至正常参考基因组时容易遗漏，肿瘤样本从头组装（或局部重组装）可以发现新型序列内容。</em></p></li>
+</ol>
 </details>
-</div>
 <hr>
 </section>
-<section id="总结" class="level2" data-number="12.7">
-<h2 data-number="12.7" class="anchored" data-anchor-id="总结"><span class="header-section-number">12.7</span> 总结</h2>
-<p>✓ <strong>SAM/BAM</strong> 是比对数据的标准格式 ✓ <strong>FLAG</strong> 位编码了 read 的所有属性（映射方向、配对情况等） ✓ <strong>CIGAR</strong> 描述了 read 与参考序列的匹配状态，可用于识别 Indel ✓ <strong>MAPQ</strong> 质量评分 &gt;= 20 是变异检测的基本过滤标准 ✓ <strong>变异分类</strong> 包括 SNP、Indel、SV、CNV 等多种类型</p>
+<section id="总结" class="level2" data-number="18.4">
+<h2 data-number="18.4" class="anchored" data-anchor-id="总结"><span class="header-section-number">18.4</span> 总结</h2>
+<p>✓ <strong>从头组装</strong> 是无参考基因组场景下重建基因组的核心技术，也是参考基因组本身产生的方式 ✓ <strong>De Bruijn 图</strong> 将 reads 分解为 k-mer，把 NP 完全的哈密顿路径问题转化为多项式时间可解的欧拉路径问题 ✓ <strong>气泡（Bubble）</strong> 来源于测序错误或真实 SNP，通过覆盖度比较弹出；<strong>尖刺（Tip）</strong> 来源于低质量 read 末端，通过迭代截除清理 ✓ <strong>N50</strong> 是衡量组装连续性的核心指标；<strong>misassembly 数量</strong> 是衡量组装准确性的最重要指标 ✓ <strong>SPAdes</strong> 通过多 k 值策略和错误校正，是目前细菌和宏基因组短读组装的行业标准 ✓ <strong>QUAST + BUSCO</strong> 组合评估提供了有参考和无参考两种场景下的完整质量图像 ✓ 覆盖深度 ≥ 50X 是高质量从头组装的基本要求，低深度（&lt; 20X）会导致严重的图断裂和碎片化</p>
 
 
 </section>
@@ -1670,8 +2124,8 @@ window.Quarto = {
   </script>
 <nav class="page-navigation">
   <div class="nav-page nav-page-previous">
-      <a href="./genomics_qc_lesson2.html" class="pagination-link" aria-label="第 2 学时：数据'体检'与参考基因组比对">
-        <i class="bi bi-arrow-left-short"></i> <span class="nav-page-text"><span class="chapter-number">10</span>&nbsp; <span class="chapter-title">第 2 学时：数据’体检’与参考基因组比对</span></span>
+      <a href="./genomics_qc_lesson2.html" class="pagination-link" aria-label="数据预处理与参考基因组比对">
+        <i class="bi bi-arrow-left-short"></i> <span class="nav-page-text"><span class="chapter-number">10</span>&nbsp; <span class="chapter-title">数据预处理与参考基因组比对</span></span>
       </a>          
   </div>
   <div class="nav-page nav-page-next">

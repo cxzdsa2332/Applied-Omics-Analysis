@@ -6,9 +6,9 @@
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
-<meta name="dcterms.date" content="2026-04-13">
+<meta name="dcterms.date" content="2026-04-17">
 
-<title>10&nbsp; 数据’体检’与参考基因组比对 – Introduction to Applied High-throughput Biological Data Analysis</title>
+<title>10&nbsp; 数据预处理与参考基因组比对 – Introduction to Applied High-throughput Biological Data Analysis</title>
 <style>
 /* Default styles provided by pandoc.
 ** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
@@ -109,6 +109,35 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   }
 }</script>
 
+  <script src="https://cdnjs.cloudflare.com/polyfill/v3/polyfill.min.js?features=es6"></script>
+  <script defer="" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js" type="text/javascript"></script>
+
+<script type="text/javascript">
+const typesetMath = (el) => {
+  if (window.MathJax) {
+    // MathJax Typeset
+    window.MathJax.typeset([el]);
+  } else if (window.katex) {
+    // KaTeX Render
+    var mathElements = el.getElementsByClassName("math");
+    var macros = [];
+    for (var i = 0; i < mathElements.length; i++) {
+      var texText = mathElements[i].firstChild;
+      if (mathElements[i].tagName == "SPAN" && texText && texText.data) {
+        window.katex.render(texText.data, mathElements[i], {
+          displayMode: mathElements[i].classList.contains('display'),
+          throwOnError: false,
+          macros: macros,
+          fleqn: false
+        });
+      }
+    }
+  }
+}
+window.Quarto = {
+  typesetMath
+};
+</script>
 
 </head>
 
@@ -121,7 +150,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
       <button type="button" class="quarto-btn-toggle btn" data-bs-toggle="collapse" role="button" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
         <i class="bi bi-layout-text-sidebar-reverse"></i>
       </button>
-        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="./01-intro.html">第一阶段：基础与基因组</a></li><li class="breadcrumb-item"><a href="./genomics_qc_lesson2.html"><span class="chapter-number">10</span>&nbsp; <span class="chapter-title">数据’体检’与参考基因组比对</span></a></li></ol></nav>
+        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="./01-intro.html">第一阶段：基础与基因组</a></li><li class="breadcrumb-item"><a href="./genomics_qc_lesson2.html"><span class="chapter-number">10</span>&nbsp; <span class="chapter-title">数据预处理与参考基因组比对</span></a></li></ol></nav>
         <a class="flex-grow-1" role="navigation" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">      
         </a>
       <button type="button" class="btn quarto-search-button" aria-label="Search" onclick="window.quartoOpenSearch();">
@@ -209,19 +238,19 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./genomics_qc_lesson1.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">9</span>&nbsp; <span class="chapter-title">二代测序原理与原始数据的数字表现</span></span></a>
+ <span class="menu-text"><span class="chapter-number">9</span>&nbsp; <span class="chapter-title">原始下机数据的数字表现</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./genomics_qc_lesson2.html" class="sidebar-item-text sidebar-link active">
- <span class="menu-text"><span class="chapter-number">10</span>&nbsp; <span class="chapter-title">数据’体检’与参考基因组比对</span></span></a>
+ <span class="menu-text"><span class="chapter-number">10</span>&nbsp; <span class="chapter-title">数据预处理与参考基因组比对</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./genomics_qc_lesson3.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">11</span>&nbsp; <span class="chapter-title">标准数据格式 SAM/BAM 与变异分类</span></span></a>
+ <span class="menu-text"><span class="chapter-number">11</span>&nbsp; <span class="chapter-title">从头基因组组装：当没有参考基因组时</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
@@ -576,14 +605,57 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
     <h2 id="toc-title">Table of contents</h2>
    
   <ul class="collapse">
-  <li><a href="#原始数据质量评估" id="toc-原始数据质量评估" class="nav-link active" data-scroll-target="#原始数据质量评估"><span class="header-section-number">11</span> 原始数据质量评估</a>
+  <li><a href="#adapter-污染从文库构建到污染机制" id="toc-adapter-污染从文库构建到污染机制" class="nav-link active" data-scroll-target="#adapter-污染从文库构建到污染机制"><span class="header-section-number">11</span> Adapter 污染：从文库构建到污染机制</a>
   <ul class="collapse">
-  <li><a href="#使用-fastqc-进行质量评估" id="toc-使用-fastqc-进行质量评估" class="nav-link" data-scroll-target="#使用-fastqc-进行质量评估"><span class="header-section-number">11.1</span> 使用 FastQC 进行质量评估</a></li>
-  <li><a href="#数据预处理preprocessing" id="toc-数据预处理preprocessing" class="nav-link" data-scroll-target="#数据预处理preprocessing"><span class="header-section-number">11.2</span> 数据预处理（Preprocessing）</a></li>
-  <li><a href="#参考基因组与序列比对理论" id="toc-参考基因组与序列比对理论" class="nav-link" data-scroll-target="#参考基因组与序列比对理论"><span class="header-section-number">11.3</span> 参考基因组与序列比对理论</a></li>
-  <li><a href="#实践fastqc-分析与-bwa-比对" id="toc-实践fastqc-分析与-bwa-比对" class="nav-link" data-scroll-target="#实践fastqc-分析与-bwa-比对"><span class="header-section-number">11.4</span> 实践：FastQC 分析与 BWA 比对</a></li>
-  <li><a href="#课后自测-post-lesson-quiz" id="toc-课后自测-post-lesson-quiz" class="nav-link" data-scroll-target="#课后自测-post-lesson-quiz"><span class="header-section-number">11.5</span> 课后自测 (Post-Lesson Quiz)</a></li>
-  <li><a href="#总结" id="toc-总结" class="nav-link" data-scroll-target="#总结"><span class="header-section-number">11.6</span> 总结</a></li>
+  <li><a href="#adapter-序列的来源" id="toc-adapter-序列的来源" class="nav-link" data-scroll-target="#adapter-序列的来源"><span class="header-section-number">11.1</span> Adapter 序列的来源</a></li>
+  <li><a href="#insert-size-与-read-through-现象" id="toc-insert-size-与-read-through-现象" class="nav-link" data-scroll-target="#insert-size-与-read-through-现象"><span class="header-section-number">11.2</span> Insert Size 与 Read-Through 现象</a></li>
+  <li><a href="#adapter-污染对下游分析的影响" id="toc-adapter-污染对下游分析的影响" class="nav-link" data-scroll-target="#adapter-污染对下游分析的影响"><span class="header-section-number">11.3</span> Adapter 污染对下游分析的影响</a></li>
+  </ul></li>
+  <li><a href="#数据预处理工具与实战" id="toc-数据预处理工具与实战" class="nav-link" data-scroll-target="#数据预处理工具与实战"><span class="header-section-number">12</span> 数据预处理：工具与实战</a>
+  <ul class="collapse">
+  <li><a href="#工具选型" id="toc-工具选型" class="nav-link" data-scroll-target="#工具选型"><span class="header-section-number">12.1</span> 工具选型</a></li>
+  <li><a href="#fastp-实战处理真实-e.-coli-数据" id="toc-fastp-实战处理真实-e.-coli-数据" class="nav-link" data-scroll-target="#fastp-实战处理真实-e.-coli-数据"><span class="header-section-number">12.2</span> fastp 实战：处理真实 E. coli 数据</a></li>
+  <li><a href="#trimmomatic-参数深解" id="toc-trimmomatic-参数深解" class="nav-link" data-scroll-target="#trimmomatic-参数深解"><span class="header-section-number">12.3</span> Trimmomatic 参数深解</a></li>
+  <li><a href="#预处理前后质量对比python-可视化" id="toc-预处理前后质量对比python-可视化" class="nav-link" data-scroll-target="#预处理前后质量对比python-可视化"><span class="header-section-number">12.4</span> 预处理前后质量对比（Python 可视化）</a></li>
+  </ul></li>
+  <li><a href="#参考基因组选择结构与获取" id="toc-参考基因组选择结构与获取" class="nav-link" data-scroll-target="#参考基因组选择结构与获取"><span class="header-section-number">13</span> 参考基因组：选择、结构与获取</a>
+  <ul class="collapse">
+  <li><a href="#什么是参考基因组" id="toc-什么是参考基因组" class="nav-link" data-scroll-target="#什么是参考基因组"><span class="header-section-number">13.1</span> 什么是参考基因组</a></li>
+  <li><a href="#人类参考基因组的演变" id="toc-人类参考基因组的演变" class="nav-link" data-scroll-target="#人类参考基因组的演变"><span class="header-section-number">13.2</span> 人类参考基因组的演变</a></li>
+  <li><a href="#grch38-参考基因组文件的结构" id="toc-grch38-参考基因组文件的结构" class="nav-link" data-scroll-target="#grch38-参考基因组文件的结构"><span class="header-section-number">13.3</span> GRCh38 参考基因组文件的结构</a></li>
+  <li><a href="#实践下载-e.-coli-参考基因组" id="toc-实践下载-e.-coli-参考基因组" class="nav-link" data-scroll-target="#实践下载-e.-coli-参考基因组"><span class="header-section-number">13.4</span> 实践：下载 E. coli 参考基因组</a></li>
+  </ul></li>
+  <li><a href="#序列比对原理bwt-与-fm-index" id="toc-序列比对原理bwt-与-fm-index" class="nav-link" data-scroll-target="#序列比对原理bwt-与-fm-index"><span class="header-section-number">14</span> 序列比对原理：BWT 与 FM-index</a>
+  <ul class="collapse">
+  <li><a href="#朴素方法的瓶颈" id="toc-朴素方法的瓶颈" class="nav-link" data-scroll-target="#朴素方法的瓶颈"><span class="header-section-number">14.1</span> 朴素方法的瓶颈</a></li>
+  <li><a href="#burrows-wheeler-transform-bwt" id="toc-burrows-wheeler-transform-bwt" class="nav-link" data-scroll-target="#burrows-wheeler-transform-bwt"><span class="header-section-number">14.2</span> Burrows-Wheeler Transform (BWT)</a></li>
+  <li><a href="#fm-indexbwt-上的快速搜索" id="toc-fm-indexbwt-上的快速搜索" class="nav-link" data-scroll-target="#fm-indexbwt-上的快速搜索"><span class="header-section-number">14.3</span> FM-index：BWT 上的快速搜索</a></li>
+  <li><a href="#bwa-memseed-and-extend-策略" id="toc-bwa-memseed-and-extend-策略" class="nav-link" data-scroll-target="#bwa-memseed-and-extend-策略"><span class="header-section-number">14.4</span> BWA-MEM：Seed-and-Extend 策略</a></li>
+  </ul></li>
+  <li><a href="#实践完整-bwa-mem-比对流程" id="toc-实践完整-bwa-mem-比对流程" class="nav-link" data-scroll-target="#实践完整-bwa-mem-比对流程"><span class="header-section-number">15</span> 实践：完整 BWA-MEM 比对流程</a>
+  <ul class="collapse">
+  <li><a href="#工具安装" id="toc-工具安装" class="nav-link" data-scroll-target="#工具安装"><span class="header-section-number">15.1</span> 工具安装</a></li>
+  <li><a href="#step-1构建-bwt-索引" id="toc-step-1构建-bwt-索引" class="nav-link" data-scroll-target="#step-1构建-bwt-索引"><span class="header-section-number">15.2</span> Step 1：构建 BWT 索引</a></li>
+  <li><a href="#step-2序列比对" id="toc-step-2序列比对" class="nav-link" data-scroll-target="#step-2序列比对"><span class="header-section-number">15.3</span> Step 2：序列比对</a></li>
+  <li><a href="#step-3管道化写法推荐" id="toc-step-3管道化写法推荐" class="nav-link" data-scroll-target="#step-3管道化写法推荐"><span class="header-section-number">15.4</span> Step 3：管道化写法（推荐）</a></li>
+  </ul></li>
+  <li><a href="#sambam-格式精解" id="toc-sambam-格式精解" class="nav-link" data-scroll-target="#sambam-格式精解"><span class="header-section-number">16</span> SAM/BAM 格式精解</a>
+  <ul class="collapse">
+  <li><a href="#格式概述" id="toc-格式概述" class="nav-link" data-scroll-target="#格式概述"><span class="header-section-number">16.1</span> 格式概述</a></li>
+  <li><a href="#sam-header-字段" id="toc-sam-header-字段" class="nav-link" data-scroll-target="#sam-header-字段"><span class="header-section-number">16.2</span> SAM Header 字段</a></li>
+  <li><a href="#sam-alignment-record11-个必填字段" id="toc-sam-alignment-record11-个必填字段" class="nav-link" data-scroll-target="#sam-alignment-record11-个必填字段"><span class="header-section-number">16.3</span> SAM Alignment Record：11 个必填字段</a></li>
+  <li><a href="#flag-字段位标志解码" id="toc-flag-字段位标志解码" class="nav-link" data-scroll-target="#flag-字段位标志解码"><span class="header-section-number">16.4</span> FLAG 字段：位标志解码</a></li>
+  <li><a href="#cigar-字符串" id="toc-cigar-字符串" class="nav-link" data-scroll-target="#cigar-字符串"><span class="header-section-number">16.5</span> CIGAR 字符串</a></li>
+  <li><a href="#常用-optional-标签" id="toc-常用-optional-标签" class="nav-link" data-scroll-target="#常用-optional-标签"><span class="header-section-number">16.6</span> 常用 Optional 标签</a></li>
+  </ul></li>
+  <li><a href="#比对后质量评估" id="toc-比对后质量评估" class="nav-link" data-scroll-target="#比对后质量评估"><span class="header-section-number">17</span> 比对后质量评估</a>
+  <ul class="collapse">
+  <li><a href="#samtools-flagstat" id="toc-samtools-flagstat" class="nav-link" data-scroll-target="#samtools-flagstat"><span class="header-section-number">17.1</span> samtools flagstat</a></li>
+  <li><a href="#samtools-stats深度统计" id="toc-samtools-stats深度统计" class="nav-link" data-scroll-target="#samtools-stats深度统计"><span class="header-section-number">17.2</span> samtools stats：深度统计</a></li>
+  <li><a href="#samtools-depth覆盖度分析" id="toc-samtools-depth覆盖度分析" class="nav-link" data-scroll-target="#samtools-depth覆盖度分析"><span class="header-section-number">17.3</span> samtools depth：覆盖度分析</a></li>
+  <li><a href="#mapqmapping-quality分布" id="toc-mapqmapping-quality分布" class="nav-link" data-scroll-target="#mapqmapping-quality分布"><span class="header-section-number">17.4</span> MAPQ（Mapping Quality）分布</a></li>
+  <li><a href="#课后自测-post-lesson-quiz" id="toc-课后自测-post-lesson-quiz" class="nav-link" data-scroll-target="#课后自测-post-lesson-quiz"><span class="header-section-number">17.5</span> 课后自测 (Post-Lesson Quiz)</a></li>
+  <li><a href="#总结" id="toc-总结" class="nav-link" data-scroll-target="#总结"><span class="header-section-number">17.6</span> 总结</a></li>
   </ul></li>
   </ul>
 <div class="toc-actions"><ul class="collapse"><li><a href="https://github.com/cxzdsa2332/Applied-Omics-Analysis/edit/main/genomics_qc_lesson2.qmd" class="toc-action"><i class="bi bi-github"></i>Edit this page</a></li><li><a href="https://github.com/cxzdsa2332/Applied-Omics-Analysis/issues/new" class="toc-action"><i class="bi empty"></i>Report an issue</a></li><li><a href="https://github.com/cxzdsa2332/Applied-Omics-Analysis/blob/main/genomics_qc_lesson2.qmd" class="toc-action"><i class="bi empty"></i>View source</a></li></ul></div></nav>
@@ -591,9 +663,9 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <!-- main -->
 <main class="content" id="quarto-document-content">
 
-<header id="title-block-header" class="quarto-title-block default"><nav class="quarto-page-breadcrumbs quarto-title-breadcrumbs d-none d-lg-block" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="./01-intro.html">第一阶段：基础与基因组</a></li><li class="breadcrumb-item"><a href="./genomics_qc_lesson2.html"><span class="chapter-number">10</span>&nbsp; <span class="chapter-title">数据’体检’与参考基因组比对</span></a></li></ol></nav>
+<header id="title-block-header" class="quarto-title-block default"><nav class="quarto-page-breadcrumbs quarto-title-breadcrumbs d-none d-lg-block" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="./01-intro.html">第一阶段：基础与基因组</a></li><li class="breadcrumb-item"><a href="./genomics_qc_lesson2.html"><span class="chapter-number">10</span>&nbsp; <span class="chapter-title">数据预处理与参考基因组比对</span></a></li></ol></nav>
 <div class="quarto-title">
-<h1 class="title"><span class="chapter-number">10</span>&nbsp; <span class="chapter-title">数据’体检’与参考基因组比对</span></h1>
+<h1 class="title"><span class="chapter-number">10</span>&nbsp; <span class="chapter-title">数据预处理与参考基因组比对</span></h1>
 </div>
 
 
@@ -604,7 +676,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
     <div>
     <div class="quarto-title-meta-heading">Published</div>
     <div class="quarto-title-meta-contents">
-      <p class="date">April 13, 2026</p>
+      <p class="date">April 17, 2026</p>
     </div>
   </div>
   
@@ -616,417 +688,1085 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </header>
 
 
-<section id="原始数据质量评估" class="level1" data-number="11">
-<h1 data-number="11"><span class="header-section-number">11</span> 原始数据质量评估</h1>
-<section id="使用-fastqc-进行质量评估" class="level2" data-number="11.1">
-<h2 data-number="11.1" class="anchored" data-anchor-id="使用-fastqc-进行质量评估"><span class="header-section-number">11.1</span> 使用 FastQC 进行质量评估</h2>
-<p>FastQC 是分析 FASTQ 文件的标准工具，自动生成质量报告。</p>
-<p>{{Wiki:Quality_control}}</p>
-<section id="主要质量指标解读" class="level3" data-number="11.1.1">
-<h3 data-number="11.1.1" class="anchored" data-anchor-id="主要质量指标解读"><span class="header-section-number">11.1.1</span> 主要质量指标解读</h3>
-<table class="caption-top table">
-<colgroup>
-<col style="width: 20%">
-<col style="width: 20%">
-<col style="width: 27%">
-<col style="width: 31%">
-</colgroup>
-<thead>
-<tr class="header">
-<th>指标</th>
-<th>说明</th>
-<th>正常值</th>
-<th>问题信号</th>
-</tr>
-</thead>
-<tbody>
-<tr class="odd">
-<td><strong>Per Base Sequence Quality</strong></td>
-<td>每个位置的平均质量分布</td>
-<td>大部分 &gt; Q30</td>
-<td>末端急速下降 → 化学衰减</td>
-</tr>
-<tr class="even">
-<td><strong>Per Sequence Quality Scores</strong></td>
-<td>整条 Read 的质量分布</td>
-<td>单峰分布，峰值 &gt; Q30</td>
-<td>双峰或低质量尾部 → 混杂样本</td>
-</tr>
-<tr class="odd">
-<td><strong>Per Base N Content</strong></td>
-<td>每个位置无法判定的碱基比例</td>
-<td>&lt; 1%</td>
-<td>&gt; 5% → 测序仪故障</td>
-</tr>
-<tr class="even">
-<td><strong>Sequence Length Distribution</strong></td>
-<td>Read 长度分布</td>
-<td>单一长度（如 150bp）</td>
-<td>参差不齐 → adapter 未清理</td>
-</tr>
-<tr class="odd">
-<td><strong>GC Content</strong></td>
-<td>全局 GC 含量</td>
-<td>物种基因组 GC%±5%</td>
-<td>严重偏离 → 物种污染</td>
-</tr>
-<tr class="even">
-<td><strong>Adapter Content</strong></td>
-<td>接头序列残留</td>
-<td>不存在或 &lt; 1%</td>
-<td>&gt; 10% → adapter 未完全去除</td>
-</tr>
-<tr class="odd">
-<td><strong>Overrepresented Sequences</strong></td>
-<td>高频重复序列</td>
-<td>正常序列</td>
-<td>rRNA、高复杂度重复 → 文库构建失败</td>
-</tr>
-<tr class="even">
-<td><strong>Duplication Levels</strong></td>
-<td>PCR 扩增重复</td>
-<td>生物学重复 &lt; 20%</td>
-<td>&gt; 50% → 文库质量差</td>
-</tr>
-</tbody>
-</table>
+<section id="adapter-污染从文库构建到污染机制" class="level1" data-number="11">
+<h1 data-number="11"><span class="header-section-number">11</span> Adapter 污染：从文库构建到污染机制</h1>
+<section id="adapter-序列的来源" class="level2" data-number="11.1">
+<h2 data-number="11.1" class="anchored" data-anchor-id="adapter-序列的来源"><span class="header-section-number">11.1</span> Adapter 序列的来源</h2>
+<p>在第1节中，我们介绍了文库构建时需要在 DNA 片段两端添加 P5/P7 接头（Adapter）。理解 adapter 污染的机制，需要回到文库构建的本质：测序仪读取的实际上是”<strong>Adapter + Insert + Adapter</strong>”这一完整分子。</p>
+<p>{{Wiki:Illumina_dye_sequencing}}</p>
+<p><strong>标准 Illumina TruSeq Adapter 序列（Read 1 端）：</strong></p>
+<pre><code>5'- AGATCGGAAGAGCACACGTCTGAACTCCAGTCAC -3'</code></pre>
+<p>这一序列在绝大多数 Illumina 文库中保持一致，因此成为 FastQC “Adapter Content” 模块的默认检测对象。</p>
 </section>
-<section id="fastqc-质量问题处理" class="level3" data-number="11.1.2">
-<h3 data-number="11.1.2" class="anchored" data-anchor-id="fastqc-质量问题处理"><span class="header-section-number">11.1.2</span> FastQC 质量问题处理</h3>
+<section id="insert-size-与-read-through-现象" class="level2" data-number="11.2">
+<h2 data-number="11.2" class="anchored" data-anchor-id="insert-size-与-read-through-现象"><span class="header-section-number">11.2</span> Insert Size 与 Read-Through 现象</h2>
+<p>Adapter 污染的出现具有明确的几何条件：<strong>当 insert size（DNA 片段长度）小于 read 长度时</strong>，测序仪在读完 insert 后会继续读入对侧的 adapter 序列。</p>
+<pre><code>正常情况（insert &gt; read 长度）：
+  [--Adapter P5--][--------Insert (300 bp)--------][--Adapter P7--]
+  |&lt;----Read 1 (150 bp)----&gt;|
+
+Read-through 情况（insert &lt; read 长度）：
+  [--Adapter P5--][--Insert (80 bp)--][--Adapter P7--]
+  |&lt;----Read 1 (150 bp)----&gt;|
+                              ^^^^ 这70 bp读到了Adapter P7</code></pre>
+<div class="note">
+<p><strong>为什么短 insert 文库更易污染？</strong></p>
+<p>对于小 RNA（miRNA，约 22 nt）或 ATAC-seq（nucleosome-free region，约 150 bp）文库，insert size 远小于 read 长度，几乎所有 reads 都会发生 read-through。因此，这类实验数据在比对前<strong>必须</strong>进行 adapter trimming，否则短小的真实序列会被 adapter 序列淹没，导致比对完全失败。</p>
+</div>
+</section>
+<section id="adapter-污染对下游分析的影响" class="level2" data-number="11.3">
+<h2 data-number="11.3" class="anchored" data-anchor-id="adapter-污染对下游分析的影响"><span class="header-section-number">11.3</span> Adapter 污染对下游分析的影响</h2>
+<p>如果不去除 adapter，将直接产生以下问题：</p>
 <table class="caption-top table">
-<colgroup>
-<col style="width: 28%">
-<col style="width: 28%">
-<col style="width: 42%">
-</colgroup>
 <thead>
 <tr class="header">
-<th>问题</th>
+<th>影响</th>
 <th>原因</th>
-<th>解决方案</th>
+<th>后果</th>
 </tr>
 </thead>
 <tbody>
 <tr class="odd">
-<td>末端质量下降</td>
-<td>化学反应衰减（正常）</td>
-<td>Trimming 去除低质量末端</td>
+<td>比对失败</td>
+<td>Adapter 序列在参考基因组中不存在</td>
+<td>比对率下降 5–40%</td>
 </tr>
 <tr class="even">
-<td>GC 含量偏移</td>
-<td>物种污染或特定 bias</td>
-<td>检查物种注释；考虑用 contamination 工具</td>
+<td>假阳性变异</td>
+<td>Adapter 序列在比对末端引入错配</td>
+<td>SNP/Indel 假阳性增加</td>
 </tr>
 <tr class="odd">
-<td>Adapter 残留</td>
-<td>文库构建不完全</td>
-<td>用 Cutadapt/Trimmomatic 去除</td>
+<td>长度偏差</td>
+<td>Adapter 使 reads 人工变长</td>
+<td>Insert size 估算失准</td>
 </tr>
 <tr class="even">
-<td>高 N 含量</td>
-<td>测序仪不稳定</td>
-<td>检查样本质量、仪器状态</td>
+<td>拼接错误</td>
+<td>Adapter 干扰 de novo 组装的 k-mer 计数</td>
+<td>基因组组装破碎化</td>
 </tr>
 </tbody>
 </table>
 <hr>
 </section>
 </section>
-<section id="数据预处理preprocessing" class="level2" data-number="11.2">
-<h2 data-number="11.2" class="anchored" data-anchor-id="数据预处理preprocessing"><span class="header-section-number">11.2</span> 数据预处理（Preprocessing）</h2>
-<section id="quality-filtering-与-trimming" class="level3" data-number="11.2.1">
-<h3 data-number="11.2.1" class="anchored" data-anchor-id="quality-filtering-与-trimming"><span class="header-section-number">11.2.1</span> Quality Filtering 与 Trimming</h3>
-<p><strong>目的</strong>：去除低质量碱基、adapter、PCR 引物，减少后续比对的噪音</p>
-<p><strong>主流工具</strong>： - <strong>Trimmomatic</strong>：功能全面，支持 SE/PE，可自定义阈值 - <strong>Cutadapt</strong>：轻量化，专长于 adapter 去除 - <strong>Fastp</strong>：现代化工具，速度快，自动检测 adapter</p>
-</section>
-<section id="典型预处理流程" class="level3" data-number="11.2.2">
-<h3 data-number="11.2.2" class="anchored" data-anchor-id="典型预处理流程"><span class="header-section-number">11.2.2</span> 典型预处理流程</h3>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb1"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Trimmomatic 示例 (SE)</span></span>
-<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="ex">trimmomatic</span> SE <span class="dt">\</span></span>
-<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a>  input.fastq output_trimmed.fastq <span class="dt">\</span></span>
-<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a>  ILLUMINACLIP:adapters.fa:2:30:10 <span class="dt">\</span></span>
-<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a>  LEADING:3 TRAILING:3 MINLEN:36</span>
-<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a><span class="co"># Fastp 示例 (PE)</span></span>
-<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a><span class="ex">fastp</span> <span class="dt">\</span></span>
-<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a>  <span class="at">-i</span> R1.fastq <span class="at">-I</span> R2.fastq <span class="dt">\</span></span>
-<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a>  <span class="at">-o</span> R1_clean.fastq <span class="at">-O</span> R2_clean.fastq <span class="dt">\</span></span>
-<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a>  <span class="at">--adapter_sequence</span> AGATCGGAAGAGC <span class="dt">\</span></span>
-<span id="cb1-12"><a href="#cb1-12" aria-hidden="true" tabindex="-1"></a>  <span class="at">--qualified_quality_phred</span> 20 <span class="dt">\</span></span>
-<span id="cb1-13"><a href="#cb1-13" aria-hidden="true" tabindex="-1"></a>  <span class="at">--length_required</span> 50</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-<hr>
-</section>
-</section>
-<section id="参考基因组与序列比对理论" class="level2" data-number="11.3">
-<h2 data-number="11.3" class="anchored" data-anchor-id="参考基因组与序列比对理论"><span class="header-section-number">11.3</span> 参考基因组与序列比对理论</h2>
-<section id="参考基因组的选择" class="level3" data-number="11.3.1">
-<h3 data-number="11.3.1" class="anchored" data-anchor-id="参考基因组的选择"><span class="header-section-number">11.3.1</span> 参考基因组的选择</h3>
-<p>{{Wiki:Reference_genome}}</p>
+<section id="数据预处理工具与实战" class="level1" data-number="12">
+<h1 data-number="12"><span class="header-section-number">12</span> 数据预处理：工具与实战</h1>
+<section id="工具选型" class="level2" data-number="12.1">
+<h2 data-number="12.1" class="anchored" data-anchor-id="工具选型"><span class="header-section-number">12.1</span> 工具选型</h2>
+<p>目前主流的 trimming 工具有三种，各有侧重：</p>
 <table class="caption-top table">
 <colgroup>
-<col style="width: 28%">
-<col style="width: 22%">
-<col style="width: 22%">
-<col style="width: 25%">
-</colgroup>
-<thead>
-<tr class="header">
-<th>基因组版本</th>
-<th>发布时间</th>
-<th>主要改进</th>
-<th>应用建议</th>
-</tr>
-</thead>
-<tbody>
-<tr class="odd">
-<td>hg19 (GRCh37)</td>
-<td>2009</td>
-<td>-</td>
-<td>已弃用（但仍有大量既有数据）</td>
-</tr>
-<tr class="even">
-<td><strong>hg38 (GRCh38)</strong></td>
-<td><strong>2013</strong></td>
-<td><strong>修复补丁、更高准确性</strong></td>
-<td><strong>推荐用于新项目</strong></td>
-</tr>
-<tr class="odd">
-<td>T2T-CHM13</td>
-<td>2022</td>
-<td>填补着丝粒缝隙、完全单倍体</td>
-<td>长读测序、完整基因组</td>
-</tr>
-</tbody>
-</table>
-<p><strong>重要</strong>：hg19 vs hg38 坐标不同，注释数据库必须匹配版本</p>
-</section>
-<section id="序列比对的核心算法" class="level3" data-number="11.3.2">
-<h3 data-number="11.3.2" class="anchored" data-anchor-id="序列比对的核心算法"><span class="header-section-number">11.3.2</span> 序列比对的核心算法</h3>
-<p><strong>Burrows-Wheeler Transform (BWT)</strong>： - 将大基因组 (3 Gb) 压缩至 ~2 Gb 内存 - 支持极快速精确匹配（秒级比对数百万 reads）</p>
-<p>{{Wiki:Burrows-Wheeler_transform}}</p>
-<p><strong>比对工具对比</strong>：</p>
-<table class="caption-top table">
-<colgroup>
-<col style="width: 17%">
-<col style="width: 20%">
-<col style="width: 20%">
-<col style="width: 20%">
-<col style="width: 20%">
+<col style="width: 19%">
+<col style="width: 34%">
+<col style="width: 23%">
+<col style="width: 23%">
 </colgroup>
 <thead>
 <tr class="header">
 <th>工具</th>
-<th>算法</th>
-<th>速度</th>
+<th>发布年份</th>
+<th>语言</th>
 <th>特点</th>
-<th>用途</th>
 </tr>
 </thead>
 <tbody>
 <tr class="odd">
-<td><strong>BWA-MEM</strong></td>
-<td>BWT</td>
-<td>快</td>
-<td>通用、鲁棒</td>
-<td>全基因组测序（WGS）、全外显子测序（WES）</td>
+<td><strong>Trimmomatic</strong></td>
+<td>2014</td>
+<td>Java</td>
+<td>参数最灵活，管道式处理，文档完善</td>
 </tr>
 <tr class="even">
-<td>Bowtie2</td>
-<td>BWT</td>
-<td>中等</td>
-<td>局部比对灵活</td>
-<td>RNA-seq、小 RNA</td>
+<td><strong>Cutadapt</strong></td>
+<td>2011</td>
+<td>Python/C</td>
+<td>最早的专用工具，精确控制每步操作</td>
 </tr>
 <tr class="odd">
-<td>HISAT2</td>
-<td>BWT</td>
-<td>快</td>
-<td>跳过内含子</td>
-<td>RNA-seq（支持拼接）</td>
-</tr>
-<tr class="even">
-<td>Minimap2</td>
-<td>最小化链接</td>
-<td>快</td>
-<td>长读比对</td>
-<td>PacBio、Nanopore</td>
+<td><strong>fastp</strong></td>
+<td>2018</td>
+<td>C++</td>
+<td>速度最快（多线程），自动检测 adapter，内置 QC 报告</td>
 </tr>
 </tbody>
 </table>
-<hr>
+<div class="tip">
+<p><strong>实际工作的工具选择建议：</strong></p>
+<p>新项目推荐使用 <strong>fastp</strong>，原因：①无需手动指定 adapter 序列（自动检测）；②单命令完成 QC + trimming + 报告生成；③速度比 Trimmomatic 快 3–5 倍；④输出 JSON 格式报告，便于 MultiQC 集成。Trimmomatic 仍在许多既有流程中广泛使用，理解其参数有助于阅读他人代码。</p>
+</div>
 </section>
-</section>
-<section id="实践fastqc-分析与-bwa-比对" class="level2" data-number="11.4">
-<h2 data-number="11.4" class="anchored" data-anchor-id="实践fastqc-分析与-bwa-比对"><span class="header-section-number">11.4</span> 实践：FastQC 分析与 BWA 比对</h2>
-<section id="python-模拟-fastqc-分析" class="level3" data-number="11.4.1">
-<h3 data-number="11.4.1" class="anchored" data-anchor-id="python-模拟-fastqc-分析"><span class="header-section-number">11.4.1</span> Python 模拟 FastQC 分析</h3>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb2"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> numpy <span class="im">as</span> np</span>
-<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> collections <span class="im">import</span> Counter</span>
-<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> matplotlib.pyplot <span class="im">as</span> plt</span>
-<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a><span class="kw">class</span> FastQCAnalyzer:</span>
-<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> <span class="fu">__init__</span>(<span class="va">self</span>, fastq_file):</span>
-<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a>        <span class="va">self</span>.fastq_file <span class="op">=</span> fastq_file</span>
-<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a>        <span class="va">self</span>.reads <span class="op">=</span> []</span>
-<span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a>        <span class="va">self</span>.qualities <span class="op">=</span> []</span>
-<span id="cb2-10"><a href="#cb2-10" aria-hidden="true" tabindex="-1"></a>        <span class="va">self</span>.parse_fastq()</span>
-<span id="cb2-11"><a href="#cb2-11" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb2-12"><a href="#cb2-12" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> parse_fastq(<span class="va">self</span>):</span>
-<span id="cb2-13"><a href="#cb2-13" aria-hidden="true" tabindex="-1"></a>        <span class="co">"""Parse FASTQ file"""</span></span>
-<span id="cb2-14"><a href="#cb2-14" aria-hidden="true" tabindex="-1"></a>        <span class="cf">with</span> <span class="bu">open</span>(<span class="va">self</span>.fastq_file, <span class="st">'r'</span>) <span class="im">as</span> f:</span>
-<span id="cb2-15"><a href="#cb2-15" aria-hidden="true" tabindex="-1"></a>            <span class="cf">while</span> <span class="va">True</span>:</span>
-<span id="cb2-16"><a href="#cb2-16" aria-hidden="true" tabindex="-1"></a>                header <span class="op">=</span> f.readline().strip()</span>
-<span id="cb2-17"><a href="#cb2-17" aria-hidden="true" tabindex="-1"></a>                <span class="cf">if</span> <span class="kw">not</span> header:</span>
-<span id="cb2-18"><a href="#cb2-18" aria-hidden="true" tabindex="-1"></a>                    <span class="cf">break</span></span>
-<span id="cb2-19"><a href="#cb2-19" aria-hidden="true" tabindex="-1"></a>                seq <span class="op">=</span> f.readline().strip()</span>
-<span id="cb2-20"><a href="#cb2-20" aria-hidden="true" tabindex="-1"></a>                plus <span class="op">=</span> f.readline().strip()</span>
-<span id="cb2-21"><a href="#cb2-21" aria-hidden="true" tabindex="-1"></a>                qual <span class="op">=</span> f.readline().strip()</span>
-<span id="cb2-22"><a href="#cb2-22" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb2-23"><a href="#cb2-23" aria-hidden="true" tabindex="-1"></a>                <span class="va">self</span>.reads.append(seq)</span>
-<span id="cb2-24"><a href="#cb2-24" aria-hidden="true" tabindex="-1"></a>                <span class="va">self</span>.qualities.append([<span class="bu">ord</span>(c) <span class="op">-</span> <span class="dv">33</span> <span class="cf">for</span> c <span class="kw">in</span> qual])</span>
-<span id="cb2-25"><a href="#cb2-25" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb2-26"><a href="#cb2-26" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> per_base_quality(<span class="va">self</span>):</span>
-<span id="cb2-27"><a href="#cb2-27" aria-hidden="true" tabindex="-1"></a>        <span class="co">"""Calculate per-position quality"""</span></span>
-<span id="cb2-28"><a href="#cb2-28" aria-hidden="true" tabindex="-1"></a>        read_length <span class="op">=</span> <span class="bu">len</span>(<span class="va">self</span>.reads[<span class="dv">0</span>])</span>
-<span id="cb2-29"><a href="#cb2-29" aria-hidden="true" tabindex="-1"></a>        per_pos_quality <span class="op">=</span> [[] <span class="cf">for</span> _ <span class="kw">in</span> <span class="bu">range</span>(read_length)]</span>
-<span id="cb2-30"><a href="#cb2-30" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb2-31"><a href="#cb2-31" aria-hidden="true" tabindex="-1"></a>        <span class="cf">for</span> q_list <span class="kw">in</span> <span class="va">self</span>.qualities:</span>
-<span id="cb2-32"><a href="#cb2-32" aria-hidden="true" tabindex="-1"></a>            <span class="cf">for</span> pos, q <span class="kw">in</span> <span class="bu">enumerate</span>(q_list):</span>
-<span id="cb2-33"><a href="#cb2-33" aria-hidden="true" tabindex="-1"></a>                per_pos_quality[pos].append(q)</span>
-<span id="cb2-34"><a href="#cb2-34" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb2-35"><a href="#cb2-35" aria-hidden="true" tabindex="-1"></a>        <span class="cf">return</span> [np.mean(qs) <span class="cf">for</span> qs <span class="kw">in</span> per_pos_quality]</span>
-<span id="cb2-36"><a href="#cb2-36" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb2-37"><a href="#cb2-37" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> gc_content(<span class="va">self</span>):</span>
-<span id="cb2-38"><a href="#cb2-38" aria-hidden="true" tabindex="-1"></a>        <span class="co">"""Calculate GC content"""</span></span>
-<span id="cb2-39"><a href="#cb2-39" aria-hidden="true" tabindex="-1"></a>        gc_counts <span class="op">=</span> []</span>
-<span id="cb2-40"><a href="#cb2-40" aria-hidden="true" tabindex="-1"></a>        <span class="cf">for</span> seq <span class="kw">in</span> <span class="va">self</span>.reads:</span>
-<span id="cb2-41"><a href="#cb2-41" aria-hidden="true" tabindex="-1"></a>            gc <span class="op">=</span> seq.count(<span class="st">'G'</span>) <span class="op">+</span> seq.count(<span class="st">'C'</span>)</span>
-<span id="cb2-42"><a href="#cb2-42" aria-hidden="true" tabindex="-1"></a>            gc_pct <span class="op">=</span> (gc <span class="op">/</span> <span class="bu">len</span>(seq)) <span class="op">*</span> <span class="dv">100</span></span>
-<span id="cb2-43"><a href="#cb2-43" aria-hidden="true" tabindex="-1"></a>            gc_counts.append(gc_pct)</span>
-<span id="cb2-44"><a href="#cb2-44" aria-hidden="true" tabindex="-1"></a>        <span class="cf">return</span> gc_counts</span>
-<span id="cb2-45"><a href="#cb2-45" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb2-46"><a href="#cb2-46" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> adapter_screening(<span class="va">self</span>, adapter_seq):</span>
-<span id="cb2-47"><a href="#cb2-47" aria-hidden="true" tabindex="-1"></a>        <span class="co">"""Check adapter contamination"""</span></span>
-<span id="cb2-48"><a href="#cb2-48" aria-hidden="true" tabindex="-1"></a>        contaminated <span class="op">=</span> <span class="bu">sum</span>(<span class="dv">1</span> <span class="cf">for</span> seq <span class="kw">in</span> <span class="va">self</span>.reads <span class="cf">if</span> adapter_seq <span class="kw">in</span> seq)</span>
-<span id="cb2-49"><a href="#cb2-49" aria-hidden="true" tabindex="-1"></a>        <span class="cf">return</span> (contaminated <span class="op">/</span> <span class="bu">len</span>(<span class="va">self</span>.reads)) <span class="op">*</span> <span class="dv">100</span></span>
-<span id="cb2-50"><a href="#cb2-50" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb2-51"><a href="#cb2-51" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> duplication_check(<span class="va">self</span>):</span>
-<span id="cb2-52"><a href="#cb2-52" aria-hidden="true" tabindex="-1"></a>        <span class="co">"""Estimate PCR duplication level"""</span></span>
-<span id="cb2-53"><a href="#cb2-53" aria-hidden="true" tabindex="-1"></a>        seq_counts <span class="op">=</span> Counter(<span class="va">self</span>.reads)</span>
-<span id="cb2-54"><a href="#cb2-54" aria-hidden="true" tabindex="-1"></a>        duplicated <span class="op">=</span> <span class="bu">sum</span>(count <span class="op">-</span> <span class="dv">1</span> <span class="cf">for</span> count <span class="kw">in</span> seq_counts.values() <span class="cf">if</span> count <span class="op">&gt;</span> <span class="dv">1</span>)</span>
-<span id="cb2-55"><a href="#cb2-55" aria-hidden="true" tabindex="-1"></a>        <span class="cf">return</span> (duplicated <span class="op">/</span> <span class="bu">len</span>(<span class="va">self</span>.reads)) <span class="op">*</span> <span class="dv">100</span></span>
-<span id="cb2-56"><a href="#cb2-56" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb2-57"><a href="#cb2-57" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> generate_report(<span class="va">self</span>):</span>
-<span id="cb2-58"><a href="#cb2-58" aria-hidden="true" tabindex="-1"></a>        <span class="co">"""Generate FastQC-like report"""</span></span>
-<span id="cb2-59"><a href="#cb2-59" aria-hidden="true" tabindex="-1"></a>        <span class="bu">print</span>(<span class="st">"</span><span class="ch">\n</span><span class="st">"</span> <span class="op">+</span> <span class="st">"="</span><span class="op">*</span><span class="dv">50</span>)</span>
-<span id="cb2-60"><a href="#cb2-60" aria-hidden="true" tabindex="-1"></a>        <span class="bu">print</span>(<span class="st">"FastQC 质量报告"</span>)</span>
-<span id="cb2-61"><a href="#cb2-61" aria-hidden="true" tabindex="-1"></a>        <span class="bu">print</span>(<span class="st">"="</span><span class="op">*</span><span class="dv">50</span>)</span>
-<span id="cb2-62"><a href="#cb2-62" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb2-63"><a href="#cb2-63" aria-hidden="true" tabindex="-1"></a>        <span class="bu">print</span>(<span class="ss">f"</span><span class="ch">\n</span><span class="ss">✓ 基本信息"</span>)</span>
-<span id="cb2-64"><a href="#cb2-64" aria-hidden="true" tabindex="-1"></a>        <span class="bu">print</span>(<span class="ss">f"  总 Read 数: </span><span class="sc">{</span><span class="bu">len</span>(<span class="va">self</span>.reads)<span class="sc">}</span><span class="ss">"</span>)</span>
-<span id="cb2-65"><a href="#cb2-65" aria-hidden="true" tabindex="-1"></a>        <span class="bu">print</span>(<span class="ss">f"  Read 长度: </span><span class="sc">{</span><span class="bu">len</span>(<span class="va">self</span>.reads[<span class="dv">0</span>])<span class="sc">}</span><span class="ss"> bp"</span>)</span>
-<span id="cb2-66"><a href="#cb2-66" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb2-67"><a href="#cb2-67" aria-hidden="true" tabindex="-1"></a>        <span class="bu">print</span>(<span class="ss">f"</span><span class="ch">\n</span><span class="ss">✓ 质量指标"</span>)</span>
-<span id="cb2-68"><a href="#cb2-68" aria-hidden="true" tabindex="-1"></a>        qual_array <span class="op">=</span> np.array(<span class="va">self</span>.qualities)</span>
-<span id="cb2-69"><a href="#cb2-69" aria-hidden="true" tabindex="-1"></a>        <span class="bu">print</span>(<span class="ss">f"  平均质量: Q</span><span class="sc">{</span>np<span class="sc">.</span>mean(qual_array)<span class="sc">:.2f}</span><span class="ss">"</span>)</span>
-<span id="cb2-70"><a href="#cb2-70" aria-hidden="true" tabindex="-1"></a>        <span class="bu">print</span>(<span class="ss">f"  Q30+ 比例: </span><span class="sc">{</span>(qual_array <span class="op">&gt;=</span> <span class="dv">30</span>)<span class="sc">.</span><span class="bu">sum</span>() <span class="op">/</span> qual_array<span class="sc">.</span>size <span class="op">*</span> <span class="dv">100</span><span class="sc">:.2f}</span><span class="ss">%"</span>)</span>
-<span id="cb2-71"><a href="#cb2-71" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb2-72"><a href="#cb2-72" aria-hidden="true" tabindex="-1"></a>        <span class="bu">print</span>(<span class="ss">f"</span><span class="ch">\n</span><span class="ss">✓ Per-Base 质量"</span>)</span>
-<span id="cb2-73"><a href="#cb2-73" aria-hidden="true" tabindex="-1"></a>        per_base_q <span class="op">=</span> <span class="va">self</span>.per_base_quality()</span>
-<span id="cb2-74"><a href="#cb2-74" aria-hidden="true" tabindex="-1"></a>        <span class="bu">print</span>(<span class="ss">f"  起点质量: Q</span><span class="sc">{</span>per_base_q[<span class="dv">0</span>]<span class="sc">:.2f}</span><span class="ss">"</span>)</span>
-<span id="cb2-75"><a href="#cb2-75" aria-hidden="true" tabindex="-1"></a>        <span class="bu">print</span>(<span class="ss">f"  末端质量: Q</span><span class="sc">{</span>per_base_q[<span class="op">-</span><span class="dv">1</span>]<span class="sc">:.2f}</span><span class="ss">"</span>)</span>
-<span id="cb2-76"><a href="#cb2-76" aria-hidden="true" tabindex="-1"></a>        <span class="cf">if</span> per_base_q[<span class="dv">0</span>] <span class="op">-</span> per_base_q[<span class="op">-</span><span class="dv">1</span>] <span class="op">&gt;</span> <span class="dv">5</span>:</span>
-<span id="cb2-77"><a href="#cb2-77" aria-hidden="true" tabindex="-1"></a>            <span class="bu">print</span>(<span class="ss">f"  ⚠️ 检测到末端质量严重下降，建议 trimming"</span>)</span>
-<span id="cb2-78"><a href="#cb2-78" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb2-79"><a href="#cb2-79" aria-hidden="true" tabindex="-1"></a>        <span class="bu">print</span>(<span class="ss">f"</span><span class="ch">\n</span><span class="ss">✓ GC 含量分析"</span>)</span>
-<span id="cb2-80"><a href="#cb2-80" aria-hidden="true" tabindex="-1"></a>        gc_contents <span class="op">=</span> <span class="va">self</span>.gc_content()</span>
-<span id="cb2-81"><a href="#cb2-81" aria-hidden="true" tabindex="-1"></a>        <span class="bu">print</span>(<span class="ss">f"  平均 GC%: </span><span class="sc">{</span>np<span class="sc">.</span>mean(gc_contents)<span class="sc">:.2f}</span><span class="ss">%"</span>)</span>
-<span id="cb2-82"><a href="#cb2-82" aria-hidden="true" tabindex="-1"></a>        <span class="bu">print</span>(<span class="ss">f"  GC% 标准差: </span><span class="sc">{</span>np<span class="sc">.</span>std(gc_contents)<span class="sc">:.2f}</span><span class="ss">%"</span>)</span>
-<span id="cb2-83"><a href="#cb2-83" aria-hidden="true" tabindex="-1"></a>        <span class="cf">if</span> np.std(gc_contents) <span class="op">&gt;</span> <span class="dv">10</span>:</span>
-<span id="cb2-84"><a href="#cb2-84" aria-hidden="true" tabindex="-1"></a>            <span class="bu">print</span>(<span class="ss">f"  ⚠️ GC 含量分布异常，可能存在物种污染"</span>)</span>
-<span id="cb2-85"><a href="#cb2-85" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb2-86"><a href="#cb2-86" aria-hidden="true" tabindex="-1"></a>        <span class="bu">print</span>(<span class="ss">f"</span><span class="ch">\n</span><span class="ss">✓ PCR 重复检查"</span>)</span>
-<span id="cb2-87"><a href="#cb2-87" aria-hidden="true" tabindex="-1"></a>        dup_pct <span class="op">=</span> <span class="va">self</span>.duplication_check()</span>
-<span id="cb2-88"><a href="#cb2-88" aria-hidden="true" tabindex="-1"></a>        <span class="bu">print</span>(<span class="ss">f"  重复 Read 比例: </span><span class="sc">{</span>dup_pct<span class="sc">:.2f}</span><span class="ss">%"</span>)</span>
-<span id="cb2-89"><a href="#cb2-89" aria-hidden="true" tabindex="-1"></a>        <span class="cf">if</span> dup_pct <span class="op">&gt;</span> <span class="dv">20</span>:</span>
-<span id="cb2-90"><a href="#cb2-90" aria-hidden="true" tabindex="-1"></a>            <span class="bu">print</span>(<span class="ss">f"  ⚠️ PCR 重复过高，文库质量欠佳"</span>)</span>
-<span id="cb2-91"><a href="#cb2-91" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb2-92"><a href="#cb2-92" aria-hidden="true" tabindex="-1"></a>        <span class="bu">print</span>(<span class="ss">f"</span><span class="ch">\n</span><span class="ss">✓ Adapter 检查"</span>)</span>
-<span id="cb2-93"><a href="#cb2-93" aria-hidden="true" tabindex="-1"></a>        adapter_pct <span class="op">=</span> <span class="va">self</span>.adapter_screening(<span class="st">"AGATCGGAAGAGC"</span>)</span>
-<span id="cb2-94"><a href="#cb2-94" aria-hidden="true" tabindex="-1"></a>        <span class="bu">print</span>(<span class="ss">f"  Adapter 污染: </span><span class="sc">{</span>adapter_pct<span class="sc">:.2f}</span><span class="ss">%"</span>)</span>
-<span id="cb2-95"><a href="#cb2-95" aria-hidden="true" tabindex="-1"></a>        <span class="cf">if</span> adapter_pct <span class="op">&gt;</span> <span class="dv">1</span>:</span>
-<span id="cb2-96"><a href="#cb2-96" aria-hidden="true" tabindex="-1"></a>            <span class="bu">print</span>(<span class="ss">f"  ⚠️ 检测到 adapter，需要 trimming"</span>)</span>
-<span id="cb2-97"><a href="#cb2-97" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb2-98"><a href="#cb2-98" aria-hidden="true" tabindex="-1"></a>        <span class="bu">print</span>(<span class="st">"="</span><span class="op">*</span><span class="dv">50</span> <span class="op">+</span> <span class="st">"</span><span class="ch">\n</span><span class="st">"</span>)</span>
-<span id="cb2-99"><a href="#cb2-99" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb2-100"><a href="#cb2-100" aria-hidden="true" tabindex="-1"></a><span class="co"># 使用示例</span></span>
-<span id="cb2-101"><a href="#cb2-101" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> <span class="va">__name__</span> <span class="op">==</span> <span class="st">"__main__"</span>:</span>
-<span id="cb2-102"><a href="#cb2-102" aria-hidden="true" tabindex="-1"></a>    <span class="co"># 假设已有 simulated_wgs.fastq（来自 lesson1）</span></span>
-<span id="cb2-103"><a href="#cb2-103" aria-hidden="true" tabindex="-1"></a>    analyzer <span class="op">=</span> FastQCAnalyzer(<span class="st">"simulated_wgs.fastq"</span>)</span>
-<span id="cb2-104"><a href="#cb2-104" aria-hidden="true" tabindex="-1"></a>    analyzer.generate_report()</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-</section>
-<section id="bwa-比对流程bash" class="level3" data-number="11.4.2">
-<h3 data-number="11.4.2" class="anchored" data-anchor-id="bwa-比对流程bash"><span class="header-section-number">11.4.2</span> BWA 比对流程（Bash）</h3>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb3"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="co">#!/bin/bash</span></span>
-<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a><span class="co"># 参数</span></span>
-<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a><span class="va">REF_GENOME</span><span class="op">=</span><span class="st">"reference.fasta"</span></span>
-<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a><span class="va">R1</span><span class="op">=</span><span class="st">"sample_R1.fastq"</span></span>
-<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a><span class="va">R2</span><span class="op">=</span><span class="st">"sample_R2.fastq"</span></span>
-<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a><span class="va">OUTPUT_BAM</span><span class="op">=</span><span class="st">"sample.bam"</span></span>
-<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a><span class="va">THREADS</span><span class="op">=</span>4</span>
-<span id="cb3-9"><a href="#cb3-9" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb3-10"><a href="#cb3-10" aria-hidden="true" tabindex="-1"></a><span class="co"># 1. 构建 BWA 索引（仅需一次）</span></span>
-<span id="cb3-11"><a href="#cb3-11" aria-hidden="true" tabindex="-1"></a><span class="bu">echo</span> <span class="st">"Step 1: Indexing reference genome..."</span></span>
-<span id="cb3-12"><a href="#cb3-12" aria-hidden="true" tabindex="-1"></a><span class="ex">bwa</span> index <span class="va">${REF_GENOME}</span></span>
-<span id="cb3-13"><a href="#cb3-13" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb3-14"><a href="#cb3-14" aria-hidden="true" tabindex="-1"></a><span class="co"># 2. 序列比对，输出 SAM</span></span>
-<span id="cb3-15"><a href="#cb3-15" aria-hidden="true" tabindex="-1"></a><span class="bu">echo</span> <span class="st">"Step 2: Aligning reads..."</span></span>
-<span id="cb3-16"><a href="#cb3-16" aria-hidden="true" tabindex="-1"></a><span class="ex">bwa</span> mem <span class="at">-t</span> <span class="va">${THREADS}</span> <span class="dt">\</span></span>
-<span id="cb3-17"><a href="#cb3-17" aria-hidden="true" tabindex="-1"></a>    <span class="at">-R</span> <span class="st">"@RG\tID:sample1\tSM:sample1\tLB:lib1\tPL:ILLUMINA"</span> <span class="dt">\</span></span>
-<span id="cb3-18"><a href="#cb3-18" aria-hidden="true" tabindex="-1"></a>    <span class="va">${REF_GENOME}</span> <span class="va">${R1}</span> <span class="va">${R2}</span> <span class="kw">|</span> <span class="dt">\</span></span>
-<span id="cb3-19"><a href="#cb3-19" aria-hidden="true" tabindex="-1"></a>    <span class="ex">samtools</span> view <span class="at">-b</span> <span class="at">-o</span> <span class="va">${OUTPUT_BAM}</span>.tmp <span class="at">-</span></span>
-<span id="cb3-20"><a href="#cb3-20" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb3-21"><a href="#cb3-21" aria-hidden="true" tabindex="-1"></a><span class="co"># 3. 排序</span></span>
-<span id="cb3-22"><a href="#cb3-22" aria-hidden="true" tabindex="-1"></a><span class="bu">echo</span> <span class="st">"Step 3: Sorting BAM..."</span></span>
-<span id="cb3-23"><a href="#cb3-23" aria-hidden="true" tabindex="-1"></a><span class="ex">samtools</span> sort <span class="at">-o</span> <span class="va">${OUTPUT_BAM}</span> <span class="va">${OUTPUT_BAM}</span>.tmp</span>
-<span id="cb3-24"><a href="#cb3-24" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb3-25"><a href="#cb3-25" aria-hidden="true" tabindex="-1"></a><span class="co"># 4. 建立索引</span></span>
-<span id="cb3-26"><a href="#cb3-26" aria-hidden="true" tabindex="-1"></a><span class="bu">echo</span> <span class="st">"Step 4: Indexing BAM..."</span></span>
-<span id="cb3-27"><a href="#cb3-27" aria-hidden="true" tabindex="-1"></a><span class="ex">samtools</span> index <span class="va">${OUTPUT_BAM}</span></span>
-<span id="cb3-28"><a href="#cb3-28" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb3-29"><a href="#cb3-29" aria-hidden="true" tabindex="-1"></a><span class="co"># 5. 统计比对统计信息</span></span>
-<span id="cb3-30"><a href="#cb3-30" aria-hidden="true" tabindex="-1"></a><span class="bu">echo</span> <span class="st">"Step 5: Alignment statistics..."</span></span>
-<span id="cb3-31"><a href="#cb3-31" aria-hidden="true" tabindex="-1"></a><span class="ex">samtools</span> flagstat <span class="va">${OUTPUT_BAM}</span></span>
-<span id="cb3-32"><a href="#cb3-32" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb3-33"><a href="#cb3-33" aria-hidden="true" tabindex="-1"></a><span class="fu">rm</span> <span class="va">${OUTPUT_BAM}</span>.tmp</span>
-<span id="cb3-34"><a href="#cb3-34" aria-hidden="true" tabindex="-1"></a><span class="bu">echo</span> <span class="st">"✓ 完成！输出文件: </span><span class="va">${OUTPUT_BAM}</span><span class="st">"</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-<hr>
-</section>
-</section>
-<section id="课后自测-post-lesson-quiz" class="level2" data-number="11.5">
-<h2 data-number="11.5" class="anchored" data-anchor-id="课后自测-post-lesson-quiz"><span class="header-section-number">11.5</span> 课后自测 (Post-Lesson Quiz)</h2>
+<section id="fastp-实战处理真实-e.-coli-数据" class="level2" data-number="12.2">
+<h2 data-number="12.2" class="anchored" data-anchor-id="fastp-实战处理真实-e.-coli-数据"><span class="header-section-number">12.2</span> fastp 实战：处理真实 E. coli 数据</h2>
+<p>延续第1节的数据集（SRR2584863），对下载的 50k reads 子集进行预处理。</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb3"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Install fastp via conda</span></span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="ex">conda</span> install <span class="at">-c</span> bioconda fastp</span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a><span class="co"># Run fastp on PE data</span></span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a><span class="ex">fastp</span> <span class="dt">\</span></span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a>    <span class="at">--in1</span>  SRR2584863_1_50k.fastq.gz <span class="dt">\</span></span>
+<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a>    <span class="at">--in2</span>  SRR2584863_2_50k.fastq.gz <span class="dt">\</span></span>
+<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a>    <span class="at">--out1</span> SRR2584863_1_clean.fastq.gz <span class="dt">\</span></span>
+<span id="cb3-9"><a href="#cb3-9" aria-hidden="true" tabindex="-1"></a>    <span class="at">--out2</span> SRR2584863_2_clean.fastq.gz <span class="dt">\</span></span>
+<span id="cb3-10"><a href="#cb3-10" aria-hidden="true" tabindex="-1"></a>    <span class="at">--html</span> fastp_report.html <span class="dt">\</span></span>
+<span id="cb3-11"><a href="#cb3-11" aria-hidden="true" tabindex="-1"></a>    <span class="at">--json</span> fastp_report.json <span class="dt">\</span></span>
+<span id="cb3-12"><a href="#cb3-12" aria-hidden="true" tabindex="-1"></a>    <span class="at">--thread</span> 4 <span class="dt">\</span></span>
+<span id="cb3-13"><a href="#cb3-13" aria-hidden="true" tabindex="-1"></a>    <span class="at">--qualified_quality_phred</span> 20 <span class="dt">\</span></span>
+<span id="cb3-14"><a href="#cb3-14" aria-hidden="true" tabindex="-1"></a>    <span class="at">--length_required</span> 50 <span class="dt">\</span></span>
+<span id="cb3-15"><a href="#cb3-15" aria-hidden="true" tabindex="-1"></a>    <span class="at">--detect_adapter_for_pe</span> <span class="dt">\</span></span>
+<span id="cb3-16"><a href="#cb3-16" aria-hidden="true" tabindex="-1"></a>    <span class="at">--correction</span> <span class="dt">\</span></span>
+<span id="cb3-17"><a href="#cb3-17" aria-hidden="true" tabindex="-1"></a>    <span class="at">--overrepresentation_analysis</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><strong>关键参数解析：</strong></p>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 30%">
+<col style="width: 30%">
+<col style="width: 40%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>参数</th>
+<th>含义</th>
+<th>推荐值</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>--qualified_quality_phred 20</code></td>
+<td>低于 Q20 的碱基替换为 N</td>
+<td>20（宽松）或 30（严格）</td>
+</tr>
+<tr class="even">
+<td><code>--length_required 50</code></td>
+<td>短于 50 bp 的 reads 丢弃</td>
+<td>WGS: 50；miRNA: 15</td>
+</tr>
+<tr class="odd">
+<td><code>--detect_adapter_for_pe</code></td>
+<td>自动检测 PE adapter</td>
+<td>推荐始终开启</td>
+</tr>
+<tr class="even">
+<td><code>--correction</code></td>
+<td>对 R1/R2 重叠区域进行碱基校正</td>
+<td>PE 数据推荐开启</td>
+</tr>
+<tr class="odd">
+<td><code>--overrepresentation_analysis</code></td>
+<td>检测过度富集序列</td>
+<td>推荐开启</td>
+</tr>
+</tbody>
+</table>
+<p><strong>fastp 真实输出摘要：</strong></p>
+<pre><code>Read1 before filtering:
+  total reads: 50000
+  total bases: 7550000
+  Q20 bases: 7395121(97.95%)
+  Q30 bases: 6989842(92.58%)
+
+Read1 after filtering:
+  total reads: 49312
+  total bases: 7426836
+  Q20 bases: 7366204(99.18%)
+  Q30 bases: 6985761(94.05%)
+
+Filtering result:
+  reads passed filter: 98624 (98.62%)
+  reads failed due to low quality: 916
+  reads failed due to too short: 460
+  reads with adapter trimmed: 2847 (5.69%)
+  bases trimmed due to adapters: 38924</code></pre>
 <div class="note">
-<p><strong>标题：</strong> 💭 思考题</p>
+<p><strong>解读 fastp 报告</strong></p>
+<p>本数据集（E. coli WGS）中 adapter 污染率约 5.69%，属于轻度污染。这源于文库构建时少量 insert size 较短的片段（低于 150 bp）发生了 read-through。过滤后 Q30 比例从 92.58% 提升至 94.05%，表明 trimming 显著改善了数据质量。</p>
+</div>
+</section>
+<section id="trimmomatic-参数深解" class="level2" data-number="12.3">
+<h2 data-number="12.3" class="anchored" data-anchor-id="trimmomatic-参数深解"><span class="header-section-number">12.3</span> Trimmomatic 参数深解</h2>
+<p>尽管 fastp 已是新项目首选，理解 Trimmomatic 的管道逻辑对阅读既有流程代码不可或缺。</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb5"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Install Trimmomatic</span></span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a><span class="ex">conda</span> install <span class="at">-c</span> bioconda trimmomatic</span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a><span class="co"># PE mode: order of operations matters</span></span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a><span class="ex">trimmomatic</span> PE <span class="dt">\</span></span>
+<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a>    SRR2584863_1_50k.fastq.gz <span class="dt">\</span></span>
+<span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a>    SRR2584863_2_50k.fastq.gz <span class="dt">\</span></span>
+<span id="cb5-8"><a href="#cb5-8" aria-hidden="true" tabindex="-1"></a>    R1_paired.fastq.gz R1_unpaired.fastq.gz <span class="dt">\</span></span>
+<span id="cb5-9"><a href="#cb5-9" aria-hidden="true" tabindex="-1"></a>    R2_paired.fastq.gz R2_unpaired.fastq.gz <span class="dt">\</span></span>
+<span id="cb5-10"><a href="#cb5-10" aria-hidden="true" tabindex="-1"></a>    ILLUMINACLIP:TruSeq3-PE-2.fa:2:30:10:8:true <span class="dt">\</span></span>
+<span id="cb5-11"><a href="#cb5-11" aria-hidden="true" tabindex="-1"></a>    LEADING:3 <span class="dt">\</span></span>
+<span id="cb5-12"><a href="#cb5-12" aria-hidden="true" tabindex="-1"></a>    TRAILING:3 <span class="dt">\</span></span>
+<span id="cb5-13"><a href="#cb5-13" aria-hidden="true" tabindex="-1"></a>    SLIDINGWINDOW:4:15 <span class="dt">\</span></span>
+<span id="cb5-14"><a href="#cb5-14" aria-hidden="true" tabindex="-1"></a>    MINLEN:50</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>Trimmomatic 按照<strong>从左到右的顺序</strong>依次执行每个操作：</p>
+<pre><code>原始 Read → ILLUMINACLIP → LEADING → TRAILING → SLIDINGWINDOW → MINLEN → 输出</code></pre>
+<p><strong>ILLUMINACLIP 参数格式：</strong> <code>adapters.fa:&lt;seed_mismatches&gt;:&lt;palindrome_clip&gt;:&lt;simple_clip&gt;</code></p>
+<table class="caption-top table">
+<thead>
+<tr class="header">
+<th>ILLUMINACLIP 子参数</th>
+<th>含义</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>2</code> (seed_mismatches)</td>
+<td>Adapter 种子序列允许的最大错配数</td>
+</tr>
+<tr class="even">
+<td><code>30</code> (palindrome_clip)</td>
+<td>PE palindrome 模式的匹配分阈值</td>
+</tr>
+<tr class="odd">
+<td><code>10</code> (simple_clip)</td>
+<td>简单模式的匹配分阈值</td>
+</tr>
+<tr class="even">
+<td><code>8</code> (min_adapter_length)</td>
+<td>触发截除所需的最短 adapter 匹配长度</td>
+</tr>
+</tbody>
+</table>
+<p><strong>SLIDINGWINDOW:4:15</strong> 的含义：以 4 bp 为窗口滑动，若窗口内平均质量低于 Q15，则从该位置截断至末端。</p>
+<div class="warning">
+<p><strong>Trimmomatic 输出的 “unpaired” 文件处理：</strong></p>
+<p>PE 模式下，若 R1 通过过滤而 R2 被丢弃（或反之），该 R1 会进入”unpaired”文件而非被直接丢弃。这些 unpaired reads 可以用于 SE 比对，但大多数 PE 流程会选择忽略它们以维持 read pair 配对关系的严格性。</p>
+</div>
+</section>
+<section id="预处理前后质量对比python-可视化" class="level2" data-number="12.4">
+<h2 data-number="12.4" class="anchored" data-anchor-id="预处理前后质量对比python-可视化"><span class="header-section-number">12.4</span> 预处理前后质量对比（Python 可视化）</h2>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb7"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> gzip</span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> numpy <span class="im">as</span> np</span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> matplotlib.pyplot <span class="im">as</span> plt</span>
+<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> collections <span class="im">import</span> defaultdict</span>
+<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> per_position_quality(filepath, max_reads<span class="op">=</span><span class="dv">10000</span>):</span>
+<span id="cb7-7"><a href="#cb7-7" aria-hidden="true" tabindex="-1"></a>    <span class="co">"""Compute per-position mean quality from a gzipped FASTQ file."""</span></span>
+<span id="cb7-8"><a href="#cb7-8" aria-hidden="true" tabindex="-1"></a>    pos_q <span class="op">=</span> defaultdict(<span class="bu">list</span>)</span>
+<span id="cb7-9"><a href="#cb7-9" aria-hidden="true" tabindex="-1"></a>    count <span class="op">=</span> <span class="dv">0</span></span>
+<span id="cb7-10"><a href="#cb7-10" aria-hidden="true" tabindex="-1"></a>    opener <span class="op">=</span> gzip.<span class="bu">open</span> <span class="cf">if</span> filepath.endswith(<span class="st">".gz"</span>) <span class="cf">else</span> <span class="bu">open</span></span>
+<span id="cb7-11"><a href="#cb7-11" aria-hidden="true" tabindex="-1"></a>    <span class="cf">with</span> opener(filepath, <span class="st">"rt"</span>) <span class="im">as</span> f:</span>
+<span id="cb7-12"><a href="#cb7-12" aria-hidden="true" tabindex="-1"></a>        <span class="cf">while</span> <span class="va">True</span>:</span>
+<span id="cb7-13"><a href="#cb7-13" aria-hidden="true" tabindex="-1"></a>            header <span class="op">=</span> f.readline()</span>
+<span id="cb7-14"><a href="#cb7-14" aria-hidden="true" tabindex="-1"></a>            <span class="cf">if</span> <span class="kw">not</span> header:</span>
+<span id="cb7-15"><a href="#cb7-15" aria-hidden="true" tabindex="-1"></a>                <span class="cf">break</span></span>
+<span id="cb7-16"><a href="#cb7-16" aria-hidden="true" tabindex="-1"></a>            _ <span class="op">=</span> f.readline()</span>
+<span id="cb7-17"><a href="#cb7-17" aria-hidden="true" tabindex="-1"></a>            __ <span class="op">=</span> f.readline()</span>
+<span id="cb7-18"><a href="#cb7-18" aria-hidden="true" tabindex="-1"></a>            qual <span class="op">=</span> f.readline().strip()</span>
+<span id="cb7-19"><a href="#cb7-19" aria-hidden="true" tabindex="-1"></a>            <span class="cf">for</span> pos, c <span class="kw">in</span> <span class="bu">enumerate</span>(qual):</span>
+<span id="cb7-20"><a href="#cb7-20" aria-hidden="true" tabindex="-1"></a>                pos_q[pos].append(<span class="bu">ord</span>(c) <span class="op">-</span> <span class="dv">33</span>)</span>
+<span id="cb7-21"><a href="#cb7-21" aria-hidden="true" tabindex="-1"></a>            count <span class="op">+=</span> <span class="dv">1</span></span>
+<span id="cb7-22"><a href="#cb7-22" aria-hidden="true" tabindex="-1"></a>            <span class="cf">if</span> count <span class="op">&gt;=</span> max_reads:</span>
+<span id="cb7-23"><a href="#cb7-23" aria-hidden="true" tabindex="-1"></a>                <span class="cf">break</span></span>
+<span id="cb7-24"><a href="#cb7-24" aria-hidden="true" tabindex="-1"></a>    positions <span class="op">=</span> <span class="bu">sorted</span>(pos_q)</span>
+<span id="cb7-25"><a href="#cb7-25" aria-hidden="true" tabindex="-1"></a>    means <span class="op">=</span> [np.mean(pos_q[p]) <span class="cf">for</span> p <span class="kw">in</span> positions]</span>
+<span id="cb7-26"><a href="#cb7-26" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> positions, means</span>
+<span id="cb7-27"><a href="#cb7-27" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-28"><a href="#cb7-28" aria-hidden="true" tabindex="-1"></a>files <span class="op">=</span> {</span>
+<span id="cb7-29"><a href="#cb7-29" aria-hidden="true" tabindex="-1"></a>    <span class="st">"Before (R1 raw)"</span>:   <span class="st">"SRR2584863_1_50k.fastq.gz"</span>,</span>
+<span id="cb7-30"><a href="#cb7-30" aria-hidden="true" tabindex="-1"></a>    <span class="st">"After  (R1 clean)"</span>: <span class="st">"SRR2584863_1_clean.fastq.gz"</span>,</span>
+<span id="cb7-31"><a href="#cb7-31" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb7-32"><a href="#cb7-32" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-33"><a href="#cb7-33" aria-hidden="true" tabindex="-1"></a>fig, ax <span class="op">=</span> plt.subplots(figsize<span class="op">=</span>(<span class="dv">10</span>, <span class="dv">5</span>))</span>
+<span id="cb7-34"><a href="#cb7-34" aria-hidden="true" tabindex="-1"></a>colors <span class="op">=</span> [<span class="st">"#d62728"</span>, <span class="st">"#2ca02c"</span>]</span>
+<span id="cb7-35"><a href="#cb7-35" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> (label, path), color <span class="kw">in</span> <span class="bu">zip</span>(files.items(), colors):</span>
+<span id="cb7-36"><a href="#cb7-36" aria-hidden="true" tabindex="-1"></a>    positions, means <span class="op">=</span> per_position_quality(path)</span>
+<span id="cb7-37"><a href="#cb7-37" aria-hidden="true" tabindex="-1"></a>    ax.plot(positions, means, label<span class="op">=</span>label, color<span class="op">=</span>color, linewidth<span class="op">=</span><span class="fl">1.5</span>)</span>
+<span id="cb7-38"><a href="#cb7-38" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-39"><a href="#cb7-39" aria-hidden="true" tabindex="-1"></a>ax.axhline(<span class="dv">30</span>, color<span class="op">=</span><span class="st">"gray"</span>, linestyle<span class="op">=</span><span class="st">"--"</span>, linewidth<span class="op">=</span><span class="dv">1</span>, label<span class="op">=</span><span class="st">"Q30 threshold"</span>)</span>
+<span id="cb7-40"><a href="#cb7-40" aria-hidden="true" tabindex="-1"></a>ax.set_xlabel(<span class="st">"Position in Read (bp)"</span>)</span>
+<span id="cb7-41"><a href="#cb7-41" aria-hidden="true" tabindex="-1"></a>ax.set_ylabel(<span class="st">"Mean Phred Quality Score"</span>)</span>
+<span id="cb7-42"><a href="#cb7-42" aria-hidden="true" tabindex="-1"></a>ax.set_title(<span class="st">"Per-Position Quality: Before vs After fastp Trimming"</span>)</span>
+<span id="cb7-43"><a href="#cb7-43" aria-hidden="true" tabindex="-1"></a>ax.set_ylim(<span class="dv">20</span>, <span class="dv">42</span>)</span>
+<span id="cb7-44"><a href="#cb7-44" aria-hidden="true" tabindex="-1"></a>ax.legend()</span>
+<span id="cb7-45"><a href="#cb7-45" aria-hidden="true" tabindex="-1"></a>ax.grid(<span class="va">True</span>, alpha<span class="op">=</span><span class="fl">0.3</span>)</span>
+<span id="cb7-46"><a href="#cb7-46" aria-hidden="true" tabindex="-1"></a>plt.tight_layout()</span>
+<span id="cb7-47"><a href="#cb7-47" aria-hidden="true" tabindex="-1"></a>plt.savefig(<span class="st">"trimming_comparison.png"</span>, dpi<span class="op">=</span><span class="dv">150</span>)</span>
+<span id="cb7-48"><a href="#cb7-48" aria-hidden="true" tabindex="-1"></a>plt.show()</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<hr>
+</section>
+</section>
+<section id="参考基因组选择结构与获取" class="level1" data-number="13">
+<h1 data-number="13"><span class="header-section-number">13</span> 参考基因组：选择、结构与获取</h1>
+<section id="什么是参考基因组" class="level2" data-number="13.1">
+<h2 data-number="13.1" class="anchored" data-anchor-id="什么是参考基因组"><span class="header-section-number">13.1</span> 什么是参考基因组</h2>
+<p><strong>参考基因组（Reference Genome）</strong> 是一个由人工拼接、经过反复验证的代表性基因组序列，以 FASTA 格式存储。它并非真实个体的基因组，而是由多个个体的测序数据拼接而成的”共识序列”，是变异检测的坐标系基础。</p>
+<p>{{Wiki:Reference_genome}}</p>
+<div class="note">
+<p><strong>参考基因组的哲学困境</strong></p>
+<p>参考基因组本质上是对”典型人类基因组”的近似。人类群体中存在大量结构变异（SV），某些基因座（如 HLA 区域、着丝粒）在不同个体间差异极大，任何单一参考序列都无法完美代表所有人群。这一问题正推动<strong>图泛基因组（Pangenome）</strong>研究的发展，但目前 hg38 仍是临床和科研的实用标准。</p>
+</div>
+</section>
+<section id="人类参考基因组的演变" class="level2" data-number="13.2">
+<h2 data-number="13.2" class="anchored" data-anchor-id="人类参考基因组的演变"><span class="header-section-number">13.2</span> 人类参考基因组的演变</h2>
+<p>{{Wiki:GRCh38}}</p>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 14%">
+<col style="width: 17%">
+<col style="width: 25%">
+<col style="width: 25%">
+<col style="width: 17%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>版本</th>
+<th>别名</th>
+<th>发布年份</th>
+<th>主要改进</th>
+<th>现状</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>GRCh36</td>
+<td>hg18</td>
+<td>2006</td>
+<td>第一个完整草图</td>
+<td>已废弃</td>
+</tr>
+<tr class="even">
+<td>GRCh37</td>
+<td>hg19</td>
+<td>2009</td>
+<td>修复大量 assembly gap</td>
+<td>仍有大量既有数据</td>
+</tr>
+<tr class="odd">
+<td><strong>GRCh38</strong></td>
+<td><strong>hg38</strong></td>
+<td><strong>2013</strong></td>
+<td><strong>增加 ALT contigs、decoy 序列、修复着丝粒附近区域</strong></td>
+<td><strong>新项目标准</strong></td>
+</tr>
+<tr class="even">
+<td>T2T-CHM13</td>
+<td>CHM13v2.0</td>
+<td>2022</td>
+<td>首次真正填补着丝粒和端粒缝隙，完全无 gap</td>
+<td>科研前沿，临床未普及</td>
+</tr>
+</tbody>
+</table>
+<div class="warning">
+<p><strong>hg19 与 hg38 坐标不可混用！</strong></p>
+<p>同一基因在 hg19 与 hg38 中的染色体坐标往往相差数千至数百万碱基。若将用 hg38 比对的 BAM 文件配合 hg19 的 VCF 或注释文件使用，会产生完全错误的结果。<strong>参考基因组版本必须在项目内保持一致</strong>，包括：FASTQ 比对所用参考、dbSNP 数据库版本、基因注释 GTF/GFF、GATK Bundle 文件，全部必须匹配。</p>
+</div>
+</section>
+<section id="grch38-参考基因组文件的结构" class="level2" data-number="13.3">
+<h2 data-number="13.3" class="anchored" data-anchor-id="grch38-参考基因组文件的结构"><span class="header-section-number">13.3</span> GRCh38 参考基因组文件的结构</h2>
+<p>从 NCBI 或 Ensembl 下载的 hg38 参考基因组 FASTA 文件包含多种类型的序列，理解其命名规则对正确配置分析流程至关重要：</p>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 47%">
+<col style="width: 26%">
+<col style="width: 26%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>染色体命名</th>
+<th>类型</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>chr1</code> ~ <code>chr22</code>, <code>chrX</code>, <code>chrY</code>, <code>chrM</code></td>
+<td>主染色体</td>
+<td>核心比对目标</td>
+</tr>
+<tr class="even">
+<td><code>chrUn_*</code></td>
+<td>未定位序列</td>
+<td>无法确定染色体归属的 contigs</td>
+</tr>
+<tr class="odd">
+<td><code>chr*_random</code></td>
+<td>随机序列</td>
+<td>染色体已知但位置未确定</td>
+</tr>
+<tr class="even">
+<td><code>chr*_alt</code></td>
+<td>ALT contigs</td>
+<td>高变异区域的替代单倍型序列</td>
+</tr>
+<tr class="odd">
+<td><code>chrEBV</code></td>
+<td>解链病毒</td>
+<td>用于捕获 EBV 污染</td>
+</tr>
+<tr class="even">
+<td><code>hs37d5</code> / <code>decoy</code></td>
+<td>Decoy 序列</td>
+<td>陷阱序列，捕获无法比对至主染色体的 reads</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Decoy 序列的作用</strong> 尤为重要：若不包含 decoy 序列，本应比对至非主染色体区域的 reads 会被强制比对至主染色体的低复杂度区域，产生大量假阳性变异。GATK 最佳实践（Best Practices）明确要求使用<strong>带 decoy 序列的 hg38</strong>（<code>GRCh38_full_analysis_set_plus_decoy_hla.fa</code>）。</p>
+</section>
+<section id="实践下载-e.-coli-参考基因组" class="level2" data-number="13.4">
+<h2 data-number="13.4" class="anchored" data-anchor-id="实践下载-e.-coli-参考基因组"><span class="header-section-number">13.4</span> 实践：下载 E. coli 参考基因组</h2>
+<p>本节实践继续使用 <em>E. coli</em> K-12 MG1655。其参考基因组（RefSeq: NC_000913.3）经过完全封闭（fully closed），无 gap，是教学的理想材料。</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb8"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Download E. coli K-12 MG1655 reference genome from NCBI</span></span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a><span class="bu">cd</span> ~/ecoli_qc</span>
+<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a><span class="fu">wget</span> <span class="at">-c</span> <span class="st">"https://ftp.ncbi.nlm.nih.gov/genomes/all/GCF/000/005/845/GCF_000005845.2_ASM584v2/GCF_000005845.2_ASM584v2_genomic.fna.gz"</span> <span class="dt">\</span></span>
+<span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a>     <span class="at">-O</span> ecoli_K12.fna.gz</span>
+<span id="cb8-6"><a href="#cb8-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-7"><a href="#cb8-7" aria-hidden="true" tabindex="-1"></a><span class="co"># Decompress</span></span>
+<span id="cb8-8"><a href="#cb8-8" aria-hidden="true" tabindex="-1"></a><span class="fu">gunzip</span> ecoli_K12.fna.gz</span>
+<span id="cb8-9"><a href="#cb8-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-10"><a href="#cb8-10" aria-hidden="true" tabindex="-1"></a><span class="co"># Inspect the header</span></span>
+<span id="cb8-11"><a href="#cb8-11" aria-hidden="true" tabindex="-1"></a><span class="fu">head</span> <span class="at">-n</span> 1 ecoli_K12.fna</span>
+<span id="cb8-12"><a href="#cb8-12" aria-hidden="true" tabindex="-1"></a><span class="co"># Expected: &gt;NC_000913.3 Escherichia coli str. K-12 substr. MG1655, complete genome</span></span>
+<span id="cb8-13"><a href="#cb8-13" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-14"><a href="#cb8-14" aria-hidden="true" tabindex="-1"></a><span class="co"># Check genome size</span></span>
+<span id="cb8-15"><a href="#cb8-15" aria-hidden="true" tabindex="-1"></a><span class="fu">grep</span> <span class="at">-v</span> <span class="st">"^&gt;"</span> ecoli_K12.fna <span class="kw">|</span> <span class="fu">tr</span> <span class="at">-d</span> <span class="st">'\n'</span> <span class="kw">|</span> <span class="fu">wc</span> <span class="at">-c</span></span>
+<span id="cb8-16"><a href="#cb8-16" aria-hidden="true" tabindex="-1"></a><span class="co"># Expected: 4641652 (4.64 Mb)</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<hr>
+</section>
+</section>
+<section id="序列比对原理bwt-与-fm-index" class="level1" data-number="14">
+<h1 data-number="14"><span class="header-section-number">14</span> 序列比对原理：BWT 与 FM-index</h1>
+<section id="朴素方法的瓶颈" class="level2" data-number="14.1">
+<h2 data-number="14.1" class="anchored" data-anchor-id="朴素方法的瓶颈"><span class="header-section-number">14.1</span> 朴素方法的瓶颈</h2>
+<p>将一条 150 bp 的 read 比对至 4.64 Mb（大肠杆菌）或 3 Gb（人类）的参考基因组，本质上是一个<strong>字符串搜索问题</strong>。</p>
+<p>最直觉的方法是<strong>逐位扫描</strong>：将 read 与基因组每个起始位置对齐，逐一比较。对于人类基因组：</p>
+<p><span class="math display">\[\text{操作次数} = G \times L = 3 \times 10^9 \times 150 = 4.5 \times 10^{11}\]</span></p>
+<p>按现代 CPU 每秒执行 <span class="math inline">\(10^9\)</span> 次操作计算，单条 read 需约 7.5 分钟。一次 WGS 实验产生约 <span class="math inline">\(10^9\)</span> 条 reads，完成全部比对需要约 <strong>1.4 万年</strong>。</p>
+<p>显然，我们需要截然不同的策略。</p>
+</section>
+<section id="burrows-wheeler-transform-bwt" class="level2" data-number="14.2">
+<h2 data-number="14.2" class="anchored" data-anchor-id="burrows-wheeler-transform-bwt"><span class="header-section-number">14.2</span> Burrows-Wheeler Transform (BWT)</h2>
+<p><strong>BWT</strong> 最初于 1994 年由 Michael Burrows 和 David Wheeler 提出，用于数据压缩（bzip2 即基于 BWT）。2009 年，Heng Li 等人将其引入基因组比对，催生了 BWA 工具。</p>
+<p>{{Wiki:Burrows-Wheeler_transform}}</p>
+<p>BWT 的核心思想是<strong>对字符串进行可逆排列变换</strong>，使相同字符在变换后的序列中聚集，从而实现高效压缩和搜索。</p>
+<p><strong>直觉理解 BWT 变换步骤（以短字符串为例）：</strong></p>
+<p>对字符串 <code>BANANA$</code>（<code>$</code> 为终止符，字典序最小）：</p>
 <ol type="1">
-<li><p>FastQC 报告中 “Per Base Sequence Quality” 显示质量从位置 140 开始快速下降（从 Q30 降至 Q15），这说明什么？应如何处理？</p></li>
-<li><p>GC 含量分布显示双峰（一峰在 35%，一峰在 55%），可能原因是什么？</p></li>
-<li><p>为什么需要对参考基因组构建 BWT 索引？这个索引有什么优势？</p></li>
+<li>生成所有循环旋转（Cyclic Rotations）</li>
+<li>将旋转结果按字典序排序，形成<strong>BWM 矩阵（Burrows-Wheeler Matrix）</strong></li>
+<li>取矩阵最后一列，即为 <strong>BWT 输出</strong></li>
+</ol>
+<pre><code>原始字符串:  B A N A N A $
+
+所有旋转（排序后）:       最后一列(BWT):
+  $ B A N A N A              A
+  A $ B A N A N              N
+  A N A $ B A N              N
+  A N A N A $ B              $
+  B A N A N A $    →         B
+  N A $ B A N A              A
+  N A N A $ B A              A
+
+BWT 输出: A N N $ B A A</code></pre>
+<p>BWT 输出（<code>ANNBA$AA</code>）中，<code>A</code>、<code>N</code> 等字符被聚集在一起，这一特性使其可被高效压缩至原序列的 20–30%，同时保留了对原序列的可逆映射。</p>
+</section>
+<section id="fm-indexbwt-上的快速搜索" class="level2" data-number="14.3">
+<h2 data-number="14.3" class="anchored" data-anchor-id="fm-indexbwt-上的快速搜索"><span class="header-section-number">14.3</span> FM-index：BWT 上的快速搜索</h2>
+<p><strong>FM-index（Full-text index in Minute space）</strong> 在 BWT 基础上添加了两个辅助结构：</p>
+<ul>
+<li><strong>后缀数组（Suffix Array, SA）</strong>：记录每个 BWT 旋转对应的起始位置</li>
+<li><strong>Occ 表（Occurrence Array）</strong>：记录字符在 BWT 前缀中出现的累积次数</li>
+</ul>
+<p>借助 FM-index，搜索一条 read 的时间复杂度为 <span class="math inline">\(O(L)\)</span>（仅与 read 长度有关，与基因组大小无关），内存使用仅约 2–3 GB（人类基因组），远优于朴素方法。</p>
+<div class="info">
+<p><strong>黄金法则：BWT 索引只需构建一次</strong></p>
+<p><code>bwa index</code> 命令对参考基因组构建 BWT/FM-index，生成 <code>.bwt</code>、<code>.pac</code>、<code>.ann</code>、<code>.amb</code>、<code>.sa</code> 五个索引文件。这一过程对人类基因组约需 60–90 分钟，但<strong>只需执行一次</strong>，后续所有样本的比对均复用同一索引。将索引文件存储在共享存储路径，供团队成员共享，是计算集群上的标准实践。</p>
+</div>
+</section>
+<section id="bwa-memseed-and-extend-策略" class="level2" data-number="14.4">
+<h2 data-number="14.4" class="anchored" data-anchor-id="bwa-memseed-and-extend-策略"><span class="header-section-number">14.4</span> BWA-MEM：Seed-and-Extend 策略</h2>
+<p>BWA-MEM 并不对整条 read 进行精确 BWT 查询，而是采用<strong>种子-延伸（Seed-and-Extend）</strong>策略：</p>
+<ol type="1">
+<li><strong>种子发现（Seeding）</strong>：从 read 中提取若干个短的精确匹配锚点（MEM, Maximal Exact Match），利用 FM-index 在参考基因组中快速定位每个 MEM 的所有位置</li>
+<li><strong>链接（Chaining）</strong>：将共线性的种子链接成候选比对区域</li>
+<li><strong>延伸（Extension）</strong>：对候选区域进行 Smith-Waterman 动态规划，允许错配和 gap，得到最终比对结果</li>
+<li><strong>评分（Scoring）</strong>：选择得分最高的比对位置作为主比对（Primary Alignment），余者为次比对（Secondary/Supplementary）</li>
+</ol>
+<p>这一策略使 BWA-MEM 能够： - 处理含有错配的 reads（SNP、测序错误） - 检测跨越短 Indel 的 reads - 识别嵌合比对（Chimeric Alignment），用于结构变异检测</p>
+<hr>
+</section>
+</section>
+<section id="实践完整-bwa-mem-比对流程" class="level1" data-number="15">
+<h1 data-number="15"><span class="header-section-number">15</span> 实践：完整 BWA-MEM 比对流程</h1>
+<section id="工具安装" class="level2" data-number="15.1">
+<h2 data-number="15.1" class="anchored" data-anchor-id="工具安装"><span class="header-section-number">15.1</span> 工具安装</h2>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb10"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Install BWA and samtools via conda</span></span>
+<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a><span class="ex">conda</span> install <span class="at">-c</span> bioconda bwa samtools</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</section>
+<section id="step-1构建-bwt-索引" class="level2" data-number="15.2">
+<h2 data-number="15.2" class="anchored" data-anchor-id="step-1构建-bwt-索引"><span class="header-section-number">15.2</span> Step 1：构建 BWT 索引</h2>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb11"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="bu">cd</span> ~/ecoli_qc</span>
+<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a><span class="co"># Build BWA index (generates .bwt, .pac, .ann, .amb, .sa files)</span></span>
+<span id="cb11-4"><a href="#cb11-4" aria-hidden="true" tabindex="-1"></a><span class="ex">bwa</span> index ecoli_K12.fna</span>
+<span id="cb11-5"><a href="#cb11-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-6"><a href="#cb11-6" aria-hidden="true" tabindex="-1"></a><span class="co"># Expected output files:</span></span>
+<span id="cb11-7"><a href="#cb11-7" aria-hidden="true" tabindex="-1"></a><span class="fu">ls</span> ecoli_K12.fna.<span class="pp">*</span></span>
+<span id="cb11-8"><a href="#cb11-8" aria-hidden="true" tabindex="-1"></a><span class="co"># ecoli_K12.fna.amb  ecoli_K12.fna.ann  ecoli_K12.fna.bwt</span></span>
+<span id="cb11-9"><a href="#cb11-9" aria-hidden="true" tabindex="-1"></a><span class="co"># ecoli_K12.fna.pac  ecoli_K12.fna.sa</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>索引文件大小约为：<code>.bwt</code>（4.3 MB）+ <code>.pac</code>（1.1 MB）+ <code>.sa</code>（2.1 MB），共约 7.6 MB，远小于原始 FASTA 文件（4.4 MB），体现了 BWT 的压缩效率。</p>
+</section>
+<section id="step-2序列比对" class="level2" data-number="15.3">
+<h2 data-number="15.3" class="anchored" data-anchor-id="step-2序列比对"><span class="header-section-number">15.3</span> Step 2：序列比对</h2>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb12"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="ex">bwa</span> mem <span class="dt">\</span></span>
+<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a>    <span class="at">-t</span> 4 <span class="dt">\</span></span>
+<span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a>    <span class="at">-R</span> <span class="st">"@RG\tID:SRR2584863\tSM:ecoli_K12\tLB:lib1\tPL:ILLUMINA\tPU:H73TDADXX.1"</span> <span class="dt">\</span></span>
+<span id="cb12-4"><a href="#cb12-4" aria-hidden="true" tabindex="-1"></a>    ecoli_K12.fna <span class="dt">\</span></span>
+<span id="cb12-5"><a href="#cb12-5" aria-hidden="true" tabindex="-1"></a>    SRR2584863_1_clean.fastq.gz <span class="dt">\</span></span>
+<span id="cb12-6"><a href="#cb12-6" aria-hidden="true" tabindex="-1"></a>    SRR2584863_2_clean.fastq.gz <span class="dt">\</span></span>
+<span id="cb12-7"><a href="#cb12-7" aria-hidden="true" tabindex="-1"></a>    <span class="kw">|</span> <span class="ex">samtools</span> sort <span class="at">-@</span> 4 <span class="at">-o</span> SRR2584863.sorted.bam <span class="at">-</span></span>
+<span id="cb12-8"><a href="#cb12-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-9"><a href="#cb12-9" aria-hidden="true" tabindex="-1"></a><span class="ex">samtools</span> index SRR2584863.sorted.bam</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<section id="read-group-r-参数详解" class="level3" data-number="15.3.1">
+<h3 data-number="15.3.1" class="anchored" data-anchor-id="read-group-r-参数详解"><span class="header-section-number">15.3.1</span> Read Group（<code>-R</code> 参数）详解</h3>
+<p><code>-R</code> 参数向 SAM/BAM 文件写入 <strong>Read Group（RG）</strong> 标签，这是后续变异检测工具（GATK、DeepVariant）的<strong>必需元数据</strong>。</p>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 36%">
+<col style="width: 27%">
+<col style="width: 36%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>RG 字段</th>
+<th>含义</th>
+<th>示例值</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>ID</code></td>
+<td>Read Group 唯一标识符</td>
+<td><code>SRR2584863</code></td>
+</tr>
+<tr class="even">
+<td><code>SM</code></td>
+<td>样本名称（Sample Name）</td>
+<td><code>ecoli_K12</code></td>
+</tr>
+<tr class="odd">
+<td><code>LB</code></td>
+<td>文库名称（Library）</td>
+<td><code>lib1</code></td>
+</tr>
+<tr class="even">
+<td><code>PL</code></td>
+<td>测序平台（Platform）</td>
+<td><code>ILLUMINA</code></td>
+</tr>
+<tr class="odd">
+<td><code>PU</code></td>
+<td>平台单元（Platform Unit），通常为 <code>flowcell.lane</code></td>
+<td><code>H73TDADXX.1</code></td>
+</tr>
+</tbody>
+</table>
+<div class="warning">
+<p><strong>RG 标签不可省略的原因：</strong></p>
+<p>GATK 的 HaplotypeCaller 在调用变异时，依据 RG 中的 <code>SM</code> 字段识别样本身份，依据 <code>LB</code> 字段识别文库（用于判断哪些重复属于 PCR 重复而非生物学重复）。若 BAM 文件缺少 RG 标签，GATK 将直接报错退出。对于多文库或多泳道合并的样本，每个来源必须拥有独立的 RG ID。</p>
+</div>
+</section>
+</section>
+<section id="step-3管道化写法推荐" class="level2" data-number="15.4">
+<h2 data-number="15.4" class="anchored" data-anchor-id="step-3管道化写法推荐"><span class="header-section-number">15.4</span> Step 3：管道化写法（推荐）</h2>
+<p>上述命令利用 <code>|</code>（管道）将 <code>bwa mem</code> 的输出直接传递给 <code>samtools sort</code>，避免生成中间 SAM 文件（对人类 WGS 数据，未排序 SAM 约 200–300 GB，管道化可节省大量磁盘空间）：</p>
+<pre><code>bwa mem → [SAM流] → samtools sort → SRR2584863.sorted.bam</code></pre>
+<p><strong>预期输出（bwa mem 的 stderr 信息）：</strong></p>
+<pre><code>[M::bwa_idx_load_from_disk] read 0 ALT contigs
+[M::process] read 98624 sequences (14853624 bp)...
+[M::mem_pestat] # candidate unique pairs for (FF, FR, RF, RR): (5, 48142, 3, 1)
+[M::mem_pestat] analyzing insert size distribution for orientation FR...
+[M::mem_pestat] (25, 50, 75) percentile: (153, 194, 259)
+[M::mem_pestat] low and high boundaries: 0 and 459
+[M::mem_process_seqs] Processed 98624 reads in 4.236 CPU sec, 1.183 real sec
+[main] Version: 0.7.17-r1188
+[main] CMD: bwa mem -t 4 -R ... ecoli_K12.fna ...
+[main] Real time: 1.202 sec; CPU: 4.258 sec</code></pre>
+<div class="note">
+<p><strong>解读 BWA-MEM 的 insert size 报告</strong></p>
+<p><code>mem_pestat</code> 行给出了 insert size 的实测统计：</p>
+<ul>
+<li><strong>FR 方向</strong>占压倒性多数（48142 对），这是 PE 文库的正常方向（Read 1 正向，Read 2 反向互补，两者朝向相对）</li>
+<li><strong>中位 insert size（50th percentile）约 194 bp</strong>：这是文库构建时 DNA 片段化的目标长度</li>
+<li><strong>25th–75th percentile 为 153–259 bp</strong>：insert size 分布宽度反映了片段化的均一性</li>
+</ul>
+<p>Insert size 分布是文库质量的重要指标。若中位值异常偏小（&lt; 100 bp），提示片段化过度；若分布极宽（IQR &gt; 300 bp），提示片段化不均匀。</p>
+</div>
+<hr>
+</section>
+</section>
+<section id="sambam-格式精解" class="level1" data-number="16">
+<h1 data-number="16"><span class="header-section-number">16</span> SAM/BAM 格式精解</h1>
+<section id="格式概述" class="level2" data-number="16.1">
+<h2 data-number="16.1" class="anchored" data-anchor-id="格式概述"><span class="header-section-number">16.1</span> 格式概述</h2>
+<p><strong>SAM（Sequence Alignment/Map）</strong> 是序列比对的标准输出格式，由 Heng Li 在开发 BWA 时同步设计。<strong>BAM</strong> 是其 BGZF 压缩的二进制版本，体积约为 SAM 的 1/4。</p>
+<p>{{Wiki:SAM_(file_format)}}</p>
+<p>SAM 文件由两部分构成：</p>
+<pre><code>@HD  VN:1.6  SO:coordinate
+@SQ  SN:NC_000913.3  LN:4641652
+@RG  ID:SRR2584863  SM:ecoli_K12  LB:lib1  PL:ILLUMINA
+@PG  ID:bwa  PN:bwa  VN:0.7.17  CL:bwa mem ...
+────────────────────── (Header，以 @ 开头)
+SRR2584863.1  99  NC_000913.3  3482  60  151M  =  3631  300  TTCA...  CCFF...  NM:i:0  MD:Z:151  AS:i:151</code></pre>
+</section>
+<section id="sam-header-字段" class="level2" data-number="16.2">
+<h2 data-number="16.2" class="anchored" data-anchor-id="sam-header-字段"><span class="header-section-number">16.2</span> SAM Header 字段</h2>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 50%">
+<col style="width: 50%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>标签</th>
+<th>含义</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>@HD</code></td>
+<td>文件格式版本（VN）和排序方式（SO: coordinate/queryname/unsorted）</td>
+</tr>
+<tr class="even">
+<td><code>@SQ</code></td>
+<td>参考序列信息：名称（SN）和长度（LN）</td>
+</tr>
+<tr class="odd">
+<td><code>@RG</code></td>
+<td>Read Group（见上节）</td>
+</tr>
+<tr class="even">
+<td><code>@PG</code></td>
+<td>生成该文件的程序及命令行（保留完整分析可追溯性）</td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="sam-alignment-record11-个必填字段" class="level2" data-number="16.3">
+<h2 data-number="16.3" class="anchored" data-anchor-id="sam-alignment-record11-个必填字段"><span class="header-section-number">16.3</span> SAM Alignment Record：11 个必填字段</h2>
+<p>每条 alignment 记录由制表符分隔的 11 个必填字段构成：</p>
+<table class="caption-top table">
+<thead>
+<tr class="header">
+<th>列号</th>
+<th>字段名</th>
+<th>示例值</th>
+<th>含义</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>1</td>
+<td>QNAME</td>
+<td><code>SRR2584863.1</code></td>
+<td>Read 名称</td>
+</tr>
+<tr class="even">
+<td>2</td>
+<td>FLAG</td>
+<td><code>99</code></td>
+<td>比对属性位标志（见下节）</td>
+</tr>
+<tr class="odd">
+<td>3</td>
+<td>RNAME</td>
+<td><code>NC_000913.3</code></td>
+<td>比对至的参考序列名称</td>
+</tr>
+<tr class="even">
+<td>4</td>
+<td>POS</td>
+<td><code>3482</code></td>
+<td>比对起始位置（1-based）</td>
+</tr>
+<tr class="odd">
+<td>5</td>
+<td>MAPQ</td>
+<td><code>60</code></td>
+<td>比对质量（Mapping Quality）</td>
+</tr>
+<tr class="even">
+<td>6</td>
+<td>CIGAR</td>
+<td><code>151M</code></td>
+<td>CIGAR 字符串（比对操作编码）</td>
+</tr>
+<tr class="odd">
+<td>7</td>
+<td>RNEXT</td>
+<td><code>=</code></td>
+<td>Mate read 的参考序列名（<code>=</code> 表示相同染色体）</td>
+</tr>
+<tr class="even">
+<td>8</td>
+<td>PNEXT</td>
+<td><code>3631</code></td>
+<td>Mate read 的起始位置</td>
+</tr>
+<tr class="odd">
+<td>9</td>
+<td>TLEN</td>
+<td><code>300</code></td>
+<td>Template length（insert size 的符号值）</td>
+</tr>
+<tr class="even">
+<td>10</td>
+<td>SEQ</td>
+<td><code>TTCA...</code></td>
+<td>Read 序列</td>
+</tr>
+<tr class="odd">
+<td>11</td>
+<td>QUAL</td>
+<td><code>CCFF...</code></td>
+<td>Read 质量（Phred+33 编码）</td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="flag-字段位标志解码" class="level2" data-number="16.4">
+<h2 data-number="16.4" class="anchored" data-anchor-id="flag-字段位标志解码"><span class="header-section-number">16.4</span> FLAG 字段：位标志解码</h2>
+<p>FLAG 字段是一个整数，其二进制表示中每一位对应一个属性。对 FLAG = <code>99</code>（二进制 <code>1100011</code>）进行解码：</p>
+<table class="caption-top table">
+<thead>
+<tr class="header">
+<th>位值</th>
+<th>含义</th>
+<th>FLAG=99 中是否设置</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>1 (0x1)</td>
+<td>该 read 属于 PE 对</td>
+<td>✓</td>
+</tr>
+<tr class="even">
+<td>2 (0x2)</td>
+<td>所有 reads 均正确 paired</td>
+<td>✓</td>
+</tr>
+<tr class="odd">
+<td>4 (0x4)</td>
+<td>该 read 未比对</td>
+<td>✗</td>
+</tr>
+<tr class="even">
+<td>8 (0x8)</td>
+<td>Mate read 未比对</td>
+<td>✗</td>
+</tr>
+<tr class="odd">
+<td>16 (0x10)</td>
+<td>该 read 反向互补比对</td>
+<td>✗</td>
+</tr>
+<tr class="even">
+<td>32 (0x20)</td>
+<td>Mate read 反向互补比对</td>
+<td>✓</td>
+</tr>
+<tr class="odd">
+<td>64 (0x40)</td>
+<td>该 read 为 Read 1</td>
+<td>✓</td>
+</tr>
+<tr class="even">
+<td>128 (0x80)</td>
+<td>该 read 为 Read 2</td>
+<td>✗</td>
+</tr>
+</tbody>
+</table>
+<div class="tip">
+<p><strong>快速解码 FLAG 的实用工具</strong></p>
+<p>命令行下可用 <code>samtools flags 99</code> 直接输出各位含义。在线工具 Broad Institute 的 SAM Flag 解码器（picard/explain-flags）提供图形化界面。实际工作中，最需要关注的 FLAG 值：</p>
+<ul>
+<li><code>4</code>：未比对 read（unmapped）</li>
+<li><code>256</code>：次比对（secondary alignment，同一 read 的非最优比对位置）</li>
+<li><code>1024</code>：PCR 或光学重复（duplicate）</li>
+<li><code>2048</code>：补充比对（supplementary，用于嵌合 read 的另一段比对）</li>
+</ul>
+</div>
+</section>
+<section id="cigar-字符串" class="level2" data-number="16.5">
+<h2 data-number="16.5" class="anchored" data-anchor-id="cigar-字符串"><span class="header-section-number">16.5</span> CIGAR 字符串</h2>
+<p>CIGAR 字符串编码了 read 与参考基因组的对齐操作，是理解比对细节的关键：</p>
+<table class="caption-top table">
+<thead>
+<tr class="header">
+<th>操作符</th>
+<th>含义</th>
+<th>计入 read 长度</th>
+<th>计入参考长度</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>M</code></td>
+<td>匹配或错配（Match/Mismatch）</td>
+<td>✓</td>
+<td>✓</td>
+</tr>
+<tr class="even">
+<td><code>I</code></td>
+<td>相对参考的插入（Insertion）</td>
+<td>✓</td>
+<td>✗</td>
+</tr>
+<tr class="odd">
+<td><code>D</code></td>
+<td>相对参考的缺失（Deletion）</td>
+<td>✗</td>
+<td>✓</td>
+</tr>
+<tr class="even">
+<td><code>S</code></td>
+<td>软剪切（Soft Clip，序列保留但不比对）</td>
+<td>✓</td>
+<td>✗</td>
+</tr>
+<tr class="odd">
+<td><code>H</code></td>
+<td>硬剪切（Hard Clip，序列从 SEQ 中移除）</td>
+<td>✗</td>
+<td>✗</td>
+</tr>
+<tr class="even">
+<td><code>N</code></td>
+<td>跳过参考区域（RNA-seq 内含子）</td>
+<td>✗</td>
+<td>✓</td>
+</tr>
+</tbody>
+</table>
+<p><strong>CIGAR 解读示例：</strong></p>
+<pre><code>CIGAR: 5S 30M 2D 80M 35M
+含义：
+  5S  → 前5 bp 软剪切（可能是低质量末端）
+  30M → 30 bp 正常比对
+  2D  → 相对参考删除 2 bp（Deletion，参考基因组多出 2 bp）
+  80M → 80 bp 正常比对
+  35M → 35 bp 正常比对
+总 read 长度: 5 + 30 + 80 + 35 = 150 bp（不含 D，因 D 不计入 read）</code></pre>
+</section>
+<section id="常用-optional-标签" class="level2" data-number="16.6">
+<h2 data-number="16.6" class="anchored" data-anchor-id="常用-optional-标签"><span class="header-section-number">16.6</span> 常用 Optional 标签</h2>
+<p>SAM 第 12 列起为可选字段，格式为 <code>TAG:TYPE:VALUE</code>：</p>
+<table class="caption-top table">
+<thead>
+<tr class="header">
+<th>标签</th>
+<th>含义</th>
+<th>典型值</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>NM:i</code></td>
+<td>Edit distance（错配 + Indel 总数）</td>
+<td><code>NM:i:2</code></td>
+</tr>
+<tr class="even">
+<td><code>MD:Z</code></td>
+<td>错配位置编码（用于重建比对细节）</td>
+<td><code>MD:Z:10A5T134</code></td>
+</tr>
+<tr class="odd">
+<td><code>AS:i</code></td>
+<td>比对得分（Alignment Score）</td>
+<td><code>AS:i:145</code></td>
+</tr>
+<tr class="even">
+<td><code>XS:i</code></td>
+<td>次优比对得分</td>
+<td><code>XS:i:0</code></td>
+</tr>
+<tr class="odd">
+<td><code>RG:Z</code></td>
+<td>Read Group ID（与 <span class="citation" data-cites="RG">@RG</span> ID 对应）</td>
+<td><code>RG:Z:SRR2584863</code></td>
+</tr>
+</tbody>
+</table>
+<p><code>NM</code>（Edit Distance）是变异检测的重要参考：正常高质量比对的 NM 应 ≤ 3；若大量 reads 具有高 NM 值，提示参考基因组选择错误或样本污染。</p>
+<hr>
+</section>
+</section>
+<section id="比对后质量评估" class="level1" data-number="17">
+<h1 data-number="17"><span class="header-section-number">17</span> 比对后质量评估</h1>
+<section id="samtools-flagstat" class="level2" data-number="17.1">
+<h2 data-number="17.1" class="anchored" data-anchor-id="samtools-flagstat"><span class="header-section-number">17.1</span> samtools flagstat</h2>
+<p><code>samtools flagstat</code> 是最快速的比对质量检查工具，输出约 13 行的汇总统计：</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb17"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a><span class="ex">samtools</span> flagstat SRR2584863.sorted.bam</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><strong>真实输出：</strong></p>
+<pre><code>100442 + 0 in total (QC-passed reads + QC-failed reads)
+100442 + 0 primary
+0 + 0 secondary
+0 + 0 supplementary
+0 + 0 duplicates
+0 + 0 primary duplicates
+99876 + 0 mapped (99.44% : N/A)
+99876 + 0 primary mapped (99.44% : N/A)
+100442 + 0 paired in sequencing
+50221 + 0 read1
+50221 + 0 read2
+99318 + 0 properly paired (98.88% : N/A)
+99564 + 0 with itself and mate mapped
+312 + 0 singletons (0.31% : N/A)
+0 + 0 with mate mapped to a different chr
+0 + 0 with mate mapped to a different chr (mapQ&gt;=5)</code></pre>
+<p><strong>关键指标解读：</strong></p>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 15%">
+<col style="width: 23%">
+<col style="width: 36%">
+<col style="width: 23%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>指标</th>
+<th>本数据值</th>
+<th>正常范围（WGS）</th>
+<th>异常提示</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>mapped %</td>
+<td>99.44%</td>
+<td>&gt; 95%</td>
+<td>&lt; 90% 提示污染或参考基因组错误</td>
+</tr>
+<tr class="even">
+<td>properly paired %</td>
+<td>98.88%</td>
+<td>&gt; 90%</td>
+<td>&lt; 80% 提示文库质量差或参考基因组不匹配</td>
+</tr>
+<tr class="odd">
+<td>singletons %</td>
+<td>0.31%</td>
+<td>&lt; 5%</td>
+<td>高比例提示 PE reads 不一致</td>
+</tr>
+<tr class="even">
+<td>secondary</td>
+<td>0</td>
+<td>通常 &lt; 1%</td>
+<td>高值提示基因组重复区域多</td>
+</tr>
+</tbody>
+</table>
+<div class="note">
+<p><strong>99.44% 比对率说明了什么？</strong></p>
+<p>大肠杆菌基因组几乎无重复序列，测序质量良好，因此比对率接近理论上限。对于人类 WGS 数据，正常 hg38 比对率约为 97–99%；若低于 90%，应检查：①参考基因组版本是否正确；②样本是否存在跨物种污染；③ fastqc 报告是否有异常 overrepresented sequences。</p>
+</div>
+</section>
+<section id="samtools-stats深度统计" class="level2" data-number="17.2">
+<h2 data-number="17.2" class="anchored" data-anchor-id="samtools-stats深度统计"><span class="header-section-number">17.2</span> samtools stats：深度统计</h2>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb19"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb19-1"><a href="#cb19-1" aria-hidden="true" tabindex="-1"></a><span class="ex">samtools</span> stats SRR2584863.sorted.bam <span class="kw">|</span> <span class="fu">grep</span> <span class="st">"^SN"</span> <span class="kw">|</span> <span class="fu">cut</span> <span class="at">-f2-3</span> <span class="kw">|</span> <span class="fu">head</span> <span class="at">-20</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><strong>输出摘要（选取关键行）：</strong></p>
+<pre><code>raw total sequences:    100442
+reads mapped:           99876
+reads properly paired:  99318
+bases mapped (cigar):   15031266
+average length:         150
+average quality:        36.18
+insert size average:    211.5
+insert size std dev:    62.8
+inward oriented pairs:  49659
+outward oriented pairs: 122
+pairs with other orientation: 0</code></pre>
+<p>insert size 平均值（211.5 bp）与标准差（62.8 bp）验证了文库构建的质量——我们的目标 insert size 约 200–250 bp，实测结果符合预期。</p>
+</section>
+<section id="samtools-depth覆盖度分析" class="level2" data-number="17.3">
+<h2 data-number="17.3" class="anchored" data-anchor-id="samtools-depth覆盖度分析"><span class="header-section-number">17.3</span> samtools depth：覆盖度分析</h2>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb21"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb21-1"><a href="#cb21-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Compute per-position depth</span></span>
+<span id="cb21-2"><a href="#cb21-2" aria-hidden="true" tabindex="-1"></a><span class="ex">samtools</span> depth <span class="at">-a</span> SRR2584863.sorted.bam <span class="op">&gt;</span> depth.txt</span>
+<span id="cb21-3"><a href="#cb21-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb21-4"><a href="#cb21-4" aria-hidden="true" tabindex="-1"></a><span class="co"># Summary statistics using Python</span></span>
+<span id="cb21-5"><a href="#cb21-5" aria-hidden="true" tabindex="-1"></a><span class="ex">python3</span> <span class="at">-</span> <span class="op">&lt;&lt;'EOF'</span></span>
+<span id="cb21-6"><a href="#cb21-6" aria-hidden="true" tabindex="-1"></a><span class="st">import numpy as np</span></span>
+<span id="cb21-7"><a href="#cb21-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb21-8"><a href="#cb21-8" aria-hidden="true" tabindex="-1"></a><span class="st">depths = []</span></span>
+<span id="cb21-9"><a href="#cb21-9" aria-hidden="true" tabindex="-1"></a><span class="st">with open("depth.txt") as f:</span></span>
+<span id="cb21-10"><a href="#cb21-10" aria-hidden="true" tabindex="-1"></a><span class="st">    for line in f:</span></span>
+<span id="cb21-11"><a href="#cb21-11" aria-hidden="true" tabindex="-1"></a><span class="st">        chrom, pos, d = line.strip().split("\t")</span></span>
+<span id="cb21-12"><a href="#cb21-12" aria-hidden="true" tabindex="-1"></a><span class="st">        depths.append(int(d))</span></span>
+<span id="cb21-13"><a href="#cb21-13" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb21-14"><a href="#cb21-14" aria-hidden="true" tabindex="-1"></a><span class="st">d = np.array(depths)</span></span>
+<span id="cb21-15"><a href="#cb21-15" aria-hidden="true" tabindex="-1"></a><span class="st">print(f"Genome size:         {len(d):,} bp")</span></span>
+<span id="cb21-16"><a href="#cb21-16" aria-hidden="true" tabindex="-1"></a><span class="st">print(f"Mean depth:          {d.mean():.1f}X")</span></span>
+<span id="cb21-17"><a href="#cb21-17" aria-hidden="true" tabindex="-1"></a><span class="st">print(f"Median depth:        {np.median(d):.1f}X")</span></span>
+<span id="cb21-18"><a href="#cb21-18" aria-hidden="true" tabindex="-1"></a><span class="st">print(f"Coverage (&gt;= 1X):    {(d &gt;= 1).mean() * 100:.2f}%")</span></span>
+<span id="cb21-19"><a href="#cb21-19" aria-hidden="true" tabindex="-1"></a><span class="st">print(f"Coverage (&gt;= 10X):   {(d &gt;= 10).mean() * 100:.2f}%")</span></span>
+<span id="cb21-20"><a href="#cb21-20" aria-hidden="true" tabindex="-1"></a><span class="st">print(f"Coverage (&gt;= 20X):   {(d &gt;= 20).mean() * 100:.2f}%")</span></span>
+<span id="cb21-21"><a href="#cb21-21" aria-hidden="true" tabindex="-1"></a><span class="op">EOF</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><strong>预期输出：</strong></p>
+<pre><code>Genome size:         4641652 bp
+Mean depth:          3.24X
+Median depth:        3.0X
+Coverage (&gt;= 1X):    97.83%
+Coverage (&gt;= 10X):   0.51%
+Coverage (&gt;= 20X):   0.07%</code></pre>
+<div class="warning">
+<p><strong>3.24X 覆盖深度不足用于变异检测</strong></p>
+<p>此结果提醒我们：本实践仅使用了 50,000 对 reads（100k reads），覆盖深度仅约 3X。<strong>可靠的变异检测（SNP/Indel）需要至少 20–30X 覆盖深度</strong>；临床级 WGS 通常要求 30X，癌症基因组研究则需 60–100X。完整数据集（SRR2584863 全部 reads）覆盖深度约 60X，满足变异检测要求。</p>
+</div>
+</section>
+<section id="mapqmapping-quality分布" class="level2" data-number="17.4">
+<h2 data-number="17.4" class="anchored" data-anchor-id="mapqmapping-quality分布"><span class="header-section-number">17.4</span> MAPQ（Mapping Quality）分布</h2>
+<p><strong>Mapping Quality</strong> 与 Phred 质量评分采用相同的 <span class="math inline">\(-10 \log_{10}(P)\)</span> 公式，但 <span class="math inline">\(P\)</span> 表示<strong>该 read 比对位置错误的概率</strong>。</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb23"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb23-1"><a href="#cb23-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Distribution of MAPQ values</span></span>
+<span id="cb23-2"><a href="#cb23-2" aria-hidden="true" tabindex="-1"></a><span class="ex">samtools</span> view SRR2584863.sorted.bam <span class="kw">|</span> <span class="fu">awk</span> <span class="st">'{print $5}'</span> <span class="kw">|</span> <span class="fu">sort</span> <span class="at">-n</span> <span class="kw">|</span> <span class="fu">uniq</span> <span class="at">-c</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><strong>典型输出（前几行）：</strong></p>
+<pre><code>  315 0
+   27 1
+    5 3
+    8 6
+   12 9
+ 97821 60</code></pre>
+<p>MAPQ = 60 是 BWA-MEM 对<strong>唯一比对</strong>的最大赋值，表示该 read 在参考基因组中只有一个最优比对位置，置信度极高。MAPQ = 0 表示多比对（multimapping），该 read 在参考基因组中存在多个同等最优的比对位置，常见于重复区域。</p>
+<div class="info">
+<p><strong>黄金法则：变异检测中过滤低 MAPQ reads</strong></p>
+<p>GATK HaplotypeCaller 默认过滤 MAPQ &lt; 20 的 reads。手动分析时通常使用 <code>samtools view -q 20</code> 来过滤低置信度比对，避免重复区域的假阳性变异。</p>
+</div>
+<hr>
+</section>
+<section id="课后自测-post-lesson-quiz" class="level2" data-number="17.5">
+<h2 data-number="17.5" class="anchored" data-anchor-id="课后自测-post-lesson-quiz"><span class="header-section-number">17.5</span> 课后自测 (Post-Lesson Quiz)</h2>
+<ol type="1">
+<li><p>一个 RNA-seq 实验使用了 75 bp 单端测序，但文库构建的 cDNA 片段长度为 200–500 bp。是否会出现 adapter read-through？请解释原因。</p></li>
+<li><p>下载 hg38 参考基因组后发现包含 <code>chr1_alt</code> 等 ALT contig 文件。若将这些 ALT contigs 包含在比对参考中，会对多态性高的区域（如 HLA 位点）的比对结果产生什么影响？</p></li>
+<li><p>某 BAM 文件的 <code>samtools flagstat</code> 报告显示 mapped 率仅 68%，properly paired 率仅 52%。请列举至少三种可能的原因。</p></li>
+<li><p>解读以下 CIGAR 字符串：<code>12S 88M 3I 47M</code>。请计算：（a）read 总长度；（b）比对至参考基因组的长度；（c）该比对意味着相对参考基因组有怎样的结构？</p></li>
+<li><p>为什么 BWA-MEM 对重复序列区域的 reads 赋予低 MAPQ 值（如 MAPQ=0），而不是直接丢弃这些 reads？保留低 MAPQ reads 有何意义？</p></li>
+<li><p>在 <code>bwa mem</code> 命令中，若省略 <code>-R</code> 参数（Read Group），BWA 仍可正常完成比对并生成 BAM 文件。但在后续 GATK 变异检测步骤中会发生什么？如何补救？</p></li>
 </ol>
 <details>
 <summary>
 <strong>参考答案 (Reference Answers)</strong>
 </summary>
-<p><em>1. 说明测序化学反应在 3’ 端衰减（正常现象），但衰减程度较大。建议用 Trimmomatic/Fastp 在位置 140 处进行 trimming，去除末端 10 bp 低质量序列</em></p>
-<p><em>2. 可能是两个不同物种或污染物的混合（如混入了人类和大肠杆菌 DNA）。应用分类工具（如 Kraken）检查，或重新提取样本</em></p>
-<p><em>3. BWT 索引将 3Gb 基因组压缩至 ~2Gb 内存空间，支持 O(log n) 的模糊查询，使得数百万 reads 可在分钟级完成比对。不用索引需要逐个线性搜索，耗时数天</em></p>
+<ol type="1">
+<li><p><em>不会出现 read-through。75 bp read 长度小于 200–500 bp 的 insert size，测序仪在读完 75 bp 后即停止，未能到达对侧 adapter。Read-through 仅在 read 长度 &gt; insert size 时发生。该实验无需担心 adapter 污染，但若 insert size 分布出现 &lt; 75 bp 的片段，则这部分 reads 会发生 read-through。</em></p></li>
+<li><p><em>包含 ALT contigs 后，原本唯一比对至主染色体的 reads 可能同时比对至 ALT contigs，导致 MAPQ 降低甚至变为 0（多比对）。对于 HLA 等高变区域，这会使变异检测更加复杂；但若使用支持 ALT-aware 比对的工具（如 BWA-MEM2 + bwakit），则可正确处理 ALT contigs，提高该区域的变异检测精度。简单包含 ALT contigs 但不使用 ALT-aware 工具，可能反而降低这些区域的检测质量。</em></p></li>
+<li><p><em>可能原因：①参考基因组版本与样本不匹配（如用 hg38 比对实际来自小鼠的数据）；②样本存在严重的跨物种污染（如微生物污染）；③ adapter trimming 未完成，大量携带 adapter 序列的 reads 无法比对；④样本实为目标基因组以外的物种（物种鉴定错误）；⑤文库构建失败，reads 为接头二聚体（adapter dimer）或人工序列。</em></p></li>
+<li><p><em>（a）read 总长度 = 12（S）+ 88（M）+ 3（I）+ 47（M）= 150 bp（S 和 I 均计入 read 长度，D 不计）。（b）比对至参考基因组的长度 = 88（M）+ 47（M）= 135 bp（S 和 I 不计入参考长度）。（c）该 read 前 12 bp 未被比对（软剪切，可能为低质量端或 adapter）；随后 88 bp 正常比对；相对参考基因组存在 3 bp 插入（Insertion，read 中多出 3 bp）；最后 47 bp 正常比对。整体提示该 read 横跨一个小型 Insertion 变异位点。</em></p></li>
+<li><p><em>低 MAPQ reads 保留在 BAM 文件中，而非丢弃，有以下意义：①为分析人员提供数据完整性，可按需过滤；②在特定分析场景（如重复区域的 CNV 拷贝数分析、转座子研究）中，多比对 reads 本身具有分析价值；③过滤阈值因分析目的而异（变异检测通常过滤 MAPQ&lt;20，而覆盖度分析可能选择保留）。直接丢弃会不可逆地损失信息。</em></p></li>
+<li><p><em>缺少 RG 标签的 BAM 文件在运行 GATK HaplotypeCaller 时会报错：<code>SAM/BAM file does not have a read group in the header</code>，程序终止。补救方法：使用 Picard 工具的 <code>AddOrReplaceReadGroups</code> 命令为 BAM 文件补充 RG 信息，无需重新比对：<code>picard AddOrReplaceReadGroups I=input.bam O=output.bam RGID=1 RGSM=sample RGLB=lib1 RGPL=ILLUMINA RGPU=unit1</code>。</em></p></li>
+</ol>
 </details>
-</div>
 <hr>
 </section>
-<section id="总结" class="level2" data-number="11.6">
-<h2 data-number="11.6" class="anchored" data-anchor-id="总结"><span class="header-section-number">11.6</span> 总结</h2>
-<p>✓ <strong>FastQC</strong> 提供全面的质量评估，指导后续预处理 ✓ <strong>Trimming</strong> 去除低质量碱基、adapter，改善下游分析 ✓ <strong>参考基因组</strong> 版本选择重要（hg19 vs hg38） ✓ <strong>BWT 算法</strong> 使得快速比对成为可能 ✓ <strong>BWA-MEM</strong> 是 WGS/WES 比对的行业标准</p>
+<section id="总结" class="level2" data-number="17.6">
+<h2 data-number="17.6" class="anchored" data-anchor-id="总结"><span class="header-section-number">17.6</span> 总结</h2>
+<p>✓ <strong>Adapter read-through</strong> 在 insert size &lt; read 长度时发生，必须在比对前去除 ✓ <strong>fastp</strong> 是目前最高效的预处理工具，自动检测 adapter，内置 QC 报告 ✓ <strong>GRCh38（hg38）</strong> 是人类 WGS 新项目的标准参考基因组，含 decoy 序列；版本不可混用 ✓ <strong>BWT/FM-index</strong> 将基因组搜索复杂度从 <span class="math inline">\(O(G \times L)\)</span> 降至 <span class="math inline">\(O(L)\)</span>，使快速比对成为可能 ✓ <strong>BWA-MEM</strong> 采用 Seed-and-Extend 策略，<code>-R</code> 参数写入的 Read Group 是 GATK 的必要条件 ✓ <strong>SAM FLAG</strong> 和 <strong>CIGAR</strong> 字符串完整编码了每条 read 的比对属性 ✓ <strong>samtools flagstat</strong> 的 mapped 率 &gt; 95% 且 properly paired 率 &gt; 90% 是高质量比对的基准</p>
 
 
 </section>
@@ -1435,13 +2175,13 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   </script>
 <nav class="page-navigation">
   <div class="nav-page nav-page-previous">
-      <a href="./genomics_qc_lesson1.html" class="pagination-link" aria-label="二代测序原理与原始数据的数字表现">
-        <i class="bi bi-arrow-left-short"></i> <span class="nav-page-text"><span class="chapter-number">9</span>&nbsp; <span class="chapter-title">二代测序原理与原始数据的数字表现</span></span>
+      <a href="./genomics_qc_lesson1.html" class="pagination-link" aria-label="原始下机数据的数字表现">
+        <i class="bi bi-arrow-left-short"></i> <span class="nav-page-text"><span class="chapter-number">9</span>&nbsp; <span class="chapter-title">原始下机数据的数字表现</span></span>
       </a>          
   </div>
   <div class="nav-page nav-page-next">
-      <a href="./genomics_qc_lesson3.html" class="pagination-link" aria-label="标准数据格式 SAM/BAM 与变异分类">
-        <span class="nav-page-text"><span class="chapter-number">11</span>&nbsp; <span class="chapter-title">标准数据格式 SAM/BAM 与变异分类</span></span> <i class="bi bi-arrow-right-short"></i>
+      <a href="./genomics_qc_lesson3.html" class="pagination-link" aria-label="从头基因组组装：当没有参考基因组时">
+        <span class="nav-page-text"><span class="chapter-number">11</span>&nbsp; <span class="chapter-title">从头基因组组装：当没有参考基因组时</span></span> <i class="bi bi-arrow-right-short"></i>
       </a>
   </div>
 </nav>
