@@ -170,6 +170,18 @@ mkdir data results logs    # create multiple directories at once
 
 #### `cp` / `mv` / `rm` - 复制、移动、删除
 
+生成示例文件 `file.txt`：
+
+```r
+writeLines(c(
+  "Hello, Linux!",
+  "This is a plain text file.",
+  "Line 3: used for cat / head / tail demos.",
+  "Line 4: practice file navigation here.",
+  "Line 5: end of file."
+), "file.txt")
+```
+
 ```bash
 cp source.txt dest.txt          # copy a file
 cp -r source_dir dest_dir       # copy directory recursively
@@ -200,6 +212,29 @@ tail -f log.txt          # follow file in real time (useful for logs)
 在生物信息学中，FASTQ 文件动辄数 GB，永远不要用 `cat` 直接显示，应用 `head` 或 `less`（分页查看）。
 
 #### `less` - 分页浏览大文件
+
+生成示例文件 `sample.fastq`：
+
+```r
+writeLines(c(
+  "@SRR2584863.1 HWI-ST999:102:C2H0WACXX:1:1101:1235:2116/1",
+  "NATCGATCGATCGATCGATCGATCGATCGATCGATCGATCGATCGATCGATCGATCGAT",
+  "+",
+  "#AAAFFJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJ",
+  "@SRR2584863.2 HWI-ST999:102:C2H0WACXX:1:1101:1456:2184/1",
+  "NATGCATGCATGCATGCATGCATGCATGCATGCATGCATGCATGCATGCATGCATGCAT",
+  "+",
+  "#AAAFFJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJ",
+  "@SRR2584863.3 HWI-ST999:102:C2H0WACXX:1:1101:1678:2201/1",
+  "NAGATCGGAAGAGCACACGTCTGAACTCCAGTCACATCACGATCTCGTATGCCGTCTTCT",
+  "+",
+  "#AAAFFJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJ",
+  "@SRR2584863.4 HWI-ST999:102:C2H0WACXX:1:1101:1901:2250/1",
+  "NGCTAGCTAGCTAGCTAGCTAGCTAGCTAGCTAGCTAGCTAGCTAGCTAGCTAGCTAGCT",
+  "+",
+  "#AAAFFJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJ"
+), "sample.fastq")
+```
 
 ```bash
 less sample.fastq.gz     # page through large file (supports gzip)
@@ -271,7 +306,42 @@ some_verbose_command > /dev/null 2>&1
 
 ### 管道（Pipe）
 
-管道将前一个命令的**标准输出**直接传给下一个命令的**标准输入**，无需中间文件：
+管道将前一个命令的**标准输出**直接传给下一个命令的**标准输入**，无需中间文件。生成示例文件 `regions.bed` 与 `fastqc_data.txt`：
+
+```r
+# regions.bed
+bed <- data.frame(
+  chrom  = c("chr1","chr1","chr2","chr3","chrX"),
+  start  = c(1000, 5000, 200000, 750000, 3000000),
+  end    = c(2500, 6200, 201500, 752000, 3001200),
+  name   = c("gene_A","gene_B","gene_C","gene_D","gene_E"),
+  score  = c(900, 750, 600, 820, 680),
+  strand = c("+", "-", "+", "+", "-")
+)
+write.table(bed, "regions.bed", sep = "\t",
+            row.names = FALSE, col.names = FALSE, quote = FALSE)
+
+# fastqc_data.txt
+writeLines(c(
+  "##FastQC\t0.12.1",
+  ">>Basic Statistics\tpass",
+  "Filename\tsample.fastq",
+  "Encoding\tSanger / Illumina 1.9",
+  "Total Sequences\t4",
+  ">>END_MODULE",
+  ">>Per base sequence quality\tpass",
+  "#Base\tMean\tMedian\tLower Quartile\tUpper Quartile",
+  "1\t2.0\t2.0\t2.0\t2.0",
+  "2\t32.0\t33.0\t31.0\t34.0",
+  ">>END_MODULE",
+  ">>Adapter Content\twarn",
+  "#Position\tIllumina Universal Adapter",
+  "30\t12.3",
+  "40\t24.7",
+  "50\t38.1",
+  ">>END_MODULE"
+), "fastqc_data.txt")
+```
 
 ```bash
 # Count how many reads are in a FASTQ file (4 lines per read)
@@ -299,6 +369,37 @@ bwa mem ref.fa R1.fastq R2.fastq | samtools sort -o sorted.bam
 
 ### `grep` - 模式搜索
 
+生成示例文件 `sequences.fa` 与 `variants.vcf`：
+
+```r
+# sequences.fa
+writeLines(c(
+  ">seq1 Homo sapiens BRCA1 exon 11 fragment",
+  "ATGATAGATAGCTAGCTAGCTAGCTAGCTAGCTAGCTAGCTATGCTAGCTAGCTAGCT",
+  "GCTAGCTAGCTAGCTAGCTAGCTAGCTAGCTAGCTAGCTATGCTAGCTAGCTAGCTAG",
+  ">seq2 Mus musculus Brca1 ortholog fragment",
+  "ATGATAGATAGCTAGCTAGCTAGCTAGCTAGCTAGCTAGCTATGCTAGCTAGCTAGCT",
+  "GCTAGCTAGCTAGCTAGCTAGCTAGCTAGCTAGCTAGCTATGCTAGCTAGCTAGATAG",
+  ">seq3 synthetic construct adapter sequence",
+  "AGATCGGAAGAGCACACGTCTGAACTCCAGTCA",
+  ">seq4 E. coli K-12 16S rRNA fragment",
+  "TTGAAGAGTTTGATCATGGCTCAGATTGAACGCTGGCGGCAGGCCTAACACATGCAAG"
+), "sequences.fa")
+
+# variants.vcf
+writeLines(c(
+  "##fileformat=VCFv4.2",
+  "##FILTER=<ID=PASS,Description=\"All filters passed\">",
+  "##INFO=<ID=DP,Number=1,Type=Integer,Description=\"Total Depth\">",
+  "##FORMAT=<ID=GT,Number=1,Type=String,Description=\"Genotype\">",
+  "#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\tSAMPLE1",
+  "chr1\t10177\t.\tA\tAC\t50\tPASS\tDP=30\tGT\t0/1",
+  "chr1\t752566\trs3094315\tG\tA\t99\tPASS\tDP=55\tGT\t1/1",
+  "chr2\t135851\t.\tT\tC\t72\tPASS\tDP=42\tGT\t0/1",
+  "chr3\t198022\trs12345\tC\tT\t88\tPASS\tDP=61\tGT\t0/1"
+), "variants.vcf")
+```
+
 ```bash
 grep "ATCG" sequences.fa           # find lines containing ATCG
 grep -c "^>" sequences.fa          # count FASTA header lines (sequences)
@@ -308,6 +409,34 @@ grep -E "chr[0-9]+\s" regions.bed  # use extended regex
 
 ### `cut` - 按列提取
 
+生成示例文件 `gene_counts.tsv` 与 `metadata.csv`：
+
+```r
+# gene_counts.tsv
+set.seed(42)
+genes <- paste0("ENSG0000", formatC(1:20, width = 7, flag = "0"))
+counts <- matrix(
+  as.integer(rnbinom(20 * 6, mu = 500, size = 1)),
+  nrow = 20, ncol = 6,
+  dimnames = list(genes, paste0("sample", 1:6))
+)
+write.table(
+  cbind(gene_id = rownames(counts), as.data.frame(counts)),
+  "gene_counts.tsv", sep = "\t", row.names = FALSE, quote = FALSE
+)
+
+# metadata.csv
+write.csv(
+  data.frame(
+    sample_id  = paste0("sample", 1:6),
+    condition  = rep(c("control", "treated"), each = 3),
+    batch      = rep(c("batch1", "batch2", "batch1"), 2),
+    read_depth = c(42e6, 38e6, 45e6, 50e6, 41e6, 39e6)
+  ),
+  "metadata.csv", row.names = FALSE, quote = FALSE
+)
+```
+
 ```bash
 cut -f1,3 gene_counts.tsv          # extract columns 1 and 3 (tab-delimited)
 cut -d',' -f2 metadata.csv         # extract column 2 (comma-delimited)
@@ -316,6 +445,18 @@ cut -f1 sample.bed | sort | uniq   # get unique chromosomes from BED file
 
 ### `sort` 与 `uniq` - 排序与去重
 
+生成示例文件 `gene_list.txt`：
+
+```r
+writeLines(c(
+  "BRCA1","TP53","EGFR","MYC","PTEN",
+  "BRCA2","CDH1","APC","VHL","RB1",
+  "BRCA1","TP53","EGFR",
+  "PIK3CA","KRAS","NRAS","BRAF","ERBB2",
+  "TP53","PTEN"
+), "gene_list.txt")
+```
+
 ```bash
 sort -k1,1 -k2,2n regions.bed      # sort BED file by chr then by position (numeric)
 sort -t$'\t' -k5,5rn counts.tsv    # sort by column 5, reverse numeric order
@@ -323,6 +464,7 @@ sort -t$'\t' -k5,5rn counts.tsv    # sort by column 5, reverse numeric order
 sort gene_list.txt | uniq          # remove duplicate lines
 sort gene_list.txt | uniq -c       # count occurrences of each line
 sort gene_list.txt | uniq -d       # show only duplicated lines
+
 ```
 
 ### `wc` - 统计行/词/字符数
@@ -805,7 +947,11 @@ sacct -j 12345 --format=JobID,State,Elapsed,MaxRSS  # job usage stats after comp
 
 ### 作业数组：批量提交多样本任务
 
-对于需要对多个样本重复相同分析的场景，**作业数组（Job Array）**可以一次提交多个任务：
+对于需要对多个样本重复相同分析的场景，**作业数组（Job Array）**可以一次提交多个任务。生成示例文件 `sample_list.txt`：
+
+```r
+writeLines(paste0("sample", 1:6), "sample_list.txt")
+```
 
 ```bash
 #!/bin/bash
