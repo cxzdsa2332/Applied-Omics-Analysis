@@ -1,186 +1,345 @@
 ---
-title: "基因组 —— 质量控制、变异检测与功能注释"
+title: "基因组数据分析：质量控制、从头组装与变异检测"
 date: today
 format:
   html:
     code-fold: false
     toc: true
-    toc-depth: 2
+    toc-depth: 3
     number-sections: true
     theme: cosmo
 ---
 
-# 课程引入
+# 整体概述
 
-本章将带你完成从生物样本"数字信号化"到"生物学意义解读"的全过程。我们将深入探讨高通量测序（NGS）的底层原理，并学习如何使用行业标准工具（GATK, Samtools, FastQC）对海量数据进行体检、比对、变异挖掘与功能注释。
+基因组学数据分析的核心问题可归结为两条并行路径。当参考基因组已知时，分析者将测序 reads 比对至参考序列，进而检测个体间的变异位点；当研究物种尚无参考基因组，或研究目标本身是组装一个新的基因组时，则必须从 reads 出发，从头重建基因组序列。这两条路径在起点（原始 FASTQ 数据）和终点（注释的基因组或变异图谱）之间共享若干关键步骤，尤其是原始数据的质量控制与预处理。本章系统覆盖上述两条路径的完整分析流程，并着重深化从头组装的算法原理、组装质量评估与组装后处理，同时保留变异检测与功能注释的完整讲解。
 
-**学习路线**：
-- **第 1 学时**：[测序原理与原始数据的数字表现](genomics_qc_lesson1.qmd) — SBS 原理、FASTQ 格式、Phred 质量评分
-- **第 2 学时**：[数据"体检"与参考基因组比对](genomics_qc_lesson2.qmd) — FastQC 质量评估、数据预处理、序列比对算法
-- **第 3 学时**：[标准数据格式 SAM/BAM 与变异分类](genomics_qc_lesson3.qmd) — SAM/BAM 格式、FLAG 标志位、CIGAR 字符串、变异分类
-- **第 4 学时**：[变异检测算法与 VCF 通用格式](genomics_qc_lesson4.qmd) — 变异检测原理、VCF 格式、质量过滤策略
-- **第 5 学时**：[功能注释、GATK 最佳实践与可视化](genomics_qc_lesson5.qmd) — 功能注释、完整 GATK 流程、BQSR、IGV 可视化
+**学习目标**：掌握基因组数据分析两条核心路径（从头组装与参考比对）的理论基础与工具实操；能对组装结果进行系统评估与精化；能完成 GATK 最佳实践流程并解读功能注释结果。
 
 ---
 
-# 课程概览
+# 结构导览
 
-## 核心概念导航
+本章分为三个模块，共八个专题，按以下数据流组织：
 
 ```
-FASTQ (原始数据)
-  ↓ 质量评估 (FastQC)
-  ↓ 数据清理 (Trimming)
-  ↓ 序列比对 (BWA)
-SAM/BAM (比对结果)
-  ↓ 排序 & 去重 (Samtools, GATK)
-  ↓ 碱基质量校正 (BQSR)
-  ↓ 变异检测 (HaplotypeCaller)
-VCF (变异列表)
-  ↓ 质量过滤 (VariantFiltration)
-  ↓ 功能注释 (SnpEff/VEP)
-注释 VCF (生物学解释)
-  ↓ 致病性评估 & 优先级排序
-临床报告 & 科学结论
+原始 FASTQ 数据
+  │
+  ├── 模块 A：质量控制与预处理（专题 2.1–2.2）
+  │     ↓ 清洁 Reads
+  │     │
+  │     ├── 模块 B：从头基因组组装（专题 2.3–2.6）
+  │     │     ↓ 算法原理 → 工具实战 → 质量评估 → 组装精化
+  │     │   草图基因组 → 精化基因组
+  │     │
+  │     └── 模块 C：参考比对·变异检测·注释（专题 2.7–2.8）
+  │             ↓ BAM → VCF → 功能注释
+  │
+  └── 综合输出：精化基因组 / 变异图谱 / 功能注释报告
 ```
 
-## 关键工具箱
-
-**数据质控**：FastQC, Fastp, Trimmomatic
-**序列比对**：BWA-MEM, Bowtie2, HISAT2
-**BAM 处理**：Samtools, GATK
-**变异检测**：GATK HaplotypeCaller, bcftools
-**功能注释**：SnpEff, VEP, ANNOVAR
-**可视化**：IGV, samtools tview
+模块 A 的输出（清洁 reads）是模块 B 和模块 C 的共同输入。模块 B 聚焦于从头组装，是本章的核心扩展内容；模块 C 聚焦于基于参考基因组的变异分析。
 
 ---
 
-# 学时详情
+# 模块 A：原始数据质量控制
 
-## 第 1 学时：测序原理与原始数据的数字表现
+:::note
+**模块目标：** 理解高通量测序数据的产生机制，掌握数据质量评估与预处理方法，为后续所有分析提供高质量输入。
+:::
 
-**核心要点**：
-- 了解 Illumina SBS 测序的物理过程（文库构建 → 簇生成 → 荧光检测）
-- 掌握 PE150 为什么是变异检测的标准配置
-- 理解 FASTQ 格式和 Phred 质量评分体系
-- 学会计算覆盖深度：$C = \frac{L \times N}{G}$
+## 专题 2.1：测序原理与原始数据的数字表现
 
-**实践内容**：Python 模拟 FASTQ 数据生成与质量分析
+**对应文件**：[genomics_qc_lesson1.qmd](genomics_qc_lesson1.qmd)
 
-👉 **详细内容见** [genomics_qc_lesson1.qmd](genomics_qc_lesson1.qmd)
+Illumina 平台的边合成边测序（SBS）技术产生了当今 90% 以上的基因组数据。本专题从测序仪的物理原理出发，深入 FASTQ 格式的数据结构与 Phred 质量评分体系，并介绍公共数据库的数据获取方法。掌握这些基础是正确评估数据质量、避免分析错误的前提。
 
----
+**核心概念**：
 
-## 第 2 学时：数据"体检"与参考基因组比对
+- Illumina SBS 的物理流程：文库构建 → 桥式扩增 → 荧光信号采集
+- 主流测序平台对比（Illumina、PacBio HiFi、Oxford Nanopore）
+- FASTQ 格式的四行结构；Phred 质量评分：$Q = -10\log_{10}(P_{\text{error}})$
+- 覆盖深度计算：$C = \dfrac{L \times N}{G}$
+- 双端测序（PE）的原理与 PE150 作为变异检测标准配置的原因
+- 公共数据库（SRA、ENA）与教学数据集（*E. coli* K-12 SRR2584863）的获取
 
-**核心要点**：
-- FastQC 的关键质量指标解读（Per-base quality、GC content、Adapter contamination）
-- 数据预处理流程（质量过滤、Adapter 去除、Trimming）
-- 参考基因组版本选择（hg19 vs hg38）
-- BWA-MEM 和 BWT 算法的原理
-
-**实践内容**：FastQC 模拟分析、BWA 比对命令行
-
-👉 **详细内容见** [genomics_qc_lesson2.qmd](genomics_qc_lesson2.qmd)
+**实践内容**：命令行下载与初探 FASTQ 数据；Python 系统性质量分析与可视化；FastQC 报告解读。
 
 ---
 
-## 第 3 学时：标准数据格式 SAM/BAM 与变异分类
+## 专题 2.2：数据预处理与参考基因组比对
 
-**核心要点**：
-- SAM/BAM 的 Header 和 Alignment 段
-- FLAG 标志位的二进制编码和解读
-- CIGAR 字符串（M, I, D, S, H）的含义
-- Mapping Quality (MAPQ) 的意义
-- 变异分类：SNP、Indel、MNP、SV、CNV
+**对应文件**：[genomics_qc_lesson2.qmd](genomics_qc_lesson2.qmd)
 
-**实践内容**：Python 解析 SAM/BAM、FLAG 位运算、CIGAR 解析
+测序产生的原始数据往往包含 Adapter 污染、低质量碱基和人为引入的序列偏差，需要在进入下游分析前进行系统性预处理。本专题重点讲解 Adapter 污染的成因（Read-through 现象）、主流预处理工具的选型逻辑，以及参考基因组比对的核心算法——Burrows-Wheeler Transform（BWT）与 BWA-MEM 的 Seed-and-Extend 策略。
 
-👉 **详细内容见** [genomics_qc_lesson3.qmd](genomics_qc_lesson3.qmd)
+**核心概念**：
 
----
+- Adapter 污染的来源：Insert Size 小于 Read 长度时发生的 Read-through 现象
+- 预处理工具选型：fastp（首选）vs Trimmomatic；参数选择逻辑
+- 参考基因组版本选择（GRCh37/hg19 vs GRCh38/hg38）及文件结构解析
+- Burrows-Wheeler Transform（BWT）与 FM-index 的算法原理
+- BWA-MEM 的 Seed-and-Extend 比对策略
+- 比对结果质量评估：唯一比对率、Insert Size 分布、覆盖均匀性
 
-## 第 4 学时：变异检测算法与 VCF 通用格式
-
-**核心要点**：
-- 频率法 vs 贝叶斯模型的原理
-- GATK HaplotypeCaller 的工作流程
-- VCF 固定列和 INFO、FORMAT 字段
-- QUAL、GQ、PL 质量评分的含义
-- 变异过滤策略（QUAL、DP、QD、位置偏差）
-
-**实践内容**：VCF 解析与过滤、质量分布分析
-
-👉 **详细内容见** [genomics_qc_lesson4.qmd](genomics_qc_lesson4.qmd)
+**实践内容**：fastp 处理真实 *E. coli* 数据；BWA-MEM 完整比对流程。
 
 ---
 
-## 第 5 学时：功能注释、GATK 最佳实践与可视化
+# 模块 B：从头基因组组装
 
-**核心要点**：
-- 变异功能注释（同义、错义、无义、移码等）
-- GATK 完整处理流程（Trimming → 比对 → 去重 → BQSR → 变异检测 → 过滤 → 注释）
-- BQSR 碱基质量分数重校正的原理
-- SnpEff/VEP 注释字段解读
-- ACMG 致病性分级（Pathogenic → Benign）
-- IGV 可视化检查技巧
+:::note
+**模块目标：** 掌握基因组从头组装的核心算法，学会使用主流工具完成组装，并能系统评估和优化组装质量。本模块是本章的核心扩展内容。
+:::
 
-**实践内容**：VCF 优先级排序、致病性评估、IGV 交互式查看
+{{Wiki:Sequence_assembly}}{width=85%}
 
-👉 **详细内容见** [genomics_qc_lesson5.qmd](genomics_qc_lesson5.qmd)
+图2.1：基因组从头组装的概念示意
 
----
+## 专题 2.3：从头组装算法原理
 
-# 实践建议
+**对应文件**：[genomics_qc_lesson3.qmd](genomics_qc_lesson3.qmd)
 
-## 推荐学习路径
+当研究对象缺乏参考基因组，或研究目标本身是构建新基因组时，从头组装（De Novo Assembly）是唯一可行的分析路径。本专题从组装问题的数学本质出发，系统介绍两种经典算法框架——Overlap-Layout-Consensus（OLC）和 De Bruijn Graph（DBG）——并重点推导 De Bruijn 图如何将 k-mer 分解、图构建与 Eulerian Path 求解串联成一个完整的组装流程。
 
-1. **理论掌握**：按顺序阅读 lesson1-5
-2. **动手实验**：每个 lesson 包含代码示例，建议在本地运行
-3. **综合应用**：从 FASTQ 到最终注释 VCF，完整走通一个样本
-4. **进阶**：
-   - 尝试多样本联合分析（GenotypeGVCFs）
-   - 体细胞变异检测（Mutect2）
-   - 长读测序比对（PacBio/Nanopore）
+**核心概念**：
 
-## 数据集建议
+- 从头组装的必要性：无参考基因组物种、结构变异检测、宏基因组分析
+- 参考比对 vs 从头组装的适用场景对比
+- 组装产物层级：Contig → Scaffold → Chromosome-level Assembly
+- 组装质量核心指标：N50、N90、L50、NG50 的定义与计算
+- OLC 框架：适合长读数据（PacBio、Nanopore）
+- De Bruijn Graph（DBG）框架：适合短读数据（Illumina）；k-mer 分解 → Eulerian Path 求解
+- 重复序列对组装的破坏：气泡（Bubble）、尖刺（Tip）、环路的识别与处理
 
-- **小规模**：1000 Genomes 的样本 FASTQ（~3 GB）
-- **标准规模**：GIAB (Genome in a Bottle) 真值集
-- **生产规模**：整个人群队列的多样本分析
+**实践内容**：R 代码手工实现 De Bruijn 图组装；igraph 可视化组装图结构。
 
 ---
 
-# 关键参考资源
+## 专题 2.4：主流组装工具实战
 
-- [GATK 官方最佳实践](https://gatk.broadinstitute.org/hc/en-us)
-- [SAM/BAM 格式规范](https://samtools.github.io/hts-specs/)
-- [VCF 格式规范](https://samtools.github.io/hts-specs/VCFv4.2.pdf)
-- [ACMG 致病性评估指南](https://www.ncbi.nlm.nih.gov/pmc/articles/PMC4707846/)
-- [SnpEff 注释文档](http://snpeff.sourceforge.net/)
+**对应文件**：genomics_qc_lesson4_assembly_tools.qmd（待编写）
+
+:::tip
+**工具选择原则：** 根据测序技术和基因组大小选择组装工具。短读优先 SPAdes；长读优先 Flye 或 Hifiasm（HiFi 数据）；混合策略在长读组装骨架基础上用短读纠错。
+:::
+
+不同测序技术的读长特性决定了组装工具的选择逻辑。短读（Illumina）具有高准确率但读长仅 150 bp，适合 DBG 算法；长读（Nanopore/PacBio）读长可达数十 kb，能跨越重复区域，但原始错误率更高。本专题系统比较三类主流组装器，并提供面向不同场景的完整命令行流程。
+
+**核心概念**：
+
+- **SPAdes**：面向短读的多 k-mer 迭代 DBG 组装器；`--careful` 模式；细菌与宏基因组（`--meta`）场景
+- **Flye**：面向长读（Nanopore / PacBio CLR）的 repeat graph 策略组装器；`--genome-size` 参数
+- **Hifiasm**：面向 PacBio HiFi（CCS）的高精度组装器；单倍型分型（Hi-C 辅助）
+- **混合组装策略**：长读骨架 + 短读纠错（Unicycler 用于细菌完整基因组）
+- 组装输出文件解读：`contigs.fasta`、`assembly_graph.gfa`、`assembly_info.txt`
+
+**计划实践内容**：
+
+```bash
+# SPAdes: short-read assembly
+spades.py -1 R1_clean.fastq.gz -2 R2_clean.fastq.gz \
+  -o spades_output/ -t 8 --careful -k 21,33,55,77
+
+# Flye: long-read assembly (Nanopore)
+flye --nano-raw reads.fastq.gz \
+  --genome-size 5m --out-dir flye_output/ --threads 8
+
+# Hifiasm: HiFi assembly
+hifiasm -o ecoli.asm -t 8 hifi_reads.fastq.gz
+```
 
 ---
 
-# 快速参考卡
+## 专题 2.5：组装质量评估
 
-| 任务 | 工具 | 命令示例 |
-|-----|------|---------|
-| 质量评估 | FastQC | `fastqc input.fastq -o output_dir` |
-| 数据预处理 | Fastp | `fastp -i R1.fq -I R2.fq -o R1_clean.fq -O R2_clean.fq` |
-| 序列比对 | BWA-MEM | `bwa mem -t 4 ref.fasta R1.fq R2.fq \| samtools sort -o out.bam` |
-| 排序和索引 | Samtools | `samtools sort in.bam -o out.bam && samtools index out.bam` |
-| 去重 | GATK | `gatk MarkDuplicates -I in.bam -O out.bam -M metrics.txt` |
-| 变异检测 | GATK | `gatk HaplotypeCaller -I in.bam -R ref.fasta -O out.vcf.gz` |
-| 功能注释 | SnpEff | `snpEff hg38 input.vcf > annotated.vcf` |
-| 可视化 | IGV | 图形界面，加载 BAM + VCF |
+**对应文件**：genomics_qc_lesson5_assembly_qc.qmd（待编写）
+
+{{Wiki:BUSCO}}{width=70%}
+
+图2.2：BUSCO 完整性评估的三类结果示意
+
+组装完成后，必须从**连续性**、**完整性**和**准确性**三个维度系统评估结果质量，才能判断组装是否达到下游分析的要求。本专题介绍工业级评估工具 QUAST 和 BUSCO 的评估逻辑，并说明如何解读评估报告来指导后续优化决策。
+
+**核心概念**：
+
+- 连续性指标：N50、N90、最大 Contig 长度、Scaffold 总长
+- 完整性指标：BUSCO（基于单拷贝直系同源基因集，输出 Complete / Fragmented / Missing 比例）；QUAST（含参考比对模式的全面统计）
+- 准确性指标：Merqury（基于 k-mer 频率计算 QV 值）
+- GFA 格式组装图谱分析：识别未解决的重复区域
+- 常见组装错误类型：错误连接（Misassembly）、坍缩重复（Collapsed Repeat）、冗余 Contig
+
+**计划实践内容**：
+
+```bash
+# QUAST: assembly statistics with/without reference
+quast.py contigs.fasta -r reference.fasta \
+  -o quast_output/ --threads 4
+
+# BUSCO: completeness assessment
+busco -i contigs.fasta -l bacteria_odb10 \
+  -o busco_output/ -m genome --cpu 8
+
+# Merqury: k-mer based accuracy
+merqury.sh meryl_db.meryl contigs.fasta merqury_output
+```
 
 ---
 
-## 完成此章学习后，你将能够：
+## 专题 2.6：组装后处理与精化
 
-✓ 从原始 FASTQ 数据出发，独立完成基因组变异检测分析
-✓ 理解每个处理步骤的目的和参数选择
-✓ 解读 SAM、BAM、VCF 等标准格式文件
-✓ 应用质量控制和过滤标准，识别高置信度变异
-✓ 进行变异功能注释和致病性评估
-✓ 使用 IGV 等工具直观验证变异的真实性
+**对应文件**：genomics_qc_lesson6_assembly_polish.qmd（待编写）
+
+{{Wiki:Scaffolding_(bioinformatics)}}{width=85%}
+
+图2.3：Scaffolding 将 Contig 连接为染色体级别组装的示意图
+
+从头组装产生的草图基因组通常包含 Gap、序列错误和外源污染，需要经过系统性后处理才能达到发表或注释级别的质量。本专题覆盖 Scaffolding（支架化）、Gap-filling（间隙填充）、Polishing（纠错）和重复序列屏蔽四个关键步骤，并介绍各步骤对应的主流工具。
+
+**核心概念**：
+
+- **Scaffolding**：利用 Mate-pair 或 Hi-C 数据将 Contig 连接为更长 Scaffold；3D-DNA（Hi-C 辅助染色体级别组装）
+- **Gap-filling**：利用原始 reads 填充 Scaffold 中的 N 区域（GapFiller、TGS-GapFiller）
+- **Polishing（纠错）**：短读纠错——Pilon（修正 SNP、Indel、小结构变异）；长读纠错——Medaka（Nanopore）、Arrow（PacBio）
+- **重复序列屏蔽**：RepeatModeler 从头识别重复元件；RepeatMasker 软屏蔽（小写 ACGT）或硬屏蔽（N）
+- **组装污染去除**：NCBI FCS-GX 检测外源序列污染
+
+**计划实践内容**：
+
+```bash
+# Pilon polishing: map reads back then correct
+bwa mem -t 8 contigs.fasta R1_clean.fastq.gz R2_clean.fastq.gz \
+  | samtools sort -o mapped.bam && samtools index mapped.bam
+pilon --genome contigs.fasta --frags mapped.bam \
+  --output polished --changes --threads 8
+
+# Medaka polishing (Nanopore)
+medaka_consensus -i reads.fastq.gz -d assembly.fasta \
+  -o medaka_output/ -t 8 -m r941_min_hac_g507
+
+# RepeatMasker soft-masking
+RepeatMasker -pa 8 -species bacteria -xsmall contigs.fasta
+```
+
+---
+
+# 模块 C：参考比对、变异检测与注释
+
+:::note
+**模块目标：** 在高质量预处理数据的基础上，完成参考基因组比对、变异检测与功能注释的完整分析流程。
+:::
+
+## 专题 2.7：变异检测算法与 VCF 格式
+
+**对应文件**：[genomics_qc_lesson4.qmd](genomics_qc_lesson4.qmd)
+
+变异检测的核心是在比对数据中区分真实的生物学变异与测序错误。本专题从统计学角度比较频率法与贝叶斯模型两种主要算法框架，重点讲解 GATK HaplotypeCaller 的局部重组装策略，并系统介绍 VCF 格式的每个字段含义与质量过滤策略。理解过滤参数的生物学意义，是避免假阳性富集的关键。
+
+**核心概念**：
+
+- 变异检测的统计基础：频率法 vs 贝叶斯模型
+- GATK HaplotypeCaller 工作流程：活跃区域检测 → 局部重组装 → 单倍型打分
+- VCF 格式详解：CHROM / POS / REF / ALT / QUAL / FILTER / INFO / FORMAT
+- QUAL、GQ、PL 质量评分的含义与区别
+- 硬过滤策略（Hard Filtering）：QD、FS、SOR、MQ、MQRankSum、ReadPosRankSum
+- VQSR（变异质量分数重校正）的原理与适用场景（需大样本量）
+
+**实践内容**：VCF 格式解析；质量分布统计与可视化；过滤管道实践。
+
+---
+
+## 专题 2.8：功能注释、GATK 最佳实践与可视化
+
+**对应文件**：[genomics_qc_lesson5.qmd](genomics_qc_lesson5.qmd)
+
+变异位点的坐标信息本身不具备直接的生物学解释，需要通过功能注释工具将其映射至基因组特征（外显子、剪接位点、调控区域等），并预测对蛋白质功能的影响。本专题还将梳理完整的 GATK 最佳实践流程，重点解释 BQSR（碱基质量分数重校正）的统计原理，并介绍如何利用 IGV 进行交互式可视化验证。
+
+**核心概念**：
+
+- 变异功能效应分类：同义、错义、无义、移码、剪接位点变异
+- GATK 完整最佳实践流程：Trimming → 比对 → 去重 → BQSR → HaplotypeCaller → VQSR → 注释
+- BQSR（碱基质量分数重校正）：基于已知变异集系统性校正测序仪的系统误差
+- 注释工具对比：SnpEff、VEP、ANNOVAR 的功能与输出格式
+- ACMG 致病性分级标准：Pathogenic / Likely Pathogenic / VUS / Likely Benign / Benign
+- IGV 交互式可视化：BAM 与 VCF 同步加载与验证技巧
+
+**实践内容**：完整 GATK 流程脚本；SnpEff 注释与字段解读；VCF 优先级排序；IGV 操作演示。
+
+---
+
+# 关键工具箱
+
+| 分析阶段 | 工具 | 适用场景 |
+|---------|------|---------|
+| 质量评估 | FastQC, fastp | 原始数据 QC 报告 |
+| 数据预处理 | fastp, Trimmomatic | Adapter 去除、质量过滤 |
+| 参考比对 | BWA-MEM, Minimap2 | 短读 / 长读参考比对 |
+| 短读组装 | SPAdes, Unicycler | Illumina 细菌 / 宏基因组 |
+| 长读组装 | Flye, Hifiasm | Nanopore / PacBio HiFi |
+| 组装评估 | QUAST, BUSCO, Merqury | 连续性 / 完整性 / 准确性 |
+| 组装纠错 | Pilon, Medaka | 短读 / 长读 Polishing |
+| 支架化 | 3D-DNA, LINKS | Hi-C 辅助染色体级别组装 |
+| BAM 处理 | Samtools, GATK | 排序、去重、索引 |
+| 变异检测 | GATK HaplotypeCaller, bcftools | SNP / Indel 检测 |
+| 功能注释 | SnpEff, VEP | 变异功能预测与致病性评估 |
+| 可视化 | IGV, Bandage | BAM / VCF / GFA 交互式查看 |
+
+---
+
+# 快速参考：核心命令速查
+
+```bash
+# === 模块 A：质量控制 ===
+fastqc input.fastq.gz -o qc_output/
+fastp -i R1.fq.gz -I R2.fq.gz -o R1_clean.fq.gz -O R2_clean.fq.gz \
+  --html fastp_report.html --thread 4
+
+# === 模块 B：从头组装 ===
+spades.py -1 R1_clean.fq.gz -2 R2_clean.fq.gz -o spades_out/ --careful
+quast.py spades_out/contigs.fasta -o quast_out/
+busco -i spades_out/contigs.fasta -l bacteria_odb10 -o busco_out/ -m genome
+pilon --genome contigs.fasta --frags mapped.bam --output polished
+
+# === 模块 C：变异检测 ===
+bwa mem -t 4 ref.fasta R1_clean.fq.gz R2_clean.fq.gz \
+  | samtools sort -o sorted.bam && samtools index sorted.bam
+gatk MarkDuplicates -I sorted.bam -O dedup.bam -M metrics.txt
+gatk BaseRecalibrator -I dedup.bam -R ref.fasta --known-sites dbsnp.vcf -O recal.table
+gatk ApplyBQSR -I dedup.bam -R ref.fasta --bqsr-recal-file recal.table -O recal.bam
+gatk HaplotypeCaller -I recal.bam -R ref.fasta -O raw.g.vcf.gz -ERC GVCF
+snpEff hg38 filtered.vcf > annotated.vcf
+```
+
+---
+
+# 学习路径建议
+
+**推荐顺序**：按模块顺序学习，确保理解算法原理后再进入实操。模块 B 的专题 2.4–2.6 属于进阶内容，建议在专题 2.3 的算法原理掌握后再推进。
+
+**数据集建议**：
+
+| 数据集 | 规模 | 适用模块 |
+|--------|------|---------|
+| *E. coli* K-12 SRR2584863（Illumina PE150） | 约 230 MB | 模块 A、模块 B（短读组装） |
+| *E. coli* Nanopore 公开数据集 | 约 500 MB | 模块 B（长读组装） |
+| GIAB HG001/HG002（人类真值集） | 约 50 GB | 模块 C |
+| 1000 Genomes 单样本外显子（教学用） | 约 3 GB | 模块 C |
+
+**进阶方向**：
+
+- 真菌或植物基因组的 Hi-C 辅助染色体级别组装
+- 宏基因组 Binning（MetaBAT2 + CheckM）
+- 体细胞变异检测（GATK Mutect2）
+- 长读结构变异检测（Sniffles2、PBSV）
+
+---
+
+# 完成本章学习后，你将能够：
+
+✓ 评估原始测序数据质量，执行 Adapter 去除与质量过滤
+✓ 从头组装细菌或小型真核基因组，选择合适的工具和参数
+✓ 使用 QUAST 和 BUSCO 系统评估组装质量，解读 N50 等核心指标
+✓ 执行 Pilon 或 Medaka 对组装结果进行纠错与精化
+✓ 完成 GATK 最佳实践流程，从 BAM 到高置信度 VCF
+✓ 对变异结果进行功能注释与 ACMG 致病性评估
+✓ 使用 IGV 和 Bandage 对比对结果与组装图谱进行可视化验证

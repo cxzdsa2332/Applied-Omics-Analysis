@@ -6,9 +6,9 @@
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
-<meta name="dcterms.date" content="2026-04-17">
+<meta name="dcterms.date" content="2026-04-26">
 
-<title>8&nbsp; 基因组 —— 质量控制、变异检测与功能注释 – Introduction to Applied High-throughput Biological Data Analysis</title>
+<title>8&nbsp; 基因组数据分析：质量控制、从头组装与变异检测 – Introduction to Applied High-throughput Biological Data Analysis</title>
 <style>
 /* Default styles provided by pandoc.
 ** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
@@ -23,6 +23,41 @@ ul.task-list li input[type="checkbox"] {
   width: 0.8em;
   margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
   vertical-align: middle;
+}
+/* CSS for syntax highlighting */
+html { -webkit-text-size-adjust: 100%; }
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
 }
 </style>
 
@@ -115,7 +150,7 @@ window.Quarto = {
       <button type="button" class="quarto-btn-toggle btn" data-bs-toggle="collapse" role="button" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
         <i class="bi bi-layout-text-sidebar-reverse"></i>
       </button>
-        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="./01-intro.html">第一阶段：基础与基因组</a></li><li class="breadcrumb-item"><a href="./02-genomics-qc.html"><span class="chapter-number">8</span>&nbsp; <span class="chapter-title">基因组 —— 质量控制、变异检测与功能注释</span></a></li></ol></nav>
+        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="./01-intro.html">第一阶段：基础与基因组</a></li><li class="breadcrumb-item"><a href="./02-genomics-qc.html"><span class="chapter-number">8</span>&nbsp; <span class="chapter-title">基因组数据分析：质量控制、从头组装与变异检测</span></a></li></ol></nav>
         <a class="flex-grow-1" role="navigation" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">      
         </a>
       <button type="button" class="btn quarto-search-button" aria-label="Search" onclick="window.quartoOpenSearch();">
@@ -161,7 +196,7 @@ window.Quarto = {
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./01-intro.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">2</span>&nbsp; <span class="chapter-title">生物信息学入门课程总览</span></span></a>
+ <span class="menu-text"><span class="chapter-number">2</span>&nbsp; <span class="chapter-title">生物信息学入门：从分子到数据</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
@@ -197,7 +232,7 @@ window.Quarto = {
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./02-genomics-qc.html" class="sidebar-item-text sidebar-link active">
- <span class="menu-text"><span class="chapter-number">8</span>&nbsp; <span class="chapter-title">基因组 —— 质量控制、变异检测与功能注释</span></span></a>
+ <span class="menu-text"><span class="chapter-number">8</span>&nbsp; <span class="chapter-title">基因组数据分析：质量控制、从头组装与变异检测</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
@@ -569,40 +604,39 @@ window.Quarto = {
         <nav id="TOC" role="doc-toc" class="toc-active">
     <h2 id="toc-title">Table of contents</h2>
    
+  <ul>
+  <li><a href="#整体概述" id="toc-整体概述" class="nav-link active" data-scroll-target="#整体概述"><span class="header-section-number">9</span> 整体概述</a></li>
+  <li><a href="#结构导览" id="toc-结构导览" class="nav-link" data-scroll-target="#结构导览"><span class="header-section-number">10</span> 结构导览</a></li>
+  <li><a href="#模块-a原始数据质量控制" id="toc-模块-a原始数据质量控制" class="nav-link" data-scroll-target="#模块-a原始数据质量控制"><span class="header-section-number">11</span> 模块 A：原始数据质量控制</a>
   <ul class="collapse">
-  <li><a href="#课程引入" id="toc-课程引入" class="nav-link active" data-scroll-target="#课程引入"><span class="header-section-number">9</span> 课程引入</a></li>
-  <li><a href="#课程概览" id="toc-课程概览" class="nav-link" data-scroll-target="#课程概览"><span class="header-section-number">10</span> 课程概览</a>
-  <ul class="collapse">
-  <li><a href="#核心概念导航" id="toc-核心概念导航" class="nav-link" data-scroll-target="#核心概念导航"><span class="header-section-number">10.1</span> 核心概念导航</a></li>
-  <li><a href="#关键工具箱" id="toc-关键工具箱" class="nav-link" data-scroll-target="#关键工具箱"><span class="header-section-number">10.2</span> 关键工具箱</a></li>
+  <li><a href="#专题-2.1测序原理与原始数据的数字表现" id="toc-专题-2.1测序原理与原始数据的数字表现" class="nav-link" data-scroll-target="#专题-2.1测序原理与原始数据的数字表现"><span class="header-section-number">11.1</span> 专题 2.1：测序原理与原始数据的数字表现</a></li>
+  <li><a href="#专题-2.2数据预处理与参考基因组比对" id="toc-专题-2.2数据预处理与参考基因组比对" class="nav-link" data-scroll-target="#专题-2.2数据预处理与参考基因组比对"><span class="header-section-number">11.2</span> 专题 2.2：数据预处理与参考基因组比对</a></li>
   </ul></li>
-  <li><a href="#学时详情" id="toc-学时详情" class="nav-link" data-scroll-target="#学时详情"><span class="header-section-number">11</span> 学时详情</a>
+  <li><a href="#模块-b从头基因组组装" id="toc-模块-b从头基因组组装" class="nav-link" data-scroll-target="#模块-b从头基因组组装"><span class="header-section-number">12</span> 模块 B：从头基因组组装</a>
   <ul class="collapse">
-  <li><a href="#第-1-学时测序原理与原始数据的数字表现" id="toc-第-1-学时测序原理与原始数据的数字表现" class="nav-link" data-scroll-target="#第-1-学时测序原理与原始数据的数字表现"><span class="header-section-number">11.1</span> 第 1 学时：测序原理与原始数据的数字表现</a></li>
-  <li><a href="#第-2-学时数据体检与参考基因组比对" id="toc-第-2-学时数据体检与参考基因组比对" class="nav-link" data-scroll-target="#第-2-学时数据体检与参考基因组比对"><span class="header-section-number">11.2</span> 第 2 学时：数据”体检”与参考基因组比对</a></li>
-  <li><a href="#第-3-学时标准数据格式-sambam-与变异分类" id="toc-第-3-学时标准数据格式-sambam-与变异分类" class="nav-link" data-scroll-target="#第-3-学时标准数据格式-sambam-与变异分类"><span class="header-section-number">11.3</span> 第 3 学时：标准数据格式 SAM/BAM 与变异分类</a></li>
-  <li><a href="#第-4-学时变异检测算法与-vcf-通用格式" id="toc-第-4-学时变异检测算法与-vcf-通用格式" class="nav-link" data-scroll-target="#第-4-学时变异检测算法与-vcf-通用格式"><span class="header-section-number">11.4</span> 第 4 学时：变异检测算法与 VCF 通用格式</a></li>
-  <li><a href="#第-5-学时功能注释gatk-最佳实践与可视化" id="toc-第-5-学时功能注释gatk-最佳实践与可视化" class="nav-link" data-scroll-target="#第-5-学时功能注释gatk-最佳实践与可视化"><span class="header-section-number">11.5</span> 第 5 学时：功能注释、GATK 最佳实践与可视化</a></li>
+  <li><a href="#专题-2.3从头组装算法原理" id="toc-专题-2.3从头组装算法原理" class="nav-link" data-scroll-target="#专题-2.3从头组装算法原理"><span class="header-section-number">12.1</span> 专题 2.3：从头组装算法原理</a></li>
+  <li><a href="#专题-2.4主流组装工具实战" id="toc-专题-2.4主流组装工具实战" class="nav-link" data-scroll-target="#专题-2.4主流组装工具实战"><span class="header-section-number">12.2</span> 专题 2.4：主流组装工具实战</a></li>
+  <li><a href="#专题-2.5组装质量评估" id="toc-专题-2.5组装质量评估" class="nav-link" data-scroll-target="#专题-2.5组装质量评估"><span class="header-section-number">12.3</span> 专题 2.5：组装质量评估</a></li>
+  <li><a href="#专题-2.6组装后处理与精化" id="toc-专题-2.6组装后处理与精化" class="nav-link" data-scroll-target="#专题-2.6组装后处理与精化"><span class="header-section-number">12.4</span> 专题 2.6：组装后处理与精化</a></li>
   </ul></li>
-  <li><a href="#实践建议" id="toc-实践建议" class="nav-link" data-scroll-target="#实践建议"><span class="header-section-number">12</span> 实践建议</a>
+  <li><a href="#模块-c参考比对变异检测与注释" id="toc-模块-c参考比对变异检测与注释" class="nav-link" data-scroll-target="#模块-c参考比对变异检测与注释"><span class="header-section-number">13</span> 模块 C：参考比对、变异检测与注释</a>
   <ul class="collapse">
-  <li><a href="#推荐学习路径" id="toc-推荐学习路径" class="nav-link" data-scroll-target="#推荐学习路径"><span class="header-section-number">12.1</span> 推荐学习路径</a></li>
-  <li><a href="#数据集建议" id="toc-数据集建议" class="nav-link" data-scroll-target="#数据集建议"><span class="header-section-number">12.2</span> 数据集建议</a></li>
+  <li><a href="#专题-2.7变异检测算法与-vcf-格式" id="toc-专题-2.7变异检测算法与-vcf-格式" class="nav-link" data-scroll-target="#专题-2.7变异检测算法与-vcf-格式"><span class="header-section-number">13.1</span> 专题 2.7：变异检测算法与 VCF 格式</a></li>
+  <li><a href="#专题-2.8功能注释gatk-最佳实践与可视化" id="toc-专题-2.8功能注释gatk-最佳实践与可视化" class="nav-link" data-scroll-target="#专题-2.8功能注释gatk-最佳实践与可视化"><span class="header-section-number">13.2</span> 专题 2.8：功能注释、GATK 最佳实践与可视化</a></li>
   </ul></li>
-  <li><a href="#关键参考资源" id="toc-关键参考资源" class="nav-link" data-scroll-target="#关键参考资源"><span class="header-section-number">13</span> 关键参考资源</a></li>
-  <li><a href="#快速参考卡" id="toc-快速参考卡" class="nav-link" data-scroll-target="#快速参考卡"><span class="header-section-number">14</span> 快速参考卡</a>
-  <ul class="collapse">
-  <li><a href="#完成此章学习后你将能够" id="toc-完成此章学习后你将能够" class="nav-link" data-scroll-target="#完成此章学习后你将能够"><span class="header-section-number">14.1</span> 完成此章学习后，你将能够：</a></li>
-  </ul></li>
+  <li><a href="#关键工具箱" id="toc-关键工具箱" class="nav-link" data-scroll-target="#关键工具箱"><span class="header-section-number">14</span> 关键工具箱</a></li>
+  <li><a href="#快速参考核心命令速查" id="toc-快速参考核心命令速查" class="nav-link" data-scroll-target="#快速参考核心命令速查"><span class="header-section-number">15</span> 快速参考：核心命令速查</a></li>
+  <li><a href="#学习路径建议" id="toc-学习路径建议" class="nav-link" data-scroll-target="#学习路径建议"><span class="header-section-number">16</span> 学习路径建议</a></li>
+  <li><a href="#完成本章学习后你将能够" id="toc-完成本章学习后你将能够" class="nav-link" data-scroll-target="#完成本章学习后你将能够"><span class="header-section-number">17</span> 完成本章学习后，你将能够：</a></li>
   </ul>
-<div class="toc-actions"><ul class="collapse"><li><a href="https://github.com/cxzdsa2332/Applied-Omics-Analysis/edit/main/02-genomics-qc.qmd" class="toc-action"><i class="bi bi-github"></i>Edit this page</a></li><li><a href="https://github.com/cxzdsa2332/Applied-Omics-Analysis/issues/new" class="toc-action"><i class="bi empty"></i>Report an issue</a></li><li><a href="https://github.com/cxzdsa2332/Applied-Omics-Analysis/blob/main/02-genomics-qc.qmd" class="toc-action"><i class="bi empty"></i>View source</a></li></ul></div></nav>
+<div class="toc-actions"><ul><li><a href="https://github.com/cxzdsa2332/Applied-Omics-Analysis/edit/main/02-genomics-qc.qmd" class="toc-action"><i class="bi bi-github"></i>Edit this page</a></li><li><a href="https://github.com/cxzdsa2332/Applied-Omics-Analysis/issues/new" class="toc-action"><i class="bi empty"></i>Report an issue</a></li><li><a href="https://github.com/cxzdsa2332/Applied-Omics-Analysis/blob/main/02-genomics-qc.qmd" class="toc-action"><i class="bi empty"></i>View source</a></li></ul></div></nav>
     </div>
 <!-- main -->
 <main class="content" id="quarto-document-content">
 
-<header id="title-block-header" class="quarto-title-block default"><nav class="quarto-page-breadcrumbs quarto-title-breadcrumbs d-none d-lg-block" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="./01-intro.html">第一阶段：基础与基因组</a></li><li class="breadcrumb-item"><a href="./02-genomics-qc.html"><span class="chapter-number">8</span>&nbsp; <span class="chapter-title">基因组 —— 质量控制、变异检测与功能注释</span></a></li></ol></nav>
+<header id="title-block-header" class="quarto-title-block default"><nav class="quarto-page-breadcrumbs quarto-title-breadcrumbs d-none d-lg-block" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="./01-intro.html">第一阶段：基础与基因组</a></li><li class="breadcrumb-item"><a href="./02-genomics-qc.html"><span class="chapter-number">8</span>&nbsp; <span class="chapter-title">基因组数据分析：质量控制、从头组装与变异检测</span></a></li></ol></nav>
 <div class="quarto-title">
-<h1 class="title"><span class="chapter-number">8</span>&nbsp; <span class="chapter-title">基因组 —— 质量控制、变异检测与功能注释</span></h1>
+<h1 class="title"><span class="chapter-number">8</span>&nbsp; <span class="chapter-title">基因组数据分析：质量控制、从头组装与变异检测</span></h1>
 </div>
 
 
@@ -613,7 +647,7 @@ window.Quarto = {
     <div>
     <div class="quarto-title-meta-heading">Published</div>
     <div class="quarto-title-meta-contents">
-      <p class="date">April 17, 2026</p>
+      <p class="date">April 26, 2026</p>
     </div>
   </div>
   
@@ -625,177 +659,368 @@ window.Quarto = {
 </header>
 
 
-<section id="课程引入" class="level1" data-number="9">
-<h1 data-number="9"><span class="header-section-number">9</span> 课程引入</h1>
-<p>本章将带你完成从生物样本”数字信号化”到”生物学意义解读”的全过程。我们将深入探讨高通量测序（NGS）的底层原理，并学习如何使用行业标准工具（GATK, Samtools, FastQC）对海量数据进行体检、比对、变异挖掘与功能注释。</p>
-<p><strong>学习路线</strong>： - <strong>第 1 学时</strong>：<a href="./genomics_qc_lesson1.html">测序原理与原始数据的数字表现</a> — SBS 原理、FASTQ 格式、Phred 质量评分 - <strong>第 2 学时</strong>：<a href="./genomics_qc_lesson2.html">数据”体检”与参考基因组比对</a> — FastQC 质量评估、数据预处理、序列比对算法 - <strong>第 3 学时</strong>：<a href="./genomics_qc_lesson3.html">标准数据格式 SAM/BAM 与变异分类</a> — SAM/BAM 格式、FLAG 标志位、CIGAR 字符串、变异分类 - <strong>第 4 学时</strong>：<a href="./genomics_qc_lesson4.html">变异检测算法与 VCF 通用格式</a> — 变异检测原理、VCF 格式、质量过滤策略 - <strong>第 5 学时</strong>：<a href="./genomics_qc_lesson5.html">功能注释、GATK 最佳实践与可视化</a> — 功能注释、完整 GATK 流程、BQSR、IGV 可视化</p>
+<section id="整体概述" class="level1" data-number="9">
+<h1 data-number="9"><span class="header-section-number">9</span> 整体概述</h1>
+<p>基因组学数据分析的核心问题可归结为两条并行路径。当参考基因组已知时，分析者将测序 reads 比对至参考序列，进而检测个体间的变异位点；当研究物种尚无参考基因组，或研究目标本身是组装一个新的基因组时，则必须从 reads 出发，从头重建基因组序列。这两条路径在起点（原始 FASTQ 数据）和终点（注释的基因组或变异图谱）之间共享若干关键步骤，尤其是原始数据的质量控制与预处理。本章系统覆盖上述两条路径的完整分析流程，并着重深化从头组装的算法原理、组装质量评估与组装后处理，同时保留变异检测与功能注释的完整讲解。</p>
+<p><strong>学习目标</strong>：掌握基因组数据分析两条核心路径（从头组装与参考比对）的理论基础与工具实操；能对组装结果进行系统评估与精化；能完成 GATK 最佳实践流程并解读功能注释结果。</p>
 <hr>
 </section>
-<section id="课程概览" class="level1" data-number="10">
-<h1 data-number="10"><span class="header-section-number">10</span> 课程概览</h1>
-<section id="核心概念导航" class="level2" data-number="10.1">
-<h2 data-number="10.1" class="anchored" data-anchor-id="核心概念导航"><span class="header-section-number">10.1</span> 核心概念导航</h2>
-<pre><code>FASTQ (原始数据)
-  ↓ 质量评估 (FastQC)
-  ↓ 数据清理 (Trimming)
-  ↓ 序列比对 (BWA)
-SAM/BAM (比对结果)
-  ↓ 排序 &amp; 去重 (Samtools, GATK)
-  ↓ 碱基质量校正 (BQSR)
-  ↓ 变异检测 (HaplotypeCaller)
-VCF (变异列表)
-  ↓ 质量过滤 (VariantFiltration)
-  ↓ 功能注释 (SnpEff/VEP)
-注释 VCF (生物学解释)
-  ↓ 致病性评估 &amp; 优先级排序
-临床报告 &amp; 科学结论</code></pre>
-</section>
-<section id="关键工具箱" class="level2" data-number="10.2">
-<h2 data-number="10.2" class="anchored" data-anchor-id="关键工具箱"><span class="header-section-number">10.2</span> 关键工具箱</h2>
-<p><strong>数据质控</strong>：FastQC, Fastp, Trimmomatic <strong>序列比对</strong>：BWA-MEM, Bowtie2, HISAT2 <strong>BAM 处理</strong>：Samtools, GATK <strong>变异检测</strong>：GATK HaplotypeCaller, bcftools <strong>功能注释</strong>：SnpEff, VEP, ANNOVAR <strong>可视化</strong>：IGV, samtools tview</p>
+<section id="结构导览" class="level1" data-number="10">
+<h1 data-number="10"><span class="header-section-number">10</span> 结构导览</h1>
+<p>本章分为三个模块，共八个专题，按以下数据流组织：</p>
+<pre><code>原始 FASTQ 数据
+  │
+  ├── 模块 A：质量控制与预处理（专题 2.1–2.2）
+  │     ↓ 清洁 Reads
+  │     │
+  │     ├── 模块 B：从头基因组组装（专题 2.3–2.6）
+  │     │     ↓ 算法原理 → 工具实战 → 质量评估 → 组装精化
+  │     │   草图基因组 → 精化基因组
+  │     │
+  │     └── 模块 C：参考比对·变异检测·注释（专题 2.7–2.8）
+  │             ↓ BAM → VCF → 功能注释
+  │
+  └── 综合输出：精化基因组 / 变异图谱 / 功能注释报告</code></pre>
+<p>模块 A 的输出（清洁 reads）是模块 B 和模块 C 的共同输入。模块 B 聚焦于从头组装，是本章的核心扩展内容；模块 C 聚焦于基于参考基因组的变异分析。</p>
 <hr>
 </section>
-</section>
-<section id="学时详情" class="level1" data-number="11">
-<h1 data-number="11"><span class="header-section-number">11</span> 学时详情</h1>
-<section id="第-1-学时测序原理与原始数据的数字表现" class="level2" data-number="11.1">
-<h2 data-number="11.1" class="anchored" data-anchor-id="第-1-学时测序原理与原始数据的数字表现"><span class="header-section-number">11.1</span> 第 1 学时：测序原理与原始数据的数字表现</h2>
-<p><strong>核心要点</strong>： - 了解 Illumina SBS 测序的物理过程（文库构建 → 簇生成 → 荧光检测） - 掌握 PE150 为什么是变异检测的标准配置 - 理解 FASTQ 格式和 Phred 质量评分体系 - 学会计算覆盖深度：<span class="math inline">\(C = \frac{L \times N}{G}\)</span></p>
-<p><strong>实践内容</strong>：Python 模拟 FASTQ 数据生成与质量分析</p>
-<p>👉 <strong>详细内容见</strong> <a href="./genomics_qc_lesson1.html">genomics_qc_lesson1.qmd</a></p>
-<hr>
-</section>
-<section id="第-2-学时数据体检与参考基因组比对" class="level2" data-number="11.2">
-<h2 data-number="11.2" class="anchored" data-anchor-id="第-2-学时数据体检与参考基因组比对"><span class="header-section-number">11.2</span> 第 2 学时：数据”体检”与参考基因组比对</h2>
-<p><strong>核心要点</strong>： - FastQC 的关键质量指标解读（Per-base quality、GC content、Adapter contamination） - 数据预处理流程（质量过滤、Adapter 去除、Trimming） - 参考基因组版本选择（hg19 vs hg38） - BWA-MEM 和 BWT 算法的原理</p>
-<p><strong>实践内容</strong>：FastQC 模拟分析、BWA 比对命令行</p>
-<p>👉 <strong>详细内容见</strong> <a href="./genomics_qc_lesson2.html">genomics_qc_lesson2.qmd</a></p>
-<hr>
-</section>
-<section id="第-3-学时标准数据格式-sambam-与变异分类" class="level2" data-number="11.3">
-<h2 data-number="11.3" class="anchored" data-anchor-id="第-3-学时标准数据格式-sambam-与变异分类"><span class="header-section-number">11.3</span> 第 3 学时：标准数据格式 SAM/BAM 与变异分类</h2>
-<p><strong>核心要点</strong>： - SAM/BAM 的 Header 和 Alignment 段 - FLAG 标志位的二进制编码和解读 - CIGAR 字符串（M, I, D, S, H）的含义 - Mapping Quality (MAPQ) 的意义 - 变异分类：SNP、Indel、MNP、SV、CNV</p>
-<p><strong>实践内容</strong>：Python 解析 SAM/BAM、FLAG 位运算、CIGAR 解析</p>
-<p>👉 <strong>详细内容见</strong> <a href="./genomics_qc_lesson3.html">genomics_qc_lesson3.qmd</a></p>
-<hr>
-</section>
-<section id="第-4-学时变异检测算法与-vcf-通用格式" class="level2" data-number="11.4">
-<h2 data-number="11.4" class="anchored" data-anchor-id="第-4-学时变异检测算法与-vcf-通用格式"><span class="header-section-number">11.4</span> 第 4 学时：变异检测算法与 VCF 通用格式</h2>
-<p><strong>核心要点</strong>： - 频率法 vs 贝叶斯模型的原理 - GATK HaplotypeCaller 的工作流程 - VCF 固定列和 INFO、FORMAT 字段 - QUAL、GQ、PL 质量评分的含义 - 变异过滤策略（QUAL、DP、QD、位置偏差）</p>
-<p><strong>实践内容</strong>：VCF 解析与过滤、质量分布分析</p>
-<p>👉 <strong>详细内容见</strong> <a href="./genomics_qc_lesson4.html">genomics_qc_lesson4.qmd</a></p>
-<hr>
-</section>
-<section id="第-5-学时功能注释gatk-最佳实践与可视化" class="level2" data-number="11.5">
-<h2 data-number="11.5" class="anchored" data-anchor-id="第-5-学时功能注释gatk-最佳实践与可视化"><span class="header-section-number">11.5</span> 第 5 学时：功能注释、GATK 最佳实践与可视化</h2>
-<p><strong>核心要点</strong>： - 变异功能注释（同义、错义、无义、移码等） - GATK 完整处理流程（Trimming → 比对 → 去重 → BQSR → 变异检测 → 过滤 → 注释） - BQSR 碱基质量分数重校正的原理 - SnpEff/VEP 注释字段解读 - ACMG 致病性分级（Pathogenic → Benign） - IGV 可视化检查技巧</p>
-<p><strong>实践内容</strong>：VCF 优先级排序、致病性评估、IGV 交互式查看</p>
-<p>👉 <strong>详细内容见</strong> <a href="./genomics_qc_lesson5.html">genomics_qc_lesson5.qmd</a></p>
-<hr>
-</section>
-</section>
-<section id="实践建议" class="level1" data-number="12">
-<h1 data-number="12"><span class="header-section-number">12</span> 实践建议</h1>
-<section id="推荐学习路径" class="level2" data-number="12.1">
-<h2 data-number="12.1" class="anchored" data-anchor-id="推荐学习路径"><span class="header-section-number">12.1</span> 推荐学习路径</h2>
-<ol type="1">
-<li><strong>理论掌握</strong>：按顺序阅读 lesson1-5</li>
-<li><strong>动手实验</strong>：每个 lesson 包含代码示例，建议在本地运行</li>
-<li><strong>综合应用</strong>：从 FASTQ 到最终注释 VCF，完整走通一个样本</li>
-<li><strong>进阶</strong>：
+<section id="模块-a原始数据质量控制" class="level1" data-number="11">
+<h1 data-number="11"><span class="header-section-number">11</span> 模块 A：原始数据质量控制</h1>
+<div class="note">
+<p><strong>模块目标：</strong> 理解高通量测序数据的产生机制，掌握数据质量评估与预处理方法，为后续所有分析提供高质量输入。</p>
+</div>
+<section id="专题-2.1测序原理与原始数据的数字表现" class="level2" data-number="11.1">
+<h2 data-number="11.1" class="anchored" data-anchor-id="专题-2.1测序原理与原始数据的数字表现"><span class="header-section-number">11.1</span> 专题 2.1：测序原理与原始数据的数字表现</h2>
+<p><strong>对应文件</strong>：<a href="./genomics_qc_lesson1.html">genomics_qc_lesson1.qmd</a></p>
+<p>Illumina 平台的边合成边测序（SBS）技术产生了当今 90% 以上的基因组数据。本专题从测序仪的物理原理出发，深入 FASTQ 格式的数据结构与 Phred 质量评分体系，并介绍公共数据库的数据获取方法。掌握这些基础是正确评估数据质量、避免分析错误的前提。</p>
+<p><strong>核心概念</strong>：</p>
 <ul>
-<li>尝试多样本联合分析（GenotypeGVCFs）</li>
-<li>体细胞变异检测（Mutect2）</li>
-<li>长读测序比对（PacBio/Nanopore）</li>
-</ul></li>
-</ol>
-</section>
-<section id="数据集建议" class="level2" data-number="12.2">
-<h2 data-number="12.2" class="anchored" data-anchor-id="数据集建议"><span class="header-section-number">12.2</span> 数据集建议</h2>
-<ul>
-<li><strong>小规模</strong>：1000 Genomes 的样本 FASTQ（~3 GB）</li>
-<li><strong>标准规模</strong>：GIAB (Genome in a Bottle) 真值集</li>
-<li><strong>生产规模</strong>：整个人群队列的多样本分析</li>
+<li>Illumina SBS 的物理流程：文库构建 → 桥式扩增 → 荧光信号采集</li>
+<li>主流测序平台对比（Illumina、PacBio HiFi、Oxford Nanopore）</li>
+<li>FASTQ 格式的四行结构；Phred 质量评分：<span class="math inline">\(Q = -10\log_{10}(P_{\text{error}})\)</span></li>
+<li>覆盖深度计算：<span class="math inline">\(C = \dfrac{L \times N}{G}\)</span></li>
+<li>双端测序（PE）的原理与 PE150 作为变异检测标准配置的原因</li>
+<li>公共数据库（SRA、ENA）与教学数据集（<em>E. coli</em> K-12 SRR2584863）的获取</li>
 </ul>
+<p><strong>实践内容</strong>：命令行下载与初探 FASTQ 数据；Python 系统性质量分析与可视化；FastQC 报告解读。</p>
 <hr>
 </section>
-</section>
-<section id="关键参考资源" class="level1" data-number="13">
-<h1 data-number="13"><span class="header-section-number">13</span> 关键参考资源</h1>
+<section id="专题-2.2数据预处理与参考基因组比对" class="level2" data-number="11.2">
+<h2 data-number="11.2" class="anchored" data-anchor-id="专题-2.2数据预处理与参考基因组比对"><span class="header-section-number">11.2</span> 专题 2.2：数据预处理与参考基因组比对</h2>
+<p><strong>对应文件</strong>：<a href="./genomics_qc_lesson2.html">genomics_qc_lesson2.qmd</a></p>
+<p>测序产生的原始数据往往包含 Adapter 污染、低质量碱基和人为引入的序列偏差，需要在进入下游分析前进行系统性预处理。本专题重点讲解 Adapter 污染的成因（Read-through 现象）、主流预处理工具的选型逻辑，以及参考基因组比对的核心算法——Burrows-Wheeler Transform（BWT）与 BWA-MEM 的 Seed-and-Extend 策略。</p>
+<p><strong>核心概念</strong>：</p>
 <ul>
-<li><a href="https://gatk.broadinstitute.org/hc/en-us">GATK 官方最佳实践</a></li>
-<li><a href="https://samtools.github.io/hts-specs/">SAM/BAM 格式规范</a></li>
-<li><a href="https://samtools.github.io/hts-specs/VCFv4.2.pdf">VCF 格式规范</a></li>
-<li><a href="https://www.ncbi.nlm.nih.gov/pmc/articles/PMC4707846/">ACMG 致病性评估指南</a></li>
-<li><a href="http://snpeff.sourceforge.net/">SnpEff 注释文档</a></li>
+<li>Adapter 污染的来源：Insert Size 小于 Read 长度时发生的 Read-through 现象</li>
+<li>预处理工具选型：fastp（首选）vs Trimmomatic；参数选择逻辑</li>
+<li>参考基因组版本选择（GRCh37/hg19 vs GRCh38/hg38）及文件结构解析</li>
+<li>Burrows-Wheeler Transform（BWT）与 FM-index 的算法原理</li>
+<li>BWA-MEM 的 Seed-and-Extend 比对策略</li>
+<li>比对结果质量评估：唯一比对率、Insert Size 分布、覆盖均匀性</li>
 </ul>
+<p><strong>实践内容</strong>：fastp 处理真实 <em>E. coli</em> 数据；BWA-MEM 完整比对流程。</p>
 <hr>
 </section>
-<section id="快速参考卡" class="level1" data-number="14">
-<h1 data-number="14"><span class="header-section-number">14</span> 快速参考卡</h1>
+</section>
+<section id="模块-b从头基因组组装" class="level1" data-number="12">
+<h1 data-number="12"><span class="header-section-number">12</span> 模块 B：从头基因组组装</h1>
+<div class="note">
+<p><strong>模块目标：</strong> 掌握基因组从头组装的核心算法，学会使用主流工具完成组装，并能系统评估和优化组装质量。本模块是本章的核心扩展内容。</p>
+</div>
+<p>{{Wiki:Sequence_assembly}}{width=85%}</p>
+<p>图2.1：基因组从头组装的概念示意</p>
+<section id="专题-2.3从头组装算法原理" class="level2" data-number="12.1">
+<h2 data-number="12.1" class="anchored" data-anchor-id="专题-2.3从头组装算法原理"><span class="header-section-number">12.1</span> 专题 2.3：从头组装算法原理</h2>
+<p><strong>对应文件</strong>：<a href="./genomics_qc_lesson3.html">genomics_qc_lesson3.qmd</a></p>
+<p>当研究对象缺乏参考基因组，或研究目标本身是构建新基因组时，从头组装（De Novo Assembly）是唯一可行的分析路径。本专题从组装问题的数学本质出发，系统介绍两种经典算法框架——Overlap-Layout-Consensus（OLC）和 De Bruijn Graph（DBG）——并重点推导 De Bruijn 图如何将 k-mer 分解、图构建与 Eulerian Path 求解串联成一个完整的组装流程。</p>
+<p><strong>核心概念</strong>：</p>
+<ul>
+<li>从头组装的必要性：无参考基因组物种、结构变异检测、宏基因组分析</li>
+<li>参考比对 vs 从头组装的适用场景对比</li>
+<li>组装产物层级：Contig → Scaffold → Chromosome-level Assembly</li>
+<li>组装质量核心指标：N50、N90、L50、NG50 的定义与计算</li>
+<li>OLC 框架：适合长读数据（PacBio、Nanopore）</li>
+<li>De Bruijn Graph（DBG）框架：适合短读数据（Illumina）；k-mer 分解 → Eulerian Path 求解</li>
+<li>重复序列对组装的破坏：气泡（Bubble）、尖刺（Tip）、环路的识别与处理</li>
+</ul>
+<p><strong>实践内容</strong>：R 代码手工实现 De Bruijn 图组装；igraph 可视化组装图结构。</p>
+<hr>
+</section>
+<section id="专题-2.4主流组装工具实战" class="level2" data-number="12.2">
+<h2 data-number="12.2" class="anchored" data-anchor-id="专题-2.4主流组装工具实战"><span class="header-section-number">12.2</span> 专题 2.4：主流组装工具实战</h2>
+<p><strong>对应文件</strong>：genomics_qc_lesson4_assembly_tools.qmd（待编写）</p>
+<div class="tip">
+<p><strong>工具选择原则：</strong> 根据测序技术和基因组大小选择组装工具。短读优先 SPAdes；长读优先 Flye 或 Hifiasm（HiFi 数据）；混合策略在长读组装骨架基础上用短读纠错。</p>
+</div>
+<p>不同测序技术的读长特性决定了组装工具的选择逻辑。短读（Illumina）具有高准确率但读长仅 150 bp，适合 DBG 算法；长读（Nanopore/PacBio）读长可达数十 kb，能跨越重复区域，但原始错误率更高。本专题系统比较三类主流组装器，并提供面向不同场景的完整命令行流程。</p>
+<p><strong>核心概念</strong>：</p>
+<ul>
+<li><strong>SPAdes</strong>：面向短读的多 k-mer 迭代 DBG 组装器；<code>--careful</code> 模式；细菌与宏基因组（<code>--meta</code>）场景</li>
+<li><strong>Flye</strong>：面向长读（Nanopore / PacBio CLR）的 repeat graph 策略组装器；<code>--genome-size</code> 参数</li>
+<li><strong>Hifiasm</strong>：面向 PacBio HiFi（CCS）的高精度组装器；单倍型分型（Hi-C 辅助）</li>
+<li><strong>混合组装策略</strong>：长读骨架 + 短读纠错（Unicycler 用于细菌完整基因组）</li>
+<li>组装输出文件解读：<code>contigs.fasta</code>、<code>assembly_graph.gfa</code>、<code>assembly_info.txt</code></li>
+</ul>
+<p><strong>计划实践内容</strong>：</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb2"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="co"># SPAdes: short-read assembly</span></span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a><span class="ex">spades.py</span> <span class="at">-1</span> R1_clean.fastq.gz <span class="at">-2</span> R2_clean.fastq.gz <span class="dt">\</span></span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a>  <span class="at">-o</span> spades_output/ <span class="at">-t</span> 8 <span class="at">--careful</span> <span class="at">-k</span> 21,33,55,77</span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a><span class="co"># Flye: long-read assembly (Nanopore)</span></span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a><span class="ex">flye</span> <span class="at">--nano-raw</span> reads.fastq.gz <span class="dt">\</span></span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a>  <span class="at">--genome-size</span> 5m <span class="at">--out-dir</span> flye_output/ <span class="at">--threads</span> 8</span>
+<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a><span class="co"># Hifiasm: HiFi assembly</span></span>
+<span id="cb2-10"><a href="#cb2-10" aria-hidden="true" tabindex="-1"></a><span class="ex">hifiasm</span> <span class="at">-o</span> ecoli.asm <span class="at">-t</span> 8 hifi_reads.fastq.gz</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<hr>
+</section>
+<section id="专题-2.5组装质量评估" class="level2" data-number="12.3">
+<h2 data-number="12.3" class="anchored" data-anchor-id="专题-2.5组装质量评估"><span class="header-section-number">12.3</span> 专题 2.5：组装质量评估</h2>
+<p><strong>对应文件</strong>：genomics_qc_lesson5_assembly_qc.qmd（待编写）</p>
+<p>{{Wiki:BUSCO}}{width=70%}</p>
+<p>图2.2：BUSCO 完整性评估的三类结果示意</p>
+<p>组装完成后，必须从<strong>连续性</strong>、<strong>完整性</strong>和<strong>准确性</strong>三个维度系统评估结果质量，才能判断组装是否达到下游分析的要求。本专题介绍工业级评估工具 QUAST 和 BUSCO 的评估逻辑，并说明如何解读评估报告来指导后续优化决策。</p>
+<p><strong>核心概念</strong>：</p>
+<ul>
+<li>连续性指标：N50、N90、最大 Contig 长度、Scaffold 总长</li>
+<li>完整性指标：BUSCO（基于单拷贝直系同源基因集，输出 Complete / Fragmented / Missing 比例）；QUAST（含参考比对模式的全面统计）</li>
+<li>准确性指标：Merqury（基于 k-mer 频率计算 QV 值）</li>
+<li>GFA 格式组装图谱分析：识别未解决的重复区域</li>
+<li>常见组装错误类型：错误连接（Misassembly）、坍缩重复（Collapsed Repeat）、冗余 Contig</li>
+</ul>
+<p><strong>计划实践内容</strong>：</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb3"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="co"># QUAST: assembly statistics with/without reference</span></span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="ex">quast.py</span> contigs.fasta <span class="at">-r</span> reference.fasta <span class="dt">\</span></span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a>  <span class="at">-o</span> quast_output/ <span class="at">--threads</span> 4</span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a><span class="co"># BUSCO: completeness assessment</span></span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a><span class="ex">busco</span> <span class="at">-i</span> contigs.fasta <span class="at">-l</span> bacteria_odb10 <span class="dt">\</span></span>
+<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a>  <span class="at">-o</span> busco_output/ <span class="at">-m</span> genome <span class="at">--cpu</span> 8</span>
+<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-9"><a href="#cb3-9" aria-hidden="true" tabindex="-1"></a><span class="co"># Merqury: k-mer based accuracy</span></span>
+<span id="cb3-10"><a href="#cb3-10" aria-hidden="true" tabindex="-1"></a><span class="ex">merqury.sh</span> meryl_db.meryl contigs.fasta merqury_output</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<hr>
+</section>
+<section id="专题-2.6组装后处理与精化" class="level2" data-number="12.4">
+<h2 data-number="12.4" class="anchored" data-anchor-id="专题-2.6组装后处理与精化"><span class="header-section-number">12.4</span> 专题 2.6：组装后处理与精化</h2>
+<p><strong>对应文件</strong>：genomics_qc_lesson6_assembly_polish.qmd（待编写）</p>
+<p>{{Wiki:Scaffolding_(bioinformatics)}}{width=85%}</p>
+<p>图2.3：Scaffolding 将 Contig 连接为染色体级别组装的示意图</p>
+<p>从头组装产生的草图基因组通常包含 Gap、序列错误和外源污染，需要经过系统性后处理才能达到发表或注释级别的质量。本专题覆盖 Scaffolding（支架化）、Gap-filling（间隙填充）、Polishing（纠错）和重复序列屏蔽四个关键步骤，并介绍各步骤对应的主流工具。</p>
+<p><strong>核心概念</strong>：</p>
+<ul>
+<li><strong>Scaffolding</strong>：利用 Mate-pair 或 Hi-C 数据将 Contig 连接为更长 Scaffold；3D-DNA（Hi-C 辅助染色体级别组装）</li>
+<li><strong>Gap-filling</strong>：利用原始 reads 填充 Scaffold 中的 N 区域（GapFiller、TGS-GapFiller）</li>
+<li><strong>Polishing（纠错）</strong>：短读纠错——Pilon（修正 SNP、Indel、小结构变异）；长读纠错——Medaka（Nanopore）、Arrow（PacBio）</li>
+<li><strong>重复序列屏蔽</strong>：RepeatModeler 从头识别重复元件；RepeatMasker 软屏蔽（小写 ACGT）或硬屏蔽（N）</li>
+<li><strong>组装污染去除</strong>：NCBI FCS-GX 检测外源序列污染</li>
+</ul>
+<p><strong>计划实践内容</strong>：</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb4"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Pilon polishing: map reads back then correct</span></span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a><span class="ex">bwa</span> mem <span class="at">-t</span> 8 contigs.fasta R1_clean.fastq.gz R2_clean.fastq.gz <span class="dt">\</span></span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a>  <span class="kw">|</span> <span class="ex">samtools</span> sort <span class="at">-o</span> mapped.bam <span class="kw">&amp;&amp;</span> <span class="ex">samtools</span> index mapped.bam</span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a><span class="ex">pilon</span> <span class="at">--genome</span> contigs.fasta <span class="at">--frags</span> mapped.bam <span class="dt">\</span></span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a>  <span class="at">--output</span> polished <span class="at">--changes</span> <span class="at">--threads</span> 8</span>
+<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a><span class="co"># Medaka polishing (Nanopore)</span></span>
+<span id="cb4-8"><a href="#cb4-8" aria-hidden="true" tabindex="-1"></a><span class="ex">medaka_consensus</span> <span class="at">-i</span> reads.fastq.gz <span class="at">-d</span> assembly.fasta <span class="dt">\</span></span>
+<span id="cb4-9"><a href="#cb4-9" aria-hidden="true" tabindex="-1"></a>  <span class="at">-o</span> medaka_output/ <span class="at">-t</span> 8 <span class="at">-m</span> r941_min_hac_g507</span>
+<span id="cb4-10"><a href="#cb4-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-11"><a href="#cb4-11" aria-hidden="true" tabindex="-1"></a><span class="co"># RepeatMasker soft-masking</span></span>
+<span id="cb4-12"><a href="#cb4-12" aria-hidden="true" tabindex="-1"></a><span class="ex">RepeatMasker</span> <span class="at">-pa</span> 8 <span class="at">-species</span> bacteria <span class="at">-xsmall</span> contigs.fasta</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<hr>
+</section>
+</section>
+<section id="模块-c参考比对变异检测与注释" class="level1" data-number="13">
+<h1 data-number="13"><span class="header-section-number">13</span> 模块 C：参考比对、变异检测与注释</h1>
+<div class="note">
+<p><strong>模块目标：</strong> 在高质量预处理数据的基础上，完成参考基因组比对、变异检测与功能注释的完整分析流程。</p>
+</div>
+<section id="专题-2.7变异检测算法与-vcf-格式" class="level2" data-number="13.1">
+<h2 data-number="13.1" class="anchored" data-anchor-id="专题-2.7变异检测算法与-vcf-格式"><span class="header-section-number">13.1</span> 专题 2.7：变异检测算法与 VCF 格式</h2>
+<p><strong>对应文件</strong>：<a href="./genomics_qc_lesson4.html">genomics_qc_lesson4.qmd</a></p>
+<p>变异检测的核心是在比对数据中区分真实的生物学变异与测序错误。本专题从统计学角度比较频率法与贝叶斯模型两种主要算法框架，重点讲解 GATK HaplotypeCaller 的局部重组装策略，并系统介绍 VCF 格式的每个字段含义与质量过滤策略。理解过滤参数的生物学意义，是避免假阳性富集的关键。</p>
+<p><strong>核心概念</strong>：</p>
+<ul>
+<li>变异检测的统计基础：频率法 vs 贝叶斯模型</li>
+<li>GATK HaplotypeCaller 工作流程：活跃区域检测 → 局部重组装 → 单倍型打分</li>
+<li>VCF 格式详解：CHROM / POS / REF / ALT / QUAL / FILTER / INFO / FORMAT</li>
+<li>QUAL、GQ、PL 质量评分的含义与区别</li>
+<li>硬过滤策略（Hard Filtering）：QD、FS、SOR、MQ、MQRankSum、ReadPosRankSum</li>
+<li>VQSR（变异质量分数重校正）的原理与适用场景（需大样本量）</li>
+</ul>
+<p><strong>实践内容</strong>：VCF 格式解析；质量分布统计与可视化；过滤管道实践。</p>
+<hr>
+</section>
+<section id="专题-2.8功能注释gatk-最佳实践与可视化" class="level2" data-number="13.2">
+<h2 data-number="13.2" class="anchored" data-anchor-id="专题-2.8功能注释gatk-最佳实践与可视化"><span class="header-section-number">13.2</span> 专题 2.8：功能注释、GATK 最佳实践与可视化</h2>
+<p><strong>对应文件</strong>：<a href="./genomics_qc_lesson5.html">genomics_qc_lesson5.qmd</a></p>
+<p>变异位点的坐标信息本身不具备直接的生物学解释，需要通过功能注释工具将其映射至基因组特征（外显子、剪接位点、调控区域等），并预测对蛋白质功能的影响。本专题还将梳理完整的 GATK 最佳实践流程，重点解释 BQSR（碱基质量分数重校正）的统计原理，并介绍如何利用 IGV 进行交互式可视化验证。</p>
+<p><strong>核心概念</strong>：</p>
+<ul>
+<li>变异功能效应分类：同义、错义、无义、移码、剪接位点变异</li>
+<li>GATK 完整最佳实践流程：Trimming → 比对 → 去重 → BQSR → HaplotypeCaller → VQSR → 注释</li>
+<li>BQSR（碱基质量分数重校正）：基于已知变异集系统性校正测序仪的系统误差</li>
+<li>注释工具对比：SnpEff、VEP、ANNOVAR 的功能与输出格式</li>
+<li>ACMG 致病性分级标准：Pathogenic / Likely Pathogenic / VUS / Likely Benign / Benign</li>
+<li>IGV 交互式可视化：BAM 与 VCF 同步加载与验证技巧</li>
+</ul>
+<p><strong>实践内容</strong>：完整 GATK 流程脚本；SnpEff 注释与字段解读；VCF 优先级排序；IGV 操作演示。</p>
+<hr>
+</section>
+</section>
+<section id="关键工具箱" class="level1" data-number="14">
+<h1 data-number="14"><span class="header-section-number">14</span> 关键工具箱</h1>
 <table class="caption-top table">
-<colgroup>
-<col style="width: 25%">
-<col style="width: 30%">
-<col style="width: 45%">
-</colgroup>
 <thead>
 <tr class="header">
-<th>任务</th>
+<th>分析阶段</th>
 <th>工具</th>
-<th>命令示例</th>
+<th>适用场景</th>
 </tr>
 </thead>
 <tbody>
 <tr class="odd">
 <td>质量评估</td>
-<td>FastQC</td>
-<td><code>fastqc input.fastq -o output_dir</code></td>
+<td>FastQC, fastp</td>
+<td>原始数据 QC 报告</td>
 </tr>
 <tr class="even">
 <td>数据预处理</td>
-<td>Fastp</td>
-<td><code>fastp -i R1.fq -I R2.fq -o R1_clean.fq -O R2_clean.fq</code></td>
+<td>fastp, Trimmomatic</td>
+<td>Adapter 去除、质量过滤</td>
 </tr>
 <tr class="odd">
-<td>序列比对</td>
-<td>BWA-MEM</td>
-<td><code>bwa mem -t 4 ref.fasta R1.fq R2.fq \| samtools sort -o out.bam</code></td>
+<td>参考比对</td>
+<td>BWA-MEM, Minimap2</td>
+<td>短读 / 长读参考比对</td>
 </tr>
 <tr class="even">
-<td>排序和索引</td>
-<td>Samtools</td>
-<td><code>samtools sort in.bam -o out.bam &amp;&amp; samtools index out.bam</code></td>
+<td>短读组装</td>
+<td>SPAdes, Unicycler</td>
+<td>Illumina 细菌 / 宏基因组</td>
 </tr>
 <tr class="odd">
-<td>去重</td>
-<td>GATK</td>
-<td><code>gatk MarkDuplicates -I in.bam -O out.bam -M metrics.txt</code></td>
+<td>长读组装</td>
+<td>Flye, Hifiasm</td>
+<td>Nanopore / PacBio HiFi</td>
+</tr>
+<tr class="even">
+<td>组装评估</td>
+<td>QUAST, BUSCO, Merqury</td>
+<td>连续性 / 完整性 / 准确性</td>
+</tr>
+<tr class="odd">
+<td>组装纠错</td>
+<td>Pilon, Medaka</td>
+<td>短读 / 长读 Polishing</td>
+</tr>
+<tr class="even">
+<td>支架化</td>
+<td>3D-DNA, LINKS</td>
+<td>Hi-C 辅助染色体级别组装</td>
+</tr>
+<tr class="odd">
+<td>BAM 处理</td>
+<td>Samtools, GATK</td>
+<td>排序、去重、索引</td>
 </tr>
 <tr class="even">
 <td>变异检测</td>
-<td>GATK</td>
-<td><code>gatk HaplotypeCaller -I in.bam -R ref.fasta -O out.vcf.gz</code></td>
+<td>GATK HaplotypeCaller, bcftools</td>
+<td>SNP / Indel 检测</td>
 </tr>
 <tr class="odd">
 <td>功能注释</td>
-<td>SnpEff</td>
-<td><code>snpEff hg38 input.vcf &gt; annotated.vcf</code></td>
+<td>SnpEff, VEP</td>
+<td>变异功能预测与致病性评估</td>
 </tr>
 <tr class="even">
 <td>可视化</td>
-<td>IGV</td>
-<td>图形界面，加载 BAM + VCF</td>
+<td>IGV, Bandage</td>
+<td>BAM / VCF / GFA 交互式查看</td>
 </tr>
 </tbody>
 </table>
 <hr>
-<section id="完成此章学习后你将能够" class="level2" data-number="14.1">
-<h2 data-number="14.1" class="anchored" data-anchor-id="完成此章学习后你将能够"><span class="header-section-number">14.1</span> 完成此章学习后，你将能够：</h2>
-<p>✓ 从原始 FASTQ 数据出发，独立完成基因组变异检测分析 ✓ 理解每个处理步骤的目的和参数选择 ✓ 解读 SAM、BAM、VCF 等标准格式文件 ✓ 应用质量控制和过滤标准，识别高置信度变异 ✓ 进行变异功能注释和致病性评估 ✓ 使用 IGV 等工具直观验证变异的真实性</p>
-
-
 </section>
+<section id="快速参考核心命令速查" class="level1" data-number="15">
+<h1 data-number="15"><span class="header-section-number">15</span> 快速参考：核心命令速查</h1>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb5"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="co"># === 模块 A：质量控制 ===</span></span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a><span class="ex">fastqc</span> input.fastq.gz <span class="at">-o</span> qc_output/</span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a><span class="ex">fastp</span> <span class="at">-i</span> R1.fq.gz <span class="at">-I</span> R2.fq.gz <span class="at">-o</span> R1_clean.fq.gz <span class="at">-O</span> R2_clean.fq.gz <span class="dt">\</span></span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a>  <span class="at">--html</span> fastp_report.html <span class="at">--thread</span> 4</span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a><span class="co"># === 模块 B：从头组装 ===</span></span>
+<span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a><span class="ex">spades.py</span> <span class="at">-1</span> R1_clean.fq.gz <span class="at">-2</span> R2_clean.fq.gz <span class="at">-o</span> spades_out/ <span class="at">--careful</span></span>
+<span id="cb5-8"><a href="#cb5-8" aria-hidden="true" tabindex="-1"></a><span class="ex">quast.py</span> spades_out/contigs.fasta <span class="at">-o</span> quast_out/</span>
+<span id="cb5-9"><a href="#cb5-9" aria-hidden="true" tabindex="-1"></a><span class="ex">busco</span> <span class="at">-i</span> spades_out/contigs.fasta <span class="at">-l</span> bacteria_odb10 <span class="at">-o</span> busco_out/ <span class="at">-m</span> genome</span>
+<span id="cb5-10"><a href="#cb5-10" aria-hidden="true" tabindex="-1"></a><span class="ex">pilon</span> <span class="at">--genome</span> contigs.fasta <span class="at">--frags</span> mapped.bam <span class="at">--output</span> polished</span>
+<span id="cb5-11"><a href="#cb5-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-12"><a href="#cb5-12" aria-hidden="true" tabindex="-1"></a><span class="co"># === 模块 C：变异检测 ===</span></span>
+<span id="cb5-13"><a href="#cb5-13" aria-hidden="true" tabindex="-1"></a><span class="ex">bwa</span> mem <span class="at">-t</span> 4 ref.fasta R1_clean.fq.gz R2_clean.fq.gz <span class="dt">\</span></span>
+<span id="cb5-14"><a href="#cb5-14" aria-hidden="true" tabindex="-1"></a>  <span class="kw">|</span> <span class="ex">samtools</span> sort <span class="at">-o</span> sorted.bam <span class="kw">&amp;&amp;</span> <span class="ex">samtools</span> index sorted.bam</span>
+<span id="cb5-15"><a href="#cb5-15" aria-hidden="true" tabindex="-1"></a><span class="ex">gatk</span> MarkDuplicates <span class="at">-I</span> sorted.bam <span class="at">-O</span> dedup.bam <span class="at">-M</span> metrics.txt</span>
+<span id="cb5-16"><a href="#cb5-16" aria-hidden="true" tabindex="-1"></a><span class="ex">gatk</span> BaseRecalibrator <span class="at">-I</span> dedup.bam <span class="at">-R</span> ref.fasta <span class="at">--known-sites</span> dbsnp.vcf <span class="at">-O</span> recal.table</span>
+<span id="cb5-17"><a href="#cb5-17" aria-hidden="true" tabindex="-1"></a><span class="ex">gatk</span> ApplyBQSR <span class="at">-I</span> dedup.bam <span class="at">-R</span> ref.fasta <span class="at">--bqsr-recal-file</span> recal.table <span class="at">-O</span> recal.bam</span>
+<span id="cb5-18"><a href="#cb5-18" aria-hidden="true" tabindex="-1"></a><span class="ex">gatk</span> HaplotypeCaller <span class="at">-I</span> recal.bam <span class="at">-R</span> ref.fasta <span class="at">-O</span> raw.g.vcf.gz <span class="at">-ERC</span> GVCF</span>
+<span id="cb5-19"><a href="#cb5-19" aria-hidden="true" tabindex="-1"></a><span class="ex">snpEff</span> hg38 filtered.vcf <span class="op">&gt;</span> annotated.vcf</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<hr>
+</section>
+<section id="学习路径建议" class="level1" data-number="16">
+<h1 data-number="16"><span class="header-section-number">16</span> 学习路径建议</h1>
+<p><strong>推荐顺序</strong>：按模块顺序学习，确保理解算法原理后再进入实操。模块 B 的专题 2.4–2.6 属于进阶内容，建议在专题 2.3 的算法原理掌握后再推进。</p>
+<p><strong>数据集建议</strong>：</p>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 34%">
+<col style="width: 26%">
+<col style="width: 39%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>数据集</th>
+<th>规模</th>
+<th>适用模块</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><em>E. coli</em> K-12 SRR2584863（Illumina PE150）</td>
+<td>约 230 MB</td>
+<td>模块 A、模块 B（短读组装）</td>
+</tr>
+<tr class="even">
+<td><em>E. coli</em> Nanopore 公开数据集</td>
+<td>约 500 MB</td>
+<td>模块 B（长读组装）</td>
+</tr>
+<tr class="odd">
+<td>GIAB HG001/HG002（人类真值集）</td>
+<td>约 50 GB</td>
+<td>模块 C</td>
+</tr>
+<tr class="even">
+<td>1000 Genomes 单样本外显子（教学用）</td>
+<td>约 3 GB</td>
+<td>模块 C</td>
+</tr>
+</tbody>
+</table>
+<p><strong>进阶方向</strong>：</p>
+<ul>
+<li>真菌或植物基因组的 Hi-C 辅助染色体级别组装</li>
+<li>宏基因组 Binning（MetaBAT2 + CheckM）</li>
+<li>体细胞变异检测（GATK Mutect2）</li>
+<li>长读结构变异检测（Sniffles2、PBSV）</li>
+</ul>
+<hr>
+</section>
+<section id="完成本章学习后你将能够" class="level1" data-number="17">
+<h1 data-number="17"><span class="header-section-number">17</span> 完成本章学习后，你将能够：</h1>
+<p>✓ 评估原始测序数据质量，执行 Adapter 去除与质量过滤 ✓ 从头组装细菌或小型真核基因组，选择合适的工具和参数 ✓ 使用 QUAST 和 BUSCO 系统评估组装质量，解读 N50 等核心指标 ✓ 执行 Pilon 或 Medaka 对组装结果进行纠错与精化 ✓ 完成 GATK 最佳实践流程，从 BAM 到高置信度 VCF ✓ 对变异结果进行功能注释与 ACMG 致病性评估 ✓ 使用 IGV 和 Bandage 对比对结果与组装图谱进行可视化验证</p>
+
+
 </section>
 
 </main> <!-- /main -->

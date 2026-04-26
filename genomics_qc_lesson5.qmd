@@ -194,6 +194,81 @@ gatk VariantFiltration \
   -O filtered.vcf.gz
 ```
 
+#### Step 7: Hardy-Weinberg 平衡检验与 MAF 过滤
+
+通过技术过滤（QUAL、DP、FS 等）后，还需对变异进行**生物学层面**的质量检验。这一步骤在群体遗传学分析和 GWAS 中尤为关键，但也适用于队列测序的常规质控。
+
+**Hardy-Weinberg 平衡（HWE）**是群体遗传学的基本定律：在理想种群中，等位基因频率保持稳定，基因型频率满足：
+
+$$P(\text{AA}) = p^2, \quad P(\text{Aa}) = 2pq, \quad P(\text{aa}) = q^2$$
+
+{{Wiki:Hardy–Weinberg_principle}}
+
+一个位点若显著偏离 HWE（通常以 $p < 10^{-6}$ 为阈值），往往提示以下技术问题而非真实生物学信号：
+
+| HWE 偏离方向 | 最可能的原因 |
+|---|---|
+| 杂合子过少（heterozygote deficit） | 基因分型错误、等位基因丢失（allele dropout）、近亲交配 |
+| 杂合子过多（heterozygote excess） | 样本混合、体细胞嵌合、比对错误 |
+
+**MAF（Minor Allele Frequency，次等位基因频率）** 过滤则用于排除统计功效不足的极低频变异：
+
+```bash
+# 使用 PLINK 进行 HWE 检验和 MAF 过滤（常用于 GWAS 前处理）
+plink \
+  --vcf filtered.vcf.gz \
+  --hwe 1e-6 \          # 移除 HWE p-value < 1e-6 的位点
+  --maf 0.01 \          # 移除 MAF < 1% 的位点（极低频变异）
+  --geno 0.05 \         # 移除缺失率 > 5% 的位点
+  --mind 0.10 \         # 移除缺失率 > 10% 的个体
+  --make-bed \
+  --out filtered_qc
+
+# 查看过滤统计
+plink --bfile filtered_qc --freq --out allele_freq
+```
+
+```r
+# R: 手工计算 HWE p 值（卡方检验）
+hwe_test <- function(n_hom_ref, n_het, n_hom_alt) {
+  n_total <- n_hom_ref + n_het + n_hom_alt
+  p <- (2 * n_hom_ref + n_het) / (2 * n_total)   # ref allele freq
+  q <- 1 - p
+
+  expected_hom_ref <- n_total * p^2
+  expected_het     <- n_total * 2 * p * q
+  expected_hom_alt <- n_total * q^2
+
+  chi2 <- (n_hom_ref - expected_hom_ref)^2 / expected_hom_ref +
+          (n_het     - expected_het)^2     / expected_het +
+          (n_hom_alt - expected_hom_alt)^2 / expected_hom_alt
+
+  p_value <- pchisq(chi2, df = 1, lower.tail = FALSE)
+
+  cat(sprintf("Observed  : AA=%d  Aa=%d  aa=%d\n",
+              n_hom_ref, n_het, n_hom_alt))
+  cat(sprintf("Expected  : AA=%.1f  Aa=%.1f  aa=%.1f\n",
+              expected_hom_ref, expected_het, expected_hom_alt))
+  cat(sprintf("Chi2 = %.4f  p-value = %.2e  %s\n",
+              chi2, p_value,
+              ifelse(p_value < 1e-6, "FAIL HWE", "PASS HWE")))
+}
+
+# 示例：正常位点
+cat("--- Normal locus ---\n")
+hwe_test(n_hom_ref = 400, n_het = 450, n_hom_alt = 150)
+
+# 示例：杂合子严重缺失（疑似基因分型错误）
+cat("\n--- Suspected genotyping error ---\n")
+hwe_test(n_hom_ref = 600, n_het = 50, n_hom_alt = 350)
+```
+
+:::tip
+**MAF 阈值的选择**
+
+MAF < 1% 的变异通常称为**低频变异（low-frequency variant）**，MAF < 0.1% 称为**罕见变异（rare variant）**。常规 GWAS 一般过滤 MAF < 1%–5%，保留常见变异（common variant）进行关联分析；若专门研究罕见变异对疾病的聚合效应，则需专用方法（如 SKAT、BURDEN test），不宜用简单 MAF 过滤。
+:::
+
 ---
 
 ## 变异注释与优先级评估
@@ -456,26 +531,154 @@ print(table(gt))  # 基因型计数
 
 ## 课后自测 (Post-Lesson Quiz)
 
-:::note
-**标题：** 💭 思考题
+1. 某错义突变在 gnomAD 中的全球频率为 2%，但在东亚人群中频率为 0.05%，同时在 ClinVar 中被注释为 pathogenic。如何综合评估该变异的致病性？群体频率和临床数据库信息应如何权衡？
 
-1. 某个错义突变在 gnomAD 中的频率为 2%，它在 ClinVar 中被注释为 pathogenic。这个变异应该被认为是 pathogenic 还是需要进一步验证？为什么？
+2. 为什么 BQSR 步骤必须使用已知变异数据库（如 dbSNP）？若对一个尚无已知变异数据库的非模式生物进行分析，应如何应对这一限制？
 
-2. 为什么 BQSR 步骤需要已知变异数据库（如 dbSNP）？如果没有这个数据库会怎样？
+3. 在 IGV 中观察某个变异位点，发现所有携带替代等位体的 reads 均来自反向链。请解释：(a) 这在统计上对应 VCF 中哪个字段的异常？(b) 这种现象的生物学/技术成因是什么？(c) 是否应该过滤此变异？
 
-3. 在 IGV 中观察某个变异位点，发现所有显示错配颜色的 reads 都来自反向链，这说明什么？
+4. 在 1000 个个体的队列中，某 SNP 位点的基因型计数为：AA=720，Aa=50，aa=230。请计算 A 等位基因频率，并判断该位点是否通过 HWE 检验（显著性阈值 $p < 10^{-6}$）。若未通过，最可能的技术原因是什么？
+
+5. 解释连锁不平衡（LD）与基因型插补（genotype imputation）的关系。为什么 GWAS 芯片（仅包含约 50 万个 SNP）能够有效覆盖全基因组约 1000 万个常见变异？
+
+6. 假设你正在分析一个病例-对照 GWAS 数据集（500 病例 + 500 对照），其中病例组主要来自东亚人群，对照组主要来自欧洲人群。请描述：(a) 这会导致什么问题？(b) 如何通过 PCA 检测这一问题？(c) 如何在分析中校正？
 
 <details>
 <summary><strong>参考答案 (Reference Answers)</strong></summary>
 
-*1. 应该进一步验证。群体频率 2% 相对较高，暗示该变异可能在某些群体中是常见的多态性（polymorphism）而非致病突变。ACMG 指南明确指出：群体频率 > 0.5% 的变异基本不考虑病原性。应查看：(1) 该变异在不同群体中的频率，(2) ClinVar 中的具体临床表型，(3) 是否有分离分析（segregation analysis）证据支持*
+1. *全球 2% 的频率属于常见多态性（common variant），ACMG 指南的 BS1 标准（频率 > 预期患病率）本应降低致病性评级；但东亚人群中仅 0.05% 的频率提示该变异在高风险群体中仍属罕见，与疾病群体特异性一致。因此不能仅以全球频率否定致病性，应分层查看各祖先人群的频率，结合 ClinVar 的具体临床表型描述、分离分析（家族研究）和功能实验证据综合判断。ACMG 框架要求多证据集成，单一指标不可决定最终分级。*
 
-*2. BQSR 的核心逻辑是：已知变异位点应该通过 alignment，而真实错误不应该。通过比较观察错误率与预测错误率的差异，机器学习模型可以学到真实的错误参数。如果没有已知变异库，算法无法区分真实变异和错误，导致不准确的校正*
+2. *BQSR 的核心假设是：已知变异位点处观测到的碱基差异是真实变异，而非测序错误；未列入数据库的差异则作为潜在错误用于训练模型。没有数据库时，可采用以下策略：(1) 先用较宽松的参数进行初步变异检测，获得"高置信变异集"作为临时替代数据库（bootstrapping approach）；(2) 对低覆盖区域不进行 BQSR，直接使用原始质量分；(3) 使用整体均值校正代替位点特异性校正。上述方法均有局限，非模式生物分析中 BQSR 的收益通常较人类基因组小。*
 
-*3. 可能存在测序 strand bias（链偏差）。某些区域特定链容易产生错误（如边合成边测序时某条链的化学反应异常）。在 VCF FILTER 字段中应该看到 FS (Fisher Strand) 检验值很高（> 60），这样的变异应该被过滤*
+3. *(a) 对应 INFO 字段中 FS（Fisher Strand bias）值异常偏高（通常 > 60 时过滤），以及 SOR（Strand Odds Ratio）偏高。(b) 技术成因：(i) 边合成边测序（SBS）化学反应在特定模板链上产生系统性错误，尤其在 GC 富集或发夹结构区域；(ii) 文库制备时的链特异性偏好；(iii) PCR 扩增偏向某一链。(c) 应当过滤——单链支持的变异是典型假阳性特征，真实变异应在两条链上均匀分布，Fisher Strand 检验正是为此设计的质量控制指标。*
+
+4. *A 等位基因频率：p = (2×720 + 50) / (2×1000) = 1490/2000 = 0.745；q = 0.255。期望基因型：AA = 1000×0.745² = 555.0，Aa = 1000×2×0.745×0.255 = 380.0，aa = 1000×0.255² = 65.0。卡方统计量 = (720-555)²/555 + (50-380)²/380 + (230-65)²/65 ≈ 49.0 + 286.1 + 418.8 = 753.9，p 值远小于 10⁻⁶，未通过 HWE 检验。观察模式为杂合子严重缺失（50 << 380），最可能的技术原因是**等位基因丢失（allele dropout）**或**基因分型错误**（如芯片探针设计不良，杂合信号被判读为纯合）。*
+
+5. *连锁不平衡意味着基因组被划分为若干 LD 区块，区块内相邻 SNP 的等位基因高度相关（r² ≈ 1）。基因型插补的原理：利用高密度参考面板（如 1000 Genomes、HRC，包含数千万 SNP）与芯片检测到的约 50 万个标签 SNP，通过隐马尔可夫模型在局部单倍型结构中"填入"未直接测定的 SNP。由于人类基因组的常见变异约有 95% 集中在约 5 万个 LD 区块中，且每个区块可由少量标签 SNP 有效代表，50 万个标签 SNP 即可通过插补扩展覆盖约 1000 万个常见变异。*
+
+6. *(a) 病例-对照之间存在系统性祖先差异（群体分层），导致本应中性的基因组区域也出现频率差异，在 GWAS 关联分析中产生大量假阳性信号，与目标疾病毫无关联。(b) 对全基因组 SNP 数据做 PCA：若前 2 个主成分的散点图中病例（东亚）和对照（欧洲）形成两个明显分离的云团，即确认存在群体分层。同时可绘制 Q-Q 图，若基因组膨胀因子（λ）远大于 1（如 λ > 1.1），也提示系统性混杂。(c) 校正方法：在逻辑回归关联模型中将前 10 个 PC 作为协变量纳入（`logistic(phenotype ~ SNP + PC1 + ... + PC10)`），可在统计上消除祖先背景的混杂效应；理想情况下应在研究设计阶段确保病例对照具有相同的祖先组成。*
 
 </details>
 
+---
+
+# 从个体变异到群体研究：迈向 GWAS
+
+经过前四节专题的完整训练，读者已掌握从原始测序数据到高质量注释变异集的全套流程。本节作为本章的收尾，从**个体变异检测**视角转向**群体遗传学**视角，为下一章 GWAS（全基因组关联分析）的学习奠定概念基础。
+
+## 等位基因频率谱：从样本到群体
+
+当我们将同一套流程应用于数百乃至数千个个体时，最终产生的不再是单个 VCF，而是一个记录全体样本在数百万变异位点上基因型的**大型矩阵**。对这个矩阵进行统计汇总，得到每个位点的等位基因频率，形成**等位基因频率谱（Allele Frequency Spectrum，AFS）**。
+
+{{Wiki:Allele_frequency_spectrum}}
+
+AFS 的形状蕴含丰富的进化信息：大量极低频变异（稀有突变）和少量高频变异（经选择或漂变固定）共同构成典型的 L 形分布。人群规模扩张、瓶颈效应、自然选择都会改变 AFS 的形状，使其成为推断人群历史的重要工具。
+
+```r
+# R: 绘制等位基因频率谱（模拟数据）
+set.seed(42)
+# 模拟 1 万个 SNP 的 MAF 分布（中性进化 + 人群扩张）
+mafs <- c(rbeta(8000, 0.5, 8),     # 大量低频变异
+          runif(2000, 0.01, 0.5))   # 少量中高频变异
+mafs <- pmin(mafs, 1 - mafs)        # 取 minor allele
+
+hist(mafs, breaks = 50, col = "steelblue", border = "white",
+     xlab = "Minor Allele Frequency (MAF)",
+     ylab = "Number of SNPs",
+     main = "Allele Frequency Spectrum (AFS)\nSimulated neutral population")
+abline(v = c(0.01, 0.05), col = c("red","orange"), lty = 2, lwd = 2)
+legend("topright", legend = c("MAF=1%", "MAF=5%"),
+       col = c("red","orange"), lty = 2, lwd = 2, bty = "n")
+```
+
+## 群体分层：GWAS 的最大混杂因素
+
+不同地理来源的个体在基因组上存在系统性频率差异（**群体分层，Population Stratification**）。若一项 GWAS 研究中病例组和对照组的祖先来源不均衡，则祖先来源本身就会成为混杂因素，产生大量假阳性关联信号——这与目标疾病毫无关联。
+
+{{Wiki:Population_stratification}}
+
+检测和校正群体分层的标准方法是**主成分分析（PCA）**：对全基因组 SNP 数据进行 PCA，前若干个主成分会捕获样本的祖先来源信息，在 GWAS 的线性/逻辑回归模型中将这些主成分作为协变量纳入，即可在统计上校正祖先背景的影响。
+
+```r
+# R: 使用 SNP 矩阵进行简化 PCA 演示（实际中用 PLINK/flashPCA）
+# 假设 geno_matrix: 行=个体，列=SNP，值=0/1/2（等位基因计数）
+
+library(ggplot2)
+
+# 模拟 200 人 × 1000 SNP（2 个亚群）
+set.seed(42)
+n1 <- 100; n2 <- 100; n_snp <- 1000
+# 亚群1: 频率从 Beta(1,3) 采样；亚群2: 频率有系统性偏差
+freq1 <- rbeta(n_snp, 1, 3)
+freq2 <- pmin(pmax(freq1 + rnorm(n_snp, 0.15, 0.05), 0), 1)
+
+geno1 <- matrix(rbinom(n1 * n_snp, 2, rep(freq1, each = n1)),
+                nrow = n1, ncol = n_snp)
+geno2 <- matrix(rbinom(n2 * n_snp, 2, rep(freq2, each = n2)),
+                nrow = n2, ncol = n_snp)
+geno_matrix <- rbind(geno1, geno2)
+population  <- c(rep("Pop1", n1), rep("Pop2", n2))
+
+# PCA
+pca_result <- prcomp(geno_matrix, center = TRUE, scale. = FALSE)
+pca_df <- data.frame(
+  PC1 = pca_result$x[, 1],
+  PC2 = pca_result$x[, 2],
+  Population = population
+)
+
+ggplot(pca_df, aes(x = PC1, y = PC2, color = Population)) +
+  geom_point(alpha = 0.7, size = 2) +
+  scale_color_manual(values = c("steelblue", "tomato")) +
+  labs(title = "PCA of Genotype Matrix\n(Population Stratification Detection)",
+       x = paste0("PC1 (", round(summary(pca_result)$importance[2,1]*100,1), "% variance)"),
+       y = paste0("PC2 (", round(summary(pca_result)$importance[2,2]*100,1), "% variance)")) +
+  theme_bw()
+```
+
+若 PCA 图中病例与对照存在明显分群，则必须在后续关联分析中将前 5–10 个 PC 作为协变量加入回归模型。
+
+## 连锁不平衡：基因组的"区块结构"
+
+基因组上相邻的 SNP 并非彼此独立——由于染色体重组频率有限，邻近位点的等位基因倾向于以固定组合（**单倍型，Haplotype**）共同遗传。这种非随机关联被称为**连锁不平衡（Linkage Disequilibrium，LD）**。
+
+{{Wiki:Linkage_disequilibrium}}
+
+LD 通常用相关系数 $r^2$（或 D' 统计量）衡量：
+
+$$r^2 = \frac{(p_{AB} - p_A p_B)^2}{p_A(1-p_A) \cdot p_B(1-p_B)}$$
+
+$r^2 = 1$ 表示两个 SNP 完全连锁（知道一个就能推断另一个）；$r^2 = 0$ 表示完全独立。
+
+LD 对 GWAS 有两个关键含义：
+
+1. **标签 SNP（Taggging SNP）**：因为 LD 的存在，基因组中并不需要对每一个 SNP 都进行基因分型。只要基因分型了区块内的"标签 SNP"，就能通过 LD 关系**插补（imputation）**出区块内其他 SNP 的基因型，大幅降低成本。HapMap 和 1000 Genomes 项目正是基于这一思路建立的基因型参考面板。
+
+2. **关联信号的精细定位（Fine-mapping）**：GWAS 发现的"命中位点"往往是该 LD 区块内 $r^2$ 最高的标签 SNP，而真正的因果变异（causal variant）可能是与之高度连锁的另一个位点。从 GWAS 命中到因果变异的定位，是后 GWAS 时代的核心挑战之一。
+
+```
+LD 区块结构示意：
+
+染色体片段：  |═══════════════════════════════════|
+LD 区块：     [Block A ████]  [Block B ████████]  [Block C ██]
+标签 SNP：        ↑                  ↑                ↑
+因果变异可能：    ← 在 Block A 任意位置，r² ≈ 1 ─→
+```
+
+:::info
+**本章与 GWAS 章节的衔接**
+
+本章建立的技术基础与 GWAS 研究的对应关系：
+
+| 本章内容 | GWAS 中的用途 |
+|---|---|
+| VCF 格式 + 变异过滤 | GWAS 输入数据的质量控制 |
+| HWE 检验 + MAF 过滤 | GWAS 位点级 QC 的核心步骤 |
+| 群体分层 PCA | GWAS 协变量校正，防止假阳性 |
+| 连锁不平衡（LD） | 基因型插补、标签 SNP 选择、精细定位 |
+| 功能注释（SnpEff/VEP） | GWAS 命中位点的生物学解释 |
+
+下一章将在上述基础上，系统介绍 GWAS 的统计模型（逻辑回归/线性回归）、Manhattan 图与 Q-Q 图的解读、多重检验校正（Bonferroni / FDR）、以及从显著位点到致病基因的全套下游分析流程。
 :::
 
 ---

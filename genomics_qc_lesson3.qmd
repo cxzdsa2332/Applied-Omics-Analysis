@@ -71,6 +71,35 @@ Chromosomes (完整染色体)
 - **Scaffold（支架）**：将多个 contig 按插入片段距离排序连接，gap 以 `N` 填充
 - **N50**：将所有 contig（或 scaffold）按长度从大到小排列，累加长度达到总长度 50% 时所对应的 contig 长度
 
+### Scaffold 的构建：从 Contig 到骨架
+
+Contig 是组装图中无歧义路径的直接产物，其终点正好是图中的分叉节点或死端——即序列本身不能再延伸的位置。Scaffold 构建利用**配对末端（paired-end）reads 的插入片段大小约束**，将彼此间距已知的两条 reads 分别比对到不同 contig 后，推断这两个 contig 的相对方向和间距，从而将它们串联为一个更长的骨架，gap 位置用等量的 `N` 填充：
+
+```
+Contig A ──────────────>         <─────────────── Contig B
+                    |←── insert ~500 bp ──→|
+                    ↓
+Scaffold: [Contig A]NNNNN[Contig B]   (gap size = insert - 2×read_len)
+```
+
+{{Wiki:Scaffolding_(bioinformatics)}}
+
+一次 scaffold 轮次后仍可能存在多段 scaffold 无法连接的情况。此时可引入更长程的距离信息逐步提升连续性：
+
+| 距离信息来源 | 跨越距离 | 典型工具 |
+|---|---|---|
+| Paired-end reads（PE） | 300–500 bp | SPAdes 内置 |
+| Mate-pair reads（MP） | 2–20 kb | SSPACE |
+| 光学图谱（Optical Mapping） | 100 kb–1 Mb | BioNano Solve |
+| Hi-C 染色质接触图谱 | 全染色体 | 3D-DNA、SALSA |
+| 长读（PacBio / Nanopore） | 10–100 kb | Hifiasm、Flye |
+
+:::note
+**为什么 gap 用 N 填充而不是跳过？**
+
+`N` 的数量对应估算的 gap 大小，这一信息对下游分析至关重要：基因预测工具需要知道基因间区的真实长度；比较基因组学工具在两物种序列对齐时依赖坐标的准确性。直接拼接（不填充 N）会错误地缩短基因间距，引入系统性偏差。
+:::
+
 ## N50：组装质量的核心指标
 
 {{Wiki:N50_statistic}}
@@ -118,16 +147,278 @@ OLC 是最早的系统性组装框架，由 Myers（1995）提出，广泛用于
 
 {{Wiki:Sequence_assembly}}
 
-**三个阶段：**
+{{Wiki:Overlap_graph}}
 
-1. **Overlap（重叠检测）**：寻找所有 read 对之间的前后缀重叠，构建重叠矩阵。时间复杂度 $O(n^2)$，对短读数据（数亿条 reads）计算代价巨大。
+### 三阶段原理
 
-2. **Layout（布局）**：根据重叠关系构建有向图，寻找哈密顿路径（经过每个节点恰好一次的路径）。哈密顿路径问题是 NP 完全问题，需要启发式算法近似求解。
+设想手中有一段撕碎的纸条，每块碎片保留了若干字符，任务是从这些碎片重建原始句子——这正是 OLC 面对的问题。
 
-3. **Consensus（共识）**：将多条 reads 在同一位置的碱基进行多数表决，生成最终的 contig 序列。
+**阶段一：Overlap（重叠检测）**
 
-**优势**：对长读（> 1 kb）效果优异，可跨越重复区域。
-**局限**：$O(n^2)$ 的 Overlap 计算对短读数据（>10 亿条 reads）不可行。
+逐对比较所有 reads，寻找一条 read 的 suffix（后缀）与另一条 read 的 prefix（前缀）高度匹配的片段。重叠关系组织为**重叠图（Overlap Graph）**，其中节点为 reads，有向边表示重叠的方向与长度：
+
+```
+Read 1 suffix:  ...G A T C A
+Read 2 prefix:      G A T C A G...
+                    ↑↑↑↑↑  overlap = 5 bp
+```
+
+时间复杂度为 $O(N^2 \times L)$，对短读数据（数亿条 reads）计算代价巨大，现代实现通过 MinHash 等局部敏感哈希技术将其加速至近似线性。
+
+**阶段二：Layout（布局）**
+
+依据重叠图推断 reads 之间的相对位置关系，在参考坐标尚不存在的情况下构建内部一致的排列顺序。理想情况下，reads 形成一条无分支的线性路径（环形基因组则为环形路径）。数学上，这等价于在重叠图中寻找**哈密顿路径**（经过每个节点恰好一次的路径）——这是 NP 完全问题，需要启发式算法近似求解。
+
+**阶段三：Consensus（共识序列）**
+
+确定布局后，逐位统计覆盖该位置的所有 reads 的碱基投票，取多数碱基作为最终共识序列，同时利用覆盖深度修正测序错误：
+
+```
+Position p: reads 在此位置的碱基为 [A, A, C, A] → 多数表决 → consensus = A
+```
+
+### 模拟数据完整演示
+
+下面用 Python 对一组模拟的短 reads 完整演示 OLC 三阶段。此处使用模拟数据仅用于说明算法逻辑。
+
+```python
+import networkx as nx
+import matplotlib.pyplot as plt
+
+# Simulated reads derived from the unknown target sequence "ATCGGATCAGTCG"
+reads = [
+    "ATCGGATCA",   # positions 0-8
+    "TCGGATCAG",   # positions 1-9
+    "CGGATCAGT",   # positions 2-10
+    "GGATCAGTC",   # positions 3-11
+    "GATCAGTCG",   # positions 4-12
+]
+
+
+# ── Stage 1: Overlap ──────────────────────────────────────────────────────────
+
+def suffix_prefix_overlap(read_a, read_b, min_overlap=4):
+    """Return the longest suffix-prefix overlap length, or 0 if below threshold."""
+    max_len = min(len(read_a), len(read_b))
+    for length in range(max_len, min_overlap - 1, -1):
+        if read_a.endswith(read_b[:length]):
+            return length
+    return 0
+
+
+print("=== Stage 1: Overlap Detection ===")
+overlap_matrix = {}
+for i, a in enumerate(reads):
+    for j, b in enumerate(reads):
+        if i != j:
+            ov = suffix_prefix_overlap(a, b)
+            if ov > 0:
+                overlap_matrix[(i, j)] = ov
+                print(f"  Read {i+1} -> Read {j+1}: overlap = {ov} bp"
+                      f"  ({a[-ov:]} | {b[:ov]})")
+
+
+# ── Stage 2: Layout (greedy Hamiltonian path) ─────────────────────────────────
+
+def greedy_layout(reads, overlap_matrix):
+    """Extend greedily from the read with no incoming edges (leftmost read)."""
+    n = len(reads)
+    in_degree = {i: 0 for i in range(n)}
+    for (i, j) in overlap_matrix:
+        in_degree[j] += 1
+
+    start = next(i for i in range(n) if in_degree[i] == 0)
+    path, visited, current = [start], {start}, start
+
+    while True:
+        candidates = [
+            (ov, j) for (i, j), ov in overlap_matrix.items()
+            if i == current and j not in visited
+        ]
+        if not candidates:
+            break
+        _, nxt = max(candidates)
+        path.append(nxt)
+        visited.add(nxt)
+        current = nxt
+
+    return path
+
+
+layout = greedy_layout(reads, overlap_matrix)
+print("\n=== Stage 2: Layout ===")
+print("  Read order:", " -> ".join(f"Read {i+1}" for i in layout))
+
+positions = [0]
+for k in range(len(layout) - 1):
+    i, j = layout[k], layout[k + 1]
+    positions.append(positions[-1] + len(reads[i]) - overlap_matrix[(i, j)])
+
+print("\n  Positional alignment:")
+for read_idx, start in zip(layout, positions):
+    print(f"    Read {read_idx + 1}: {' ' * start}{reads[read_idx]}")
+
+
+# ── Stage 3: Consensus ────────────────────────────────────────────────────────
+
+def build_consensus(reads, layout, positions):
+    """Majority-vote at each position across all overlapping reads."""
+    total_len = max(pos + len(reads[i]) for i, pos in zip(layout, positions))
+    columns = [[] for _ in range(total_len)]
+    for read_idx, start in zip(layout, positions):
+        for offset, base in enumerate(reads[read_idx]):
+            columns[start + offset].append(base)
+    consensus = "".join(max(set(col), key=col.count) for col in columns)
+    return consensus, columns
+
+
+consensus, columns = build_consensus(reads, layout, positions)
+
+print("\n=== Stage 3: Consensus ===")
+for pos, (col, base) in enumerate(zip(columns, consensus)):
+    print(f"  Position {pos:2d}: [{', '.join(col)}] -> {base}")
+
+print(f"\n  Assembled consensus: {consensus}")
+print(f"  Expected sequence:   ATCGGATCAGTCG")
+print(f"  Match: {consensus == 'ATCGGATCAGTCG'}")
+
+
+def draw_overlap_graph(reads, overlap_matrix):
+    print("\n=== Drawing Overlap Graph ===")
+
+    G = nx.DiGraph()
+    for i, read in enumerate(reads):
+        G.add_node(i)
+    for (i, j), ov in overlap_matrix.items():
+        G.add_edge(i, j, weight=ov)
+
+    n = len(reads)
+    x_gap = 3.5
+    pos = {i: (i * x_gap, 0.0) for i in range(n)}
+
+    # Figure height must accommodate upward arc peaks.
+    # With rad=0.3 and x_gap=3.5, arc peak ≈ rad * x_gap / 2 ≈ 0.525 data units;
+    # adding top/bottom padding keeps every arc and label fully visible.
+    fig, ax = plt.subplots(figsize=(15, 5))
+    ax.set_title("OLC Assembly: Directed Overlap Graph", fontsize=13, fontweight='bold')
+
+    x_vals = [p[0] for p in pos.values()]
+    x_pad, y_pad = 1.8, 1.2
+    ax.set_xlim(min(x_vals) - x_pad, max(x_vals) + x_pad)
+    ax.set_ylim(-y_pad, y_pad)
+
+    node_size = 2000
+    node_labels = {i: f"Read {i+1}\n({reads[i]})" for i in range(n)}
+
+    nx.draw_networkx_nodes(
+        G, pos, ax=ax,
+        node_color='#add8e6', node_size=node_size,
+        edgecolors='#2c6e9e', linewidths=1.8,
+    )
+    nx.draw_networkx_labels(
+        G, pos, labels=node_labels, ax=ax,
+        font_size=8, font_family="monospace",
+    )
+
+    # Arrows emerge from node edge (not center) via min_source/target_margin.
+    # rad=0.3 gives a clear upward arc; arrowhead is large enough to read direction.
+    nx.draw_networkx_edges(
+        G, pos, ax=ax,
+        arrowstyle='-|>',
+        arrowsize=25,
+        edge_color='steelblue',
+        width=2.0,
+        connectionstyle='arc3,rad=0.3',
+        min_source_margin=36,
+        min_target_margin=36,
+    )
+
+    # Weight = overlap length in bp (correct: suffix_prefix_overlap returns bp count).
+    # label_pos=0.5 places the label at the geometric midpoint of the arc.
+    edge_labels = {(i, j): f"{d['weight']} bp" for i, j, d in G.edges(data=True)}
+    nx.draw_networkx_edge_labels(
+        G, pos, edge_labels=edge_labels, ax=ax,
+        font_color='darkred', font_size=9, font_weight='bold',
+        label_pos=0.5,
+        bbox=dict(boxstyle='round,pad=0.25', fc='white', ec='lightgray', alpha=0.9),
+    )
+
+    ax.axis('off')
+    plt.tight_layout()
+    plt.savefig("olc_overlap_graph.png", dpi=150, bbox_inches='tight')
+    print("  Overlap graph saved to: olc_overlap_graph.png")
+    plt.show()
+
+
+# 调用绘图函数
+draw_overlap_graph(reads, overlap_matrix)
+```
+
+**预期输出：**
+
+```
+=== Stage 1: Overlap Detection ===
+  Read 1 -> Read 2: overlap = 8 bp  (TCGGATCA | TCGGATCA)
+  Read 2 -> Read 3: overlap = 8 bp  (CGGATCAG | CGGATCAG)
+  Read 3 -> Read 4: overlap = 8 bp  (GGATCAGT | GGATCAGT)
+  Read 4 -> Read 5: overlap = 8 bp  (GATCAGTC | GATCAGTC)
+
+=== Stage 2: Layout ===
+  Read order: Read 1 -> Read 2 -> Read 3 -> Read 4 -> Read 5
+
+  Positional alignment:
+    Read 1: ATCGGATCA
+    Read 2:  TCGGATCAG
+    Read 3:   CGGATCAGT
+    Read 4:    GGATCAGTC
+    Read 5:     GATCAGTCG
+
+=== Stage 3: Consensus ===
+  Position  0: [A] -> A
+  Position  1: [T, T] -> T
+  Position  2: [C, C, C] -> C
+  Position  3: [G, G, G, G] -> G
+  Position  4: [G, G, G, G, G] -> G
+  Position  5: [A, A, A, A, A] -> A
+  Position  6: [T, T, T, T, T] -> T
+  Position  7: [C, C, C, C, C] -> C
+  Position  8: [A, A, A, A] -> A
+  Position  9: [G, G, G] -> G
+  Position 10: [T, T] -> T
+  Position 11: [C, C] -> C
+  Position 12: [G] -> G
+
+  Assembled consensus: ATCGGATCAGTCG
+  Expected sequence:   ATCGGATCAGTCG
+  Match: True
+```
+
+:::note
+**观察输出中的覆盖深度分布**
+
+位置 4–8 被 5 条 reads 覆盖（最大深度），而位置 0 和 12 仅被 1 条 read 覆盖（末端单读）。这一**覆盖深度向两端递减**的模式是所有线性序列 OLC 组装的普遍特征。真实数据中，末端低覆盖区域的 consensus 置信度较低，通常需要额外验证。
+:::
+
+### OLC 的固有挑战与长读长的复兴
+
+:::warning
+**OLC 在实践中面临的三大难题**
+
+1. **计算复杂度**：全对比较时间复杂度为 $O(N^2 \times L)$，对数亿条短读不可行。现代实现（Canu、Hifiasm）通过 MinHash 近似哈希将实际复杂度降至 $O(N \log N)$。
+
+2. **重复序列的歧义性**：若基因组含有长于 read 的重复序列，重叠图中会出现分叉，导致无法确定重复区域的真实排列。这是短读长 OLC 的根本局限。
+
+3. **测序错误的干扰**：错误会使真实相邻的 reads 重叠不完全匹配，或使不相邻的 reads 因共享低复杂度序列而被错误链接。Nanopore 原始读长错误率约 5–15%，需要在 Overlap 阶段引入误差容忍机制。
+:::
+
+:::tip
+**OLC 随长读长测序的复兴**
+
+OLC 在 Illumina 短读时代（2008–2015）被基于 de Bruijn 图的方法取代，主因是 $O(N^2)$ 计算代价无法承受。然而，随着 PacBio HiFi（read 长 15–20 kb，准确率 > 99.9%）和 Oxford Nanopore（read 长可达 >100 kb）的普及，read 本身已能跨越大多数重复区域，OLC 重新成为高质量基因组组装的首选框架。目前最先进的组装工具 Hifiasm 即以 OLC 为核心，可将人类基因组组装至几乎染色体级别的连续性。
+:::
+
+**优势**：对长读（> 1 kb）效果优异，天然可跨越中等重复区域。
+**局限**：$O(N^2)$ 的原始 Overlap 计算对短读数据（> 10 亿条 reads）不可行，需近似算法辅助。
 
 ## De Bruijn 图（DBG）
 
@@ -750,6 +1041,125 @@ Contig 1  : ATCGATCGAATCGATCG
 本例中，Read 6（`TCGATCGTTC`）携带一个 A→T SNP，在图中产生了一个气泡。气泡弹出（bubble popping）策略是：保留覆盖度更高的路径（原始序列，覆盖×2），丢弃低覆盖路径（SNP 路径，覆盖×1）。这实际上是**测序深度不足**时组装工具丢弃真实变异的机制之一——真实 SNP 在杂合子样本中覆盖度约为总深度的 50%，而测序错误通常覆盖度 < 5%。SPAdes 等工具通过更精细的覆盖度模型区分二者。
 :::
 
+:::warning
+**重复序列导致 Cleaned Graph 出现闭环：这是正常现象**
+
+细心的读者可能会注意到，在经过气泡弹出和尾端修剪之后，Cleaned Graph 中仍然存在一个闭合的环状结构（诊断输出显示 `Tips: 0, Junction nodes: 0, Putative bubbles: 0`，但图形可视化呈现为环）。这并非代码错误，而是由参考序列本身的重复结构决定的。
+
+本例中参考序列为 `ATCGATCGAATCGATCG`，其中 `ATCGATCG` 在首尾各出现一次，形成长度为 8 bp 的重复片段。当 $k=6$ 时，图的节点为 $(k-1)=5$-mer；只要重复长度 $\geq k-1$，de Bruijn 图就必然在重复区域引入环路——两次经过同一组节点的路径在图中合并为同一条边，从而形成闭环。气泡弹出等清理操作针对的是**错误引入的歧义**，而非序列本身固有的重复结构，因此无法也不应消除这类环。
+
+此闭环的直接后果是图中不存在唯一的欧拉路径（起点和终点无法同时满足入度等于出度的条件），代码因此进入"逐连通分量分别重建"的分支。在本例的理想条件下（无测序错误、足够覆盖度），最终仍可重建出与参考序列完全一致的 contig；但在真实数据中，重复区域往往导致组装断裂，形成多条较短的 contigs，这正是所有短读组装工具面临的核心挑战。
+
+提高 $k$ 值可以在一定程度上打断由短重复引起的环，但对于长度远超 $k$ 的重复（如转座子、rRNA 操纵子），单纯调整 $k$ 无效；SPAdes 等工具需借助配对末端距离约束或长读跨越重复区域才能将其解析。
+:::
+
+---
+
+# 组装前：k-mer 频谱分析与基因组特征估算
+
+在运行任何组装工具之前，先对测序数据进行 **k-mer 频谱分析**是标准的工业流程步骤。这一分析以 $O(N)$ 的时间成本提供三项关键信息：基因组大小估算、测序深度确认、以及杂合度与重复序列比例的预判——这些信息直接影响后续组装参数的选择。
+
+{{Wiki:K-mer}}
+
+## k-mer 频谱的解读原理
+
+对全部 reads 进行 k-mer 计数后，以 k-mer 出现频次为横轴、具有该频次的不同 k-mer 数量为纵轴绘制频谱图。在无误差的理想情况下，单倍体基因组的频谱应呈现**单峰分布**，峰值位置对应测序深度 $\lambda$；而双倍体基因组（含杂合位点）会出现**双峰**，第一个峰在 $\lambda/2$ 处（杂合区段，两条单倍型各贡献一半深度），第二个峰在 $\lambda$ 处（纯合区段）。
+
+```
+k-mer 频谱示意（双倍体，覆盖度 ~30X）：
+
+  k-mer 数量
+  ↑
+  │        ← 测序错误（极低频，k=1 处高峰）
+  │    ╭─╮
+  │    │ │  ← 杂合峰（~15X，杂合 SNP 区域）
+  │    │ │        ╭──╮
+  │    │ │        │  │  ← 纯合峰（~30X，主体基因组）
+  │    │ │        │  │
+  └────┴─┴────────┴──┴──────→ k-mer 频次
+       1  15      30
+```
+
+基因组大小估算公式：
+
+$$\text{Genome size} \approx \frac{\text{Total k-mers} - \text{Error k-mers}}{\lambda}$$
+
+其中 $\lambda$ 为纯合峰位置，Error k-mers 为频次 = 1 的极低频 k-mer 总数（来源于测序错误）。
+
+## 使用 Jellyfish + GenomeScope 实践
+
+```bash
+cd ~/ecoli_qc
+
+# Step 1: Count k-mers from cleaned reads (k=21 is standard for Illumina)
+jellyfish count \
+    -C \
+    -m 21 \
+    -s 1G \
+    -t 4 \
+    -o reads_k21.jf \
+    <(zcat SRR2584863_1_clean.fastq.gz SRR2584863_2_clean.fastq.gz)
+
+# Step 2: Export histogram
+jellyfish histo -t 4 reads_k21.jf > reads_k21.histo
+
+# Step 3: Estimate genome properties with GenomeScope
+# Install: conda install -c bioconda genomescope2
+genomescope2 \
+    -i reads_k21.histo \
+    -o genomescope_output \
+    -k 21 \
+    -p 1          # ploidy: 1 for haploid (E. coli), 2 for diploid
+```
+
+**典型输出（E. coli K-12，~60X 完整数据集）：**
+
+```
+GenomeScope version 2.0
+k = 21
+
+property                      min               max
+Homozygous (aa)               99.9604%          99.9628%
+Heterozygous (ab)             0.0372%           0.0396%
+Genome Haploid Length         4,570,341 bp      4,572,240 bp
+Genome Repeat Length          189,823 bp        189,905 bp
+Genome Unique Length          4,380,518 bp      4,382,335 bp
+Model Fit                     97.9765%          98.0053%
+Read Error Rate               0.271%            0.271%
+```
+
+{{Wiki:GenomeScope}}
+
+:::tip
+**在运行组装前，重点检查以下三项**
+
+1. **Genome Haploid Length**：与已知参考基因组大小（4.64 Mb）对比，误差 < 5% 说明数据质量可靠
+2. **Heterozygosity**：E. coli 为单倍体，杂合度应接近 0；若偏高（> 1%）提示样本污染或混培
+3. **Repeat Length / Genome Length**：重复比例 > 30% 时需考虑提高 k 值或补充长读
+:::
+
+```r
+# R: visualize k-mer histogram locally (without GenomeScope)
+histo <- read.table("reads_k21.histo", col.names = c("depth", "count"))
+histo_trimmed <- histo[histo$depth >= 5 & histo$depth <= 200, ]
+
+peak_depth <- histo_trimmed$depth[which.max(histo_trimmed$count)]
+total_kmers <- sum(as.numeric(histo$count * histo$depth))
+error_kmers <- sum(as.numeric(histo$count[histo$depth < 5] * histo$depth[histo$depth < 5]))
+genome_size_est <- (total_kmers - error_kmers) / peak_depth
+
+cat(sprintf("Estimated peak coverage : %d X\n", peak_depth))
+cat(sprintf("Estimated genome size   : %.2f Mb\n", genome_size_est / 1e6))
+
+plot(histo_trimmed$depth, histo_trimmed$count / 1e6,
+     type = "l", col = "steelblue", lwd = 2,
+     xlab = "k-mer depth", ylab = "Count (millions)",
+     main = "k-mer Frequency Spectrum (k=21)")
+abline(v = peak_depth, col = "red", lty = 2)
+text(peak_depth + 5, max(histo_trimmed$count) * 0.9 / 1e6,
+     paste0("peak = ", peak_depth, "X"), col = "red")
+```
+
 ---
 
 # 实践：使用 SPAdes 组装真实 E. coli 基因组
@@ -817,6 +1227,48 @@ assembly_graph.fastg   ← 组装图（可用 Bandage 可视化）
 spades.log             ← 详细运行日志
 K21/, K33/, K55/       ← 各 k 值的中间结果
 ```
+
+## 组装图可视化：Bandage
+
+`assembly_graph.fastg` 是 SPAdes 输出的原始组装图文件，记录了所有节点（unitig）之间的连接关系，包含尚未解析的分叉和环。**Bandage**（Bandage is a Nucleotide De-Bruijn graph Assembly visualizer）是查看该文件的标准工具，能直观呈现组装的"困难区域"——重复导致的气泡、未解析的分支节点——是诊断组装质量问题的第一步。
+
+{{Wiki:Bandage_(software)}}
+
+```bash
+# Install Bandage
+conda install -c bioconda bandage
+
+# Load and visualize the assembly graph
+Bandage load spades_output_50k/assembly_graph.fastg
+
+# Command-line: export PNG without GUI
+Bandage image spades_output_50k/assembly_graph.fastg assembly_graph.png \
+    --width 1200 --height 900
+```
+
+**图形界面操作流程（GUI）：**
+
+```
+1. File → Load graph → 选择 assembly_graph.fastg
+2. 点击 "Draw graph"（使用力导向布局）
+3. 颜色含义：
+   - 蓝色长节点   = 高覆盖度、唯一路径（组装良好区域）
+   - 红色短节点   = 低覆盖度（可能是错误 k-mer 残留）
+   - 密集分叉区域 = 重复序列（图中"毛球"结构）
+4. 点击单个节点 → 右侧面板显示该节点序列长度与覆盖深度
+5. Output → Save entire graph as image
+```
+
+:::tip
+**从 Bandage 图中读取组装质量信号**
+
+- **图呈线性长链，分叉极少**：组装质量高，基因组重复比例低
+- **图中存在"毛球"（hairball）结构**：重复区域密集，k 值可能偏小；可尝试提高 k 值或补充长读
+- **图被分割为多个独立连通分量**：覆盖度不足或样本中存在多个物种（宏基因组场景）
+- **个别节点覆盖度明显低于均值（< 均值 × 0.3）**：疑似污染序列，可在后处理阶段剔除
+:::
+
+高质量细菌基因组组装（如完整数据集的 E. coli）在 Bandage 中应接近**单一环形连通分量**（对应环形染色体），仅在 rRNA 操纵子等高重复区域出现少数分叉节点。
 
 ## 检查组装结果
 

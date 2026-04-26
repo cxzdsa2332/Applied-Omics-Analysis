@@ -297,6 +297,9 @@ cd ~/ecoli_qc
 wget -c "https://ftp.ncbi.nlm.nih.gov/genomes/all/GCF/000/005/845/GCF_000005845.2_ASM584v2/GCF_000005845.2_ASM584v2_genomic.fna.gz" \
      -O ecoli_K12.fna.gz
 
+#for mac users, use curl with -L (follow redirects) and -C - (resume download)
+curl -L -C - "https://ftp.ncbi.nlm.nih.gov/genomes/all/GCF/000/005/845/GCF_000005845.2_ASM584v2/GCF_000005845.2_ASM584v2_genomic.fna.gz" -o ecoli_K12.fna.gz
+
 # Decompress
 gunzip ecoli_K12.fna.gz
 
@@ -412,7 +415,7 @@ ls ecoli_K12.fna.*
 # ecoli_K12.fna.pac  ecoli_K12.fna.sa
 ```
 
-索引文件大小约为：`.bwt`（4.3 MB）+ `.pac`（1.1 MB）+ `.sa`（2.1 MB），共约 7.6 MB，远小于原始 FASTA 文件（4.4 MB），体现了 BWT 的压缩效率。
+索引文件大小约为：`.bwt`（4.3 MB）+ `.pac`（1.1 MB）+ `.sa`（2.1 MB），共约 7.6 MB，约为原始 FASTA 文件（4.4 MB）的 1.7 倍。索引体积略大于原始序列属于正常现象：`.pac` 以 2-bit 编码压缩了碱基序列，但 `.sa`（采样后缀数组）引入了额外的辅助结构，使总体积有所增加。BWA 索引的核心价值不在于减小文件体积，而在于将每条 read 的比对复杂度从 $O(G)$ 降至 $O(L)$，使整个 WGS 项目的比对时间从理论上的"万年"压缩至数小时。
 
 ## Step 2：序列比对
 
@@ -454,16 +457,16 @@ GATK 的 HaplotypeCaller 在调用变异时，依据 RG 中的 `SM` 字段识别
 bwa mem → [SAM流] → samtools sort → SRR2584863.sorted.bam
 ```
 
-**预期输出（bwa mem 的 stderr 信息）：**
+**真实输出（bwa mem 的 stderr 信息）：**
 
 ```
 [M::bwa_idx_load_from_disk] read 0 ALT contigs
-[M::process] read 98624 sequences (14853624 bp)...
-[M::mem_pestat] # candidate unique pairs for (FF, FR, RF, RR): (5, 48142, 3, 1)
+[M::process] read 78308 sequences (11210567 bp)...
+[M::mem_pestat] # candidate unique pairs for (FF, FR, RF, RR): (3, 36676, 2, 1)
 [M::mem_pestat] analyzing insert size distribution for orientation FR...
-[M::mem_pestat] (25, 50, 75) percentile: (153, 194, 259)
-[M::mem_pestat] low and high boundaries: 0 and 459
-[M::mem_process_seqs] Processed 98624 reads in 4.236 CPU sec, 1.183 real sec
+[M::mem_pestat] (25, 50, 75) percentile: (148, 188, 251)
+[M::mem_pestat] low and high boundaries: 0 and 441
+[M::mem_process_seqs] Processed 78308 reads in 3.471 CPU sec, 0.934 real sec
 [main] Version: 0.7.17-r1188
 [main] CMD: bwa mem -t 4 -R ... ecoli_K12.fna ...
 [main] Real time: 1.202 sec; CPU: 4.258 sec
@@ -595,6 +598,79 @@ SAM 第 12 列起为可选字段，格式为 `TAG:TYPE:VALUE`：
 
 `NM`（Edit Distance）是变异检测的重要参考：正常高质量比对的 NM 应 ≤ 3；若大量 reads 具有高 NM 值，提示参考基因组选择错误或样本污染。
 
+## 实践：查看 BAM 文件内容
+
+理论学完之后，亲手翻看几条真实的比对记录是巩固理解的最快方式。以下命令均作用于本节已生成的 `SRR2584863.sorted.bam`。
+
+**查看 Header（不输出 alignment 记录）：**
+
+```bash
+samtools view -H SRR2584863.sorted.bam
+```
+
+**查看前 5 条 alignment 记录（不含 Header）：**
+
+```bash
+samtools view SRR2584863.sorted.bam | head -n 5
+```
+
+**格式化输出单条记录的各字段（便于逐列对照）：**
+
+```bash
+# Print one alignment record, then split into numbered fields
+samtools view SRR2584863.sorted.bam | head -n 1 | tr '\t' '\n' | nl
+```
+
+输出示例：
+
+```
+ 1  SRR2584863.1
+ 2  99
+ 3  NC_000913.3
+ 4  3482
+ 5  60
+ 6  143M
+ 7  =
+ 8  3625
+ 9  286
+10  TTCACATCCTGACC...
+11  CCCFFFFFGHHHHJ...
+12  NM:i:0
+13  MD:Z:143
+14  AS:i:143
+15  XS:i:0
+16  RG:Z:SRR2584863
+```
+
+对照第 2 列 FLAG = `99`（二进制 `1100011`）可验证：该 read 属于 PE 对、正确配对、mate 反向互补、为 Read 1——与上节 FLAG 解码表完全吻合。
+
+**按坐标区间提取特定区域的 reads：**
+
+```bash
+# View reads mapping to the first 10,000 bp of the E. coli genome
+samtools view SRR2584863.sorted.bam NC_000913.3:1-10000 | wc -l
+```
+
+**筛选高质量唯一比对（MAPQ ≥ 20，排除未比对和重复）：**
+
+```bash
+# -F 4: exclude unmapped; -F 1024: exclude duplicates; -q 20: min MAPQ
+samtools view -F 4 -F 1024 -q 20 SRR2584863.sorted.bam | wc -l
+```
+
+:::tip
+**`-F` 与 `-f` 的区别**
+
+`samtools view` 通过 FLAG 过滤 reads 时，`-f INT` 表示**保留**具有该 FLAG 位的 reads，`-F INT` 表示**排除**具有该 FLAG 位的 reads。二者可叠加使用。常用组合：
+
+| 目的 | 命令 |
+|------|------|
+| 只保留比对成功的 reads | `-F 4` |
+| 只保留 properly paired reads | `-f 2` |
+| 排除重复 reads | `-F 1024` |
+| 只保留 Read 1 | `-f 64` |
+:::
+
 ---
 
 # 比对后质量评估
@@ -610,20 +686,20 @@ samtools flagstat SRR2584863.sorted.bam
 **真实输出：**
 
 ```
-100442 + 0 in total (QC-passed reads + QC-failed reads)
-100442 + 0 primary
+78984 + 0 in total (QC-passed reads + QC-failed reads)
+78308 + 0 primary
 0 + 0 secondary
-0 + 0 supplementary
+676 + 0 supplementary
 0 + 0 duplicates
 0 + 0 primary duplicates
-99876 + 0 mapped (99.44% : N/A)
-99876 + 0 primary mapped (99.44% : N/A)
-100442 + 0 paired in sequencing
-50221 + 0 read1
-50221 + 0 read2
-99318 + 0 properly paired (98.88% : N/A)
-99564 + 0 with itself and mate mapped
-312 + 0 singletons (0.31% : N/A)
+73818 + 0 mapped (93.46% : N/A)
+73142 + 0 primary mapped (93.40% : N/A)
+78308 + 0 paired in sequencing
+39154 + 0 read1
+39154 + 0 read2
+71658 + 0 properly paired (90.72% : N/A)
+73352 + 0 with itself and mate mapped
+466 + 0 singletons (0.59% : N/A)
 0 + 0 with mate mapped to a different chr
 0 + 0 with mate mapped to a different chr (mapQ>=5)
 ```
@@ -632,15 +708,15 @@ samtools flagstat SRR2584863.sorted.bam
 
 | 指标 | 本数据值 | 正常范围（WGS）| 异常提示 |
 |------|---------|--------------|---------|
-| mapped % | 99.44% | > 95% | < 90% 提示污染或参考基因组错误 |
-| properly paired % | 98.88% | > 90% | < 80% 提示文库质量差或参考基因组不匹配 |
-| singletons % | 0.31% | < 5% | 高比例提示 PE reads 不一致 |
-| secondary | 0 | 通常 < 1% | 高值提示基因组重复区域多 |
+| mapped % | 93.46% | > 95% | < 90% 提示污染或参考基因组错误 |
+| properly paired % | 90.72% | > 90% | < 80% 提示文库质量差或参考基因组不匹配 |
+| singletons % | 0.59% | < 5% | 高比例提示 PE reads 不一致 |
+| supplementary | 676 | 通常 < 1% | 嵌合 reads，由结构变异或跨着丝粒比对产生 |
 
 :::note
-**99.44% 比对率说明了什么？**
+**93.46% 比对率的解读**
 
-大肠杆菌基因组几乎无重复序列，测序质量良好，因此比对率接近理论上限。对于人类 WGS 数据，正常 hg38 比对率约为 97–99%；若低于 90%，应检查：①参考基因组版本是否正确；②样本是否存在跨物种污染；③ fastqc 报告是否有异常 overrepresented sequences。
+本次使用的是 50k reads 子集经 fastp 过滤后的结果，比对率 93.46% 略低于使用完整数据集时的预期（> 95%）。可能原因有二：①子集中低质量或过短的 reads 比例相对偏高；②676 条嵌合 reads（supplementary alignments）跨越参考基因组两处位置，其主比对记录也计入统计。使用完整数据集（SRR2584863 全部 reads）时，比对率通常可达 98% 以上。对于人类 WGS，若比对率低于 90%，应排查参考基因组版本错误、跨物种污染或 adapter 残留等问题。
 :::
 
 ## samtools stats：深度统计
@@ -652,20 +728,29 @@ samtools stats SRR2584863.sorted.bam | grep "^SN" | cut -f2-3 | head -20
 **输出摘要（选取关键行）：**
 
 ```
-raw total sequences:    100442
-reads mapped:           99876
-reads properly paired:  99318
-bases mapped (cigar):   15031266
-average length:         150
-average quality:        36.18
-insert size average:    211.5
-insert size std dev:    62.8
-inward oriented pairs:  49659
-outward oriented pairs: 122
-pairs with other orientation: 0
+raw total sequences:        78308
+filtered sequences:         0
+sequences:                  78308
+is sorted:                  1
+1st fragments:              39154
+last fragments:             39154
+reads mapped:               73818
+reads mapped and paired:    73352
+reads unmapped:             4490
+reads properly paired:      71658
+reads paired:               78308
+reads duplicated:           0
+reads MQ0:                  1395
+reads QC failed:            0
+non-primary alignments:     0
+supplementary alignments:   676
+total length:               11210567
+total first fragment length: 5605204
+total last fragment length:  5605363
+bases mapped:               10571334
 ```
 
-insert size 平均值（211.5 bp）与标准差（62.8 bp）验证了文库构建的质量——我们的目标 insert size 约 200–250 bp，实测结果符合预期。
+平均 read 长度 = 11,210,567 / 78,308 ≈ **143 bp**，略短于原始 150 bp，符合 fastp 对低质量末端进行 trimming 后的预期。`reads MQ0 = 1395`（约 1.8%）为多比对 reads，集中于基因组中的重复区域，在变异检测时将被过滤。
 
 ## samtools depth：覆盖度分析
 
