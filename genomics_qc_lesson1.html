@@ -6,7 +6,7 @@
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
-<meta name="dcterms.date" content="2026-04-19">
+<meta name="dcterms.date" content="2026-04-26">
 
 <title>9&nbsp; 原始下机数据的数字表现 – Introduction to Applied High-throughput Biological Data Analysis</title>
 <style>
@@ -196,7 +196,7 @@ window.Quarto = {
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./01-intro.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">2</span>&nbsp; <span class="chapter-title">生物信息学入门课程总览</span></span></a>
+ <span class="menu-text"><span class="chapter-number">2</span>&nbsp; <span class="chapter-title">生物信息学入门：从分子到数据</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
@@ -232,7 +232,7 @@ window.Quarto = {
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./02-genomics-qc.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">8</span>&nbsp; <span class="chapter-title">基因组 —— 质量控制、变异检测与功能注释</span></span></a>
+ <span class="menu-text"><span class="chapter-number">8</span>&nbsp; <span class="chapter-title">基因组数据分析：质量控制、从头组装与变异检测</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
@@ -659,7 +659,7 @@ window.Quarto = {
     <div>
     <div class="quarto-title-meta-heading">Published</div>
     <div class="quarto-title-meta-contents">
-      <p class="date">April 19, 2026</p>
+      <p class="date">April 26, 2026</p>
     </div>
   </div>
   
@@ -1098,7 +1098,10 @@ TTGTACTTCGTTCAGTTACGTATTGCTGTCGTTACTTCGTTCAGTTACGTATTGCTATCGTTACTTCGTTCAGTTACGTA
 <h2 data-number="12.4" class="anchored" data-anchor-id="检查质量字符范围"><span class="header-section-number">12.4</span> 检查质量字符范围</h2>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb10"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Extract quality strings and find min/max ASCII values</span></span>
 <span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a><span class="fu">zcat</span> SRR2584863_1_50k.fastq.gz <span class="kw">|</span> <span class="fu">awk</span> <span class="st">'NR%4==0'</span> <span class="kw">|</span> <span class="fu">head</span> <span class="at">-n</span> 1000 <span class="kw">|</span> <span class="dt">\</span></span>
-<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">grep</span> <span class="at">-o</span> . <span class="kw">|</span> <span class="fu">awk</span> <span class="st">'{print $0, ord($0)}'</span> <span class="kw">|</span> <span class="fu">sort</span> <span class="at">-u</span> <span class="kw">|</span> <span class="fu">head</span> <span class="at">-20</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">grep</span> <span class="at">-o</span> . <span class="kw">|</span> <span class="fu">awk</span> <span class="st">'{print $0, ord($0)}'</span> <span class="kw">|</span> <span class="fu">sort</span> <span class="at">-u</span> <span class="kw">|</span> <span class="fu">head</span> <span class="at">-20</span></span>
+<span id="cb10-4"><a href="#cb10-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-5"><a href="#cb10-5" aria-hidden="true" tabindex="-1"></a><span class="ex">gzcat</span> SRR2584863_1_50k.fastq.gz <span class="kw">|</span> <span class="fu">awk</span> <span class="st">'NR%4==0'</span> <span class="kw">|</span> <span class="fu">head</span> <span class="at">-n</span> 1000 <span class="kw">|</span> <span class="dt">\</span></span>
+<span id="cb10-6"><a href="#cb10-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">grep</span> <span class="at">-o</span> . <span class="kw">|</span> <span class="fu">perl</span> <span class="at">-ne</span> <span class="st">'chomp; print "$_ ", ord($_), "\n"'</span> <span class="kw">|</span> <span class="fu">sort</span> <span class="at">-u</span> <span class="kw">|</span> <span class="fu">head</span> <span class="at">-20</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <hr>
 </section>
 </section>
@@ -1505,7 +1508,54 @@ Fail both criteria:            201  (0.40%)</code></pre>
 <span id="cb17-6"><a href="#cb17-6" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb17-7"><a href="#cb17-7" aria-hidden="true" tabindex="-1"></a><span class="co"># Output: multiqc_output/multiqc_report.html</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <p>MultiQC 将所有样本的每项指标绘制为并排热图或折线图，可一眼识别离群样本，是实际项目中不可或缺的工具。</p>
+<section id="multiqc-报告的重点模块解读" class="level3" data-number="14.4.1">
+<h3 data-number="14.4.1" class="anchored" data-anchor-id="multiqc-报告的重点模块解读"><span class="header-section-number">14.4.1</span> MultiQC 报告的重点模块解读</h3>
+<p>打开 <code>multiqc_report.html</code> 后，报告顶部是<strong>全局概览表（General Statistics）</strong>，每行一个样本，列出各工具的核心指标。对于 FastQC 数据，最需要关注以下三列：</p>
+<table class="caption-top table">
+<thead>
+<tr class="header">
+<th>列名</th>
+<th>含义</th>
+<th>警戒值</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>% Dups</code></td>
+<td>序列重复率</td>
+<td>WGS &gt; 30% 提示 PCR 过扩增</td>
+</tr>
+<tr class="even">
+<td><code>% GC</code></td>
+<td>全体 reads 的 GC 含量均值</td>
+<td>偏离物种理论值 ±5% 需调查</td>
+</tr>
+<tr class="odd">
+<td><code>M Seqs</code></td>
+<td>Read 总数（百万条）</td>
+<td>低于预期测序量提示上机失败</td>
+</tr>
+</tbody>
+</table>
+<p>在概览表中<strong>直接横向比较所有样本</strong>，是发现离群样本最快的方法。</p>
+</section>
+<section id="最关键的两张汇总图" class="level3" data-number="14.4.2">
+<h3 data-number="14.4.2" class="anchored" data-anchor-id="最关键的两张汇总图"><span class="header-section-number">14.4.2</span> 最关键的两张汇总图</h3>
+<p><strong>图一：Per Sequence Quality Scores（折线图）</strong></p>
+<p>所有样本的每-read 平均质量分布叠加于同一坐标系中。正常情况下，各曲线高度重叠且峰值集中在 Q35 以上；若某一样本曲线明显左移（峰值低于 Q30），即可在折线图中直接定位该样本，无需逐一翻阅单独报告。</p>
+<p><strong>图二：Per Base Sequence Content（热图）</strong></p>
+<p>MultiQC 将 FastQC 的 Per Base Sequence Content 模块结果压缩为每样本一行的热图，颜色编码通过/警告/失败状态。若某一行全红，通常意味着该样本的碱基组成在整个 read 长度上均存在严重偏差，是文库质量问题或物种混淆的强烈信号。</p>
+<div class="tip">
+<p><strong>使用 MultiQC 的高效工作流</strong></p>
+<ol type="1">
+<li>打开报告，先看<strong>General Statistics 表</strong>：确认所有样本的 read 数、GC 含量、重复率是否在预期范围内。</li>
+<li>再看 <strong>Per Sequence Quality Scores 折线图</strong>：有无明显低质量离群样本。</li>
+<li>最后检查 <strong>Adapter Content 热图</strong>：有无样本存在严重的 adapter 残留（需重新 trimming）。</li>
+</ol>
+<p>以上三步通常可在 5 分钟内完成对 100 个样本批次的初步质检，决定哪些样本需要进一步处理或排除。</p>
+</div>
 <hr>
+</section>
 </section>
 <section id="课后自测-post-lesson-quiz" class="level2" data-number="14.5">
 <h2 data-number="14.5" class="anchored" data-anchor-id="课后自测-post-lesson-quiz"><span class="header-section-number">14.5</span> 课后自测 (Post-Lesson Quiz)</h2>
@@ -1943,8 +1993,8 @@ Fail both criteria:            201  (0.40%)</code></pre>
   </script>
 <nav class="page-navigation">
   <div class="nav-page nav-page-previous">
-      <a href="./02-genomics-qc.html" class="pagination-link" aria-label="基因组 —— 质量控制、变异检测与功能注释">
-        <i class="bi bi-arrow-left-short"></i> <span class="nav-page-text"><span class="chapter-number">8</span>&nbsp; <span class="chapter-title">基因组 —— 质量控制、变异检测与功能注释</span></span>
+      <a href="./02-genomics-qc.html" class="pagination-link" aria-label="基因组数据分析：质量控制、从头组装与变异检测">
+        <i class="bi bi-arrow-left-short"></i> <span class="nav-page-text"><span class="chapter-number">8</span>&nbsp; <span class="chapter-title">基因组数据分析：质量控制、从头组装与变异检测</span></span>
       </a>          
   </div>
   <div class="nav-page nav-page-next">
