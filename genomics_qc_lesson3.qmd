@@ -1130,6 +1130,27 @@ Read Error Rate               0.271%            0.271%
 
 {{Wiki:GenomeScope}}
 
+### GenomeScope 输出结果详解
+
+GenomeScope 直观呈现了 k-mer 频谱曲线，并输出以下关键估算参数。以上述 *E. coli* 完整数据为例逐项解读：
+
+| 参数 | 结果 | 生物学含义 |
+|-----|------|---------|
+| **Homozygous (aa)** | 99.9604% | 基因组中纯合位点的比例；E. coli 为单倍体，应接近 100% |
+| **Heterozygous (ab)** | 0.0372% | 杂合位点比例；E. coli 理论为 0%，小幅升高（< 0.1%）来自测序错误 |
+| **Genome Haploid Length** | 4,570,341 bp | 估算的基因组大小；与已知参考（4,641,652 bp）的误差 = -1.5%，说明数据质量优秀 |
+| **Genome Repeat Length** | 189,823 bp | 基因组中被重复序列占据的碱基数；比例 = 189,823 / 4,570,341 ≈ 4.2%，重复较少 |
+| **Genome Unique Length** | 4,380,518 bp | 非重复序列长度；比例 ≈ 95.8%，说明大部分基因组独特，易于组装 |
+| **Read Error Rate** | 0.271% | 测序错误率；Illumina 期望 0.1–0.5%，此值在正常范围 |
+| **Model Fit** | 97.9765% | 拟合曲线与实际频谱的相似度；> 95% 说明模型假设合理 |
+
+**从频谱曲线形状判断数据质量：**
+
+- **左侧极低频峰过高**（频次 1–5）：测序错误多，需提高质量过滤阈值或在组装前进行 k-mer 过滤（Jellyfish 的 `-C` 参数）
+- **双倍体样本中出现两个峰**（约为 深度/2 和 深度）：正常现象，杂合区段与纯合区段分别贡献一半和完整覆盖深度
+- **右侧高覆盖区域出现多个峰**：可能存在多个物种（宏基因组）或污染序列
+- **频谱峰位置与预期深度相差 > 20%**：检查是否有低通量子集、数据截断或混样
+
 :::tip
 **在运行组装前，重点检查以下三项**
 
@@ -1370,6 +1391,198 @@ C:99.1%[S:99.1%,D:0.0%],F:0.5%,M:0.4%,n:124
 - `M`（Missing）= 0.4%：0.4% 的基因完全缺失
 
 BUSCO 值 ≥ 95% 通常被认为是高质量的细菌基因组组装。
+
+**BUSCO 评估的生物学含义：**
+
+- `C`（Complete）：直系同源基因被完整组装。对细菌基因组，该比例应 ≥ 95%；缺失或破碎的基因提示组装不完整或污染
+- `S`（Single Copy）：检测到的完整基因为单拷贝。若 S < Complete，说明存在基因重复（复制组装），需警惕
+- `D`（Duplicated）：基因被检测到多份。在异源四倍体或包含大片段重复的基因组中正常，但在单倍体生物中提示气泡未被完全弹出
+- `F`（Fragmented）：基因被检测到但不完整，通常因 contig 在基因内部断裂
+- `M`（Missing）：基因完全缺失，提示数据覆盖不足或真实基因缺失（如水平基因转移）
+
+## 使用 Merqury 评估准确性
+
+**Merqury** 是基于 k-mer 的无参考准确性评估工具，通过比较测序 reads 中的 k-mer 与组装序列中的 k-mer，估算组装的 Quality Value（QV）。QV 越高说明组装错误越少。
+
+```bash
+# Step 1: Build Meryl k-mer database from reads
+conda install -c bioconda meryl
+meryl count k=21 output reads.meryl <(cat R1_clean.fastq.gz R2_clean.fastq.gz)
+
+# Step 2: Run Merqury
+conda install -c bioconda merqury
+merqury.sh reads.meryl contigs.fasta merqury_output/
+
+# Output includes QV statistics and k-mer completeness plot
+cat merqury_output/*.qv
+```
+
+**Merqury 输出示例：**
+
+```
+Assembly: contigs.fasta
+asm QV = 43.5        ← Assembly Quality Value：等价于错误率 10^(-43.5/10) ≈ 4.5×10^-5
+reads only = 2.1%    ← 读段中出现但组装中缺失的 k-mer 比例（测序错误与罕见变异）
+```
+
+QV 值的解释：
+| QV 值 | 对应错误率 | 质量评价 |
+|------|----------|--------|
+| ≥ 50 | ≤ 10^-5 | 一致性高，可直接发表 |
+| 40–50 | 10^-5 – 10^-4 | 良好，标准细菌/植物基因组 |
+| 30–40 | 10^-4 – 10^-3 | 可接受，后续 Polishing 可进一步改善 |
+| < 30 | > 10^-3 | 较差，需进一步纠错或长读补充 |
+
+---
+
+# 组装后处理与精化
+
+从头组装产生的草图基因组通常包含 Gap（未覆盖区域）、碱基错误和外源污染序列，需要经过系统性后处理才能达到发表级别。本节介绍四个关键步骤：Scaffolding（支架化）、Gap-filling（间隙填充）、Polishing（纠错）和重复序列屏蔽。
+
+## Scaffolding：将 Contig 连接为 Scaffold
+
+Contigs 是组装的直接产物，相邻 contig 间可能由于重复区域或测序深度不足而无法直接连接。Scaffolding 利用**配对末端读段的插入片段距离信息**推断相邻 contig 的相对位置和方向，将其用 N 填充的 gap 连接。
+
+{{Wiki:Scaffolding_(bioinformatics)}}
+
+**使用 Mate-pair 数据进行 Scaffolding：**
+
+```bash
+# Install SSPACE (short scaffolding pipeline)
+conda install -c bioconda sspace-basic
+
+# Standard execution
+SSPACE_Basic_v1.0.pl \
+    -l contigs.fasta \
+    -p R1_mp.fastq.gz \
+    -q R2_mp.fastq.gz \
+    -o scaffold_output \
+    -x 1 -T 4
+```
+
+**使用 Hi-C 数据进行染色体级别 Scaffolding：**
+
+Hi-C（chromosome conformation capture）基于核内染色体三维接触频率进行长程关联，可将 scaffolds 连接至完整的染色体级别。
+
+```bash
+# Install 3D-DNA pipeline
+conda install -c bioconda 3d-dna
+
+# Prepare BAM file from Hi-C reads mapped to contigs
+bwa mem -t 8 contigs.fasta R1_hic.fastq.gz R2_hic.fastq.gz \
+    | samtools sort -o hic.bam && samtools index hic.bam
+
+# Run 3D-DNA: generates assembly graph and produces .assembly file
+run-asm-pipeline.sh contigs.fasta hic.bam
+```
+
+## Gap-filling：填充 Scaffold 中的 N 区域
+
+Scaffold 中的 N 串代表未覆盖的 gap。填充 gap 的策略是利用原始 reads 中跨越 gap 两端的 reads 重新组装该区域。
+
+```bash
+# Install GapFiller
+conda install -c bioconda gapfiller
+
+# Config file: libraries.txt (specifies insert size distribution for each library)
+cat > libraries.txt << 'EOF'
+bwa_index	reads_R1.fastq.gz	reads_R2.fastq.gz	300	0.3	FR
+EOF
+
+GapFiller.pl -s scaffold.fasta -l libraries.txt -o gapfilled -t 4
+
+# Alternative: TGS-GapFiller for long-read gap filling
+# (when long-read data is available)
+```
+
+## Polishing：纠错与碱基精化
+
+组装过程中，De Bruijn 图的多数表决可能引入碱基错误（SNP），而 Polishing 通过将原始 reads 重新比对至组装序列，用读段数据修正位点错误。
+
+### 短读纠错：Pilon
+
+Pilon 是基于短读的标准纠错工具，通过比对 reads 至组装，利用多数表决修正 SNP、Indel 和小的结构变异。
+
+```bash
+# Install Pilon
+conda install -c bioconda pilon
+
+# Step 1: Map reads back to contigs
+bwa mem -t 8 contigs.fasta R1_clean.fastq.gz R2_clean.fastq.gz \
+    | samtools sort -o mapped.bam
+samtools index mapped.bam
+
+# Step 2: Run Pilon
+pilon --genome contigs.fasta --frags mapped.bam \
+    --output polished --changes --threads 8
+
+# Output:
+# - polished.fasta：纠正后的序列
+# - polished.changes：修改列表（用于追踪改动）
+```
+
+### 长读纠错：Medaka（Nanopore）与 Arrow（PacBio）
+
+当使用长读数据补充短读组装时，用长读本身进行 Polishing 可进一步提升准确性。
+
+```bash
+# Install Medaka for Nanopore
+conda install -c bioconda medaka
+
+# Run medaka_consensus
+medaka_consensus -i reads.fastq.gz -d draft_assembly.fasta \
+    -o medaka_output/ -t 8 -m r941_min_hac_g507
+
+# Output: consensus.fasta (polished assembly)
+
+# For PacBio CCS reads, use Arrow (part of SMRT Link)
+# arrow -j 8 reads.sorted.bam -r assembly.fasta -o polished.fasta
+```
+
+## 重复序列屏蔽
+
+基因组中存在大量转座子、卫星 DNA 和其他重复元件。这些序列虽然应被保留，但在下游分析（基因预测、变异检测）中常被屏蔽（masking）以避免假阳性。
+
+{{Wiki:Repeat_element}}
+
+### RepeatModeler + RepeatMasker 流程
+
+```bash
+# Install RepeatModeler and RepeatMasker
+conda install -c bioconda repeatmodeler repeatmasker
+
+# Step 1: Build repeat library (de novo identification)
+# 警告：此步对大型基因组耗时很长（数小时至数天）
+RepeatModeler -database mydb -pa 4 -LLRmode < assembly.fasta
+
+# Step 2: Soft-mask with RepeatMasker (using both repeat library and standard databases)
+RepeatMasker -pa 4 -lib mydb-families.fa -xsmall assembly.fasta
+# -xsmall：重复区域用小写 ACGT 表示，非重复区域用大写（可被基因预测器识别）
+
+# Output: assembly.fasta.masked
+```
+
+**Soft-masking vs Hard-masking 对比：**
+
+| 策略 | 符号 | 用途 | 影响 |
+|-----|------|------|------|
+| **Soft-masking** | 小写 acgt | 标记重复但保留序列 | 基因预测、BLAST 可跳过 |
+| **Hard-masking** | N 或 X | 隐藏重复序列 | 下游分析无法获取原始序列 |
+
+细菌基因组的重复通常 < 10%（主要为 rRNA、tRNA 操纵子），通常仅需软屏蔽。真菌与植物基因组重复比例更高（20–50%），屏蔽流程更重要。
+
+### 污染序列检测与去除
+
+组装中可能混入外源 DNA（如向量序列、病毒、细菌污染）。NCBI 的 FCS-GX 工具可检测这些污染。
+
+```bash
+# Install FCS-GX
+# (需要从 NCBI 下载预编译的 GCS 数据库)
+conda install -c ncbi ncbi-fcs-gx
+
+# Run contamination screen
+fcs.py screen genome assembly.fasta --gx-db gxdb/
+```
 
 ---
 
