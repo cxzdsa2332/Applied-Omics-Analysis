@@ -6,7 +6,7 @@
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
-<meta name="dcterms.date" content="2026-04-26">
+<meta name="dcterms.date" content="2026-04-27">
 
 <title>11&nbsp; 从头基因组组装：当没有参考基因组时 – Introduction to Applied High-throughput Biological Data Analysis</title>
 <style>
@@ -647,8 +647,16 @@ window.Quarto = {
   <ul class="collapse">
   <li><a href="#使用-quast-进行标准化评估" id="toc-使用-quast-进行标准化评估" class="nav-link" data-scroll-target="#使用-quast-进行标准化评估"><span class="header-section-number">19.1</span> 使用 QUAST 进行标准化评估</a></li>
   <li><a href="#无参考时的组装评估" id="toc-无参考时的组装评估" class="nav-link" data-scroll-target="#无参考时的组装评估"><span class="header-section-number">19.2</span> 无参考时的组装评估</a></li>
-  <li><a href="#课后自测-post-lesson-quiz" id="toc-课后自测-post-lesson-quiz" class="nav-link" data-scroll-target="#课后自测-post-lesson-quiz"><span class="header-section-number">19.3</span> 课后自测 (Post-Lesson Quiz)</a></li>
-  <li><a href="#总结" id="toc-总结" class="nav-link" data-scroll-target="#总结"><span class="header-section-number">19.4</span> 总结</a></li>
+  <li><a href="#使用-merqury-评估准确性" id="toc-使用-merqury-评估准确性" class="nav-link" data-scroll-target="#使用-merqury-评估准确性"><span class="header-section-number">19.3</span> 使用 Merqury 评估准确性</a></li>
+  </ul></li>
+  <li><a href="#组装后处理与精化" id="toc-组装后处理与精化" class="nav-link" data-scroll-target="#组装后处理与精化"><span class="header-section-number">20</span> 组装后处理与精化</a>
+  <ul class="collapse">
+  <li><a href="#scaffolding将-contig-连接为-scaffold" id="toc-scaffolding将-contig-连接为-scaffold" class="nav-link" data-scroll-target="#scaffolding将-contig-连接为-scaffold"><span class="header-section-number">20.1</span> Scaffolding：将 Contig 连接为 Scaffold</a></li>
+  <li><a href="#gap-filling填充-scaffold-中的-n-区域" id="toc-gap-filling填充-scaffold-中的-n-区域" class="nav-link" data-scroll-target="#gap-filling填充-scaffold-中的-n-区域"><span class="header-section-number">20.2</span> Gap-filling：填充 Scaffold 中的 N 区域</a></li>
+  <li><a href="#polishing纠错与碱基精化" id="toc-polishing纠错与碱基精化" class="nav-link" data-scroll-target="#polishing纠错与碱基精化"><span class="header-section-number">20.3</span> Polishing：纠错与碱基精化</a></li>
+  <li><a href="#重复序列屏蔽" id="toc-重复序列屏蔽" class="nav-link" data-scroll-target="#重复序列屏蔽"><span class="header-section-number">20.4</span> 重复序列屏蔽</a></li>
+  <li><a href="#课后自测-post-lesson-quiz" id="toc-课后自测-post-lesson-quiz" class="nav-link" data-scroll-target="#课后自测-post-lesson-quiz"><span class="header-section-number">20.5</span> 课后自测 (Post-Lesson Quiz)</a></li>
+  <li><a href="#总结" id="toc-总结" class="nav-link" data-scroll-target="#总结"><span class="header-section-number">20.6</span> 总结</a></li>
   </ul></li>
   </ul>
 <div class="toc-actions"><ul class="collapse"><li><a href="https://github.com/cxzdsa2332/Applied-Omics-Analysis/edit/main/genomics_qc_lesson3.qmd" class="toc-action"><i class="bi bi-github"></i>Edit this page</a></li><li><a href="https://github.com/cxzdsa2332/Applied-Omics-Analysis/issues/new" class="toc-action"><i class="bi empty"></i>Report an issue</a></li><li><a href="https://github.com/cxzdsa2332/Applied-Omics-Analysis/blob/main/genomics_qc_lesson3.qmd" class="toc-action"><i class="bi empty"></i>View source</a></li></ul></div></nav>
@@ -669,7 +677,7 @@ window.Quarto = {
     <div>
     <div class="quarto-title-meta-heading">Published</div>
     <div class="quarto-title-meta-contents">
-      <p class="date">April 26, 2026</p>
+      <p class="date">April 27, 2026</p>
     </div>
   </div>
   
@@ -1838,6 +1846,67 @@ Genome Unique Length          4,380,518 bp      4,382,335 bp
 Model Fit                     97.9765%          98.0053%
 Read Error Rate               0.271%            0.271%</code></pre>
 <p>{{Wiki:GenomeScope}}</p>
+<section id="genomescope-输出结果详解" class="level3" data-number="17.2.1">
+<h3 data-number="17.2.1" class="anchored" data-anchor-id="genomescope-输出结果详解"><span class="header-section-number">17.2.1</span> GenomeScope 输出结果详解</h3>
+<p>GenomeScope 直观呈现了 k-mer 频谱曲线，并输出以下关键估算参数。以上述 <em>E. coli</em> 完整数据为例逐项解读：</p>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 25%">
+<col style="width: 30%">
+<col style="width: 45%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>参数</th>
+<th>结果</th>
+<th>生物学含义</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><strong>Homozygous (aa)</strong></td>
+<td>99.9604%</td>
+<td>基因组中纯合位点的比例；E. coli 为单倍体，应接近 100%</td>
+</tr>
+<tr class="even">
+<td><strong>Heterozygous (ab)</strong></td>
+<td>0.0372%</td>
+<td>杂合位点比例；E. coli 理论为 0%，小幅升高（&lt; 0.1%）来自测序错误</td>
+</tr>
+<tr class="odd">
+<td><strong>Genome Haploid Length</strong></td>
+<td>4,570,341 bp</td>
+<td>估算的基因组大小；与已知参考（4,641,652 bp）的误差 = -1.5%，说明数据质量优秀</td>
+</tr>
+<tr class="even">
+<td><strong>Genome Repeat Length</strong></td>
+<td>189,823 bp</td>
+<td>基因组中被重复序列占据的碱基数；比例 = 189,823 / 4,570,341 ≈ 4.2%，重复较少</td>
+</tr>
+<tr class="odd">
+<td><strong>Genome Unique Length</strong></td>
+<td>4,380,518 bp</td>
+<td>非重复序列长度；比例 ≈ 95.8%，说明大部分基因组独特，易于组装</td>
+</tr>
+<tr class="even">
+<td><strong>Read Error Rate</strong></td>
+<td>0.271%</td>
+<td>测序错误率；Illumina 期望 0.1–0.5%，此值在正常范围</td>
+</tr>
+<tr class="odd">
+<td><strong>Model Fit</strong></td>
+<td>97.9765%</td>
+<td>拟合曲线与实际频谱的相似度；&gt; 95% 说明模型假设合理</td>
+</tr>
+</tbody>
+</table>
+<p><strong>从频谱曲线形状判断数据质量：</strong></p>
+<ul>
+<li><strong>左侧极低频峰过高</strong>（频次 1–5）：测序错误多，需提高质量过滤阈值或在组装前进行 k-mer 过滤（Jellyfish 的 <code>-C</code> 参数）</li>
+<li><strong>双倍体样本中出现两个峰</strong>（约为 深度/2 和 深度）：正常现象，杂合区段与纯合区段分别贡献一半和完整覆盖深度</li>
+<li><strong>右侧高覆盖区域出现多个峰</strong>：可能存在多个物种（宏基因组）或污染序列</li>
+<li><strong>频谱峰位置与预期深度相差 &gt; 20%</strong>：检查是否有低通量子集、数据截断或混样</li>
+</ul>
 <div class="tip">
 <p><strong>在运行组装前，重点检查以下三项</strong></p>
 <ol type="1">
@@ -1866,6 +1935,7 @@ Read Error Rate               0.271%            0.271%</code></pre>
 <span id="cb19-18"><a href="#cb19-18" aria-hidden="true" tabindex="-1"></a><span class="fu">text</span>(peak_depth <span class="sc">+</span> <span class="dv">5</span>, <span class="fu">max</span>(histo_trimmed<span class="sc">$</span>count) <span class="sc">*</span> <span class="fl">0.9</span> <span class="sc">/</span> <span class="fl">1e6</span>,</span>
 <span id="cb19-19"><a href="#cb19-19" aria-hidden="true" tabindex="-1"></a>     <span class="fu">paste0</span>(<span class="st">"peak = "</span>, peak_depth, <span class="st">"X"</span>), <span class="at">col =</span> <span class="st">"red"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <hr>
+</section>
 </section>
 </section>
 <section id="实践使用-spades-组装真实-e.-coli-基因组" class="level1" data-number="18">
@@ -2109,10 +2179,185 @@ spades_output_full/contigs.fasta   FASTA   DNA        9    4638517      476   51
 <li><code>M</code>（Missing）= 0.4%：0.4% 的基因完全缺失</li>
 </ul>
 <p>BUSCO 值 ≥ 95% 通常被认为是高质量的细菌基因组组装。</p>
+<p><strong>BUSCO 评估的生物学含义：</strong></p>
+<ul>
+<li><code>C</code>（Complete）：直系同源基因被完整组装。对细菌基因组，该比例应 ≥ 95%；缺失或破碎的基因提示组装不完整或污染</li>
+<li><code>S</code>（Single Copy）：检测到的完整基因为单拷贝。若 S &lt; Complete，说明存在基因重复（复制组装），需警惕</li>
+<li><code>D</code>（Duplicated）：基因被检测到多份。在异源四倍体或包含大片段重复的基因组中正常，但在单倍体生物中提示气泡未被完全弹出</li>
+<li><code>F</code>（Fragmented）：基因被检测到但不完整，通常因 contig 在基因内部断裂</li>
+<li><code>M</code>（Missing）：基因完全缺失，提示数据覆盖不足或真实基因缺失（如水平基因转移）</li>
+</ul>
+</section>
+<section id="使用-merqury-评估准确性" class="level2" data-number="19.3">
+<h2 data-number="19.3" class="anchored" data-anchor-id="使用-merqury-评估准确性"><span class="header-section-number">19.3</span> 使用 Merqury 评估准确性</h2>
+<p><strong>Merqury</strong> 是基于 k-mer 的无参考准确性评估工具，通过比较测序 reads 中的 k-mer 与组装序列中的 k-mer，估算组装的 Quality Value（QV）。QV 越高说明组装错误越少。</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb32"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb32-1"><a href="#cb32-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Step 1: Build Meryl k-mer database from reads</span></span>
+<span id="cb32-2"><a href="#cb32-2" aria-hidden="true" tabindex="-1"></a><span class="ex">conda</span> install <span class="at">-c</span> bioconda meryl</span>
+<span id="cb32-3"><a href="#cb32-3" aria-hidden="true" tabindex="-1"></a><span class="ex">meryl</span> count k=21 output reads.meryl <span class="op">&lt;(</span><span class="fu">cat</span> R1_clean.fastq.gz R2_clean.fastq.gz<span class="op">)</span></span>
+<span id="cb32-4"><a href="#cb32-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb32-5"><a href="#cb32-5" aria-hidden="true" tabindex="-1"></a><span class="co"># Step 2: Run Merqury</span></span>
+<span id="cb32-6"><a href="#cb32-6" aria-hidden="true" tabindex="-1"></a><span class="ex">conda</span> install <span class="at">-c</span> bioconda merqury</span>
+<span id="cb32-7"><a href="#cb32-7" aria-hidden="true" tabindex="-1"></a><span class="ex">merqury.sh</span> reads.meryl contigs.fasta merqury_output/</span>
+<span id="cb32-8"><a href="#cb32-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb32-9"><a href="#cb32-9" aria-hidden="true" tabindex="-1"></a><span class="co"># Output includes QV statistics and k-mer completeness plot</span></span>
+<span id="cb32-10"><a href="#cb32-10" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span> merqury_output/<span class="pp">*</span>.qv</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><strong>Merqury 输出示例：</strong></p>
+<pre><code>Assembly: contigs.fasta
+asm QV = 43.5        ← Assembly Quality Value：等价于错误率 10^(-43.5/10) ≈ 4.5×10^-5
+reads only = 2.1%    ← 读段中出现但组装中缺失的 k-mer 比例（测序错误与罕见变异）</code></pre>
+<p>QV 值的解释： | QV 值 | 对应错误率 | 质量评价 | |——|———-|——–| | ≥ 50 | ≤ 10^-5 | 一致性高，可直接发表 | | 40–50 | 10^-5 – 10^-4 | 良好，标准细菌/植物基因组 | | 30–40 | 10^-4 – 10^-3 | 可接受，后续 Polishing 可进一步改善 | | &lt; 30 | &gt; 10^-3 | 较差，需进一步纠错或长读补充 |</p>
 <hr>
 </section>
-<section id="课后自测-post-lesson-quiz" class="level2" data-number="19.3">
-<h2 data-number="19.3" class="anchored" data-anchor-id="课后自测-post-lesson-quiz"><span class="header-section-number">19.3</span> 课后自测 (Post-Lesson Quiz)</h2>
+</section>
+<section id="组装后处理与精化" class="level1" data-number="20">
+<h1 data-number="20"><span class="header-section-number">20</span> 组装后处理与精化</h1>
+<p>从头组装产生的草图基因组通常包含 Gap（未覆盖区域）、碱基错误和外源污染序列，需要经过系统性后处理才能达到发表级别。本节介绍四个关键步骤：Scaffolding（支架化）、Gap-filling（间隙填充）、Polishing（纠错）和重复序列屏蔽。</p>
+<section id="scaffolding将-contig-连接为-scaffold" class="level2" data-number="20.1">
+<h2 data-number="20.1" class="anchored" data-anchor-id="scaffolding将-contig-连接为-scaffold"><span class="header-section-number">20.1</span> Scaffolding：将 Contig 连接为 Scaffold</h2>
+<p>Contigs 是组装的直接产物，相邻 contig 间可能由于重复区域或测序深度不足而无法直接连接。Scaffolding 利用<strong>配对末端读段的插入片段距离信息</strong>推断相邻 contig 的相对位置和方向，将其用 N 填充的 gap 连接。</p>
+<p>{{Wiki:Scaffolding_(bioinformatics)}}</p>
+<p><strong>使用 Mate-pair 数据进行 Scaffolding：</strong></p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb34"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb34-1"><a href="#cb34-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Install SSPACE (short scaffolding pipeline)</span></span>
+<span id="cb34-2"><a href="#cb34-2" aria-hidden="true" tabindex="-1"></a><span class="ex">conda</span> install <span class="at">-c</span> bioconda sspace-basic</span>
+<span id="cb34-3"><a href="#cb34-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb34-4"><a href="#cb34-4" aria-hidden="true" tabindex="-1"></a><span class="co"># Standard execution</span></span>
+<span id="cb34-5"><a href="#cb34-5" aria-hidden="true" tabindex="-1"></a><span class="ex">SSPACE_Basic_v1.0.pl</span> <span class="dt">\</span></span>
+<span id="cb34-6"><a href="#cb34-6" aria-hidden="true" tabindex="-1"></a>    <span class="at">-l</span> contigs.fasta <span class="dt">\</span></span>
+<span id="cb34-7"><a href="#cb34-7" aria-hidden="true" tabindex="-1"></a>    <span class="at">-p</span> R1_mp.fastq.gz <span class="dt">\</span></span>
+<span id="cb34-8"><a href="#cb34-8" aria-hidden="true" tabindex="-1"></a>    <span class="at">-q</span> R2_mp.fastq.gz <span class="dt">\</span></span>
+<span id="cb34-9"><a href="#cb34-9" aria-hidden="true" tabindex="-1"></a>    <span class="at">-o</span> scaffold_output <span class="dt">\</span></span>
+<span id="cb34-10"><a href="#cb34-10" aria-hidden="true" tabindex="-1"></a>    <span class="at">-x</span> 1 <span class="at">-T</span> 4</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><strong>使用 Hi-C 数据进行染色体级别 Scaffolding：</strong></p>
+<p>Hi-C（chromosome conformation capture）基于核内染色体三维接触频率进行长程关联，可将 scaffolds 连接至完整的染色体级别。</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb35"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb35-1"><a href="#cb35-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Install 3D-DNA pipeline</span></span>
+<span id="cb35-2"><a href="#cb35-2" aria-hidden="true" tabindex="-1"></a><span class="ex">conda</span> install <span class="at">-c</span> bioconda 3d-dna</span>
+<span id="cb35-3"><a href="#cb35-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb35-4"><a href="#cb35-4" aria-hidden="true" tabindex="-1"></a><span class="co"># Prepare BAM file from Hi-C reads mapped to contigs</span></span>
+<span id="cb35-5"><a href="#cb35-5" aria-hidden="true" tabindex="-1"></a><span class="ex">bwa</span> mem <span class="at">-t</span> 8 contigs.fasta R1_hic.fastq.gz R2_hic.fastq.gz <span class="dt">\</span></span>
+<span id="cb35-6"><a href="#cb35-6" aria-hidden="true" tabindex="-1"></a>    <span class="kw">|</span> <span class="ex">samtools</span> sort <span class="at">-o</span> hic.bam <span class="kw">&amp;&amp;</span> <span class="ex">samtools</span> index hic.bam</span>
+<span id="cb35-7"><a href="#cb35-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb35-8"><a href="#cb35-8" aria-hidden="true" tabindex="-1"></a><span class="co"># Run 3D-DNA: generates assembly graph and produces .assembly file</span></span>
+<span id="cb35-9"><a href="#cb35-9" aria-hidden="true" tabindex="-1"></a><span class="ex">run-asm-pipeline.sh</span> contigs.fasta hic.bam</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</section>
+<section id="gap-filling填充-scaffold-中的-n-区域" class="level2" data-number="20.2">
+<h2 data-number="20.2" class="anchored" data-anchor-id="gap-filling填充-scaffold-中的-n-区域"><span class="header-section-number">20.2</span> Gap-filling：填充 Scaffold 中的 N 区域</h2>
+<p>Scaffold 中的 N 串代表未覆盖的 gap。填充 gap 的策略是利用原始 reads 中跨越 gap 两端的 reads 重新组装该区域。</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb36"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb36-1"><a href="#cb36-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Install GapFiller</span></span>
+<span id="cb36-2"><a href="#cb36-2" aria-hidden="true" tabindex="-1"></a><span class="ex">conda</span> install <span class="at">-c</span> bioconda gapfiller</span>
+<span id="cb36-3"><a href="#cb36-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb36-4"><a href="#cb36-4" aria-hidden="true" tabindex="-1"></a><span class="co"># Config file: libraries.txt (specifies insert size distribution for each library)</span></span>
+<span id="cb36-5"><a href="#cb36-5" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span> <span class="op">&gt;</span> libraries.txt <span class="op">&lt;&lt; 'EOF'</span></span>
+<span id="cb36-6"><a href="#cb36-6" aria-hidden="true" tabindex="-1"></a><span class="st">bwa_index   reads_R1.fastq.gz   reads_R2.fastq.gz   300 0.3 FR</span></span>
+<span id="cb36-7"><a href="#cb36-7" aria-hidden="true" tabindex="-1"></a><span class="op">EOF</span></span>
+<span id="cb36-8"><a href="#cb36-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb36-9"><a href="#cb36-9" aria-hidden="true" tabindex="-1"></a><span class="ex">GapFiller.pl</span> <span class="at">-s</span> scaffold.fasta <span class="at">-l</span> libraries.txt <span class="at">-o</span> gapfilled <span class="at">-t</span> 4</span>
+<span id="cb36-10"><a href="#cb36-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb36-11"><a href="#cb36-11" aria-hidden="true" tabindex="-1"></a><span class="co"># Alternative: TGS-GapFiller for long-read gap filling</span></span>
+<span id="cb36-12"><a href="#cb36-12" aria-hidden="true" tabindex="-1"></a><span class="co"># (when long-read data is available)</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</section>
+<section id="polishing纠错与碱基精化" class="level2" data-number="20.3">
+<h2 data-number="20.3" class="anchored" data-anchor-id="polishing纠错与碱基精化"><span class="header-section-number">20.3</span> Polishing：纠错与碱基精化</h2>
+<p>组装过程中，De Bruijn 图的多数表决可能引入碱基错误（SNP），而 Polishing 通过将原始 reads 重新比对至组装序列，用读段数据修正位点错误。</p>
+<section id="短读纠错pilon" class="level3" data-number="20.3.1">
+<h3 data-number="20.3.1" class="anchored" data-anchor-id="短读纠错pilon"><span class="header-section-number">20.3.1</span> 短读纠错：Pilon</h3>
+<p>Pilon 是基于短读的标准纠错工具，通过比对 reads 至组装，利用多数表决修正 SNP、Indel 和小的结构变异。</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb37"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb37-1"><a href="#cb37-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Install Pilon</span></span>
+<span id="cb37-2"><a href="#cb37-2" aria-hidden="true" tabindex="-1"></a><span class="ex">conda</span> install <span class="at">-c</span> bioconda pilon</span>
+<span id="cb37-3"><a href="#cb37-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb37-4"><a href="#cb37-4" aria-hidden="true" tabindex="-1"></a><span class="co"># Step 1: Map reads back to contigs</span></span>
+<span id="cb37-5"><a href="#cb37-5" aria-hidden="true" tabindex="-1"></a><span class="ex">bwa</span> mem <span class="at">-t</span> 8 contigs.fasta R1_clean.fastq.gz R2_clean.fastq.gz <span class="dt">\</span></span>
+<span id="cb37-6"><a href="#cb37-6" aria-hidden="true" tabindex="-1"></a>    <span class="kw">|</span> <span class="ex">samtools</span> sort <span class="at">-o</span> mapped.bam</span>
+<span id="cb37-7"><a href="#cb37-7" aria-hidden="true" tabindex="-1"></a><span class="ex">samtools</span> index mapped.bam</span>
+<span id="cb37-8"><a href="#cb37-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb37-9"><a href="#cb37-9" aria-hidden="true" tabindex="-1"></a><span class="co"># Step 2: Run Pilon</span></span>
+<span id="cb37-10"><a href="#cb37-10" aria-hidden="true" tabindex="-1"></a><span class="ex">pilon</span> <span class="at">--genome</span> contigs.fasta <span class="at">--frags</span> mapped.bam <span class="dt">\</span></span>
+<span id="cb37-11"><a href="#cb37-11" aria-hidden="true" tabindex="-1"></a>    <span class="at">--output</span> polished <span class="at">--changes</span> <span class="at">--threads</span> 8</span>
+<span id="cb37-12"><a href="#cb37-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb37-13"><a href="#cb37-13" aria-hidden="true" tabindex="-1"></a><span class="co"># Output:</span></span>
+<span id="cb37-14"><a href="#cb37-14" aria-hidden="true" tabindex="-1"></a><span class="co"># - polished.fasta：纠正后的序列</span></span>
+<span id="cb37-15"><a href="#cb37-15" aria-hidden="true" tabindex="-1"></a><span class="co"># - polished.changes：修改列表（用于追踪改动）</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</section>
+<section id="长读纠错medakananopore与-arrowpacbio" class="level3" data-number="20.3.2">
+<h3 data-number="20.3.2" class="anchored" data-anchor-id="长读纠错medakananopore与-arrowpacbio"><span class="header-section-number">20.3.2</span> 长读纠错：Medaka（Nanopore）与 Arrow（PacBio）</h3>
+<p>当使用长读数据补充短读组装时，用长读本身进行 Polishing 可进一步提升准确性。</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb38"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb38-1"><a href="#cb38-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Install Medaka for Nanopore</span></span>
+<span id="cb38-2"><a href="#cb38-2" aria-hidden="true" tabindex="-1"></a><span class="ex">conda</span> install <span class="at">-c</span> bioconda medaka</span>
+<span id="cb38-3"><a href="#cb38-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb38-4"><a href="#cb38-4" aria-hidden="true" tabindex="-1"></a><span class="co"># Run medaka_consensus</span></span>
+<span id="cb38-5"><a href="#cb38-5" aria-hidden="true" tabindex="-1"></a><span class="ex">medaka_consensus</span> <span class="at">-i</span> reads.fastq.gz <span class="at">-d</span> draft_assembly.fasta <span class="dt">\</span></span>
+<span id="cb38-6"><a href="#cb38-6" aria-hidden="true" tabindex="-1"></a>    <span class="at">-o</span> medaka_output/ <span class="at">-t</span> 8 <span class="at">-m</span> r941_min_hac_g507</span>
+<span id="cb38-7"><a href="#cb38-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb38-8"><a href="#cb38-8" aria-hidden="true" tabindex="-1"></a><span class="co"># Output: consensus.fasta (polished assembly)</span></span>
+<span id="cb38-9"><a href="#cb38-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb38-10"><a href="#cb38-10" aria-hidden="true" tabindex="-1"></a><span class="co"># For PacBio CCS reads, use Arrow (part of SMRT Link)</span></span>
+<span id="cb38-11"><a href="#cb38-11" aria-hidden="true" tabindex="-1"></a><span class="co"># arrow -j 8 reads.sorted.bam -r assembly.fasta -o polished.fasta</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</section>
+</section>
+<section id="重复序列屏蔽" class="level2" data-number="20.4">
+<h2 data-number="20.4" class="anchored" data-anchor-id="重复序列屏蔽"><span class="header-section-number">20.4</span> 重复序列屏蔽</h2>
+<p>基因组中存在大量转座子、卫星 DNA 和其他重复元件。这些序列虽然应被保留，但在下游分析（基因预测、变异检测）中常被屏蔽（masking）以避免假阳性。</p>
+<p>{{Wiki:Repeat_element}}</p>
+<section id="repeatmodeler-repeatmasker-流程" class="level3" data-number="20.4.1">
+<h3 data-number="20.4.1" class="anchored" data-anchor-id="repeatmodeler-repeatmasker-流程"><span class="header-section-number">20.4.1</span> RepeatModeler + RepeatMasker 流程</h3>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb39"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb39-1"><a href="#cb39-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Install RepeatModeler and RepeatMasker</span></span>
+<span id="cb39-2"><a href="#cb39-2" aria-hidden="true" tabindex="-1"></a><span class="ex">conda</span> install <span class="at">-c</span> bioconda repeatmodeler repeatmasker</span>
+<span id="cb39-3"><a href="#cb39-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb39-4"><a href="#cb39-4" aria-hidden="true" tabindex="-1"></a><span class="co"># Step 1: Build repeat library (de novo identification)</span></span>
+<span id="cb39-5"><a href="#cb39-5" aria-hidden="true" tabindex="-1"></a><span class="co"># 警告：此步对大型基因组耗时很长（数小时至数天）</span></span>
+<span id="cb39-6"><a href="#cb39-6" aria-hidden="true" tabindex="-1"></a><span class="ex">RepeatModeler</span> <span class="at">-database</span> mydb <span class="at">-pa</span> 4 <span class="at">-LLRmode</span> <span class="op">&lt;</span> assembly.fasta</span>
+<span id="cb39-7"><a href="#cb39-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb39-8"><a href="#cb39-8" aria-hidden="true" tabindex="-1"></a><span class="co"># Step 2: Soft-mask with RepeatMasker (using both repeat library and standard databases)</span></span>
+<span id="cb39-9"><a href="#cb39-9" aria-hidden="true" tabindex="-1"></a><span class="ex">RepeatMasker</span> <span class="at">-pa</span> 4 <span class="at">-lib</span> mydb-families.fa <span class="at">-xsmall</span> assembly.fasta</span>
+<span id="cb39-10"><a href="#cb39-10" aria-hidden="true" tabindex="-1"></a><span class="co"># -xsmall：重复区域用小写 ACGT 表示，非重复区域用大写（可被基因预测器识别）</span></span>
+<span id="cb39-11"><a href="#cb39-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb39-12"><a href="#cb39-12" aria-hidden="true" tabindex="-1"></a><span class="co"># Output: assembly.fasta.masked</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><strong>Soft-masking vs Hard-masking 对比：</strong></p>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 21%">
+<col style="width: 26%">
+<col style="width: 26%">
+<col style="width: 26%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>策略</th>
+<th>符号</th>
+<th>用途</th>
+<th>影响</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><strong>Soft-masking</strong></td>
+<td>小写 acgt</td>
+<td>标记重复但保留序列</td>
+<td>基因预测、BLAST 可跳过</td>
+</tr>
+<tr class="even">
+<td><strong>Hard-masking</strong></td>
+<td>N 或 X</td>
+<td>隐藏重复序列</td>
+<td>下游分析无法获取原始序列</td>
+</tr>
+</tbody>
+</table>
+<p>细菌基因组的重复通常 &lt; 10%（主要为 rRNA、tRNA 操纵子），通常仅需软屏蔽。真菌与植物基因组重复比例更高（20–50%），屏蔽流程更重要。</p>
+</section>
+<section id="污染序列检测与去除" class="level3" data-number="20.4.2">
+<h3 data-number="20.4.2" class="anchored" data-anchor-id="污染序列检测与去除"><span class="header-section-number">20.4.2</span> 污染序列检测与去除</h3>
+<p>组装中可能混入外源 DNA（如向量序列、病毒、细菌污染）。NCBI 的 FCS-GX 工具可检测这些污染。</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb40"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb40-1"><a href="#cb40-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Install FCS-GX</span></span>
+<span id="cb40-2"><a href="#cb40-2" aria-hidden="true" tabindex="-1"></a><span class="co"># (需要从 NCBI 下载预编译的 GCS 数据库)</span></span>
+<span id="cb40-3"><a href="#cb40-3" aria-hidden="true" tabindex="-1"></a><span class="ex">conda</span> install <span class="at">-c</span> ncbi ncbi-fcs-gx</span>
+<span id="cb40-4"><a href="#cb40-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb40-5"><a href="#cb40-5" aria-hidden="true" tabindex="-1"></a><span class="co"># Run contamination screen</span></span>
+<span id="cb40-6"><a href="#cb40-6" aria-hidden="true" tabindex="-1"></a><span class="ex">fcs.py</span> screen genome assembly.fasta <span class="at">--gx-db</span> gxdb/</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<hr>
+</section>
+</section>
+<section id="课后自测-post-lesson-quiz" class="level2" data-number="20.5">
+<h2 data-number="20.5" class="anchored" data-anchor-id="课后自测-post-lesson-quiz"><span class="header-section-number">20.5</span> 课后自测 (Post-Lesson Quiz)</h2>
 <ol type="1">
 <li><p>已知某基因组大小约 5 Mb，使用 PE150 进行 WGS，共获得 3,000,000 对 reads（即 6,000,000 条 reads）。估算测序覆盖深度，并判断该深度是否足以进行高质量从头组装？</p></li>
 <li><p>解释为什么 De Bruijn 图方法将组装问题从哈密顿路径转化为欧拉路径，这一转化的计算复杂度意义是什么？</p></li>
@@ -2136,8 +2381,8 @@ spades_output_full/contigs.fasta   FASTA   DNA        9    4638517      476   51
 </details>
 <hr>
 </section>
-<section id="总结" class="level2" data-number="19.4">
-<h2 data-number="19.4" class="anchored" data-anchor-id="总结"><span class="header-section-number">19.4</span> 总结</h2>
+<section id="总结" class="level2" data-number="20.6">
+<h2 data-number="20.6" class="anchored" data-anchor-id="总结"><span class="header-section-number">20.6</span> 总结</h2>
 <p>✓ <strong>从头组装</strong> 是无参考基因组场景下重建基因组的核心技术，也是参考基因组本身产生的方式 ✓ <strong>De Bruijn 图</strong> 将 reads 分解为 k-mer，把 NP 完全的哈密顿路径问题转化为多项式时间可解的欧拉路径问题 ✓ <strong>气泡（Bubble）</strong> 来源于测序错误或真实 SNP，通过覆盖度比较弹出；<strong>尖刺（Tip）</strong> 来源于低质量 read 末端，通过迭代截除清理 ✓ <strong>N50</strong> 是衡量组装连续性的核心指标；<strong>misassembly 数量</strong> 是衡量组装准确性的最重要指标 ✓ <strong>SPAdes</strong> 通过多 k 值策略和错误校正，是目前细菌和宏基因组短读组装的行业标准 ✓ <strong>QUAST + BUSCO</strong> 组合评估提供了有参考和无参考两种场景下的完整质量图像 ✓ 覆盖深度 ≥ 50X 是高质量从头组装的基本要求，低深度（&lt; 20X）会导致严重的图断裂和碎片化</p>
 
 
