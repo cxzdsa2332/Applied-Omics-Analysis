@@ -10,8 +10,6 @@ format:
     theme: cosmo
 ---
 
-# 从组装到变异：基因组分析的下一步
-
 在上一专题中，我们完成了基因组的从头组装，并通过 QUAST 和 BUSCO 评估了组装质量。至此，我们手中已经有了一份连续、完整的基因组序列。然而，一份"组装完成"的基因组并不意味着分析的终点——对大多数研究而言，真正的科学问题往往藏在**个体之间或样本之间的序列差异**之中：这株 *E. coli* 与参考菌株相比，究竟在哪些位点发生了突变？这些突变是单碱基替换（SNP）、小片段插入缺失（Indel），还是更大规模的结构变异？
 
 回答这些问题，需要经历从"比对"到"检测"再到"注释"的完整流程（参见第2章）。其中，**变异检测（Variant Calling）**是承上启下的核心环节：它以比对后的 BAM 文件为输入，以标准化的 VCF 文件为输出，将序列层面的信号转化为可供下游分析使用的变异表。
@@ -22,9 +20,83 @@ format:
 基因组分析的典型流程是：原始 reads → 质量控制 → 参考基因组比对（或从头组装）→ **变异检测** → 功能注释。本专题聚焦于变异检测这一环节，重点讲解其统计原理和 VCF 格式规范，为后续使用 GATK 进行实战分析奠定基础（参见专题 2.5）。
 :::
 
+# 变异类型与分类体系
+
+## 基因组变异的四大类型
+
+基因组变异按规模和机制可分为四大类，每类的检测方法和生物学影响存在本质差异：
+
+{{Wiki:Single-nucleotide_polymorphism}}
+
+| 类型 | 英文名称 | 规模 | 典型例子 | 主要检测工具 |
+|---|---|---|---|---|
+| **SNP** | Single Nucleotide Polymorphism | 1 bp | A → G | GATK HaplotypeCaller |
+| **Indel** | Insertion/Deletion | 1–50 bp | 插入 3 bp / 缺失 7 bp | GATK HaplotypeCaller |
+| **SV** | Structural Variant | > 50 bp | 倒位、易位、大缺失 | Manta、DELLY、Lumpy |
+| **CNV** | Copy Number Variant | kb–Mb | 基因组片段扩增/缺失 | CNVnator、GATK gCNV |
+
+本节重点关注 SNP 和 Indel，这是二代短读测序最擅长检测的类型。SV 和 CNV 因需要特殊分析框架，将在后续章节中专项介绍。
+
+:::note
+**SNP 与 SNV 的区别**
+
+**SNP（Single Nucleotide Polymorphism）** 特指在群体中频率 ≥ 1% 的单核苷酸变异，强调其**多态性**；**SNV（Single Nucleotide Variant）** 则泛指任何单碱基替换，包括频率极低的体细胞突变。肿瘤基因组学中习惯用 SNV，群体遗传学和 GWAS 中习惯用 SNP。两者在 VCF 文件中格式相同，仅概念范畴不同。
+:::
+
+## 碱基替换类型与 Ti/Tv 比值
+
+单碱基替换按化学结构分为两类，这一分类是评估变异集质量的重要依据：
+
+{{Wiki:Transition_(genetics)}}
+
+| 类型 | 英文 | 方向 | 化学结构 |
+|---|---|---|---|
+| **转换（Transition）** | Ti | A ↔ G、C ↔ T | 嘌呤↔嘌呤 或 嘧啶↔嘧啶 |
+| **颠换（Transversion）** | Tv | A/G ↔ C/T 交叉 | 嘌呤↔嘧啶 |
+
+由于 DNA 聚合酶容错机制对化学结构相似的碱基替换（转换）更宽松，真实基因组中转换发生概率约为颠换的 2 倍。这一规律产生了重要的 QC 指标：
+
+$$\text{Ti/Tv ratio} = \frac{\text{转换 SNP 数}}{\text{颠换 SNP 数}}$$
+
+| 数据类型 | 期望 Ti/Tv | 偏低说明 | 偏高说明 |
+|---|---|---|---|
+| 全基因组 WGS | 2.0–2.1 | 假阳性偏多（错误倾向颠换） | 过度过滤颠换 |
+| 全外显子组 WES | 2.8–3.0 | 过滤不足 | 选择压力偏差 |
+| CpG 位点富集区 | > 3.5 | — | 正常（CpG 甲基化偏好 C→T 转换） |
+
+Ti/Tv 比值是变异集整体质量的"体温计"——偏离正常范围意味着过滤策略需要调整，而不是某个变异的问题。
+
+```r
+# R: 计算 Ti/Tv 比值（从 VCF 提取的 SNP 数据框）
+compute_titv <- function(snp_df) {
+  # snp_df 需含 ref 和 alt 列（单字符）
+  transitions  <- c("A>G", "G>A", "C>T", "T>C")
+  transversions <- c("A>C", "A>T", "G>C", "G>T",
+                     "C>A", "C>G", "T>A", "T>G")
+
+  change <- paste0(snp_df$ref, ">", snp_df$alt)
+  ti_count <- sum(change %in% transitions)
+  tv_count <- sum(change %in% transversions)
+
+  cat(sprintf("Transitions   : %d\n", ti_count))
+  cat(sprintf("Transversions : %d\n", tv_count))
+  cat(sprintf("Ti/Tv ratio   : %.3f\n", ti_count / tv_count))
+  cat(sprintf("Status        : %s\n",
+              ifelse(ti_count / tv_count >= 1.8 & ti_count / tv_count <= 3.5,
+                     "PASS (expected range)", "WARNING: check filtering")))
+}
+
+# 示例
+snps <- data.frame(
+  ref = c("A","C","T","G","A","C"),
+  alt = c("G","T","C","A","C","A")
+)
+compute_titv(snps)
+```
+
 # 变异检测原理
 
-## 变异检测的数学基础
+## 基本概念：等位体与基因型
 
 变异检测的核心是：**在给定的比对数据中，判断某个位置是否存在真实的生物学变异，而不是测序或比对错误**。
 
@@ -36,18 +108,13 @@ format:
 基因型（Genotype）是对一个样本在某位点上两个等位体组合的描述，在 VCF 文件中用数字编码表示：`0` 代表参考等位体，`1` 代表第一个替代等位体，`2` 代表第二个替代等位体，以此类推。`0/1` 表示杂合（一个参考、一个替代），`1/1` 表示纯合替代，`0/0` 表示纯合参考。
 :::
 
-### 两种主要算法框架
-
-{{Wiki:Bayesian_inference}}
-
-#### 1. 频率法 (Frequency-Based)
+## 频率法（Frequency-Based）
 
 最简单的方法：直接统计比对到某位点的各碱基数量，计算替代等位体的观测频率。
 
 $$\text{AF} = \frac{\text{替代等位体数}}{\text{总等位体数}} \times 100\%$$
 
-**优点**：快速、直观
-**缺点**：不考虑测序质量信息，单个低质量 read 即可造成假阳性
+**优点**：快速、直观。**缺点**：不考虑测序质量信息，单个低质量 read 即可造成假阳性。
 
 ```text
 位置: chr1:1000
@@ -61,14 +128,15 @@ $$\text{AF} = \frac{\text{替代等位体数}}{\text{总等位体数}} \times 10
 AF = 1/(1+3) = 25%，但 Read3 质量低，不可信
 ```
 
-#### 2. 贝叶斯模型 (Bayesian Model)
+## 贝叶斯推断与 GATK HaplotypeCaller
+
+{{Wiki:Bayesian_inference}}
 
 贝叶斯推断的核心思想是：将"已有知识（先验）"与"观测数据（似然）"结合，得到更新后的"后验概率"。在变异检测场景中，先验是该位点在群体中存在变异的背景概率，似然是在假设某种基因型成立的情况下，观测到当前 reads 数据的概率；后验则是综合两者后，该变异真实存在的概率。
 
 $$P(\text{变异} | \text{数据}) \propto P(\text{数据} | \text{变异}) \times P(\text{变异})$$
 
-**优点**：整合质量评分、等位体频率、群体背景等多维信息
-**缺点**：计算复杂，参数设置对结果影响较大
+**优点**：整合质量评分、等位体频率、群体背景等多维信息。**缺点**：计算复杂，参数设置对结果影响较大。
 
 **GATK HaplotypeCaller** 是目前最广泛使用的贝叶斯变异检测工具，由 Broad Institute 开发，专为人类及模式生物胚系变异检测设计。与简单频率法不同，HaplotypeCaller 首先在**活跃区域（Active Region）**——即 reads 与参考基因组存在显著差异的局部区段——内重新进行 de novo 组装，避免因初始比对偏差引入错误，再对组装得到的单倍型进行似然评分。其核心步骤如下：
 
@@ -84,13 +152,11 @@ $$P(\text{变异} | \text{数据}) \propto P(\text{数据} | \text{变异}) \tim
 PHRED 评分将错误概率转换为对数尺度，便于处理极小概率值：$Q = -10\log_{10}(P_{\text{error}})$。Q30 对应错误概率 0.1%，Q50 对应 0.001%。GATK 输出的 QUAL 字段即为该变异为假阳性的 PHRED 概率——QUAL=30 意味着该变异有 99.9% 的置信度是真实变异。
 :::
 
----
-
-## VCF 格式详解
+# VCF 格式规范
 
 {{Wiki:Variant_Call_Format}}
 
-### VCF 文件结构
+## VCF 文件结构
 
 VCF（Variant Call Format）是由国际千人基因组计划（1000 Genomes Project）制定的变异信息存储标准，目前维护于 samtools/hts-specs 规范库。VCF 文件以纯文本形式存储，由三部分构成：以 `##` 开头的**元信息行**（描述文件版本、参考基因组、INFO/FORMAT 字段定义等）；以单个 `#` 开头的**表头行**（定义固定列名及样本名称）；以及每行代表一个变异位点的**数据行**。
 
@@ -109,7 +175,7 @@ chr1    10000   .       A       G       50      PASS    DP=100;AF=0.5   GT:DP:GQ
 chr1    10500   rs123   C       T,A     100     PASS    DP=120;AF=0.4,0.1       GT:DP:GQ        0/1:60:45       1/1:60:50
 ```
 
-### 固定列说明
+## 固定列说明
 
 | 列号 | 列名 | 说明 |
 |-----|------|------|
@@ -124,7 +190,7 @@ chr1    10500   rs123   C       T,A     100     PASS    DP=120;AF=0.4,0.1       
 | 9+ | FORMAT | 样本数据格式 |
 | 10+ | 样本 | 每个样本的基因型和相关字段 |
 
-### INFO 字段关键标签
+## INFO 字段关键标签
 
 | 标签 | 含义 | 示例 |
 |-----|------|------|
@@ -138,7 +204,7 @@ chr1    10500   rs123   C       T,A     100     PASS    DP=120;AF=0.4,0.1       
 | **MQRankSum** | 参考与替代等位体的 MAPQ 分布差异（Wilcoxon 秩和检验） | MQRankSum=0.5 |
 | **ReadPosRankSum** | 变异在 read 上的位置偏倚（末端出现假阳性概率更高） | ReadPosRankSum=-2.0 |
 
-### FORMAT 和样本字段
+## FORMAT 和样本字段
 
 | 字段 | 含义 |
 |-----|------|
@@ -149,21 +215,39 @@ chr1    10500   rs123   C       T,A     100     PASS    DP=120;AF=0.4,0.1       
 | **AF** | 该样本中替代等位体的频率 |
 | **PL** | Phred-Likelihood（各基因型的负对数似然） |
 
-### 基因型解读
+## 基因型解读
 
 | 基因型 | 含义 | 常见情况 |
 |-------|------|---------|
 | 0/0 | 纯合参考 | 无突变 |
 | 0/1 | 杂合 | 来自一个亲本（胚系变异） |
 | 1/1 | 纯合替代 | 来自两个亲本 |
-| ./.| 缺失基因型 | 覆盖不足或质量差 |
+| ./. | 缺失基因型 | 覆盖不足或质量差 |
 | 0/2, 1/2 | 多等位体 | 多个替代等位体 |
 
----
+# GVCF 格式简介
 
-## 变异过滤策略
+在标准 VCF 文件中，只有检测到变异的位点才会被记录；参考一致的区域会被直接跳过。这在单样本分析中没有问题，但当需要**多样本联合基因型定型（Joint Genotyping）**时，就会产生歧义：某个样本在某位置没有变异记录，究竟是"该位置测序深度足够、确认为参考纯合"，还是"该位置根本没有被测到"？两者的生物学含义截然不同，但在普通 VCF 中无法区分。
 
-### 变异质量过滤
+GVCF（Genomic VCF）正是为解决这一问题而设计的 VCF 扩展格式。GVCF 对基因组**每一个位置**都写出记录：对于检测到变异的位点，格式与普通 VCF 相同；对于与参考一致的连续区域，则用一条**参考匹配块（Reference Block）**记录，以 `<NON_REF>` 作为占位 ALT 等位体，并用 `END` 字段标注该块的终止位置，从而压缩表示整段参考一致区域。
+
+这种设计使得多样本分析时，工具（如 `GATK GenotypeGVCFs`）可以在群体层面对每个位点做出正确的联合推断——即便某个样本在该位置没有变异，其参考深度信息也被完整保留。
+
+```text
+##gVCFVersion=v1.4
+#CHROM  POS     ID      REF     ALT          QUAL  FILTER  INFO         FORMAT    sample1
+chr1    10000   .       A       <NON_REF>    .     .       END=10010    GT:DP     0/0:50
+chr1    10011   .       C       T            50    PASS    DP=100       GT:DP:GQ  0/1:50:40
+chr1    10012   .       T       <NON_REF>    .     .       END=10100    GT:DP     0/0:48
+```
+
+上例中：chr1:10000–10010 为参考匹配块（深度 50X，单条记录压缩表示）；chr1:10011 为一个杂合 SNP；chr1:10012–10100 又回到参考匹配块。这种格式在样本数量较多时每个 GVCF 文件比普通 VCF 大约大 2–5 倍，但因此换来了联合分析所必需的完整信息。
+
+# 变异过滤策略
+
+## 质量指标与过滤阈值
+
+变异过滤的目标是在精度（Precision）和召回率（Recall）之间取得合理平衡。过滤过严会漏掉真实变异（假阴性增多），过滤过松则保留大量假阳性。以下三类指标构成过滤决策的核心依据。
 
 **QUAL 评分**：
 
@@ -171,12 +255,12 @@ $$\text{QUAL} = -10 \log_{10}(P_{\text{error}})$$
 
 | QUAL 范围 | 含义 | 建议 |
 |----------|------|------|
-| 0-10 | 极低置信 | 丢弃 |
-| 10-30 | 低置信 | 谨慎 |
-| **30-50** | **中等置信** | **基本过滤** |
+| 0–10 | 极低置信 | 丢弃 |
+| 10–30 | 低置信 | 谨慎 |
+| **30–50** | **中等置信** | **基本过滤** |
 | **50+** | **高置信** | **推荐使用** |
 
-### 深度过滤
+**深度过滤**：
 
 | 条件 | 问题 | 过滤阈值 |
 |-----|------|---------|
@@ -184,7 +268,7 @@ $$\text{QUAL} = -10 \log_{10}(P_{\text{error}})$$
 | 深度过高 (> 300X) | 可能是重复或污染 | DP <= 300 |
 | 平衡度差 | 暗示短 read 或 contamination | AD_ratio >= 0.25 |
 
-### 位置效应过滤
+**位置效应过滤**：
 
 | 指标 | 阈值 | 解释 |
 |-----|------|------|
@@ -193,30 +277,367 @@ $$\text{QUAL} = -10 \log_{10}(P_{\text{error}})$$
 | **FS (Fisher Strand)** | < 60 | 变异偏向某一条链（测序 bias） |
 | **QD (Quality/Depth)** | >= 2.0 | 确保质量与深度相匹配 |
 
-### 推荐的过滤管道（硬过滤）
+## 硬过滤（Hard Filtering）
 
-对于本节使用的 *E. coli* SRR2584863 数据集，硬过滤是**唯一可行的选择**：细菌基因组没有 HapMap、1000 Genomes 等已知高质量人类变异数据库，无法为 VQSR 提供训练资源。下面直接延续"步骤一"生成的 `snps_raw.vcf.gz` 和 `indels_raw.vcf.gz`，使用 `gatk VariantFiltration` 按多指标硬过滤：
+硬过滤对每个变异位点逐条套用预设阈值，满足条件则标注通过（PASS），否则标注失败原因。GATK `VariantFiltration` 实现了此逻辑：它不删除变异记录，而是在 FILTER 列写入失败标签，保留原始数据的完整性。具体过滤命令及 GIAB 精度评估见实践部分步骤四。
+
+硬过滤的核心局限在于**阈值固定**：不同测序深度、不同物种、不同测序平台下，同一阈值的精度-召回率表现差异显著。当样本量充足时，GATK 推荐使用更精细的 **VQSR** 方法自适应地学习过滤边界。
+
+## VQSR：变异质量分数重校正
+
+{{Wiki:Gaussian_mixture_model}}
+
+**VQSR（Variant Quality Score Recalibration）** 是 GATK 针对人类中大型 WGS 队列（通常 ≥ 30 个样本）的推荐过滤策略。其核心思路是：用已知高质量变异数据集训练高斯混合模型，学习真实变异在多维质量特征空间中的分布，再为每个待过滤变异打出重校正后的置信分（VQSLOD），最终按分位线软过滤，而非预设固定阈值。
+
+训练所需的参考变异资源均来自 **GATK Resource Bundle**（hg38 版本）：
+
+| 资源集 | 用途 | known | training | truth | prior |
+|---|---|---|---|---|---|
+| HapMap 3.3 | SNP 真阳性训练集 | false | true | true | 15.0 |
+| 1000G Omni 2.5 | SNP 训练集 | false | true | false | 12.0 |
+| 1000G Phase 1 SNPs | SNP 训练集 | false | true | false | 10.0 |
+| dbSNP 138 | 已知变异标注 | true | false | false | 2.0 |
+| Mills 1000G Indels | Indel 真阳性训练集 | false | true | true | 12.0 |
+
+:::note
+**先验权重（prior）的含义**
+
+`--resource` 参数中的 `prior` 值（如 `prior=15.0`）表示该数据集中变异为真阳性的 log-odds 先验，数值越高表示越可信。HapMap（prior=15）是最高质量的已知变异集；dbSNP 中包含大量低频和错误条目，因此 prior 仅为 2.0，只用作已知变异标注而非训练。
+:::
+
+:::warning
+**VQSR 的样本量要求**
+
+SNP 模型至少需要约 30 个 WGS 样本才有足够的变异位点训练高斯混合模型。全外显子组测序（WES）因覆盖区域有限、变异数量不足，通常也使用硬过滤而非 VQSR。单样本数据集同样属于此类情况，应使用硬过滤方案；VQSR 代码段（见步骤四）仅作队列场景下的概念演示。
+:::
+
+VQSR 的完整命令及所需资源文件下载见实践部分步骤四。
+
+# 实践：完整变异检测流程（HG002 chr21）
+
+本节从零开始搭建完整的人类 WGS 变异检测流程，使用 **HG002（NA24385）的 chr21 子集**作为教学数据。chr21 是人类最小的常染色体（约 48 Mb），包含约 7 万个 SNP 和 8 千个 Indel（GIAB 真阳性集），足以演示完整的 GATK 流程，同时将计算时间控制在 30 分钟以内。
+
+此处切换至人类数据集（而非此前专题中的 *E. coli*）的原因有三：其一，GATK BQSR 和 VQSR 均依赖人类专有的已知变异数据库（dbSNP、HapMap），无法在细菌基因组上完整演示；其二，人类二倍体基因组的杂合/纯合变异类型更具代表性；其三，HG002 是 GIAB 联盟发布的黄金标准基准样本，其 chr21 上拥有经过实验验证的真阳性变异集，可用于量化过滤策略的精度与召回率。
+
+数据准备分为三个独立模块：**(A)** hg38 chr21 参考基因组，**(B)** HG002 chr21 测序 reads，**(C)** GIAB 真阳性变异集。下表汇总了各模块的文件体积和预期耗时，以便在课前完成下载：
+
+| 模块 | 来源 | 下载体积 | 解压/处理后体积 | 估计耗时（百兆网） |
+|-----|------|---------|--------------|-----------------|
+| A. hg38 chr21 参考 | UCSC | ~60 MB | ~70 MB | 2 min |
+| B. HG002 chr21 BAM | GIAB ftp（流式截取） | ~1.2 GB | ~800 MB (FASTQ) | 20–40 min |
+| C. GIAB 真阳性 VCF | GIAB ftp | ~1.4 GB | ~50 MB (chr21 子集) | 15–25 min |
+| **合计磁盘占用** | — | — | **≈ 2 GB** | — |
 
 ```bash
-# SNP 硬过滤（细菌基因组推荐阈值）
+mkdir -p hg002_chr21 reference giab logs
+```
+
+## 步骤一：获取 HG002 chr21 教学子集
+
+### 子步骤 A：下载 hg38 chr21 参考基因组
+
+hg38 chr21 参考序列来自 UCSC Genome Browser 官方镜像，仅包含 chr21 主染色体（不含未锁定重叠群 unlocalized contigs），大小约 70 MB，是后续比对和变异检测的坐标基准。
+
+```bash
+# ── A1. 下载并解压 chr21 FASTA ─────────────────────────────────────────────
+wget -P reference/ \
+    https://hgdownload.soe.ucsc.edu/goldenPath/hg38/chromosomes/chr21.fa.gz
+gunzip reference/chr21.fa.gz
+mv reference/chr21.fa reference/hg38_chr21.fasta
+
+# 验证：查看序列名称和长度（应为 "chr21"，长约 46,709,983 bp）
+grep "^>" reference/hg38_chr21.fasta
+samtools faidx reference/hg38_chr21.fasta
+awk '{print $1, $2}' reference/hg38_chr21.fasta.fai
+
+# ── A2. 建立 GATK、BWA 所需索引（约 3–5 min）────────────────────────────────
+gatk CreateSequenceDictionary -R reference/hg38_chr21.fasta
+bwa index reference/hg38_chr21.fasta
+# 完成后 reference/ 目录下应有：
+#   hg38_chr21.fasta  .fai  .dict  .amb  .ann  .bwt  .pac  .sa
+ls -lh reference/
+```
+
+:::tip
+**为什么只下载 chr21 而不是全基因组？**
+
+hg38 全基因组约 3 GB（压缩后），建立 BWA 索引需 ~90 分钟、约 5 GB 内存。通过只下载 chr21 单染色体，索引时间降至 ~3 分钟，内存占用降至 ~500 MB，非常适合课堂和笔记本电脑环境。后续的比对命令用 `-L chr21` 参数限定处理范围，逻辑上等同于对全基因组分析，结果完全可复现。
+:::
+
+### 子步骤 B：提取 HG002 chr21 测序 reads
+
+GIAB 官方提供了 HG002 的全基因组高深度（约 300×）BAM 文件，已比对至 GRCh38 参考基因组，并在 GIAB ftp 上对外开放。直接下载全基因组 BAM 约需 200 GB；但由于 BAM 文件已建立 BAI 索引，`samtools view` 可通过 HTTP 范围请求（HTTP range request）**仅流式传输 chr21 区域**，实际下载量约 1.2 GB，大幅节省时间和磁盘空间。
+
+```bash
+# ── B1. 定义远程 BAM 路径（GIAB 官方 hg38 比对文件）─────────────────────────
+# HG002 300× Illumina HiSeq 2×150 bp，经 Novoalign 比对至 GRCh38（hg38）
+# BAM 位于 NHGRI_Illumina300X_AJtrio_novoalign_bams/ 子目录（非 fastq 目录）
+REMOTE_BAM="https://ftp-trace.ncbi.nlm.nih.gov/giab/ftp/data/AshkenazimTrio/\
+HG002_NA24385_son/NIST_HiSeq_HG002_Homogeneity-10953946/\
+NHGRI_Illumina300X_AJtrio_novoalign_bams/HG002.GRCh38.300x.bam"
+
+# BAI 索引（samtools HTTP range request 必须）
+REMOTE_BAI="${REMOTE_BAM}.bai"
+
+# ── B2. 流式截取 chr21 区域（约 1.2 GB 传输，20–40 min）──────────────────────
+# samtools view 通过 HTTP range request 仅拉取 chr21 对应的 BAM blocks
+# -b: 输出 BAM  -h: 保留 header（GATK 必须字段）
+# -F 2048: 过滤 supplementary alignments，避免后续重复计算
+samtools view -b -h -F 2048 \
+    ${REMOTE_BAM} chr21 \
+    -o hg002_chr21/HG002_chr21.bam
+
+# 排序并建立索引（若远程 BAM 已按坐标排序，此步仅建索引）
+samtools sort -@ 4 -o hg002_chr21/HG002_chr21_sorted.bam \
+    hg002_chr21/HG002_chr21.bam
+samtools index hg002_chr21/HG002_chr21_sorted.bam
+
+# ── B3. 验证 BAM 文件完整性 ────────────────────────────────────────────────
+# 预期：总 reads ~6,000,000–8,000,000，平均深度 ~280–320×（chr21 约 46.7 Mb）
+samtools flagstat hg002_chr21/HG002_chr21_sorted.bam | tee logs/flagstat_chr21.txt
+
+# 估算平均覆盖深度
+samtools depth -a hg002_chr21/HG002_chr21_sorted.bam \
+    | awk '{sum+=$3; n++} END {printf "Mean depth: %.1fX\n", sum/n}'
+
+# ── B4. BAM → 双端 FASTQ（用于从头比对，重建 Read Group）──────────────────────
+# -n: 使用 read 名作为 FASTQ 标题（保留配对信息）
+samtools sort -n -@ 4 -o hg002_chr21/HG002_chr21_namesort.bam \
+    hg002_chr21/HG002_chr21_sorted.bam
+
+samtools fastq -@ 4 \
+    hg002_chr21/HG002_chr21_namesort.bam \
+    -1 hg002_chr21/HG002_chr21_R1.fastq.gz \
+    -2 hg002_chr21/HG002_chr21_R2.fastq.gz \
+    -0 /dev/null -s /dev/null -n
+
+# 验证：查看 FASTQ 条数（R1 与 R2 应相同，每条 read 占 4 行）
+echo "R1 read count: $(zcat hg002_chr21/HG002_chr21_R1.fastq.gz | wc -l | awk '{print $1/4}')"
+echo "R2 read count: $(zcat hg002_chr21/HG002_chr21_R2.fastq.gz | wc -l | awk '{print $1/4}')"
+# 预期约 3,000,000–4,000,000 条 read（双端各一份）
+```
+
+:::warning
+**远程 BAM URL 验证**
+
+GIAB ftp 上的 BAM 文件路径和文件名可能随数据版本更新而变化。运行前请先确认文件仍可访问，并替换 `REMOTE_BAM` 变量。确认方式：
+
+```bash
+curl -sl "https://ftp-trace.ncbi.nlm.nih.gov/giab/ftp/data/AshkenazimTrio/HG002_NA24385_son/NIST_HiSeq_HG002_Homogeneity-10953946/NHGRI_Illumina300X_AJtrio_novoalign_bams/" \
+    | grep -E "\.bam$"
+```
+:::
+
+:::note
+**网络受限或下载失败的替代方案**
+
+若 GIAB ftp 访问速度慢或连接失败，有以下两种替代方案：
+
+**方案一：使用 AWS S3 公共镜像（无需账号，免费）**
+```bash
+aws s3 --no-sign-request cp \
+    s3://giab/data/AshkenazimTrio/HG002_NA24385_son/NIST_HiSeq_HG002_Homogeneity-10953946/ \
+    hg002_chr21/ --recursive \
+    --exclude "*" --include "*.bam" --include "*.bai"
+```
+
+**方案二：从 NCBI SRA 下载 FASTQ（无需 BAM 转换，但需全量下载）**
+```bash
+# 仅建议网络带宽充足的环境使用（单 run 约 30–50 GB）
+prefetch SRR2052380 SRR2052381
+fasterq-dump --split-files SRR2052380 -O hg002_chr21/
+fasterq-dump --split-files SRR2052381 -O hg002_chr21/
+# 合并两个 run 的 R1/R2，再用 bwa mem 比对至 hg38 全基因组
+# 比对后用 samtools view -b chr21 截取 chr21 reads
+```
+:::
+
+### 子步骤 C：下载 GIAB 真阳性变异集并截取 chr21
+
+GIAB（Genome in a Bottle）联盟发布的 NISTv4.2.1 基准变异集是目前最权威的人类基因组 ground-truth 数据，涵盖全基因组所有常染色体。其中 chr21 的真阳性 SNP 约 68,000 个、Indel 约 8,200 个，且每个变异均有对应的**高置信区间（confident region）**的 BED 文件，仅在测序和组装质量均达标的区域内进行评估。全基因组 VCF 约 1.4 GB，下载后仅需截取 chr21 子集（约 50 MB）供本节使用。
+
+```bash
+GIAB_BASE="ftp://ftp-trace.ncbi.nlm.nih.gov/giab/ftp/release/AshkenazimTrio/\
+HG002_NA24385_son/NISTv4.2.1/GRCh38"
+
+# ── C1. 下载全基因组 benchmark VCF 及其 TBI 索引（约 1.4 GB + 1.5 MB）────────
+wget -P giab/ -c \
+    ${GIAB_BASE}/HG002_GRCh38_1_22_v4.2.1_benchmark.vcf.gz \
+    ${GIAB_BASE}/HG002_GRCh38_1_22_v4.2.1_benchmark.vcf.gz.tbi
+
+# 下载高置信区间 BED（定义哪些区域可用于 precision/recall 评估）
+wget -P giab/ -c \
+    ${GIAB_BASE}/HG002_GRCh38_1_22_v4.2.1_benchmark_noinconsistent.bed
+
+# ── C2. 截取 chr21 子集（基于 TBI 索引，仅解压对应 BAM blocks，秒级完成）──────
+bcftools view -r chr21 \
+    giab/HG002_GRCh38_1_22_v4.2.1_benchmark.vcf.gz \
+    -O z -o giab/HG002_chr21_truthset.vcf.gz
+tabix -p vcf giab/HG002_chr21_truthset.vcf.gz
+
+# 同样截取 chr21 的高置信区间 BED
+grep "^chr21" giab/HG002_GRCh38_1_22_v4.2.1_benchmark_noinconsistent.bed \
+    > giab/HG002_chr21_confident.bed
+
+# ── C3. 验证真阳性集内容 ─────────────────────────────────────────────────────
+bcftools stats giab/HG002_chr21_truthset.vcf.gz | grep "^SN"
+# 预期输出示例：
+#   SN  0  Number of SNPs:   68231
+#   SN  0  Number of indels:  8174
+# 查看高置信区间覆盖 chr21 的比例（约 88–92%）
+awk '{sum += $3-$2} END {printf "Confident region: %.1f Mb (%.1f%%)\n",
+    sum/1e6, sum/46709983*100}' giab/HG002_chr21_confident.bed
+```
+
+:::note
+**高置信区间 BED 的作用**
+
+GIAB 的评估框架只在 `benchmark_noinconsistent.bed` 标注的区域内计算 Precision 和 Recall。chr21 约 8–12% 的区域因存在重复序列、低复杂度区域或测序深度不足而被排除在外。在后续 `rtg vcfeval` 或 `hap.py` 评估时，须通过 `--regions` 参数传入该 BED 文件，否则在置信区域外出现的变异差异会错误地计入假阳性或假阴性。
+:::
+
+### 子步骤 D：目录结构验证
+
+完成上述三个模块后，工作目录应具有以下结构。运行下方命令确认所有必需文件均存在且大小合理：
+
+```bash
+# 检查文件是否完整（各文件参考大小见注释）
+ls -lh reference/hg38_chr21.fasta        # ~70 MB
+ls -lh reference/hg38_chr21.fasta.fai    # <1 MB
+ls -lh reference/hg38_chr21.dict         # <1 MB
+ls -lh reference/hg38_chr21.fasta.bwt    # ~70 MB
+ls -lh hg002_chr21/HG002_chr21_R1.fastq.gz  # ~600–800 MB
+ls -lh hg002_chr21/HG002_chr21_R2.fastq.gz  # ~600–800 MB
+ls -lh giab/HG002_chr21_truthset.vcf.gz     # ~3–5 MB
+ls -lh giab/HG002_chr21_confident.bed       # <1 MB
+
+# 生成简洁的数据概览报告
+echo "=== Dataset Summary ===" > logs/dataset_summary.txt
+echo "Reference chr21 size:" >> logs/dataset_summary.txt
+awk '{print $2, "bp"}' reference/hg38_chr21.fasta.fai >> logs/dataset_summary.txt
+echo "FASTQ read counts (R1):" >> logs/dataset_summary.txt
+zcat hg002_chr21/HG002_chr21_R1.fastq.gz | awk 'NR%4==1' | wc -l \
+    >> logs/dataset_summary.txt
+echo "Truth set variants (chr21):" >> logs/dataset_summary.txt
+bcftools stats giab/HG002_chr21_truthset.vcf.gz \
+    | grep "^SN" >> logs/dataset_summary.txt
+cat logs/dataset_summary.txt
+```
+
+## 步骤二：BWA 比对与预处理
+
+```bash
+REF=reference/hg38_chr21.fasta
+SAMPLE=HG002_chr21
+
+# 1. BWA-MEM 比对（添加 Read Group，GATK 必须字段）
+bwa mem -t 8 \
+    -R "@RG\tID:${SAMPLE}\tSM:HG002\tLB:lib1\tPL:ILLUMINA\tPU:${SAMPLE}" \
+    ${REF} \
+    hg002_chr21/HG002_chr21_R1.fastq.gz \
+    hg002_chr21/HG002_chr21_R2.fastq.gz \
+    | samtools sort -@ 4 -o ${SAMPLE}_sorted.bam
+
+samtools index ${SAMPLE}_sorted.bam
+
+# 2. 标记 PCR 重复（MarkDuplicates）
+gatk MarkDuplicates \
+    -I ${SAMPLE}_sorted.bam \
+    -O ${SAMPLE}_dedup.bam \
+    -M ${SAMPLE}_dup_metrics.txt
+samtools index ${SAMPLE}_dedup.bam
+
+# 3. BQSR：下载 hg38 dbSNP 并截取 chr21 区域（用于已知变异位点排除）
+wget -P reference/ \
+    https://storage.googleapis.com/genomics-public-data/resources/broad/hg38/v0/Homo_sapiens_assembly38.dbsnp138.vcf
+bcftools view -r chr21 reference/Homo_sapiens_assembly38.dbsnp138.vcf \
+    -O z -o reference/dbsnp138_chr21.vcf.gz
+tabix -p vcf reference/dbsnp138_chr21.vcf.gz
+
+gatk BaseRecalibrator \
+    -I ${SAMPLE}_dedup.bam \
+    -R ${REF} \
+    --known-sites reference/dbsnp138_chr21.vcf.gz \
+    -O ${SAMPLE}_recal.table
+
+gatk ApplyBQSR \
+    -I ${SAMPLE}_dedup.bam \
+    -R ${REF} \
+    --bqsr-recal-file ${SAMPLE}_recal.table \
+    -O ${SAMPLE}_recal.bam
+```
+
+:::note
+**为什么在人类基因组上 BQSR 有效，而细菌基因组上不做？**
+
+BQSR 需要一个"已知真实变异"的排除列表（dbSNP）：在这些位点观测到的碱基差异被认为是真实多态性而非测序错误，不参与错误率模型训练。人类 hg38 有完善的 dbSNP（1.5 亿+ 条目），可为 BQSR 提供充足的排除位点。*E. coli* 没有等效的公共已知变异库，若强行运行 BQSR，训练数据将同时包含真实变异和测序错误，导致模型失真。
+:::
+
+## 步骤三：HaplotypeCaller 变异检测
+
+```bash
+REF=reference/hg38_chr21.fasta
+SAMPLE=HG002_chr21
+
+# 1. HaplotypeCaller：生成 GVCF（-ERC GVCF 模式保留所有位点信息）
+gatk HaplotypeCaller \
+    -R ${REF} \
+    -I ${SAMPLE}_recal.bam \
+    -O ${SAMPLE}.g.vcf.gz \
+    -ERC GVCF \
+    -L chr21
+
+# 2. 单样本 Joint Genotyping：GVCF → VCF
+gatk GenotypeGVCFs \
+    -R ${REF} \
+    -V ${SAMPLE}.g.vcf.gz \
+    -O variants_raw.vcf.gz \
+    -L chr21
+
+# 3. 分别提取原始 SNP 和 Indel
+gatk SelectVariants -R ${REF} \
+    -V variants_raw.vcf.gz --select-type-to-include SNP \
+    -O snps_raw.vcf.gz
+
+gatk SelectVariants -R ${REF} \
+    -V variants_raw.vcf.gz --select-type-to-include INDEL \
+    -O indels_raw.vcf.gz
+
+# 查看原始变异统计
+echo "Raw variant counts:"
+bcftools stats variants_raw.vcf.gz | grep "^SN"
+```
+
+对于 HG002 chr21，预期检出约 85,000–95,000 个原始 SNP 和 10,000–15,000 个原始 Indel（其中约 20–30% 为假阳性，将被步骤四的过滤去除）。
+
+## 步骤四：变异过滤
+
+步骤三生成的 `snps_raw.vcf.gz` 和 `indels_raw.vcf.gz` 包含原始检出变异，需通过过滤去除假阳性。本节提供两套方案：**硬过滤**适用于本教学数据集（单样本）；**VQSR** 演示适用于 ≥ 30 个样本的大型队列。
+
+### 硬过滤（本节教学数据集）
+
+```bash
+REF=reference/hg38_chr21.fasta
+
+# SNP 硬过滤（GATK 官方推荐阈值，适用于人类 WGS 单样本）
 gatk VariantFiltration \
-    -R reference/ecoli_K12.fasta \
+    -R ${REF} \
     -V snps_raw.vcf.gz \
     --filter-expression "QD < 2.0"              --filter-name "QD2" \
     --filter-expression "FS > 60.0"             --filter-name "FS60" \
     --filter-expression "MQ < 40.0"             --filter-name "MQ40" \
-    --filter-expression "MQRankSum < -2.0"      --filter-name "MQRankSum-2" \
-    --filter-expression "ReadPosRankSum < -2.0" --filter-name "ReadPosRankSum-2" \
+    --filter-expression "MQRankSum < -12.5"     --filter-name "MQRankSum-12.5" \
+    --filter-expression "ReadPosRankSum < -8.0" --filter-name "ReadPosRankSum-8" \
     --filter-expression "SOR > 3.0"             --filter-name "SOR3" \
     -O snps_filtered.vcf.gz
 
-# Indel 硬过滤（Indel 的 FS 阈值更宽松）
+# Indel 硬过滤（Indel 的 FS/ReadPosRankSum 阈值更宽松）
 gatk VariantFiltration \
-    -R reference/ecoli_K12.fasta \
+    -R ${REF} \
     -V indels_raw.vcf.gz \
-    --filter-expression "QD < 2.0"              --filter-name "QD2" \
-    --filter-expression "FS > 200.0"            --filter-name "FS200" \
-    --filter-expression "ReadPosRankSum < -2.0" --filter-name "ReadPosRankSum-2" \
+    --filter-expression "QD < 2.0"               --filter-name "QD2" \
+    --filter-expression "FS > 200.0"             --filter-name "FS200" \
+    --filter-expression "ReadPosRankSum < -20.0" --filter-name "ReadPosRankSum-20" \
+    --filter-expression "SOR > 10.0"             --filter-name "SOR10" \
     -O indels_filtered.vcf.gz
 
 # 合并并提取 PASS 变异 → 最终 variants.vcf
@@ -232,37 +653,43 @@ gatk SelectVariants \
 
 # 查看过滤后变异统计
 bcftools stats variants.vcf | grep "^SN"
+
+# 用 GIAB 真阳性集评估精度与召回率（rtg vcfeval）
+rtg vcfeval \
+    -b giab/HG002_chr21_truthset.vcf.gz \
+    -c variants.vcf \
+    -t reference/hg38_chr21.sdf \
+    -o eval_hardfilter/
 ```
 
-硬过滤的核心局限在于**阈值固定**：不同测序深度、不同物种、不同测序平台下，同一阈值的精度-召回率表现差异显著。当样本量充足时，GATK 推荐使用更精细的 **VQSR** 方法自适应地学习过滤边界。
+:::tip
+**用 GIAB 真阳性集量化过滤效果**
 
-### VQSR：变异质量分数重校正
-
-:::warning
-**适用范围：人类 WGS 队列（≥ 30 个样本）**
-
-VQSR 依赖人类专有的已知变异数据库（HapMap、1000 Genomes Omni、dbSNP）作为训练集，**不适用于细菌、植物或其他无配套公共变异库的物种**。本节教学数据集（*E. coli* SRR2584863）应使用上方的硬过滤方案；VQSR 的应用场景为人类 WGS 大型队列，如 UKBiobank、TOPMed 等项目。
+HG002 的 GIAB 真阳性变异集已对 chr21 全部位点做出"高置信"标注，可直接用 `rtg vcfeval` 或 `hap.py` 计算过滤前后的 Precision / Recall / F1，量化硬过滤阈值对假阳性和假阴性的具体影响——这是评估过滤策略最严格的方式。须通过 `--regions giab/HG002_chr21_confident.bed` 参数限定评估范围。
 :::
 
-**VQSR（Variant Quality Score Recalibration）** 是 GATK 针对人类中大型 WGS 队列（通常 ≥ 30 个样本）的推荐过滤策略。其核心思路是：用已知高质量变异数据集训练高斯混合模型，学习真实变异在多维质量特征空间中的分布，再为每个待过滤变异打出重校正后的置信分（VQSLOD），最终按分位线软过滤，而非预设固定阈值。
+### VQSR（大型队列演示）
 
-{{Wiki:Gaussian_mixture_model}}
+:::warning
+**单样本不适用 VQSR**
 
-训练所需的参考变异资源均来自 **GATK Resource Bundle**（hg38 版本），可从 Broad Institute 官方渠道下载：
+本节的 HG002 chr21 教学数据集只有 1 个样本，在实际生产中**不应对单样本运行 VQSR**（变异位点数不足以稳定训练高斯混合模型）。以下代码以人类 WGS 队列为概念演示：在真实项目中，须将 ≥ 30 个 WGS 样本的 GVCF 经 `GenomicsDBImport + GenotypeGVCFs` 合并为 `cohort.vcf.gz`，再运行 VQSR。
+:::
+
+首先下载 GATK hg38 Resource Bundle（约 20 GB，建议使用 gsutil）：
 
 ```bash
-# 下载 GATK hg38 Resource Bundle（约 20 GB，建议使用 gsutil）
-# 亦可从 https://gatk.broadinstitute.org/hc/en-us/articles/360035890811 获取 FTP 链接
 gsutil -m cp \
     gs://genomics-public-data/resources/broad/hg38/v0/hapmap_3.3.hg38.vcf.gz \
     gs://genomics-public-data/resources/broad/hg38/v0/1000G_omni2.5.hg38.vcf.gz \
     gs://genomics-public-data/resources/broad/hg38/v0/1000G_phase1.snps.high_confidence.hg38.vcf.gz \
     gs://genomics-public-data/resources/broad/hg38/v0/Homo_sapiens_assembly38.dbsnp138.vcf \
+    gs://genomics-public-data/resources/broad/hg38/v0/Mills_and_1000G_gold_standard.indels.hg38.vcf.gz \
     gs://genomics-public-data/resources/broad/hg38/v0/Homo_sapiens_assembly38.fasta \
     resource_bundle/
 ```
 
-以下以人类 WGS 队列（`cohort_hg38.vcf.gz`，来自 ≥ 30 个样本联合基因型定型）为例演示 VQSR 流程：
+以下以人类 WGS 队列（`cohort_hg38.vcf.gz`，假设已完成 ≥ 30 个样本的联合基因型定型）为例演示 VQSR 完整流程：
 
 ```bash
 REF=resource_bundle/Homo_sapiens_assembly38.fasta
@@ -316,182 +743,11 @@ gatk ApplyVQSR \
     -O cohort_final.vcf.gz
 ```
 
-:::note
-**先验权重（prior）的含义**
+## 步骤五：Python 解析与质量评估
 
-`--resource` 参数中的 `prior` 值（如 `prior=15.0`）表示该数据集中变异为真阳性的 log-odds 先验，数值越高表示越可信。HapMap（prior=15）是最高质量的已知变异集；dbSNP 中包含大量低频和错误条目，因此 prior 仅为 2.0，只用作已知变异标注而非训练。
-:::
+步骤四产生的 `variants.vcf` 是经过过滤的最终变异集。本步骤使用 Python 对其进行统计分析，验证过滤效果并可视化质量分布。
 
-| 资源集 | 用途 | known | training | truth | prior |
-|---|---|---|---|---|---|
-| HapMap 3.3 | SNP 真阳性训练集 | false | true | true | 15.0 |
-| 1000G Omni 2.5 | SNP 训练集 | false | true | false | 12.0 |
-| 1000G Phase 1 SNPs | SNP 训练集 | false | true | false | 10.0 |
-| dbSNP 138 | 已知变异标注 | true | false | false | 2.0 |
-| Mills 1000G Indels | Indel 真阳性训练集 | false | true | true | 12.0 |
-
-:::warning
-**VQSR 的样本量要求**
-
-SNP 模型至少需要约 30 个 WGS 样本才有足够的变异位点训练高斯混合模型。全外显子组测序（WES）因覆盖区域有限、变异数量不足，通常也使用硬过滤而非 VQSR。单样本分析（如本节 *E. coli* 教学示例）必须使用硬过滤。
-:::
-
----
-
-## GVCF 格式简介
-
-在标准 VCF 文件中，只有检测到变异的位点才会被记录；参考一致的区域会被直接跳过。这在单样本分析中没有问题，但当需要**多样本联合基因型定型（Joint Genotyping）**时，就会产生歧义：某个样本在某位置没有变异记录，究竟是"该位置测序深度足够、确认为参考纯合"，还是"该位置根本没有被测到"？两者的生物学含义截然不同，但在普通 VCF 中无法区分。
-
-GVCF（Genomic VCF）正是为解决这一问题而设计的 VCF 扩展格式。GVCF 对基因组**每一个位置**都写出记录：对于检测到变异的位点，格式与普通 VCF 相同；对于与参考一致的连续区域，则用一条**参考匹配块（Reference Block）**记录，以 `<NON_REF>` 作为占位 ALT 等位体，并用 `END` 字段标注该块的终止位置，从而压缩表示整段参考一致区域。
-
-这种设计使得多样本分析时，工具（如 `GATK GenotypeGVCFs`）可以在群体层面对每个位点做出正确的联合推断——即便某个样本在该位置没有变异，其参考深度信息也被完整保留。
-
-```text
-##gVCFVersion=v1.4
-#CHROM  POS     ID      REF     ALT          QUAL  FILTER  INFO         FORMAT    sample1
-chr1    10000   .       A       <NON_REF>    .     .       END=10010    GT:DP     0/0:50
-chr1    10011   .       C       T            50    PASS    DP=100       GT:DP:GQ  0/1:50:40
-chr1    10012   .       T       <NON_REF>    .     .       END=10100    GT:DP     0/0:48
-```
-
-上例中：chr1:10000–10010 为参考匹配块（深度 50X，单条记录压缩表示）；chr1:10011 为一个杂合 SNP；chr1:10012–10100 又回到参考匹配块。这种格式在样本数量较多时每个 GVCF 文件比普通 VCF 大约大 2–5 倍，但因此换来了联合分析所必需的完整信息。
-
----
-
-## 变异类型的系统分类与质量控制指标
-
-### 变异类型分类体系
-
-基因组变异按规模和机制可分为四大类，每类的检测方法和生物学影响存在本质差异：
-
-{{Wiki:Single-nucleotide_polymorphism}}
-
-| 类型 | 英文名称 | 规模 | 典型例子 | 主要检测工具 |
-|---|---|---|---|---|
-| **SNP** | Single Nucleotide Polymorphism | 1 bp | A → G | GATK HaplotypeCaller |
-| **Indel** | Insertion/Deletion | 1–50 bp | 插入 3 bp / 缺失 7 bp | GATK HaplotypeCaller |
-| **SV** | Structural Variant | > 50 bp | 倒位、易位、大缺失 | Manta、DELLY、Lumpy |
-| **CNV** | Copy Number Variant | kb–Mb | 基因组片段扩增/缺失 | CNVnator、GATK gCNV |
-
-本节重点关注 SNP 和 Indel，这是二代短读测序最擅长检测的类型。SV 和 CNV 因需要特殊分析框架，将在后续章节中专项介绍。
-
-:::note
-**SNP 与 SNV 的区别**
-
-**SNP（Single Nucleotide Polymorphism）** 特指在群体中频率 ≥ 1% 的单核苷酸变异，强调其**多态性**；**SNV（Single Nucleotide Variant）** 则泛指任何单碱基替换，包括频率极低的体细胞突变。肿瘤基因组学中习惯用 SNV，群体遗传学和 GWAS 中习惯用 SNP。两者在 VCF 文件中格式相同，仅概念范畴不同。
-:::
-
-### 碱基替换的两种类型
-
-单碱基替换按化学结构分为两类，这一分类是评估变异集质量的重要依据：
-
-{{Wiki:Transition_(genetics)}}
-
-| 类型 | 英文 | 方向 | 化学结构 |
-|---|---|---|---|
-| **转换（Transition）** | Ti | A ↔ G、C ↔ T | 嘌呤↔嘌呤 或 嘧啶↔嘧啶 |
-| **颠换（Transversion）** | Tv | A/G ↔ C/T 交叉 | 嘌呤↔嘧啶 |
-
-由于 DNA 聚合酶容错机制对化学结构相似的碱基替换（转换）更宽松，真实基因组中转换发生概率约为颠换的 2 倍。这一规律产生了重要的 QC 指标：
-
-$$\text{Ti/Tv ratio} = \frac{\text{转换 SNP 数}}{\text{颠换 SNP 数}}$$
-
-| 数据类型 | 期望 Ti/Tv | 偏低说明 | 偏高说明 |
-|---|---|---|---|
-| 全基因组 WGS | 2.0–2.1 | 假阳性偏多（错误倾向颠换） | 过度过滤颠换 |
-| 全外显子组 WES | 2.8–3.0 | 过滤不足 | 选择压力偏差 |
-| CpG 位点富集区 | > 3.5 | — | 正常（CpG 甲基化偏好 C→T 转换） |
-
-Ti/Tv 比值是变异集整体质量的"体温计"——偏离正常范围意味着过滤策略需要调整，而不是某个变异的问题。
-
-```r
-# R: 计算 Ti/Tv 比值（从 VCF 提取的 SNP 数据框）
-compute_titv <- function(snp_df) {
-  # snp_df 需含 ref 和 alt 列（单字符）
-  transitions  <- c("A>G", "G>A", "C>T", "T>C")
-  transversions <- c("A>C", "A>T", "G>C", "G>T",
-                     "C>A", "C>G", "T>A", "T>G")
-
-  change <- paste0(snp_df$ref, ">", snp_df$alt)
-  ti_count <- sum(change %in% transitions)
-  tv_count <- sum(change %in% transversions)
-
-  cat(sprintf("Transitions   : %d\n", ti_count))
-  cat(sprintf("Transversions : %d\n", tv_count))
-  cat(sprintf("Ti/Tv ratio   : %.3f\n", ti_count / tv_count))
-  cat(sprintf("Status        : %s\n",
-              ifelse(ti_count / tv_count >= 1.8 & ti_count / tv_count <= 3.5,
-                     "PASS (expected range)", "WARNING: check filtering")))
-}
-
-# 示例
-snps <- data.frame(
-  ref = c("A","C","T","G","A","C"),
-  alt = c("G","T","C","A","C","A")
-)
-compute_titv(snps)
-```
-
----
-
-## 实践：变异检测与 VCF 解析
-
-### 步骤一：生成实验用 VCF 文件
-
-本节的 Python 分析需要一个 VCF 文件作为输入。我们以规范教学数据集 *E. coli* K-12 MG1655（SRR2584863）为例，从 BWA 比对后的 BAM 文件出发，使用 GATK HaplotypeCaller 生成变异检测结果。若尚未完成比对步骤，请先参考专题 2.2 中的 BWA 比对流程。
-
-:::note
-**前置文件要求**
-
-以下命令假定已存在以下文件：
-- `ecoli_sorted.bam`：排序、去重后的比对文件（来自专题 2.2）
-- `ecoli_sorted.bam.bai`：对应的 BAI 索引文件
-- `reference/ecoli_K12.fasta`：参考基因组（来自 NCBI RefSeq，Accession: NC_000913.3）
-- `reference/ecoli_K12.fasta.fai` 和 `reference/ecoli_K12.dict`：参考基因组索引
-:::
-
-```bash
-# 1. 生成参考基因组索引（若尚未完成）
-samtools faidx reference/ecoli_K12.fasta
-gatk CreateSequenceDictionary -R reference/ecoli_K12.fasta
-
-# 2. 对 BAM 文件添加 Read Group 信息（GATK 必须字段）
-gatk AddOrReplaceReadGroups \
-    -I ecoli_sorted.bam \
-    -O ecoli_rg.bam \
-    --RGID SRR2584863 \
-    --RGLB lib1 \
-    --RGPL ILLUMINA \
-    --RGPU SRR2584863 \
-    --RGSM ecoli_sample
-samtools index ecoli_rg.bam
-
-# 3. 运行 HaplotypeCaller（生成 GVCF，再转为 VCF）
-gatk HaplotypeCaller \
-    -R reference/ecoli_K12.fasta \
-    -I ecoli_rg.bam \
-    -O ecoli_raw.g.vcf.gz \
-    -ERC GVCF
-
-# 4. 单样本 Joint Genotyping（GVCF → VCF）
-gatk GenotypeGVCFs \
-    -R reference/ecoli_K12.fasta \
-    -V ecoli_raw.g.vcf.gz \
-    -O variants_raw.vcf.gz
-
-# 5. 分别提取原始 SNP 和 Indel（供后续过滤节使用）
-gatk SelectVariants -R reference/ecoli_K12.fasta \
-    -V variants_raw.vcf.gz --select-type-to-include SNP \
-    -O snps_raw.vcf.gz
-
-gatk SelectVariants -R reference/ecoli_K12.fasta \
-    -V variants_raw.vcf.gz --select-type-to-include INDEL \
-    -O indels_raw.vcf.gz
-```
-
-至此，我们得到了两个未过滤的原始变异文件 `snps_raw.vcf.gz` 和 `indels_raw.vcf.gz`。**过滤策略的选择和具体参数**将在下一节详细讨论；最终的 `variants.vcf` 由过滤节的命令生成，作为后续 Python 分析的输入。对于 *E. coli* SRR2584863 数据集，经过滤后预期保留约 600–900 个高置信 SNP 和 50–150 个 Indel（具体数量因参考基因组版本和过滤参数而异）。
-
-### 步骤二：Python 解析与过滤 VCF
+### VCF 解析与过滤
 
 ```python
 import vcf
@@ -499,17 +755,14 @@ from collections import defaultdict
 
 class VCFAnalyzer:
     def __init__(self, vcf_file):
-        """Initialize VCF reader"""
         self.vcf_reader = vcf.Reader(filename=vcf_file)
         self.variants = []
 
     def parse_vcf(self):
-        """Parse all variants"""
         for record in self.vcf_reader:
             self.variants.append(record)
 
     def quality_distribution(self):
-        """Analyze QUAL score distribution"""
         quals = [v.QUAL for v in self.variants if v.QUAL is not None]
 
         print("\n=== 质量评分分布 ===")
@@ -521,7 +774,6 @@ class VCFAnalyzer:
         print(f"QUAL >= 50: {len([q for q in quals if q >= 50])} ({len([q for q in quals if q >= 50]) / len(quals) * 100:.1f}%)")
 
     def variant_type_distribution(self):
-        """Count SNP vs Indel"""
         snp_count = 0
         indel_count = 0
         other_count = 0
@@ -543,7 +795,6 @@ class VCFAnalyzer:
         print(f"其他: {other_count}")
 
     def depth_analysis(self):
-        """Analyze DP (depth) distribution"""
         depths = []
 
         for v in self.variants:
@@ -562,15 +813,12 @@ class VCFAnalyzer:
             print(f"最大深度: {max(depths)}X")
 
     def filter_variants(self, qual_min=50, dp_min=10, dp_max=300):
-        """Filter variants based on quality criteria"""
         filtered = []
 
         for v in self.variants:
-            # Quality check
             if v.QUAL is None or v.QUAL < qual_min:
                 continue
 
-            # Depth check
             if 'DP' in v.INFO:
                 dp = v.INFO['DP']
                 if isinstance(dp, list):
@@ -578,7 +826,6 @@ class VCFAnalyzer:
                 if dp < dp_min or dp > dp_max:
                     continue
 
-            # QD check (Quality/Depth ratio)
             if 'QD' in v.INFO:
                 qd = v.INFO['QD']
                 if isinstance(qd, list):
@@ -596,7 +843,6 @@ class VCFAnalyzer:
         return filtered
 
     def genotype_analysis(self):
-        """Analyze genotype distribution"""
         gt_counts = defaultdict(int)
 
         for v in self.variants:
@@ -608,7 +854,7 @@ class VCFAnalyzer:
         for gt, count in sorted(gt_counts.items()):
             print(f"  {gt}: {count}")
 
-# 使用示例
+
 if __name__ == "__main__":
     analyzer = VCFAnalyzer("variants.vcf")
     analyzer.parse_vcf()
@@ -619,11 +865,9 @@ if __name__ == "__main__":
     filtered = analyzer.filter_variants(qual_min=50, dp_min=10, dp_max=300)
 ```
 
-### 手工计算基因型质量
+### 基因型质量手工计算
 
 ```python
-import math
-
 def calculate_genotype_quality(pl_values):
     """
     PL (Phred-Likelihood) 是各基因型的负对数似然
@@ -641,17 +885,15 @@ def calculate_genotype_quality(pl_values):
     gq = sorted_pl[1] - sorted_pl[0]
     return gq
 
-# 示例计算
-pl_example = [0, 30, 100]  # 假设三个基因型的似然
+
+pl_example = [0, 30, 100]
 gq = calculate_genotype_quality(pl_example)
 print(f"PL 值: {pl_example}")
-print(f"GQ = {gq}")  # 输出: GQ = 30
-
-# 解释: 第二好的基因型（0/1）比最好的基因型（0/0）低 30 PHRED
-#      即该位点为杂合的置信度为 99.9%（Q30 = 0.1% 错误率）
+print(f"GQ = {gq}")
+# 输出: GQ = 30
+# 含义: 第二好基因型（0/1）比最好基因型（0/0）低 30 PHRED，
+#       即该位点为杂合的置信度为 99.9%（Q30 = 0.1% 错误率）
 ```
-
----
 
 ## 课后自测 (Post-Lesson Quiz)
 
@@ -684,12 +926,10 @@ print(f"GQ = {gq}")  # 输出: GQ = 30
 
 </details>
 
----
-
 ## 总结
 
-✓ **变异检测** 的核心是区分真实生物学变异和测序/比对错误
-✓ **贝叶斯模型**（如 GATK）比频率法更准确，考虑质量和先验知识
-✓ **VCF 格式** 是变异信息的标准存储格式，包含质量、基因型、注释等信息
-✓ **过滤策略** 需要综合考虑 QUAL、DP、QD、位置偏差等多个指标
-✓ **GVCF** 记录所有位置的基因型，支持多样本联合分析
+- **变异类型**按规模分为 SNP、Indel、SV、CNV 四类；Ti/Tv 比值是 SNP 集合整体质量的关键 QC 指标
+- **贝叶斯模型**（GATK HaplotypeCaller）通过局部重组装和先验信息，显著优于简单频率法
+- **VCF 格式**是变异信息的通用存储标准；GVCF 扩展了 VCF 以支持多样本联合分析
+- **过滤策略**需综合 QUAL、DP、QD、链偏倚等多指标；单样本用硬过滤，大型队列用 VQSR
+- **GIAB 真阳性集**提供了量化过滤效果的黄金标准，可精确计算 Precision / Recall / F1
