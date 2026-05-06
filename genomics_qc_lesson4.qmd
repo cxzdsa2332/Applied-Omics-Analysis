@@ -35,7 +35,7 @@ format:
 | **SV** | Structural Variant | > 50 bp | 倒位、易位、大缺失 | Manta、DELLY、Lumpy |
 | **CNV** | Copy Number Variant | kb–Mb | 基因组片段扩增/缺失 | CNVnator、GATK gCNV |
 
-本节重点关注 SNP 和 Indel，这是二代短读测序最擅长检测的类型。SV 和 CNV 因需要特殊分析框架，将在后续章节中专项介绍。
+本节重点关注 SNP 和 Indel，这是二代短读测序最擅长检测的类型。
 
 :::note
 **SNP 与 SNV 的区别**
@@ -289,6 +289,83 @@ $$\text{QUAL} = -10 \log_{10}(P_{\text{error}})$$
 
 **VQSR（Variant Quality Score Recalibration）** 是 GATK 针对人类中大型 WGS 队列（通常 ≥ 30 个样本）的推荐过滤策略。其核心思路是：用已知高质量变异数据集训练高斯混合模型，学习真实变异在多维质量特征空间中的分布，再为每个待过滤变异打出重校正后的置信分（VQSLOD），最终按分位线软过滤，而非预设固定阈值。
 
+以下 R 代码通过模拟数据演示 VQSR 的统计核心：高斯混合模型如何在多维特征空间中区分真实变异与测序错误，并生成连续的置信度评分（VQSLOD）用于 tranche 过滤。
+
+```r
+library(mclust)
+library(ggplot2)
+
+# ── 1. Simulate variant features (QD and MQ for two classes) ─────────────────
+set.seed(42)
+n_true  <- 1000
+n_false <- 500
+
+data <- data.frame(
+  QD     = c(rnorm(n_true,  mean = 28, sd = 4),  rnorm(n_false, mean = 12, sd = 6)),
+  MQ     = c(rnorm(n_true,  mean = 60, sd = 2),  rnorm(n_false, mean = 40, sd = 10)),
+  actual = factor(c(rep("True_Variant", n_true), rep("False_Artifact", n_false)))
+)
+
+# Raw feature space: the two classes overlap — fixed hard cutoffs fail here
+ggplot(data, aes(x = MQ, y = QD, color = actual)) +
+  geom_point(alpha = 0.4, size = 0.8) +
+  theme_minimal() +
+  labs(title = "Raw variant features (before VQSR)",
+       subtitle = "Simple hard cutoffs cannot cleanly separate the two classes")
+
+# ── 2. Fit Gaussian Mixture Model (unsupervised — labels not used) ────────────
+features  <- data[, c("QD", "MQ")]
+gmm_model <- Mclust(features, G = 2)
+
+# ── 3. Compute pseudo-VQSLOD = log10( P(true cluster) / P(artifact cluster) ) ─
+# Identify the component with higher mean MQ as the "true variant" cluster
+true_component <- which.max(gmm_model$parameters$mean["MQ", ])
+P_true  <- gmm_model$z[,  true_component]
+P_false <- gmm_model$z[, -true_component]
+
+data$VQSLOD <- log10((P_true + 1e-10) / (P_false + 1e-10))
+
+# VQSLOD landscape: high-quality variants score blue, artifacts score red
+ggplot(data, aes(x = MQ, y = QD, color = VQSLOD)) +
+  geom_point(alpha = 0.6, size = 0.8) +
+  scale_color_gradient2(low = "red", mid = "white", high = "steelblue", midpoint = 0) +
+  theme_minimal() +
+  labs(title = "VQSLOD scores from GMM (pseudo-VQSR)",
+       subtitle = "Continuous score replaces fixed threshold; blue = high confidence")
+
+# ── 4. Simulate 99% sensitivity tranche ──────────────────────────────────────
+# Find the VQSLOD cutoff that retains 99% of true variants (1% false-negative rate)
+threshold_99 <- quantile(data$VQSLOD[data$actual == "True_Variant"], 0.01)
+cat(sprintf("99%% sensitivity tranche threshold: VQSLOD >= %.3f\n", threshold_99))
+
+data$filter <- ifelse(data$VQSLOD >= threshold_99, "PASS", "FILTERED")
+
+# Score distribution with the tranche cutoff line
+ggplot(data, aes(x = VQSLOD, fill = actual)) +
+  geom_histogram(binwidth = 0.2, alpha = 0.6, position = "identity") +
+  geom_vline(xintercept = threshold_99, linetype = "dashed") +
+  annotate("text", x = threshold_99 + 0.1, y = Inf, vjust = 2,
+           label = "99% tranche", hjust = 0, size = 3) +
+  theme_minimal() +
+  labs(title = "VQSLOD distribution and 99% sensitivity tranche",
+       x = "VQSLOD", y = "Count")
+
+# Confusion matrix and precision / recall
+cm <- table(Actual = data$actual, Filter = data$filter)
+print(cm)
+tp <- cm["True_Variant",   "PASS"]
+fp <- cm["False_Artifact", "PASS"]
+fn <- cm["True_Variant",   "FILTERED"]
+cat(sprintf("Precision : %.1f%%\n", tp / (tp + fp) * 100))
+cat(sprintf("Recall    : %.1f%%\n", tp / (tp + fn) * 100))
+```
+
+:::tip
+**从模拟结果理解 VQSR 的设计哲学**
+
+上述代码演示了三个关键洞察：其一，GMM 以**无监督**方式学习特征分布——真实 GATK VQSR 同样不依赖人工标注，而是从已知变异数据库的统计特征中自动推断类别边界；其二，VQSLOD 是**连续评分**而非二值判断，允许研究者在精度与召回率之间灵活权衡；其三，"99% sensitivity tranche"意味着接受约 1% 的真实变异损失，以换取大幅压缩假阳性——不同阈值对应不同的 Precision / Recall 曲线，最优点取决于下游分析目标。
+:::
+
 训练所需的参考变异资源均来自 **GATK Resource Bundle**（hg38 版本）：
 
 | 资源集 | 用途 | known | training | truth | prior |
@@ -324,7 +401,7 @@ VQSR 的完整命令及所需资源文件下载见实践部分步骤四。
 | 模块 | 来源 | 下载体积 | 解压/处理后体积 | 估计耗时（百兆网） |
 |-----|------|---------|--------------|-----------------|
 | A. hg38 chr21 参考 | UCSC | ~60 MB | ~70 MB | 2 min |
-| B. HG002 chr21 BAM | GIAB ftp（流式截取） | ~1.2 GB | ~800 MB (FASTQ) | 20–40 min |
+| B. HG002 chr21 BAM | GIAB ftp（流式截取） | ~1.2 GB | ~800 MB (sorted BAM) | 20–40 min |
 | C. GIAB 真阳性 VCF | GIAB ftp | ~1.4 GB | ~50 MB (chr21 子集) | 15–25 min |
 | **合计磁盘占用** | — | — | **≈ 2 GB** | — |
 
@@ -393,28 +470,24 @@ samtools sort -@ 4 -o hg002_chr21/HG002_chr21_sorted.bam \
 samtools index hg002_chr21/HG002_chr21_sorted.bam
 
 # ── B3. 验证 BAM 文件完整性 ────────────────────────────────────────────────
-# 预期：总 reads ~6,000,000–8,000,000，平均深度 ~280–320×（chr21 约 46.7 Mb）
+# 预期：总 reads ~15,400,000，比对率 ~97.9%，平均深度 ~47.6×（chr21 约 46.7 Mb）
+mkdir -p logs
 samtools flagstat hg002_chr21/HG002_chr21_sorted.bam | tee logs/flagstat_chr21.txt
 
 # 估算平均覆盖深度
 samtools depth -a hg002_chr21/HG002_chr21_sorted.bam \
     | awk '{sum+=$3; n++} END {printf "Mean depth: %.1fX\n", sum/n}'
 
-# ── B4. BAM → 双端 FASTQ（用于从头比对，重建 Read Group）──────────────────────
-# -n: 使用 read 名作为 FASTQ 标题（保留配对信息）
-samtools sort -n -@ 4 -o hg002_chr21/HG002_chr21_namesort.bam \
-    hg002_chr21/HG002_chr21_sorted.bam
-
-samtools fastq -@ 4 \
-    hg002_chr21/HG002_chr21_namesort.bam \
-    -1 hg002_chr21/HG002_chr21_R1.fastq.gz \
-    -2 hg002_chr21/HG002_chr21_R2.fastq.gz \
-    -0 /dev/null -s /dev/null -n
-
-# 验证：查看 FASTQ 条数（R1 与 R2 应相同，每条 read 占 4 行）
-echo "R1 read count: $(zcat hg002_chr21/HG002_chr21_R1.fastq.gz | wc -l | awk '{print $1/4}')"
-echo "R2 read count: $(zcat hg002_chr21/HG002_chr21_R2.fastq.gz | wc -l | awk '{print $1/4}')"
-# 预期约 3,000,000–4,000,000 条 read（双端各一份）
+# ── B4. 验证 Read Group 字段（GATK 必须字段）──────────────────────────────────
+# GIAB 原始 BAM 已含 @RG header；确认 SM、LB、PL 字段存在
+samtools view -H hg002_chr21/HG002_chr21_sorted.bam | grep "^@RG"
+# 预期输出示例：@RG  ID:...  SM:HG002  LB:...  PL:ILLUMINA  PU:...
+# 若输出为空，执行下方 AddOrReplaceReadGroups 补充（否则 GATK 将报错）
+# gatk AddOrReplaceReadGroups \
+#     -I hg002_chr21/HG002_chr21_sorted.bam \
+#     -O hg002_chr21/HG002_chr21_rg.bam \
+#     -RGID HG002_chr21 -RGSM HG002 -RGLB lib1 -RGPL ILLUMINA -RGPU unit1
+# samtools index hg002_chr21/HG002_chr21_rg.bam
 ```
 
 :::warning
@@ -454,7 +527,7 @@ fasterq-dump --split-files SRR2052381 -O hg002_chr21/
 
 ### 子步骤 C：下载 GIAB 真阳性变异集并截取 chr21
 
-GIAB（Genome in a Bottle）联盟发布的 NISTv4.2.1 基准变异集是目前最权威的人类基因组 ground-truth 数据，涵盖全基因组所有常染色体。其中 chr21 的真阳性 SNP 约 68,000 个、Indel 约 8,200 个，且每个变异均有对应的**高置信区间（confident region）**的 BED 文件，仅在测序和组装质量均达标的区域内进行评估。全基因组 VCF 约 1.4 GB，下载后仅需截取 chr21 子集（约 50 MB）供本节使用。
+GIAB（Genome in a Bottle）联盟发布的 NISTv4.2.1 基准变异集是目前最权威的人类基因组 ground-truth 数据，涵盖全基因组所有常染色体。其中 chr21 的真阳性 SNP 46,488 个、Indel 8,756 个（共 55,210 条记录，含 602 个多等位位点），且每个变异均有对应的**高置信区间（confident region）**的 BED 文件，仅在测序和组装质量均达标的区域内进行评估。全基因组 VCF 约 1.4 GB，下载后仅需截取 chr21 子集（约 50 MB）供本节使用。
 
 ```bash
 GIAB_BASE="ftp://ftp-trace.ncbi.nlm.nih.gov/giab/ftp/release/AshkenazimTrio/\
@@ -482,9 +555,10 @@ grep "^chr21" giab/HG002_GRCh38_1_22_v4.2.1_benchmark_noinconsistent.bed \
 # ── C3. 验证真阳性集内容 ─────────────────────────────────────────────────────
 bcftools stats giab/HG002_chr21_truthset.vcf.gz | grep "^SN"
 # 预期输出示例：
-#   SN  0  Number of SNPs:   68231
-#   SN  0  Number of indels:  8174
-# 查看高置信区间覆盖 chr21 的比例（约 88–92%）
+#   SN  0  number of SNPs:    46488
+#   SN  0  number of indels:   8756
+#   SN  0  number of records:  55210
+# 查看高置信区间覆盖 chr21 的比例（实测约 68%，即 31.8 Mb）
 awk '{sum += $3-$2} END {printf "Confident region: %.1f Mb (%.1f%%)\n",
     sum/1e6, sum/46709983*100}' giab/HG002_chr21_confident.bed
 ```
@@ -492,7 +566,7 @@ awk '{sum += $3-$2} END {printf "Confident region: %.1f Mb (%.1f%%)\n",
 :::note
 **高置信区间 BED 的作用**
 
-GIAB 的评估框架只在 `benchmark_noinconsistent.bed` 标注的区域内计算 Precision 和 Recall。chr21 约 8–12% 的区域因存在重复序列、低复杂度区域或测序深度不足而被排除在外。在后续 `rtg vcfeval` 或 `hap.py` 评估时，须通过 `--regions` 参数传入该 BED 文件，否则在置信区域外出现的变异差异会错误地计入假阳性或假阴性。
+GIAB 的评估框架只在 `benchmark_noinconsistent.bed` 标注的区域内计算 Precision 和 Recall。chr21 约 32% 的区域（~14.9 Mb）因存在重复序列、低复杂度区域或测序深度不足而被排除在外，实际高置信区间为 31.8 Mb（占 chr21 的 68.0%）。在后续 `rtg vcfeval` 或 `hap.py` 评估时，须通过 `--regions` 参数传入该 BED 文件，否则在置信区域外出现的变异差异会错误地计入假阳性或假阴性。
 :::
 
 ### 子步骤 D：目录结构验证
@@ -505,8 +579,8 @@ ls -lh reference/hg38_chr21.fasta        # ~70 MB
 ls -lh reference/hg38_chr21.fasta.fai    # <1 MB
 ls -lh reference/hg38_chr21.dict         # <1 MB
 ls -lh reference/hg38_chr21.fasta.bwt    # ~70 MB
-ls -lh hg002_chr21/HG002_chr21_R1.fastq.gz  # ~600–800 MB
-ls -lh hg002_chr21/HG002_chr21_R2.fastq.gz  # ~600–800 MB
+ls -lh hg002_chr21/HG002_chr21_sorted.bam   # ~800 MB
+ls -lh hg002_chr21/HG002_chr21_sorted.bam.bai  # <1 MB
 ls -lh giab/HG002_chr21_truthset.vcf.gz     # ~3–5 MB
 ls -lh giab/HG002_chr21_confident.bed       # <1 MB
 
@@ -514,36 +588,29 @@ ls -lh giab/HG002_chr21_confident.bed       # <1 MB
 echo "=== Dataset Summary ===" > logs/dataset_summary.txt
 echo "Reference chr21 size:" >> logs/dataset_summary.txt
 awk '{print $2, "bp"}' reference/hg38_chr21.fasta.fai >> logs/dataset_summary.txt
-echo "FASTQ read counts (R1):" >> logs/dataset_summary.txt
-zcat hg002_chr21/HG002_chr21_R1.fastq.gz | awk 'NR%4==1' | wc -l \
-    >> logs/dataset_summary.txt
+echo "BAM total reads:" >> logs/dataset_summary.txt
+samtools view -c hg002_chr21/HG002_chr21_sorted.bam >> logs/dataset_summary.txt
 echo "Truth set variants (chr21):" >> logs/dataset_summary.txt
 bcftools stats giab/HG002_chr21_truthset.vcf.gz \
     | grep "^SN" >> logs/dataset_summary.txt
 cat logs/dataset_summary.txt
 ```
 
-## 步骤二：BWA 比对与预处理
+## 步骤二：预处理（MarkDuplicates + BQSR）
+
+由于子步骤 B 截取的 BAM 来自 GIAB 官方已比对文件（Novoalign 比对至 GRCh38），无需重新执行 BWA 比对，直接从排序 BAM 开始进行预处理。
 
 ```bash
 REF=reference/hg38_chr21.fasta
 SAMPLE=HG002_chr21
+INPUT_BAM=hg002_chr21/HG002_chr21_sorted.bam
 
-# 1. BWA-MEM 比对（添加 Read Group，GATK 必须字段）
-bwa mem -t 8 \
-    -R "@RG\tID:${SAMPLE}\tSM:HG002\tLB:lib1\tPL:ILLUMINA\tPU:${SAMPLE}" \
-    ${REF} \
-    hg002_chr21/HG002_chr21_R1.fastq.gz \
-    hg002_chr21/HG002_chr21_R2.fastq.gz \
-    | samtools sort -@ 4 -o ${SAMPLE}_sorted.bam
-
-samtools index ${SAMPLE}_sorted.bam
-
-# 2. 标记 PCR 重复（MarkDuplicates）
+# 1. 标记 PCR 重复（MarkDuplicates）
+# 输入为子步骤 B 截取并排序的 BAM，输出去重标记后的文件
 gatk MarkDuplicates \
-    -I ${SAMPLE}_sorted.bam \
+    -I ${INPUT_BAM} \
     -O ${SAMPLE}_dedup.bam \
-    -M ${SAMPLE}_dup_metrics.txt
+    -M logs/${SAMPLE}_dup_metrics.txt
 samtools index ${SAMPLE}_dedup.bam
 
 # 3. BQSR：下载 hg38 dbSNP 并截取 chr21 区域（用于已知变异位点排除）
