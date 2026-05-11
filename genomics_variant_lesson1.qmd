@@ -1,2 +1,720 @@
-# 第三章 课时1
+---
+title: "经典分子标记、遗传图谱与 QTL 定位"
+date: today
+format:
+  html:
+    code-fold: false
+    toc: true
+    toc-depth: 3
+    number-sections: true
+    theme: cosmo
+---
 
+# 从表型到基因型：遗传标记的意义
+
+遗传学研究的核心任务之一，是将可以观测的**表型差异**（身高、产量、疾病易感性）与不可直接观测的**基因组差异**联系起来。完成这一联系的桥梁，是**遗传标记（Genetic Marker）**——一种可以在个体间区分遗传差异、且位置已知于基因组的 DNA 片段或序列特征。
+
+在 DNA 分子标记出现之前，遗传学家只能使用形态学标记（如豌豆的颜色与形状）或同工酶标记来追踪基因的遗传。这类标记数量极少，且性状本身的表达受环境影响，严重限制了遗传图谱的构建精度。20 世纪 80 年代，DNA 限制性片段长度多态性（RFLP）标记的出现打破了这一局限，开启了基因组时代分子标记的历史。
+
+:::note
+**一个好的遗传标记应具备哪些性质？**
+
+1. **可靠区分个体**：在不同基因型间呈现稳定的多态性
+2. **已知基因组位置**：能够锚定在遗传图谱或物理图谱上
+3. **共显性优先**：能区分杂合子与两种纯合子，信息量更高
+4. **操作简便、通量高、重现性好**：适合大规模基因分型
+5. **中性（对表型无直接影响）**：作为位置标志，不应本身影响所研究的性状
+:::
+
+本专题将沿着技术演进的历史脉络，系统讲解 RFLP、AFLP、SSR 三代经典分子标记的原理与应用，随后深入遗传图谱的构建逻辑和 QTL 定位方法——这是理解后续 GWAS 分析的必要历史背景。
+
+---
+
+# 第一代分子标记：RFLP
+
+## 限制性内切酶：序列特异性"分子剪刀"
+
+RFLP 的技术基础是**限制性内切酶（Restriction Endonuclease）**。这类酶来源于细菌的免疫系统，能识别 DNA 上 4–8 bp 的特定序列（识别位点），并在此处精确切割双链 DNA。由于不同个体在这些识别位点上可能存在碱基差异（如 GAATTC 变为 GAATCC，导致 *Eco*RI 无法切割），切割后产生的片段长度因人而异——这种长度差异即为**限制性片段长度多态性**。
+
+{{Wiki:Restriction_fragment_length_polymorphism}}
+
+## RFLP 的检测流程
+
+RFLP 的检测依赖于**Southern 印迹杂交**，步骤如下：
+
+```
+1. 提取基因组 DNA
+         ↓
+2. 用限制性内切酶消化 DNA（产生大量不同长度的片段）
+         ↓
+3. 琼脂糖凝胶电泳分离片段（按长度）
+         ↓
+4. 变性 + 转膜（Southern Blotting）：将 DNA 从凝胶转移到硝酸纤维素膜
+         ↓
+5. 与放射性标记的探针杂交（探针对应目标标记区域）
+         ↓
+6. 放射自显影或荧光成像：显示出杂交条带的位置与数量
+```
+
+个体基因型的判断依赖于条带的数目和大小：
+- **纯合子 AA**：只有一个（或一组）条带，对应 A 等位体的限制性片段
+- **纯合子 aa**：只有另一个（或一组）条带
+- **杂合子 Aa**：同时出现两种条带
+
+这使 RFLP 成为**共显性标记**——这在当时是极大的优势，因为共显性标记能够充分区分三种基因型，提供更多的遗传信息量。
+
+## RFLP 的历史意义与局限
+
+1980 年，David Botstein 等人在《美国人类遗传学杂志》发表奠基性论文，系统阐述了利用 RFLP 构建人类全基因组遗传图谱的可行性。这篇文章是遗传学史上的里程碑——它第一次以清晰的数学逻辑证明，只需足够密度的标记，就可以在任何生物中追踪任何基因的遗传。
+
+然而，RFLP 在实际应用中存在明显的局限：
+- **通量极低**：每个 Southern 杂交实验只能检测 1–2 个标记位点；构建一张覆盖整个基因组的图谱需要数年时间
+- **操作繁琐、成本高**：依赖放射性标记，对实验室设施要求严格
+- **需要大量高质量 DNA**：Southern 杂交对 DNA 质量和用量的要求远高于 PCR
+- **多态性有限**：仅有两个等位体（有或无切割位点），每个位点的信息量相对较低
+
+尽管如此，RFLP 在随后十年间仍成功构建了玉米、大豆、水稻等重要作物的遗传图谱，并用于人类遗传病的连锁定位（如亨廷顿病的定位早在 1983 年就利用 RFLP 实现）。
+
+---
+
+# 第二代分子标记：AFLP 与 SSR
+
+PCR 技术（1983 年发明）的出现彻底改变了分子标记的面貌：不再需要 Southern 杂交和放射性标记，只需微量 DNA 即可在数小时内完成分型。AFLP 和 SSR 是 PCR 时代最具代表性的两类标记，分别在高通量指纹与精准共显性分型方面各有所长。
+
+## AFLP：高通量指纹标记
+
+**AFLP（Amplified Fragment Length Polymorphism，扩增片段长度多态性）** 由 Marc Vos 等人于 1995 年提出，其设计思路是将限制酶的特异性与 PCR 的扩增能力相结合，以"变通"的方式同时检测数百个多态性位点。
+
+{{Wiki:Amplified_fragment_length_polymorphism}}
+
+### AFLP 的五步技术流程
+
+```
+步骤 1：限制酶双消化
+  基因组 DNA + 两种限制酶（如 EcoRI + MseI）
+  → 产生两种末端类型的片段：EcoRI-末端 和 MseI-末端
+  → 重点关注两端不同的片段（EcoRI/MseI 杂合片段）
+
+步骤 2：接头连接（Adapter Ligation）
+  在每种末端连接对应的双链接头（已知序列）
+  → 片段两端获得已知序列，为后续 PCR 提供引物锚定位置
+
+步骤 3：预扩增（Pre-amplification）
+  使用仅在接头序列基础上添加 1 个选择性碱基的引物扩增
+  → 将片段总数降至可处理范围（约 1/4 的原始片段）
+
+步骤 4：选择性扩增（Selective Amplification）
+  使用在接头序列基础上添加 3 个选择性碱基的引物扩增
+  → 每个引物组合只能扩增含有对应选择性碱基的片段
+  → 一次反应通常产生 50–150 个片段，分辨率高
+
+步骤 5：毛细管电泳检测
+  荧光标记的 PCR 产物通过毛细管电泳分离
+  → 按片段大小产生"指纹图谱"（electroferogram）
+```
+
+### AFLP 的核心特点
+
+AFLP 最大的优势是**无需任何序列信息**即可应用于任何生物——这在基因组信息匮乏的年代极为重要。其次，一次 AFLP 实验可产生数百个多态性位点，通量远优于 RFLP 和 SSR。
+
+然而，AFLP 是**显性标记**：电泳图谱上的条带只能判断"有"（1）或"无"（0），无法区分杂合子（Aa，有条带）与纯合子（AA，同样有条带）。这一局限导致 AFLP 的信息量低于共显性标记，使其更适合亲缘关系分析、品种区分和初步遗传图谱构建，而不适合精细的 QTL 定位（因为无法估算显隐性效应）。
+
+### AFLP 评分矩阵
+
+```
+          标记1  标记2  标记3  标记4  标记5
+样品 A     1      0      1      1      0
+样品 B     1      1      0      1      1
+样品 C     0      0      1      0      1
+样品 D     1      1      1      0      0
+
+说明：1 = 有条带（至少一个等位体），0 = 无条带
+     无法区分 AA（纯合有带）与 Aa（杂合有带）
+```
+
+## SSR：共显性高信息量标记
+
+**SSR（Simple Sequence Repeat，简单序列重复）**，又称**微卫星（Microsatellite）**，是目前为止设计最优雅的经典分子标记。其多态性来源不是限制性位点的有无，而是短串联重复序列的**拷贝数差异**——一种比点突变更为活跃的突变形式。
+
+{{Wiki:Microsatellite}}
+
+### SSR 的多态性来源：复制滑移
+
+基因组中广泛分布着由 1–6 bp 的基序（motif）串联重复的序列，例如：
+
+```
+(CA)n 重复：...CACACACACACA...
+(AT)n 重复：...ATATATATAT...
+(AAT)n 重复：...AATAATAATAATAATAATAATAATAAT...
+```
+
+在 DNA 复制过程中，**聚合酶偶尔会在重复序列上发生"滑移"（Replication Slippage）**：新合成链与模板链之间发生错误配对，导致重复单元的增加或减少。这一过程的发生概率（约 $10^{-4}$ 每位点每代）远高于点突变（约 $10^{-8}$），因此 SSR 具有**极高的多态性**——不同个体间往往存在许多不同的拷贝数等位体（通常 5–30 个），信息量远超 RFLP。
+
+```
+突变示意（(CA)n 重复）：
+
+亲代序列：  ...CACACACACA...  (n=5)
+后代 1：    ...CACACACACACA...  (n=6，增加 1 个单元)
+后代 2：    ...CACACACA...  (n=4，减少 1 个单元)
+```
+
+### SSR 的检测流程
+
+1. **引物设计**：针对 SSR 两侧的**保守侧翼序列**设计特异性 PCR 引物（需要知道侧翼序列，这是 SSR 的主要前期成本）
+2. **PCR 扩增**：用荧光标记的引物扩增目标 SSR 区域
+3. **毛细管电泳**：产物通过高分辨率毛细管电泳分离，精确区分相差 2 bp（对于 2 bp 重复单元）的不同等位体
+4. **等位体判读**：读取每个位点的荧光峰位置和大小，记录各样品在该位点的等位体组成
+
+由于 SSR 等位体仅存在大小差异（拷贝数），一个个体在某 SSR 位点上最多有两个等位体（杂合子），可以明确判断纯合与杂合状态——这是 SSR 作为**共显性标记**的体现。
+
+### SSR 的典型应用场景
+
+**亲子鉴定**：每个 SSR 位点子代的等位体必须各来自亲代之一（孟德尔分离）；多个 SSR 位点联合使用可达到极高的排除概率（> 99.9999%）。人类 ABO 血型 + 13 个 SSR 位点的组合曾是法医鉴定的黄金标准。
+
+**品种鉴定与指纹图谱**：在水稻、玉米、小麦等重要作物中，20–30 个 SSR 位点的组合即可唯一鉴定每个品种，是植物品种保护法律认定的技术基础。
+
+**遗传多样性研究**：基于多个 SSR 位点的基因型数据，可计算个体/群体间的遗传距离，构建系统发育树，用于种群遗传结构分析。
+
+**遗传图谱构建**：SSR 的共显性、高多态性使其成为 1990 年代至 2000 年代初遗传图谱构建的首选标记，许多重要农作物的第一代高密度遗传图谱以 SSR 为主要标记构建。
+
+---
+
+# 标记辅助选择（MAS）
+
+经典分子标记最重要的实用价值之一，是在育种中实现**标记辅助选择（Marker-Assisted Selection，MAS）**。传统育种依赖表型观测——要等作物生长成熟、表型充分表达后才能选择，费时费力，且受环境影响严重。MAS 的核心思路是：如果某个标记与目标性状（如抗病基因）紧密连锁，就可以在**幼苗期**通过检测 DNA 标记的基因型来预测性状，大幅加速选择进程。
+
+{{Wiki:Marker-assisted_selection}}
+
+```
+传统育种流程（以主效抗病基因为例）：
+
+F1 杂交 → F2 植株（需长至成熟才能鉴定表型）
+    ↓
+接种病原体，观察发病情况（4–8 周）
+    ↓
+选择抗性植株自交 → F3 ...（重复多代）
+
+MAS 流程：
+
+F1 杂交 → F2 植株（取幼叶提取 DNA，1–2 周）
+    ↓
+PCR 检测与抗性基因紧密连锁的 SSR 标记
+    ↓
+直接选择携带目标标记基因型的植株自交
+（无需等待表型，可提前 4–6 周做出选择决策）
+```
+
+MAS 在以下场景中尤其有价值：
+
+- **选择不可见性状**：如抗根线虫、抗土传病害，需要特殊接种条件
+- **选择晚显性状**：如木材质量、抗旱性，需多年等待才能观测
+- **基因聚合（Gene Pyramiding）**：将多个抗病基因（通常来自不同品种）聚合到同一背景中，同时检测多个标记即可确认多基因是否同时被选入
+
+MAS 在水稻抗稻瘟病育种（Pi 基因系列）、小麦抗锈病育种（Lr/Yr/Sr 基因）、大豆孢囊线虫抗性育种等领域已有大量成功应用。
+
+:::tip
+**MAS 的核心前提**
+
+MAS 的有效性依赖于**标记与目标基因之间足够小的遗传距离**（通常 < 5 cM）。若标记距目标基因较远，则在世代推进中发生重组的概率不可忽视，标记与目标基因会发生"分离"，导致选择失效。因此，识别与目标基因紧密连锁的标记（即前一节中描述的 QTL 精细定位）是 MAS 的技术基础。
+:::
+
+---
+
+# 实践：SSR 数据分析与遗传距离计算
+
+下面通过 R 代码演示 SSR 数据的标准分析流程：从原始等位体得分矩阵出发，计算 Nei 遗传距离，并构建 UPGMA 聚类树。这一流程在群体遗传结构分析和品种鉴定中广泛应用。
+
+```r
+# R: SSR data analysis - Nei's genetic distance and UPGMA tree
+# Data: 8 accessions genotyped at 5 SSR loci
+# Each locus can have up to 2 alleles per individual (diploid)
+# Format: allele sizes in base pairs (each locus has 2 columns for 2 alleles)
+
+library(adegenet)   # population genetics tools
+library(ape)        # phylogenetics and tree visualization
+
+# ---- 1. Simulate SSR genotype data ----
+# 8 samples, 5 SSR loci (2 alleles each)
+set.seed(42)
+locus_alleles <- list(
+  SSR1 = c(120, 122, 124, 126, 128),
+  SSR2 = c(200, 204, 208, 212),
+  SSR3 = c(150, 153, 156, 159, 162),
+  SSR4 = c(300, 305, 310, 315),
+  SSR5 = c(100, 102, 104, 106, 108, 110)
+)
+
+# Create a genind object directly from a matrix
+geno_raw <- matrix(
+  c(
+  # SSR1    SSR2    SSR3    SSR4    SSR5
+  120,122, 200,204, 150,153, 300,305, 100,104,  # Sample 1
+  122,122, 204,204, 153,156, 305,310, 102,106,  # Sample 2
+  120,124, 200,208, 150,159, 300,310, 100,108,  # Sample 3
+  126,128, 212,212, 153,162, 315,315, 106,110,  # Sample 4
+  122,126, 200,204, 156,159, 300,305, 100,102,  # Sample 5
+  120,128, 204,212, 150,162, 310,315, 104,108,  # Sample 6
+  122,124, 200,212, 153,159, 305,315, 102,110,  # Sample 7
+  126,126, 208,212, 150,156, 300,315, 100,106   # Sample 8
+  ),
+  nrow = 8, byrow = TRUE,
+  dimnames = list(
+    paste0("Sample_", 1:8),
+    paste0(rep(paste0("SSR", 1:5), each = 2), c(".a1",".a2"))
+  )
+)
+
+cat("=== Raw SSR Genotype Matrix ===\n")
+print(geno_raw)
+
+# ---- 2. Convert to allele frequency per locus per sample ----
+# For each locus, compute allele frequencies across all samples
+compute_allele_freq <- function(geno_raw, locus_cols, all_alleles) {
+  n_samples <- nrow(geno_raw)
+  freq_mat  <- matrix(0, nrow = n_samples,
+                      ncol = length(all_alleles),
+                      dimnames = list(rownames(geno_raw),
+                                      as.character(all_alleles)))
+  for (i in seq_len(n_samples)) {
+    alleles <- geno_raw[i, locus_cols]
+    for (a in alleles) {
+      col_name <- as.character(a)
+      if (col_name %in% colnames(freq_mat))
+        freq_mat[i, col_name] <- freq_mat[i, col_name] + 0.5
+    }
+  }
+  freq_mat
+}
+
+loci_names  <- paste0("SSR", 1:5)
+loci_cols   <- list(1:2, 3:4, 5:6, 7:8, 9:10)
+loci_alleles <- list(
+  c(120,122,124,126,128),
+  c(200,204,208,212),
+  c(150,153,156,159,162),
+  c(300,305,310,315),
+  c(100,102,104,106,108,110)
+)
+
+freq_list <- mapply(compute_allele_freq,
+                    locus_cols   = loci_cols,
+                    all_alleles  = loci_alleles,
+                    MoreArgs     = list(geno_raw = geno_raw),
+                    SIMPLIFY     = FALSE)
+
+cat("\n=== Allele Frequencies at SSR1 ===\n")
+print(round(freq_list[[1]], 2))
+
+# ---- 3. Compute Nei's genetic distance ----
+# Nei (1972): D = -ln(I), where I = J_xy / sqrt(J_x * J_y)
+# J_x = sum of squared allele frequencies in population x (= expected homo)
+
+nei_distance <- function(freq_list) {
+  n <- nrow(freq_list[[1]])
+  dist_mat <- matrix(0, n, n,
+                     dimnames = list(rownames(freq_list[[1]]),
+                                     rownames(freq_list[[1]])))
+  for (i in 1:(n-1)) {
+    for (j in (i+1):n) {
+      # sum across all loci
+      J_xy <- 0; J_x <- 0; J_y <- 0
+      for (locus in freq_list) {
+        pi <- locus[i, ]
+        pj <- locus[j, ]
+        J_xy <- J_xy + sum(pi * pj)
+        J_x  <- J_x  + sum(pi^2)
+        J_y  <- J_y  + sum(pj^2)
+      }
+      I <- J_xy / sqrt(J_x * J_y)
+      D <- ifelse(I > 0, -log(I), Inf)
+      dist_mat[i, j] <- D
+      dist_mat[j, i] <- D
+    }
+  }
+  as.dist(dist_mat)
+}
+
+nei_dist <- nei_distance(freq_list)
+cat("\n=== Nei's Genetic Distance Matrix ===\n")
+print(round(as.matrix(nei_dist), 3))
+
+# ---- 4. UPGMA clustering tree ----
+upgma_tree <- hclust(nei_dist, method = "average")  # UPGMA = average linkage
+
+cat("\n=== UPGMA Cluster Dendrogram ===\n")
+plot(as.phylo(upgma_tree),
+     type  = "phylogram",
+     main  = "UPGMA Dendrogram Based on Nei's Genetic Distance (5 SSR Loci)",
+     cex   = 0.9,
+     tip.color = "darkblue")
+```
+
+---
+
+# 从标记到图谱：遗传图谱的构建
+
+## 遗传距离与厘摩
+
+掌握了分子标记技术后，下一个问题是：如何将标记位点的相对位置表示出来？在基因组时代，标记的物理位置可以通过测序直接确定（以碱基对为单位）；但在测序技术普及之前，以及在理解遗传重组行为时，**遗传距离**是描述位点间关系的核心度量。
+
+**遗传距离**的单位是**厘摩（centimorgan，cM）**，定义来自减数分裂中的**交叉互换（Crossing Over）**：
+
+$$1 \text{ cM} = \text{两个位点之间在 100 次减数分裂中发生 1 次重组的概率}$$
+
+或等价地，1 cM 对应 1% 的重组频率（$r = 0.01$）。
+
+:::note
+**重组频率的上限为 50%**
+
+若两个位点位于不同染色体，或在同一染色体上距离极远，则每次减数分裂中各自独立分配，后代中约 50% 出现重组型——此时 $r = 0.5$，位点表现为**独立遗传**。这是理解遗传图谱的重要边界条件：超过 50 cM 的两个位点，在遗传行为上与独立位点无法区分。
+:::
+
+## 遗传距离 ≠ 物理距离
+
+遗传图谱与物理图谱之间存在重要的非线性关系，不同区域的比例差异极大：
+
+| 基因组区域 | 遗传/物理比例 | 原因 |
+|----------|------------|------|
+| **重组热点** | 10–100 cM/Mb | 减数分裂中重组优先发生在特定序列基序附近 |
+| **常规区域** | 1–3 cM/Mb | 人类平均约 1.2 Mb/cM |
+| **着丝粒附近** | 0.01–0.1 cM/Mb | 着丝粒附近的染色质结构抑制重组 |
+| **端粒附近** | 5–20 cM/Mb | 端粒区域重组频率偏高 |
+
+这种非线性关系意味着：遗传图谱上的位点间距并不代表其物理距离；同样 10 cM 的遗传距离，在不同区域对应的物理长度可能相差百倍。这也是遗传图谱"比例尺失真"的含义。
+
+{{Wiki:Genetic_map}}
+
+## 双重交换与作图函数
+
+当两个标记在遗传图谱上距离较远时（如 30–40 cM），在它们之间同时发生**两次交换（双重交换）**的概率不可忽视。双重交换会使两端的标记回到亲本组合，在观测中被记录为"未重组"——导致对遗传距离的**低估**。
+
+为了校正这一效应，需要使用**作图函数（Mapping Function）**将观测重组频率 $r$ 转换为加性的图距 $d$：
+
+**Morgan 函数**（假设无干涉，不同交换事件完全独立）：
+$$d = -\frac{1}{2}\ln(1 - 2r)$$
+
+**Kosambi 函数**（假设部分干涉，更符合实际生物学观察）：
+$$d = \frac{1}{4}\ln\frac{1 + 2r}{1 - 2r}$$
+
+在植物遗传图谱构建中，Kosambi 函数更为常用，因为它更好地拟合了大多数物种中观测到的交换干涉（interference）水平。两个公式在 $r$ 较小时行为相似（$d \approx r$），在 $r$ 接近 0.5 时差异显著。
+
+```r
+# R: compare Morgan vs Kosambi mapping functions
+r_vals <- seq(0.001, 0.499, by = 0.001)
+
+morgan_d  <- -0.5 * log(1 - 2 * r_vals)       # Morgan function
+kosambi_d <- 0.25 * log((1 + 2*r_vals) / (1 - 2*r_vals))  # Kosambi function
+
+par(mfrow = c(1, 2))
+
+# Panel 1: map distance vs recombination frequency
+plot(r_vals, morgan_d * 100,  type = "l", col = "steelblue", lwd = 2,
+     xlab = "Recombination frequency (r)",
+     ylab = "Map distance (cM)",
+     main = "Mapping Functions Comparison",
+     ylim = c(0, 60))
+lines(r_vals, kosambi_d * 100, col = "firebrick", lwd = 2, lty = 2)
+abline(h = 50, lty = 3, col = "gray50")
+legend("topleft", legend = c("Morgan", "Kosambi"),
+       col = c("steelblue","firebrick"), lwd = 2, lty = c(1,2))
+
+# Panel 2: ratio of map distance to physical analogy (r itself)
+plot(r_vals, (morgan_d - r_vals) / r_vals * 100, type = "l",
+     col = "steelblue", lwd = 2,
+     xlab = "Recombination frequency (r)",
+     ylab = "Correction relative to raw r (%)",
+     main = "Magnitude of Double-Crossover Correction")
+lines(r_vals, (kosambi_d - r_vals) / r_vals * 100,
+      col = "firebrick", lwd = 2, lty = 2)
+abline(h = 0, lty = 3, col = "gray50")
+legend("topleft", legend = c("Morgan correction", "Kosambi correction"),
+       col = c("steelblue","firebrick"), lwd = 2, lty = c(1,2))
+```
+
+## LOD 值：连锁的统计证据
+
+要确认两个标记位点是否连锁（而非独立遗传），需要统计检验。**LOD 值（Logarithm of Odds）** 是最常用的指标：
+
+$$\text{LOD} = \log_{10}\frac{L(\text{数据} \mid r = \hat{r})}{L(\text{数据} \mid r = 0.5)}$$
+
+其中分子是在最大似然估计的重组频率 $\hat{r}$ 下观测到数据的概率，分母是在零假设（独立遗传，$r = 0.5$）下的概率。LOD 值的直觉含义是：**观测数据支持连锁（而非独立）的似然比，以 10 为底取对数**。
+
+| LOD 值 | 解读 |
+|-------|------|
+| $\geq 3.0$ | 支持连锁的证据充分（传统遗传学标准；连锁概率约 1000:1） |
+| $2.0$–$3.0$ | 证据提示性，需更多数据 |
+| $< 2.0$ | 证据不足，无法宣称连锁 |
+| $< 0$ | 数据支持独立遗传 |
+
+LOD 阈值通常设为 3.0（对应 $p \approx 0.001$），在存在多重检验时（扫描全基因组）有时提高至 3.5 或更高。
+
+---
+
+# QTL 定位群体
+
+数量性状位点（Quantitative Trait Locus，QTL）定位的第一步是选择合适的**分离群体**。群体的选择决定了可用的统计方法、定位分辨率和所能检测的遗传效应类型。
+
+## 常见 QTL 定位群体
+
+**F2 分离群体**
+
+两个纯合亲本（$P_1 \times P_2$）杂交产生 F1，F1 自交产生 F2。F2 个体在每个位点上均可能出现三种基因型（$P_1P_1$、$P_1P_2$、$P_2P_2$），比例为 1:2:1（理想情况）。这是最常用的 QTL 定位群体，因为构建成本低、分离充分。但 F2 个体均为杂合体，不能重复测定（除非无性繁殖），且每个表型值只来自一次测定，统计噪声较大。
+
+**重组自交系（Recombinant Inbred Lines，RIL）**
+
+将 F2 个体连续自交 6–10 代，使每条染色体上的每个位置趋于纯合，得到一套基因型稳定的近交系。RIL 的优势在于：每个基因型可以重复种植，获得多次表型观测，大幅降低环境误差；同时可以在不同年份、不同地点反复测定，是多环境 QTL 分析的理想材料。RIL 的缺点是构建周期长（需 6–8 年）。
+
+**双单倍体（Doubled Haploid，DH）**
+
+通过花粉离体培养（花药培养）或单倍体诱导，使 F1 的单倍体细胞直接加倍，一步获得纯合二倍体材料。DH 与 RIL 类似，具有基因型稳定可重复的优点，且构建周期仅 1–2 年；但技术要求高，在一些物种（如大豆）中难以实现，且缺乏杂合基因型，无法估算显性效应。
+
+**回交群体（Backcross，BC）**
+
+将 F1 与一个亲本回交，产生 BC1 群体。每个位点只有两种基因型（$P_1P_2$ 或 $P_2P_2$），无法估算显性效应；主要用于将目标基因从一个背景（供体亲本）渐渗到另一个背景（受体亲本）中，是 MAS 背景选择的常用策略。
+
+| 群体类型 | 构建周期 | 基因型类别 | 可重复 | 可估算显性 | 主要用途 |
+|--------|--------|----------|-------|----------|---------|
+| F2 | 1 代（~1 年） | 3 种 | 否（植物） | 是 | 快速定位，初步分析 |
+| RIL | 6–8 代 (~6–8 年) | 2 种 | 是 | 否 | 多环境 QTL、精细定位 |
+| DH | 1–2 年 | 2 种 | 是 | 否 | 快速获得纯系 |
+| BC | 1 代 | 2 种 | 否（通常） | 否 | 基因渐渗、MAS 背景选择 |
+
+---
+
+# 区间作图：QTL 定位的标准算法
+
+## Lander-Botstein 区间作图
+
+1989 年，Eric Lander 和 David Botstein 提出了**区间作图（Interval Mapping，IM）**算法，彻底改变了 QTL 定位的面貌。这一方法的核心思路是：不把标记本身作为 QTL 的假设位置，而是在每对相邻标记之间的**每一个点**上假设一个 QTL 存在，通过最大似然估计评估证据强度。
+
+{{Wiki:Quantitative_trait_locus}}
+
+### 算法核心
+
+在区间作图中，每个假设的 QTL 位置 $q$ 处，利用两侧标记的基因型（$M_L$ 和 $M_R$）以及重组频率，可以推算出 QTL 处三种基因型（$QQ$、$Qq$、$qq$）的**条件概率**，进而构建关于表型值的**混合正态分布**似然函数：
+
+$$L(\mu_{QQ}, \mu_{Qq}, \mu_{qq}, \sigma^2 \mid \text{数据}) = \prod_{i=1}^{n} \sum_{g \in \{QQ, Qq, qq\}} P(g \mid M_{L,i}, M_{R,i}) \cdot \phi(y_i \mid \mu_g, \sigma^2)$$
+
+其中 $\phi$ 为正态密度函数，$\mu_g$ 为各基因型对应的表型均值，$P(g \mid M_{L}, M_{R})$ 为基于两侧标记推算的 QTL 基因型条件概率。
+
+最大化该似然函数，得到每个基因组位置上 QTL 存在的统计证据，即 **LOD 值**：
+
+$$\text{LOD}(q) = \log_{10}\frac{L(\hat{\mu}_{QQ}, \hat{\mu}_{Qq}, \hat{\mu}_{qq} \mid q)}{L(\text{无 QTL 模型})}$$
+
+扫描整个基因组后，LOD 值随位置变化形成 **LOD 曲线**；超过阈值的峰即为 QTL 候选位置。
+
+### LOD 阈值的确定：排列检验
+
+经典区间作图进行的是多重检验（每 1 cM 一个检验点），需要校正多重检验。最常用的方法是**排列检验（Permutation Test）**：
+
+1. 随机打乱所有个体的表型值（保持基因型数据不变），重新执行全基因组扫描，记录最高 LOD 值
+2. 重复上述过程 1000 次，得到 1000 个"零假设下的最高 LOD 值"的经验分布
+3. 以该分布的第 95 百分位数（对应 $\alpha = 0.05$）作为 LOD 阈值
+
+大多数物种中，LOD 阈值在 2.5–3.5 之间，传统上以 **LOD ≥ 3.0** 作为经验判断标准。
+
+### QTL 置信区间：LOD 1-Drop 法
+
+当一个 QTL 被检测到后，需要估计其位置的不确定性，即**置信区间**。最简便的方法是"LOD 1-Drop 法"：以峰值 LOD 减去 1 为阈值，包含该阈值以上区域的染色体片段即为 QTL 的 1-LOD 置信区间。这一区间通常在 10–30 cM 之间，对应数十 Mb 的物理长度，包含数百至数千个基因——这是经典 QTL 定位分辨率的固有局限。
+
+## 复合区间作图（CIM）
+
+区间作图的一个关键问题是：若基因组上存在多个 QTL，在扫描某一区间时，其他位置的 QTL 会作为"背景遗传噪声"干扰检测，可能导致假阳性或显著降低检测功效。
+
+**复合区间作图（Composite Interval Mapping，CIM）**由 Zeng 于 1994 年提出，解决方案是在似然函数中引入若干**协变量标记（cofactors）**作为背景控制：将与当前检验区间无 LD 的其他标记基因型作为回归协变量加入模型，从而"吸收"其他 QTL 对方差的贡献，降低背景噪声。
+
+CIM 的优势：
+- 在多 QTL 背景下，LOD 曲线的峰形更尖锐，定位精度提升
+- 可减少因其他 QTL 引起的假阳性峰
+- 在 R/qtl、Windows QTL Cartographer 等软件中均有实现
+
+## QTL 效应的遗传学解释
+
+当一个 QTL 被检测到后，通常需要估算其遗传效应参数：
+
+**加性效应（Additive Effect，$a$）**：两个纯合基因型均值之差的一半
+
+$$a = \frac{\mu_{QQ} - \mu_{qq}}{2}$$
+
+**显性效应（Dominance Effect，$d$）**：杂合子均值偏离两纯合子均值中点的大小
+
+$$d = \mu_{Qq} - \frac{\mu_{QQ} + \mu_{qq}}{2}$$
+
+**显隐性比（$d/a$）**：
+- $d/a = 0$：纯粹加性遗传（杂合子正好介于两亲本间）
+- $d/a = 1$：完全显性（杂合子与一个纯合亲本相同）
+- $d/a = -1$：完全隐性
+- $|d/a| > 1$：超显性（杂合子超过两亲本的极值）
+
+**表型变异解释率（$R^2$ 或 $PVE$）**：该 QTL 可解释的表型总方差百分比，是评价 QTL 效应大小的核心指标。
+
+---
+
+# 实践：R/qtl2 区间作图
+
+下面使用 R/qtl2 软件包，对一个模拟的 F2 群体数据执行完整的区间作图流程。
+
+```r
+# R: interval mapping with R/qtl2
+# Using the built-in "iron" dataset for demonstration
+library(qtl2)
+
+# ---- 1. Load example dataset (iron: iron deficiency in mice, F2 cross) ----
+iron <- read_cross2(system.file("extdata", "iron.zip", package = "qtl2"))
+cat("=== Cross Summary ===\n")
+summary(iron)
+
+# ---- 2. Insert pseudomarkers for smooth LOD curves ----
+# Pseudomarkers are added every 1 cM to create a dense grid for scanning
+gmap      <- insert_pseudomarkers(iron$gmap, step = 1)
+pmap      <- interp_map(gmap, iron$gmap, iron$pmap)
+
+# ---- 3. Calculate genotype probabilities ----
+# Using the Haldane (no-interference) model
+pr <- calc_genoprob(iron, gmap, error_prob = 0.002)
+
+# ---- 4. Perform genome scan (interval mapping) ----
+# Phenotype: liver iron concentration (column 1)
+out_loco <- scan1(pr, iron$pheno[, 1, drop = FALSE])
+
+cat("\n=== Top 5 LOD Peaks ===\n")
+print(find_peaks(out_loco, gmap, threshold = 3, drop = 1.5))
+
+# ---- 5. Determine LOD significance threshold by permutation ----
+# 1000 permutations (use fewer for speed in teaching demos)
+set.seed(100)
+operm <- scan1perm(pr, iron$pheno[, 1, drop = FALSE], n_perm = 200)
+thr   <- summary(operm, alpha = 0.05)
+cat("\n=== LOD Threshold at alpha=0.05 (from 200 permutations) ===\n")
+print(thr)
+
+# ---- 6. Plot LOD curves ----
+par(mar = c(4, 4, 2, 1))
+plot_scan1(out_loco, map = gmap,
+           main = "Genome Scan: Iron Deficiency QTL (F2 Mice)",
+           ylab = "LOD score",
+           col  = "steelblue")
+abline(h = thr[1], col = "firebrick", lty = 2, lwd = 1.5)
+legend("topright",
+       legend = c("LOD curve", sprintf("Threshold (%.2f, p=0.05)", thr[1])),
+       col    = c("steelblue", "firebrick"), lty = c(1,2), lwd = c(2,1.5),
+       bty = "n")
+
+# ---- 7. Examine the strongest QTL peak ----
+peaks <- find_peaks(out_loco, gmap, threshold = 3, drop = 1.5)
+cat("\n=== QTL Peaks Above Threshold ===\n")
+print(peaks)
+
+# ---- 8. Effect plot at top peak ----
+chr_peak  <- as.character(peaks$chr[which.max(peaks$lod)])
+pos_peak  <- peaks$pos[which.max(peaks$lod)]
+
+# Find the pseudomarker nearest to the peak
+nearest_marker <- find_marker(gmap, chr_peak, pos_peak)
+
+# Plot QTL effect (genotype means)
+eff <- scan1coef(pr[, chr_peak], iron$pheno[, 1, drop = FALSE])
+plot_coefCC(eff, map = gmap[[chr_peak]],
+            main = sprintf("QTL Effects: Chr %s", chr_peak),
+            legend = "topleft")
+```
+
+---
+
+# QTL 定位的局限性与 GWAS 的诞生
+
+## 为什么传统 QTL 定位无法鉴定因果基因
+
+经过完整的 QTL 定位分析，研究者得到的是一个 10–30 cM 宽度的染色体区间——通常包含 300 到 3000 个基因。从这一区间出发鉴定因果基因（精细定位）需要额外构建**近等基因系（Near-Isogenic Lines，NIL）**或进行候选基因测序等费时费力的工作，有时需要数年才能完成。
+
+这一局限的根本原因在于**人工构建的分离群体中历史重组事件太少**：即使是 500 个 F2 个体，每条染色体臂上平均也只有约 1 次重组，定位分辨率因此受限于标记间距（通常 5–20 cM）。
+
+## 自然群体中的历史重组
+
+而**自然群体**则完全不同。当我们从多个地理来源采集数百乃至数千份样品时，每一对相邻碱基之间，在过去数百到数千代的演化历史中已经历了无数次重组事件。这意味着：
+
+- 只有在**极短的物理距离**内（数十到数百 kb）才会保留稳定的 LD
+- 同一基因内部的不同多态性位点之间可能已经完全解耦
+- 理论上，定位分辨率可以接近单碱基水平（受限于样本量和统计功效）
+
+```
+分辨率对比示意（以某 5 Mb 染色体区段为例）：
+
+QTL 定位（200 个 F2 个体）：
+|—————————————————————|    ← QTL 置信区间：约 15 cM ≈ 3–4 Mb
+               ↑ 真实因果基因（无法从区间中识别）
+
+GWAS（5000 个自然群体样本）：
+                    |—|    ← 关联峰：约 100–300 kb
+                    ↑ 可进一步精细定位至候选 SNP 水平
+```
+
+这就是 GWAS 相较于经典 QTL 定位的核心优势来源：**用数千年的历史重组替代人工构建的有限重组**。但这一优势要求改变标记系统——从 SSR 的数百个标记，升级到覆盖全基因组的数十万至数百万 SNP 标记，这正是下一个专题（SNP 阵列与 LD 图谱）的主题。
+
+:::info
+**本节与后续章节的衔接**
+
+本专题建立的概念基础与后续 GWAS 分析的对应关系：
+
+| 本专题内容 | 在 GWAS 中的对应 |
+|----------|---------------|
+| SSR 标记基因分型 | 高密度 SNP 芯片基因分型 |
+| LOD 值（连锁统计量） | $-\log_{10}(p)$（关联统计量） |
+| F2 群体重组（单代，低分辨率） | 自然群体历史重组（千代，高分辨率） |
+| QTL 置信区间（10–30 cM） | GWAS 信号区（100 kb–1 Mb） |
+| 遗传图谱中的连锁（LD 概念前身） | LD 区块（r² 量化） |
+| MAS（分子育种应用） | PRS（临床风险预测应用） |
+
+下一专题将重点讲解 SNP 阵列技术的原理、HapMap 计划的意义，以及 LD 图谱的定量刻画——这是理解 GWAS 统计功效的关键基础。
+:::
+
+---
+
+## 课堂测验
+
+**题目**：一个 F2 群体中，某 SSR 标记 M1 与另一 SSR 标记 M2 之间观测到 80 个重组个体，共分析了 400 个个体。
+
+1. 观测重组频率 $r$ 是多少？
+2. 用 Kosambi 函数计算对应的图距 $d$（单位：cM）？
+3. 若第三个标记 M3 在 M2 另一侧，M2-M3 间的重组频率也为 0.2，且 M1-M3 间观测重组频率为 0.32，这与预期相比说明了什么？
+
+<details>
+<summary><strong>参考答案 (Reference Answers)</strong></summary>
+
+1. *观测重组频率：$r = 80/400 = 0.20$（即 20%）*
+
+2. *Kosambi 图距：*
+$$d = \frac{1}{4}\ln\frac{1+2 \times 0.20}{1-2 \times 0.20} = \frac{1}{4}\ln\frac{1.40}{0.60} = \frac{1}{4}\ln(2.333) = \frac{1}{4} \times 0.848 \approx 0.212 \text{ Morgan} = 21.2 \text{ cM}$$
+
+3. *若 M2-M3 图距也为 21.2 cM，则 M1-M3 的期望图距约为 42.4 cM，对应的期望重组频率约为 $r \approx 0.37$。但观测到 0.32，低于预期——这是**正干涉（Positive Interference）**的体现：M1-M2 区间内发生交换后，M2-M3 区间内再次发生交换的概率降低，导致双重交换事件少于随机预期。Kosambi 函数正是基于部分正干涉的假设推导的，它在一定程度上校正了这一效应。*
+
+</details>
+
+---
+
+## 课后自测 (Post-Lesson Quiz)
+
+1. RFLP 和 SSR 都是共显性标记，而 AFLP 是显性标记。请从标记原理角度解释：为什么 AFLP 无法区分杂合子与纯合子，而 SSR 可以？这一区别对 QTL 定位的显性效应估算有何影响？
+
+2. 遗传图谱上两个标记的距离为 45 cM。(a) 这两个标记是否一定位于同一条染色体？(b) 在 F2 群体中，这两个标记之间观测到的重组频率大约是多少（用 Kosambi 函数反向推算）？(c) 如果想在遗传图谱上使这两个位点在同一连锁群，至少需要多少 LOD 值的证据？
+
+3. 某研究者用 200 个 F2 个体对水稻株高进行 QTL 定位，在 1 号染色体上检测到一个 LOD = 4.5 的显著峰，1-LOD 置信区间为 8 cM。她随后查阅该区域对应的物理图谱，发现该 8 cM 对应约 2.5 Mb，包含约 400 个基因。(a) 如果要将候选基因数量缩小到 5 个以内，大约需要将分辨率提升多少倍？(b) 请列举两种可以提升 QTL 定位分辨率的方法，并说明其原理。
+
+4. 标记辅助选择（MAS）的有效性依赖于标记与目标基因的遗传距离。若某抗病基因 R 与最近的 SSR 标记 M 之间的遗传距离为 5 cM，在 BC2F2 世代中（通过两代回交和一代自交），标记 M 与真正的目标基因 R 发生重组的概率是多少？这种重组对 MAS 选择准确性的影响是什么？
+
+5. 一个 QTL 的加性效应 $a = 2.5$（表型单位），显性效应 $d = -0.5$。(a) 计算 $d/a$ 比值并解释其遗传含义（该 QTL 最接近哪种遗传模式）；(b) 三种基因型（$QQ$、$Qq$、$qq$）的期望表型均值各是多少（以 $qq$ 为参照，均值设为 10）？
+
+<details>
+<summary><strong>参考答案 (Reference Answers)</strong></summary>
+
+1. *AFLP 的多态性来源是某一特定 DNA 片段能否被扩增（有带=1，无带=0）。对于一个显性标记位点，纯合显性（AA）和杂合（Aa）个体均能扩增出条带，两者在电泳图上无法区分；只有纯合隐性（aa）没有条带。SSR 则不同：两条同源染色体上的 SSR 等位体因拷贝数不同而大小不同，电泳可以同时显示两个峰（杂合）或一个峰（纯合），可明确区分三种基因型。对于 QTL 定位，显性标记无法准确推算杂合子的基因型概率，因此无法在统计模型中区分加性效应和显性效应——只能检测该 QTL 位点是否存在效应，但无法分解其遗传结构（$a$ 与 $d$ 参数不可分离估计）。*
+
+2. *(a) 不一定。45 cM 的遗传距离意味着重组频率接近 50%，但不超过 50%——若两个标记在同一染色体上但距离极远，也可能表现出接近独立遗传的行为。LOD 值分析是区分"位于同一染色体但距离远"与"位于不同染色体（独立遗传）"的统计工具，仅靠重组频率无法区分。 (b) 由 Kosambi 函数 $d = \frac{1}{4}\ln\frac{1+2r}{1-2r} = 0.45$，求解 $r$：$e^{4 \times 0.45} = e^{1.8} \approx 6.05$，则 $\frac{1+2r}{1-2r} = 6.05$，解得 $r \approx 0.424$，即约 42% 的重组频率。 (c) 要将 45 cM 的两位点置于同一连锁群，LOD 阈值为 3.0 的标准是充分的，因为 LOD ≥ 3.0 提供了 1000:1 的优势比支持连锁假设，相当于 p ≈ 0.001 的统计证据，在单次连锁检验中已足够可信。*
+
+3. *(a) 400 个候选基因 → 5 个以内，需要分辨率提升约 80 倍，即区间从 8 cM 压缩至约 0.1 cM（对应约 30 kb）。 (b) 方法一：**扩大群体规模**——更多个体意味着更多重组事件，LOD 峰形更尖锐，置信区间更窄；将群体从 200 扩大到 2000 个个体，分辨率可提升约 10 倍。方法二：**构建 NIL（近等基因系）或 BC 回交群体精细定位**——通过多代回交将目标区域缩小，并在不同 NIL 中通过表型差异将 QTL 定位至越来越小的染色体片段（染色体步移，chromosome walking）；这是将数百 Mb 的 QTL 区间精细到单基因最常用的传统策略。*
+
+4. *BC2F2 世代的 MAS 准确性分析：标记 M 与目标基因 R 之间每次传代的重组概率为 5 cM = 5%。在 BC2F2 中，个体经历了两次回交和一代自交，共 3 次减数分裂传代（近似）。在任意一次传代中 M 与 R 不发生重组的概率为 0.95，三次均不发生重组的概率约为 $0.95^3 \approx 0.857$。因此，约有 14.3% 的个体虽然携带了正确的标记基因型，但实际上 M 与 R 之间已发生重组，导致目标基因 R 并未真正被选入——这类个体会被错误地选入（假阳性），降低 MAS 的准确性。距离越近（< 1 cM），这一错误率越低；育种实践中通常优先使用距目标基因 < 2 cM 的标记以保证 > 98% 的准确性。*
+
+5. *(a) $d/a = -0.5 / 2.5 = -0.2$，接近 0，说明该 QTL 以**加性遗传为主**，杂合子表型略偏向 $qq$ 亲本方向（部分隐性），但偏离中间值很小，近似于加性模式。 (b) 以 $\mu_{qq} = 10$ 为参照：$\mu_{QQ} = 10 + 2a = 10 + 5.0 = 15.0$；$\mu_{Qq} = 10 + a + d = 10 + 2.5 + (-0.5) = 12.0$（中间值为 12.5，杂合子 12.0 略低，符合 $d = -0.5$ 的方向）。*
+
+</details>

@@ -5,102 +5,443 @@ format:
   html:
     theme: cosmo
     toc: true
-    toc-title: "本节目录"
+    toc-title: "本章目录"
     toc-depth: 3
     number-sections: true
     code-copy: true
 ---
 
-# 课程引入
+# 整体概述
 
-从 20 世纪 80 年代至今，遗传学研究经历了一场从“片段观察”到“全基因组扫描”的跨越。本章将带领大家梳理遗传标记的演进逻辑：从经典的 AFLP/SSR 标记入手，理解遗传图谱与物理图谱的构建，最终深入到现代组学研究的核心工具——**全基因组关联分析 (GWAS)**。
+人类认识基因组遗传变异的历史，是一部标记技术不断革新、分辨率持续提升的演进史。从 20 世纪 80 年代依赖限制性内切酶的 RFLP 标记，到基于 PCR 的 SSR 与 AFLP，再到芯片时代的高密度 SNP 阵列，每一次技术跃迁都将遗传学研究从"片段观察"推向更全局的视角。本章以这条历史主线为骨架，系统讲解遗传标记、遗传图谱与 QTL 定位的经典方法，然后重点深入**全基因组关联分析（Genome-Wide Association Study，GWAS）**的统计框架、结果解读与后续分析。GWAS 的两个核心引擎——连锁不平衡（LD）和混合线性模型（MLM）——以及从显著位点到功能验证的完整路径，是本章的学习重心。完成本章学习后，学生不仅能够理解 GWAS 文章中每一张图的统计含义，还能初步掌握多基因风险评分（PRS）和罕见变异聚合分析的基本方法，为后续专题章节奠定坚实基础。
 
----
-
-# 第 1 学时：经典分子标记的黄金时代 (AFLP & SSR)
-
-在 DNA 测序成本昂贵的年代，科学家通过观察 DNA 片段的长度差异来识别遗传多样性。
-
-## 简单序列重复 (SSR / Microsatellites)
-- **原理**：基于基因组中 1-6 bp 的短串联重复序列。由于复制滑动，不同个体间重复次数不同。
-- **特点**：共显性标记，信息量高，重复性好。
-- **应用**：亲子鉴定、品种鉴定、构建初级遗传图谱。
-
-## 扩增片段长度多态性 (AFLP)
-- **原理**：结合了限制性内切酶切割与 PCR 扩增技术。通过选择性扩增引物，在电泳胶上产生“指纹”图谱。
-- **特点**：显性标记，无需提前获知序列信息，一次可产生大量多态性位点。
-- **局限**：操作复杂，难以区分纯合与杂合子。
-
-
+**学习目标**：理解遗传标记演进的技术逻辑；掌握遗传图谱构建和 QTL 定位的基本原理；能够理解并批判性评估 GWAS 研究的统计设计；能够独立解读曼哈顿图和 Q-Q 图；了解精细定位、eQTL、PRS 和罕见变异分析的算法框架。
 
 ---
 
-# 第 2 学时：两张“地图”的博弈 —— 遗传图谱与物理图谱
+# 结构导览
 
-## 遗传图谱 (Genetic Map)
-- **核心单位**：厘摩 (centimorgan, cM)。
-- **衡量标准**：重组频率 (Recombination Frequency)。$1 \text{ cM}$ 定义为两个位点间发生 1% 交换掉换的距离。
-- **逻辑**：基于减数分裂中的交换律。距离越近，越倾向于连锁遗传。
+本章分为三个模块，共七个专题，按"技术演进 → 统计方法 → 后续分析"的逻辑组织：
 
-## 物理图谱 (Physical Map)
-- **核心单位**：碱基对 (Base pair, bp)。
-- **衡量标准**：DNA 序列的实际物理长度。
-- **演进**：从早期的重叠群 (Contig) 图谱到如今完美的参考基因组序列。
+```
+分子标记技术演进
+  │
+  ├── 模块 A：标记与遗传图谱（专题 3.1–3.2）
+  │     RFLP → SSR/AFLP → SNP
+  │     遗传图谱构建 → QTL 定位
+  │         ↓
+  │     识别与性状关联的基因组区域（Mb 级）
+  │
+  ├── 模块 B：GWAS 统计框架（专题 3.3–3.5）
+  │     SNP 阵列 + LD 图谱 → 统计模型 → 结果可视化
+  │         ↓
+  │     全基因组显著关联位点（kb 级）
+  │
+  └── 模块 C：后 GWAS 分析（专题 3.6–3.7）
+        精细定位 + eQTL + MR → 因果基因
+        PRS → 个体风险预测
+        罕见变异聚合检验 → 低频/罕见变异的遗传贡献
+```
 
-## 转换与矛盾
-- 遗传距离与物理距离并非线性相关。
-- **重组热点 (Recombination Hotspots)**：某些区域物理距离很短但重组频繁。
-- **着丝粒效应**：着丝粒附近重组受抑制，导致巨大的物理距离仅对应极小的遗传距离。
-
-
-
----
-
-# 第 3 学时：从 QTL 定位向 GWAS 的演变
-
-## 数量性状位点 (QTL) 定位
-- **群体对象**：人工构建的分离群体（F2, RIL, DH）。
-- **优势**：背景简单，统计效能高。
-- **劣势**：分辨率低（通常在 Mb 级别），且仅限于双亲间的遗传差异。
-
-## GWAS 的崛起
-- **原理**：利用自然群体中数世代累积的重组事件。
-- **标志物切换**：从片段标记（SSR）切换为高密度的单核苷酸多态性（SNP）。
-- **核心逻辑**：利用**连锁不平衡 (Linkage Disequilibrium, LD)**。
+模块 A 是历史与方法论基础；模块 B 是统计核心，是本章的重点；模块 C 是从关联到因果的方法延伸，也是当前遗传学研究的前沿方向。
 
 ---
 
-# 第 4 学时：GWAS 的核心统计学逻辑
+# 模块 A：遗传标记的历史演进与遗传图谱构建
 
-## 连锁不平衡 (LD) —— GWAS 的引擎
-- **定义**：不同位点的等位基因非随机组合。
-- **衰减 (LD Decay)**：LD 随物理距离增加而下降的速率决定了 GWAS 的定位精度。
-- **单倍型 (Haplotype)**：处于强 LD 区域的一组 SNP 往往共同遗传。
+:::note
+**模块目标：** 理解分子标记技术从 RFLP 到 SNP 的演进逻辑，掌握遗传图谱的构建原理与 QTL 定位的基本方法，为后续理解 GWAS 如何利用自然群体中的历史重组奠定基础。
+:::
 
-## 群体分层与校正
-- **假阳性来源**：如果亚群间表型差异巨大（如不同地理来源的品种），算法会误判。
-- **校正工具**：
-    - **PCA (主成分分析)**：提取群体结构的特征向量作为协变量。
-    - **Q+K 模型 (混合线性模型, LMM)**：同时考虑群体结构 (Q) 和亲缘关系矩阵 (K)。
+## 专题 3.1：经典分子标记（RFLP、AFLP、SSR）
 
+**对应文件**：genomics_variant_lesson1.qmd（待编写）
 
+遗传标记技术的演进折射出分子生物学技术发展的整体脉络。1980 年，Botstein 等人提出利用 DNA 限制性片段长度多态性（Restriction Fragment Length Polymorphism，RFLP）构建人类遗传图谱，开创了分子标记连锁分析的时代。此后十年，基于 PCR 的 SSR 和 AFLP 标记因操作简便而迅速普及，成为 20 世纪 90 年代品种鉴定与遗传研究的主力工具。理解这些经典标记的原理，不仅有历史意义，更有助于理解为什么 SNP 会在后来彻底取代它们。
+
+{{Wiki:Restriction_fragment_length_polymorphism}}
+
+**核心概念**：
+
+- **RFLP**：限制性内切酶切割位点的序列多态性导致片段长度不同；共显性标记；无需 PCR，操作繁琐、通量低，但奠定了分子标记的概念框架
+- **AFLP（扩增片段长度多态性）**：限制酶消化 + 接头连接 + 选择性 PCR 扩增；一次可产生数百个多态位点；显性标记，无法区分纯合与杂合子；无需已知序列信息
+- **SSR（简单序列重复 / 微卫星）**：基于 1–6 bp 短串联重复序列的拷贝数多态性；共显性、信息量高、重复性好；仍是亲子鉴定和品种指纹的金标准
+- **标记辅助选择（MAS）**：利用与目标性状紧密连锁的标记在早期世代筛选优良基因型，加速育种进程；在分子育种中至今仍有应用
+
+| 标记类型 | 技术基础 | 显隐性 | 通量 | 主要用途 |
+|---------|--------|-------|------|---------|
+| RFLP | 限制酶 + Southern 印迹 | 共显性 | 极低 | 初代遗传图谱 |
+| AFLP | 限制酶 + PCR | 显性 | 中等 | 遗传多样性、指纹 |
+| SSR | PCR | 共显性 | 低–中 | 亲子鉴定、品种鉴定、MAS |
+| SNP | 测序 / 芯片 | 共显性 | 极高 | GWAS、精细定位、PRS |
+
+**计划实践内容**：R 代码模拟 SSR 等位体评分矩阵；基于 SSR 数据的 Nei 遗传距离计算与 UPGMA 聚类树构建。
 
 ---
 
-# 第 5 学时：结果解读、曼哈顿图与候选基因挖掘
+## 专题 3.2：遗传图谱构建与 QTL 定位
 
-## 结果的可视化
-- **曼哈顿图 (Manhattan Plot)**：展示全基因组范围内显著关联的“山峰”。
-- **QQ 图 (Quantile-Quantile Plot)**：评估统计模型是否过度膨胀。
+**对应文件**：genomics_variant_lesson1.qmd（待编写）
 
-## 从关联到候选基因
-- **LocusZoom**：观察显著 SNP 周边的 LD 区域。
-- **候选基因筛选**：结合基因功能注释、表达定量（eQTL）筛选真正的因果基因。
+遗传图谱（Genetic Map）将标记位点按减数分裂中发生重组的频率排列，是染色体遗传结构的"比例尺失真地图"。遗传图谱与物理图谱的最重要区别在于：遗传距离（厘摩，cM）反映的是重组率，而非 DNA 的物理长度，两者在不同基因组区域的比例关系差异悬殊。数量性状位点（QTL）定位在此基础上，通过统计遗传标记基因型与表型值的关联，将影响数量性状的基因组区域锁定在遗传图谱上。
 
-:::tip
-**标题：** 💻 技能实战：从 SSR 数据到 SNP 矩阵
-- 传统方法：手工记录胶图条带，转化为 0/1 矩阵。
-- 现代方法：使用 `VCFtools` 处理海量 SNP 变异数据。
+{{Wiki:Genetic_map}}
+
+**核心概念**：
+
+- **遗传距离单位**：厘摩（cM）；1 cM 定义为两位点间在 100 次减数分裂中发生 1 次重组的距离；重组频率的理论上限为 50%（独立遗传）
+- **重组热点与着丝粒效应**：基因组特定区域重组频率极高（热点）或极低（着丝粒附近），导致遗传距离与物理距离严重失衡；同一基因组中 1 cM 可对应 几十 kb 到数 Mb 的物理距离
+- **Kosambi 作图函数**：将观测重组频率 $r$ 转换为图距 $d$：$d = \frac{1}{4}\ln\frac{1+2r}{1-2r}$；相较于 Morgan 函数，更好地校正了双重交换的低估
+- **QTL 定位群体**：F2 分离群体（一代杂交 + 自交）、重组自交系（RIL，经多代自交近乎纯合）、双单倍体（DH）；不同群体在分辨率和工作量上各有优劣
+- **区间作图（Interval Mapping）**：以每个标记区间的中点为 QTL 假设位置，通过似然比检验（LOD score）扫描全基因组；LOD 阈值通常由排列检验（Permutation Test）确定（通常 LOD ≥ 3）
+- **复合区间作图（Composite Interval Mapping，CIM）**：在区间作图的似然函数中引入其他标记作为协变量，降低背景遗传效应干扰，提升定位精度
+- **QTL 定位的固有局限**：典型分辨率为 10–30 cM（相当于数十 Mb），包含数百至数千个基因；无法从统计意义上的 QTL 区间直接鉴定因果基因
+
+**计划实践内容**：R/qtl2 软件包对示例 F2 群体数据进行区间作图；LOD 值可视化与置信区间估算。
+
+---
+
+# 模块 B：GWAS 统计框架
+
+:::note
+**模块目标：** 理解 GWAS 如何通过利用自然群体中的历史重组将定位分辨率从 Mb 级压缩至 kb 级；掌握 GWAS 核心统计模型与多重检验校正方法；能够独立解读曼哈顿图和 Q-Q 图。
+:::
+
+## 专题 3.3：SNP 阵列技术与连锁不平衡图谱
+
+**对应文件**：genomics_variant_lesson2.qmd（待编写）
+
+从 QTL 定位到 GWAS 的核心转变在于两点：将人工构建的分离群体替换为自然群体（从而利用数千年间积累的历史重组）；将稀疏标记替换为覆盖全基因组的高密度 SNP。这一转变的技术实现依赖于 SNP 阵列（Genotyping Array）的商业化和 HapMap 计划对人类全基因组 LD 图谱的系统描绘。理解 LD 图谱——特别是 LD 区块结构和标签 SNP 的选取逻辑——是理解 GWAS 为何能以有限的基因分型成本实现全基因组覆盖的基础（第02章已介绍 LD 的概念，本专题在此基础上深化定量描述）。
+
+{{Wiki:HapMap}}
+
+**核心概念**：
+
+- **HapMap 计划**（2002–2009）：对来自多个人群的约 270 个体进行全基因组 SNP 基因分型，系统描绘了人类基因组的 LD 图谱；奠定了 GWAS 芯片设计的理论基础
+- **SNP 阵列技术**：Affymetrix GeneChip 和 Illumina BeadChip 通过杂交或碱基延伸检测数十万至数百万个 SNP；目前主流芯片密度为 50 万–900 万 SNP
+- **LD 的定量描述**：
+  - $r^2$（相关系数平方）：两位点间基因型的线性相关程度；$r^2 = 1$ 时两位点完全等价
+  - $D'$（标准化 D 值）：描述等位体组合是否存在偏离；$|D'| = 1$ 时无四种单倍型组合
+  - GWAS 中 $r^2$ 是更常用的 LD 度量，因其直接对应于统计功效的传递效率
+- **LD 衰减（LD Decay）**：LD 随物理距离增加而下降的速率；欧洲人群约在 100–200 kb 时 $r^2$ 降至 0.1 以下；非洲人群衰减更快（约 20–50 kb），导致相同密度的 SNP 芯片在非洲人群中的覆盖率更低
+- **LD 区块与标签 SNP**：基因组可划分为若干 LD 区块（典型大小 5–50 kb）；每个区块内少数"标签 SNP"（Tag SNP）足以代表整个区块的遗传变异；Haploview 等工具用于识别区块并选取标签 SNP
+- **基因型插补（Genotype Imputation）**：利用 LD 关系和参考面板（1000 Genomes、HRC、TOPMed）推断芯片未直接测定的位点基因型，将数十万 SNP 扩展至数千万，大幅提升 GWAS 分辨率；IMPUTE2、Michigan Imputation Server 是常用工具
+
+**计划实践内容**：R 中计算若干位点间的 $r^2$ 矩阵；PLINK 计算 LD 衰减并可视化。
+
 ```bash
-# 使用 PLINK 计算群体 LD 衰减
-plink --bfile my_data --ld-window-r2 0 --ld-window 999999 --ld-window-kb 1000 --r2 --out ld_decay
+# PLINK: calculate pairwise LD decay
+plink --bfile my_data \
+  --ld-window-r2 0 --ld-window 999999 --ld-window-kb 1000 \
+  --r2 --out ld_decay
+```
+
+---
+
+## 专题 3.4：GWAS 统计模型与多重检验校正
+
+**对应文件**：genomics_variant_lesson3.qmd（待编写）
+
+GWAS 的统计本质是对基因组上每一个 SNP 位点独立进行关联检验：在校正混杂因素后，携带某等位体的个体与不携带者在表型上是否存在统计显著差异？这一框架看似简单，但涉及三个关键挑战：选择正确的统计模型（不同数据类型需要不同方法）、控制群体分层引起的假阳性（参见第02章的概念介绍）、以及对数百万次同步检验进行合理的多重检验校正。混合线性模型（MLM）既能校正群体分层，又能利用亲缘关系矩阵（K 矩阵）控制多基因背景效应，是目前动植物育种和人类 GWAS 的标准选择。
+
+{{Wiki:Genome-wide_association_study}}
+
+**核心概念**：
+
+- **研究设计类型**：
+  - **病例-对照设计**（Case-Control）：适用于是/否型疾病表型；以卡方检验或逻辑回归检验等位体频率在病例与对照间的差异
+  - **定量性状设计**（Quantitative Trait）：适用于连续型表型（身高、BMI、血脂等）；以线性回归检验每个 SNP 对表型的加性效应
+  - **家系设计**（Family-Based）：利用亲子或同胞对；天然控制了群体分层，但统计功效较低
+
+- **基本统计模型**：
+
+  | 模型 | 适用表型 | 核心方程 | 特点 |
+  |-----|--------|--------|------|
+  | 卡方检验 | 病例-对照 | 观测 vs 期望等位体频率 2×2 表 | 简单，不能加入协变量 |
+  | 逻辑回归 | 病例-对照 | $\text{logit}(P) = \mu + \beta \cdot SNP + \mathbf{C}\boldsymbol{\gamma}$ | 可加协变量，应用广泛 |
+  | 线性回归 | 定量性状 | $Y = \mu + \beta \cdot SNP + \mathbf{C}\boldsymbol{\gamma} + \varepsilon$ | 简单直接 |
+  | 混合线性模型（MLM） | 两者皆可 | $Y = \mu + \beta \cdot SNP + \mathbf{Q}\mathbf{v} + \mathbf{Z}\mathbf{u} + \varepsilon$ | 同时控制群体结构（Q）和亲缘关系（K） |
+
+- **混合线性模型（Mixed Linear Model，MLM）详解**：
+  - $\mathbf{Q}$ 矩阵（群体结构矩阵）：来自 STRUCTURE 软件的祖先成分估计，或 PCA 前几个主成分向量
+  - $\mathbf{K}$ 矩阵（亲缘关系矩阵 / Kinship Matrix）：基于全基因组 SNP 估算的个体间基因组相似度；捕获多基因背景效应
+  - **Q+K 模型**：同时纳入 Q 和 K，是植物 GWAS 的标准模型（TASSEL 软件）
+  - **EMMA/EMMAX/GEMMA/BLINK**：对 MLM 的计算进行加速，使其可用于大样本（数万个体）；BLINK（Bayesian-information criterion based Iterative Mixed Model Association）在每一步更新 K 矩阵，进一步提升检测功效
+
+- **多重检验校正**：
+  - **问题本质**：对 100 万个 SNP 各以 $\alpha = 0.05$ 检验，即使完全随机数据，期望也会出现 5 万个"显著"结果
+  - **Bonferroni 校正**：$\alpha_{\text{adjusted}} = \alpha / m$（$m$ 为检验总数）；对于人类 GWAS，$5\times10^{-8}$ 即来源于 $0.05 / 10^6$
+  - **为什么不是精确 Bonferroni？**：SNP 间存在 LD（非独立），实际独立检验数约为 10 万–100 万（而非严格的百万），$5\times10^{-8}$ 是经验值而非严格推导
+  - **FDR（False Discovery Rate）**：Benjamini-Hochberg 方法；控制的是"被错误宣称显著的比例"，而非"犯至少一次 I 型错误的概率"；在发现驱动的探索性分析中更常用
+  - **提示性阈值（Suggestive Threshold）**：$p < 10^{-5}$；通常在报告中标注，用于显示"值得关注但尚未达到严格显著"的位点
+  - **统计功效与样本量**：在常见效应量（OR ≈ 1.1–1.3）和 MAF ≈ 20% 的典型场景下，达到全基因组显著性通常需要数千到数万例样本；UK Biobank（50 万人）等生物银行的建立根本性地改变了 GWAS 的格局
+
+**计划实践内容**：R 中用逻辑回归对模拟数据执行单位点关联检验；比较不同校正方法的阈值差异；PLINK 执行全基因组关联分析。
+
+```bash
+# PLINK: basic case-control GWAS (logistic regression)
+plink --bfile gwas_data \
+  --logistic --covar pca_covariates.txt \
+  --covar-number 1-10 \
+  --out gwas_results
+
+# PLINK: quantitative trait GWAS (linear regression)
+plink --bfile gwas_data \
+  --linear --pheno phenotype.txt \
+  --covar pca_covariates.txt \
+  --out gwas_quant_results
+```
+
+---
+
+## 专题 3.5：GWAS 结果可视化与候选位点解析
+
+**对应文件**：genomics_variant_lesson4.qmd（待编写）
+
+GWAS 分析完成后，结果的可视化与解读是连接统计输出和生物学洞察的关键步骤。曼哈顿图（Manhattan Plot）提供全基因组范围内显著关联位点的直观总览；Q-Q 图（Quantile-Quantile Plot）是检验统计模型是否存在系统性偏差的必要诊断工具；LocusZoom 图则对每个显著"峰"进行区域精细展示，揭示候选位点与 LD 结构的关系。这三张图是任何 GWAS 论文的标准组合，理解其每一处细节是阅读文献的基础能力。
+
+{{Wiki:Manhattan_plot}}
+
+**核心概念**：
+
+- **曼哈顿图**：
+  - X 轴为按染色体排列的基因组位置，Y 轴为 $-\log_{10}(p)$
+  - 红色虚线（通常 $p = 5\times10^{-8}$）为全基因组显著阈值；蓝色虚线（$p = 10^{-5}$）为提示性阈值
+  - 显著"峰"（Peak）通常不是单个孤立 SNP，而是由 LD 连接的一簇 SNP 同时显著——这是真实关联信号的特征，也是假阳性（如技术批次效应）与真实信号的重要区别
+  - 每条染色体的峰数、峰高、区域宽度均含有生物学信息：宽峰提示较强的 LD 或选择清除；窄而高的峰提示已精确定位
+
+- **Q-Q 图（Quantile-Quantile Plot）与 λ 膨胀因子**：
+  - X 轴为零假设下 $p$ 值的理论分布（均匀分布的 $-\log_{10}$ 变换），Y 轴为观测 $p$ 值
+  - 若模型正确、无混杂，绝大多数点应落在对角线上；真实关联信号体现为右上角偏离对角线的"尾巴"
+  - **$\lambda$（Genomic Inflation Factor）**：中位卡方统计量与零假设期望中位卡方的比值；$\lambda = 1.0$ 理想；$\lambda > 1.05$ 通常提示存在群体分层未被充分校正或样本混合
+  - **$\lambda_{1000}$（按 1000 人校正的 λ）**：消除样本量效应的标准化 λ 值，用于跨研究比较
+
+- **LocusZoom 区域图**：
+  - 针对每个显著位点，展示一个 1–2 Mb 的区域范围内所有 SNP 的 $p$ 值
+  - 颜色编码代表每个 SNP 与最显著 SNP（"领头 SNP"）的 $r^2$ 值
+  - 下方的基因结构图显示区域内所有已知基因，辅助候选基因的初步筛选
+
+- **从峰到候选基因的初步解析**：
+  - **最近基因优先**：领头 SNP 所在基因或最近的编码基因通常最先被检视
+  - **功能注释整合**：位于外显子（尤其是非同义变异）、剪接位点、已知调控区域（ENCODE、GTEx）的 SNP 获得额外优先级
+  - **eQTL 初筛**：查询 GTEx 数据库，判断该区域内 SNP 是否与附近基因的表达水平相关
+  - **文献支持**：查阅 GWAS 目录（GWAS Catalog）确认该位点是否曾在独立研究中被重复
+
+**计划实践内容**：R 中使用 `ggplot2` / `CMplot` 绘制曼哈顿图；使用 `qqman` 包绘制 Q-Q 图并计算 λ 值。
+
+```r
+# R: draw Manhattan and Q-Q plots using qqman package
+library(qqman)
+
+# Manhattan plot
+manhattan(gwas_results,
+          chr = "CHR", bp = "BP", p = "P", snp = "SNP",
+          suggestiveline = -log10(1e-5),
+          genomewideline  = -log10(5e-8),
+          highlight = top_snps,
+          main = "GWAS Manhattan Plot")
+
+# Q-Q plot with lambda calculation
+qq(gwas_results$P, main = "Q-Q Plot of GWAS p-values")
+lambda <- median(qchisq(gwas_results$P, df = 1,
+                         lower.tail = FALSE)) / qchisq(0.5, df = 1)
+cat(sprintf("Genomic inflation factor lambda = %.3f\n", lambda))
+```
+
+---
+
+# 模块 C：后 GWAS 分析
+
+:::note
+**模块目标：** 掌握从 GWAS 显著位点推进到因果基因与功能机制的分析路径；了解多基因风险评分和罕见变异分析的基本框架。
+:::
+
+## 专题 3.6：精细定位与功能验证
+
+**对应文件**：genomics_variant_lesson5.qmd（待编写）
+
+GWAS 检测到的显著位点并不直接等同于因果变异——它可能只是与真正致病/效应变异处于高 LD 的"标签 SNP"，而整个 LD 区块中可能包含数十甚至数百个候选位点。**精细定位（Fine Mapping）**的目标是在 GWAS 峰内将候选变异集缩窄至最可能的因果变异（通常以"可信集，Credible Set"表示）。功能验证则通过整合表达数据（eQTL）、表观遗传信息和因果推断框架，进一步确定是哪个基因、通过哪种机制介导了遗传关联信号。
+
+{{Wiki:Fine_mapping}}
+
+**核心概念**：
+
+- **条件分析（Conditional Analysis）**：在关联检验模型中将领头 SNP 作为协变量，检验同一区域是否存在独立的次级信号；反复迭代直到区域内无更多独立信号；用于识别同一 LD 区块内的多重独立关联
+- **贝叶斯精细定位与可信集（Credible Set）**：基于每个 SNP 的后验概率（Posterior Inclusion Probability，PIP）构建"90% 可信集"——包含因果变异的概率 ≥ 90% 的最小 SNP 集合；FINEMAP、SuSiE 是常用工具；高质量的精细定位可信集有时只含 1–3 个候选 SNP
+- **表达数量性状位点（eQTL）**：影响附近基因表达水平的遗传变异；**GTEx（Genotype-Tissue Expression）计划**系统检测了 54 种人体组织中 49 个体的 eQTL，是 GWAS 功能解读的核心参考资源
+  - *cis*-eQTL：作用于 1 Mb 以内基因的表达
+  - *trans*-eQTL：作用于远端（> 1 Mb 或跨染色体）基因的表达；效应较弱，假阳性率较高
+- **共定位（Colocalization）**：统计检验某个基因组区域的 GWAS 信号和 eQTL 信号是否共享同一因果变异；`coloc` R 包计算五种假设的后验概率，其中 H4（共享因果变异）的高后验概率是将 GWAS 位点连接到特定基因最有力的遗传证据
+- **孟德尔随机化（Mendelian Randomization，MR）**：将遗传变异（GWAS 命中位点）作为"工具变量"，在观察性数据中推断暴露（如血脂水平）与结局（如心肌梗死）之间的因果关系；规避传统流行病学中混杂因素和反向因果性的问题；核心假设是工具变量需满足相关性、独立性、排他性三个条件
+
+**计划实践内容**：R 中使用 `coloc` 包对模拟 GWAS + eQTL 数据进行共定位分析；解读 H0–H4 后验概率；`TwoSampleMR` 包进行简单 MR 分析示例。
+
+---
+
+## 专题 3.7：多基因风险评分与罕见变异分析
+
+**对应文件**：genomics_variant_lesson6.qmd（待编写）
+
+复杂性状（如2型糖尿病、精神分裂症、身高）的遗传结构并非由少数效应量大的位点决定，而是由数千至数十万个效应量微小的常见变异共同塑造——这一认识催生了**多基因风险评分（Polygenic Risk Score，PRS）**的方法框架：将来自大型 GWAS 的数千个 SNP 的效应量叠加，为每个个体计算一个综合的遗传风险指数。与此同时，GWAS 框架只对常见变异（MAF > 1%–5%）有充分的统计功效；对于效应量更大但频率极低的罕见变异，需要专门设计的**聚合检验**方法。
+
+{{Wiki:Polygenic_risk_score}}
+
+**核心概念**：
+
+- **多基因风险评分（PRS）**：
+
+  $$\text{PRS}_i = \sum_{j=1}^{m} \hat{\beta}_j \cdot x_{ij}$$
+
+  其中 $\hat{\beta}_j$ 为第 $j$ 个 SNP 在 GWAS 中估计的效应量（log OR 或回归系数），$x_{ij}$ 为个体 $i$ 在位点 $j$ 的次等位基因拷贝数（0/1/2）
+
+- **Clumping + Thresholding（C+T）算法**：
+  1. **Clumping（LD 去冗余）**：对每个显著 SNP，去除 LD 窗口内（如 500 kb，$r^2 > 0.1$）与其高度相关的 SNP，仅保留最显著的 SNP 作为"代表性 SNP"
+  2. **Thresholding（p 值阈值筛选）**：在不同 p 值阈值（如 $5\times10^{-8}$, $10^{-5}$, $0.01$, $0.05$, $0.5$, $1.0$）下分别计算 PRS，通过在独立验证集中比较预测效果选取最优阈值
+  - PRSice-2 是自动化执行 C+T 流程并优化阈值的标准工具
+
+- **PRS 的应用与局限**：
+  - **应用**：疾病早期风险分层、临床辅助决策（结合家族史和传统危险因素）、药物反应预测
+  - **局限**：PRS 基于单一人群构建的 GWAS 结果，在其他祖先群体中预测效果显著下降（可移植性问题）；不能捕捉罕见变异和基因-环境交互的遗传效应
+
+- **缺失遗传力（Missing Heritability）问题**：
+  - 复杂性状的观测遗传力（来自双生子研究）往往远高于 GWAS 显著位点所能解释的遗传力
+  - 原因：效应量极小的大量亚阈值位点、罕见变异、基因-基因交互（上位性）、基因-环境交互、表观遗传等
+  - 低频和罕见变异的贡献是当前研究前沿
+
+- **罕见变异聚合检验**：
+  - **单 SNP 检验的局限**：MAF < 1% 时，单个位点在标准样本量下几乎没有统计功效（每种基因型的观测例数过少）
+  - **Burden 检验**：将某一基因（或功能区域）内所有罕见变异的等位体加权合并为一个"总负担分数"，然后检验病例与对照的负担分数差异；假设同一基因内所有罕见变异均朝同一方向影响表型
+  - **SKAT（Sequence Kernel Association Test）**：基于核函数的检验，允许同一基因内不同变异的效应方向不同；将多个变异对表型的贡献建模为随机效应
+  - **SKAT-O**：Burden 检验与 SKAT 的最优混合，自适应选择最优权重；在实际应用中一般优于单独使用 Burden 或 SKAT
+
+- **大规模生物银行与 GWAS 新格局**：
+  - **UK Biobank**（50 万个体，英国）：覆盖超过 4000 种表型，是目前规模最大的单一 GWAS 资源
+  - **FinnGen**（50 万+，芬兰）：利用芬兰人群奠基者效应优势，富集了特定罕见变异
+  - **中国慢性病前瞻性研究（CKB）/ 中国人群精准医学计划（ChinaMAP）**：针对中国汉族人群的大规模生物银行
+
+**计划实践内容**：R 中手工计算并可视化简单 PRS 分布；PRSice-2 命令行示例；SKAT/SKAT-O 的 R 包应用演示。
+
+```r
+# R: simple PRS computation demonstration
+# gwas_effects: data frame with columns SNP, BETA (effect size from GWAS)
+# geno_matrix:  n_individuals x n_snps matrix of dosage values (0/1/2)
+
+compute_prs <- function(geno_matrix, gwas_effects) {
+  # align SNPs between dosage matrix and effect sizes
+  shared_snps <- intersect(colnames(geno_matrix), gwas_effects$SNP)
+  geno_sub    <- geno_matrix[, shared_snps, drop = FALSE]
+  betas       <- gwas_effects$BETA[match(shared_snps, gwas_effects$SNP)]
+  # weighted sum across SNPs for each individual
+  prs_scores  <- as.vector(geno_sub %*% betas)
+  return(prs_scores)
+}
+```
+
+---
+
+# 关键工具箱
+
+| 分析阶段 | 工具 | 用途 |
+|---------|------|------|
+| 遗传标记 | GenAlEx, PowerMarker | SSR 多样性分析与遗传距离计算 |
+| 遗传图谱 | R/qtl2, ASMap | 遗传图谱构建与 QTL 定位 |
+| LD 图谱 | Haploview, LDblockshow | LD 区块可视化与标签 SNP 选取 |
+| 基因型插补 | IMPUTE2, Michigan Imputation Server | SNP 芯片数据插补至全基因组密度 |
+| GWAS（人类） | PLINK 1.9 / 2.0, REGENIE | 全基因组关联分析（大样本优化） |
+| GWAS（动植物） | TASSEL, GEMMA, BLINK | 含 Q+K 混合模型的 GWAS |
+| 结果可视化 | qqman, CMplot, ggplot2 | 曼哈顿图、Q-Q 图绘制 |
+| 区域可视化 | LocusZoom, locus2gene | 显著位点区域精细图 |
+| 精细定位 | SuSiE, FINEMAP | 贝叶斯精细定位与可信集构建 |
+| eQTL 查询 | GTEx Portal, eQTL Catalogue | 组织特异性 eQTL 检索 |
+| 共定位 | coloc（R 包） | GWAS + eQTL 信号共定位检验 |
+| 孟德尔随机化 | TwoSampleMR（R 包）, MR-Egger | 因果推断 |
+| 多基因风险评分 | PRSice-2, LDpred2 | PRS 计算与优化 |
+| 罕见变异 | SKAT（R 包）, SAIGE-GENE | 基因水平聚合检验 |
+
+---
+
+# 快速参考：核心命令速查
+
+```bash
+# === 模块 B：GWAS 流程 ===
+
+# PLINK: data QC (MAF / HWE / genotype call rate)
+plink --bfile raw_data \
+  --maf 0.01 --hwe 1e-6 --geno 0.05 --mind 0.1 \
+  --make-bed --out qc_data
+
+# PLINK: PCA for population stratification
+plink --bfile qc_data --indep-pairwise 500 5 0.2 --out pruned
+plink --bfile qc_data --extract pruned.prune.in --pca 20 --out pca_results
+
+# PLINK: logistic regression GWAS with PCA covariates
+plink --bfile qc_data \
+  --logistic --covar pca_results.eigenvec \
+  --covar-number 1-10 --1 \
+  --out gwas_logistic
+
+# PLINK: LD decay estimation
+plink --bfile qc_data \
+  --ld-window-r2 0 --ld-window 999999 --ld-window-kb 1000 \
+  --r2 --out ld_decay_output
+```
+
+```r
+# === R: Manhattan and Q-Q plots ===
+library(qqman)
+library(data.table)
+
+results <- fread("gwas_logistic.assoc.logistic")
+results <- results[results$TEST == "ADD", ]
+
+# Manhattan plot
+manhattan(results, chr = "CHR", bp = "BP", p = "P", snp = "SNP",
+          suggestiveline = -log10(1e-5),
+          genomewideline  = -log10(5e-8),
+          main = "GWAS Manhattan Plot")
+
+# Q-Q plot
+qq(results$P, main = "Quantile-Quantile Plot")
+
+# Genomic inflation factor
+chi2_obs <- qchisq(results$P, df = 1, lower.tail = FALSE)
+lambda   <- median(chi2_obs, na.rm = TRUE) / qchisq(0.5, df = 1)
+cat(sprintf("Lambda = %.4f\n", lambda))
+```
+
+---
+
+# 学习路径建议
+
+**推荐顺序**：模块 A → 模块 B 专题 3.3 → 专题 3.4 → 专题 3.5 → 模块 C。模块 B 是本章的核心，建议在理解 LD 图谱（专题 3.3）后再进入统计模型（专题 3.4），避免在不理解 LD 结构的情况下机械套用 GWAS 流程。
+
+**推荐教学数据集**：
+
+| 数据集 | 规模 | 适用专题 |
+|--------|------|---------|
+| 模拟 F2 群体 QTL 数据（R/qtl2 内置） | 约 300 个体 × 100 标记 | 专题 3.2 |
+| 1000 Genomes Phase 3（chr22） | 2504 个体 × ~100 万 SNP | 专题 3.3、3.4、3.5 |
+| GWAS Catalog 公开汇总统计数据 | 百万级位点 | 专题 3.5、3.6 |
+| GTEx v8 公开 eQTL 数据 | 49 组织 | 专题 3.6 |
+
+**进阶方向**：
+
+- 多性状 GWAS（Multi-trait GWAS）与遗传相关分析（LDSC 软件）
+- 空间转录组 + GWAS 联合分析
+- 全基因组多基因评分（Genome-wide PRS）的临床转化
+- 结构变异（SV）的群体遗传学分析
+
+---
+
+# 完成本章学习后，你将能够：
+
+✓ 识别并比较 RFLP、SSR、AFLP、SNP 四类标记的原理、优缺点及适用场景
+✓ 理解遗传距离（cM）与物理距离（bp）的概念差异，解释重组热点和着丝粒效应的成因
+✓ 使用 R/qtl2 对 QTL 定位数据进行区间作图，解读 LOD 值曲线与置信区间
+✓ 解释 $r^2$ 和 LD 衰减曲线的含义，说明 LD 区块和标签 SNP 的遗传学意义
+✓ 理解 GWAS 中逻辑回归、线性回归和混合线性模型（Q+K 模型）的适用场景与区别
+✓ 解释全基因组显著性阈值 $5\times10^{-8}$ 的来源与局限性
+✓ 独立解读曼哈顿图和 Q-Q 图（含 λ 膨胀因子），识别潜在的系统性偏差
+✓ 理解精细定位（可信集）、eQTL 分析和共定位的基本逻辑
+✓ 解释多基因风险评分（PRS）的计算原理及其在不同人群中的可移植性局限
+✓ 说明为什么罕见变异需要聚合检验（Burden / SKAT），以及其与 GWAS 的统计功效差异
