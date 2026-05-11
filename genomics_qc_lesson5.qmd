@@ -813,7 +813,315 @@ AFS 直方图的形状含义（示意）：
 
 AFS 是验证基因组数据质量的实用工具——若你的 WGS 变异集 AFS 形状异常（如高频区异常富集，或低频区完全缺失），往往提示测序深度不均匀、过度过滤或样本混合问题，而非真实的生物学信号。
 
-## 其他重要概念（预习提示）
+## 突变：一切遗传变异的原始来源
+
+前面所有关于等位体频率、漂变和选择的讨论都有一个共同的前提：变异从哪里来？答案只有一个——**突变（Mutation）**。没有突变，等位体频率无论如何漂移或被选择，最终都会因固定效应而趋向单态（全为参考等位体）；正是持续不断的新突变，为进化提供了取之不尽的原材料。
+
+{{Wiki:Mutation}}
+
+### 点突变的类型：转换与颠换
+
+碱基替换（点突变）按化学结构可分为两类：
+
+- **转换（Transition，Ti）**：嘌呤与嘌呤之间（A↔G）、或嘧啶与嘧啶之间（C↔T）的互换。化学结构相似，热力学上更容易发生。
+- **颠换（Transversion，Tv）**：嘌呤与嘧啶之间的互换（A↔C、A↔T、G↔C、G↔T）。结构差异大，发生概率相对较低。
+
+从排列组合看，4 种碱基共有 12 种可能的单碱基替换，其中 4 种为转换、8 种为颠换；若突变完全随机，Tv:Ti 比值应约为 2:1。然而，实际测量的人类基因组 **Ti/Tv 比值约为 2.0–2.1**，转换显著过多——原因是 CpG 二核苷酸的超突变性（见下文）以及转换在化学机制上更容易发生。
+
+**Ti/Tv 比值作为数据质量指标**：
+
+| 数据类型 | 期望 Ti/Tv | 偏低的含义 |
+|--------|----------|----------|
+| 全基因组测序（WGS） | 2.0–2.1 | 假阳性（测序错误）过多，应检查过滤阈值 |
+| 全外显子测序（WES） | 2.8–3.0 | 编码区功能约束使转换富集 |
+| RNA-seq SNP calling | 3.0–3.5 | 转录区选择压力更强 |
+
+WES 的 Ti/Tv 更高，是因为外显子区域受到更强的纯化选择——颠换对蛋白质结构的破坏往往更大，被更积极地清除，留下来的多态性中转换比例更高。**Ti/Tv 显著偏低（如 < 1.5）是变异检测质量不达标的警示信号**，提示需重新审视过滤参数或测序质量。
+
+### CpG 二核苷酸的超突变性
+
+人类基因组中，**CpG 位点**（5′-C-G-3′，胞嘧啶后紧跟鸟嘌呤）的甲基化修饰使得胞嘧啶极易自发脱氨基（C→T），导致 CpG 位点的 C→T 突变率约为基因组平均水平的 **10–15 倍**。这种超突变性（CpG Hypermutability）有几个重要推论：
+
+1. CpG 位点的 C→T 转换贡献了人类突变总量的约 25%，尽管 CpG 在基因组中只占约 1% 的位点
+2. 基因组中观察到的 CpG 频率远低于随机预期（"CpG 缺失"，CpG Suppression），正是因为高突变率持续消耗 CpG 位点
+3. CpG 岛（CpG Island）——通常位于基因启动子附近、甲基化受到保护的 CpG 富集区域——因未甲基化而维持了较高的 CpG 密度
+
+### 从头突变率与遗传病负担
+
+人类**从头突变率（De Novo Mutation Rate）**约为 $1.0$–$1.5 \times 10^{-8}$ 每碱基每代，全基因组约 30 亿碱基，意味着每个个体相较于其父母，携带约 **50–70 个新的点突变**。这一数字看似不多，但：
+
+- 新突变在所有已知变异中占绝大多数（约 99% 的人类常见 SNP 历史超过数万年）
+- 父亲年龄与从头突变数量正相关（高龄父亲增加约 1–2 个额外突变/年）——这是一些罕见发育障碍（如孤独症谱系障碍）发病率与父亲年龄正相关的分子基础
+- 从头突变在亲子三代（trio）测序研究中可直接检测，是孟德尔遗传病因果鉴定的主要方法
+
+```r
+# R: Transition/Transversion ratio calculation from a VCF summary
+# In practice, bcftools stats reports Ti/Tv directly; this shows the manual logic.
+
+# Define mutation categories
+mutation_types <- data.frame(
+  from = c("A","A","A","C","C","G","G","T","T","T","C","G"),
+  to   = c("C","G","T","A","G","A","T","A","C","G","T","C"),
+  type = c("Tv","Ti","Tv","Tv","Ti","Ti","Tv","Tv","Tv","Ti","Ti","Tv")
+)
+
+# Simulated counts from a WGS callset (typical proportions)
+set.seed(7)
+n_total <- 4e6   # ~4 million SNPs in a typical WGS
+ti_frac <- 2.05 / (1 + 2.05)   # Ti/Tv = 2.05 → Ti fraction
+n_ti <- round(n_total * ti_frac)
+n_tv <- n_total - n_ti
+
+cat(sprintf("Simulated SNP count: %d\n", n_total))
+cat(sprintf("  Transitions (Ti): %d  (%.1f%%)\n", n_ti, 100 * n_ti / n_total))
+cat(sprintf("  Transversions (Tv): %d  (%.1f%%)\n", n_tv, 100 * n_tv / n_total))
+cat(sprintf("  Ti/Tv ratio: %.3f\n", n_ti / n_tv))
+cat("\nExpected Ti/Tv by data type:\n")
+cat("  WGS: 2.0–2.1 (pass)\n")
+cat("  WES: 2.8–3.0 (pass)\n")
+cat("  < 1.5: flag for QC review\n")
+```
+
+---
+
+## 基因流动：种群间的遗传连通
+
+遗传漂变和自然选择在相互隔离的种群内各自运作，会使种群间的遗传差异不断积累。**基因流动（Gene Flow）**是对抗这一分化趋势的力量：当个体（或配子）在种群间迁移并成功繁殖时，外来等位体便进入目标种群，使两个种群的频率趋于均一。
+
+{{Wiki:Gene_flow}}
+
+从进化力量的框架来看，突变、漂变、选择和基因流动共同构成了改变等位体频率的四大机制：
+
+```
+四种进化力量及其方向性：
+
+突变（Mutation）    →  产生新的等位体（随机，速率极低）
+遗传漂变（Drift）  →  随机改变频率（在小种群中更强）
+自然选择（Selection）→  定向改变频率（有利等位体升频）
+基因流动（Gene Flow）→  使种群间频率趋于均一
+```
+
+### Fst：量化种群间遗传分化
+
+**群体分化指数（Fixation Index，$F_{ST}$）**是最常用的种群间遗传分化度量，其直觉含义是"等位体频率在不同种群间的差异占总多态性的比例"：
+
+$$F_{ST} = \frac{H_T - H_S}{H_T}$$
+
+其中 $H_T$ 是将所有个体视为单一大群体时的期望杂合度，$H_S$ 是各子群体期望杂合度的加权平均值。$F_{ST}$ 介于 0（各群体频率相同，无分化）和 1（每个群体固定不同等位体，完全分化）之间。
+
+| $F_{ST}$ 范围 | 解读 |
+|------------|------|
+| 0–0.05 | 轻微分化（同一连续种群，频繁基因流动） |
+| 0.05–0.15 | 中等分化（不同地理区域的人类亚群） |
+| 0.15–0.25 | 较高分化（不同大陆人群间） |
+| > 0.25 | 极高分化（不同物种间，或长期隔离种群） |
+
+人类不同大陆人群间的全基因组平均 $F_{ST}$ 约为 **0.10–0.15**，远低于一般动物的种群分化水平，反映了人类历史上频繁的迁徙与混合。个别受到强烈正向选择的位点 $F_{ST}$ 可接近 1——例如，控制北欧人肤色的 *SLC24A5* rs1426654 位点，在欧洲人（几乎全为 A 等位体）和非洲/东亚人（几乎全为 G 等位体）之间的 $F_{ST}$ 约为 0.99，是自然选择使种群极端分化的典型证据。
+
+### 混合（Admixture）：多个祖先群体的基因组遗迹
+
+当两个长期隔离的种群重新接触并相互通婚时，其后代基因组将由来自不同祖先种群的染色体片段镶嵌拼接而成——这称为**遗传混合（Admixture）**。现代基因组学工具（如 STRUCTURE、ADMIXTURE）通过分析数万个 SNP，可以将每个个体的基因组分解为来自不同"祖先成分"（Ancestry Component）的比例，绘制出直观的"条形图"（Bar Plot）。
+
+:::note
+**混合分析在法医与临床中的应用**
+
+遗传混合分析不仅有进化学意义，在临床遗传学中也有实际价值：多基因风险评分（PRS）在构建训练集时所用的人群背景直接决定了其在其他人群中的预测精度。一个基于欧洲人群构建的 PRS 在高度混合的美洲人群（如拉丁美洲人）中效果大幅下降，其根本原因正是不同祖先成分在效应量估计上的系统性偏差。准确的混合比例估计是跨人群 PRS 迁移校正的第一步。
+:::
+
+---
+
+## Wright-Fisher 模型：遗传漂变的数学骨架
+
+"有限种群导致随机漂变"这一直觉，有着精确的数学表述——**Wright-Fisher 模型（Wright-Fisher Model）**。理解这个模型，可以从直觉的"硬币翻转类比"跃升到可计算的量化预测。
+
+### 模型的核心假设
+
+Wright-Fisher 模型将种群抽象为以下最简框架：
+
+- 种群规模固定为 $N$ 个**二倍体**个体（即 $2N$ 个等位体拷贝）
+- 每一代的 $2N$ 个等位体，通过对上一代 $2N$ 个等位体**有放回随机抽样**产生
+- 无突变、无选择、随机交配
+
+在这一框架下，若当前代某等位体 $A$ 的拷贝数为 $k$（频率 $p = k/2N$），则下一代 $A$ 的拷贝数 $k'$ 服从**二项分布**：
+
+$$k' \sim \text{Binomial}(2N,\ p)$$
+
+因此，等位体频率在相邻两代间的期望变化量为零（$\mathbb{E}[\Delta p] = 0$，漂变无方向），但**方差**为：
+
+$$\text{Var}(\Delta p) = \frac{p(1-p)}{2N}$$
+
+这个公式非常直观：$p = 0.5$ 时方差最大（中间频率最不稳定）；$N$ 越大，方差越小（漂变越弱）。
+
+### 固定时间的估算
+
+一个初始频率为 $p_0$ 的等位体，在纯漂变下最终要么固定（频率 → 1）要么丢失（频率 → 0），其固定概率恰好等于其当前频率 $p_0$。**平均固定时间**约为：
+
+$$\bar{t}_{\text{fix}} \approx 4 N_e \text{ 代}$$
+
+对于人类（$N_e \approx 10{,}000$），一个中性新突变被固定的平均时间约为 **4 万代**（约 100 万年）。这解释了为什么很多古老的人类多态性（杂合 SNP）在全球不同人群中均有分布——它们在人类走出非洲之前已存在，时间足够长。
+
+```r
+# R: Wright-Fisher drift simulation — multiple allele frequency trajectories
+# Shows how frequency trajectories diverge more with smaller population size
+
+wf_simulation <- function(N, p0, n_gen, n_rep) {
+  # N: diploid population size (2N allele copies)
+  # p0: initial allele frequency
+  # n_gen: number of generations to simulate
+  # n_rep: number of independent replicate trajectories
+  trajectories <- matrix(NA_real_, nrow = n_gen + 1, ncol = n_rep)
+  trajectories[1, ] <- p0
+
+  for (rep in seq_len(n_rep)) {
+    p <- p0
+    for (gen in seq_len(n_gen)) {
+      # binomial sampling: draw 2N alleles, count successes (A alleles)
+      k  <- rbinom(1, size = 2 * N, prob = p)
+      p  <- k / (2 * N)
+      trajectories[gen + 1, rep] <- p
+      if (p == 0 || p == 1) {
+        trajectories[(gen + 1):nrow(trajectories), rep] <- p  # absorbing state
+        break
+      }
+    }
+  }
+  trajectories
+}
+
+set.seed(2024)
+n_gen <- 200
+p0    <- 0.3
+
+# Compare small (N=50) vs large (N=500) population
+traj_small <- wf_simulation(N = 50,  p0 = p0, n_gen = n_gen, n_rep = 20)
+traj_large <- wf_simulation(N = 500, p0 = p0, n_gen = n_gen, n_rep = 20)
+
+par(mfrow = c(1, 2), mar = c(4, 4, 3, 1))
+
+# Small population (N=50): strong drift, rapid fixation/loss
+matplot(0:n_gen, traj_small, type = "l", lty = 1,
+        col = adjustcolor("steelblue", 0.5),
+        ylim = c(0, 1), xlab = "Generation", ylab = "Allele frequency (p)",
+        main = sprintf("Small population (N=50)\nVar(Δp) = %.4f per gen",
+                       p0 * (1 - p0) / (2 * 50)))
+abline(h = c(0, 1), lty = 2, col = "gray50")
+abline(h = p0, lty = 3, col = "firebrick")
+
+# Large population (N=500): weak drift, slow divergence
+matplot(0:n_gen, traj_large, type = "l", lty = 1,
+        col = adjustcolor("darkorange", 0.5),
+        ylim = c(0, 1), xlab = "Generation", ylab = "Allele frequency (p)",
+        main = sprintf("Large population (N=500)\nVar(Δp) = %.4f per gen",
+                       p0 * (1 - p0) / (2 * 500)))
+abline(h = c(0, 1), lty = 2, col = "gray50")
+abline(h = p0, lty = 3, col = "firebrick")
+```
+
+运行上述代码会看到一个清晰对比：**小种群（N=50）**中，各条频率轨迹在 50–100 代内迅速发散，许多轨迹达到 0 或 1（固定或丢失）；**大种群（N=500）**中，轨迹在初始频率附近波动，200 代内几乎无轨迹到达固定/丢失——漂变的速率与 $N_e$ 成反比，直观而精确地体现了公式中的 $1/2N$ 因子。
+
+:::note
+**Wright-Fisher 模型的局限**
+
+现实种群不满足 WF 模型的几个关键假设：世代重叠、性别比例不等、个体繁殖成功率差异（reproduction variance）、以及交配非随机——这些都会使实际漂变强度偏离 $N_e = N$ 的预测，这正是为什么我们需要引入"有效种群大小 $N_e$"这一概念作为等效的 WF 种群规模：$N_e$ 是与实际种群产生相同漂变强度的理想 WF 种群大小。
+:::
+
+---
+
+## Tajima's D：中性进化偏离的统计检验
+
+掌握了 AFS 的形状含义之后，一个自然的问题是：如何将这种"形状偏离"量化为一个可以进行统计检验的数字？**Tajima's D**（由日本遗传学家 Fumio Tajima 于 1989 年提出）正是为此而设计的，它通过比较两种估算核苷酸多样性的方法之间的差异，将 AFS 的形状偏离压缩为单一统计量。
+
+### 两种多样性估计量
+
+Tajima's D 比较的是同一数据的**两种等价估计量**：
+
+**Watterson's $\hat{\theta}_W$（基于分离位点数）**：
+
+$$\hat{\theta}_W = \frac{S}{\sum_{i=1}^{n-1} \frac{1}{i}}$$
+
+其中 $S$ 为序列中观测到的分离位点（segregating sites）总数，$n$ 为采样个体数。$\hat{\theta}_W$ 对低频和高频变异同等权重，只关心"有多少位点是多态的"。
+
+**$\hat{\pi}$（基于两两平均差异数）**：
+
+即前文定义的核苷酸多样性，对每对序列做平均。$\hat{\pi}$ 对**中等频率**的变异给予更高权重（中频等位体对两两比较贡献更大），对极低频/极高频变异权重相对低。
+
+### Tajima's D 的计算与解读
+
+$$D = \frac{\hat{\pi} - \hat{\theta}_W}{\sqrt{\text{Var}(\hat{\pi} - \hat{\theta}_W)}}$$
+
+在中性进化（无选择、无人口规模变化）下，两种估计量在期望上相等，$D$ 近似为 0。
+
+| Tajima's D 值 | AFS 特征 | 可能的进化解释 |
+|-------------|---------|-------------|
+| $D \approx 0$ | 标准 L 形，符合中性期望 | 中性进化，种群规模稳定 |
+| $D < 0$（显著） | 低频变异过多（左侧偏高） | 纯化选择（清除有害突变） 或 种群快速扩张（大量新突变涌现） |
+| $D > 0$（显著） | 中等频率变异过多 | 平衡选择（维持中等频率）或 种群瓶颈（低频变异丢失） |
+
+**直觉解读**：$D$ 本质上是在问"你的低频变异相对于预期是太多还是太少"。
+
+- 如果 $D < 0$（低频变异**过多**），说明大量变异处于极低频——这与近期新突变爆发（种群扩张）或持续清除高频有害突变（纯化选择）的预期一致
+- 如果 $D > 0$（中频变异**过多**），说明变异在群体中维持在中等频率——这是平衡选择（两个等位体都有优势）或历史瓶颈（低频变异被随机清除）的信号
+
+:::warning
+**Tajima's D 的解读需要结合背景**
+
+$D$ 的显著偏离可以同时由选择和人口历史事件（扩张/瓶颈）解释——两者对 AFS 的影响方向相同，仅凭 $D$ 无法区分。实践中，通常先估算全基因组平均 $D$ 作为人口历史基线，再识别显著偏离基线的局部基因组区域作为选择信号候选。此外，$D$ 对采样深度（$n$）敏感，不同研究间的比较须谨慎。
+:::
+
+### 经典案例
+
+**HBB 基因区域（非洲人群，疟疾流行区）**：包含镰状细胞贫血症突变（c.20A>T）的区域，由于平衡选择使杂合子优势维持，$D$ 值显著为正（约 +2.5 至 +4.0）——中等频率等位体远多于中性期望，是平衡选择最有力的基因组学证据之一。
+
+**MHC（主要组织相容性复合体）区域**：人类基因组中多态性最高的区域，长期平衡选择（免疫系统需要多样性识别不同病原体）使该区域整体 $D$ 显著为正。
+
+**蛋白质编码区全基因组平均**：由于纯化选择持续清除有害突变，编码区整体 $D$ 值略为负值（约 −0.3 至 −0.5），而非编码区则更接近 0，这一差异本身便是纯化选择在编码区发挥作用的间接证据。
+
+```r
+# R: conceptual demonstration of Tajima's D
+# We compare pi vs theta_W under different evolutionary scenarios
+
+tajima_demo <- function(freq_vec, n_seq) {
+  # freq_vec: derived allele frequencies of segregating sites
+  # n_seq: number of sequences sampled
+  S <- length(freq_vec)
+  if (S == 0) return(list(pi = 0, theta_w = 0, D_approx = NA))
+
+  # pi: mean pairwise differences (weighted by frequency)
+  # For a site with derived freq p, contribution to pi = 2p(1-p) * n/(n-1)
+  pi_hat <- mean(2 * freq_vec * (1 - freq_vec) * n_seq / (n_seq - 1))
+
+  # Watterson's theta_W
+  a1 <- sum(1 / seq_len(n_seq - 1))
+  theta_w <- S / (a1 * 1)   # per-site theta_w requires knowing sequence length
+
+  list(pi = round(pi_hat, 4),
+       theta_w = round(theta_w / 1000, 4),  # rough per-site scaling
+       ratio = round(pi_hat / (theta_w / 1000), 3))
+}
+
+# Scenario 1: neutral AFS (many rare variants, L-shape)
+neutral_afs <- c(0.02, 0.03, 0.02, 0.05, 0.04, 0.01, 0.03, 0.02, 0.30, 0.45)
+
+# Scenario 2: balancing selection (elevated intermediate frequencies)
+balancing_afs <- c(0.35, 0.40, 0.42, 0.38, 0.45, 0.50, 0.36, 0.43)
+
+# Scenario 3: purifying selection / expansion (excess rare variants)
+purifying_afs <- c(0.005, 0.008, 0.003, 0.006, 0.002, 0.004, 0.009, 0.007, 0.001, 0.003)
+
+cat("=== Tajima's D conceptual comparison ===\n\n")
+for (scenario in list(
+    list(name = "Neutral / stable",    freqs = neutral_afs),
+    list(name = "Balancing selection", freqs = balancing_afs),
+    list(name = "Purifying / expansion", freqs = purifying_afs)
+)) {
+  res <- tajima_demo(scenario$freqs, n_seq = 50)
+  cat(sprintf("Scenario: %-25s | pi = %.4f | pi/theta_W ratio = %.3f\n",
+              scenario$name, res$pi, res$ratio))
+  cat(sprintf("  → High pi/theta_W (>1) implies D > 0; Low (<1) implies D < 0\n\n"))
+}
+```
+
+## 其他重要概念
 
 下列概念在 GWAS 章节中将进一步介绍，此处仅作简要说明：
 
@@ -855,6 +1163,10 @@ AFS 是验证基因组数据质量的实用工具——若你的 WGS 变异集 A
 ✓ **自然选择** 在基因组留下可检测的印记：正向选择（乳糖酶 LCT）形成选择清除；纯化选择持续清除有害功能突变；平衡选择（SCD HBB）维持中等频率等位体共存
 ✓ **遗传多样性指标** 核苷酸多样性 π 和期望杂合度 $H_e$ 量化群体的整体多态性水平；非洲人群 π 高于非非洲人群，直接反映了走出非洲的奠基者效应和后续漂变积累
 ✓ **等位基因频率谱（AFS）** 是群体历史的综合快照：中性进化下呈 L 形（低频变异占多数）；形状偏离可诊断数据质量问题（深度不均、过度过滤）或推断群体历史（瓶颈、扩张、选择）
+✓ **突变（Ti/Tv）** 是一切遗传变异的原始来源；转换/颠换比值（Ti/Tv ≈ 2.0–2.1 for WGS）是变异检测质量的内置诊断指标；CpG 超突变性使胞嘧啶→胸腺嘧啶转换在基因组中高度富集
+✓ **基因流动（Gene Flow）** 通过种群间个体迁移使等位体频率趋于均一，与漂变和选择方向相反；$F_{ST}$ 量化种群间分化程度，人类大陆人群间全基因组平均约 0.10–0.15
+✓ **Wright-Fisher 模型** 提供了漂变的精确数学框架：$\text{Var}(\Delta p) = p(1-p)/2N_e$，频率波动的大小完全由有效种群大小决定；平均固定时间 $\approx 4N_e$ 代
+✓ **Tajima's D** 通过比较 $\hat{\pi}$ 与 $\hat{\theta}_W$ 的差异量化 AFS 偏离中性期望的方向：$D < 0$ 提示纯化选择或种群扩张；$D > 0$ 提示平衡选择或种群瓶颈；需结合全基因组背景解读
 ✓ **群体分层** 是 GWAS 最重要的混杂因素，PCA 协变量校正是标准应对方案
 ✓ **连锁不平衡（LD）** 赋予基因组区块结构，是基因型插补和 GWAS 精细定位的理论基础；详细方法见 GWAS 章节
 

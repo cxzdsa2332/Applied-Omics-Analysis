@@ -497,6 +497,242 @@ VQSR 的完整命令及所需资源文件下载见实践部分步骤四。
 mkdir -p hg002_chr21 reference giab logs
 ```
 
+## 总体流程
+
+在进入逐步操作之前，先建立对完整流程的全局认知。下图展示了本实践从预处理到评估的每个关键步骤及其数据流向（不含数据下载环节，假设输入文件已就位）：
+
+```
+输入文件
+  ├── HG002_chr21_rg.bam        ← 已比对、已添加 Read Group 的排序 BAM
+  ├── hg38_chr21.fasta          ← 参考基因组（含 .fai / .dict 索引）
+  ├── dbsnp138_chr21.vcf.gz     ← BQSR 已知变异排除列表
+  └── HG002_chr21_truthset.vcf.gz  ← GIAB 真阳性集（用于最终评估）
+
+          │
+          ▼
+┌─────────────────────────────┐
+│  步骤二A：MarkDuplicates     │  标记 PCR 扩增重复（FLAG 0x400）
+│  工具：gatk MarkDuplicates   │  输出：*_dedup.bam
+└──────────────┬──────────────┘
+               │
+               ▼
+┌─────────────────────────────┐
+│  步骤二B：BQSR               │  校正系统性碱基质量偏差
+│  BaseRecalibrator            │  ① 统计实际错误率 → recal.table
+│  ApplyBQSR                   │  ② 重写质量分数   → *_recal.bam
+└──────────────┬──────────────┘
+               │
+               ▼
+┌─────────────────────────────┐
+│  步骤三：HaplotypeCaller     │  局部重组装 + 单倍型打分
+│  工具：gatk HaplotypeCaller  │  -ERC GVCF 模式输出 → *.g.vcf.gz
+└──────────────┬──────────────┘
+               │
+               ▼
+┌─────────────────────────────┐
+│  GenotypeGVCFs               │  GVCF → 最终基因型（多位点联合）
+│  工具：gatk GenotypeGVCFs    │  输出：variants_raw.vcf.gz
+└──────────────┬──────────────┘
+               │
+        ┌──────┴──────┐
+        ▼             ▼
+   SelectVariants  SelectVariants
+   -select-type SNP  -select-type INDEL
+   snps_raw.vcf.gz   indels_raw.vcf.gz
+        │             │
+        ▼             ▼
+┌──────────────┐  ┌─────────────────┐
+│VariantFiltration│  │VariantFiltration│  硬过滤（单样本适用）
+│SNP 阈值：      │  │Indel 阈值：     │
+│QD<2/FS>60/    │  │QD<2/FS>200/    │
+│MQ<40/SOR>3等  │  │SOR>10等        │
+└──────┬───────┘  └────────┬────────┘
+       │                    │
+       └─────────┬──────────┘
+                 ▼
+         MergeVcfs → variants_merged.vcf.gz
+                 │
+                 ▼
+         SelectVariants --exclude-filtered
+                 │
+                 ▼
+         variants_final.vcf.gz  ← 最终 PASS 变异集
+                 │
+                 ▼
+         rtg vcfeval（对照 GIAB 真阳性集）
+         → Precision / Recall / F1
+```
+
+### 整合脚本（假设数据已就位）
+
+以下脚本将步骤二至步骤四的所有分析环节整合为一个可直接执行的流水线，适合在数据下载完成后一键运行。脚本中所有 `wget`/`samtools view` 等数据获取命令均已省略；如需重现完整下载过程，请参照步骤一各子步骤。
+
+```bash
+#!/usr/bin/env bash
+# GATK Best Practices — HG002 chr21 analysis pipeline
+# Assumes: all input files already present (see Step 1 for download)
+# Runtime: ~25–40 min on a single core with 8 GB RAM
+
+set -euo pipefail
+
+# ── Environment variables ────────────────────────────────────────────────────
+REF=reference/hg38_chr21.fasta
+DBSNP=reference/dbsnp138_chr21.vcf.gz
+SAMPLE=HG002_chr21
+INPUT_BAM=hg002_chr21/${SAMPLE}_rg.bam    # pre-aligned BAM with Read Groups
+TRUTH_VCF=giab/HG002_chr21_truthset.vcf.gz
+CONFIDENT_BED=giab/HG002_chr21_confident.bed
+REF_SDF=reference/hg38_chr21.sdf          # rtg-format SDF index (see Step 1A3)
+
+echo "=== Pipeline start: $(date) ==="
+
+# ── Step 2A: Mark PCR duplicates ─────────────────────────────────────────────
+# Flags duplicate reads (FLAG 0x400) without removing them.
+# Prevents inflated allele depth at over-amplified loci.
+echo "[2A] MarkDuplicates..."
+gatk MarkDuplicates \
+    -I  ${INPUT_BAM} \
+    -O  hg002_chr21/${SAMPLE}_dedup.bam \
+    -M  logs/${SAMPLE}_dup_metrics.txt
+samtools index hg002_chr21/${SAMPLE}_dedup.bam
+
+# ── Step 2B: Base Quality Score Recalibration (BQSR) ─────────────────────────
+# Phase 1: build a recalibration model from observed vs reported base qualities.
+#   --known-sites: dbSNP positions are excluded from error-rate estimation;
+#   mismatches at known SNP sites reflect true polymorphism, not sequencing error.
+echo "[2B] BaseRecalibrator..."
+gatk BaseRecalibrator \
+    -I  hg002_chr21/${SAMPLE}_dedup.bam \
+    -R  ${REF} \
+    --known-sites ${DBSNP} \
+    -O  logs/${SAMPLE}_recal.table
+
+# Phase 2: rewrite quality scores in the BAM using the recalibration model.
+echo "[2B] ApplyBQSR..."
+gatk ApplyBQSR \
+    -I  hg002_chr21/${SAMPLE}_dedup.bam \
+    -R  ${REF} \
+    --bqsr-recal-file logs/${SAMPLE}_recal.table \
+    -O  hg002_chr21/${SAMPLE}_recal.bam
+samtools index hg002_chr21/${SAMPLE}_recal.bam
+
+# ── Step 3: Variant calling with HaplotypeCaller ──────────────────────────────
+# -ERC GVCF: emit reference confidence records, enabling joint genotyping later.
+# -L chr21:  restrict to chr21 to limit runtime.
+# --dbsnp:   annotates known variants with rsIDs in the INFO/ID column.
+echo "[3] HaplotypeCaller..."
+gatk HaplotypeCaller \
+    -I  hg002_chr21/${SAMPLE}_recal.bam \
+    -R  ${REF} \
+    --dbsnp ${DBSNP} \
+    -L  chr21 \
+    -ERC GVCF \
+    -O  hg002_chr21/${SAMPLE}.g.vcf.gz
+
+# Convert GVCF → VCF (genotype the single sample)
+echo "[3] GenotypeGVCFs..."
+gatk GenotypeGVCFs \
+    -R  ${REF} \
+    -V  hg002_chr21/${SAMPLE}.g.vcf.gz \
+    --dbsnp ${DBSNP} \
+    -O  hg002_chr21/variants_raw.vcf.gz
+
+echo "[3] Raw variant counts:"
+bcftools stats hg002_chr21/variants_raw.vcf.gz | grep "^SN"
+
+# ── Step 4: Variant filtration ────────────────────────────────────────────────
+# Separate SNPs and INDELs before applying type-specific filter thresholds.
+
+echo "[4] SelectVariants: SNPs..."
+gatk SelectVariants \
+    -V  hg002_chr21/variants_raw.vcf.gz \
+    --select-type-to-include SNP \
+    -O  hg002_chr21/snps_raw.vcf.gz
+
+echo "[4] SelectVariants: INDELs..."
+gatk SelectVariants \
+    -V  hg002_chr21/variants_raw.vcf.gz \
+    --select-type-to-include INDEL \
+    -O  hg002_chr21/indels_raw.vcf.gz
+
+# Hard-filter SNPs (GATK recommended thresholds for human WGS single-sample)
+#   QD  < 2.0  : quality normalised by depth; guards against depth-inflated QUAL
+#   FS  > 60.0 : Fisher strand bias; alt allele enriched on one strand → artifact
+#   MQ  < 40.0 : mean mapping quality; low MQ implies multi-mapping in repeats
+#   MQRankSum < -12.5 : ALT reads systematically lower MAPQ than REF reads
+#   ReadPosRankSum < -8.0 : ALT reads cluster at read ends (higher error rate)
+#   SOR > 3.0  : strand odds ratio; supplements FS at high-depth sites
+echo "[4] VariantFiltration: SNPs..."
+gatk VariantFiltration \
+    -R  ${REF} \
+    -V  hg002_chr21/snps_raw.vcf.gz \
+    --filter-expression "QD < 2.0"              --filter-name "QD2" \
+    --filter-expression "FS > 60.0"             --filter-name "FS60" \
+    --filter-expression "MQ < 40.0"             --filter-name "MQ40" \
+    --filter-expression "MQRankSum < -12.5"     --filter-name "MQRankSum-12.5" \
+    --filter-expression "ReadPosRankSum < -8.0" --filter-name "ReadPosRankSum-8" \
+    --filter-expression "SOR > 3.0"             --filter-name "SOR3" \
+    -O  hg002_chr21/snps_filtered.vcf.gz
+
+# Hard-filter INDELs — thresholds are wider than for SNPs because insertions and
+# deletions inherently produce greater strand asymmetry and read-end enrichment.
+#   FS  > 200.0 : INDEL strand bias threshold
+#   ReadPosRankSum < -20.0 : INDELs tolerate higher read-end enrichment
+#   SOR > 10.0  : correspondingly relaxed strand-ratio threshold
+echo "[4] VariantFiltration: INDELs..."
+gatk VariantFiltration \
+    -R  ${REF} \
+    -V  hg002_chr21/indels_raw.vcf.gz \
+    --filter-expression "QD < 2.0"               --filter-name "QD2" \
+    --filter-expression "FS > 200.0"             --filter-name "FS200" \
+    --filter-expression "ReadPosRankSum < -20.0" --filter-name "ReadPosRankSum-20" \
+    --filter-expression "SOR > 10.0"             --filter-name "SOR10" \
+    -O  hg002_chr21/indels_filtered.vcf.gz
+
+# Merge filtered SNPs and INDELs back into a single coordinate-sorted VCF
+echo "[4] MergeVcfs..."
+gatk MergeVcfs \
+    -I hg002_chr21/snps_filtered.vcf.gz \
+    -I hg002_chr21/indels_filtered.vcf.gz \
+    -O hg002_chr21/variants_merged.vcf.gz
+
+# Extract only FILTER=PASS variants as the final call set
+echo "[4] SelectVariants (PASS only)..."
+gatk SelectVariants \
+    -V  hg002_chr21/variants_merged.vcf.gz \
+    --exclude-filtered \
+    -O  hg002_chr21/variants_final.vcf.gz
+
+echo "[4] Final variant counts (post-filter):"
+bcftools stats hg002_chr21/variants_final.vcf.gz | grep "^SN"
+
+# ── Step 5: Evaluate against GIAB truth set ───────────────────────────────────
+# --bed-regions restricts evaluation to GIAB high-confidence regions,
+# excluding centromeres, tandem repeats, and other low-mappability intervals
+# where even the truth set has uncertain calls.
+echo "[5] rtg vcfeval: benchmarking against GIAB truth set..."
+rtg vcfeval \
+    -b ${TRUTH_VCF} \
+    -c hg002_chr21/variants_final.vcf.gz \
+    --bed-regions ${CONFIDENT_BED} \
+    -t ${REF_SDF} \
+    -o eval_hardfilter/
+
+echo ""
+echo "=== Evaluation summary ==="
+cat eval_hardfilter/summary.txt
+
+echo "=== Pipeline complete: $(date) ==="
+```
+
+:::note
+**关键设计决策说明**
+
+- **GVCF 模式而非直接调用 VCF**：`-ERC GVCF` 输出包含参考置信区间，允许后续将多个样本合并进行联合基因型定型（Joint Genotyping），避免"丢失"低频变异时的批次效应。单样本也走 GVCF → GenotypeGVCFs 路径是 GATK Best Practices 的标准做法。
+- **SNP 与 INDEL 分开过滤**：两类变异的技术特性（链偏倚分布、read 末端富集度）差异显著，若使用相同阈值，要么对 INDEL 过于严格（假阴性增加），要么对 SNP 过于宽松（假阳性增加）。
+- **GIAB 高置信区间限定评估范围**：`--bed-regions` 的使用至关重要——着丝粒、端粒和高度重复区域的变异即使在真实样本中也难以评估，将其排除可以得到更准确的 Precision/Recall 估算。
+:::
+
 ## 步骤一：获取 HG002 chr21 教学子集
 
 ### 子步骤 A：下载 hg38 chr21 参考基因组
