@@ -1,2 +1,806 @@
-# 第三章 课时2
+---
+title: "SNP 阵列技术、连锁不平衡图谱与基因型插补"
+date: today
+format:
+  html:
+    code-fold: false
+    toc: true
+    toc-depth: 3
+    number-sections: true
+    theme: cosmo
+---
 
+# 从 QTL 到 GWAS：一场由标记密度引发的革命
+
+专题 3.1 和 3.2 系统讲解了经典分子标记与区间作图的技术逻辑（参见专题 3.1、3.2）。那一套框架的核心局限已清晰：人工构建的分离群体（F2、RIL）中历史重组次数有限，导致 QTL 定位分辨率始终徘徊在 10–30 cM，无法从统计意义上锁定因果基因。
+
+改变这一局面的关键，并不仅仅是换一个统计方法，而是**两个根本性的转变**：
+
+1. **群体**：从人工构建的分离群体，转向自然群体（自然人群或动植物育种群体）。自然群体中，每对位置相邻的碱基之间，经过数百至数千代的减数分裂已积累了大量历史重组事件。这意味着，只有在极短的物理距离内（数十至数百 kb），遗传变异之间才能维持稳定的共分离关系——这一现象称为**连锁不平衡（Linkage Disequilibrium，LD）**。
+
+2. **标记**：从数十至数百个 SSR，转向覆盖全基因组的数十万至数百万个**单核苷酸多态性（Single Nucleotide Polymorphism，SNP）**。SNP 是基因组中最丰富的遗传变异形式，每 1 kb 约有 1–3 个 SNP；同时，SNP 只有两个等位体，天然适合芯片杂交的信号读取。
+
+上述两个转变的交汇点，正是**全基因组关联分析（Genome-Wide Association Study，GWAS）**。本专题的任务是在进入 GWAS 统计模型之前，系统理解支撑这一框架的两项技术基础：**SNP 阵列（Genotyping Array）**和**LD 图谱**。
+
+:::note
+**本专题与前后专题的关系**
+
+本专题是专题 3.2（QTL 定位）与专题 3.4（GWAS 统计模型）之间的桥梁。前者揭示了 QTL 定位的分辨率局限，本专题解释为什么 SNP 阵列 + 自然群体可以突破这一局限，后续专题将在此基础上讲解 GWAS 如何进行统计检验与结果解读。
+:::
+
+---
+
+# SNP：基因组最丰富的遗传多态形式
+
+## 什么是 SNP
+
+**单核苷酸多态性（Single Nucleotide Polymorphism，SNP）**是基因组中单个碱基位置上存在的序列差异，且该差异在人群中的次等位基因频率（Minor Allele Frequency，MAF）通常要求 ≥ 1%（低于此阈值称为罕见变异，rare variant）。
+
+{{Wiki:Single-nucleotide_polymorphism}}
+
+一个典型的 SNP 位点如下：
+
+```
+参考序列（Reference）:  ...A T G [C] G A T...
+个体 1（纯合参考）:    ...A T G [C] G A T...
+个体 2（杂合）：       ...A T G [C/T] G A T...
+个体 3（纯合替代）：   ...A T G [T] G A T...
+```
+
+在双等位体 SNP 中，每个个体的基因型只有三种可能：参考纯合（0/0）、杂合（0/1）、替代纯合（1/1）。这一简洁性使 SNP 极为适合芯片检测和统计建模。
+
+## SNP 的丰度与分布
+
+人类基因组中已知的 SNP 超过 6 亿个（dbSNP 数据库 Build 156），其中 MAF > 5% 的常见 SNP 约 1500 万个。SNP 的分布并非均匀：
+
+- **外显子区**：SNP 密度相对较低（负选择压力清除有害变异）
+- **内含子和基因间区**：SNP 密度较高，但功能意义需结合调控元件注释判断
+- **重复元件区（如 LINE、SINE）**：序列高度保守，SNP 密度低
+- **着丝粒和端粒附近**：分型技术难度大，SNP 图谱不完整
+
+:::tip
+**SNP 与点突变的区别**
+
+"点突变"（Point Mutation）泛指单碱基替换，通常指特定个体中发生的新生突变（de novo），可能频率极低（MAF < 0.1%）。SNP 是群体水平上经过筛选后仍具有一定频率的点突变，是群体遗传多态性的主要形式，两个概念在使用场景上有明确区分。
+:::
+
+---
+
+# SNP 阵列：高通量基因分型的技术实现
+
+在 SNP 阵列出现之前，对大量 SNP 进行高通量基因分型是技术和成本上的双重瓶颈。SNP 阵列通过**固相杂交（Solid-Phase Hybridization）**或**单碱基延伸（Single-Base Extension）**在一张芯片上同时检测数十万至数百万个 SNP，使大规模 GWAS 研究成为可能。
+
+## Illumina BeadChip：珠阵杂交技术
+
+Illumina 的 BeadChip 平台（包括 Infinium 和 OmniExpress 系列）是目前人类 GWAS 最广泛使用的阵列平台。其工作原理基于**单碱基延伸**：
+
+{{Wiki:DNA_microarray}}
+
+```
+技术流程：
+
+1. DNA 样品制备
+   基因组 DNA（500 ng–1 µg）→ 全基因组扩增（WGA）→ 片段化 → 纯化
+
+2. 芯片杂交
+   变性后的单链 DNA 片段与芯片上的探针序列互补配对
+   每个 SNP 位点设计两条探针（分别对应两种等位体）
+   → 探针 3' 端紧邻 SNP 位点
+
+3. 单碱基延伸与荧光信号读取
+   DNA 聚合酶在探针末端掺入对应 SNP 位点的荧光标记碱基
+   两种等位体分别对应不同波长的荧光染料（如 Cy3 / Cy5）
+   → 激光扫描仪读取每个 Bead 上的荧光强度
+
+4. 基因型判读（Genotype Calling）
+   软件（如 GenCall、GenomeStudio）根据两个荧光通道的强度比值
+   将样品分配到三个簇（Cluster）：
+   ● AA 簇（参考纯合）：高 Cy3 强度，低 Cy5 强度
+   ● AB 簇（杂合）：两种荧光强度均等
+   ● BB 簇（替代纯合）：低 Cy3 强度，高 Cy5 强度
+```
+
+判读质量的关键指标是**GenCall 得分**（GC score）和**簇分离程度**（Cluster Separation Score）。通常 GC score < 0.15 的基因型调用被视为低质量，应在数据 QC 阶段排除（参见专题 3.4 的 GWAS 数据质控）。
+
+## 主流 SNP 芯片平台比较
+
+| 平台 | 代表产品 | SNP 数量 | 特点 | 主要用途 |
+|------|--------|---------|------|---------|
+| Illumina | OmniExpress-24 | ~700k | 兼顾密度与成本 | 标准人类 GWAS |
+| Illumina | GSA（Global Screening Array） | ~650k | 跨人群覆盖优化 | 生物银行 |
+| Illumina | MEGA | ~1.7M | 高密度，多人群 | 精细定位 |
+| Affymetrix | Axiom 系列 | 500k–2M | 可定制 | 农作物、动物育种 |
+| 50K 育种芯片 | BovineSNP50 | ~54k | 牛专用 | 基因组选择（GS） |
+
+:::note
+**SNP 芯片与全基因组测序（WGS）的权衡**
+
+SNP 芯片每个样品成本约 50–150 美元（人类 700k SNP 级别），WGS（30× 覆盖度）每个样品成本约 150–300 美元（2025 年价格）。大规模生物银行（如 UK Biobank）早期以芯片为主，后续补充 WGS。两种方案的权衡取决于样本量、目标变异类型（常见 vs 罕见）和研究经费。随着 WGS 成本持续下降，未来 GWAS 研究将逐步向 WGS 迁移，但芯片数据在现有生物银行中仍将长期存在。
+:::
+
+---
+
+# HapMap 计划：绘制人类基因组 LD 图谱
+
+SNP 芯片的出现解决了高通量基因分型的技术问题，但仍有一个关键问题悬而未决：**究竟哪些 SNP 需要被检测？** 理论上，人类基因组中有约 1500 万个常见 SNP，要全部检测既无必要也无可能。回答这一问题，需要先理解 SNP 之间的**连锁不平衡（LD）结构**。
+
+**HapMap 计划（International HapMap Project）**正是为此目的而设计的。该计划于 2002 年启动，分三个阶段对来自欧洲（CEU）、非洲（YRI）、日本（JPT）和中国汉族（CHB）共约 270 个个体进行全基因组 SNP 分型，系统描绘了人类基因组的单倍型（Haplotype）结构和 LD 图谱。
+
+{{Wiki:HapMap}}
+
+HapMap 计划的核心发现是：人类基因组并非"每个 SNP 都独立"，而是呈现出**LD 区块（LD Block）**结构——相邻 SNP 之间往往高度相关，整个区块内少数"标签 SNP"即可代表所有遗传变异。这一发现奠定了 GWAS 芯片设计的理论基础：只需检测足够多的标签 SNP，就能通过 LD 关系"覆盖"到未检测的其他位点。
+
+:::note
+**从 HapMap 到 1000 Genomes 计划**
+
+HapMap 计划的样本量和 SNP 密度在当时已属领先，但随着测序技术进步，其局限也日益显现：样本量偏小（约 270 人），低频变异（MAF 1%–5%）覆盖不足。**1000 Genomes Project**（2008–2015）对来自 26 个人群的 2504 个体进行了全基因组测序，将参考面板扩展到约 8800 万个变异位点，成为此后 GWAS 插补和精细定位的主要参考资源。目前最全面的人类基因组变异参考面板是 **TOPMed**（约 250 万个体）和 **gnomAD**，分辨率已接近全部常见变异的完整捕获。
+:::
+
+---
+
+# 连锁不平衡：定量描述遗传变异的共分离
+
+## LD 的概念与直觉
+
+两个位点处于**连锁不平衡（Linkage Disequilibrium，LD）**，意味着它们的等位体组合在群体中出现的频率，偏离了随机期望（即两者完全独立时的频率乘积）。
+
+直觉上：若两个 SNP 位点 A 和 B 处于完全 LD，则只要知道位点 A 的基因型，就可以完全推断位点 B 的基因型——两者携带完全相同的"遗传信息"，检测一个即可。若两者完全独立（LD = 0），则必须分别检测。
+
+形式化定义：设位点 A 有等位体 $A_1$（频率 $p_A$）和 $A_2$（频率 $1-p_A$），位点 B 有等位体 $B_1$（频率 $p_B$）和 $B_2$（频率 $1-p_B$），则双位点单倍型 $A_1B_1$ 的期望频率为 $p_A \cdot p_B$，观测频率为 $f_{A_1B_1}$，两者之差定义为**D 值（连锁不平衡系数）**：
+
+$$D = f_{A_1B_1} - p_A \cdot p_B$$
+
+## r² 与 D'：两种主要的 LD 量化指标
+
+**D 值**的绝对大小受等位体频率影响，不同位点间难以直接比较。因此实践中更多使用两个标准化指标：
+
+### r²（相关系数平方）
+
+$$r^2 = \frac{D^2}{p_A(1-p_A) \cdot p_B(1-p_B)}$$
+
+$r^2$ 的取值范围为 $[0, 1]$，具有直接的统计学含义：
+- $r^2 = 1$：两位点完全等价，知道一个即知道另一个；GWAS 中对某位点的检测功效可以 100% 传递到与之 $r^2 = 1$ 的其他位点
+- $r^2 = 0$：两位点完全独立，无 LD
+- **在 GWAS 中**，若某 SNP 与未检测的因果变异的 $r^2 = 0.8$，则 GWAS 在该 SNP 处的统计功效约为检测因果变异本身的 80%
+
+### D'（标准化 D 值）
+
+$$D' = \frac{D}{D_{\max}}$$
+
+其中 $D_{\max}$ 是在当前等位体频率约束下 $D$ 的最大可能值。$|D'|$ 的取值范围为 $[0, 1]$：
+- $|D'| = 1$：位点间的四种可能单倍型组合（$A_1B_1$, $A_1B_2$, $A_2B_1$, $A_2B_2$）中至多出现三种（称为"不可分解"或历史上只发生过一次重组事件）
+- $|D'| < 1$：四种单倍型均存在，说明两位点间已发生过至少一次重组
+
+### 两个指标的使用场景
+
+| 指标 | 优势 | 局限 | 主要用途 |
+|------|------|------|---------|
+| $r^2$ | 直接对应统计功效传递 | 低频 SNP 间 $r^2$ 估计偏差大 | GWAS 功效分析、标签 SNP 选取 |
+| $D'$ | 对重组历史更敏感 | 受样本量和等位体频率影响大，小样本时偏高 | 单倍型结构推断 |
+
+:::warning
+**小样本时 D' 的系统性高估**
+
+当样本量较小（< 100 个体）时，$D'$ 值趋向于 1，即便两个位点实际上并不处于高 LD 状态。这是因为小样本中四种单倍型组合往往不能全部被观测到。因此，在小样本研究中，$r^2$ 是更可靠的 LD 度量。
+:::
+
+## R 代码：手工计算 LD 指标
+
+以下代码演示从原始基因型数据出发，计算 $r^2$ 和 $D'$ 的完整流程，以增强对 LD 指标的直觉理解。
+
+```r
+# R: manual calculation of LD statistics (r2 and D-prime)
+# Input: two SNP loci genotyped in a sample of individuals
+# Genotype coding: 0 = ref/ref, 1 = ref/alt, 2 = alt/alt
+
+compute_ld <- function(snp_a, snp_b) {
+  # Remove individuals with missing data at either locus
+  valid <- !is.na(snp_a) & !is.na(snp_b)
+  snp_a <- snp_a[valid]
+  snp_b <- snp_b[valid]
+  n <- length(snp_a)
+
+  # ---- Allele frequencies ----
+  # Under additive coding: dosage = number of alt alleles (0/1/2)
+  # Each diploid individual contributes 2 alleles
+  p_a <- sum(snp_a) / (2 * n)   # frequency of alt allele at locus A
+  p_b <- sum(snp_b) / (2 * n)   # frequency of alt allele at locus B
+
+  # ---- Haplotype frequency estimation (EM algorithm, simplified) ----
+  # For phased data: directly count haplotypes
+  # Here we use the method-of-moments estimate for unphased diploid data
+  # f_AB = (2 * n_AABB + n_AABb + n_AaBB + 0.5 * n_AaBb) / (2n)
+  n_AABB <- sum(snp_a == 2 & snp_b == 2)  # alt/alt at both loci
+  n_AABb <- sum(snp_a == 2 & snp_b == 1)
+  n_AaBB <- sum(snp_a == 1 & snp_b == 2)
+  n_AaBb <- sum(snp_a == 1 & snp_b == 1)  # double heterozygote (ambiguous phase)
+
+  # Estimated frequency of haplotype carrying alt alleles at both A and B
+  f_AB <- (2 * n_AABB + n_AABb + n_AaBB + 0.5 * n_AaBb) / (2 * n)
+
+  # ---- D statistic ----
+  D <- f_AB - p_a * p_b
+
+  # ---- r-squared ----
+  r2 <- D^2 / (p_a * (1 - p_a) * p_b * (1 - p_b))
+
+  # ---- D-prime ----
+  if (D >= 0) {
+    D_max <- min(p_a * (1 - p_b), (1 - p_a) * p_b)
+  } else {
+    D_max <- min(p_a * p_b, (1 - p_a) * (1 - p_b))
+  }
+  D_prime <- D / D_max
+
+  list(
+    p_a = p_a, p_b = p_b,
+    D = D, r2 = round(r2, 4), D_prime = round(abs(D_prime), 4)
+  )
+}
+
+# ---- Example: two SNPs in high LD ----
+set.seed(42)
+n <- 500
+
+# Simulate a haplotype block: SNP_A drives SNP_B with high correlation
+snp_a <- sample(c(0, 1, 2), n, replace = TRUE, prob = c(0.25, 0.50, 0.25))
+# SNP_B mostly follows SNP_A, with 10% noise
+snp_b <- ifelse(runif(n) < 0.85, snp_a,
+                sample(c(0, 1, 2), n, replace = TRUE, prob = c(0.25, 0.50, 0.25)))
+
+result_high_ld <- compute_ld(snp_a, snp_b)
+cat("=== High LD Pair ===\n")
+cat(sprintf("p(A_alt) = %.3f  p(B_alt) = %.3f\n",
+            result_high_ld$p_a, result_high_ld$p_b))
+cat(sprintf("D = %.4f  r2 = %.4f  D' = %.4f\n\n",
+            result_high_ld$D, result_high_ld$r2, result_high_ld$D_prime))
+
+# ---- Example: two SNPs in low LD (independent) ----
+snp_c <- sample(c(0, 1, 2), n, replace = TRUE, prob = c(0.36, 0.48, 0.16))
+snp_d <- sample(c(0, 1, 2), n, replace = TRUE, prob = c(0.25, 0.50, 0.25))
+
+result_low_ld <- compute_ld(snp_c, snp_d)
+cat("=== Low LD Pair (near-independent) ===\n")
+cat(sprintf("p(C_alt) = %.3f  p(D_alt) = %.3f\n",
+            result_low_ld$p_a, result_low_ld$p_b))
+cat(sprintf("D = %.4f  r2 = %.4f  D' = %.4f\n",
+            result_low_ld$D, result_low_ld$r2, result_low_ld$D_prime))
+```
+
+---
+
+# LD 衰减：距离越远，相关性越低
+
+## LD 衰减的成因
+
+在自然群体中，两个位点间的 LD 水平随着物理距离的增加而下降，这一现象称为 **LD 衰减（LD Decay）**。其成因在于减数分裂中的重组：位点间的物理距离越大，历经多个世代后在两者之间发生重组的累积概率越高，原始的单倍型组合逐渐被打散，等位体频率趋向随机组合。
+
+{{Wiki:Linkage_disequilibrium}}
+
+LD 随距离的衰减速率在不同人群和物种中差异显著：
+
+| 物种 / 人群 | LD 衰减至 r² < 0.1 的距离 | 成因 |
+|------------|-------------------------|------|
+| 非洲人群（YRI） | ~20–50 kb | 更古老的奠基群体，历史重组次数更多 |
+| 欧洲人群（CEU） | ~100–200 kb | 较年轻的奠基者瓶颈效应降低了 LD 衰减速率 |
+| 亚洲人群（CHB/JPT） | ~100–150 kb | 与欧洲人群类似 |
+| 玉米（自交系间） | ~2 kb | 极高的遗传多样性，重组历史极丰富 |
+| 大豆 | ~150 kb | 栽培大豆遗传基础窄，LD 延伸较远 |
+| 小麦 | > 1 Mb | 强烈的驯化瓶颈和近亲繁殖 |
+
+这一差异对 GWAS 芯片设计有直接影响：非洲人群的 LD 衰减快，意味着相同密度的 SNP 芯片在非洲人群中对基因组变异的覆盖率更低，需要更高密度的 SNP 才能实现相同的功效。
+
+## 使用 PLINK 计算 LD 衰减
+
+```bash
+# PLINK: compute pairwise r2 for all SNP pairs within 1 Mb window
+# Input: 1000 Genomes Phase 3 chr22 data (2504 individuals)
+# Download from: http://ftp.1000genomes.ebi.ac.uk/vol1/ftp/release/20130502/
+
+# Step 1: download and convert chr22 VCF to PLINK binary format
+wget http://ftp.1000genomes.ebi.ac.uk/vol1/ftp/release/20130502/ALL.chr22.phase3_shapeit2_mvncall_integrated_v5b.20130502.genotypes.vcf.gz
+plink --vcf ALL.chr22.phase3_shapeit2_mvncall_integrated_v5b.20130502.genotypes.vcf.gz \
+      --keep-allele-order \
+      --make-bed \
+      --out 1kg_chr22
+
+# Step 2: filter to common SNPs (MAF > 0.05, biallelic SNPs only)
+plink --bfile 1kg_chr22 \
+      --maf 0.05 --snps-only just-acgt --biallelic-only \
+      --make-bed \
+      --out 1kg_chr22_common
+
+# Step 3: compute pairwise LD (r2) within 1 Mb windows
+plink --bfile 1kg_chr22_common \
+      --r2 \
+      --ld-window-r2 0 \
+      --ld-window 9999 \
+      --ld-window-kb 1000 \
+      --out chr22_ld
+```
+
+```r
+# R: visualize LD decay from PLINK output
+library(data.table)
+library(ggplot2)
+
+# Read PLINK LD output (columns: CHR_A, BP_A, SNP_A, CHR_B, BP_B, SNP_B, R2)
+ld_raw <- fread("chr22_ld.ld")
+colnames(ld_raw) <- c("CHR_A", "BP_A", "SNP_A", "CHR_B", "BP_B", "SNP_B", "R2")
+
+# Compute physical distance between pairs
+ld_raw[, dist_kb := abs(BP_B - BP_A) / 1000]
+
+# Bin distances (100 kb bins) and compute mean r2 per bin
+ld_raw[, dist_bin := cut(dist_kb,
+                          breaks = c(0, 10, 20, 50, 100, 200, 500, 1000),
+                          labels = c("0-10", "10-20", "20-50",
+                                     "50-100", "100-200", "200-500", "500-1000"))]
+ld_decay <- ld_raw[, .(mean_r2 = mean(R2, na.rm = TRUE),
+                         median_r2 = median(R2, na.rm = TRUE),
+                         n_pairs = .N),
+                    by = dist_bin]
+
+cat("=== LD Decay Summary (1000 Genomes chr22) ===\n")
+print(ld_decay)
+
+# Plot LD decay curve
+ggplot(ld_decay, aes(x = dist_bin, y = mean_r2, group = 1)) +
+  geom_line(color = "steelblue", linewidth = 1.2) +
+  geom_point(color = "steelblue", size = 3) +
+  geom_hline(yintercept = 0.1, linetype = "dashed", color = "firebrick",
+             linewidth = 0.8) +
+  annotate("text", x = 3, y = 0.12, label = "r² = 0.1 threshold",
+           color = "firebrick", size = 3.5) +
+  labs(title = "LD Decay on Chromosome 22 (1000 Genomes, n = 2504)",
+       x = "Physical Distance (kb)",
+       y = expression(Mean~r^2)) +
+  theme_classic(base_size = 13) +
+  theme(axis.text.x = element_text(angle = 30, hjust = 1))
+```
+
+---
+
+# LD 区块与标签 SNP
+
+## LD 区块的概念
+
+基因组并非以均匀的速率衰减 LD，而是呈现出**区块化（Block-like）**结构：某些区域内 SNP 间的 LD 极高（区块内），而相邻区块之间则存在重组热点，LD 急剧下降（区块间）。这种结构在 HapMap 数据中首次被系统描绘，并形成了"单倍型区块（Haplotype Block）"的概念。
+
+{{Wiki:Haplotype_block}}
+
+在一个 LD 区块内，常见单倍型的数量通常远少于理论上的最大值（$2^n$，$n$ 为 SNP 数量）。例如，一个含有 10 个 SNP 的区块，理论上有 $2^{10} = 1024$ 种单倍型组合，但实际上往往只有 3–6 种在群体中频率较高的单倍型（major haplotypes）覆盖了 90% 以上的个体。
+
+## 标签 SNP 的选取
+
+**标签 SNP（Tag SNP）**是能够代表 LD 区块内全部变异信息的最小 SNP 集合。判定标准通常是：一个 Tag SNP 与区块内每一个未被直接检测的 SNP 的 $r^2 \geq 0.8$（即统计功效至少为直接检测的 80%）。
+
+Haploview 软件是最常用的 LD 区块可视化与 Tag SNP 选取工具，其算法（Gabriel et al., 2002）基于 $D'$ 的置信区间将基因组划分为 LD 区块。PLINK 的 `--indep-pairwise` 命令则提供了一种基于 $r^2$ 阈值的 LD 修剪（LD Pruning）方法，常用于 GWAS 数据质控和 PCA 分析前的 SNP 筛选。
+
+```r
+# R: LD heatmap visualization using LDheatmap package
+# Demonstrates the block structure of LD within a genomic region
+
+library(LDheatmap)
+library(genetics)
+
+# Simulate genotype data for 20 SNPs in a haplotype block region
+set.seed(123)
+n_samples <- 300
+n_snps    <- 20
+
+# Create block structure: SNPs 1-10 in high LD, SNPs 11-20 in another block
+# with low LD between blocks
+base_allele <- rbinom(n_samples, 1, 0.4)  # shared haplotype background
+
+geno_block1 <- sapply(1:10, function(i) {
+  noise <- rbinom(n_samples, 1, 0.10)     # 10% recombination noise
+  ifelse(noise == 1,
+         rbinom(n_samples, 1, 0.35),
+         base_allele)
+})
+
+base_allele2 <- rbinom(n_samples, 1, 0.3)  # independent second block
+geno_block2 <- sapply(1:10, function(i) {
+  noise <- rbinom(n_samples, 1, 0.12)
+  ifelse(noise == 1,
+         rbinom(n_samples, 1, 0.30),
+         base_allele2)
+})
+
+geno_matrix <- cbind(geno_block1, geno_block2)
+colnames(geno_matrix) <- paste0("SNP", 1:20)
+
+# Convert to genetics::genotype objects for LDheatmap
+geno_list <- apply(geno_matrix, 2, function(x) {
+  as.genotype(paste0(x, "/", ifelse(x == 0, 0, 1 - x)))
+})
+
+# Simulate physical positions (bp) on a chromosome
+snp_positions <- cumsum(c(0, rep(c(5000, 8000, 12000, 7000, 10000,
+                                    6000, 9000, 11000, 4000, 15000,
+                                    50000, 7000, 8000, 9000, 6000,
+                                    10000, 7000, 8000, 11000), 1)))
+
+cat("=== Pairwise r2 Matrix (first 5 x 5) ===\n")
+r2_mat <- cor(geno_matrix)^2
+print(round(r2_mat[1:5, 1:5], 3))
+
+# Draw LD heatmap
+LDheatmap(geno_list,
+           genetic.distances = snp_positions[1:20],
+           distances = "physical",
+           LDmeasure = "r",
+           title = "LD Heatmap: Two-Block Structure (Simulated)",
+           color = heat.colors(20))
+```
+
+## PLINK LD 修剪：GWAS 前数据处理
+
+```bash
+# PLINK: LD pruning for GWAS QC and PCA preparation
+# Step 1: identify SNPs to retain (window=500 kb, step=5 SNPs, r2 threshold=0.2)
+plink --bfile 1kg_chr22_common \
+      --indep-pairwise 500 5 0.2 \
+      --out pruned_snps
+
+# Output: pruned_snps.prune.in  (SNPs to KEEP)
+#         pruned_snps.prune.out (SNPs to REMOVE due to high LD)
+
+# Step 2: extract pruned SNP set for downstream analysis (e.g., PCA)
+plink --bfile 1kg_chr22_common \
+      --extract pruned_snps.prune.in \
+      --make-bed \
+      --out 1kg_chr22_pruned
+
+# Count retained vs removed SNPs
+wc -l pruned_snps.prune.in pruned_snps.prune.out
+```
+
+---
+
+# 基因型插补：以 LD 为杠杆，扩展标记密度
+
+## 插补的必要性
+
+商业 SNP 芯片通常检测 50 万–200 万个 SNP，而人类基因组中常见 SNP 约有 1500 万个。芯片未直接覆盖的 SNP，如果与某个生物学效应有关，GWAS 可能就此错过。
+
+**基因型插补（Genotype Imputation）**利用 LD 结构和大型参考面板（如 1000 Genomes、HRC、TOPMed），统计推断芯片未直接检测的位点的基因型（准确说是基因型剂量，Dosage）。插补后，GWAS 可分析的位点数量从数十万扩展至数千万，覆盖几乎所有常见变异，大幅提升精细定位的分辨率。
+
+{{Wiki:Genotype_imputation}}
+
+## 插补的基本原理
+
+插补依赖**单倍型参考面板**和**隐马尔可夫模型（Hidden Markov Model，HMM）**。以下是核心逻辑：
+
+```
+概念示意（3 个个体，5 个 SNP 位点）：
+
+参考面板（已知完整单倍型）：
+  单倍型 1:  A - C - G - T - A   （所有 5 个位点均已知）
+  单倍型 2:  T - C - A - T - G
+  单倍型 3:  A - T - G - C - A
+
+目标个体（芯片数据，仅检测到 SNP 1、3、5）：
+  检测到：   A - ? - G - ? - A
+
+插补逻辑：
+  1. 在参考面板中寻找与目标个体在已知位点（1、3、5）最匹配的单倍型
+  2. 单倍型 1（A-G-A）与目标个体完全吻合
+  3. 推断：SNP 2 的基因型为 C，SNP 4 的基因型为 T
+  4. 插补质量指标（Info score / Rsq）反映该推断的置信度
+```
+
+实践中，插补质量的关键指标是 **$R^2$（Imputation Accuracy）**，定义为插补基因型剂量与真实基因型的平方相关系数。通常要求 $R^2 > 0.3$（宽松）或 $R^2 > 0.8$（严格）的 SNP 才进入后续 GWAS 分析。
+
+## 主流插补工具与参考面板
+
+| 工具 | 算法 | 主要参考面板 | 特点 |
+|------|------|------------|------|
+| IMPUTE2 | HMM（MCMC） | 1000 Genomes, HRC | 学术界经典工具 |
+| Michigan Imputation Server | Minimac4 | HRC, TOPMed | 在线服务，操作简便 |
+| TOPMed Imputation Server | Minimac4 | TOPMed (n≈250k) | 目前最全面的参考面板 |
+| Beagle 5 | 图模型 | 1000 Genomes | 速度快，支持多倍体 |
+
+```bash
+# Example workflow: pre-phasing + imputation pipeline (command-line reference)
+
+# Step 1: Quality control before imputation
+# Remove SNPs with low call rate, MAF, or HWE deviation
+plink --bfile gwas_array_data \
+      --geno 0.02 --maf 0.01 --hwe 1e-6 \
+      --make-bed --out gwas_qc
+
+# Step 2: Convert to VCF format (required by most imputation tools)
+plink --bfile gwas_qc \
+      --recode vcf-iid \
+      --out gwas_qc_for_impute
+
+bgzip gwas_qc_for_impute.vcf
+tabix -p vcf gwas_qc_for_impute.vcf.gz
+
+# Step 3: Pre-phasing with SHAPEIT4 (estimate haplotypes from genotypes)
+shapeit4 \
+  --input gwas_qc_for_impute.vcf.gz \
+  --region chr22 \
+  --reference 1kg_chr22_phased.vcf.gz \
+  --output gwas_phased_chr22.vcf.gz \
+  --thread 8
+
+# Step 4: Imputation with Minimac4 (or submit to Michigan Imputation Server)
+minimac4 \
+  --refHaps 1kg_chr22.m3vcf.gz \
+  --haps gwas_phased_chr22.vcf.gz \
+  --prefix imputed_chr22 \
+  --format GT,DS,GP \
+  --minRatio 0.001
+
+# Step 5: Filter by imputation quality (Rsq > 0.3)
+bcftools filter -e 'R2 < 0.3' imputed_chr22.dose.vcf.gz \
+  -O z -o imputed_chr22_filtered.vcf.gz
+tabix -p vcf imputed_chr22_filtered.vcf.gz
+```
+
+## 插补后数据的质量评估
+
+```r
+# R: evaluate imputation quality distribution
+library(data.table)
+library(ggplot2)
+
+# Read imputation info file (output from Minimac4)
+# Columns include: SNP, ALT_Frq, MAF, AvgCall, Rsq, Genotyped, LooRsq
+info <- fread("imputed_chr22.info")
+info <- info[info$Genotyped == "Imputed", ]   # focus on imputed-only SNPs
+
+cat("=== Imputation Quality Summary ===\n")
+cat(sprintf("Total imputed SNPs: %d\n", nrow(info)))
+cat(sprintf("Rsq > 0.3: %d (%.1f%%)\n",
+            sum(info$Rsq > 0.3), 100 * mean(info$Rsq > 0.3)))
+cat(sprintf("Rsq > 0.8: %d (%.1f%%)\n",
+            sum(info$Rsq > 0.8), 100 * mean(info$Rsq > 0.8)))
+cat(sprintf("Median Rsq: %.3f\n", median(info$Rsq)))
+
+# Distribution of Rsq by MAF bin
+info[, maf_bin := cut(MAF,
+                       breaks = c(0, 0.01, 0.05, 0.10, 0.20, 0.5),
+                       labels = c("0-1%", "1-5%", "5-10%", "10-20%", ">20%"))]
+
+rsq_by_maf <- info[, .(median_rsq = median(Rsq),
+                         n_snps = .N),
+                    by = maf_bin]
+cat("\n=== Median Rsq by MAF Bin ===\n")
+print(rsq_by_maf)
+
+# Scatter plot: Rsq vs MAF
+ggplot(info[sample(.N, min(.N, 50000)), ],
+       aes(x = MAF, y = Rsq)) +
+  geom_hex(bins = 60) +
+  scale_fill_viridis_c(option = "plasma", name = "SNP count") +
+  geom_hline(yintercept = 0.3, color = "white", linetype = "dashed",
+             linewidth = 0.8) +
+  geom_hline(yintercept = 0.8, color = "yellow", linetype = "dashed",
+             linewidth = 0.8) +
+  labs(title = "Imputation Quality (Rsq) vs Minor Allele Frequency",
+       subtitle = "Chr22, TOPMed reference panel",
+       x = "Minor Allele Frequency (MAF)",
+       y = "Imputation Accuracy (Rsq)") +
+  theme_classic(base_size = 13)
+```
+
+:::info
+**核心规律：MAF 越低，插补越难**
+
+插补精度（$R^2$）与次等位基因频率（MAF）之间存在稳定的正相关：MAF > 20% 的常见 SNP 插补 $R^2$ 通常 > 0.95，而 MAF 1%–5% 的低频变异 $R^2$ 往往只有 0.4–0.7。这是因为低频变异在参考面板中代表的单倍型数量少，HMM 难以精确估计其单倍型背景。因此，低频变异的 GWAS 关联结果可靠性更低，需要更严格的插补质量阈值或直接进行全基因组测序。
+:::
+
+---
+
+# LD 结构对 GWAS 的三重影响
+
+理解 LD 图谱之后，有必要明确 LD 在 GWAS 全流程中的具体作用——这将为后续专题的统计模型学习奠定直觉基础。
+
+## 影响一：决定 GWAS 的基因组覆盖率
+
+芯片上某个 SNP 能够"代表"多大范围内的变异，完全取决于该 SNP 周围的 LD 衰减速率。若 LD 衰减慢（如小麦），200k SNP 的芯片即可覆盖几乎全基因组；若 LD 衰减快（如非洲人群玉米），则需要数百万个 SNP 才能实现相同的覆盖率。**标签 SNP 的选取密度**直接由 LD 结构决定。
+
+## 影响二：产生"LD 拖尾"（LD Tailing）
+
+当 GWAS 在某位点发现显著关联时，该位点附近所有与其处于高 LD 的 SNP 也会同时显著——在曼哈顿图上形成一个由高 LD 连接的"峰"（而非单点）。这是真实关联的特征，而非假阳性：整个峰代表一个 LD 区块，其中因果变异可能是峰顶 SNP，也可能是任何一个与之高 LD 的其他 SNP。从峰到因果变异的鉴定，是精细定位（Fine Mapping）的任务（参见专题 3.6）。
+
+## 影响三：导致多重检验负担并非"百万次独立检验"
+
+GWAS 对基因组上数百万个 SNP 同时进行关联检验，但由于 SNP 间存在 LD（非独立），真正独立的检验次数远少于 SNP 总数。人类全基因组显著性阈值 $p < 5\times10^{-8}$ 正是基于"约 100 万个独立检验"（考虑 LD 后的有效独立 SNP 数）的 Bonferroni 校正，而非严格按照实际 SNP 总数（约 500 万–1000 万个常见 SNP）计算。这一阈值的推导逻辑将在专题 3.4 中详细展开。
+
+```r
+# R: demonstrate LD inflation effect on association statistics
+# Shows how LD causes neighboring SNPs to show inflated significance
+# even when only one causal variant exists
+
+simulate_gwas_ld <- function(n = 3000, n_snps = 30, causal_idx = 15,
+                               effect_size = 0.5, ld_decay_rate = 0.3) {
+  set.seed(42)
+
+  # Simulate correlated SNPs using multivariate normal + threshold
+  # LD between SNPs decays exponentially with distance
+  snp_positions <- seq(0, 100, length.out = n_snps)  # in kb
+  sigma_mat <- outer(snp_positions, snp_positions,
+                     function(i, j) exp(-ld_decay_rate * abs(i - j)))
+
+  library(MASS)
+  latent <- mvrnorm(n, mu = rep(0, n_snps), Sigma = sigma_mat)
+  # Convert to genotype dosage (0/1/2) via thresholding
+  maf <- 0.3
+  geno_mat <- (latent > qnorm(1 - maf))  +
+              (latent > qnorm(1 - maf^2 - 2*maf*(1-maf)))  # rough diploid approx
+  # Simpler: just use quantized continuous latent
+  geno_mat <- apply(latent, 2, function(x) {
+    q <- quantile(x, probs = c((1-maf)^2, 1 - maf^2))
+    ifelse(x < q[1], 0, ifelse(x > q[2], 2, 1))
+  })
+
+  # Simulate phenotype driven by causal SNP only
+  pheno <- geno_mat[, causal_idx] * effect_size + rnorm(n, 0, 1)
+
+  # Run association tests (linear regression) for each SNP
+  p_values <- sapply(1:n_snps, function(j) {
+    fit <- lm(pheno ~ geno_mat[, j])
+    coef(summary(fit))[2, 4]  # p-value for SNP coefficient
+  })
+
+  data.frame(
+    snp     = paste0("SNP", 1:n_snps),
+    pos_kb  = snp_positions,
+    neg_log_p = -log10(p_values),
+    is_causal = 1:n_snps == causal_idx
+  )
+}
+
+results <- simulate_gwas_ld()
+
+library(ggplot2)
+ggplot(results, aes(x = pos_kb, y = neg_log_p, color = is_causal)) +
+  geom_point(size = 3) +
+  scale_color_manual(values = c("FALSE" = "steelblue", "TRUE" = "firebrick"),
+                     labels = c("FALSE" = "Non-causal (LD tag)", "TRUE" = "Causal SNP")) +
+  geom_hline(yintercept = -log10(5e-8), linetype = "dashed",
+             color = "gray40", linewidth = 0.8) +
+  labs(title = "LD Tailing Effect in GWAS",
+       subtitle = "Single causal SNP (red) at 50 kb; neighboring SNPs significant via LD",
+       x = "Position (kb)", y = expression(-log[10](p)),
+       color = NULL) +
+  theme_classic(base_size = 13) +
+  theme(legend.position = "top")
+```
+
+---
+
+# 综合实践：LD 图谱分析完整流程
+
+以下展示从 1000 Genomes chr22 数据出发、计算 LD 矩阵并可视化区块结构的端到端流程，作为本专题实践练习的参考模板。
+
+```r
+# R: full LD analysis pipeline on 1000 Genomes chr22 data
+# Tools: snpStats, ggplot2
+# Data: 1kg_chr22_common.bed/.bim/.fam (prepared via PLINK above)
+
+library(snpStats)
+library(ggplot2)
+library(data.table)
+
+# ---- 1. Read PLINK binary files ----
+plink_data <- read.plink("1kg_chr22_common")
+geno    <- plink_data$genotypes   # SnpMatrix object
+bim     <- plink_data$map          # SNP annotation
+
+cat(sprintf("Loaded: %d samples x %d SNPs\n",
+            nrow(geno), ncol(geno)))
+
+# ---- 2. Select a 200-SNP region for LD visualization ----
+region_snps <- bim$snp.name[bim$position > 20e6 & bim$position < 20.5e6]
+geno_region <- geno[, colnames(geno) %in% region_snps]
+n_selected  <- ncol(geno_region)
+cat(sprintf("Selected %d SNPs in chr22:20.0–20.5 Mb for LD heatmap\n",
+            n_selected))
+
+# ---- 3. Compute pairwise LD (r2) using snpStats ----
+ld_result <- ld(geno_region, stats = "R.squared", depth = n_selected - 1)
+r2_matrix <- as.matrix(ld_result)
+
+# Fill lower triangle (ld() returns upper triangle only)
+r2_full <- r2_matrix
+r2_full[lower.tri(r2_full)] <- t(r2_matrix)[lower.tri(r2_matrix)]
+diag(r2_full) <- 1
+
+# ---- 4. LD heatmap (melt to long format for ggplot2) ----
+r2_long <- as.data.table(reshape2::melt(r2_full,
+                                         varnames = c("SNP_A", "SNP_B"),
+                                         value.name = "r2"))
+
+# Use SNP index for axis positioning
+r2_long[, idx_a := match(SNP_A, rownames(r2_full))]
+r2_long[, idx_b := match(SNP_B, rownames(r2_full))]
+
+ggplot(r2_long, aes(x = idx_a, y = idx_b, fill = r2)) +
+  geom_tile() +
+  scale_fill_gradientn(colors = c("white", "lightyellow", "orange", "firebrick"),
+                        values = c(0, 0.2, 0.5, 1),
+                        na.value = "white",
+                        name = expression(r^2)) +
+  labs(title = "LD Heatmap: Chr22:20.0–20.5 Mb (1000 Genomes, n=2504)",
+       x = "SNP index", y = "SNP index") +
+  theme_minimal(base_size = 12) +
+  theme(axis.text = element_blank(),
+        axis.ticks = element_blank(),
+        panel.grid = element_blank())
+
+# ---- 5. LD decay within the selected region ----
+positions <- bim$position[bim$snp.name %in% region_snps]
+r2_long[, dist_kb := abs(positions[idx_a] - positions[idx_b]) / 1000]
+r2_long[, dist_bin := cut(dist_kb,
+                           breaks = c(0, 5, 10, 20, 50, 100, 200, 500),
+                           labels = c("0-5", "5-10", "10-20",
+                                      "20-50", "50-100", "100-200", "200-500"))]
+
+decay_summary <- r2_long[dist_kb > 0,
+                           .(mean_r2 = mean(r2, na.rm = TRUE)),
+                           by = dist_bin]
+cat("\n=== LD Decay within chr22:20-20.5 Mb ===\n")
+print(decay_summary)
+```
+
+---
+
+## 课堂测验
+
+**题目**：在一项针对欧洲人群的 GWAS 研究中，研究者使用了 Illumina OmniExpress 芯片（约 700k SNP），并在分析前执行了基因型插补（参考面板：HRC，约 4000 万 SNP）。
+
+1. 插补后，可用于关联分析的 SNP 数量从 700k 扩大到约 1500 万。这一扩增的技术前提是什么？若改在西非人群中执行同样的插补流程，预期插补质量会如何变化？原因是什么？
+
+2. 某位点的插补 $R^2 = 0.45$，MAF = 0.03。研究者应如何处理这个位点？
+
+<details>
+<summary><strong>参考答案 (Reference Answers)</strong></summary>
+
+1. *技术前提是：欧洲人群基因组中存在稳定的 LD 区块结构，使得参考面板中的已知单倍型能够可靠地推断未检测位点的基因型。具体而言，欧洲人群的 LD 衰减距离约为 100–200 kb（$r^2$ 降至 0.1 的距离），芯片 SNP 的平均间距（约 4 kb/700k SNP）远小于 LD 区块的典型大小，因此插补具有足够的"锚定"信息。若改在西非人群（如 YRI）中执行：LD 衰减距离约为 20–50 kb，远快于欧洲人群，同样密度的芯片 SNP 对于西非人群而言"覆盖盲区"更大；同时，HRC 参考面板以欧洲人群为主，单倍型多样性对于非洲人群的代表性不足。两者共同导致西非人群的插补精度（$R^2$）整体低于欧洲人群，低频变异尤甚。*
+
+2. *该位点 MAF 极低（3%）且插补质量偏低（$R^2 = 0.45$），通常应被过滤排除，不纳入 GWAS 关联分析。原因：一方面，低 MAF 意味着该位点在标准样本量下本身统计功效极低（每种基因型的样本数少）；另一方面，插补 $R^2 = 0.45$ 说明插补基因型与真实基因型的相关性中等偏低，基于此进行的关联检验结果不可靠，既可能产生假阴性（效应被稀释），也可能因插补误差产生假阳性。标准做法是：MAF < 1% 的位点通常从常见变异 GWAS 中排除，另行使用罕见变异聚合检验（参见专题 3.7）；MAF 1%–5% 的位点则同时要求插补 $R^2 > 0.3$（宽松阈值）或 $> 0.8$（严格阈值）方可纳入分析。*
+
+</details>
+
+---
+
+## 课后自测 (Post-Lesson Quiz)
+
+1. 连锁不平衡的两个常用度量指标 $r^2$ 和 $D'$ 各有侧重。请从定义出发，解释为什么 $D'$ 在小样本时会系统性地偏高，而 $r^2$ 则更适合作为 GWAS 功效分析中的 LD 度量。两者各在什么分析场景中是更合适的选择？
+
+2. 下表给出了同一组 SNP 数据在三个不同群体中计算得到的 LD 衰减参数：
+
+   | 群体 | LD 衰减至 r² = 0.1 的距离 | 有效群体大小（$N_e$）（估计） |
+   |------|--------------------------|--------------------------|
+   | 群体 A | ~25 kb | 约 12,000 |
+   | 群体 B | ~150 kb | 约 2,500 |
+   | 群体 C | ~800 kb | 约 300 |
+
+   (a) 从进化遗传学角度，解释为什么有效群体大小（$N_e$）与 LD 衰减速率存在上述负相关关系。(b) 若要对三个群体分别设计 GWAS 基因分型芯片，达到相同的全基因组覆盖率（$r^2 \geq 0.8$），哪个群体需要最高的 SNP 密度？(c) 三个群体中哪个最可能是驯化作物品系？哪个最可能是具有大型历史人口的非洲人群来源？
+
+3. 某研究者在植物 GWAS 中使用了 50k SNP 芯片，并在分析结果中发现了一个强关联峰，峰顶 SNP 的 $-\log_{10}(p) = 12.5$。但她注意到该峰只有一个孤立的 SNP 显著，周围相邻的 SNP 均未达到显著阈值。(a) 这种"单点峰"（Single-Point Peak）是真实关联信号还是可能的假阳性？请从 LD 结构的角度分析。(b) 应采取哪些步骤验证该峰的真实性？(c) 若该研究使用了全基因组测序（WGS）数据而非芯片数据，是否更有可能看到真实信号伴随的 LD 拖尾？
+
+4. HapMap 计划描绘了人类基因组的 LD 区块结构，发现每个区块内的常见单倍型数量通常远少于理论最大值。请解释：(a) 为什么区块内单倍型数量远少于 $2^n$（$n$ 为区块内 SNP 数）？从群体遗传学角度给出两个原因。(b) 这一现象对 GWAS 基因分型芯片的"标签 SNP"设计策略有何实际意义？(c) 如果一个 LD 区块跨越一个重组热点，会发生什么？
+
+5. 某研究对一组农作物品系执行了基因型插补，使用的参考面板来自同一物种但不同亚群的 500 个个体（全基因组测序）。分析插补结果时发现：MAF > 10% 的 SNP 中 85% 的 $R^2 > 0.8$，但 MAF 1%–5% 的 SNP 中仅有 30% 的 $R^2 > 0.8$。(a) 解释 MAF 对插补质量的影响机制。(b) 该研究若使用 TOPMed 人类参考面板（约 250,000 个人类样本）替代当前面板，插补质量会改善还是下降？为什么？(c) 为提升低频变异的插补准确性，研究者可以采取哪两种策略？
+
+<details>
+<summary><strong>参考答案 (Reference Answers)</strong></summary>
+
+1. *$D'$ 的系统性高估来源于其定义：$D' = D / D_{\max}$，其中 $D_{\max}$ 取决于当前等位体频率。在小样本中，即使两位点实际 LD 较低，也可能因为四种单倍型组合（$A_1B_1, A_1B_2, A_2B_1, A_2B_2$）中某一种罕见组合恰好未在样本中被观测到，导致 $D_{\max}$ 被高估，从而 $|D'|$ 趋向 1。$r^2$ 则直接反映两个位点基因型向量的线性相关程度，统计性质更稳健，且与 GWAS 功效的传递效率存在直接数学对应关系（功效传递比例 $\approx r^2$），因此在 GWAS 相关分析中是更合适的指标。$D'$ 适合用于单倍型结构推断和历史重组事件的推断，尤其在大样本、较高 MAF 的情景下可靠性高。*
+
+2. *(a) 有效群体大小（$N_e$）越大，群体经历的历史重组次数总和越多（重组次数 ∝ $N_e$ × 世代数），相邻位点间积累的重组事件越多，原始 LD 被打断得越彻底，衰减越快。较小的 $N_e$ 意味着遗传漂变效应更强，随机丢失了大量等位体组合，维持了更长距离的 LD。 (b) 群体 A（LD 衰减最快，约 25 kb）需要最高的 SNP 密度，约每 20–25 kb 一个 Tag SNP 才能保证全基因组覆盖（$r^2 \geq 0.8$）。 (c) 群体 C（LD 延伸 ~800 kb，$N_e \approx 300$）最可能是驯化作物品系，因为人工选择和近亲繁殖导致遗传基础极窄，LD 极长。群体 A（$N_e \approx 12,000$，LD 衰减快）最可能来自非洲人群，与非洲人群历史悠久、奠基者效应弱、有效群体大的特征一致。*
+
+3. *(a) "单点峰"是可疑信号，更可能是假阳性。真实的 GWAS 关联信号通常由 LD 连接的一簇 SNP 共同显著——若某 SNP 是真实因果变异或其标签 SNP，则在 LD 衰减半径内（数十至数百 kb）的其他 SNP 应表现出程度不等的关联，在曼哈顿图上形成"峰形"。孤立的单点显著 SNP 提示可能存在：基因型分型错误（Call Rate 低、基因型聚类异常）、批次效应（技术性假阳性）、极端小 MAF 样本导致的统计不稳定。 (b) 验证步骤：① 检查该 SNP 的基因型质量（GC Score、Hardy-Weinberg 平衡、缺失率）；② 检查同一区域其他 SNP 的 LD 结构，理解为何无 LD 拖尾（芯片覆盖不足？还是确实无 LD 结构？）；③ 在独立群体中重复验证；④ 若条件允许，对该区域进行局部重测序以确认 SNP 的真实性和基因型准确性。 (c) 是的。WGS 数据覆盖了该 SNP 周围所有变异，若为真实信号，与因果变异处于高 LD 的其他 SNP 将在 WGS GWAS 中同时显著，形成可见的 LD 拖尾。芯片数据因覆盖密度不足，可能恰好只有一个 SNP"碰巧"落在因果变异所在 LD 区块内，周围区块代表性 SNP 缺失，造成假性的单点峰。*
+
+4. *(a) 原因一：**重组热点的区块化效应**——基因组中重组热点将染色体分割成若干低重组区段，区块内部重组率极低，使得原始单倍型组合长期保持，大大减少了单倍型种类。原因二：**遗传漂变与创始者效应**——特别是在历史瓶颈或小群体中，随机丢失了许多罕见单倍型，使得某几种主要单倍型在群体中占据极高频率。 (b) 每个 LD 区块内只需选取少数"标签 SNP"（使区块内每个未检测 SNP 均与至少一个 Tag SNP 的 $r^2 \geq 0.8$），而无需逐个检测区块内所有 SNP，从而大幅降低 GWAS 所需的基因分型成本。芯片 SNP 的设计正是以 Tag SNP 为核心，理论上用 50 万–100 万 SNP 即可"覆盖"约 1500 万常见变异。 (c) 若一个 LD 区块跨越重组热点，该区块将被打断，形成两个独立的小区块，两个小区块之间 $D'$ 和 $r^2$ 均显著下降，等位体组合呈现接近随机的分布。Tag SNP 的选取需要分别对两个小区块独立进行，而原来的单一 Tag SNP 将无法同时代表热点两侧的变异。*
+
+5. *(a) MAF 越低，群体中携带次等位基因的个体越少，包含该位点次等位基因的单倍型在参考面板中数量稀少，HMM 难以精确学习其单倍型背景。同时，低频 SNP 的等位体频率估计本身具有较大的抽样方差，插补模型不稳定。以上两个因素共同导致低 MAF 位点的插补精度系统性低于高 MAF 位点。 (b) 会显著下降。TOPMed 是人类参考面板，其单倍型结构完全基于人类基因组多态性，与农作物物种的基因组结构（不同基因组大小、不同 LD 结构、不同 SNP 集合）完全不相容，插补结果无意义。参考面板必须来自同一物种（最好是同一亚群或品系），方可用于插补。 (c) 策略一：**扩大参考面板规模**——使用更多个体（当前 500 个体明显偏少，低频变异需要参考面板中有足够数量的携带者），增加低频变异的单倍型多样性，提升插补模型精度。策略二：**对目标群体进行全基因组测序（WGS）**——无需插补直接获得所有变异（包括罕见变异）的真实基因型，从根本上消除插补误差；这对于低频变异分析尤为重要，是罕见变异 GWAS 的推荐做法。*
+
+</details>
