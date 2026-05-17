@@ -1,2 +1,383 @@
-# 第三章 课时4
+---
+title: "GWAS 结果可视化与候选位点解析"
+---
 
+# 专题 3.5：GWAS 结果可视化与候选位点解析
+
+## 学习目标
+
+完成本专题学习后，学生应能够：
+
+1. 绘制并解读曼哈顿图（Manhattan plot）和 QQ 图（Quantile-Quantile plot）；
+2. 利用局部关联图（LocusZoom 风格）展示候选区域内的 LD 结构与关联信号；
+3. 理解连锁不平衡（LD）如何影响 GWAS 信号的定位精度；
+4. 描述候选位点解析（locus annotation）的标准生物信息学流程；
+5. 利用公共数据库（GTEx、ENCODE）将统计信号与功能注释整合，提出生物学假说。
+
+---
+
+## 3.5.1 GWAS 可视化概述
+
+GWAS 产生数百万个 SNP 的关联统计量，其可视化目标在于：（1）总览全局显著位点的分布；（2）评估统计模型是否存在系统性偏差；（3）精细展示候选区域内信号的精细结构。
+
+三类核心图形各有侧重：
+
+| 图形类型 | 目的 | 核心信息 |
+|----------|------|----------|
+| 曼哈顿图 | 全局信号定位 | 各染色体上显著 SNP 位置与 $-\log_{10}(p)$ |
+| QQ 图 | 模型诊断 | 观测 p 值与理论均匀分布的偏离程度 |
+| 局部关联图 | 候选区域精细分析 | LD 结构、候选 SNP 与周边变异的关系 |
+
+---
+
+## 3.5.2 曼哈顿图
+
+### 3.5.2.1 图形结构与解读
+
+{{Wiki:Manhattan_plot}}
+
+曼哈顿图的 x 轴按染色体顺序排列所有 SNP 的基因组位置，y 轴显示 $-\log_{10}(p)$。通常叠加两条水平参考线：
+
+- **显著性阈值线**（实线）：$-\log_{10}(5 \times 10^{-8}) \approx 7.3$，对应 Bonferroni 校正后的全基因组显著性；
+- **建议性阈值线**（虚线）：$-\log_{10}(1 \times 10^{-5}) \approx 5.0$，用于标记值得关注但未达严格显著的候选位点。
+
+超过显著性阈值的 SNP 簇通常对应一个 LD 区块内的多个相关变异，而非多个独立位点，需要通过条件分析或 LD 裁剪（clumping）识别独立信号（参见 3.5.4 节）。
+
+### 3.5.2.2 R 实现（ggplot2）
+
+```r
+library(tidyverse)
+
+# 假设已读入 PLINK 线性或逻辑回归结果
+gwas <- read_table("gwas_linear.assoc.linear", col_types = cols()) %>%
+  filter(TEST == "ADD", !is.na(P))
+
+# 准备曼哈顿图数据：计算各 SNP 的累积基因组位置
+manhattan_data <- gwas %>%
+  group_by(CHR) %>%
+  summarise(chr_len = max(BP), .groups = "drop") %>%
+  mutate(tot = cumsum(as.numeric(chr_len)) - chr_len) %>%
+  select(CHR, tot) %>%
+  left_join(gwas, by = "CHR") %>%
+  mutate(BPcum = BP + tot) %>%
+  filter(!is.na(P)) %>%
+  mutate(log10p = -log10(P))
+
+# 确定染色体标签位置
+axis_df <- manhattan_data %>%
+  group_by(CHR) %>%
+  summarise(center = mean(BPcum), .groups = "drop")
+
+# 绘制曼哈顿图
+ggplot(manhattan_data,
+       aes(x = BPcum, y = log10p, color = factor(CHR %% 2))) +
+  geom_point(size = 0.4, alpha = 0.6) +
+  geom_hline(yintercept = -log10(5e-8),
+             color = "red",   linetype = "solid",  linewidth = 0.6) +
+  geom_hline(yintercept = -log10(1e-5),
+             color = "blue",  linetype = "dashed", linewidth = 0.4) +
+  scale_x_continuous(label = axis_df$CHR, breaks = axis_df$center) +
+  scale_color_manual(values = c("grey60", "steelblue"), guide = "none") +
+  labs(x = "Chromosome",
+       y = expression(-log[10](italic(p))),
+       title = "Manhattan Plot") +
+  theme_classic() +
+  theme(axis.text.x = element_text(size = 7))
+```
+
+---
+
+## 3.5.3 QQ 图与基因组膨胀因子
+
+QQ 图将排序后的观测 $-\log_{10}(p)$ 与期望值对比，用于诊断统计模型是否存在系统性偏差。
+
+- **理想情况**：绝大多数点沿对角线分布（零假设为真的位点），尾部真实信号偏离对角线；
+- **全局向上偏离（inflation）**：提示群体分层未充分控制，需增加 PCA 主成分或引入 MLM；
+- **全局向下偏离（deflation）**：通常由样本量不足或过于保守的模型导致。
+
+```r
+# QQ 图
+observed <- sort(-log10(gwas$P), decreasing = TRUE)
+expected <- -log10(ppoints(length(observed)))
+
+qq_df <- data.frame(expected = expected, observed = observed)
+
+ggplot(qq_df, aes(x = expected, y = observed)) +
+  geom_point(size = 0.5, alpha = 0.5, color = "steelblue") +
+  geom_abline(slope = 1, intercept = 0,
+              color = "red", linetype = "dashed") +
+  labs(x = expression("Expected" ~ -log[10](italic(p))),
+       y = expression("Observed" ~ -log[10](italic(p))),
+       title = "QQ Plot") +
+  theme_classic()
+
+# Genomic inflation factor
+lambda_gc <- median(qchisq(gwas$P, df = 1, lower.tail = FALSE),
+                    na.rm = TRUE) /
+             qchisq(0.5, df = 1, lower.tail = FALSE)
+cat(sprintf("lambda_GC = %.4f\n", lambda_gc))
+```
+
+:::tip
+**$\lambda_{GC}$ 的校正**
+
+当 $\lambda_{GC}$ 因样本量极大（如 $n > 100,000$）而偏高时，并非一定反映群体分层，也可能是多基因遗传结构（polygenicity）的正常表现。此时应使用 **LD Score 回归（LDSC）** 区分膨胀来源：若截距接近 1，则膨胀主要由多基因性贡献；若截距显著大于 1，则提示混杂因素存在。
+:::
+
+---
+
+## 3.5.4 独立信号的识别：LD 裁剪与条件分析
+
+### 3.5.4.1 LD 裁剪（Clumping）
+
+同一 LD 区块内的多个 SNP 因连锁不平衡而产生相关的关联信号，不能被视为独立命中。**LD 裁剪**以最显著的 SNP（index SNP）为核心，将其一定窗口内 $r^2$ 超过阈值的关联 SNP 合并为同一位点：
+
+```bash
+# PLINK LD clumping
+plink \
+  --bfile qc_step4 \
+  --clump gwas_linear.assoc.linear \
+  --clump-p1 5e-8 \
+  --clump-p2 1e-5 \
+  --clump-r2 0.1 \
+  --clump-kb 1000 \
+  --clump-field P \
+  --out gwas_clumped
+
+# 输出文件：gwas_clumped.clumped
+# 每行为一个独立信号，SP2 列列出被合并的相关 SNP
+```
+
+### 3.5.4.2 逐步条件分析
+
+对于同一染色体区域内可能存在多个独立信号的情况，逐步条件分析（stepwise conditional analysis）逐步将已识别的显著 SNP 作为协变量加入模型，检验是否存在额外的独立关联信号：
+
+```r
+# Conditional analysis: adjust for index SNP genotype
+# 假设 index_snp_geno 为 index SNP 的基因型向量
+fit_conditional <- lm(pheno ~ geno_candidate + index_snp_geno + PC1 + PC2)
+summary(fit_conditional)
+```
+
+---
+
+## 3.5.5 局部关联图
+
+局部关联图（regional association plot，LocusZoom 风格）聚焦于候选区域（通常 ±500 kb），叠加展示：
+
+- 各 SNP 的 $-\log_{10}(p)$ 值（点的颜色反映其与 lead SNP 的 $r^2$）；
+- 基因结构注释（编码区、非编码区、转录方向）；
+- 重组率估计（来自 HapMap 或 1000 Genomes）。
+
+```r
+library(tidyverse)
+library(ggrepel)
+
+# 假设已获取候选区域的关联结果和 LD 信息
+# ld_with_lead: data.frame, 含 SNP, r2_with_lead 两列
+
+region <- gwas %>%
+  filter(CHR == 6, BP >= 32.4e6, BP <= 33.4e6) %>%
+  left_join(ld_with_lead, by = "SNP") %>%
+  mutate(
+    log10p = -log10(P),
+    ld_bin = cut(r2_with_lead,
+                 breaks = c(0, 0.2, 0.4, 0.6, 0.8, 1.0),
+                 labels = c("0.0-0.2", "0.2-0.4",
+                            "0.4-0.6", "0.6-0.8", "0.8-1.0"),
+                 include.lowest = TRUE)
+  )
+
+ld_colors <- c("0.0-0.2" = "#2166AC",
+               "0.2-0.4" = "#74ADD1",
+               "0.4-0.6" = "#FDAE61",
+               "0.6-0.8" = "#F46D43",
+               "0.8-1.0" = "#D73027")
+
+lead_snp <- region %>% filter(P == min(P))
+
+ggplot(region, aes(x = BP / 1e6, y = log10p, color = ld_bin)) +
+  geom_point(size = 1.5, alpha = 0.8) +
+  geom_point(data = lead_snp, color = "purple", size = 3, shape = 18) +
+  geom_label_repel(data = lead_snp,
+                   aes(label = SNP), color = "purple",
+                   size = 3, nudge_y = 0.5, show.legend = FALSE) +
+  scale_color_manual(values = ld_colors,
+                     name = expression(r^2 ~ "with lead SNP")) +
+  geom_hline(yintercept = -log10(5e-8),
+             linetype = "dashed", color = "grey40") +
+  labs(x = "Position (Mb)",
+       y = expression(-log[10](italic(p))),
+       title = "Regional Association Plot") +
+  theme_classic()
+```
+
+---
+
+## 3.5.6 候选位点的功能注释
+
+统计显著性本身不能说明机制。GWAS 的后续核心工作是将显著 SNP（通常是 LD 区块内的多个相关变异）与功能信息整合，提出生物学假说。
+
+### 3.5.6.1 变异注释
+
+```bash
+# 使用 ANNOVAR 进行功能注释
+# 注释类型：exonic/intronic/UTR/intergenic/splicing 等
+perl annotate_variation.pl \
+  -geneanno \
+  -dbtype refGene \
+  -buildver hg38 \
+  candidate_snps.txt \
+  humandb/
+
+# 使用 bcftools annotate 添加 VEP 注释
+bcftools annotate \
+  -a vep_annotations.vcf.gz \
+  -c INFO \
+  candidate_snps.vcf.gz \
+  -o annotated_candidates.vcf.gz
+```
+
+### 3.5.6.2 eQTL 整合与共定位
+
+**表达数量性状位点（expression Quantitative Trait Locus，eQTL）** 是与基因表达水平关联的遗传变异。若 GWAS 命中的 SNP 同时也是某基因的 eQTL，则该基因成为优先候选致因基因（causal gene）。
+
+GTEx（Genotype-Tissue Expression）项目提供了来自 54 种人类组织的 cis-eQTL 数据，是最常用的 eQTL 参考数据库。
+
+```r
+library(tidyverse)
+
+# 读取 GTEx eQTL 结果（以全血为例）
+# 文件格式：gene_id, variant_id, tss_distance, pval_nominal, slope, ...
+eqtl <- read_tsv("GTEx_Analysis_v8_eQTL/Whole_Blood.v8.signif_variant_gene_pairs.txt.gz")
+
+# 从 variant_id 解析染色体位置
+eqtl <- eqtl %>%
+  mutate(
+    CHR = as.integer(sub("chr(\\d+)_.*", "\\1", variant_id)),
+    BP  = as.integer(sub("chr\\d+_(\\d+)_.*", "\\1", variant_id))
+  )
+
+# 候选区域内的 eQTL 重叠
+candidate_region <- list(chr = 6, start = 32.4e6, end = 33.4e6)
+
+overlapping_eqtl <- eqtl %>%
+  filter(CHR == candidate_region$chr,
+         BP  >= candidate_region$start,
+         BP  <=  candidate_region$end) %>%
+  arrange(pval_nominal)
+
+cat("eQTL genes in candidate region:\n")
+print(unique(overlapping_eqtl$gene_id))
+```
+
+### 3.5.6.3 共定位分析原理
+
+**共定位（colocalization）** 检验两个性状（如疾病 GWAS 和 eQTL）的关联信号是否由同一个因果变异驱动，还是由同一区域内两个紧密连锁但不同的变异分别驱动。
+
+`coloc` 软件包基于贝叶斯因子框架，计算五种假设的后验概率（PPH0–PPH4）：
+
+| 假设 | 含义 |
+|------|------|
+| H0 | 两个性状均无关联信号 |
+| H1 | 仅性状 1 有关联信号 |
+| H2 | 仅性状 2 有关联信号 |
+| H3 | 两者均有关联信号，但各自由不同变异驱动 |
+| H4 | 两者共享同一因果变异 |
+
+**PPH4 > 0.8** 通常被视为共定位的证据阈值。
+
+```r
+library(coloc)
+
+# 准备 GWAS 数据集（以候选区域为例）
+dataset_gwas <- list(
+  beta   = region$beta,
+  varbeta = region$se^2,
+  N      = 50000,
+  type   = "quant",
+  snp    = region$SNP
+)
+
+# 准备 eQTL 数据集
+dataset_eqtl <- list(
+  beta    = overlapping_eqtl$slope,
+  varbeta = overlapping_eqtl$slope_se^2,
+  N       = 670,          # GTEx whole blood sample size
+  type    = "quant",
+  snp     = overlapping_eqtl$variant_id
+)
+
+# 运行共定位
+result_coloc <- coloc.abf(dataset1 = dataset_gwas,
+                           dataset2 = dataset_eqtl)
+
+cat("PP.H4 (shared causal variant):", result_coloc$summary["PP.H4.abf"], "\n")
+```
+
+{{Wiki:Quantitative_trait_locus}}
+
+---
+
+## 3.5.7 候选位点解析的整合框架
+
+将上述步骤整合为标准解析流程：
+
+```
+GWAS 全局结果
+      │
+      ▼
+  LD clumping → 独立显著位点列表
+      │
+      ▼
+  候选区域定义 (lead SNP ± 500 kb)
+      │
+      ├──► 变异功能注释 (ANNOVAR / VEP)
+      │         └── 编码变异？非编码？剪接位点？
+      │
+      ├──► eQTL 查询 (GTEx / tissue-specific)
+      │         └── 候选效应基因
+      │
+      ├──► 共定位分析 (coloc / SuSiE-coloc)
+      │         └── PPH4 > 0.8 → 强共定位证据
+      │
+      ├──► 染色质可及性 / 组蛋白修饰 (ENCODE / Roadmap)
+      │         └── 候选调控元件 (enhancer, promoter)
+      │
+      └──► 整合结论：候选致因基因与致因变异
+```
+
+:::info
+**黄金法则：从统计显著到生物学假说**
+
+GWAS 的统计命中仅是起点，而非终点。由于 LD 的存在，lead SNP 通常不是真正的致因变异（causal variant），而是其标记物。候选基因的确立需要多组学证据的汇聚：功能注释、eQTL 证据、共定位分析和实验验证（如 CRISPR 功能筛选）共同构成因果推断的基础。
+:::
+
+---
+
+## 课后自测 (Post-Lesson Quiz)
+
+1. 在曼哈顿图中，显著位点通常表现为一"柱"相关联的 SNP，而非单个孤立点。请从连锁不平衡（LD）的角度解释这一现象，并说明 LD 裁剪（clumping）如何从中识别独立信号。
+
+2. QQ 图中，若绝大多数点沿对角线分布，仅尾部出现上翘，这意味着什么？若全体点均整体偏离对角线向上，又意味着什么？
+
+3. 什么是 eQTL？GTEx 数据库在 GWAS 后续分析中扮演什么角色？请描述利用 eQTL 信息确认候选致因基因的基本思路。
+
+4. 共定位分析（coloc）中的五个假设（H0–H4）各代表什么？PPH4 > 0.8 的生物学含义是什么？
+
+5. 假设某 GWAS 在 chr6:32,800,000 处发现一个显著 SNP（$p = 3.2 \times 10^{-9}$），该位点位于基因间区（intergenic region），但距一个已知免疫基因的增强子（enhancer）仅 5 kb。请描述你将采取哪些后续步骤来评估该 SNP 是否可能通过调控该基因的表达来影响表型。
+
+<details>
+<summary><strong>参考答案 (Reference Answers)</strong></summary>
+
+1. *同一 LD 区块内的 SNP 彼此高度相关（高 $r^2$），因此若某一致因变异（或其紧密连锁的标记物）与表型真实关联，该区块内所有与其连锁的 SNP 也会显示出类似的关联信号，形成"信号柱"。LD 裁剪以 p 值最小的 SNP（index SNP）为核心，将其特定窗口内 $r^2$ 超过阈值（如 0.1）的所有 SNP 归并为同一位点，仅保留 index SNP 代表该独立信号，从而在全基因组范围内统计独立命中数量。*
+
+2. *仅尾部上翘说明统计模型整体校准良好（零假设下的位点符合均匀分布），少数位点产生了真实的关联信号，这是理想的 GWAS 结果模式。全体点整体偏离对角线向上（inflation）则提示存在系统性偏差，最常见原因是群体分层未充分控制、隐性亲缘关系（cryptic relatedness）或基因型质量问题，应计算 $\lambda_{GC}$ 并采用 MLM 或增加 PCA 主成分进行校正。*
+
+3. *eQTL（表达数量性状位点）是与基因表达水平统计关联的遗传变异。GTEx 提供了 54 种人类组织中的 cis-eQTL 图谱，当 GWAS 命中 SNP 与某基因的 eQTL 重叠时，该基因成为优先候选致因基因。基本思路为：在候选区域内查询 GTEx（选择与表型最相关的组织），若 lead SNP 同时是该基因的显著 eQTL，则进一步开展共定位分析（coloc）以确认二者是否共享同一因果变异。*
+
+4. *H0：两个性状在该区域均无关联信号；H1：仅 GWAS 性状有信号；H2：仅 eQTL 性状有信号；H3：两者均有信号但由不同变异驱动（LD 区块内两个独立因果变异）；H4：两者共享同一因果变异（最强的致因基因证据）。PPH4 > 0.8 意味着在贝叶斯框架下，有超过 80% 的后验概率支持 GWAS 信号与该基因的 eQTL 信号由同一遗传变异驱动，提供了该基因为因果效应基因的强有力分子证据。*
+
+5. *后续步骤包括：（1）利用 ANNOVAR 或 VEP 注释该 SNP 及其 LD 伙伴变异（$r^2 > 0.8$）的功能类别，关注是否有变异落在增强子区域；（2）在 GTEx 数据库中查询该 SNP 或其 LD 伙伴是否为该免疫基因在相关组织中的 eQTL；（3）若存在 eQTL 关联，运行 coloc 分析评估 PPH4；（4）查询 ENCODE 或 Roadmap 数据，确认该增强子在相关细胞类型中是否具有活性标志（H3K27ac、ATAC-seq 峰）；（5）综合以上多组学证据，形成假说：该 SNP 通过改变增强子活性调控目标基因表达，进而影响表型；（6）如条件允许，通过 CRISPR 编辑或等位基因特异性报告基因实验进行功能验证。*
+
+</details>

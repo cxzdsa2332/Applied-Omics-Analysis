@@ -1,2 +1,429 @@
-# 第三章 课时5
+---
+title: "精细定位与功能验证及更多"
+---
 
+# 专题 3.6：精细定位与功能验证
+
+## 学习目标
+
+完成本专题学习后，学生应能够：
+
+1. 阐释 GWAS 精细定位（fine-mapping）的必要性及其与 LD 裁剪的本质区别；
+2. 理解贝叶斯精细定位方法（SuSiE、FINEMAP）的核心统计框架；
+3. 解释可信集（Credible Set）的定义与生物学意义；
+4. 描述孟德尔随机化（Mendelian Randomization，MR）的基本原理及其用于因果推断的条件；
+5. 区分多基因风险评分（PRS）与单位点 GWAS 的应用场景，并掌握 PRS 的基本构建流程；
+6. 概述稀有变异聚合检验（SKAT、SKAT-O）的动机与统计策略。
+
+---
+
+## 3.6.1 精细定位的必要性
+
+GWAS 中的显著信号通常对应一个 LD 区块，该区块内可能含有数十至数百个相互高度连锁的 SNP，其中只有少数（甚至仅一个）是真正的致因变异（causal variant）。精细定位（fine-mapping）的目标是在统计层面**缩小因果候选变异的范围**，为后续功能实验提供优先靶标。
+
+:::note
+**精细定位 vs. LD 裁剪**
+
+LD 裁剪（clumping）识别的是统计独立的信号位点，目的是消除冗余；精细定位识别的是在已知信号区域内最可能为因果变异的集合，目的是缩小候选范围。二者互补，缺一不可。
+:::
+
+{{Wiki:Linkage_disequilibrium}}
+
+---
+
+## 3.6.2 贝叶斯精细定位
+
+### 3.6.2.1 统计框架
+
+贝叶斯精细定位方法将每个 SNP 视为候选因果变异，计算其后验因果概率（Posterior Inclusion Probability，PIP）：
+
+$$
+\text{PIP}_j = P(\text{SNP } j \text{ 为因果变异} \mid \text{数据})
+$$
+
+早期方法（如 FINEMAP）假设候选区域内因果变异数量服从先验分布，通过马尔可夫链蒙特卡罗（MCMC）或 shotgun stochastic search 枚举可能的因果变异组合。
+
+**SuSiE（Sum of Single Effects）** 方法采用变分贝叶斯（variational Bayes）推断，将多因果变异问题分解为多个"单效应"成分之和：
+
+$$
+\mathbf{y} = \sum_{l=1}^{L} \mathbf{X} \mathbf{b}_l + \boldsymbol{\varepsilon}
+$$
+
+其中每个 $\mathbf{b}_l$ 仅有一个非零元素（单效应假设），$L$ 为预设的最大因果变异数。SuSiE 通过迭代贝叶斯岭回归（iterative Bayesian stepwise selection，IBSS）算法求解各成分的后验分布。
+
+### 3.6.2.2 可信集（Credible Set）
+
+对于每个效应成分 $l$，SuSiE 输出一个**可信集（Credible Set）**：包含所有 SNP 中，累积后验概率达到指定覆盖率（通常 95%）的最小变异子集。即：
+
+$$
+\sum_{j \in \mathcal{CS}_l} \text{PIP}_{lj} \geq 0.95
+$$
+
+可信集越小，精细定位的分辨率越高。若某个可信集仅含 1–2 个 SNP，则这些变异是高置信度的因果候选变异。
+
+### 3.6.2.3 SuSiE R 实现
+
+```r
+library(susieR)
+library(tidyverse)
+
+# 准备输入数据
+# z: z-score 向量（GWAS 统计量）
+# R: LD 矩阵（候选区域内所有 SNP 的 r 相关矩阵）
+# n: 样本量
+
+# 示例：从 GWAS summary stats 和参考 LD 矩阵运行 SuSiE
+# （实际应用中 LD 矩阵由参考面板如 1000 Genomes 计算）
+set.seed(42)
+n_snp <- 200
+n_samp <- 50000
+
+# Simulate z-scores with one causal variant at position 100
+causal_pos <- 100
+z_scores <- rnorm(n_snp, mean = 0, sd = 1)
+z_scores[causal_pos] <- 8.0  # strong signal at causal variant
+
+# Simulate LD matrix (block structure)
+R <- diag(n_snp)
+for (i in 1:n_snp) {
+  for (j in i:n_snp) {
+    r_ij <- exp(-0.02 * abs(i - j))
+    R[i, j] <- R[j, i] <- r_ij
+  }
+}
+
+# Run SuSiE with summary statistics
+fit_susie <- susie_rss(
+  z    = z_scores,
+  R    = R,
+  n    = n_samp,
+  L    = 5,          # max number of causal variants
+  coverage = 0.95
+)
+
+# Extract results
+cat("Number of credible sets:", length(fit_susie$sets$cs), "\n")
+
+# PIP for each SNP
+pip_df <- data.frame(
+  snp_idx = 1:n_snp,
+  pip     = fit_susie$pip
+)
+
+# Visualize PIP
+ggplot(pip_df, aes(x = snp_idx, y = pip)) +
+  geom_col(fill = "steelblue", width = 0.8) +
+  geom_hline(yintercept = 0.9, color = "red", linetype = "dashed") +
+  labs(x = "SNP Index",
+       y = "Posterior Inclusion Probability (PIP)",
+       title = "SuSiE Fine-mapping Result") +
+  theme_classic()
+
+# Print credible set SNPs
+for (l in seq_along(fit_susie$sets$cs)) {
+  cat(sprintf("Credible set %d: SNPs %s (coverage = %.3f)\n",
+              l,
+              paste(fit_susie$sets$cs[[l]], collapse = ", "),
+              fit_susie$sets$coverage[l]))
+}
+```
+
+:::tip
+**SuSiE 的实际应用注意事项**
+
+精细定位的质量高度依赖于 LD 矩阵的准确性。应优先使用与 GWAS 样本来源相同的群体作为参考面板计算 LD；若使用公共参考面板（如 1000 Genomes EUR），需确认与研究样本的祖源高度匹配。样本量不足时，SuSiE 可信集可能包含大量 SNP，精细定位分辨率有限。
+:::
+
+---
+
+## 3.6.3 孟德尔随机化（Mendelian Randomization）
+
+### 3.6.3.1 因果推断的挑战
+
+观察性流行病学研究中，暴露因素（如 BMI、LDL 胆固醇、炎症因子）与疾病的关联可能受到混杂因素的干扰，或受到反向因果（reverse causation）的影响，难以直接推断因果关系。
+
+**孟德尔随机化（Mendelian Randomization，MR）** 借助遗传变异作为暴露因素的**工具变量（instrumental variable，IV）**，利用遗传变异随机分配（类似随机对照试验）的特性推断因果效应。
+
+{{Wiki:Mendelian_randomization}}
+
+### 3.6.3.2 三个核心假设
+
+有效工具变量必须满足三个假设：
+
+1. **相关性（Relevance）**：遗传变异与暴露因素显著关联（通常要求 F 统计量 > 10）；
+2. **独立性（Independence）**：遗传变异与混杂因素无关（随机化假设，由减数分裂的随机性保证）；
+3. **排他性（Exclusion restriction）**：遗传变异仅通过暴露因素影响结局，不存在水平多效性（horizontal pleiotropy）。
+
+```
+遗传变异 (G) ──────────► 暴露 (X) ──────────► 结局 (Y)
+     │                                              ▲
+     │               混杂因素 (U)                  │
+     │──────────────────────────────────────────────┘
+                    (假设此路径不存在)
+```
+
+### 3.6.3.3 MR 分析流程与敏感性分析
+
+```r
+library(TwoSampleMR)
+
+# Step 1: 提取暴露 GWAS 中的工具变量（显著 SNP）
+exposure_dat <- extract_instruments(
+  outcomes = "ieu-b-4816",   # 以 BMI 为暴露（IEU Open GWAS ID）
+  p1       = 5e-8,
+  clump    = TRUE,
+  r2       = 0.001,
+  kb       = 10000
+)
+
+cat("Number of IVs:", nrow(exposure_dat), "\n")
+
+# Step 2: 在结局 GWAS 中提取对应 SNP 效应（以 T2D 为结局）
+outcome_dat <- extract_outcome_data(
+  snps     = exposure_dat$SNP,
+  outcomes = "ieu-a-24"    # Type 2 diabetes
+)
+
+# Step 3: 数据协调
+dat <- harmonise_data(exposure_dat, outcome_dat)
+
+# Step 4: MR 分析（多种方法）
+res <- mr(dat, method_list = c(
+  "mr_ivw",                   # Inverse Variance Weighted (主方法)
+  "mr_weighted_median",       # 允许 <50% IV 无效
+  "mr_egger_regression",      # 检测水平多效性
+  "mr_weighted_mode"
+))
+
+mr_results(res)
+
+# Step 5: 敏感性分析
+# MR-Egger 截距检验多效性
+mr_pleiotropy_test(dat)
+
+# Cochran Q 统计量检验异质性
+mr_heterogeneity(dat)
+
+# 漏斗图
+mr_funnel_plot(mr_singlesnp(dat))
+
+# 散点图
+mr_scatter_plot(res, dat)
+```
+
+:::warning
+**水平多效性是 MR 的主要威胁**
+
+若工具变量 SNP 除通过暴露路径外，还通过其他生物学路径影响结局（水平多效性），则 MR 估计有偏。MR-Egger 回归通过允许非零截距来检测和校正平均多效性，但其估计效率低，且假设多效性与 IV 强度不相关（InSIDE 假设）。加权中位数法和众数法在不同多效性模式下均提供稳健估计，与 IVW 结果一致性越高，因果推断越可信。
+:::
+
+---
+
+## 3.6.4 多基因风险评分（PRS）
+
+### 3.6.4.1 基本原理
+
+**多基因风险评分（Polygenic Risk Score，PRS）** 将个体基因组中所有（或筛选后的）GWAS 关联 SNP 的效应叠加，得到一个量化该个体遗传风险的单一分数：
+
+$$
+\text{PRS}_i = \sum_{j=1}^{M} \hat{\beta}_j \cdot G_{ij}
+$$
+
+其中 $\hat{\beta}_j$ 为第 $j$ 个 SNP 在 GWAS 训练集中估计的效应量，$G_{ij}$ 为个体 $i$ 在该 SNP 的基因型编码（0/1/2）。
+
+PRS 捕捉的是多个位点的累积遗传效应，而非单个位点的大效应，适用于复杂多基因遗传结构的表型（如身高、BMI、心血管疾病）。
+
+### 3.6.4.2 LD 裁剪 + p 值阈值（C+T）方法
+
+最简单的 PRS 构建方法为 C+T（Clumping + Thresholding）：
+
+```bash
+# Step 1: LD clumping（同前，去除 LD 冗余）
+plink \
+  --bfile target_genotypes \
+  --clump base_gwas.assoc \
+  --clump-p1 1.0 \
+  --clump-r2 0.1 \
+  --clump-kb 250 \
+  --clump-field P \
+  --out clumped_snps
+
+# Step 2: 提取不同 p 值阈值下的 SNP 集合
+for PTHRESH in 5e-8 1e-5 1e-3 0.01 0.05 0.1 0.2 0.5 1.0; do
+  plink \
+    --bfile target_genotypes \
+    --score base_gwas.assoc 3 4 7 header \
+    --q-score-range p_thresholds.txt p_values.txt \
+    --extract clumped_snps.clumped \
+    --out prs_pt_${PTHRESH}
+done
+```
+
+```r
+# 选择最优 p 值阈值（在独立验证集中最大化 R² 或 AUC）
+library(tidyverse)
+
+thresholds <- c(5e-8, 1e-5, 1e-3, 0.01, 0.05, 0.1, 0.2, 0.5, 1.0)
+
+# 读取各阈值下的 PRS 并在验证集中评估
+results <- map_df(thresholds, function(pt) {
+  prs <- read_table(sprintf("prs_pt_%.0e.profile", pt),
+                    col_types = cols()) %>%
+    select(IID, SCORE)
+
+  # 与表型合并（假设 pheno_df 包含 IID 和 PHENO 列）
+  merged <- left_join(pheno_df, prs, by = "IID")
+
+  fit <- lm(PHENO ~ SCORE, data = merged)
+  r2  <- summary(fit)$r.squared
+
+  tibble(threshold = pt, r_squared = r2, n_snps = NA)
+})
+
+best_thresh <- results %>% filter(r_squared == max(r_squared))
+cat("Best p-value threshold:", best_thresh$threshold, "\n")
+cat("R² in validation set:", round(best_thresh$r_squared, 4), "\n")
+
+# 可视化
+ggplot(results, aes(x = -log10(threshold), y = r_squared)) +
+  geom_line(color = "steelblue") +
+  geom_point(size = 2, color = "steelblue") +
+  geom_point(data = best_thresh, color = "red", size = 3) +
+  labs(x = expression(-log[10]("p-value threshold")),
+       y = expression(R^2 ~ "(validation set)"),
+       title = "PRS Performance vs. p-value Threshold (C+T)") +
+  theme_classic()
+```
+
+:::note
+**LDpred2 与 PRS-CS：贝叶斯 PRS 方法**
+
+C+T 方法简单但次优，因为它丢弃了阈值以下大量有信息的小效应位点。LDpred2 和 PRS-CS 通过贝叶斯收缩方法在全基因组范围内同时估计所有 SNP 的后验效应量，通常比 C+T 方法有更高的预测准确性，尤其在多基因性（polygenicity）高的性状上。
+:::
+
+---
+
+## 3.6.5 稀有变异聚合检验
+
+### 3.6.5.1 稀有变异分析的动机
+
+标准 GWAS 主要针对常见变异（MAF > 1%），对稀有变异（MAF < 1%）的统计检验力极低：在有限样本量下，稀有变异在任何基因型组别中仅有少数个体携带，单 SNP 检验几乎无法达到显著。
+
+然而，稀有变异（尤其是功能性稀有变异，如 Loss-of-Function 变异）往往具有较大的效应量，其在基因水平的聚合分析可显著提升检验力。
+
+### 3.6.5.2 SKAT 与 SKAT-O
+
+**序列核关联检验（Sequence Kernel Association Test，SKAT）** 将同一基因（或基因组窗口）内所有稀有变异的效应量视为服从先验分布（均值为零）的随机变量，通过核函数（kernel function）将多个稀有变异的基因型信息聚合为单一统计量：
+
+$$
+Q_{\text{SKAT}} = (\mathbf{y} - \hat{\boldsymbol{\mu}})^\top \mathbf{K} (\mathbf{y} - \hat{\boldsymbol{\mu}})
+$$
+
+其中 $\mathbf{K} = \mathbf{G} \mathbf{W} \mathbf{G}^\top$ 为加权核矩阵，$\mathbf{G}$ 为基因型矩阵，$\mathbf{W}$ 为基于 MAF 的权重矩阵（稀有变异权重更高）。
+
+**SKAT-O（Optimal SKAT）** 通过线性组合负担检验（burden test）和 SKAT 统计量，自适应地在"方向一致的稀有变异效应"和"效应方向混合的稀有变异"两种场景之间取得最优检验力：
+
+$$
+Q_\rho = (1-\rho) \cdot Q_{\text{SKAT}} + \rho \cdot Q_{\text{burden}}, \quad \rho \in [0, 1]
+$$
+
+```r
+library(SKAT)
+
+# 准备输入数据
+# Z: n × p 稀有变异基因型矩阵 (n 样本, p 变异)
+# y: 表型向量
+# X: 协变量矩阵
+
+# 创建 SKAT 零模型（包含协变量）
+obj_null <- SKAT_Null_Model(
+  y ~ age + sex + PC1 + PC2 + PC3,
+  data     = pheno_df,
+  out_type = "C"  # "C" for continuous, "D" for dichotomous
+)
+
+# 运行 SKAT
+result_skat <- SKAT(Z = rare_geno_matrix, obj = obj_null, method = "SKAT")
+cat("SKAT p-value:", result_skat$p.value, "\n")
+
+# 运行 SKAT-O（自动选择最优 rho）
+result_skato <- SKAT(Z = rare_geno_matrix, obj = obj_null, method = "SKATO")
+cat("SKAT-O p-value:", result_skato$p.value, "\n")
+
+# 运行 Burden test (rho = 1)
+result_burden <- SKAT(Z = rare_geno_matrix, obj = obj_null, method = "Burden")
+cat("Burden p-value:", result_burden$p.value, "\n")
+```
+
+| 方法 | 适用场景 | 核心假设 |
+|------|----------|----------|
+| Burden test | 同一基因内所有稀有变异效应方向一致 | 效应同向且大小相近 |
+| SKAT | 同一基因内稀有变异效应方向混合 | 效应服从均值为零的分布 |
+| SKAT-O | 未知效应方向分布 | 自适应最优，通用性最强 |
+
+---
+
+## 3.6.6 精细定位到功能验证的完整路径
+
+```
+GWAS 显著信号
+      │
+      ▼
+精细定位 (SuSiE / FINEMAP)
+  → 可信集（Credible Set）
+  → 高 PIP 候选因果变异
+      │
+      ├──► 功能注释过滤
+      │     （编码变异？调控区域？剪接位点？）
+      │
+      ├──► eQTL 整合 + 共定位
+      │     → 候选效应基因
+      │
+      ├──► 孟德尔随机化
+      │     → 暴露→结局因果效应估计
+      │
+      └──► 功能实验验证
+            ├── CRISPR 等位基因编辑
+            ├── 等位基因特异性表达（ASE）
+            ├── 荧光素酶报告基因实验
+            └── 体内动物模型
+```
+
+:::info
+**黄金法则：统计证据不等于因果证据**
+
+精细定位、MR 和共定位均属于计算推断，其结论需要功能实验验证。高 PIP（如 > 0.9）仅表示在当前数据和模型假设下该变异最可能为因果变异，但样本量、LD 结构和基因组注释的局限性均可能影响推断结果。多条独立证据线（统计 + 分子 + 动物模型）汇聚才能建立可靠的因果结论。
+:::
+
+---
+
+## 课后自测 (Post-Lesson Quiz)
+
+1. 精细定位（fine-mapping）与 LD 裁剪（LD clumping）的目的分别是什么？二者在 GWAS 分析流程中如何互补？
+
+2. SuSiE 中的"可信集（Credible Set）"是如何定义的？若某候选区域的 95% 可信集仅含一个 SNP，这意味着什么？
+
+3. 孟德尔随机化的三个核心假设是什么？水平多效性（horizontal pleiotropy）违背的是哪一条假设？常用的敏感性分析方法有哪些？
+
+4. 在构建多基因风险评分（PRS）时，C+T 方法和 LDpred2 各有什么优缺点？在实际应用中，PRS 的预测性能通常用哪些指标评估？
+
+5. 为什么标准单 SNP GWAS 对稀有变异（MAF < 1%）的检验力极低？SKAT 方法如何通过基因水平的聚合检验解决这一问题？
+
+6. 假设你在 GWAS 中发现基因 PCSK9 区域的一个 SNP 显著关联于 LDL 胆固醇（暴露），你希望进一步利用孟德尔随机化评估 LDL 胆固醇对心肌梗死（结局）的因果效应。请描述分析流程，并指出可能的局限性。
+
+<details>
+<summary><strong>参考答案 (Reference Answers)</strong></summary>
+
+1. *LD 裁剪（clumping）的目的是在全基因组范围内识别统计独立的信号位点，通过将 LD 区块内相关 SNP 合并为一个代表性位点来消除冗余，输出独立命中列表。精细定位（fine-mapping）的目的是在已知信号区域内，基于贝叶斯框架估计每个 SNP 为因果变异的后验概率，缩小因果候选变异的集合。在分析流程中，LD 裁剪先识别独立信号区域，再对每个区域进行精细定位，以获取高置信度的因果候选变异。*
+
+2. *95% 可信集定义为：从 PIP 最高的 SNP 开始累加，直到累积 PIP 达到 0.95 为止的最小 SNP 集合。若该集合仅含一个 SNP，表明在当前数据和 LD 结构下，有超过 95% 的后验概率支持该变异为唯一因果变异，精细定位分辨率极高，该 SNP 是高优先级功能实验靶标。*
+
+3. *三个假设为：（1）相关性：IV（遗传变异）与暴露因素显著关联；（2）独立性：IV 与混杂因素无关（由孟德尔随机化遗传原理保证）；（3）排他性：IV 仅通过暴露影响结局，不存在其他路径。水平多效性违背的是排他性假设。常用敏感性分析方法包括：MR-Egger 回归（检测平均多效性，截距不为零提示多效性）、加权中位数法（在 50% 以下 IV 有效时仍稳健）、加权众数法和 MR-PRESSO（检测并校正异常 IV）。*
+
+4. *C+T 方法优点是简单透明、计算快速，缺点是阈值以下小效应 SNP 被完全丢弃，且对 LD 校正不充分。LDpred2 优点是通过贝叶斯收缩利用全基因组 SNP 信息，在高多基因性性状上预测准确性更高，缺点是计算复杂度高、依赖参考 LD 矩阵质量。PRS 预测性能通常用连续表型的 Nagelkerke R²（或 Pearson $r^2$）以及二元表型的 AUC（曲线下面积）评估，均应在独立验证集中评估以避免过拟合。*
+
+5. *稀有变异（MAF < 1%）在群体中携带者极少，单 SNP 关联检验在有限样本中的等位基因组数量太小，导致统计量方差极大，几乎无法在全基因组显著性阈值下达到显著。SKAT 将同一基因内所有稀有变异的基因型信息通过核矩阵聚合为单一统计量，相当于在基因水平上汇聚多个稀有变异的微小信号，从而实现检验力的提升，且允许各变异效应方向不同（与 burden test 的区别）。*
+
+6. *分析流程：（1）从 LDL 胆固醇 GWAS（如 CARDIoGRAMplusC4D 或 UK Biobank）提取显著 SNP 作为工具变量，进行 LD 裁剪保留独立 IV；（2）在心肌梗死 GWAS 中提取对应 SNP 的效应量；（3）使用 TwoSampleMR 运行 IVW（主估计）、加权中位数法和 MR-Egger（敏感性）；（4）通过 MR-Egger 截距检验和 Cochran Q 统计量评估多效性和异质性。主要局限性：PCSK9 区域 SNP 已知仅通过 LDL 水平影响心血管风险，但若纳入其他区域的 LDL 相关 SNP，需检查是否存在通过 HDL、甘油三酯等其他路径的水平多效性；GWAS 样本重叠（winner's curse 效应）也可能导致 IV 效应高估。*
+
+</details>

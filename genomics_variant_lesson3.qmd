@@ -1,2 +1,654 @@
-# 第三章 课时3
+---
+title: "GWAS 统计模型、质量控制与多重检验校正"
+---
 
+# GWAS 统计模型、质量控制与多重检验校正
+
+## 学习目标
+
+完成本专题学习后，学生应能够：
+
+1. 描述 GWAS 标准质量控制（QC）流程的各个步骤及其生物学依据；
+2. 理解并比较卡方检验、逻辑回归与线性回归三类关联检验的适用条件；
+3. 阐释混合线性模型（Mixed Linear Model，MLM）如何控制群体分层与亲缘关系对关联分析的影响；
+4. 推导 Bonferroni 校正阈值 $5 \times 10^{-8}$ 的来源，并正确区分其与 FDR（False Discovery Rate）的使用场景；
+5. 利用 PLINK 和 R 完成一个完整的单 SNP 关联分析流程。
+
+---
+
+## 全基因组关联分析的基本逻辑
+
+全基因组关联分析（Genome-Wide Association Study，GWAS）的核心问题是：**基因组上的哪些位点的遗传变异与目标性状存在统计关联？**
+
+其逻辑框架可以分解为三个层次：
+
+1. **遗传标记的系统筛查**：在全基因组范围内，对数十万至数百万个 SNP 位点逐一进行统计检验；
+2. **关联强度的量化**：以 p 值、效应量（odds ratio 或 beta 系数）及其置信区间刻画每个位点的关联程度；
+3. **混杂因素的控制**：群体分层（population stratification）、亲缘关系（relatedness）和基因型测定错误是导致假阳性的主要来源，必须在分析前或分析中予以控制。
+
+:::note
+**关键概念：GWAS 的统计假设**
+
+每次单 SNP 检验的零假设为：该 SNP 的基因型与目标性状在群体中无关联（即等位基因频率在表型组间无差异，或回归系数为零）。GWAS 在同一数据集上同时进行成千上万次独立检验，由此引入严重的多重比较问题（参见第 3.4.5 节）。
+:::
+
+{{Wiki:Genome-wide_association_study}}
+
+---
+
+## GWAS 质量控制
+
+在进行任何统计检验之前，必须对原始基因型数据实施严格的质量控制（Quality Control，QC）。QC 不合格的样本或位点会显著增加假阳性和假阴性率。
+
+### 样本水平 QC
+
+| 指标 | 含义 | 常用阈值 | 过滤方向 |
+|------|------|----------|----------|
+| Call rate（基因型检出率） | 该样本成功基因分型的 SNP 比例 | < 0.95 删除 | 低于阈值删除 |
+| 杂合率（Heterozygosity rate） | 基因组范围内杂合位点比例 | 均值 ± 3 SD 删除 | 过高或过低均删除 |
+| 性别核实 | 利用 X 染色体杂合率推断性别 | 与记录性别不符删除 | — |
+| 亲缘关系（IBD, $\hat{\pi}$） | 两样本间同源等位基因比例 | $\hat{\pi} > 0.125$ 为三级亲属 | 每对中删除 call rate 低者 |
+
+### 位点水平 QC
+
+| 指标 | 含义 | 常用阈值 |
+|------|------|----------|
+| SNP call rate | 该位点在所有样本中的基因分型成功率 | < 0.95 删除 |
+| 次等位基因频率（MAF） | 频率较低的等位基因在群体中的频率 | < 0.01 或 < 0.05 删除 |
+| Hardy-Weinberg 平衡（HWE） | 控制基因分型错误导致的偏离 | p < $1 \times 10^{-6}$ 删除（仅对照组） |
+| 差异缺失（Differential missingness） | 病例与对照间缺失率差异 | p < $1 \times 10^{-5}$ 删除 |
+
+:::warning
+**HWE 过滤仅应用于对照组**
+
+若某位点真实与疾病关联，则病例组的基因型频率本身就会偏离 HWE。因此，HWE 检验用于对照组以识别基因型测定错误，而不应在病例组中过滤。
+:::
+
+### PLINK QC 命令示例
+
+以下流程使用 PLINK 1.9 对 *E. coli* 数据之外的人类 HG002 教学子集进行示范（输入文件以 PLINK binary 格式 `.bed/.bim/.fam` 存储）。
+
+```bash
+# Step 1: 样本 call rate 过滤 (mind < 0.05 即 call rate > 0.95)
+plink \
+  --bfile gwas_input \
+  --mind 0.05 \
+  --make-bed \
+  --out qc_step1
+
+# Step 2: SNP call rate 过滤
+plink \
+  --bfile qc_step1 \
+  --geno 0.05 \
+  --make-bed \
+  --out qc_step2
+
+# Step 3: MAF 过滤
+plink \
+  --bfile qc_step2 \
+  --maf 0.01 \
+  --make-bed \
+  --out qc_step3
+
+# Step 4: HWE 过滤（仅对照组，--hwe 默认仅作用于对照）
+plink \
+  --bfile qc_step3 \
+  --hwe 1e-6 \
+  --make-bed \
+  --out qc_step4
+
+# Step 5: 计算杂合率，后续在 R 中过滤异常样本
+plink \
+  --bfile qc_step4 \
+  --het \
+  --out het_check
+
+# Step 6: IBD 估计（先进行 LD pruning）
+plink \
+  --bfile qc_step4 \
+  --indep-pairwise 50 10 0.1 \
+  --out pruned_snps
+
+plink \
+  --bfile qc_step4 \
+  --extract pruned_snps.prune.in \
+  --genome \
+  --out ibd_check
+
+# Step 7: PCA（用于后续控制群体分层）
+plink \
+  --bfile qc_step4 \
+  --extract pruned_snps.prune.in \
+  --pca 10 \
+  --out pca_result
+```
+
+### R 中的杂合率异常样本过滤
+
+```r
+library(tidyverse)
+
+# 读取 PLINK --het 输出
+het <- read_table("het_check.het", col_types = cols())
+
+# 计算观测杂合率 F_obs
+het <- het %>%
+  mutate(H_obs = (N.NM. - `O(HOM)`) / N.NM.)
+
+# 识别均值 ± 3 SD 以外的样本
+het_mean <- mean(het$H_obs)
+het_sd   <- sd(het$H_obs)
+
+outliers <- het %>%
+  filter(H_obs < het_mean - 3 * het_sd |
+         H_obs > het_mean + 3 * het_sd)
+
+cat("Number of heterozygosity outliers:", nrow(outliers), "\n")
+
+# 可视化
+ggplot(het, aes(x = H_obs)) +
+  geom_histogram(binwidth = 0.005, fill = "steelblue", color = "white") +
+  geom_vline(xintercept = c(het_mean - 3*het_sd, het_mean + 3*het_sd),
+             linetype = "dashed", color = "red") +
+  labs(x = "Observed Heterozygosity Rate",
+       y = "Number of Samples",
+       title = "Sample Heterozygosity Distribution") +
+  theme_classic()
+```
+
+```r
+# PCA 可视化（以前两个主成分为例）
+pca <- read_table("pca_result.eigenvec",
+                  col_names = c("FID", "IID", paste0("PC", 1:10)),
+                  col_types = cols())
+
+ggplot(pca, aes(x = PC1, y = PC2)) +
+  geom_point(alpha = 0.6, size = 1.5, color = "steelblue") +
+  labs(x = "PC1", y = "PC2",
+       title = "PCA of Genotype Data (Post-QC)") +
+  theme_classic()
+```
+
+---
+
+## 单 SNP 关联检验
+
+### 卡方检验（病例-对照研究）
+
+对于二元表型（如患病 vs. 健康），最简单的关联检验方法是构建 2×3 列联表（病例/对照 × 三种基因型）并进行卡方检验。
+
+$$
+\chi^2 = \sum_{i,j} \frac{(O_{ij} - E_{ij})^2}{E_{ij}}
+$$
+
+其中 $O_{ij}$ 为观测频次，$E_{ij}$ 为在零假设（无关联）下的期望频次，自由度为 2。
+
+:::tip
+**等位基因检验 vs. 基因型检验**
+
+实践中更常用 **等位基因检验（allelic test）**，即将每个个体的两条单倍型视为独立观测，构建 2×2 列联表（病例/对照 × 两种等位基因）。该方法自由度为 1，统计检验力通常更高，但要求基因型频率满足 HWE，否则等位基因独立性假设不成立。
+:::
+
+### 逻辑回归（Logistic Regression）
+
+逻辑回归是病例-对照 GWAS 的标准方法，其优势在于可以将协变量（如年龄、性别、PCA 主成分）纳入模型：
+
+$$
+\log\frac{P(Y=1)}{P(Y=0)} = \beta_0 + \beta_{\text{SNP}} \cdot G + \beta_1 X_1 + \cdots + \beta_k X_k
+$$
+
+其中 $G$ 为 SNP 编码（加性模型：0/1/2，计次等位基因数），$X_1, \ldots, X_k$ 为协变量，$\beta_{\text{SNP}}$ 的指数 $e^{\beta_{\text{SNP}}}$ 即为 **优势比（Odds Ratio，OR）**。
+
+### 线性回归（连续性状）
+
+对于连续表型（如血压、身高、产量），使用普通最小二乘回归：
+
+$$
+Y = \beta_0 + \beta_{\text{SNP}} \cdot G + \beta_1 X_1 + \cdots + \beta_k X_k + \varepsilon, \quad \varepsilon \sim \mathcal{N}(0, \sigma^2)
+$$
+
+$\beta_{\text{SNP}}$ 为每增加一个次等位基因副本时表型均值的变化量（加性效应），其显著性通过 t 检验评估。
+
+### R 模拟演示：单 SNP 关联检验
+
+```r
+set.seed(42)
+n <- 1000  # sample size
+
+# Simulate genotype (0/1/2) under MAF = 0.3
+maf <- 0.3
+geno <- rbinom(n, 2, maf)
+
+# Simulate continuous phenotype: true effect size beta = 0.5
+beta_true <- 0.5
+pheno <- 2.0 + beta_true * geno + rnorm(n, sd = 1.5)
+
+# Covariate: sex (0/1)
+sex <- rbinom(n, 1, 0.5)
+pheno <- pheno + 0.8 * sex + rnorm(n, sd = 0.5)
+
+# Linear regression with genotype + sex as covariate
+fit <- lm(pheno ~ geno + sex)
+summary_fit <- summary(fit)
+
+cat("SNP beta estimate:", coef(fit)["geno"], "\n")
+cat("SNP p-value:", summary_fit$coefficients["geno", "Pr(>|t|)"], "\n")
+
+# Logistic regression example (binary trait)
+case_prob <- plogis(-2 + 0.6 * geno + 0.5 * sex)
+binary_pheno <- rbinom(n, 1, case_prob)
+
+fit_logit <- glm(binary_pheno ~ geno + sex, family = binomial)
+summary_logit <- summary(fit_logit)
+
+cat("SNP OR (logistic):", exp(coef(fit_logit)["geno"]), "\n")
+cat("SNP p-value (logistic):",
+    summary_logit$coefficients["geno", "Pr(>|z|)"], "\n")
+```
+
+---
+
+## 混合线性模型（MLM）与群体分层控制
+
+### 群体分层的危害
+
+当研究样本来自遗传背景不同的亚群体时，如果某一表型在各亚群中的频率不同，而各亚群的等位基因频率也存在系统差异，则即使某个 SNP 与表型没有因果关系，其关联检验也可能出现显著的 p 值。这种现象称为**群体分层混杂（population stratification confounding）**。
+
+{{Wiki:Population_stratification}}
+
+```r
+# Simulation: population stratification confounding
+set.seed(2024)
+n_pop <- 500  # individuals per population
+
+# Population 1: high disease prevalence, high MAF
+pop1_geno  <- rbinom(n_pop, 2, 0.6)
+pop1_pheno <- rnorm(n_pop, mean = 5.0, sd = 1.0)
+
+# Population 2: low disease prevalence, low MAF
+pop2_geno  <- rbinom(n_pop, 2, 0.2)
+pop2_pheno <- rnorm(n_pop, mean = 3.0, sd = 1.0)
+
+geno_all  <- c(pop1_geno, pop2_geno)
+pheno_all <- c(pop1_pheno, pop2_pheno)
+pop_label <- factor(c(rep("Pop1", n_pop), rep("Pop2", n_pop)))
+
+# Naive test (no stratification correction)
+fit_naive <- lm(pheno_all ~ geno_all)
+p_naive <- summary(fit_naive)$coefficients["geno_all", "Pr(>|t|)"]
+
+# Corrected test (add population as covariate)
+fit_corrected <- lm(pheno_all ~ geno_all + pop_label)
+p_corrected   <- summary(fit_corrected)$coefficients["geno_all", "Pr(>|t|)"]
+
+cat(sprintf("Naive p-value:     %.2e\n", p_naive))
+cat(sprintf("Corrected p-value: %.2e\n", p_corrected))
+```
+
+### 混合线性模型的数学框架
+
+混合线性模型（Mixed Linear Model，MLM）通过在模型中引入随机效应来同时控制群体分层和亲缘关系：
+
+$$
+\mathbf{y} = \mathbf{X}\boldsymbol{\beta} + \mathbf{Z}\mathbf{u} + \boldsymbol{\varepsilon}
+$$
+
+其中：
+- $\mathbf{y}$：$n \times 1$ 表型向量；
+- $\mathbf{X}$：固定效应设计矩阵，包含 SNP 基因型编码和协变量（如 PCA 主成分）；
+- $\boldsymbol{\beta}$：固定效应系数向量；
+- $\mathbf{u}$：随机遗传效应，$\mathbf{u} \sim \mathcal{N}(\mathbf{0},\ \sigma_g^2 \mathbf{K})$；
+- $\mathbf{K}$：$n \times n$ **亲缘关系矩阵（kinship matrix / genomic relatedness matrix，GRM）**；
+- $\boldsymbol{\varepsilon}$：残差，$\boldsymbol{\varepsilon} \sim \mathcal{N}(\mathbf{0},\ \sigma_e^2 \mathbf{I})$。
+
+因此表型的边际分布为：
+
+$$
+\mathbf{y} \sim \mathcal{N}\!\left(\mathbf{X}\boldsymbol{\beta},\ \sigma_g^2 \mathbf{K} + \sigma_e^2 \mathbf{I}\right)
+$$
+
+**亲缘关系矩阵 K** 由基因组全局 SNP 估计，其第 $(i,j)$ 元素反映个体 $i$ 与个体 $j$ 的遗传相似度。常用的计算方式（VanRaden 2008）为：
+
+$$
+K_{ij} = \frac{1}{M} \sum_{l=1}^{M} \frac{(G_{il} - 2p_l)(G_{jl} - 2p_l)}{2p_l(1-p_l)}
+$$
+
+其中 $G_{il}$ 为个体 $i$ 在第 $l$ 个 SNP 的基因型编码，$p_l$ 为次等位基因频率，$M$ 为 SNP 总数。
+
+:::info
+**黄金法则：Q+K 模型**
+
+实践中将 PCA 主成分（Q，对应固定效应）与亲缘关系矩阵（K，对应随机效应）同时纳入模型，即 **Q+K 模型**，可以最有效地控制群体分层和亲缘关系的双重混杂。TASSEL、GEMMA 和 REGENIE 均支持该框架。
+:::
+
+### GEMMA 运行示例
+
+```bash
+# Step 1: 计算亲缘关系矩阵（centered relatedness matrix）
+gemma \
+  -bfile qc_step4 \
+  -gk 1 \
+  -o gwas_kinship
+
+# Step 2: 使用 MLM 进行全基因组关联分析
+# -k: 亲缘关系矩阵文件
+# -c: 协变量文件（包含 PCA 主成分）
+# -lmm 1: 使用 Wald 检验（也可选 2=LRT, 3=Score）
+gemma \
+  -bfile qc_step4 \
+  -k output/gwas_kinship.cXX.txt \
+  -c pca_covariates.txt \
+  -lmm 1 \
+  -o gwas_mlm_result
+
+# 结果文件位于 output/gwas_mlm_result.assoc.txt
+# 主要列：chr, rs, ps (position), n_mis, n_obs, allele1, allele0,
+#         af, beta, se, l_remle, p_wald
+```
+
+```r
+# 读取 GEMMA 结果
+library(tidyverse)
+
+gwas <- read_tsv("output/gwas_mlm_result.assoc.txt")
+
+# 查看效应量分布
+ggplot(gwas, aes(x = beta)) +
+  geom_histogram(bins = 60, fill = "steelblue", color = "white") +
+  labs(x = "Effect Size (beta)", y = "Count",
+       title = "Distribution of SNP Effect Sizes") +
+  theme_classic()
+
+# QQ plot：评估模型校正是否充分
+observed  <- sort(-log10(gwas$p_wald))
+expected  <- -log10(ppoints(nrow(gwas)))
+
+ggplot(data.frame(expected, observed), aes(x = expected, y = observed)) +
+  geom_point(size = 0.5, alpha = 0.5, color = "steelblue") +
+  geom_abline(slope = 1, intercept = 0, color = "red", linetype = "dashed") +
+  labs(x = "Expected -log10(p)", y = "Observed -log10(p)",
+       title = "QQ Plot of GWAS p-values (MLM)") +
+  theme_classic()
+
+# 计算 genomic inflation factor (lambda)
+chisq_vals <- qchisq(gwas$p_wald, df = 1, lower.tail = FALSE)
+lambda_gc  <- median(chisq_vals) / qchisq(0.5, df = 1, lower.tail = FALSE)
+cat(sprintf("Genomic inflation factor (lambda_GC): %.3f\n", lambda_gc))
+```
+
+:::note
+**基因组膨胀因子（Genomic Inflation Factor，$\lambda_{GC}$）**
+
+$\lambda_{GC}$ 是 GWAS 中评估系统性偏差的经典指标，定义为全基因组 $\chi^2$ 统计量的中位数与理论中位数（0.4549）之比。$\lambda_{GC} = 1.0$ 表示无膨胀；$\lambda_{GC} > 1.1$ 通常提示存在群体分层或其他系统性偏差，需要进一步校正（参见 3.4.4.2 节）。
+:::
+
+---
+
+## 多重检验校正
+
+### 多重比较问题
+
+GWAS 对数百万个 SNP 同时进行独立检验。若以 $\alpha = 0.05$ 为单次检验显著性阈值，则仅凭随机机会，预期假阳性数量为：
+
+$$
+E[\text{false positives}] = 0.05 \times M
+$$
+
+当 $M = 10^6$ 时，期望假阳性数量高达 50,000 个，远超任何真实信号。
+
+### Bonferroni 校正与 $5 \times 10^{-8}$ 阈值的由来
+
+**Bonferroni 校正**将全局显著性水平 $\alpha$ 均摊至每次检验：
+
+$$
+\alpha_{\text{adjusted}} = \frac{\alpha}{M}
+$$
+
+若以 $\alpha = 0.05$ 且有效独立检验数 $M_{\text{eff}} \approx 10^6$（人类基因组约 100 万个独立 LD 区块），则：
+
+$$
+\alpha_{\text{Bonferroni}} = \frac{0.05}{10^6} = 5 \times 10^{-8}
+$$
+
+这正是人类 GWAS 中广泛采用的显著性阈值的来源。该值并非来自严格的理论推导，而是基于约 100 万个独立 SNP 的经验估计，已被反复验证具有合理的假阳性控制效果。
+
+:::warning
+**Bonferroni 阈值不可普适于所有物种**
+
+$5 \times 10^{-8}$ 仅适用于人类 GWAS。对于其他物种，应根据实际的有效独立 SNP 数（可通过 LD 结构估算）重新计算阈值。例如，*Arabidopsis thaliana* 或 *E. coli* 的 LD 结构与人类差异悬殊，直接套用该阈值将导致过于保守或过于宽松的结论。
+:::
+
+### 错误发现率（FDR）与 Benjamini-Hochberg 程序
+
+**错误发现率（False Discovery Rate，FDR）**控制的是所有显著结果中假阳性的**比例**，而 Bonferroni 控制的是犯至少一次 I 类错误的**概率**。
+
+**Benjamini-Hochberg（BH）程序**：
+
+设 $p_{(1)} \leq p_{(2)} \leq \cdots \leq p_{(M)}$ 为 $M$ 个检验的排序 p 值，令 FDR 阈值为 $q$，则：
+
+$$
+\text{拒绝所有满足 } p_{(i)} \leq \frac{i}{M} \cdot q \text{ 的零假设}
+$$
+
+等价地，将所有 p 值转化为 **q 值**：
+
+$$
+q_{(i)} = \frac{M}{i} \cdot p_{(i)} \cdot \text{（经单调调整）}
+$$
+
+| 方法 | 控制目标 | 适用场景 | 检验力 |
+|------|----------|----------|--------|
+| Bonferroni | 家族性 I 类错误率（FWER） | 少量独立假设；后续验证实验代价极高 | 保守，检验力低 |
+| FDR (BH) | 错误发现率 | 大规模探索性分析；允许一定比例假阳性 | 较高 |
+| 置换检验 | 经验分布下的 FWER | LD 结构复杂或非标准数据 | 计算代价高 |
+
+### R 示例：三种校正方法比较
+
+```r
+set.seed(123)
+M <- 1e6  # simulated number of SNP tests
+
+# Simulate p-values: mostly null, a few true signals
+p_null   <- runif(M - 50)
+p_signal <- runif(50, min = 0, max = 1e-7)  # true signals
+p_all    <- c(p_null, p_signal)
+
+# Bonferroni
+bonf_threshold <- 0.05 / M
+n_bonf <- sum(p_all < bonf_threshold)
+
+# FDR (BH) at q = 0.05
+p_adj_bh <- p.adjust(p_all, method = "BH")
+n_bh     <- sum(p_adj_bh < 0.05)
+
+cat(sprintf("Bonferroni significant SNPs: %d\n", n_bonf))
+cat(sprintf("FDR (BH) significant SNPs:  %d\n", n_bh))
+cat(sprintf("True signal SNPs:            %d\n", 50))
+
+# Visualize p-value distribution
+hist_data <- data.frame(p = p_all)
+library(ggplot2)
+ggplot(hist_data, aes(x = p)) +
+  geom_histogram(bins = 100, fill = "grey70", color = "white") +
+  geom_vline(xintercept = bonf_threshold,
+             color = "red", linetype = "solid", linewidth = 0.8) +
+  annotate("text", x = bonf_threshold * 3, y = Inf,
+           label = "Bonferroni", vjust = 2, color = "red", size = 3.5) +
+  scale_x_continuous(labels = scales::scientific) +
+  labs(x = "p-value", y = "Count",
+       title = "p-value Distribution (Simulated GWAS)") +
+  theme_classic()
+```
+
+---
+
+## 统计检验力与样本量估计
+
+统计检验力（statistical power）是在真实效应存在时，正确拒绝零假设的概率。GWAS 中检验力受以下因素共同决定：样本量 $n$、效应量 $\beta$（或 OR）、次等位基因频率（MAF）以及显著性阈值 $\alpha$。
+
+在加性线性模型下，非中心参数（Non-Centrality Parameter，NCP）近似为：
+
+$$
+\text{NCP} = \frac{n \cdot \beta^2 \cdot 2p(1-p)}{\sigma^2}
+$$
+
+其中 $p$ 为 MAF，$\sigma^2$ 为表型残差方差，对应 $\chi^2$ 分布的非中心参数。
+
+```r
+# GWAS power calculation under additive linear model
+gwas_power <- function(n, beta, maf, sigma2 = 1.0, alpha = 5e-8) {
+  ncp <- n * beta^2 * 2 * maf * (1 - maf) / sigma2
+  critical_val <- qchisq(1 - alpha, df = 1)
+  power <- pchisq(critical_val, df = 1, ncp = ncp, lower.tail = FALSE)
+  return(power)
+}
+
+# Power curves across sample sizes for different effect sizes
+library(tidyverse)
+
+params <- expand.grid(
+  n    = seq(500, 10000, by = 500),
+  beta = c(0.1, 0.2, 0.3),
+  maf  = 0.2
+)
+
+params$power <- mapply(gwas_power, params$n, params$beta, params$maf)
+
+ggplot(params, aes(x = n, y = power,
+                   color = factor(beta), group = factor(beta))) +
+  geom_line(linewidth = 1) +
+  geom_hline(yintercept = 0.8, linetype = "dashed", color = "grey40") +
+  scale_color_brewer(palette = "Set1", name = "Effect size (beta)") +
+  labs(x = "Sample Size (n)",
+       y = "Statistical Power",
+       title = "GWAS Power vs. Sample Size") +
+  theme_classic()
+```
+
+```r
+# Minimum sample size to achieve 80% power for given beta and MAF
+min_n_for_power <- function(target_power = 0.8, beta, maf,
+                            sigma2 = 1.0, alpha = 5e-8) {
+  for (n in seq(100, 1e6, by = 100)) {
+    if (gwas_power(n, beta, maf, sigma2, alpha) >= target_power) {
+      return(n)
+    }
+  }
+  return(NA)
+}
+
+grid <- expand.grid(
+  beta = c(0.05, 0.10, 0.20, 0.30),
+  maf  = c(0.05, 0.10, 0.20, 0.30)
+)
+
+grid$min_n <- mapply(min_n_for_power, beta = grid$beta, maf = grid$maf)
+
+knitr::kable(
+  grid %>% pivot_wider(names_from = maf, values_from = min_n,
+                       names_prefix = "MAF="),
+  caption = "表3.4.1：达到80%检验力所需最低样本量（alpha = 5×10⁻⁸）"
+)
+```
+
+:::note
+**现代 GWAS 的规模**
+
+检验力计算揭示了为何现代 GWAS 需要数万至数十万样本。对于效应量 $\beta = 0.1$（SD 单位）、MAF = 0.2 的位点，在 $\alpha = 5 \times 10^{-8}$ 下达到 80% 检验力需要约 30,000 个样本。复杂疾病中大量位点效应量更小，这正是 UK Biobank（50 万样本）和 Biobank Japan（20 万样本）等大型队列如此重要的根本原因。
+:::
+
+---
+
+## PLINK 实战：完整单 SNP 关联分析
+
+以下展示从 QC 后数据出发，利用 PLINK 完成逻辑回归和线性回归关联分析的完整命令。
+
+```bash
+# 准备协变量文件（含 PCA 主成分和性别）
+# 格式：FID IID PC1 PC2 ... PC10 SEX
+paste \
+  <(awk '{print $1, $2}' pca_result.eigenvec) \
+  <(awk '{print $3,$4,$5,$6,$7,$8,$9,$10,$11,$12}' pca_result.eigenvec) \
+  <(awk '{print $5}' qc_step4.fam) \
+  > covariates.txt
+
+# 逻辑回归（二元表型）
+# --1: 表型编码 0=对照, 1=病例 (PLINK 默认 1=对照, 2=病例; --1 改变编码)
+plink \
+  --bfile qc_step4 \
+  --logistic \
+  --covar covariates.txt \
+  --covar-name PC1,PC2,PC3,PC4,PC5,PC6,PC7,PC8,PC9,PC10,SEX \
+  --hide-covar \
+  --out gwas_logistic
+
+# 线性回归（连续表型）
+plink \
+  --bfile qc_step4 \
+  --linear \
+  --pheno continuous_pheno.txt \
+  --covar covariates.txt \
+  --covar-name PC1,PC2,PC3,PC4,PC5,PC6,PC7,PC8,PC9,PC10,SEX \
+  --hide-covar \
+  --out gwas_linear
+```
+
+```r
+# 读取 PLINK 关联分析结果并进行后处理
+library(tidyverse)
+
+# 读取逻辑回归结果
+assoc <- read_table("gwas_logistic.assoc.logistic",
+                    col_types = cols()) %>%
+  filter(TEST == "ADD") %>%          # 仅保留加性模型结果
+  filter(!is.na(P)) %>%
+  mutate(log10p = -log10(P))
+
+# Bonferroni 阈值
+bonf <- 0.05 / nrow(assoc)
+cat(sprintf("Bonferroni threshold: %.2e\n", bonf))
+
+# 显著位点
+sig_hits <- assoc %>% filter(P < bonf)
+cat(sprintf("Significant hits: %d\n", nrow(sig_hits)))
+
+# 输出 Top 10 hits
+assoc %>%
+  arrange(P) %>%
+  select(CHR, SNP, BP, A1, OR, SE, P) %>%
+  head(10) %>%
+  knitr::kable(caption = "表3.4.2：Top 10 关联位点（逻辑回归）")
+```
+
+---
+
+## 课后自测 (Post-Lesson Quiz)
+
+1. 在 GWAS 质量控制中，为何 HWE 过滤只应用于对照组，而不应用于病例组？请阐述其统计学依据。
+
+2. 混合线性模型（MLM）中亲缘关系矩阵 $\mathbf{K}$ 的作用是什么？若不加入 $\mathbf{K}$，可能出现什么问题？
+
+3. 已知人类基因组有效独立 SNP 数约为 100 万个，请推导出 Bonferroni 校正后的显著性阈值 $5 \times 10^{-8}$，并说明该值对其他物种是否同样适用。
+
+4. 错误发现率（FDR）与 Bonferroni 校正分别控制的是什么？请举例说明各自更适合的使用场景。
+
+5. 一项 GWAS 研究中，某 SNP 的 MAF = 0.15，加性效应量 $\beta = 0.12$（以标准差为单位），表型残差方差 $\sigma^2 = 1$。在 $\alpha = 5 \times 10^{-8}$ 的显著性阈值下，达到 80% 统计检验力需要多少样本？请编写 R 代码验证你的答案。
+
+6. 在群体分层模拟实验中，即使 SNP 与表型没有真实的生物学因果关系，朴素（未校正）的关联检验仍然可能产生极小的 p 值。请解释这种现象的统计学机制，并说明 PCA 校正如何解决该问题。
+
+<details>
+<summary><strong>参考答案 (Reference Answers)</strong></summary>
+
+1. *HWE 检验用于识别基因分型错误：若某位点的基因型频率严重偏离 HWE，通常反映测定错误（如等位基因脱扣效应），而非真实的生物学信号。然而，若某 SNP 真实与疾病关联，则在病例组中其基因型频率本应偏离 HWE——因为病例是经过疾病状态选择的非随机样本。因此，若在病例组实施 HWE 过滤，将把真实关联位点错误地删除，导致假阴性。*
+
+2. *亲缘关系矩阵 $\mathbf{K}$ 作为随机效应的协方差结构，捕捉样本间由共同祖先引起的基因组相似性。将 $\mathbf{K}$ 纳入模型后，全基因组背景遗传相似性作为混杂因素被"吸收"到随机效应中，从而减少其对单 SNP 固定效应估计的干扰。若不加入 $\mathbf{K}$，亲缘关系较近的个体在表型上可能系统性相似，导致关联检验的 I 类错误膨胀（$\lambda_{GC} > 1$），假阳性增加。*
+
+3. *全局显著性水平 $\alpha = 0.05$，有效独立检验数 $M_{\text{eff}} \approx 10^6$，则 Bonferroni 校正后每次检验的阈值为 $\alpha / M_{\text{eff}} = 0.05 / 10^6 = 5 \times 10^{-8}$。该值不适用于其他物种：例如，拟南芥（Arabidopsis thaliana）基因组较小且 LD 衰减较快，有效独立 SNP 数与人类差异显著，应根据该物种实际 LD 结构重新估算有效检验数并计算相应阈值。*
+
+4. *Bonferroni 校正控制的是**家族性 I 类错误率（FWER）**，即在所有检验中犯至少一次假阳性的概率不超过 $\alpha$。FDR（BH 程序）控制的是**错误发现率**，即所有显著结果中假阳性所占的期望比例不超过 $q$。Bonferroni 更适合检验数量少、每次假阳性代价极高的场景（如临床诊断基因检测）；FDR 更适合大规模探索性分析（如转录组差异表达分析），在允许一定比例假阳性的前提下保留更多真实信号。*
+
+5. *利用 NCP 公式 $\text{NCP} = n \cdot \beta^2 \cdot 2p(1-p) / \sigma^2$，代入 $\beta = 0.12$、$p = 0.15$、$\sigma^2 = 1$，需要迭代求解使得检验力达到 80% 的 $n$。R 代码验证：调用 `min_n_for_power(beta = 0.12, maf = 0.15)` 函数（见 3.4.6 节），预期结果约为 60,000–90,000 样本（具体取决于迭代精度）。*
+
+6. *群体分层混杂的统计机制：若两个亚群在某 SNP 的等位基因频率上存在差异（例如群体1的 MAF 较高），同时在表型均值上也存在差异（例如群体1的表型均值较高），则该 SNP 的等位基因与表型在混合样本中表现出统计相关，即使在各亚群内部二者完全不相关。这是因为群体标签既是 SNP 频率的预测因子，也是表型的预测因子，形成了混杂路径。PCA 校正通过将基因组主成分作为固定效应协变量纳入回归模型，将群体标签引起的表型差异"吸收"为协变量效应，从而使 SNP 系数的估计只反映亚群内部的关联，消除跨群体的混杂。*
+
+</details>
