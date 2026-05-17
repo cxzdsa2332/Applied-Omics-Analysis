@@ -7,7 +7,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
 
-<title>18&nbsp; 第三章 课时4 – Introduction to Applied High-throughput Biological Data Analysis</title>
+<title>18&nbsp; GWAS 结果可视化与候选位点解析 – Introduction to Applied High-throughput Biological Data Analysis</title>
 <style>
 /* Default styles provided by pandoc.
 ** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
@@ -22,6 +22,41 @@ ul.task-list li input[type="checkbox"] {
   width: 0.8em;
   margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
   vertical-align: middle;
+}
+/* CSS for syntax highlighting */
+html { -webkit-text-size-adjust: 100%; }
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
 }
 </style>
 
@@ -73,6 +108,35 @@ ul.task-list li input[type="checkbox"] {
   }
 }</script>
 
+  <script src="https://cdnjs.cloudflare.com/polyfill/v3/polyfill.min.js?features=es6"></script>
+  <script defer="" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js" type="text/javascript"></script>
+
+<script type="text/javascript">
+const typesetMath = (el) => {
+  if (window.MathJax) {
+    // MathJax Typeset
+    window.MathJax.typeset([el]);
+  } else if (window.katex) {
+    // KaTeX Render
+    var mathElements = el.getElementsByClassName("math");
+    var macros = [];
+    for (var i = 0; i < mathElements.length; i++) {
+      var texText = mathElements[i].firstChild;
+      if (mathElements[i].tagName == "SPAN" && texText && texText.data) {
+        window.katex.render(texText.data, mathElements[i], {
+          displayMode: mathElements[i].classList.contains('display'),
+          throwOnError: false,
+          macros: macros,
+          fleqn: false
+        });
+      }
+    }
+  }
+}
+window.Quarto = {
+  typesetMath
+};
+</script>
 
 </head>
 
@@ -85,7 +149,7 @@ ul.task-list li input[type="checkbox"] {
       <button type="button" class="quarto-btn-toggle btn" data-bs-toggle="collapse" role="button" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
         <i class="bi bi-layout-text-sidebar-reverse"></i>
       </button>
-        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="./01-intro.html">第一阶段：基础与基因组</a></li><li class="breadcrumb-item"><a href="./genomics_variant_lesson4.html"><span class="chapter-number">18</span>&nbsp; <span class="chapter-title">第三章 课时4</span></a></li></ol></nav>
+        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="./01-intro.html">第一阶段：基础与基因组</a></li><li class="breadcrumb-item"><a href="./genomics_variant_lesson4.html"><span class="chapter-number">18</span>&nbsp; <span class="chapter-title">GWAS 结果可视化与候选位点解析</span></a></li></ol></nav>
         <a class="flex-grow-1" role="navigation" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">      
         </a>
       <button type="button" class="btn quarto-search-button" aria-label="Search" onclick="window.quartoOpenSearch();">
@@ -215,25 +279,25 @@ ul.task-list li input[type="checkbox"] {
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./genomics_variant_lesson2.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">16</span>&nbsp; <span class="chapter-title">SNP 阵列技术、连锁不平衡图谱与基因型插补</span></span></a>
+ <span class="menu-text"><span class="chapter-number">16</span>&nbsp; <span class="chapter-title">全基因组 SNP 鉴定、连锁不平衡图谱与基因型数据处理</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./genomics_variant_lesson3.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">17</span>&nbsp; <span class="chapter-title">第三章 课时3</span></span></a>
+ <span class="menu-text"><span class="chapter-number">17</span>&nbsp; <span class="chapter-title">GWAS 统计模型、质量控制与多重检验校正</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./genomics_variant_lesson4.html" class="sidebar-item-text sidebar-link active">
- <span class="menu-text"><span class="chapter-number">18</span>&nbsp; <span class="chapter-title">第三章 课时4</span></span></a>
+ <span class="menu-text"><span class="chapter-number">18</span>&nbsp; <span class="chapter-title">GWAS 结果可视化与候选位点解析</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./genomics_variant_lesson5.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">19</span>&nbsp; <span class="chapter-title">第三章 课时5</span></span></a>
+ <span class="menu-text"><span class="chapter-number">19</span>&nbsp; <span class="chapter-title">精细定位与功能验证及更多</span></span></a>
   </div>
 </li>
       </ul>
@@ -535,15 +599,45 @@ ul.task-list li input[type="checkbox"] {
 </nav>
 <div id="quarto-sidebar-glass" class="quarto-sidebar-collapse-item" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item"></div>
 <!-- margin-sidebar -->
-    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar zindex-bottom">
-        
+    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+        <nav id="TOC" role="doc-toc" class="toc-active">
+    <h2 id="toc-title">Table of contents</h2>
+   
+  <ul>
+  <li><a href="#专题-3.5gwas-结果可视化与候选位点解析" id="toc-专题-3.5gwas-结果可视化与候选位点解析" class="nav-link active" data-scroll-target="#专题-3.5gwas-结果可视化与候选位点解析"><span class="header-section-number">19</span> 专题 3.5：GWAS 结果可视化与候选位点解析</a>
+  <ul class="collapse">
+  <li><a href="#学习目标" id="toc-学习目标" class="nav-link" data-scroll-target="#学习目标"><span class="header-section-number">19.1</span> 学习目标</a></li>
+  <li><a href="#gwas-可视化概述" id="toc-gwas-可视化概述" class="nav-link" data-scroll-target="#gwas-可视化概述"><span class="header-section-number">19.2</span> 3.5.1 GWAS 可视化概述</a></li>
+  <li><a href="#曼哈顿图" id="toc-曼哈顿图" class="nav-link" data-scroll-target="#曼哈顿图"><span class="header-section-number">19.3</span> 3.5.2 曼哈顿图</a>
+  <ul class="collapse">
+  <li><a href="#图形结构与解读" id="toc-图形结构与解读" class="nav-link" data-scroll-target="#图形结构与解读"><span class="header-section-number">19.3.1</span> 3.5.2.1 图形结构与解读</a></li>
+  <li><a href="#r-实现ggplot2" id="toc-r-实现ggplot2" class="nav-link" data-scroll-target="#r-实现ggplot2"><span class="header-section-number">19.3.2</span> 3.5.2.2 R 实现（ggplot2）</a></li>
+  </ul></li>
+  <li><a href="#qq-图与基因组膨胀因子" id="toc-qq-图与基因组膨胀因子" class="nav-link" data-scroll-target="#qq-图与基因组膨胀因子"><span class="header-section-number">19.4</span> 3.5.3 QQ 图与基因组膨胀因子</a></li>
+  <li><a href="#独立信号的识别ld-裁剪与条件分析" id="toc-独立信号的识别ld-裁剪与条件分析" class="nav-link" data-scroll-target="#独立信号的识别ld-裁剪与条件分析"><span class="header-section-number">19.5</span> 3.5.4 独立信号的识别：LD 裁剪与条件分析</a>
+  <ul class="collapse">
+  <li><a href="#ld-裁剪clumping" id="toc-ld-裁剪clumping" class="nav-link" data-scroll-target="#ld-裁剪clumping"><span class="header-section-number">19.5.1</span> 3.5.4.1 LD 裁剪（Clumping）</a></li>
+  <li><a href="#逐步条件分析" id="toc-逐步条件分析" class="nav-link" data-scroll-target="#逐步条件分析"><span class="header-section-number">19.5.2</span> 3.5.4.2 逐步条件分析</a></li>
+  </ul></li>
+  <li><a href="#局部关联图" id="toc-局部关联图" class="nav-link" data-scroll-target="#局部关联图"><span class="header-section-number">19.6</span> 3.5.5 局部关联图</a></li>
+  <li><a href="#候选位点的功能注释" id="toc-候选位点的功能注释" class="nav-link" data-scroll-target="#候选位点的功能注释"><span class="header-section-number">19.7</span> 3.5.6 候选位点的功能注释</a>
+  <ul class="collapse">
+  <li><a href="#变异注释" id="toc-变异注释" class="nav-link" data-scroll-target="#变异注释"><span class="header-section-number">19.7.1</span> 3.5.6.1 变异注释</a></li>
+  <li><a href="#eqtl-整合与共定位" id="toc-eqtl-整合与共定位" class="nav-link" data-scroll-target="#eqtl-整合与共定位"><span class="header-section-number">19.7.2</span> 3.5.6.2 eQTL 整合与共定位</a></li>
+  <li><a href="#共定位分析原理" id="toc-共定位分析原理" class="nav-link" data-scroll-target="#共定位分析原理"><span class="header-section-number">19.7.3</span> 3.5.6.3 共定位分析原理</a></li>
+  </ul></li>
+  <li><a href="#候选位点解析的整合框架" id="toc-候选位点解析的整合框架" class="nav-link" data-scroll-target="#候选位点解析的整合框架"><span class="header-section-number">19.8</span> 3.5.7 候选位点解析的整合框架</a></li>
+  <li><a href="#课后自测-post-lesson-quiz" id="toc-课后自测-post-lesson-quiz" class="nav-link" data-scroll-target="#课后自测-post-lesson-quiz"><span class="header-section-number">19.9</span> 课后自测 (Post-Lesson Quiz)</a></li>
+  </ul></li>
+  </ul>
+<div class="toc-actions"><ul><li><a href="https://github.com/cxzdsa2332/Applied-Omics-Analysis/edit/main/genomics_variant_lesson4.qmd" class="toc-action"><i class="bi bi-github"></i>Edit this page</a></li><li><a href="https://github.com/cxzdsa2332/Applied-Omics-Analysis/issues/new" class="toc-action"><i class="bi empty"></i>Report an issue</a></li><li><a href="https://github.com/cxzdsa2332/Applied-Omics-Analysis/blob/main/genomics_variant_lesson4.qmd" class="toc-action"><i class="bi empty"></i>View source</a></li></ul></div></nav>
     </div>
 <!-- main -->
 <main class="content" id="quarto-document-content">
 
-<header id="title-block-header" class="quarto-title-block default"><nav class="quarto-page-breadcrumbs quarto-title-breadcrumbs d-none d-lg-block" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="./01-intro.html">第一阶段：基础与基因组</a></li><li class="breadcrumb-item"><a href="./genomics_variant_lesson4.html"><span class="chapter-number">18</span>&nbsp; <span class="chapter-title">第三章 课时4</span></a></li></ol></nav>
+<header id="title-block-header" class="quarto-title-block default"><nav class="quarto-page-breadcrumbs quarto-title-breadcrumbs d-none d-lg-block" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="./01-intro.html">第一阶段：基础与基因组</a></li><li class="breadcrumb-item"><a href="./genomics_variant_lesson4.html"><span class="chapter-number">18</span>&nbsp; <span class="chapter-title">GWAS 结果可视化与候选位点解析</span></a></li></ol></nav>
 <div class="quarto-title">
-<h1 class="title"><span class="chapter-number">18</span>&nbsp; <span class="chapter-title">第三章 课时4</span></h1>
+<h1 class="title"><span class="chapter-number">18</span>&nbsp; <span class="chapter-title">GWAS 结果可视化与候选位点解析</span></h1>
 </div>
 
 
@@ -560,8 +654,388 @@ ul.task-list li input[type="checkbox"] {
 </header>
 
 
+<section id="专题-3.5gwas-结果可视化与候选位点解析" class="level1" data-number="19">
+<h1 data-number="19"><span class="header-section-number">19</span> 专题 3.5：GWAS 结果可视化与候选位点解析</h1>
+<section id="学习目标" class="level2" data-number="19.1">
+<h2 data-number="19.1" class="anchored" data-anchor-id="学习目标"><span class="header-section-number">19.1</span> 学习目标</h2>
+<p>完成本专题学习后，学生应能够：</p>
+<ol type="1">
+<li>绘制并解读曼哈顿图（Manhattan plot）和 QQ 图（Quantile-Quantile plot）；</li>
+<li>利用局部关联图（LocusZoom 风格）展示候选区域内的 LD 结构与关联信号；</li>
+<li>理解连锁不平衡（LD）如何影响 GWAS 信号的定位精度；</li>
+<li>描述候选位点解析（locus annotation）的标准生物信息学流程；</li>
+<li>利用公共数据库（GTEx、ENCODE）将统计信号与功能注释整合，提出生物学假说。</li>
+</ol>
+<hr>
+</section>
+<section id="gwas-可视化概述" class="level2" data-number="19.2">
+<h2 data-number="19.2" class="anchored" data-anchor-id="gwas-可视化概述"><span class="header-section-number">19.2</span> 3.5.1 GWAS 可视化概述</h2>
+<p>GWAS 产生数百万个 SNP 的关联统计量，其可视化目标在于：（1）总览全局显著位点的分布；（2）评估统计模型是否存在系统性偏差；（3）精细展示候选区域内信号的精细结构。</p>
+<p>三类核心图形各有侧重：</p>
+<table class="caption-top table">
+<thead>
+<tr class="header">
+<th>图形类型</th>
+<th>目的</th>
+<th>核心信息</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>曼哈顿图</td>
+<td>全局信号定位</td>
+<td>各染色体上显著 SNP 位置与 <span class="math inline">\(-\log_{10}(p)\)</span></td>
+</tr>
+<tr class="even">
+<td>QQ 图</td>
+<td>模型诊断</td>
+<td>观测 p 值与理论均匀分布的偏离程度</td>
+</tr>
+<tr class="odd">
+<td>局部关联图</td>
+<td>候选区域精细分析</td>
+<td>LD 结构、候选 SNP 与周边变异的关系</td>
+</tr>
+</tbody>
+</table>
+<hr>
+</section>
+<section id="曼哈顿图" class="level2" data-number="19.3">
+<h2 data-number="19.3" class="anchored" data-anchor-id="曼哈顿图"><span class="header-section-number">19.3</span> 3.5.2 曼哈顿图</h2>
+<section id="图形结构与解读" class="level3" data-number="19.3.1">
+<h3 data-number="19.3.1" class="anchored" data-anchor-id="图形结构与解读"><span class="header-section-number">19.3.1</span> 3.5.2.1 图形结构与解读</h3>
+<p>{{Wiki:Manhattan_plot}}</p>
+<p>曼哈顿图的 x 轴按染色体顺序排列所有 SNP 的基因组位置，y 轴显示 <span class="math inline">\(-\log_{10}(p)\)</span>。通常叠加两条水平参考线：</p>
+<ul>
+<li><strong>显著性阈值线</strong>（实线）：<span class="math inline">\(-\log_{10}(5 \times 10^{-8}) \approx 7.3\)</span>，对应 Bonferroni 校正后的全基因组显著性；</li>
+<li><strong>建议性阈值线</strong>（虚线）：<span class="math inline">\(-\log_{10}(1 \times 10^{-5}) \approx 5.0\)</span>，用于标记值得关注但未达严格显著的候选位点。</li>
+</ul>
+<p>超过显著性阈值的 SNP 簇通常对应一个 LD 区块内的多个相关变异，而非多个独立位点，需要通过条件分析或 LD 裁剪（clumping）识别独立信号（参见 3.5.4 节）。</p>
+</section>
+<section id="r-实现ggplot2" class="level3" data-number="19.3.2">
+<h3 data-number="19.3.2" class="anchored" data-anchor-id="r-实现ggplot2"><span class="header-section-number">19.3.2</span> 3.5.2.2 R 实现（ggplot2）</h3>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb1"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(tidyverse)</span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="co"># 假设已读入 PLINK 线性或逻辑回归结果</span></span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a>gwas <span class="ot">&lt;-</span> <span class="fu">read_table</span>(<span class="st">"gwas_linear.assoc.linear"</span>, <span class="at">col_types =</span> <span class="fu">cols</span>()) <span class="sc">%&gt;%</span></span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(TEST <span class="sc">==</span> <span class="st">"ADD"</span>, <span class="sc">!</span><span class="fu">is.na</span>(P))</span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a><span class="co"># 准备曼哈顿图数据：计算各 SNP 的累积基因组位置</span></span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a>manhattan_data <span class="ot">&lt;-</span> gwas <span class="sc">%&gt;%</span></span>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a>  <span class="fu">group_by</span>(CHR) <span class="sc">%&gt;%</span></span>
+<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a>  <span class="fu">summarise</span>(<span class="at">chr_len =</span> <span class="fu">max</span>(BP), <span class="at">.groups =</span> <span class="st">"drop"</span>) <span class="sc">%&gt;%</span></span>
+<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">tot =</span> <span class="fu">cumsum</span>(<span class="fu">as.numeric</span>(chr_len)) <span class="sc">-</span> chr_len) <span class="sc">%&gt;%</span></span>
+<span id="cb1-12"><a href="#cb1-12" aria-hidden="true" tabindex="-1"></a>  <span class="fu">select</span>(CHR, tot) <span class="sc">%&gt;%</span></span>
+<span id="cb1-13"><a href="#cb1-13" aria-hidden="true" tabindex="-1"></a>  <span class="fu">left_join</span>(gwas, <span class="at">by =</span> <span class="st">"CHR"</span>) <span class="sc">%&gt;%</span></span>
+<span id="cb1-14"><a href="#cb1-14" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">BPcum =</span> BP <span class="sc">+</span> tot) <span class="sc">%&gt;%</span></span>
+<span id="cb1-15"><a href="#cb1-15" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(<span class="sc">!</span><span class="fu">is.na</span>(P)) <span class="sc">%&gt;%</span></span>
+<span id="cb1-16"><a href="#cb1-16" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">log10p =</span> <span class="sc">-</span><span class="fu">log10</span>(P))</span>
+<span id="cb1-17"><a href="#cb1-17" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-18"><a href="#cb1-18" aria-hidden="true" tabindex="-1"></a><span class="co"># 确定染色体标签位置</span></span>
+<span id="cb1-19"><a href="#cb1-19" aria-hidden="true" tabindex="-1"></a>axis_df <span class="ot">&lt;-</span> manhattan_data <span class="sc">%&gt;%</span></span>
+<span id="cb1-20"><a href="#cb1-20" aria-hidden="true" tabindex="-1"></a>  <span class="fu">group_by</span>(CHR) <span class="sc">%&gt;%</span></span>
+<span id="cb1-21"><a href="#cb1-21" aria-hidden="true" tabindex="-1"></a>  <span class="fu">summarise</span>(<span class="at">center =</span> <span class="fu">mean</span>(BPcum), <span class="at">.groups =</span> <span class="st">"drop"</span>)</span>
+<span id="cb1-22"><a href="#cb1-22" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-23"><a href="#cb1-23" aria-hidden="true" tabindex="-1"></a><span class="co"># 绘制曼哈顿图</span></span>
+<span id="cb1-24"><a href="#cb1-24" aria-hidden="true" tabindex="-1"></a><span class="fu">ggplot</span>(manhattan_data,</span>
+<span id="cb1-25"><a href="#cb1-25" aria-hidden="true" tabindex="-1"></a>       <span class="fu">aes</span>(<span class="at">x =</span> BPcum, <span class="at">y =</span> log10p, <span class="at">color =</span> <span class="fu">factor</span>(CHR <span class="sc">%%</span> <span class="dv">2</span>))) <span class="sc">+</span></span>
+<span id="cb1-26"><a href="#cb1-26" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_point</span>(<span class="at">size =</span> <span class="fl">0.4</span>, <span class="at">alpha =</span> <span class="fl">0.6</span>) <span class="sc">+</span></span>
+<span id="cb1-27"><a href="#cb1-27" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_hline</span>(<span class="at">yintercept =</span> <span class="sc">-</span><span class="fu">log10</span>(<span class="fl">5e-8</span>),</span>
+<span id="cb1-28"><a href="#cb1-28" aria-hidden="true" tabindex="-1"></a>             <span class="at">color =</span> <span class="st">"red"</span>,   <span class="at">linetype =</span> <span class="st">"solid"</span>,  <span class="at">linewidth =</span> <span class="fl">0.6</span>) <span class="sc">+</span></span>
+<span id="cb1-29"><a href="#cb1-29" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_hline</span>(<span class="at">yintercept =</span> <span class="sc">-</span><span class="fu">log10</span>(<span class="fl">1e-5</span>),</span>
+<span id="cb1-30"><a href="#cb1-30" aria-hidden="true" tabindex="-1"></a>             <span class="at">color =</span> <span class="st">"blue"</span>,  <span class="at">linetype =</span> <span class="st">"dashed"</span>, <span class="at">linewidth =</span> <span class="fl">0.4</span>) <span class="sc">+</span></span>
+<span id="cb1-31"><a href="#cb1-31" aria-hidden="true" tabindex="-1"></a>  <span class="fu">scale_x_continuous</span>(<span class="at">label =</span> axis_df<span class="sc">$</span>CHR, <span class="at">breaks =</span> axis_df<span class="sc">$</span>center) <span class="sc">+</span></span>
+<span id="cb1-32"><a href="#cb1-32" aria-hidden="true" tabindex="-1"></a>  <span class="fu">scale_color_manual</span>(<span class="at">values =</span> <span class="fu">c</span>(<span class="st">"grey60"</span>, <span class="st">"steelblue"</span>), <span class="at">guide =</span> <span class="st">"none"</span>) <span class="sc">+</span></span>
+<span id="cb1-33"><a href="#cb1-33" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(<span class="at">x =</span> <span class="st">"Chromosome"</span>,</span>
+<span id="cb1-34"><a href="#cb1-34" aria-hidden="true" tabindex="-1"></a>       <span class="at">y =</span> <span class="fu">expression</span>(<span class="sc">-</span>log[<span class="dv">10</span>](<span class="fu">italic</span>(p))),</span>
+<span id="cb1-35"><a href="#cb1-35" aria-hidden="true" tabindex="-1"></a>       <span class="at">title =</span> <span class="st">"Manhattan Plot"</span>) <span class="sc">+</span></span>
+<span id="cb1-36"><a href="#cb1-36" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme_classic</span>() <span class="sc">+</span></span>
+<span id="cb1-37"><a href="#cb1-37" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme</span>(<span class="at">axis.text.x =</span> <span class="fu">element_text</span>(<span class="at">size =</span> <span class="dv">7</span>))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<hr>
+</section>
+</section>
+<section id="qq-图与基因组膨胀因子" class="level2" data-number="19.4">
+<h2 data-number="19.4" class="anchored" data-anchor-id="qq-图与基因组膨胀因子"><span class="header-section-number">19.4</span> 3.5.3 QQ 图与基因组膨胀因子</h2>
+<p>QQ 图将排序后的观测 <span class="math inline">\(-\log_{10}(p)\)</span> 与期望值对比，用于诊断统计模型是否存在系统性偏差。</p>
+<ul>
+<li><strong>理想情况</strong>：绝大多数点沿对角线分布（零假设为真的位点），尾部真实信号偏离对角线；</li>
+<li><strong>全局向上偏离（inflation）</strong>：提示群体分层未充分控制，需增加 PCA 主成分或引入 MLM；</li>
+<li><strong>全局向下偏离（deflation）</strong>：通常由样本量不足或过于保守的模型导致。</li>
+</ul>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb2"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="co"># QQ 图</span></span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>observed <span class="ot">&lt;-</span> <span class="fu">sort</span>(<span class="sc">-</span><span class="fu">log10</span>(gwas<span class="sc">$</span>P), <span class="at">decreasing =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a>expected <span class="ot">&lt;-</span> <span class="sc">-</span><span class="fu">log10</span>(<span class="fu">ppoints</span>(<span class="fu">length</span>(observed)))</span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a>qq_df <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(<span class="at">expected =</span> expected, <span class="at">observed =</span> observed)</span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a><span class="fu">ggplot</span>(qq_df, <span class="fu">aes</span>(<span class="at">x =</span> expected, <span class="at">y =</span> observed)) <span class="sc">+</span></span>
+<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_point</span>(<span class="at">size =</span> <span class="fl">0.5</span>, <span class="at">alpha =</span> <span class="fl">0.5</span>, <span class="at">color =</span> <span class="st">"steelblue"</span>) <span class="sc">+</span></span>
+<span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_abline</span>(<span class="at">slope =</span> <span class="dv">1</span>, <span class="at">intercept =</span> <span class="dv">0</span>,</span>
+<span id="cb2-10"><a href="#cb2-10" aria-hidden="true" tabindex="-1"></a>              <span class="at">color =</span> <span class="st">"red"</span>, <span class="at">linetype =</span> <span class="st">"dashed"</span>) <span class="sc">+</span></span>
+<span id="cb2-11"><a href="#cb2-11" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(<span class="at">x =</span> <span class="fu">expression</span>(<span class="st">"Expected"</span> <span class="sc">~</span> <span class="sc">-</span>log[<span class="dv">10</span>](<span class="fu">italic</span>(p))),</span>
+<span id="cb2-12"><a href="#cb2-12" aria-hidden="true" tabindex="-1"></a>       <span class="at">y =</span> <span class="fu">expression</span>(<span class="st">"Observed"</span> <span class="sc">~</span> <span class="sc">-</span>log[<span class="dv">10</span>](<span class="fu">italic</span>(p))),</span>
+<span id="cb2-13"><a href="#cb2-13" aria-hidden="true" tabindex="-1"></a>       <span class="at">title =</span> <span class="st">"QQ Plot"</span>) <span class="sc">+</span></span>
+<span id="cb2-14"><a href="#cb2-14" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme_classic</span>()</span>
+<span id="cb2-15"><a href="#cb2-15" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-16"><a href="#cb2-16" aria-hidden="true" tabindex="-1"></a><span class="co"># Genomic inflation factor</span></span>
+<span id="cb2-17"><a href="#cb2-17" aria-hidden="true" tabindex="-1"></a>lambda_gc <span class="ot">&lt;-</span> <span class="fu">median</span>(<span class="fu">qchisq</span>(gwas<span class="sc">$</span>P, <span class="at">df =</span> <span class="dv">1</span>, <span class="at">lower.tail =</span> <span class="cn">FALSE</span>),</span>
+<span id="cb2-18"><a href="#cb2-18" aria-hidden="true" tabindex="-1"></a>                    <span class="at">na.rm =</span> <span class="cn">TRUE</span>) <span class="sc">/</span></span>
+<span id="cb2-19"><a href="#cb2-19" aria-hidden="true" tabindex="-1"></a>             <span class="fu">qchisq</span>(<span class="fl">0.5</span>, <span class="at">df =</span> <span class="dv">1</span>, <span class="at">lower.tail =</span> <span class="cn">FALSE</span>)</span>
+<span id="cb2-20"><a href="#cb2-20" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="fu">sprintf</span>(<span class="st">"lambda_GC = %.4f</span><span class="sc">\n</span><span class="st">"</span>, lambda_gc))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="tip">
+<p><strong><span class="math inline">\(\lambda_{GC}\)</span> 的校正</strong></p>
+<p>当 <span class="math inline">\(\lambda_{GC}\)</span> 因样本量极大（如 <span class="math inline">\(n &gt; 100,000\)</span>）而偏高时，并非一定反映群体分层，也可能是多基因遗传结构（polygenicity）的正常表现。此时应使用 <strong>LD Score 回归（LDSC）</strong> 区分膨胀来源：若截距接近 1，则膨胀主要由多基因性贡献；若截距显著大于 1，则提示混杂因素存在。</p>
+</div>
+<hr>
+</section>
+<section id="独立信号的识别ld-裁剪与条件分析" class="level2" data-number="19.5">
+<h2 data-number="19.5" class="anchored" data-anchor-id="独立信号的识别ld-裁剪与条件分析"><span class="header-section-number">19.5</span> 3.5.4 独立信号的识别：LD 裁剪与条件分析</h2>
+<section id="ld-裁剪clumping" class="level3" data-number="19.5.1">
+<h3 data-number="19.5.1" class="anchored" data-anchor-id="ld-裁剪clumping"><span class="header-section-number">19.5.1</span> 3.5.4.1 LD 裁剪（Clumping）</h3>
+<p>同一 LD 区块内的多个 SNP 因连锁不平衡而产生相关的关联信号，不能被视为独立命中。<strong>LD 裁剪</strong>以最显著的 SNP（index SNP）为核心，将其一定窗口内 <span class="math inline">\(r^2\)</span> 超过阈值的关联 SNP 合并为同一位点：</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb3"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="co"># PLINK LD clumping</span></span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="ex">plink</span> <span class="dt">\</span></span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a>  <span class="at">--bfile</span> qc_step4 <span class="dt">\</span></span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a>  <span class="at">--clump</span> gwas_linear.assoc.linear <span class="dt">\</span></span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a>  <span class="at">--clump-p1</span> 5e-8 <span class="dt">\</span></span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a>  <span class="at">--clump-p2</span> 1e-5 <span class="dt">\</span></span>
+<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a>  <span class="at">--clump-r2</span> 0.1 <span class="dt">\</span></span>
+<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a>  <span class="at">--clump-kb</span> 1000 <span class="dt">\</span></span>
+<span id="cb3-9"><a href="#cb3-9" aria-hidden="true" tabindex="-1"></a>  <span class="at">--clump-field</span> P <span class="dt">\</span></span>
+<span id="cb3-10"><a href="#cb3-10" aria-hidden="true" tabindex="-1"></a>  <span class="at">--out</span> gwas_clumped</span>
+<span id="cb3-11"><a href="#cb3-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-12"><a href="#cb3-12" aria-hidden="true" tabindex="-1"></a><span class="co"># 输出文件：gwas_clumped.clumped</span></span>
+<span id="cb3-13"><a href="#cb3-13" aria-hidden="true" tabindex="-1"></a><span class="co"># 每行为一个独立信号，SP2 列列出被合并的相关 SNP</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</section>
+<section id="逐步条件分析" class="level3" data-number="19.5.2">
+<h3 data-number="19.5.2" class="anchored" data-anchor-id="逐步条件分析"><span class="header-section-number">19.5.2</span> 3.5.4.2 逐步条件分析</h3>
+<p>对于同一染色体区域内可能存在多个独立信号的情况，逐步条件分析（stepwise conditional analysis）逐步将已识别的显著 SNP 作为协变量加入模型，检验是否存在额外的独立关联信号：</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb4"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Conditional analysis: adjust for index SNP genotype</span></span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a><span class="co"># 假设 index_snp_geno 为 index SNP 的基因型向量</span></span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a>fit_conditional <span class="ot">&lt;-</span> <span class="fu">lm</span>(pheno <span class="sc">~</span> geno_candidate <span class="sc">+</span> index_snp_geno <span class="sc">+</span> PC1 <span class="sc">+</span> PC2)</span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a><span class="fu">summary</span>(fit_conditional)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<hr>
+</section>
+</section>
+<section id="局部关联图" class="level2" data-number="19.6">
+<h2 data-number="19.6" class="anchored" data-anchor-id="局部关联图"><span class="header-section-number">19.6</span> 3.5.5 局部关联图</h2>
+<p>局部关联图（regional association plot，LocusZoom 风格）聚焦于候选区域（通常 ±500 kb），叠加展示：</p>
+<ul>
+<li>各 SNP 的 <span class="math inline">\(-\log_{10}(p)\)</span> 值（点的颜色反映其与 lead SNP 的 <span class="math inline">\(r^2\)</span>）；</li>
+<li>基因结构注释（编码区、非编码区、转录方向）；</li>
+<li>重组率估计（来自 HapMap 或 1000 Genomes）。</li>
+</ul>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb5"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(tidyverse)</span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(ggrepel)</span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a><span class="co"># 假设已获取候选区域的关联结果和 LD 信息</span></span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a><span class="co"># ld_with_lead: data.frame, 含 SNP, r2_with_lead 两列</span></span>
+<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a>region <span class="ot">&lt;-</span> gwas <span class="sc">%&gt;%</span></span>
+<span id="cb5-8"><a href="#cb5-8" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(CHR <span class="sc">==</span> <span class="dv">6</span>, BP <span class="sc">&gt;=</span> <span class="fl">32.4e6</span>, BP <span class="sc">&lt;=</span> <span class="fl">33.4e6</span>) <span class="sc">%&gt;%</span></span>
+<span id="cb5-9"><a href="#cb5-9" aria-hidden="true" tabindex="-1"></a>  <span class="fu">left_join</span>(ld_with_lead, <span class="at">by =</span> <span class="st">"SNP"</span>) <span class="sc">%&gt;%</span></span>
+<span id="cb5-10"><a href="#cb5-10" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(</span>
+<span id="cb5-11"><a href="#cb5-11" aria-hidden="true" tabindex="-1"></a>    <span class="at">log10p =</span> <span class="sc">-</span><span class="fu">log10</span>(P),</span>
+<span id="cb5-12"><a href="#cb5-12" aria-hidden="true" tabindex="-1"></a>    <span class="at">ld_bin =</span> <span class="fu">cut</span>(r2_with_lead,</span>
+<span id="cb5-13"><a href="#cb5-13" aria-hidden="true" tabindex="-1"></a>                 <span class="at">breaks =</span> <span class="fu">c</span>(<span class="dv">0</span>, <span class="fl">0.2</span>, <span class="fl">0.4</span>, <span class="fl">0.6</span>, <span class="fl">0.8</span>, <span class="fl">1.0</span>),</span>
+<span id="cb5-14"><a href="#cb5-14" aria-hidden="true" tabindex="-1"></a>                 <span class="at">labels =</span> <span class="fu">c</span>(<span class="st">"0.0-0.2"</span>, <span class="st">"0.2-0.4"</span>,</span>
+<span id="cb5-15"><a href="#cb5-15" aria-hidden="true" tabindex="-1"></a>                            <span class="st">"0.4-0.6"</span>, <span class="st">"0.6-0.8"</span>, <span class="st">"0.8-1.0"</span>),</span>
+<span id="cb5-16"><a href="#cb5-16" aria-hidden="true" tabindex="-1"></a>                 <span class="at">include.lowest =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb5-17"><a href="#cb5-17" aria-hidden="true" tabindex="-1"></a>  )</span>
+<span id="cb5-18"><a href="#cb5-18" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-19"><a href="#cb5-19" aria-hidden="true" tabindex="-1"></a>ld_colors <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="st">"0.0-0.2"</span> <span class="ot">=</span> <span class="st">"#2166AC"</span>,</span>
+<span id="cb5-20"><a href="#cb5-20" aria-hidden="true" tabindex="-1"></a>               <span class="st">"0.2-0.4"</span> <span class="ot">=</span> <span class="st">"#74ADD1"</span>,</span>
+<span id="cb5-21"><a href="#cb5-21" aria-hidden="true" tabindex="-1"></a>               <span class="st">"0.4-0.6"</span> <span class="ot">=</span> <span class="st">"#FDAE61"</span>,</span>
+<span id="cb5-22"><a href="#cb5-22" aria-hidden="true" tabindex="-1"></a>               <span class="st">"0.6-0.8"</span> <span class="ot">=</span> <span class="st">"#F46D43"</span>,</span>
+<span id="cb5-23"><a href="#cb5-23" aria-hidden="true" tabindex="-1"></a>               <span class="st">"0.8-1.0"</span> <span class="ot">=</span> <span class="st">"#D73027"</span>)</span>
+<span id="cb5-24"><a href="#cb5-24" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-25"><a href="#cb5-25" aria-hidden="true" tabindex="-1"></a>lead_snp <span class="ot">&lt;-</span> region <span class="sc">%&gt;%</span> <span class="fu">filter</span>(P <span class="sc">==</span> <span class="fu">min</span>(P))</span>
+<span id="cb5-26"><a href="#cb5-26" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-27"><a href="#cb5-27" aria-hidden="true" tabindex="-1"></a><span class="fu">ggplot</span>(region, <span class="fu">aes</span>(<span class="at">x =</span> BP <span class="sc">/</span> <span class="fl">1e6</span>, <span class="at">y =</span> log10p, <span class="at">color =</span> ld_bin)) <span class="sc">+</span></span>
+<span id="cb5-28"><a href="#cb5-28" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_point</span>(<span class="at">size =</span> <span class="fl">1.5</span>, <span class="at">alpha =</span> <span class="fl">0.8</span>) <span class="sc">+</span></span>
+<span id="cb5-29"><a href="#cb5-29" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_point</span>(<span class="at">data =</span> lead_snp, <span class="at">color =</span> <span class="st">"purple"</span>, <span class="at">size =</span> <span class="dv">3</span>, <span class="at">shape =</span> <span class="dv">18</span>) <span class="sc">+</span></span>
+<span id="cb5-30"><a href="#cb5-30" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_label_repel</span>(<span class="at">data =</span> lead_snp,</span>
+<span id="cb5-31"><a href="#cb5-31" aria-hidden="true" tabindex="-1"></a>                   <span class="fu">aes</span>(<span class="at">label =</span> SNP), <span class="at">color =</span> <span class="st">"purple"</span>,</span>
+<span id="cb5-32"><a href="#cb5-32" aria-hidden="true" tabindex="-1"></a>                   <span class="at">size =</span> <span class="dv">3</span>, <span class="at">nudge_y =</span> <span class="fl">0.5</span>, <span class="at">show.legend =</span> <span class="cn">FALSE</span>) <span class="sc">+</span></span>
+<span id="cb5-33"><a href="#cb5-33" aria-hidden="true" tabindex="-1"></a>  <span class="fu">scale_color_manual</span>(<span class="at">values =</span> ld_colors,</span>
+<span id="cb5-34"><a href="#cb5-34" aria-hidden="true" tabindex="-1"></a>                     <span class="at">name =</span> <span class="fu">expression</span>(r<span class="sc">^</span><span class="dv">2</span> <span class="sc">~</span> <span class="st">"with lead SNP"</span>)) <span class="sc">+</span></span>
+<span id="cb5-35"><a href="#cb5-35" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_hline</span>(<span class="at">yintercept =</span> <span class="sc">-</span><span class="fu">log10</span>(<span class="fl">5e-8</span>),</span>
+<span id="cb5-36"><a href="#cb5-36" aria-hidden="true" tabindex="-1"></a>             <span class="at">linetype =</span> <span class="st">"dashed"</span>, <span class="at">color =</span> <span class="st">"grey40"</span>) <span class="sc">+</span></span>
+<span id="cb5-37"><a href="#cb5-37" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(<span class="at">x =</span> <span class="st">"Position (Mb)"</span>,</span>
+<span id="cb5-38"><a href="#cb5-38" aria-hidden="true" tabindex="-1"></a>       <span class="at">y =</span> <span class="fu">expression</span>(<span class="sc">-</span>log[<span class="dv">10</span>](<span class="fu">italic</span>(p))),</span>
+<span id="cb5-39"><a href="#cb5-39" aria-hidden="true" tabindex="-1"></a>       <span class="at">title =</span> <span class="st">"Regional Association Plot"</span>) <span class="sc">+</span></span>
+<span id="cb5-40"><a href="#cb5-40" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme_classic</span>()</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<hr>
+</section>
+<section id="候选位点的功能注释" class="level2" data-number="19.7">
+<h2 data-number="19.7" class="anchored" data-anchor-id="候选位点的功能注释"><span class="header-section-number">19.7</span> 3.5.6 候选位点的功能注释</h2>
+<p>统计显著性本身不能说明机制。GWAS 的后续核心工作是将显著 SNP（通常是 LD 区块内的多个相关变异）与功能信息整合，提出生物学假说。</p>
+<section id="变异注释" class="level3" data-number="19.7.1">
+<h3 data-number="19.7.1" class="anchored" data-anchor-id="变异注释"><span class="header-section-number">19.7.1</span> 3.5.6.1 变异注释</h3>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb6"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="co"># 使用 ANNOVAR 进行功能注释</span></span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a><span class="co"># 注释类型：exonic/intronic/UTR/intergenic/splicing 等</span></span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a><span class="fu">perl</span> annotate_variation.pl <span class="dt">\</span></span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a>  <span class="at">-geneanno</span> <span class="dt">\</span></span>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a>  <span class="at">-dbtype</span> refGene <span class="dt">\</span></span>
+<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a>  <span class="at">-buildver</span> hg38 <span class="dt">\</span></span>
+<span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a>  candidate_snps.txt <span class="dt">\</span></span>
+<span id="cb6-8"><a href="#cb6-8" aria-hidden="true" tabindex="-1"></a>  humandb/</span>
+<span id="cb6-9"><a href="#cb6-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-10"><a href="#cb6-10" aria-hidden="true" tabindex="-1"></a><span class="co"># 使用 bcftools annotate 添加 VEP 注释</span></span>
+<span id="cb6-11"><a href="#cb6-11" aria-hidden="true" tabindex="-1"></a><span class="ex">bcftools</span> annotate <span class="dt">\</span></span>
+<span id="cb6-12"><a href="#cb6-12" aria-hidden="true" tabindex="-1"></a>  <span class="at">-a</span> vep_annotations.vcf.gz <span class="dt">\</span></span>
+<span id="cb6-13"><a href="#cb6-13" aria-hidden="true" tabindex="-1"></a>  <span class="at">-c</span> INFO <span class="dt">\</span></span>
+<span id="cb6-14"><a href="#cb6-14" aria-hidden="true" tabindex="-1"></a>  candidate_snps.vcf.gz <span class="dt">\</span></span>
+<span id="cb6-15"><a href="#cb6-15" aria-hidden="true" tabindex="-1"></a>  <span class="at">-o</span> annotated_candidates.vcf.gz</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</section>
+<section id="eqtl-整合与共定位" class="level3" data-number="19.7.2">
+<h3 data-number="19.7.2" class="anchored" data-anchor-id="eqtl-整合与共定位"><span class="header-section-number">19.7.2</span> 3.5.6.2 eQTL 整合与共定位</h3>
+<p><strong>表达数量性状位点（expression Quantitative Trait Locus，eQTL）</strong> 是与基因表达水平关联的遗传变异。若 GWAS 命中的 SNP 同时也是某基因的 eQTL，则该基因成为优先候选致因基因（causal gene）。</p>
+<p>GTEx（Genotype-Tissue Expression）项目提供了来自 54 种人类组织的 cis-eQTL 数据，是最常用的 eQTL 参考数据库。</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb7"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(tidyverse)</span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a><span class="co"># 读取 GTEx eQTL 结果（以全血为例）</span></span>
+<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a><span class="co"># 文件格式：gene_id, variant_id, tss_distance, pval_nominal, slope, ...</span></span>
+<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a>eqtl <span class="ot">&lt;-</span> <span class="fu">read_tsv</span>(<span class="st">"GTEx_Analysis_v8_eQTL/Whole_Blood.v8.signif_variant_gene_pairs.txt.gz"</span>)</span>
+<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-7"><a href="#cb7-7" aria-hidden="true" tabindex="-1"></a><span class="co"># 从 variant_id 解析染色体位置</span></span>
+<span id="cb7-8"><a href="#cb7-8" aria-hidden="true" tabindex="-1"></a>eqtl <span class="ot">&lt;-</span> eqtl <span class="sc">%&gt;%</span></span>
+<span id="cb7-9"><a href="#cb7-9" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(</span>
+<span id="cb7-10"><a href="#cb7-10" aria-hidden="true" tabindex="-1"></a>    <span class="at">CHR =</span> <span class="fu">as.integer</span>(<span class="fu">sub</span>(<span class="st">"chr(</span><span class="sc">\\</span><span class="st">d+)_.*"</span>, <span class="st">"</span><span class="sc">\\</span><span class="st">1"</span>, variant_id)),</span>
+<span id="cb7-11"><a href="#cb7-11" aria-hidden="true" tabindex="-1"></a>    <span class="at">BP  =</span> <span class="fu">as.integer</span>(<span class="fu">sub</span>(<span class="st">"chr</span><span class="sc">\\</span><span class="st">d+_(</span><span class="sc">\\</span><span class="st">d+)_.*"</span>, <span class="st">"</span><span class="sc">\\</span><span class="st">1"</span>, variant_id))</span>
+<span id="cb7-12"><a href="#cb7-12" aria-hidden="true" tabindex="-1"></a>  )</span>
+<span id="cb7-13"><a href="#cb7-13" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-14"><a href="#cb7-14" aria-hidden="true" tabindex="-1"></a><span class="co"># 候选区域内的 eQTL 重叠</span></span>
+<span id="cb7-15"><a href="#cb7-15" aria-hidden="true" tabindex="-1"></a>candidate_region <span class="ot">&lt;-</span> <span class="fu">list</span>(<span class="at">chr =</span> <span class="dv">6</span>, <span class="at">start =</span> <span class="fl">32.4e6</span>, <span class="at">end =</span> <span class="fl">33.4e6</span>)</span>
+<span id="cb7-16"><a href="#cb7-16" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-17"><a href="#cb7-17" aria-hidden="true" tabindex="-1"></a>overlapping_eqtl <span class="ot">&lt;-</span> eqtl <span class="sc">%&gt;%</span></span>
+<span id="cb7-18"><a href="#cb7-18" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(CHR <span class="sc">==</span> candidate_region<span class="sc">$</span>chr,</span>
+<span id="cb7-19"><a href="#cb7-19" aria-hidden="true" tabindex="-1"></a>         BP  <span class="sc">&gt;=</span> candidate_region<span class="sc">$</span>start,</span>
+<span id="cb7-20"><a href="#cb7-20" aria-hidden="true" tabindex="-1"></a>         BP  <span class="sc">&lt;=</span>  candidate_region<span class="sc">$</span>end) <span class="sc">%&gt;%</span></span>
+<span id="cb7-21"><a href="#cb7-21" aria-hidden="true" tabindex="-1"></a>  <span class="fu">arrange</span>(pval_nominal)</span>
+<span id="cb7-22"><a href="#cb7-22" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-23"><a href="#cb7-23" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">"eQTL genes in candidate region:</span><span class="sc">\n</span><span class="st">"</span>)</span>
+<span id="cb7-24"><a href="#cb7-24" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(<span class="fu">unique</span>(overlapping_eqtl<span class="sc">$</span>gene_id))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</section>
+<section id="共定位分析原理" class="level3" data-number="19.7.3">
+<h3 data-number="19.7.3" class="anchored" data-anchor-id="共定位分析原理"><span class="header-section-number">19.7.3</span> 3.5.6.3 共定位分析原理</h3>
+<p><strong>共定位（colocalization）</strong> 检验两个性状（如疾病 GWAS 和 eQTL）的关联信号是否由同一个因果变异驱动，还是由同一区域内两个紧密连锁但不同的变异分别驱动。</p>
+<p><code>coloc</code> 软件包基于贝叶斯因子框架，计算五种假设的后验概率（PPH0–PPH4）：</p>
+<table class="caption-top table">
+<thead>
+<tr class="header">
+<th>假设</th>
+<th>含义</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>H0</td>
+<td>两个性状均无关联信号</td>
+</tr>
+<tr class="even">
+<td>H1</td>
+<td>仅性状 1 有关联信号</td>
+</tr>
+<tr class="odd">
+<td>H2</td>
+<td>仅性状 2 有关联信号</td>
+</tr>
+<tr class="even">
+<td>H3</td>
+<td>两者均有关联信号，但各自由不同变异驱动</td>
+</tr>
+<tr class="odd">
+<td>H4</td>
+<td>两者共享同一因果变异</td>
+</tr>
+</tbody>
+</table>
+<p><strong>PPH4 &gt; 0.8</strong> 通常被视为共定位的证据阈值。</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb8"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(coloc)</span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a><span class="co"># 准备 GWAS 数据集（以候选区域为例）</span></span>
+<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a>dataset_gwas <span class="ot">&lt;-</span> <span class="fu">list</span>(</span>
+<span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a>  <span class="at">beta   =</span> region<span class="sc">$</span>beta,</span>
+<span id="cb8-6"><a href="#cb8-6" aria-hidden="true" tabindex="-1"></a>  <span class="at">varbeta =</span> region<span class="sc">$</span>se<span class="sc">^</span><span class="dv">2</span>,</span>
+<span id="cb8-7"><a href="#cb8-7" aria-hidden="true" tabindex="-1"></a>  <span class="at">N      =</span> <span class="dv">50000</span>,</span>
+<span id="cb8-8"><a href="#cb8-8" aria-hidden="true" tabindex="-1"></a>  <span class="at">type   =</span> <span class="st">"quant"</span>,</span>
+<span id="cb8-9"><a href="#cb8-9" aria-hidden="true" tabindex="-1"></a>  <span class="at">snp    =</span> region<span class="sc">$</span>SNP</span>
+<span id="cb8-10"><a href="#cb8-10" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb8-11"><a href="#cb8-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-12"><a href="#cb8-12" aria-hidden="true" tabindex="-1"></a><span class="co"># 准备 eQTL 数据集</span></span>
+<span id="cb8-13"><a href="#cb8-13" aria-hidden="true" tabindex="-1"></a>dataset_eqtl <span class="ot">&lt;-</span> <span class="fu">list</span>(</span>
+<span id="cb8-14"><a href="#cb8-14" aria-hidden="true" tabindex="-1"></a>  <span class="at">beta    =</span> overlapping_eqtl<span class="sc">$</span>slope,</span>
+<span id="cb8-15"><a href="#cb8-15" aria-hidden="true" tabindex="-1"></a>  <span class="at">varbeta =</span> overlapping_eqtl<span class="sc">$</span>slope_se<span class="sc">^</span><span class="dv">2</span>,</span>
+<span id="cb8-16"><a href="#cb8-16" aria-hidden="true" tabindex="-1"></a>  <span class="at">N       =</span> <span class="dv">670</span>,          <span class="co"># GTEx whole blood sample size</span></span>
+<span id="cb8-17"><a href="#cb8-17" aria-hidden="true" tabindex="-1"></a>  <span class="at">type    =</span> <span class="st">"quant"</span>,</span>
+<span id="cb8-18"><a href="#cb8-18" aria-hidden="true" tabindex="-1"></a>  <span class="at">snp     =</span> overlapping_eqtl<span class="sc">$</span>variant_id</span>
+<span id="cb8-19"><a href="#cb8-19" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb8-20"><a href="#cb8-20" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-21"><a href="#cb8-21" aria-hidden="true" tabindex="-1"></a><span class="co"># 运行共定位</span></span>
+<span id="cb8-22"><a href="#cb8-22" aria-hidden="true" tabindex="-1"></a>result_coloc <span class="ot">&lt;-</span> <span class="fu">coloc.abf</span>(<span class="at">dataset1 =</span> dataset_gwas,</span>
+<span id="cb8-23"><a href="#cb8-23" aria-hidden="true" tabindex="-1"></a>                           <span class="at">dataset2 =</span> dataset_eqtl)</span>
+<span id="cb8-24"><a href="#cb8-24" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-25"><a href="#cb8-25" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">"PP.H4 (shared causal variant):"</span>, result_coloc<span class="sc">$</span>summary[<span class="st">"PP.H4.abf"</span>], <span class="st">"</span><span class="sc">\n</span><span class="st">"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>{{Wiki:Quantitative_trait_locus}}</p>
+<hr>
+</section>
+</section>
+<section id="候选位点解析的整合框架" class="level2" data-number="19.8">
+<h2 data-number="19.8" class="anchored" data-anchor-id="候选位点解析的整合框架"><span class="header-section-number">19.8</span> 3.5.7 候选位点解析的整合框架</h2>
+<p>将上述步骤整合为标准解析流程：</p>
+<pre><code>GWAS 全局结果
+      │
+      ▼
+  LD clumping → 独立显著位点列表
+      │
+      ▼
+  候选区域定义 (lead SNP ± 500 kb)
+      │
+      ├──► 变异功能注释 (ANNOVAR / VEP)
+      │         └── 编码变异？非编码？剪接位点？
+      │
+      ├──► eQTL 查询 (GTEx / tissue-specific)
+      │         └── 候选效应基因
+      │
+      ├──► 共定位分析 (coloc / SuSiE-coloc)
+      │         └── PPH4 &gt; 0.8 → 强共定位证据
+      │
+      ├──► 染色质可及性 / 组蛋白修饰 (ENCODE / Roadmap)
+      │         └── 候选调控元件 (enhancer, promoter)
+      │
+      └──► 整合结论：候选致因基因与致因变异</code></pre>
+<div class="info">
+<p><strong>黄金法则：从统计显著到生物学假说</strong></p>
+<p>GWAS 的统计命中仅是起点，而非终点。由于 LD 的存在，lead SNP 通常不是真正的致因变异（causal variant），而是其标记物。候选基因的确立需要多组学证据的汇聚：功能注释、eQTL 证据、共定位分析和实验验证（如 CRISPR 功能筛选）共同构成因果推断的基础。</p>
+</div>
+<hr>
+</section>
+<section id="课后自测-post-lesson-quiz" class="level2" data-number="19.9">
+<h2 data-number="19.9" class="anchored" data-anchor-id="课后自测-post-lesson-quiz"><span class="header-section-number">19.9</span> 课后自测 (Post-Lesson Quiz)</h2>
+<ol type="1">
+<li><p>在曼哈顿图中，显著位点通常表现为一”柱”相关联的 SNP，而非单个孤立点。请从连锁不平衡（LD）的角度解释这一现象，并说明 LD 裁剪（clumping）如何从中识别独立信号。</p></li>
+<li><p>QQ 图中，若绝大多数点沿对角线分布，仅尾部出现上翘，这意味着什么？若全体点均整体偏离对角线向上，又意味着什么？</p></li>
+<li><p>什么是 eQTL？GTEx 数据库在 GWAS 后续分析中扮演什么角色？请描述利用 eQTL 信息确认候选致因基因的基本思路。</p></li>
+<li><p>共定位分析（coloc）中的五个假设（H0–H4）各代表什么？PPH4 &gt; 0.8 的生物学含义是什么？</p></li>
+<li><p>假设某 GWAS 在 chr6:32,800,000 处发现一个显著 SNP（<span class="math inline">\(p = 3.2 \times 10^{-9}\)</span>），该位点位于基因间区（intergenic region），但距一个已知免疫基因的增强子（enhancer）仅 5 kb。请描述你将采取哪些后续步骤来评估该 SNP 是否可能通过调控该基因的表达来影响表型。</p></li>
+</ol>
+<details>
+<summary>
+<strong>参考答案 (Reference Answers)</strong>
+</summary>
+<ol type="1">
+<li><p><em>同一 LD 区块内的 SNP 彼此高度相关（高 <span class="math inline">\(r^2\)</span>），因此若某一致因变异（或其紧密连锁的标记物）与表型真实关联，该区块内所有与其连锁的 SNP 也会显示出类似的关联信号，形成”信号柱”。LD 裁剪以 p 值最小的 SNP（index SNP）为核心，将其特定窗口内 <span class="math inline">\(r^2\)</span> 超过阈值（如 0.1）的所有 SNP 归并为同一位点，仅保留 index SNP 代表该独立信号，从而在全基因组范围内统计独立命中数量。</em></p></li>
+<li><p><em>仅尾部上翘说明统计模型整体校准良好（零假设下的位点符合均匀分布），少数位点产生了真实的关联信号，这是理想的 GWAS 结果模式。全体点整体偏离对角线向上（inflation）则提示存在系统性偏差，最常见原因是群体分层未充分控制、隐性亲缘关系（cryptic relatedness）或基因型质量问题，应计算 <span class="math inline">\(\lambda_{GC}\)</span> 并采用 MLM 或增加 PCA 主成分进行校正。</em></p></li>
+<li><p><em>eQTL（表达数量性状位点）是与基因表达水平统计关联的遗传变异。GTEx 提供了 54 种人类组织中的 cis-eQTL 图谱，当 GWAS 命中 SNP 与某基因的 eQTL 重叠时，该基因成为优先候选致因基因。基本思路为：在候选区域内查询 GTEx（选择与表型最相关的组织），若 lead SNP 同时是该基因的显著 eQTL，则进一步开展共定位分析（coloc）以确认二者是否共享同一因果变异。</em></p></li>
+<li><p><em>H0：两个性状在该区域均无关联信号；H1：仅 GWAS 性状有信号；H2：仅 eQTL 性状有信号；H3：两者均有信号但由不同变异驱动（LD 区块内两个独立因果变异）；H4：两者共享同一因果变异（最强的致因基因证据）。PPH4 &gt; 0.8 意味着在贝叶斯框架下，有超过 80% 的后验概率支持 GWAS 信号与该基因的 eQTL 信号由同一遗传变异驱动，提供了该基因为因果效应基因的强有力分子证据。</em></p></li>
+<li><p><em>后续步骤包括：（1）利用 ANNOVAR 或 VEP 注释该 SNP 及其 LD 伙伴变异（<span class="math inline">\(r^2 &gt; 0.8\)</span>）的功能类别，关注是否有变异落在增强子区域；（2）在 GTEx 数据库中查询该 SNP 或其 LD 伙伴是否为该免疫基因在相关组织中的 eQTL；（3）若存在 eQTL 关联，运行 coloc 分析评估 PPH4；（4）查询 ENCODE 或 Roadmap 数据，确认该增强子在相关细胞类型中是否具有活性标志（H3K27ac、ATAC-seq 峰）；（5）综合以上多组学证据，形成假说：该 SNP 通过改变增强子活性调控目标基因表达，进而影响表型；（6）如条件允许，通过 CRISPR 编辑或等位基因特异性报告基因实验进行功能验证。</em></p></li>
+</ol>
+</details>
 
 
+</section>
+</section>
 
 </main> <!-- /main -->
 <script id="quarto-html-after-body" type="application/javascript">
@@ -966,13 +1440,13 @@ ul.task-list li input[type="checkbox"] {
   </script>
 <nav class="page-navigation">
   <div class="nav-page nav-page-previous">
-      <a href="./genomics_variant_lesson3.html" class="pagination-link" aria-label="第三章 课时3">
-        <i class="bi bi-arrow-left-short"></i> <span class="nav-page-text"><span class="chapter-number">17</span>&nbsp; <span class="chapter-title">第三章 课时3</span></span>
+      <a href="./genomics_variant_lesson3.html" class="pagination-link" aria-label="GWAS 统计模型、质量控制与多重检验校正">
+        <i class="bi bi-arrow-left-short"></i> <span class="nav-page-text"><span class="chapter-number">17</span>&nbsp; <span class="chapter-title">GWAS 统计模型、质量控制与多重检验校正</span></span>
       </a>          
   </div>
   <div class="nav-page nav-page-next">
-      <a href="./genomics_variant_lesson5.html" class="pagination-link" aria-label="第三章 课时5">
-        <span class="nav-page-text"><span class="chapter-number">19</span>&nbsp; <span class="chapter-title">第三章 课时5</span></span> <i class="bi bi-arrow-right-short"></i>
+      <a href="./genomics_variant_lesson5.html" class="pagination-link" aria-label="精细定位与功能验证及更多">
+        <span class="nav-page-text"><span class="chapter-number">19</span>&nbsp; <span class="chapter-title">精细定位与功能验证及更多</span></span> <i class="bi bi-arrow-right-short"></i>
       </a>
   </div>
 </nav>
@@ -981,4 +1455,4 @@ ul.task-list li input[type="checkbox"] {
 
 
 
-<footer class="footer"><div class="nav-footer"><div class="nav-footer-center"><div class="toc-actions"><ul><li><a href="https://github.com/cxzdsa2332/Applied-Omics-Analysis/edit/main/genomics_variant_lesson4.qmd" class="toc-action"><i class="bi bi-github"></i>Edit this page</a></li><li><a href="https://github.com/cxzdsa2332/Applied-Omics-Analysis/issues/new" class="toc-action"><i class="bi empty"></i>Report an issue</a></li><li><a href="https://github.com/cxzdsa2332/Applied-Omics-Analysis/blob/main/genomics_variant_lesson4.qmd" class="toc-action"><i class="bi empty"></i>View source</a></li></ul></div></div></div></footer></body></html>
+<footer class="footer"><div class="nav-footer"><div class="nav-footer-center"><div class="toc-actions d-sm-block d-md-none"><ul><li><a href="https://github.com/cxzdsa2332/Applied-Omics-Analysis/edit/main/genomics_variant_lesson4.qmd" class="toc-action"><i class="bi bi-github"></i>Edit this page</a></li><li><a href="https://github.com/cxzdsa2332/Applied-Omics-Analysis/issues/new" class="toc-action"><i class="bi empty"></i>Report an issue</a></li><li><a href="https://github.com/cxzdsa2332/Applied-Omics-Analysis/blob/main/genomics_variant_lesson4.qmd" class="toc-action"><i class="bi empty"></i>View source</a></li></ul></div></div></div></footer></body></html>
