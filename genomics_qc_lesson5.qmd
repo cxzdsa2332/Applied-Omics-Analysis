@@ -1078,59 +1078,65 @@ $D$ 的显著偏离可以同时由选择和人口历史事件（扩张/瓶颈）
 
 ```r
 # R: conceptual demonstration of Tajima's D
-# We compare pi vs theta_W under different evolutionary scenarios
+# We compare pi vs theta_W under different evolutionary scenarios.
+#
+# Key derivation: both pi and theta_W are expressed per site (divided by L),
+# so L cancels in the ratio:
+#   pi / theta_W = mean(2p(1-p) * n/(n-1)) / (1/a1)
+#                = mean(2p(1-p) * n/(n-1)) * a1
+# where a1 = sum(1/i, i = 1 .. n-1)  is Watterson's harmonic number.
 
 tajima_demo <- function(freq_vec, n_seq) {
   # freq_vec: derived allele frequencies of segregating sites
-  # n_seq: number of sequences sampled
+  # n_seq:    number of sequences (chromosomes) sampled
   S <- length(freq_vec)
-  if (S == 0) return(list(pi = 0, theta_w = 0, D_approx = NA))
+  if (S == 0) return(list(pi_per_seg = 0, theta_w_per_seg = 0, ratio = NA))
 
-  # pi: mean pairwise differences (weighted by frequency)
-  # For a site with derived freq p, contribution to pi = 2p(1-p) * n/(n-1)
-  pi_hat <- mean(2 * freq_vec * (1 - freq_vec) * n_seq / (n_seq - 1))
-
-  # Watterson's theta_W
+  # Harmonic number — Watterson's normalising constant
   a1 <- sum(1 / seq_len(n_seq - 1))
-  theta_w <- S / (a1 * 1)   # per-site theta_w requires knowing sequence length
 
-  list(pi = round(pi_hat, 4),
-       theta_w = round(theta_w / 1000, 4),  # rough per-site scaling
-       ratio = round(pi_hat / (theta_w / 1000), 3))
+  # pi per segregating site: unbiased mean pairwise difference per site.
+  # At a biallelic site with derived allele frequency p:
+  #   contribution = 2p(1-p) * n/(n-1)
+  pi_per_seg <- mean(2 * freq_vec * (1 - freq_vec) * n_seq / (n_seq - 1))
+
+  # theta_W per segregating site = 1/a1.
+  # Full Watterson estimator: theta_W = S / (a1 * L).
+  # Normalised per segregating site: [S/(a1*L)] / [S/L] = 1/a1.
+  theta_w_per_seg <- 1 / a1
+
+  # ratio > 1 → pi > theta_W → excess intermediate-frequency variants → D > 0
+  # ratio < 1 → pi < theta_W → excess rare variants                  → D < 0
+  ratio <- pi_per_seg / theta_w_per_seg
+
+  list(pi_per_seg      = round(pi_per_seg, 4),
+       theta_w_per_seg = round(theta_w_per_seg, 4),
+       ratio           = round(ratio, 3))
 }
 
-# Scenario 1: neutral AFS (many rare variants, L-shape)
-neutral_afs <- c(0.02, 0.03, 0.02, 0.05, 0.04, 0.01, 0.03, 0.02, 0.30, 0.45)
+# Scenario 1: neutral AFS — mostly rare variants, two at intermediate frequency
+neutral_afs   <- c(0.02, 0.03, 0.02, 0.05, 0.04, 0.01, 0.03, 0.02, 0.30, 0.45)
 
-# Scenario 2: balancing selection (elevated intermediate frequencies)
+# Scenario 2: balancing selection — all variants at intermediate frequency
 balancing_afs <- c(0.35, 0.40, 0.42, 0.38, 0.45, 0.50, 0.36, 0.43)
 
-# Scenario 3: purifying selection / expansion (excess rare variants)
+# Scenario 3: purifying selection / expansion — all variants very rare
 purifying_afs <- c(0.005, 0.008, 0.003, 0.006, 0.002, 0.004, 0.009, 0.007, 0.001, 0.003)
 
-cat("=== Tajima's D conceptual comparison ===\n\n")
+cat("=== Tajima's D conceptual comparison (n = 50 sequences) ===\n\n")
 for (scenario in list(
-    list(name = "Neutral / stable",    freqs = neutral_afs),
-    list(name = "Balancing selection", freqs = balancing_afs),
-    list(name = "Purifying / expansion", freqs = purifying_afs)
+    list(name = "Neutral / stable",       freqs = neutral_afs),
+    list(name = "Balancing selection",    freqs = balancing_afs),
+    list(name = "Purifying / expansion",  freqs = purifying_afs)
 )) {
   res <- tajima_demo(scenario$freqs, n_seq = 50)
-  cat(sprintf("Scenario: %-25s | pi = %.4f | pi/theta_W ratio = %.3f\n",
-              scenario$name, res$pi, res$ratio))
-  cat(sprintf("  → High pi/theta_W (>1) implies D > 0; Low (<1) implies D < 0\n\n"))
+  cat(sprintf("Scenario: %-25s | pi = %.4f | theta_W = %.4f | ratio = %.3f\n",
+              scenario$name, res$pi_per_seg, res$theta_w_per_seg, res$ratio))
+  direction <- if (res$ratio > 1) "ratio > 1  → D > 0  (excess intermediate-freq variants)" else
+                                   "ratio < 1  → D < 0  (excess rare variants)"
+  cat(sprintf("  → %s\n\n", direction))
 }
 ```
-
-## 其他重要概念
-
-下列概念在 GWAS 章节中将进一步介绍，此处仅作简要说明：
-
-| 概念 | 一句话描述 | GWAS 中的用途 |
-|-----|----------|-------------|
-| **等位基因频率谱（AFS）** | 群体中各频率档 SNP 的数量分布 | 检验数据质量；理解群体历史 |
-| **固定指数（Fst）** | 量化两个群体间遗传分化程度 | 识别受自然选择位点；验证群体结构 |
-| **遗传漂变（Genetic Drift）** | 有限种群中等位频率的随机波动 | 解释低频变异分布；理解 $N_e$ 概念 |
-| **有效群体大小（$N_e$）** | 遗传等效的理想随机交配群体大小 | 估算漂变强度；推断人群历史 |
 
 :::info
 **本章与 GWAS 章节的衔接**
