@@ -6,7 +6,7 @@
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
-<meta name="dcterms.date" content="2026-05-18">
+<meta name="dcterms.date" content="2026-05-22">
 
 <title>16&nbsp; 全基因组 SNP 鉴定、连锁不平衡图谱与基因型数据处理 – Introduction to Applied High-throughput Biological Data Analysis</title>
 <style>
@@ -676,7 +676,7 @@ window.Quarto = {
     <div>
     <div class="quarto-title-meta-heading">Published</div>
     <div class="quarto-title-meta-contents">
-      <p class="date">May 18, 2026</p>
+      <p class="date">May 22, 2026</p>
     </div>
   </div>
   
@@ -920,70 +920,71 @@ window.Quarto = {
 <span id="cb2-10"><a href="#cb2-10" aria-hidden="true" tabindex="-1"></a>  n <span class="ot">&lt;-</span> <span class="fu">length</span>(snp_a)</span>
 <span id="cb2-11"><a href="#cb2-11" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb2-12"><a href="#cb2-12" aria-hidden="true" tabindex="-1"></a>  <span class="co"># ---- Allele frequencies ----</span></span>
-<span id="cb2-13"><a href="#cb2-13" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Under additive coding: dosage = number of alt alleles (0/1/2)</span></span>
-<span id="cb2-14"><a href="#cb2-14" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Each diploid individual contributes 2 alleles</span></span>
-<span id="cb2-15"><a href="#cb2-15" aria-hidden="true" tabindex="-1"></a>  p_a <span class="ot">&lt;-</span> <span class="fu">sum</span>(snp_a) <span class="sc">/</span> (<span class="dv">2</span> <span class="sc">*</span> n)   <span class="co"># frequency of alt allele at locus A</span></span>
-<span id="cb2-16"><a href="#cb2-16" aria-hidden="true" tabindex="-1"></a>  p_b <span class="ot">&lt;-</span> <span class="fu">sum</span>(snp_b) <span class="sc">/</span> (<span class="dv">2</span> <span class="sc">*</span> n)   <span class="co"># frequency of alt allele at locus B</span></span>
-<span id="cb2-17"><a href="#cb2-17" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb2-18"><a href="#cb2-18" aria-hidden="true" tabindex="-1"></a>  <span class="co"># ---- Haplotype frequency estimation (EM algorithm, simplified) ----</span></span>
-<span id="cb2-19"><a href="#cb2-19" aria-hidden="true" tabindex="-1"></a>  <span class="co"># For phased data: directly count haplotypes</span></span>
-<span id="cb2-20"><a href="#cb2-20" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Here we use the method-of-moments estimate for unphased diploid data</span></span>
-<span id="cb2-21"><a href="#cb2-21" aria-hidden="true" tabindex="-1"></a>  <span class="co"># f_AB = (2 * n_AABB + n_AABb + n_AaBB + 0.5 * n_AaBb) / (2n)</span></span>
-<span id="cb2-22"><a href="#cb2-22" aria-hidden="true" tabindex="-1"></a>  n_AABB <span class="ot">&lt;-</span> <span class="fu">sum</span>(snp_a <span class="sc">==</span> <span class="dv">2</span> <span class="sc">&amp;</span> snp_b <span class="sc">==</span> <span class="dv">2</span>)  <span class="co"># alt/alt at both loci</span></span>
-<span id="cb2-23"><a href="#cb2-23" aria-hidden="true" tabindex="-1"></a>  n_AABb <span class="ot">&lt;-</span> <span class="fu">sum</span>(snp_a <span class="sc">==</span> <span class="dv">2</span> <span class="sc">&amp;</span> snp_b <span class="sc">==</span> <span class="dv">1</span>)</span>
-<span id="cb2-24"><a href="#cb2-24" aria-hidden="true" tabindex="-1"></a>  n_AaBB <span class="ot">&lt;-</span> <span class="fu">sum</span>(snp_a <span class="sc">==</span> <span class="dv">1</span> <span class="sc">&amp;</span> snp_b <span class="sc">==</span> <span class="dv">2</span>)</span>
-<span id="cb2-25"><a href="#cb2-25" aria-hidden="true" tabindex="-1"></a>  n_AaBb <span class="ot">&lt;-</span> <span class="fu">sum</span>(snp_a <span class="sc">==</span> <span class="dv">1</span> <span class="sc">&amp;</span> snp_b <span class="sc">==</span> <span class="dv">1</span>)  <span class="co"># double heterozygote (ambiguous phase)</span></span>
+<span id="cb2-13"><a href="#cb2-13" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Additive coding: dosage = number of alt alleles (0/1/2)</span></span>
+<span id="cb2-14"><a href="#cb2-14" aria-hidden="true" tabindex="-1"></a>  p_a <span class="ot">&lt;-</span> <span class="fu">sum</span>(snp_a) <span class="sc">/</span> (<span class="dv">2</span> <span class="sc">*</span> n)</span>
+<span id="cb2-15"><a href="#cb2-15" aria-hidden="true" tabindex="-1"></a>  p_b <span class="ot">&lt;-</span> <span class="fu">sum</span>(snp_b) <span class="sc">/</span> (<span class="dv">2</span> <span class="sc">*</span> n)</span>
+<span id="cb2-16"><a href="#cb2-16" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-17"><a href="#cb2-17" aria-hidden="true" tabindex="-1"></a>  <span class="co"># ---- r-squared ----</span></span>
+<span id="cb2-18"><a href="#cb2-18" aria-hidden="true" tabindex="-1"></a>  <span class="co"># cor(genotype_A, genotype_B)^2 equals haplotype-level r2 under HWE.</span></span>
+<span id="cb2-19"><a href="#cb2-19" aria-hidden="true" tabindex="-1"></a>  <span class="co"># The naive method-of-moments estimator (0.5 * n_double_het) omits EM</span></span>
+<span id="cb2-20"><a href="#cb2-20" aria-hidden="true" tabindex="-1"></a>  <span class="co"># iteration and severely underestimates r2 when LD is high.</span></span>
+<span id="cb2-21"><a href="#cb2-21" aria-hidden="true" tabindex="-1"></a>  r2 <span class="ot">&lt;-</span> <span class="fu">cor</span>(snp_a, snp_b)<span class="sc">^</span><span class="dv">2</span></span>
+<span id="cb2-22"><a href="#cb2-22" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-23"><a href="#cb2-23" aria-hidden="true" tabindex="-1"></a>  <span class="co"># ---- D statistic (recovered from r2 and allele frequencies) ----</span></span>
+<span id="cb2-24"><a href="#cb2-24" aria-hidden="true" tabindex="-1"></a>  cov_sign <span class="ot">&lt;-</span> <span class="fu">sign</span>(<span class="fu">cov</span>(snp_a, snp_b))</span>
+<span id="cb2-25"><a href="#cb2-25" aria-hidden="true" tabindex="-1"></a>  D <span class="ot">&lt;-</span> cov_sign <span class="sc">*</span> <span class="fu">sqrt</span>(r2 <span class="sc">*</span> p_a <span class="sc">*</span> (<span class="dv">1</span> <span class="sc">-</span> p_a) <span class="sc">*</span> p_b <span class="sc">*</span> (<span class="dv">1</span> <span class="sc">-</span> p_b))</span>
 <span id="cb2-26"><a href="#cb2-26" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb2-27"><a href="#cb2-27" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Estimated frequency of haplotype carrying alt alleles at both A and B</span></span>
-<span id="cb2-28"><a href="#cb2-28" aria-hidden="true" tabindex="-1"></a>  f_AB <span class="ot">&lt;-</span> (<span class="dv">2</span> <span class="sc">*</span> n_AABB <span class="sc">+</span> n_AABb <span class="sc">+</span> n_AaBB <span class="sc">+</span> <span class="fl">0.5</span> <span class="sc">*</span> n_AaBb) <span class="sc">/</span> (<span class="dv">2</span> <span class="sc">*</span> n)</span>
-<span id="cb2-29"><a href="#cb2-29" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb2-30"><a href="#cb2-30" aria-hidden="true" tabindex="-1"></a>  <span class="co"># ---- D statistic ----</span></span>
-<span id="cb2-31"><a href="#cb2-31" aria-hidden="true" tabindex="-1"></a>  D <span class="ot">&lt;-</span> f_AB <span class="sc">-</span> p_a <span class="sc">*</span> p_b</span>
-<span id="cb2-32"><a href="#cb2-32" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb2-33"><a href="#cb2-33" aria-hidden="true" tabindex="-1"></a>  <span class="co"># ---- r-squared ----</span></span>
-<span id="cb2-34"><a href="#cb2-34" aria-hidden="true" tabindex="-1"></a>  r2 <span class="ot">&lt;-</span> D<span class="sc">^</span><span class="dv">2</span> <span class="sc">/</span> (p_a <span class="sc">*</span> (<span class="dv">1</span> <span class="sc">-</span> p_a) <span class="sc">*</span> p_b <span class="sc">*</span> (<span class="dv">1</span> <span class="sc">-</span> p_b))</span>
-<span id="cb2-35"><a href="#cb2-35" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb2-36"><a href="#cb2-36" aria-hidden="true" tabindex="-1"></a>  <span class="co"># ---- D-prime ----</span></span>
-<span id="cb2-37"><a href="#cb2-37" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span> (D <span class="sc">&gt;=</span> <span class="dv">0</span>) {</span>
-<span id="cb2-38"><a href="#cb2-38" aria-hidden="true" tabindex="-1"></a>    D_max <span class="ot">&lt;-</span> <span class="fu">min</span>(p_a <span class="sc">*</span> (<span class="dv">1</span> <span class="sc">-</span> p_b), (<span class="dv">1</span> <span class="sc">-</span> p_a) <span class="sc">*</span> p_b)</span>
-<span id="cb2-39"><a href="#cb2-39" aria-hidden="true" tabindex="-1"></a>  } <span class="cf">else</span> {</span>
-<span id="cb2-40"><a href="#cb2-40" aria-hidden="true" tabindex="-1"></a>    D_max <span class="ot">&lt;-</span> <span class="fu">min</span>(p_a <span class="sc">*</span> p_b, (<span class="dv">1</span> <span class="sc">-</span> p_a) <span class="sc">*</span> (<span class="dv">1</span> <span class="sc">-</span> p_b))</span>
-<span id="cb2-41"><a href="#cb2-41" aria-hidden="true" tabindex="-1"></a>  }</span>
-<span id="cb2-42"><a href="#cb2-42" aria-hidden="true" tabindex="-1"></a>  D_prime <span class="ot">&lt;-</span> D <span class="sc">/</span> D_max</span>
-<span id="cb2-43"><a href="#cb2-43" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb2-44"><a href="#cb2-44" aria-hidden="true" tabindex="-1"></a>  <span class="fu">list</span>(</span>
-<span id="cb2-45"><a href="#cb2-45" aria-hidden="true" tabindex="-1"></a>    <span class="at">p_a =</span> p_a, <span class="at">p_b =</span> p_b,</span>
-<span id="cb2-46"><a href="#cb2-46" aria-hidden="true" tabindex="-1"></a>    <span class="at">D =</span> D, <span class="at">r2 =</span> <span class="fu">round</span>(r2, <span class="dv">4</span>), <span class="at">D_prime =</span> <span class="fu">round</span>(<span class="fu">abs</span>(D_prime), <span class="dv">4</span>)</span>
-<span id="cb2-47"><a href="#cb2-47" aria-hidden="true" tabindex="-1"></a>  )</span>
-<span id="cb2-48"><a href="#cb2-48" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb2-27"><a href="#cb2-27" aria-hidden="true" tabindex="-1"></a>  <span class="co"># ---- D-prime ----</span></span>
+<span id="cb2-28"><a href="#cb2-28" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span> (D <span class="sc">&gt;=</span> <span class="dv">0</span>) {</span>
+<span id="cb2-29"><a href="#cb2-29" aria-hidden="true" tabindex="-1"></a>    D_max <span class="ot">&lt;-</span> <span class="fu">min</span>(p_a <span class="sc">*</span> (<span class="dv">1</span> <span class="sc">-</span> p_b), (<span class="dv">1</span> <span class="sc">-</span> p_a) <span class="sc">*</span> p_b)</span>
+<span id="cb2-30"><a href="#cb2-30" aria-hidden="true" tabindex="-1"></a>  } <span class="cf">else</span> {</span>
+<span id="cb2-31"><a href="#cb2-31" aria-hidden="true" tabindex="-1"></a>    D_max <span class="ot">&lt;-</span> <span class="fu">min</span>(p_a <span class="sc">*</span> p_b, (<span class="dv">1</span> <span class="sc">-</span> p_a) <span class="sc">*</span> (<span class="dv">1</span> <span class="sc">-</span> p_b))</span>
+<span id="cb2-32"><a href="#cb2-32" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb2-33"><a href="#cb2-33" aria-hidden="true" tabindex="-1"></a>  D_prime <span class="ot">&lt;-</span> D <span class="sc">/</span> D_max</span>
+<span id="cb2-34"><a href="#cb2-34" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-35"><a href="#cb2-35" aria-hidden="true" tabindex="-1"></a>  <span class="fu">list</span>(</span>
+<span id="cb2-36"><a href="#cb2-36" aria-hidden="true" tabindex="-1"></a>    <span class="at">p_a =</span> p_a, <span class="at">p_b =</span> p_b,</span>
+<span id="cb2-37"><a href="#cb2-37" aria-hidden="true" tabindex="-1"></a>    <span class="at">D =</span> D, <span class="at">r2 =</span> <span class="fu">round</span>(r2, <span class="dv">4</span>), <span class="at">D_prime =</span> <span class="fu">round</span>(<span class="fu">abs</span>(D_prime), <span class="dv">4</span>)</span>
+<span id="cb2-38"><a href="#cb2-38" aria-hidden="true" tabindex="-1"></a>  )</span>
+<span id="cb2-39"><a href="#cb2-39" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb2-40"><a href="#cb2-40" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-41"><a href="#cb2-41" aria-hidden="true" tabindex="-1"></a><span class="co"># ---- Example: two SNPs in high LD ----</span></span>
+<span id="cb2-42"><a href="#cb2-42" aria-hidden="true" tabindex="-1"></a><span class="co"># Simulate at the HAPLOTYPE level: each individual carries two haplotypes.</span></span>
+<span id="cb2-43"><a href="#cb2-43" aria-hidden="true" tabindex="-1"></a><span class="co"># Copying the allele from A to B on the same haplotype with low recombination</span></span>
+<span id="cb2-44"><a href="#cb2-44" aria-hidden="true" tabindex="-1"></a><span class="co"># creates haplotype-level LD.  Copying genotype dosages directly does NOT,</span></span>
+<span id="cb2-45"><a href="#cb2-45" aria-hidden="true" tabindex="-1"></a><span class="co"># because a heterozygous genotype (1) still carries two independent alleles.</span></span>
+<span id="cb2-46"><a href="#cb2-46" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">42</span>)</span>
+<span id="cb2-47"><a href="#cb2-47" aria-hidden="true" tabindex="-1"></a>n   <span class="ot">&lt;-</span> <span class="dv">500</span></span>
+<span id="cb2-48"><a href="#cb2-48" aria-hidden="true" tabindex="-1"></a>maf <span class="ot">&lt;-</span> <span class="fl">0.35</span>   <span class="co"># minor allele frequency</span></span>
 <span id="cb2-49"><a href="#cb2-49" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb2-50"><a href="#cb2-50" aria-hidden="true" tabindex="-1"></a><span class="co"># ---- Example: two SNPs in high LD ----</span></span>
-<span id="cb2-51"><a href="#cb2-51" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">42</span>)</span>
-<span id="cb2-52"><a href="#cb2-52" aria-hidden="true" tabindex="-1"></a>n <span class="ot">&lt;-</span> <span class="dv">500</span></span>
-<span id="cb2-53"><a href="#cb2-53" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb2-54"><a href="#cb2-54" aria-hidden="true" tabindex="-1"></a><span class="co"># Simulate a haplotype block: SNP_A drives SNP_B with high correlation</span></span>
-<span id="cb2-55"><a href="#cb2-55" aria-hidden="true" tabindex="-1"></a>snp_a <span class="ot">&lt;-</span> <span class="fu">sample</span>(<span class="fu">c</span>(<span class="dv">0</span>, <span class="dv">1</span>, <span class="dv">2</span>), n, <span class="at">replace =</span> <span class="cn">TRUE</span>, <span class="at">prob =</span> <span class="fu">c</span>(<span class="fl">0.25</span>, <span class="fl">0.50</span>, <span class="fl">0.25</span>))</span>
-<span id="cb2-56"><a href="#cb2-56" aria-hidden="true" tabindex="-1"></a><span class="co"># SNP_B mostly follows SNP_A, with 10% noise</span></span>
-<span id="cb2-57"><a href="#cb2-57" aria-hidden="true" tabindex="-1"></a>snp_b <span class="ot">&lt;-</span> <span class="fu">ifelse</span>(<span class="fu">runif</span>(n) <span class="sc">&lt;</span> <span class="fl">0.85</span>, snp_a,</span>
-<span id="cb2-58"><a href="#cb2-58" aria-hidden="true" tabindex="-1"></a>                <span class="fu">sample</span>(<span class="fu">c</span>(<span class="dv">0</span>, <span class="dv">1</span>, <span class="dv">2</span>), n, <span class="at">replace =</span> <span class="cn">TRUE</span>, <span class="at">prob =</span> <span class="fu">c</span>(<span class="fl">0.25</span>, <span class="fl">0.50</span>, <span class="fl">0.25</span>)))</span>
-<span id="cb2-59"><a href="#cb2-59" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb2-60"><a href="#cb2-60" aria-hidden="true" tabindex="-1"></a>result_high_ld <span class="ot">&lt;-</span> <span class="fu">compute_ld</span>(snp_a, snp_b)</span>
-<span id="cb2-61"><a href="#cb2-61" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">"=== High LD Pair ===</span><span class="sc">\n</span><span class="st">"</span>)</span>
-<span id="cb2-62"><a href="#cb2-62" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="fu">sprintf</span>(<span class="st">"p(A_alt) = %.3f  p(B_alt) = %.3f</span><span class="sc">\n</span><span class="st">"</span>,</span>
-<span id="cb2-63"><a href="#cb2-63" aria-hidden="true" tabindex="-1"></a>            result_high_ld<span class="sc">$</span>p_a, result_high_ld<span class="sc">$</span>p_b))</span>
-<span id="cb2-64"><a href="#cb2-64" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="fu">sprintf</span>(<span class="st">"D = %.4f  r2 = %.4f  D' = %.4f</span><span class="sc">\n\n</span><span class="st">"</span>,</span>
-<span id="cb2-65"><a href="#cb2-65" aria-hidden="true" tabindex="-1"></a>            result_high_ld<span class="sc">$</span>D, result_high_ld<span class="sc">$</span>r2, result_high_ld<span class="sc">$</span>D_prime))</span>
-<span id="cb2-66"><a href="#cb2-66" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb2-67"><a href="#cb2-67" aria-hidden="true" tabindex="-1"></a><span class="co"># ---- Example: two SNPs in low LD (independent) ----</span></span>
-<span id="cb2-68"><a href="#cb2-68" aria-hidden="true" tabindex="-1"></a>snp_c <span class="ot">&lt;-</span> <span class="fu">sample</span>(<span class="fu">c</span>(<span class="dv">0</span>, <span class="dv">1</span>, <span class="dv">2</span>), n, <span class="at">replace =</span> <span class="cn">TRUE</span>, <span class="at">prob =</span> <span class="fu">c</span>(<span class="fl">0.36</span>, <span class="fl">0.48</span>, <span class="fl">0.16</span>))</span>
-<span id="cb2-69"><a href="#cb2-69" aria-hidden="true" tabindex="-1"></a>snp_d <span class="ot">&lt;-</span> <span class="fu">sample</span>(<span class="fu">c</span>(<span class="dv">0</span>, <span class="dv">1</span>, <span class="dv">2</span>), n, <span class="at">replace =</span> <span class="cn">TRUE</span>, <span class="at">prob =</span> <span class="fu">c</span>(<span class="fl">0.25</span>, <span class="fl">0.50</span>, <span class="fl">0.25</span>))</span>
-<span id="cb2-70"><a href="#cb2-70" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb2-71"><a href="#cb2-71" aria-hidden="true" tabindex="-1"></a>result_low_ld <span class="ot">&lt;-</span> <span class="fu">compute_ld</span>(snp_c, snp_d)</span>
-<span id="cb2-72"><a href="#cb2-72" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">"=== Low LD Pair (near-independent) ===</span><span class="sc">\n</span><span class="st">"</span>)</span>
-<span id="cb2-73"><a href="#cb2-73" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="fu">sprintf</span>(<span class="st">"p(C_alt) = %.3f  p(D_alt) = %.3f</span><span class="sc">\n</span><span class="st">"</span>,</span>
-<span id="cb2-74"><a href="#cb2-74" aria-hidden="true" tabindex="-1"></a>            result_low_ld<span class="sc">$</span>p_a, result_low_ld<span class="sc">$</span>p_b))</span>
-<span id="cb2-75"><a href="#cb2-75" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="fu">sprintf</span>(<span class="st">"D = %.4f  r2 = %.4f  D' = %.4f</span><span class="sc">\n</span><span class="st">"</span>,</span>
-<span id="cb2-76"><a href="#cb2-76" aria-hidden="true" tabindex="-1"></a>            result_low_ld<span class="sc">$</span>D, result_low_ld<span class="sc">$</span>r2, result_low_ld<span class="sc">$</span>D_prime))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<span id="cb2-50"><a href="#cb2-50" aria-hidden="true" tabindex="-1"></a>hap1_a <span class="ot">&lt;-</span> <span class="fu">rbinom</span>(n, <span class="dv">1</span>, maf)   <span class="co"># haplotype 1, locus A (0 or 1)</span></span>
+<span id="cb2-51"><a href="#cb2-51" aria-hidden="true" tabindex="-1"></a>hap2_a <span class="ot">&lt;-</span> <span class="fu">rbinom</span>(n, <span class="dv">1</span>, maf)   <span class="co"># haplotype 2, locus A</span></span>
+<span id="cb2-52"><a href="#cb2-52" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-53"><a href="#cb2-53" aria-hidden="true" tabindex="-1"></a><span class="co"># 2% recombination between A and B -&gt; expected r2 ≈ (1 - 2*0.02)^2 ≈ 0.92</span></span>
+<span id="cb2-54"><a href="#cb2-54" aria-hidden="true" tabindex="-1"></a>recomb_rate <span class="ot">&lt;-</span> <span class="fl">0.02</span></span>
+<span id="cb2-55"><a href="#cb2-55" aria-hidden="true" tabindex="-1"></a>hap1_b <span class="ot">&lt;-</span> <span class="fu">ifelse</span>(<span class="fu">runif</span>(n) <span class="sc">&lt;</span> recomb_rate, <span class="fu">rbinom</span>(n, <span class="dv">1</span>, maf), hap1_a)</span>
+<span id="cb2-56"><a href="#cb2-56" aria-hidden="true" tabindex="-1"></a>hap2_b <span class="ot">&lt;-</span> <span class="fu">ifelse</span>(<span class="fu">runif</span>(n) <span class="sc">&lt;</span> recomb_rate, <span class="fu">rbinom</span>(n, <span class="dv">1</span>, maf), hap2_a)</span>
+<span id="cb2-57"><a href="#cb2-57" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-58"><a href="#cb2-58" aria-hidden="true" tabindex="-1"></a>snp_a <span class="ot">&lt;-</span> hap1_a <span class="sc">+</span> hap2_a   <span class="co"># diploid additive dosage (0/1/2)</span></span>
+<span id="cb2-59"><a href="#cb2-59" aria-hidden="true" tabindex="-1"></a>snp_b <span class="ot">&lt;-</span> hap1_b <span class="sc">+</span> hap2_b</span>
+<span id="cb2-60"><a href="#cb2-60" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-61"><a href="#cb2-61" aria-hidden="true" tabindex="-1"></a>result_high_ld <span class="ot">&lt;-</span> <span class="fu">compute_ld</span>(snp_a, snp_b)</span>
+<span id="cb2-62"><a href="#cb2-62" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">"=== High LD Pair ===</span><span class="sc">\n</span><span class="st">"</span>)</span>
+<span id="cb2-63"><a href="#cb2-63" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="fu">sprintf</span>(<span class="st">"p(A_alt) = %.3f  p(B_alt) = %.3f</span><span class="sc">\n</span><span class="st">"</span>,</span>
+<span id="cb2-64"><a href="#cb2-64" aria-hidden="true" tabindex="-1"></a>            result_high_ld<span class="sc">$</span>p_a, result_high_ld<span class="sc">$</span>p_b))</span>
+<span id="cb2-65"><a href="#cb2-65" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="fu">sprintf</span>(<span class="st">"D = %.4f  r2 = %.4f  D' = %.4f</span><span class="sc">\n\n</span><span class="st">"</span>,</span>
+<span id="cb2-66"><a href="#cb2-66" aria-hidden="true" tabindex="-1"></a>            result_high_ld<span class="sc">$</span>D, result_high_ld<span class="sc">$</span>r2, result_high_ld<span class="sc">$</span>D_prime))</span>
+<span id="cb2-67"><a href="#cb2-67" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-68"><a href="#cb2-68" aria-hidden="true" tabindex="-1"></a><span class="co"># ---- Example: two SNPs in low LD (independent) ----</span></span>
+<span id="cb2-69"><a href="#cb2-69" aria-hidden="true" tabindex="-1"></a>snp_c <span class="ot">&lt;-</span> <span class="fu">sample</span>(<span class="fu">c</span>(<span class="dv">0</span>, <span class="dv">1</span>, <span class="dv">2</span>), n, <span class="at">replace =</span> <span class="cn">TRUE</span>, <span class="at">prob =</span> <span class="fu">c</span>(<span class="fl">0.36</span>, <span class="fl">0.48</span>, <span class="fl">0.16</span>))</span>
+<span id="cb2-70"><a href="#cb2-70" aria-hidden="true" tabindex="-1"></a>snp_d <span class="ot">&lt;-</span> <span class="fu">sample</span>(<span class="fu">c</span>(<span class="dv">0</span>, <span class="dv">1</span>, <span class="dv">2</span>), n, <span class="at">replace =</span> <span class="cn">TRUE</span>, <span class="at">prob =</span> <span class="fu">c</span>(<span class="fl">0.25</span>, <span class="fl">0.50</span>, <span class="fl">0.25</span>))</span>
+<span id="cb2-71"><a href="#cb2-71" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-72"><a href="#cb2-72" aria-hidden="true" tabindex="-1"></a>result_low_ld <span class="ot">&lt;-</span> <span class="fu">compute_ld</span>(snp_c, snp_d)</span>
+<span id="cb2-73"><a href="#cb2-73" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">"=== Low LD Pair (near-independent) ===</span><span class="sc">\n</span><span class="st">"</span>)</span>
+<span id="cb2-74"><a href="#cb2-74" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="fu">sprintf</span>(<span class="st">"p(C_alt) = %.3f  p(D_alt) = %.3f</span><span class="sc">\n</span><span class="st">"</span>,</span>
+<span id="cb2-75"><a href="#cb2-75" aria-hidden="true" tabindex="-1"></a>            result_low_ld<span class="sc">$</span>p_a, result_low_ld<span class="sc">$</span>p_b))</span>
+<span id="cb2-76"><a href="#cb2-76" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="fu">sprintf</span>(<span class="st">"D = %.4f  r2 = %.4f  D' = %.4f</span><span class="sc">\n</span><span class="st">"</span>,</span>
+<span id="cb2-77"><a href="#cb2-77" aria-hidden="true" tabindex="-1"></a>            result_low_ld<span class="sc">$</span>D, result_low_ld<span class="sc">$</span>r2, result_low_ld<span class="sc">$</span>D_prime))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <hr>
 </section>
 </section>
