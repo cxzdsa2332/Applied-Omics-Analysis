@@ -208,28 +208,19 @@ compute_ld <- function(snp_a, snp_b) {
   n <- length(snp_a)
 
   # ---- Allele frequencies ----
-  # Under additive coding: dosage = number of alt alleles (0/1/2)
-  # Each diploid individual contributes 2 alleles
-  p_a <- sum(snp_a) / (2 * n)   # frequency of alt allele at locus A
-  p_b <- sum(snp_b) / (2 * n)   # frequency of alt allele at locus B
-
-  # ---- Haplotype frequency estimation (EM algorithm, simplified) ----
-  # For phased data: directly count haplotypes
-  # Here we use the method-of-moments estimate for unphased diploid data
-  # f_AB = (2 * n_AABB + n_AABb + n_AaBB + 0.5 * n_AaBb) / (2n)
-  n_AABB <- sum(snp_a == 2 & snp_b == 2)  # alt/alt at both loci
-  n_AABb <- sum(snp_a == 2 & snp_b == 1)
-  n_AaBB <- sum(snp_a == 1 & snp_b == 2)
-  n_AaBb <- sum(snp_a == 1 & snp_b == 1)  # double heterozygote (ambiguous phase)
-
-  # Estimated frequency of haplotype carrying alt alleles at both A and B
-  f_AB <- (2 * n_AABB + n_AABb + n_AaBB + 0.5 * n_AaBb) / (2 * n)
-
-  # ---- D statistic ----
-  D <- f_AB - p_a * p_b
+  # Additive coding: dosage = number of alt alleles (0/1/2)
+  p_a <- sum(snp_a) / (2 * n)
+  p_b <- sum(snp_b) / (2 * n)
 
   # ---- r-squared ----
-  r2 <- D^2 / (p_a * (1 - p_a) * p_b * (1 - p_b))
+  # cor(genotype_A, genotype_B)^2 equals haplotype-level r2 under HWE.
+  # The naive method-of-moments estimator (0.5 * n_double_het) omits EM
+  # iteration and severely underestimates r2 when LD is high.
+  r2 <- cor(snp_a, snp_b)^2
+
+  # ---- D statistic (recovered from r2 and allele frequencies) ----
+  cov_sign <- sign(cov(snp_a, snp_b))
+  D <- cov_sign * sqrt(r2 * p_a * (1 - p_a) * p_b * (1 - p_b))
 
   # ---- D-prime ----
   if (D >= 0) {
@@ -246,14 +237,24 @@ compute_ld <- function(snp_a, snp_b) {
 }
 
 # ---- Example: two SNPs in high LD ----
+# Simulate at the HAPLOTYPE level: each individual carries two haplotypes.
+# Copying the allele from A to B on the same haplotype with low recombination
+# creates haplotype-level LD.  Copying genotype dosages directly does NOT,
+# because a heterozygous genotype (1) still carries two independent alleles.
 set.seed(42)
-n <- 500
+n   <- 500
+maf <- 0.35   # minor allele frequency
 
-# Simulate a haplotype block: SNP_A drives SNP_B with high correlation
-snp_a <- sample(c(0, 1, 2), n, replace = TRUE, prob = c(0.25, 0.50, 0.25))
-# SNP_B mostly follows SNP_A, with 10% noise
-snp_b <- ifelse(runif(n) < 0.85, snp_a,
-                sample(c(0, 1, 2), n, replace = TRUE, prob = c(0.25, 0.50, 0.25)))
+hap1_a <- rbinom(n, 1, maf)   # haplotype 1, locus A (0 or 1)
+hap2_a <- rbinom(n, 1, maf)   # haplotype 2, locus A
+
+# 2% recombination between A and B -> expected r2 ≈ (1 - 2*0.02)^2 ≈ 0.92
+recomb_rate <- 0.02
+hap1_b <- ifelse(runif(n) < recomb_rate, rbinom(n, 1, maf), hap1_a)
+hap2_b <- ifelse(runif(n) < recomb_rate, rbinom(n, 1, maf), hap2_a)
+
+snp_a <- hap1_a + hap2_a   # diploid additive dosage (0/1/2)
+snp_b <- hap1_b + hap2_b
 
 result_high_ld <- compute_ld(snp_a, snp_b)
 cat("=== High LD Pair ===\n")

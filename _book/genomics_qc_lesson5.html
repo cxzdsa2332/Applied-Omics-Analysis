@@ -6,7 +6,7 @@
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
-<meta name="dcterms.date" content="2026-05-18">
+<meta name="dcterms.date" content="2026-05-22">
 
 <title>13&nbsp; 功能注释、GATK 最佳实践与可视化 – Introduction to Applied High-throughput Biological Data Analysis</title>
 <style>
@@ -628,9 +628,8 @@ window.Quarto = {
   <li><a href="#基因流动种群间的遗传连通" id="toc-基因流动种群间的遗传连通" class="nav-link" data-scroll-target="#基因流动种群间的遗传连通"><span class="header-section-number">15.11</span> 基因流动：种群间的遗传连通</a></li>
   <li><a href="#wright-fisher-模型遗传漂变的数学骨架" id="toc-wright-fisher-模型遗传漂变的数学骨架" class="nav-link" data-scroll-target="#wright-fisher-模型遗传漂变的数学骨架"><span class="header-section-number">15.12</span> Wright-Fisher 模型：遗传漂变的数学骨架</a></li>
   <li><a href="#tajimas-d中性进化偏离的统计检验" id="toc-tajimas-d中性进化偏离的统计检验" class="nav-link" data-scroll-target="#tajimas-d中性进化偏离的统计检验"><span class="header-section-number">15.13</span> Tajima’s D：中性进化偏离的统计检验</a></li>
-  <li><a href="#其他重要概念" id="toc-其他重要概念" class="nav-link" data-scroll-target="#其他重要概念"><span class="header-section-number">15.14</span> 其他重要概念</a></li>
-  <li><a href="#总结" id="toc-总结" class="nav-link" data-scroll-target="#总结"><span class="header-section-number">15.15</span> 总结</a></li>
-  <li><a href="#课后自测-post-lesson-quiz" id="toc-课后自测-post-lesson-quiz" class="nav-link" data-scroll-target="#课后自测-post-lesson-quiz"><span class="header-section-number">15.16</span> 课后自测 (Post-Lesson Quiz)</a></li>
+  <li><a href="#总结" id="toc-总结" class="nav-link" data-scroll-target="#总结"><span class="header-section-number">15.14</span> 总结</a></li>
+  <li><a href="#课后自测-post-lesson-quiz" id="toc-课后自测-post-lesson-quiz" class="nav-link" data-scroll-target="#课后自测-post-lesson-quiz"><span class="header-section-number">15.15</span> 课后自测 (Post-Lesson Quiz)</a></li>
   </ul></li>
   </ul>
 <div class="toc-actions"><ul class="collapse"><li><a href="https://github.com/cxzdsa2332/Applied-Omics-Analysis/edit/main/genomics_qc_lesson5.qmd" class="toc-action"><i class="bi bi-github"></i>Edit this page</a></li><li><a href="https://github.com/cxzdsa2332/Applied-Omics-Analysis/issues/new" class="toc-action"><i class="bi empty"></i>Report an issue</a></li><li><a href="https://github.com/cxzdsa2332/Applied-Omics-Analysis/blob/main/genomics_qc_lesson5.qmd" class="toc-action"><i class="bi empty"></i>View source</a></li></ul></div></nav>
@@ -651,7 +650,7 @@ window.Quarto = {
     <div>
     <div class="quarto-title-meta-heading">Published</div>
     <div class="quarto-title-meta-contents">
-      <p class="date">May 18, 2026</p>
+      <p class="date">May 22, 2026</p>
     </div>
   </div>
   
@@ -1945,88 +1944,64 @@ protein_altering|2/7|c.715C&gt;T|p.Arg239Trp|818/2584|79%|...</code></pre>
 <p><strong>MHC（主要组织相容性复合体）区域</strong>：人类基因组中多态性最高的区域，长期平衡选择（免疫系统需要多样性识别不同病原体）使该区域整体 <span class="math inline">\(D\)</span> 显著为正。</p>
 <p><strong>蛋白质编码区全基因组平均</strong>：由于纯化选择持续清除有害突变，编码区整体 <span class="math inline">\(D\)</span> 值略为负值（约 −0.3 至 −0.5），而非编码区则更接近 0，这一差异本身便是纯化选择在编码区发挥作用的间接证据。</p>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb20"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb20-1"><a href="#cb20-1" aria-hidden="true" tabindex="-1"></a><span class="co"># R: conceptual demonstration of Tajima's D</span></span>
-<span id="cb20-2"><a href="#cb20-2" aria-hidden="true" tabindex="-1"></a><span class="co"># We compare pi vs theta_W under different evolutionary scenarios</span></span>
-<span id="cb20-3"><a href="#cb20-3" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb20-4"><a href="#cb20-4" aria-hidden="true" tabindex="-1"></a>tajima_demo <span class="ot">&lt;-</span> <span class="cf">function</span>(freq_vec, n_seq) {</span>
-<span id="cb20-5"><a href="#cb20-5" aria-hidden="true" tabindex="-1"></a>  <span class="co"># freq_vec: derived allele frequencies of segregating sites</span></span>
-<span id="cb20-6"><a href="#cb20-6" aria-hidden="true" tabindex="-1"></a>  <span class="co"># n_seq: number of sequences sampled</span></span>
-<span id="cb20-7"><a href="#cb20-7" aria-hidden="true" tabindex="-1"></a>  S <span class="ot">&lt;-</span> <span class="fu">length</span>(freq_vec)</span>
-<span id="cb20-8"><a href="#cb20-8" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span> (S <span class="sc">==</span> <span class="dv">0</span>) <span class="fu">return</span>(<span class="fu">list</span>(<span class="at">pi =</span> <span class="dv">0</span>, <span class="at">theta_w =</span> <span class="dv">0</span>, <span class="at">D_approx =</span> <span class="cn">NA</span>))</span>
+<span id="cb20-2"><a href="#cb20-2" aria-hidden="true" tabindex="-1"></a><span class="co"># We compare pi vs theta_W under different evolutionary scenarios.</span></span>
+<span id="cb20-3"><a href="#cb20-3" aria-hidden="true" tabindex="-1"></a><span class="co">#</span></span>
+<span id="cb20-4"><a href="#cb20-4" aria-hidden="true" tabindex="-1"></a><span class="co"># Key derivation: both pi and theta_W are expressed per site (divided by L),</span></span>
+<span id="cb20-5"><a href="#cb20-5" aria-hidden="true" tabindex="-1"></a><span class="co"># so L cancels in the ratio:</span></span>
+<span id="cb20-6"><a href="#cb20-6" aria-hidden="true" tabindex="-1"></a><span class="co">#   pi / theta_W = mean(2p(1-p) * n/(n-1)) / (1/a1)</span></span>
+<span id="cb20-7"><a href="#cb20-7" aria-hidden="true" tabindex="-1"></a><span class="co">#                = mean(2p(1-p) * n/(n-1)) * a1</span></span>
+<span id="cb20-8"><a href="#cb20-8" aria-hidden="true" tabindex="-1"></a><span class="co"># where a1 = sum(1/i, i = 1 .. n-1)  is Watterson's harmonic number.</span></span>
 <span id="cb20-9"><a href="#cb20-9" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb20-10"><a href="#cb20-10" aria-hidden="true" tabindex="-1"></a>  <span class="co"># pi: mean pairwise differences (weighted by frequency)</span></span>
-<span id="cb20-11"><a href="#cb20-11" aria-hidden="true" tabindex="-1"></a>  <span class="co"># For a site with derived freq p, contribution to pi = 2p(1-p) * n/(n-1)</span></span>
-<span id="cb20-12"><a href="#cb20-12" aria-hidden="true" tabindex="-1"></a>  pi_hat <span class="ot">&lt;-</span> <span class="fu">mean</span>(<span class="dv">2</span> <span class="sc">*</span> freq_vec <span class="sc">*</span> (<span class="dv">1</span> <span class="sc">-</span> freq_vec) <span class="sc">*</span> n_seq <span class="sc">/</span> (n_seq <span class="sc">-</span> <span class="dv">1</span>))</span>
-<span id="cb20-13"><a href="#cb20-13" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb20-14"><a href="#cb20-14" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Watterson's theta_W</span></span>
-<span id="cb20-15"><a href="#cb20-15" aria-hidden="true" tabindex="-1"></a>  a1 <span class="ot">&lt;-</span> <span class="fu">sum</span>(<span class="dv">1</span> <span class="sc">/</span> <span class="fu">seq_len</span>(n_seq <span class="sc">-</span> <span class="dv">1</span>))</span>
-<span id="cb20-16"><a href="#cb20-16" aria-hidden="true" tabindex="-1"></a>  theta_w <span class="ot">&lt;-</span> S <span class="sc">/</span> (a1 <span class="sc">*</span> <span class="dv">1</span>)   <span class="co"># per-site theta_w requires knowing sequence length</span></span>
-<span id="cb20-17"><a href="#cb20-17" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb20-18"><a href="#cb20-18" aria-hidden="true" tabindex="-1"></a>  <span class="fu">list</span>(<span class="at">pi =</span> <span class="fu">round</span>(pi_hat, <span class="dv">4</span>),</span>
-<span id="cb20-19"><a href="#cb20-19" aria-hidden="true" tabindex="-1"></a>       <span class="at">theta_w =</span> <span class="fu">round</span>(theta_w <span class="sc">/</span> <span class="dv">1000</span>, <span class="dv">4</span>),  <span class="co"># rough per-site scaling</span></span>
-<span id="cb20-20"><a href="#cb20-20" aria-hidden="true" tabindex="-1"></a>       <span class="at">ratio =</span> <span class="fu">round</span>(pi_hat <span class="sc">/</span> (theta_w <span class="sc">/</span> <span class="dv">1000</span>), <span class="dv">3</span>))</span>
-<span id="cb20-21"><a href="#cb20-21" aria-hidden="true" tabindex="-1"></a>}</span>
-<span id="cb20-22"><a href="#cb20-22" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb20-23"><a href="#cb20-23" aria-hidden="true" tabindex="-1"></a><span class="co"># Scenario 1: neutral AFS (many rare variants, L-shape)</span></span>
-<span id="cb20-24"><a href="#cb20-24" aria-hidden="true" tabindex="-1"></a>neutral_afs <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="fl">0.02</span>, <span class="fl">0.03</span>, <span class="fl">0.02</span>, <span class="fl">0.05</span>, <span class="fl">0.04</span>, <span class="fl">0.01</span>, <span class="fl">0.03</span>, <span class="fl">0.02</span>, <span class="fl">0.30</span>, <span class="fl">0.45</span>)</span>
-<span id="cb20-25"><a href="#cb20-25" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb20-26"><a href="#cb20-26" aria-hidden="true" tabindex="-1"></a><span class="co"># Scenario 2: balancing selection (elevated intermediate frequencies)</span></span>
-<span id="cb20-27"><a href="#cb20-27" aria-hidden="true" tabindex="-1"></a>balancing_afs <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="fl">0.35</span>, <span class="fl">0.40</span>, <span class="fl">0.42</span>, <span class="fl">0.38</span>, <span class="fl">0.45</span>, <span class="fl">0.50</span>, <span class="fl">0.36</span>, <span class="fl">0.43</span>)</span>
+<span id="cb20-10"><a href="#cb20-10" aria-hidden="true" tabindex="-1"></a>tajima_demo <span class="ot">&lt;-</span> <span class="cf">function</span>(freq_vec, n_seq) {</span>
+<span id="cb20-11"><a href="#cb20-11" aria-hidden="true" tabindex="-1"></a>  <span class="co"># freq_vec: derived allele frequencies of segregating sites</span></span>
+<span id="cb20-12"><a href="#cb20-12" aria-hidden="true" tabindex="-1"></a>  <span class="co"># n_seq:    number of sequences (chromosomes) sampled</span></span>
+<span id="cb20-13"><a href="#cb20-13" aria-hidden="true" tabindex="-1"></a>  S <span class="ot">&lt;-</span> <span class="fu">length</span>(freq_vec)</span>
+<span id="cb20-14"><a href="#cb20-14" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span> (S <span class="sc">==</span> <span class="dv">0</span>) <span class="fu">return</span>(<span class="fu">list</span>(<span class="at">pi_per_seg =</span> <span class="dv">0</span>, <span class="at">theta_w_per_seg =</span> <span class="dv">0</span>, <span class="at">ratio =</span> <span class="cn">NA</span>))</span>
+<span id="cb20-15"><a href="#cb20-15" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb20-16"><a href="#cb20-16" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Harmonic number — Watterson's normalising constant</span></span>
+<span id="cb20-17"><a href="#cb20-17" aria-hidden="true" tabindex="-1"></a>  a1 <span class="ot">&lt;-</span> <span class="fu">sum</span>(<span class="dv">1</span> <span class="sc">/</span> <span class="fu">seq_len</span>(n_seq <span class="sc">-</span> <span class="dv">1</span>))</span>
+<span id="cb20-18"><a href="#cb20-18" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb20-19"><a href="#cb20-19" aria-hidden="true" tabindex="-1"></a>  <span class="co"># pi per segregating site: unbiased mean pairwise difference per site.</span></span>
+<span id="cb20-20"><a href="#cb20-20" aria-hidden="true" tabindex="-1"></a>  <span class="co"># At a biallelic site with derived allele frequency p:</span></span>
+<span id="cb20-21"><a href="#cb20-21" aria-hidden="true" tabindex="-1"></a>  <span class="co">#   contribution = 2p(1-p) * n/(n-1)</span></span>
+<span id="cb20-22"><a href="#cb20-22" aria-hidden="true" tabindex="-1"></a>  pi_per_seg <span class="ot">&lt;-</span> <span class="fu">mean</span>(<span class="dv">2</span> <span class="sc">*</span> freq_vec <span class="sc">*</span> (<span class="dv">1</span> <span class="sc">-</span> freq_vec) <span class="sc">*</span> n_seq <span class="sc">/</span> (n_seq <span class="sc">-</span> <span class="dv">1</span>))</span>
+<span id="cb20-23"><a href="#cb20-23" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb20-24"><a href="#cb20-24" aria-hidden="true" tabindex="-1"></a>  <span class="co"># theta_W per segregating site = 1/a1.</span></span>
+<span id="cb20-25"><a href="#cb20-25" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Full Watterson estimator: theta_W = S / (a1 * L).</span></span>
+<span id="cb20-26"><a href="#cb20-26" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Normalised per segregating site: [S/(a1*L)] / [S/L] = 1/a1.</span></span>
+<span id="cb20-27"><a href="#cb20-27" aria-hidden="true" tabindex="-1"></a>  theta_w_per_seg <span class="ot">&lt;-</span> <span class="dv">1</span> <span class="sc">/</span> a1</span>
 <span id="cb20-28"><a href="#cb20-28" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb20-29"><a href="#cb20-29" aria-hidden="true" tabindex="-1"></a><span class="co"># Scenario 3: purifying selection / expansion (excess rare variants)</span></span>
-<span id="cb20-30"><a href="#cb20-30" aria-hidden="true" tabindex="-1"></a>purifying_afs <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="fl">0.005</span>, <span class="fl">0.008</span>, <span class="fl">0.003</span>, <span class="fl">0.006</span>, <span class="fl">0.002</span>, <span class="fl">0.004</span>, <span class="fl">0.009</span>, <span class="fl">0.007</span>, <span class="fl">0.001</span>, <span class="fl">0.003</span>)</span>
-<span id="cb20-31"><a href="#cb20-31" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb20-32"><a href="#cb20-32" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">"=== Tajima's D conceptual comparison ===</span><span class="sc">\n\n</span><span class="st">"</span>)</span>
-<span id="cb20-33"><a href="#cb20-33" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> (scenario <span class="cf">in</span> <span class="fu">list</span>(</span>
-<span id="cb20-34"><a href="#cb20-34" aria-hidden="true" tabindex="-1"></a>    <span class="fu">list</span>(<span class="at">name =</span> <span class="st">"Neutral / stable"</span>,    <span class="at">freqs =</span> neutral_afs),</span>
-<span id="cb20-35"><a href="#cb20-35" aria-hidden="true" tabindex="-1"></a>    <span class="fu">list</span>(<span class="at">name =</span> <span class="st">"Balancing selection"</span>, <span class="at">freqs =</span> balancing_afs),</span>
-<span id="cb20-36"><a href="#cb20-36" aria-hidden="true" tabindex="-1"></a>    <span class="fu">list</span>(<span class="at">name =</span> <span class="st">"Purifying / expansion"</span>, <span class="at">freqs =</span> purifying_afs)</span>
-<span id="cb20-37"><a href="#cb20-37" aria-hidden="true" tabindex="-1"></a>)) {</span>
-<span id="cb20-38"><a href="#cb20-38" aria-hidden="true" tabindex="-1"></a>  res <span class="ot">&lt;-</span> <span class="fu">tajima_demo</span>(scenario<span class="sc">$</span>freqs, <span class="at">n_seq =</span> <span class="dv">50</span>)</span>
-<span id="cb20-39"><a href="#cb20-39" aria-hidden="true" tabindex="-1"></a>  <span class="fu">cat</span>(<span class="fu">sprintf</span>(<span class="st">"Scenario: %-25s | pi = %.4f | pi/theta_W ratio = %.3f</span><span class="sc">\n</span><span class="st">"</span>,</span>
-<span id="cb20-40"><a href="#cb20-40" aria-hidden="true" tabindex="-1"></a>              scenario<span class="sc">$</span>name, res<span class="sc">$</span>pi, res<span class="sc">$</span>ratio))</span>
-<span id="cb20-41"><a href="#cb20-41" aria-hidden="true" tabindex="-1"></a>  <span class="fu">cat</span>(<span class="fu">sprintf</span>(<span class="st">"  → High pi/theta_W (&gt;1) implies D &gt; 0; Low (&lt;1) implies D &lt; 0</span><span class="sc">\n\n</span><span class="st">"</span>))</span>
-<span id="cb20-42"><a href="#cb20-42" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-</section>
-</section>
-<section id="其他重要概念" class="level2" data-number="15.14">
-<h2 data-number="15.14" class="anchored" data-anchor-id="其他重要概念"><span class="header-section-number">15.14</span> 其他重要概念</h2>
-<p>下列概念在 GWAS 章节中将进一步介绍，此处仅作简要说明：</p>
-<table class="caption-top table">
-<colgroup>
-<col style="width: 17%">
-<col style="width: 35%">
-<col style="width: 46%">
-</colgroup>
-<thead>
-<tr class="header">
-<th>概念</th>
-<th>一句话描述</th>
-<th>GWAS 中的用途</th>
-</tr>
-</thead>
-<tbody>
-<tr class="odd">
-<td><strong>等位基因频率谱（AFS）</strong></td>
-<td>群体中各频率档 SNP 的数量分布</td>
-<td>检验数据质量；理解群体历史</td>
-</tr>
-<tr class="even">
-<td><strong>固定指数（Fst）</strong></td>
-<td>量化两个群体间遗传分化程度</td>
-<td>识别受自然选择位点；验证群体结构</td>
-</tr>
-<tr class="odd">
-<td><strong>遗传漂变（Genetic Drift）</strong></td>
-<td>有限种群中等位频率的随机波动</td>
-<td>解释低频变异分布；理解 <span class="math inline">\(N_e\)</span> 概念</td>
-</tr>
-<tr class="even">
-<td><strong>有效群体大小（<span class="math inline">\(N_e\)</span>）</strong></td>
-<td>遗传等效的理想随机交配群体大小</td>
-<td>估算漂变强度；推断人群历史</td>
-</tr>
-</tbody>
-</table>
+<span id="cb20-29"><a href="#cb20-29" aria-hidden="true" tabindex="-1"></a>  <span class="co"># ratio &gt; 1 → pi &gt; theta_W → excess intermediate-frequency variants → D &gt; 0</span></span>
+<span id="cb20-30"><a href="#cb20-30" aria-hidden="true" tabindex="-1"></a>  <span class="co"># ratio &lt; 1 → pi &lt; theta_W → excess rare variants                  → D &lt; 0</span></span>
+<span id="cb20-31"><a href="#cb20-31" aria-hidden="true" tabindex="-1"></a>  ratio <span class="ot">&lt;-</span> pi_per_seg <span class="sc">/</span> theta_w_per_seg</span>
+<span id="cb20-32"><a href="#cb20-32" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb20-33"><a href="#cb20-33" aria-hidden="true" tabindex="-1"></a>  <span class="fu">list</span>(<span class="at">pi_per_seg      =</span> <span class="fu">round</span>(pi_per_seg, <span class="dv">4</span>),</span>
+<span id="cb20-34"><a href="#cb20-34" aria-hidden="true" tabindex="-1"></a>       <span class="at">theta_w_per_seg =</span> <span class="fu">round</span>(theta_w_per_seg, <span class="dv">4</span>),</span>
+<span id="cb20-35"><a href="#cb20-35" aria-hidden="true" tabindex="-1"></a>       <span class="at">ratio           =</span> <span class="fu">round</span>(ratio, <span class="dv">3</span>))</span>
+<span id="cb20-36"><a href="#cb20-36" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb20-37"><a href="#cb20-37" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb20-38"><a href="#cb20-38" aria-hidden="true" tabindex="-1"></a><span class="co"># Scenario 1: neutral AFS — mostly rare variants, two at intermediate frequency</span></span>
+<span id="cb20-39"><a href="#cb20-39" aria-hidden="true" tabindex="-1"></a>neutral_afs   <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="fl">0.02</span>, <span class="fl">0.03</span>, <span class="fl">0.02</span>, <span class="fl">0.05</span>, <span class="fl">0.04</span>, <span class="fl">0.01</span>, <span class="fl">0.03</span>, <span class="fl">0.02</span>, <span class="fl">0.30</span>, <span class="fl">0.45</span>)</span>
+<span id="cb20-40"><a href="#cb20-40" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb20-41"><a href="#cb20-41" aria-hidden="true" tabindex="-1"></a><span class="co"># Scenario 2: balancing selection — all variants at intermediate frequency</span></span>
+<span id="cb20-42"><a href="#cb20-42" aria-hidden="true" tabindex="-1"></a>balancing_afs <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="fl">0.35</span>, <span class="fl">0.40</span>, <span class="fl">0.42</span>, <span class="fl">0.38</span>, <span class="fl">0.45</span>, <span class="fl">0.50</span>, <span class="fl">0.36</span>, <span class="fl">0.43</span>)</span>
+<span id="cb20-43"><a href="#cb20-43" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb20-44"><a href="#cb20-44" aria-hidden="true" tabindex="-1"></a><span class="co"># Scenario 3: purifying selection / expansion — all variants very rare</span></span>
+<span id="cb20-45"><a href="#cb20-45" aria-hidden="true" tabindex="-1"></a>purifying_afs <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="fl">0.005</span>, <span class="fl">0.008</span>, <span class="fl">0.003</span>, <span class="fl">0.006</span>, <span class="fl">0.002</span>, <span class="fl">0.004</span>, <span class="fl">0.009</span>, <span class="fl">0.007</span>, <span class="fl">0.001</span>, <span class="fl">0.003</span>)</span>
+<span id="cb20-46"><a href="#cb20-46" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb20-47"><a href="#cb20-47" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">"=== Tajima's D conceptual comparison (n = 50 sequences) ===</span><span class="sc">\n\n</span><span class="st">"</span>)</span>
+<span id="cb20-48"><a href="#cb20-48" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> (scenario <span class="cf">in</span> <span class="fu">list</span>(</span>
+<span id="cb20-49"><a href="#cb20-49" aria-hidden="true" tabindex="-1"></a>    <span class="fu">list</span>(<span class="at">name =</span> <span class="st">"Neutral / stable"</span>,       <span class="at">freqs =</span> neutral_afs),</span>
+<span id="cb20-50"><a href="#cb20-50" aria-hidden="true" tabindex="-1"></a>    <span class="fu">list</span>(<span class="at">name =</span> <span class="st">"Balancing selection"</span>,    <span class="at">freqs =</span> balancing_afs),</span>
+<span id="cb20-51"><a href="#cb20-51" aria-hidden="true" tabindex="-1"></a>    <span class="fu">list</span>(<span class="at">name =</span> <span class="st">"Purifying / expansion"</span>,  <span class="at">freqs =</span> purifying_afs)</span>
+<span id="cb20-52"><a href="#cb20-52" aria-hidden="true" tabindex="-1"></a>)) {</span>
+<span id="cb20-53"><a href="#cb20-53" aria-hidden="true" tabindex="-1"></a>  res <span class="ot">&lt;-</span> <span class="fu">tajima_demo</span>(scenario<span class="sc">$</span>freqs, <span class="at">n_seq =</span> <span class="dv">50</span>)</span>
+<span id="cb20-54"><a href="#cb20-54" aria-hidden="true" tabindex="-1"></a>  <span class="fu">cat</span>(<span class="fu">sprintf</span>(<span class="st">"Scenario: %-25s | pi = %.4f | theta_W = %.4f | ratio = %.3f</span><span class="sc">\n</span><span class="st">"</span>,</span>
+<span id="cb20-55"><a href="#cb20-55" aria-hidden="true" tabindex="-1"></a>              scenario<span class="sc">$</span>name, res<span class="sc">$</span>pi_per_seg, res<span class="sc">$</span>theta_w_per_seg, res<span class="sc">$</span>ratio))</span>
+<span id="cb20-56"><a href="#cb20-56" aria-hidden="true" tabindex="-1"></a>  direction <span class="ot">&lt;-</span> <span class="cf">if</span> (res<span class="sc">$</span>ratio <span class="sc">&gt;</span> <span class="dv">1</span>) <span class="st">"ratio &gt; 1  → D &gt; 0  (excess intermediate-freq variants)"</span> <span class="cf">else</span></span>
+<span id="cb20-57"><a href="#cb20-57" aria-hidden="true" tabindex="-1"></a>                                   <span class="st">"ratio &lt; 1  → D &lt; 0  (excess rare variants)"</span></span>
+<span id="cb20-58"><a href="#cb20-58" aria-hidden="true" tabindex="-1"></a>  <span class="fu">cat</span>(<span class="fu">sprintf</span>(<span class="st">"  → %s</span><span class="sc">\n\n</span><span class="st">"</span>, direction))</span>
+<span id="cb20-59"><a href="#cb20-59" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="info">
 <p><strong>本章与 GWAS 章节的衔接</strong></p>
 <p>本章建立的技术基础与 GWAS 研究的对应关系：</p>
@@ -2064,13 +2039,14 @@ protein_altering|2/7|c.715C&gt;T|p.Arg239Trp|818/2584|79%|...</code></pre>
 </div>
 <hr>
 </section>
-<section id="总结" class="level2" data-number="15.15">
-<h2 data-number="15.15" class="anchored" data-anchor-id="总结"><span class="header-section-number">15.15</span> 总结</h2>
+</section>
+<section id="总结" class="level2" data-number="15.14">
+<h2 data-number="15.14" class="anchored" data-anchor-id="总结"><span class="header-section-number">15.14</span> 总结</h2>
 <p>✓ <strong>变异功能注释</strong> 将基因组坐标转换为生物学意义，SnpEff/VEP 是标准工具；IMPACT 分级（HIGH/MODERATE/LOW）是优先级筛选的第一道过滤 ✓ <strong>BQSR</strong> 通过统计建模校正测序仪的系统性质量分偏差，提升 HaplotypeCaller 准确率；对细菌等无公共变异库的物种效益有限 ✓ <strong>ACMG 五级分类</strong> 是临床变异致病性评估的国际标准，需整合群体频率、计算预测、功能证据和临床表型多条证据 ✓ <strong>IGV</strong> 提供 BAM + VCF 的直观可视化，是发现链偏倚、低 MAPQ 比对等假阳性信号的最直接手段 ✓ <strong>等位基因频率（AF/MAF）</strong> 是个体变异走向群体分析的核心统计量；MAF 过滤（通常 ≥ 1%–5%）是 GWAS 前处理的必要步骤 ✓ <strong>Hardy-Weinberg 平衡（HWE）</strong> 是群体遗传学的理想基准；六个假设几乎从不同时成立，因此偏离 HWE 的位点是基因分型错误的有效诊断信号；HWE 过滤应仅对<strong>对照组</strong>执行 ✓ <strong>单倍型（Haplotype）与相位推断</strong> 描述同一条染色体上等位体的组合遗传方式；基因型只告诉”有什么”，相位推断（SHAPEIT/EAGLE）才能确定”组合如何”——这是 LD 分析和基因型插补的前提 ✓ <strong>遗传漂变</strong> 是有限种群中等位体频率的随机波动，强度与有效种群大小（<span class="math inline">\(N_e\)</span>）成反比；瓶颈效应和奠基者效应是两种常见的强漂变情形，在孤立人群遗传病研究中有直接应用 ✓ <strong>自然选择</strong> 在基因组留下可检测的印记：正向选择（乳糖酶 LCT）形成选择清除；纯化选择持续清除有害功能突变；平衡选择（SCD HBB）维持中等频率等位体共存 ✓ <strong>遗传多样性指标</strong> 核苷酸多样性 π 和期望杂合度 <span class="math inline">\(H_e\)</span> 量化群体的整体多态性水平；非洲人群 π 高于非非洲人群，直接反映了走出非洲的奠基者效应和后续漂变积累 ✓ <strong>等位基因频率谱（AFS）</strong> 是群体历史的综合快照：中性进化下呈 L 形（低频变异占多数）；形状偏离可诊断数据质量问题（深度不均、过度过滤）或推断群体历史（瓶颈、扩张、选择） ✓ <strong>突变（Ti/Tv）</strong> 是一切遗传变异的原始来源；转换/颠换比值（Ti/Tv ≈ 2.0–2.1 for WGS）是变异检测质量的内置诊断指标；CpG 超突变性使胞嘧啶→胸腺嘧啶转换在基因组中高度富集 ✓ <strong>基因流动（Gene Flow）</strong> 通过种群间个体迁移使等位体频率趋于均一，与漂变和选择方向相反；<span class="math inline">\(F_{ST}\)</span> 量化种群间分化程度，人类大陆人群间全基因组平均约 0.10–0.15 ✓ <strong>Wright-Fisher 模型</strong> 提供了漂变的精确数学框架：<span class="math inline">\(\text{Var}(\Delta p) = p(1-p)/2N_e\)</span>，频率波动的大小完全由有效种群大小决定；平均固定时间 <span class="math inline">\(\approx 4N_e\)</span> 代 ✓ <strong>Tajima’s D</strong> 通过比较 <span class="math inline">\(\hat{\pi}\)</span> 与 <span class="math inline">\(\hat{\theta}_W\)</span> 的差异量化 AFS 偏离中性期望的方向：<span class="math inline">\(D &lt; 0\)</span> 提示纯化选择或种群扩张；<span class="math inline">\(D &gt; 0\)</span> 提示平衡选择或种群瓶颈；需结合全基因组背景解读 ✓ <strong>群体分层</strong> 是 GWAS 最重要的混杂因素，PCA 协变量校正是标准应对方案 ✓ <strong>连锁不平衡（LD）</strong> 赋予基因组区块结构，是基因型插补和 GWAS 精细定位的理论基础；详细方法见 GWAS 章节</p>
 <hr>
 </section>
-<section id="课后自测-post-lesson-quiz" class="level2" data-number="15.16">
-<h2 data-number="15.16" class="anchored" data-anchor-id="课后自测-post-lesson-quiz"><span class="header-section-number">15.16</span> 课后自测 (Post-Lesson Quiz)</h2>
+<section id="课后自测-post-lesson-quiz" class="level2" data-number="15.15">
+<h2 data-number="15.15" class="anchored" data-anchor-id="课后自测-post-lesson-quiz"><span class="header-section-number">15.15</span> 课后自测 (Post-Lesson Quiz)</h2>
 <ol type="1">
 <li><p>某错义突变在 gnomAD 中的全球频率为 2%，但在东亚人群中频率为 0.05%，同时在 ClinVar 中被注释为 pathogenic。如何综合评估该变异的致病性？群体频率和临床数据库信息应如何权衡？</p></li>
 <li><p>为什么 BQSR 步骤必须使用已知变异数据库（如 dbSNP）？若对一个尚无已知变异数据库的非模式生物进行分析，应如何应对这一限制？</p></li>
