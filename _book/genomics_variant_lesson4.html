@@ -7,7 +7,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
 
-<title>18&nbsp; GWAS 结果可视化与候选位点解析 – Introduction to Applied High-throughput Biological Data Analysis</title>
+<title>18&nbsp; GWAS 结果可视化、多重检验与候选位点解析 – Introduction to Applied High-throughput Biological Data Analysis</title>
 <style>
 /* Default styles provided by pandoc.
 ** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
@@ -79,7 +79,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <link href="site_libs/quarto-html/quarto-syntax-highlighting-845c23b38eaddc0f92fda52bfe77a8c8.css" rel="stylesheet" id="quarto-text-highlighting-styles">
 <script src="site_libs/bootstrap/bootstrap.min.js"></script>
 <link href="site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
-<link href="site_libs/bootstrap/bootstrap-ffc4c3fc79587ee79da4865b6a08975e.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
+<link href="site_libs/bootstrap/bootstrap-b9eaee60a963b5d74e9d33cc267de6a6.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
 <script id="quarto-search-options" type="application/json">{
   "location": "sidebar",
   "copy-button": false,
@@ -149,7 +149,7 @@ window.Quarto = {
       <button type="button" class="quarto-btn-toggle btn" data-bs-toggle="collapse" role="button" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
         <i class="bi bi-layout-text-sidebar-reverse"></i>
       </button>
-        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="./01-intro.html">第一阶段：基础与基因组</a></li><li class="breadcrumb-item"><a href="./genomics_variant_lesson4.html"><span class="chapter-number">18</span>&nbsp; <span class="chapter-title">GWAS 结果可视化与候选位点解析</span></a></li></ol></nav>
+        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="./01-intro.html">第一阶段：基础与基因组</a></li><li class="breadcrumb-item"><a href="./genomics_variant_lesson4.html"><span class="chapter-number">18</span>&nbsp; <span class="chapter-title">GWAS 结果可视化、多重检验与候选位点解析</span></a></li></ol></nav>
         <a class="flex-grow-1" role="navigation" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">      
         </a>
       <button type="button" class="btn quarto-search-button" aria-label="Search" onclick="window.quartoOpenSearch();">
@@ -291,13 +291,13 @@ window.Quarto = {
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./genomics_variant_lesson4.html" class="sidebar-item-text sidebar-link active">
- <span class="menu-text"><span class="chapter-number">18</span>&nbsp; <span class="chapter-title">GWAS 结果可视化与候选位点解析</span></span></a>
+ <span class="menu-text"><span class="chapter-number">18</span>&nbsp; <span class="chapter-title">GWAS 结果可视化、多重检验与候选位点解析</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./genomics_variant_lesson5.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">19</span>&nbsp; <span class="chapter-title">精细定位与功能验证及更多</span></span></a>
+ <span class="menu-text"><span class="chapter-number">19</span>&nbsp; <span class="chapter-title">精细定位、功能注释与因果推断</span></span></a>
   </div>
 </li>
       </ul>
@@ -604,30 +604,52 @@ window.Quarto = {
     <h2 id="toc-title">Table of contents</h2>
    
   <ul>
-  <li><a href="#专题-3.5gwas-结果可视化与候选位点解析" id="toc-专题-3.5gwas-结果可视化与候选位点解析" class="nav-link active" data-scroll-target="#专题-3.5gwas-结果可视化与候选位点解析"><span class="header-section-number">19</span> 专题 3.5：GWAS 结果可视化与候选位点解析</a>
+  <li><a href="#专题-3.5gwas-结果可视化多重检验与候选位点解析" id="toc-专题-3.5gwas-结果可视化多重检验与候选位点解析" class="nav-link active" data-scroll-target="#专题-3.5gwas-结果可视化多重检验与候选位点解析"><span class="header-section-number">19</span> 专题 3.5：GWAS 结果可视化、多重检验与候选位点解析</a>
   <ul class="collapse">
   <li><a href="#学习目标" id="toc-学习目标" class="nav-link" data-scroll-target="#学习目标"><span class="header-section-number">19.1</span> 学习目标</a></li>
-  <li><a href="#gwas-可视化概述" id="toc-gwas-可视化概述" class="nav-link" data-scroll-target="#gwas-可视化概述"><span class="header-section-number">19.2</span> 3.5.1 GWAS 可视化概述</a></li>
-  <li><a href="#曼哈顿图" id="toc-曼哈顿图" class="nav-link" data-scroll-target="#曼哈顿图"><span class="header-section-number">19.3</span> 3.5.2 曼哈顿图</a>
+  <li><a href="#gwas-可视化概述" id="toc-gwas-可视化概述" class="nav-link" data-scroll-target="#gwas-可视化概述"><span class="header-section-number">19.2</span> GWAS 可视化概述</a></li>
+  <li><a href="#曼哈顿图" id="toc-曼哈顿图" class="nav-link" data-scroll-target="#曼哈顿图"><span class="header-section-number">19.3</span> 曼哈顿图</a>
   <ul class="collapse">
-  <li><a href="#图形结构与解读" id="toc-图形结构与解读" class="nav-link" data-scroll-target="#图形结构与解读"><span class="header-section-number">19.3.1</span> 3.5.2.1 图形结构与解读</a></li>
-  <li><a href="#r-实现ggplot2" id="toc-r-实现ggplot2" class="nav-link" data-scroll-target="#r-实现ggplot2"><span class="header-section-number">19.3.2</span> 3.5.2.2 R 实现（ggplot2）</a></li>
+  <li><a href="#图形结构与规范解读" id="toc-图形结构与规范解读" class="nav-link" data-scroll-target="#图形结构与规范解读"><span class="header-section-number">19.3.1</span> 图形结构与规范解读</a></li>
+  <li><a href="#r-实现ggplot2" id="toc-r-实现ggplot2" class="nav-link" data-scroll-target="#r-实现ggplot2"><span class="header-section-number">19.3.2</span> R 实现（ggplot2）</a></li>
   </ul></li>
-  <li><a href="#qq-图与基因组膨胀因子" id="toc-qq-图与基因组膨胀因子" class="nav-link" data-scroll-target="#qq-图与基因组膨胀因子"><span class="header-section-number">19.4</span> 3.5.3 QQ 图与基因组膨胀因子</a></li>
-  <li><a href="#独立信号的识别ld-裁剪与条件分析" id="toc-独立信号的识别ld-裁剪与条件分析" class="nav-link" data-scroll-target="#独立信号的识别ld-裁剪与条件分析"><span class="header-section-number">19.5</span> 3.5.4 独立信号的识别：LD 裁剪与条件分析</a>
+  <li><a href="#qq-图与基因组膨胀因子" id="toc-qq-图与基因组膨胀因子" class="nav-link" data-scroll-target="#qq-图与基因组膨胀因子"><span class="header-section-number">19.4</span> QQ 图与基因组膨胀因子</a>
   <ul class="collapse">
-  <li><a href="#ld-裁剪clumping" id="toc-ld-裁剪clumping" class="nav-link" data-scroll-target="#ld-裁剪clumping"><span class="header-section-number">19.5.1</span> 3.5.4.1 LD 裁剪（Clumping）</a></li>
-  <li><a href="#逐步条件分析" id="toc-逐步条件分析" class="nav-link" data-scroll-target="#逐步条件分析"><span class="header-section-number">19.5.2</span> 3.5.4.2 逐步条件分析</a></li>
+  <li><a href="#qq-图的系统解读" id="toc-qq-图的系统解读" class="nav-link" data-scroll-target="#qq-图的系统解读"><span class="header-section-number">19.4.1</span> QQ 图的系统解读</a></li>
+  <li><a href="#基因组膨胀因子genomic-inflation-factor" id="toc-基因组膨胀因子genomic-inflation-factor" class="nav-link" data-scroll-target="#基因组膨胀因子genomic-inflation-factor"><span class="header-section-number">19.4.2</span> 基因组膨胀因子（Genomic Inflation Factor）</a></li>
+  <li><a href="#模拟实验pca-校正前后的-qq-图对比" id="toc-模拟实验pca-校正前后的-qq-图对比" class="nav-link" data-scroll-target="#模拟实验pca-校正前后的-qq-图对比"><span class="header-section-number">19.4.3</span> 模拟实验：PCA 校正前后的 QQ 图对比</a></li>
   </ul></li>
-  <li><a href="#局部关联图" id="toc-局部关联图" class="nav-link" data-scroll-target="#局部关联图"><span class="header-section-number">19.6</span> 3.5.5 局部关联图</a></li>
-  <li><a href="#候选位点的功能注释" id="toc-候选位点的功能注释" class="nav-link" data-scroll-target="#候选位点的功能注释"><span class="header-section-number">19.7</span> 3.5.6 候选位点的功能注释</a>
+  <li><a href="#多重检验校正" id="toc-多重检验校正" class="nav-link" data-scroll-target="#多重检验校正"><span class="header-section-number">19.5</span> 多重检验校正</a>
   <ul class="collapse">
-  <li><a href="#变异注释" id="toc-变异注释" class="nav-link" data-scroll-target="#变异注释"><span class="header-section-number">19.7.1</span> 3.5.6.1 变异注释</a></li>
-  <li><a href="#eqtl-整合与共定位" id="toc-eqtl-整合与共定位" class="nav-link" data-scroll-target="#eqtl-整合与共定位"><span class="header-section-number">19.7.2</span> 3.5.6.2 eQTL 整合与共定位</a></li>
-  <li><a href="#共定位分析原理" id="toc-共定位分析原理" class="nav-link" data-scroll-target="#共定位分析原理"><span class="header-section-number">19.7.3</span> 3.5.6.3 共定位分析原理</a></li>
+  <li><a href="#多重比较问题" id="toc-多重比较问题" class="nav-link" data-scroll-target="#多重比较问题"><span class="header-section-number">19.5.1</span> 多重比较问题</a></li>
+  <li><a href="#bonferroni-校正与-5-times-10-8-阈值的由来" id="toc-bonferroni-校正与-5-times-10-8-阈值的由来" class="nav-link" data-scroll-target="#bonferroni-校正与-5-times-10-8-阈值的由来"><span class="header-section-number">19.5.2</span> Bonferroni 校正与 <span class="math inline">\(5 \times 10^{-8}\)</span> 阈值的由来</a></li>
+  <li><a href="#错误发现率fdr与-benjamini-hochberg-程序" id="toc-错误发现率fdr与-benjamini-hochberg-程序" class="nav-link" data-scroll-target="#错误发现率fdr与-benjamini-hochberg-程序"><span class="header-section-number">19.5.3</span> 错误发现率（FDR）与 Benjamini-Hochberg 程序</a></li>
+  <li><a href="#置换检验" id="toc-置换检验" class="nav-link" data-scroll-target="#置换检验"><span class="header-section-number">19.5.4</span> 置换检验</a></li>
+  <li><a href="#r-示例三种校正方法比较" id="toc-r-示例三种校正方法比较" class="nav-link" data-scroll-target="#r-示例三种校正方法比较"><span class="header-section-number">19.5.5</span> R 示例：三种校正方法比较</a></li>
   </ul></li>
-  <li><a href="#候选位点解析的整合框架" id="toc-候选位点解析的整合框架" class="nav-link" data-scroll-target="#候选位点解析的整合框架"><span class="header-section-number">19.8</span> 3.5.7 候选位点解析的整合框架</a></li>
-  <li><a href="#课后自测-post-lesson-quiz" id="toc-课后自测-post-lesson-quiz" class="nav-link" data-scroll-target="#课后自测-post-lesson-quiz"><span class="header-section-number">19.9</span> 课后自测 (Post-Lesson Quiz)</a></li>
+  <li><a href="#统计检验力与样本量估计" id="toc-统计检验力与样本量估计" class="nav-link" data-scroll-target="#统计检验力与样本量估计"><span class="header-section-number">19.6</span> 统计检验力与样本量估计</a>
+  <ul class="collapse">
+  <li><a href="#检验力对-maf-的依赖" id="toc-检验力对-maf-的依赖" class="nav-link" data-scroll-target="#检验力对-maf-的依赖"><span class="header-section-number">19.6.1</span> 检验力对 MAF 的依赖</a></li>
+  <li><a href="#gwas-的规模效应" id="toc-gwas-的规模效应" class="nav-link" data-scroll-target="#gwas-的规模效应"><span class="header-section-number">19.6.2</span> GWAS 的规模效应</a></li>
+  <li><a href="#元分析对统计检验力的倍增效应" id="toc-元分析对统计检验力的倍增效应" class="nav-link" data-scroll-target="#元分析对统计检验力的倍增效应"><span class="header-section-number">19.6.3</span> 元分析对统计检验力的倍增效应</a></li>
+  </ul></li>
+  <li><a href="#plink-实战完整单-snp-关联分析" id="toc-plink-实战完整单-snp-关联分析" class="nav-link" data-scroll-target="#plink-实战完整单-snp-关联分析"><span class="header-section-number">19.7</span> PLINK 实战：完整单 SNP 关联分析</a>
+  <ul class="collapse">
+  <li><a href="#plink-结果输出的深度解读" id="toc-plink-结果输出的深度解读" class="nav-link" data-scroll-target="#plink-结果输出的深度解读"><span class="header-section-number">19.7.1</span> PLINK 结果输出的深度解读</a></li>
+  <li><a href="#snp-遗传力估计gcta-greml" id="toc-snp-遗传力估计gcta-greml" class="nav-link" data-scroll-target="#snp-遗传力估计gcta-greml"><span class="header-section-number">19.7.2</span> SNP 遗传力估计（GCTA-GREML）</a></li>
+  </ul></li>
+  <li><a href="#独立信号的识别ld-裁剪与精细定位" id="toc-独立信号的识别ld-裁剪与精细定位" class="nav-link" data-scroll-target="#独立信号的识别ld-裁剪与精细定位"><span class="header-section-number">19.8</span> 独立信号的识别：LD 裁剪与精细定位</a>
+  <ul class="collapse">
+  <li><a href="#ld-裁剪clumping" id="toc-ld-裁剪clumping" class="nav-link" data-scroll-target="#ld-裁剪clumping"><span class="header-section-number">19.8.1</span> LD 裁剪（Clumping）</a></li>
+  <li><a href="#逐步条件分析" id="toc-逐步条件分析" class="nav-link" data-scroll-target="#逐步条件分析"><span class="header-section-number">19.8.2</span> 逐步条件分析</a></li>
+  <li><a href="#精细定位的概念" id="toc-精细定位的概念" class="nav-link" data-scroll-target="#精细定位的概念"><span class="header-section-number">19.8.3</span> 精细定位的概念</a></li>
+  </ul></li>
+  <li><a href="#局部关联图" id="toc-局部关联图" class="nav-link" data-scroll-target="#局部关联图"><span class="header-section-number">19.9</span> 局部关联图</a>
+  <ul class="collapse">
+  <li><a href="#局部关联图的深度解读" id="toc-局部关联图的深度解读" class="nav-link" data-scroll-target="#局部关联图的深度解读"><span class="header-section-number">19.9.1</span> 局部关联图的深度解读</a></li>
+  <li><a href="#使用-gassocplot-生成专业级局部关联图" id="toc-使用-gassocplot-生成专业级局部关联图" class="nav-link" data-scroll-target="#使用-gassocplot-生成专业级局部关联图"><span class="header-section-number">19.9.2</span> 使用 gassocplot 生成专业级局部关联图</a></li>
+  </ul></li>
+  <li><a href="#课后自测-post-lesson-quiz" id="toc-课后自测-post-lesson-quiz" class="nav-link" data-scroll-target="#课后自测-post-lesson-quiz"><span class="header-section-number">19.10</span> 课后自测 (Post-Lesson Quiz)</a></li>
   </ul></li>
   </ul>
 <div class="toc-actions"><ul><li><a href="https://github.com/cxzdsa2332/Applied-Omics-Analysis/edit/main/genomics_variant_lesson4.qmd" class="toc-action"><i class="bi bi-github"></i>Edit this page</a></li><li><a href="https://github.com/cxzdsa2332/Applied-Omics-Analysis/issues/new" class="toc-action"><i class="bi empty"></i>Report an issue</a></li><li><a href="https://github.com/cxzdsa2332/Applied-Omics-Analysis/blob/main/genomics_variant_lesson4.qmd" class="toc-action"><i class="bi empty"></i>View source</a></li></ul></div></nav>
@@ -635,9 +657,9 @@ window.Quarto = {
 <!-- main -->
 <main class="content" id="quarto-document-content">
 
-<header id="title-block-header" class="quarto-title-block default"><nav class="quarto-page-breadcrumbs quarto-title-breadcrumbs d-none d-lg-block" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="./01-intro.html">第一阶段：基础与基因组</a></li><li class="breadcrumb-item"><a href="./genomics_variant_lesson4.html"><span class="chapter-number">18</span>&nbsp; <span class="chapter-title">GWAS 结果可视化与候选位点解析</span></a></li></ol></nav>
+<header id="title-block-header" class="quarto-title-block default"><nav class="quarto-page-breadcrumbs quarto-title-breadcrumbs d-none d-lg-block" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="./01-intro.html">第一阶段：基础与基因组</a></li><li class="breadcrumb-item"><a href="./genomics_variant_lesson4.html"><span class="chapter-number">18</span>&nbsp; <span class="chapter-title">GWAS 结果可视化、多重检验与候选位点解析</span></a></li></ol></nav>
 <div class="quarto-title">
-<h1 class="title"><span class="chapter-number">18</span>&nbsp; <span class="chapter-title">GWAS 结果可视化与候选位点解析</span></h1>
+<h1 class="title"><span class="chapter-number">18</span>&nbsp; <span class="chapter-title">GWAS 结果可视化、多重检验与候选位点解析</span></h1>
 </div>
 
 
@@ -654,30 +676,38 @@ window.Quarto = {
 </header>
 
 
-<section id="专题-3.5gwas-结果可视化与候选位点解析" class="level1" data-number="19">
-<h1 data-number="19"><span class="header-section-number">19</span> 专题 3.5：GWAS 结果可视化与候选位点解析</h1>
+<section id="专题-3.5gwas-结果可视化多重检验与候选位点解析" class="level1" data-number="19">
+<h1 data-number="19"><span class="header-section-number">19</span> 专题 3.5：GWAS 结果可视化、多重检验与候选位点解析</h1>
 <section id="学习目标" class="level2" data-number="19.1">
 <h2 data-number="19.1" class="anchored" data-anchor-id="学习目标"><span class="header-section-number">19.1</span> 学习目标</h2>
 <p>完成本专题学习后，学生应能够：</p>
 <ol type="1">
-<li>绘制并解读曼哈顿图（Manhattan plot）和 QQ 图（Quantile-Quantile plot）；</li>
-<li>利用局部关联图（LocusZoom 风格）展示候选区域内的 LD 结构与关联信号；</li>
-<li>理解连锁不平衡（LD）如何影响 GWAS 信号的定位精度；</li>
-<li>描述候选位点解析（locus annotation）的标准生物信息学流程；</li>
-<li>利用公共数据库（GTEx、ENCODE）将统计信号与功能注释整合，提出生物学假说。</li>
+<li>绘制并规范解读曼哈顿图（Manhattan plot）和 QQ 图（Quantile-Quantile plot），正确识别信号峰、背景噪声和系统性偏差的视觉特征；</li>
+<li>理解基因组膨胀因子 <span class="math inline">\(\lambda_{GC}\)</span> 的定义、来源与局限，并使用 LD Score 回归（LDSC）区分群体分层偏差与真实多基因性信号；</li>
+<li>掌握 Bonferroni 校正、FDR（BH 程序）与置换检验三种多重检验校正方法的原理与适用场景，理解 FWER 与 FDR 的概念区别；</li>
+<li>根据非中心参数（NCP）公式估算 GWAS 统计检验力，理解样本量、效应量、MAF 与显著性阈值的交互影响；</li>
+<li>使用 PLINK 运行完整的逻辑回归和线性回归关联分析，解读输出结果，并利用 GCTA-GREML 估计 SNP 遗传力；</li>
+<li>利用 LD 裁剪（clumping）识别独立关联信号，并利用局部关联图（LocusZoom 风格）展示候选区域内的 LD 结构与信号精细结构。</li>
 </ol>
 <hr>
 </section>
 <section id="gwas-可视化概述" class="level2" data-number="19.2">
-<h2 data-number="19.2" class="anchored" data-anchor-id="gwas-可视化概述"><span class="header-section-number">19.2</span> 3.5.1 GWAS 可视化概述</h2>
-<p>GWAS 产生数百万个 SNP 的关联统计量，其可视化目标在于：（1）总览全局显著位点的分布；（2）评估统计模型是否存在系统性偏差；（3）精细展示候选区域内信号的精细结构。</p>
-<p>三类核心图形各有侧重：</p>
+<h2 data-number="19.2" class="anchored" data-anchor-id="gwas-可视化概述"><span class="header-section-number">19.2</span> GWAS 可视化概述</h2>
+<p>一项典型的 GWAS 针对数百万个 SNP 分别计算关联统计量，最终产生等量的 p 值、效应量和标准误。面对如此规模的统计结果，可视化不仅是展示工具，更是质量控制和科学发现的必要环节。GWAS 结果的可视化目标体现在三个层次：在<strong>全基因组层次</strong>，需要快速定位统计显著位点在染色体上的分布格局，识别可重复的强信号；在<strong>统计诊断层次</strong>，需要评估检验统计量的整体分布是否符合零假设预期，判断群体分层等系统性偏差是否已被充分控制；在<strong>候选区域层次</strong>，需要精细呈现显著位点周围的 LD 结构，为候选基因识别和精细定位提供视觉基础。</p>
+<p>三类核心图形各有侧重，在 GWAS 报告中缺一不可：</p>
 <table class="caption-top table">
+<colgroup>
+<col style="width: 26%">
+<col style="width: 15%">
+<col style="width: 26%">
+<col style="width: 31%">
+</colgroup>
 <thead>
 <tr class="header">
 <th>图形类型</th>
 <th>目的</th>
 <th>核心信息</th>
+<th>典型使用场景</th>
 </tr>
 </thead>
 <tbody>
@@ -685,84 +715,91 @@ window.Quarto = {
 <td>曼哈顿图</td>
 <td>全局信号定位</td>
 <td>各染色体上显著 SNP 位置与 <span class="math inline">\(-\log_{10}(p)\)</span></td>
+<td>论文主图，展示发现位点</td>
 </tr>
 <tr class="even">
 <td>QQ 图</td>
 <td>模型诊断</td>
 <td>观测 p 值与理论均匀分布的偏离程度</td>
+<td>与曼哈顿图并排，质控证据</td>
 </tr>
 <tr class="odd">
 <td>局部关联图</td>
 <td>候选区域精细分析</td>
 <td>LD 结构、候选 SNP 与周边变异的关系</td>
+<td>补充材料，每个显著位点一图</td>
 </tr>
 </tbody>
 </table>
+<p>从数据流动的角度来看，GWAS 可视化遵循”从粗到细”的分析逻辑：首先通过 QQ 图确认统计模型无系统性偏差，再通过曼哈顿图识别全基因组显著位点，最后对每个候选位点生成局部关联图以深入解析信号结构。这一顺序不仅是展示逻辑，也是分析流程的自然顺序——跳过 QQ 图诊断直接报告曼哈顿图是对统计严谨性的放弃，因为系统性偏差会产生假阳性”信号峰”，在曼哈顿图中与真实信号外观无异。</p>
 <hr>
 </section>
 <section id="曼哈顿图" class="level2" data-number="19.3">
-<h2 data-number="19.3" class="anchored" data-anchor-id="曼哈顿图"><span class="header-section-number">19.3</span> 3.5.2 曼哈顿图</h2>
-<section id="图形结构与解读" class="level3" data-number="19.3.1">
-<h3 data-number="19.3.1" class="anchored" data-anchor-id="图形结构与解读"><span class="header-section-number">19.3.1</span> 3.5.2.1 图形结构与解读</h3>
+<h2 data-number="19.3" class="anchored" data-anchor-id="曼哈顿图"><span class="header-section-number">19.3</span> 曼哈顿图</h2>
+<section id="图形结构与规范解读" class="level3" data-number="19.3.1">
+<h3 data-number="19.3.1" class="anchored" data-anchor-id="图形结构与规范解读"><span class="header-section-number">19.3.1</span> 图形结构与规范解读</h3>
 <p>{{Wiki:Manhattan_plot}}</p>
-<p>曼哈顿图的 x 轴按染色体顺序排列所有 SNP 的基因组位置，y 轴显示 <span class="math inline">\(-\log_{10}(p)\)</span>。通常叠加两条水平参考线：</p>
+<p>曼哈顿图（Manhattan plot）是 GWAS 结果的标准可视化形式，其名称来源于纽约曼哈顿天际线的外形相似性——显著位点如高楼般突出于背景噪声之上。x 轴按染色体顺序排列所有 SNP 的基因组位置，y 轴显示 <span class="math inline">\(-\log_{10}(p)\)</span>。通常叠加两条水平参考线：</p>
 <ul>
 <li><strong>显著性阈值线</strong>（实线）：<span class="math inline">\(-\log_{10}(5 \times 10^{-8}) \approx 7.3\)</span>，对应 Bonferroni 校正后的全基因组显著性；</li>
 <li><strong>建议性阈值线</strong>（虚线）：<span class="math inline">\(-\log_{10}(1 \times 10^{-5}) \approx 5.0\)</span>，用于标记值得关注但未达严格显著的候选位点。</li>
 </ul>
-<p>超过显著性阈值的 SNP 簇通常对应一个 LD 区块内的多个相关变异，而非多个独立位点，需要通过条件分析或 LD 裁剪（clumping）识别独立信号（参见 3.5.4 节）。</p>
+<p><strong>显著性峰（signal peaks）</strong> 是关注的核心。超过 <span class="math inline">\(5 \times 10^{-8}\)</span> 阈值的位点被视为基因组显著（genome-wide significant）。一个典型的真实信号通常不是单个孤立的点，而是一组相邻 SNP 共同超过阈值——这是因为芯片对 LD 区块内多个 SNP 均进行了分型，每个 SNP 获得的信号强度正比于其与因果变异的 <span class="math inline">\(r^2\)</span>，由此形成峰顶最显著、两侧随 LD 衰减平滑下降的”山峰”轮廓，峰宽反映 LD 区块的物理范围。若仅有单个孤立 SNP 超过阈值而邻近位点均无信号，则应怀疑技术假象（如基因型判定错误或染色体结构变异）。</p>
+<p><strong>背景分布</strong>应贴近 <span class="math inline">\(y = 0\)</span> 基线（即 <span class="math inline">\(-\log_{10}(p) \approx 0\)</span> 对应 <span class="math inline">\(p \approx 1\)</span>）。若整体背景升高，而非仅有少数峰突出，这是 <span class="math inline">\(\lambda_{GC}\)</span> 膨胀的直观表现，提示群体分层或亲缘关系未被充分控制（参见 3.5.3 节）。</p>
+<p>超过显著性阈值的 SNP 簇通常对应一个 LD 区块内的多个相关变异，而非多个独立位点，需要通过条件分析或 LD 裁剪（clumping）识别独立信号（参见 3.5.7 节）。</p>
 </section>
 <section id="r-实现ggplot2" class="level3" data-number="19.3.2">
-<h3 data-number="19.3.2" class="anchored" data-anchor-id="r-实现ggplot2"><span class="header-section-number">19.3.2</span> 3.5.2.2 R 实现（ggplot2）</h3>
+<h3 data-number="19.3.2" class="anchored" data-anchor-id="r-实现ggplot2"><span class="header-section-number">19.3.2</span> R 实现（ggplot2）</h3>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb1"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(tidyverse)</span>
 <span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="co"># 假设已读入 PLINK 线性或逻辑回归结果</span></span>
-<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a>gwas <span class="ot">&lt;-</span> <span class="fu">read_table</span>(<span class="st">"gwas_linear.assoc.linear"</span>, <span class="at">col_types =</span> <span class="fu">cols</span>()) <span class="sc">%&gt;%</span></span>
-<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(TEST <span class="sc">==</span> <span class="st">"ADD"</span>, <span class="sc">!</span><span class="fu">is.na</span>(P))</span>
-<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a><span class="co"># 准备曼哈顿图数据：计算各 SNP 的累积基因组位置</span></span>
-<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a>manhattan_data <span class="ot">&lt;-</span> gwas <span class="sc">%&gt;%</span></span>
-<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a>  <span class="fu">group_by</span>(CHR) <span class="sc">%&gt;%</span></span>
-<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a>  <span class="fu">summarise</span>(<span class="at">chr_len =</span> <span class="fu">max</span>(BP), <span class="at">.groups =</span> <span class="st">"drop"</span>) <span class="sc">%&gt;%</span></span>
-<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">tot =</span> <span class="fu">cumsum</span>(<span class="fu">as.numeric</span>(chr_len)) <span class="sc">-</span> chr_len) <span class="sc">%&gt;%</span></span>
-<span id="cb1-12"><a href="#cb1-12" aria-hidden="true" tabindex="-1"></a>  <span class="fu">select</span>(CHR, tot) <span class="sc">%&gt;%</span></span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="co"># 读取 GWAS 结果（以 MLM 输出格式为例）</span></span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a>gwas <span class="ot">&lt;-</span> <span class="fu">read_tsv</span>(<span class="st">"output/gwas_mlm_result.assoc.txt"</span>) <span class="sc">%&gt;%</span></span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(<span class="sc">!</span><span class="fu">is.na</span>(p_wald)) <span class="sc">%&gt;%</span></span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">rename</span>(<span class="at">CHR =</span> chr, <span class="at">BP =</span> ps, <span class="at">P =</span> p_wald)</span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a><span class="co"># 计算每个染色体的累积坐标</span></span>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a>gwas_plot <span class="ot">&lt;-</span> gwas <span class="sc">%&gt;%</span></span>
+<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a>  <span class="fu">group_by</span>(CHR) <span class="sc">%&gt;%</span></span>
+<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a>  <span class="fu">summarize</span>(<span class="at">chr_len =</span> <span class="fu">max</span>(BP), <span class="at">.groups =</span> <span class="st">"drop"</span>) <span class="sc">%&gt;%</span></span>
+<span id="cb1-12"><a href="#cb1-12" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">tot =</span> <span class="fu">cumsum</span>(chr_len) <span class="sc">-</span> chr_len) <span class="sc">%&gt;%</span></span>
 <span id="cb1-13"><a href="#cb1-13" aria-hidden="true" tabindex="-1"></a>  <span class="fu">left_join</span>(gwas, <span class="at">by =</span> <span class="st">"CHR"</span>) <span class="sc">%&gt;%</span></span>
 <span id="cb1-14"><a href="#cb1-14" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">BPcum =</span> BP <span class="sc">+</span> tot) <span class="sc">%&gt;%</span></span>
-<span id="cb1-15"><a href="#cb1-15" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(<span class="sc">!</span><span class="fu">is.na</span>(P)) <span class="sc">%&gt;%</span></span>
-<span id="cb1-16"><a href="#cb1-16" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">log10p =</span> <span class="sc">-</span><span class="fu">log10</span>(P))</span>
-<span id="cb1-17"><a href="#cb1-17" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-18"><a href="#cb1-18" aria-hidden="true" tabindex="-1"></a><span class="co"># 确定染色体标签位置</span></span>
-<span id="cb1-19"><a href="#cb1-19" aria-hidden="true" tabindex="-1"></a>axis_df <span class="ot">&lt;-</span> manhattan_data <span class="sc">%&gt;%</span></span>
-<span id="cb1-20"><a href="#cb1-20" aria-hidden="true" tabindex="-1"></a>  <span class="fu">group_by</span>(CHR) <span class="sc">%&gt;%</span></span>
-<span id="cb1-21"><a href="#cb1-21" aria-hidden="true" tabindex="-1"></a>  <span class="fu">summarise</span>(<span class="at">center =</span> <span class="fu">mean</span>(BPcum), <span class="at">.groups =</span> <span class="st">"drop"</span>)</span>
-<span id="cb1-22"><a href="#cb1-22" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-23"><a href="#cb1-23" aria-hidden="true" tabindex="-1"></a><span class="co"># 绘制曼哈顿图</span></span>
-<span id="cb1-24"><a href="#cb1-24" aria-hidden="true" tabindex="-1"></a><span class="fu">ggplot</span>(manhattan_data,</span>
-<span id="cb1-25"><a href="#cb1-25" aria-hidden="true" tabindex="-1"></a>       <span class="fu">aes</span>(<span class="at">x =</span> BPcum, <span class="at">y =</span> log10p, <span class="at">color =</span> <span class="fu">factor</span>(CHR <span class="sc">%%</span> <span class="dv">2</span>))) <span class="sc">+</span></span>
-<span id="cb1-26"><a href="#cb1-26" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_point</span>(<span class="at">size =</span> <span class="fl">0.4</span>, <span class="at">alpha =</span> <span class="fl">0.6</span>) <span class="sc">+</span></span>
+<span id="cb1-15"><a href="#cb1-15" aria-hidden="true" tabindex="-1"></a>  <span class="fu">arrange</span>(CHR, BP)</span>
+<span id="cb1-16"><a href="#cb1-16" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-17"><a href="#cb1-17" aria-hidden="true" tabindex="-1"></a><span class="co"># 染色体中心坐标（用于 x 轴标签）</span></span>
+<span id="cb1-18"><a href="#cb1-18" aria-hidden="true" tabindex="-1"></a>axis_df <span class="ot">&lt;-</span> gwas_plot <span class="sc">%&gt;%</span></span>
+<span id="cb1-19"><a href="#cb1-19" aria-hidden="true" tabindex="-1"></a>  <span class="fu">group_by</span>(CHR) <span class="sc">%&gt;%</span></span>
+<span id="cb1-20"><a href="#cb1-20" aria-hidden="true" tabindex="-1"></a>  <span class="fu">summarize</span>(<span class="at">center =</span> (<span class="fu">max</span>(BPcum) <span class="sc">+</span> <span class="fu">min</span>(BPcum)) <span class="sc">/</span> <span class="dv">2</span>, <span class="at">.groups =</span> <span class="st">"drop"</span>)</span>
+<span id="cb1-21"><a href="#cb1-21" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-22"><a href="#cb1-22" aria-hidden="true" tabindex="-1"></a><span class="co"># 绘制曼哈顿图</span></span>
+<span id="cb1-23"><a href="#cb1-23" aria-hidden="true" tabindex="-1"></a><span class="fu">ggplot</span>(gwas_plot, <span class="fu">aes</span>(<span class="at">x =</span> BPcum, <span class="at">y =</span> <span class="sc">-</span><span class="fu">log10</span>(P))) <span class="sc">+</span></span>
+<span id="cb1-24"><a href="#cb1-24" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_point</span>(<span class="fu">aes</span>(<span class="at">color =</span> <span class="fu">as.factor</span>(CHR <span class="sc">%%</span> <span class="dv">2</span>)),</span>
+<span id="cb1-25"><a href="#cb1-25" aria-hidden="true" tabindex="-1"></a>             <span class="at">alpha =</span> <span class="fl">0.75</span>, <span class="at">size =</span> <span class="fl">0.8</span>) <span class="sc">+</span></span>
+<span id="cb1-26"><a href="#cb1-26" aria-hidden="true" tabindex="-1"></a>  <span class="fu">scale_color_manual</span>(<span class="at">values =</span> <span class="fu">c</span>(<span class="st">"steelblue"</span>, <span class="st">"grey60"</span>)) <span class="sc">+</span></span>
 <span id="cb1-27"><a href="#cb1-27" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_hline</span>(<span class="at">yintercept =</span> <span class="sc">-</span><span class="fu">log10</span>(<span class="fl">5e-8</span>),</span>
-<span id="cb1-28"><a href="#cb1-28" aria-hidden="true" tabindex="-1"></a>             <span class="at">color =</span> <span class="st">"red"</span>,   <span class="at">linetype =</span> <span class="st">"solid"</span>,  <span class="at">linewidth =</span> <span class="fl">0.6</span>) <span class="sc">+</span></span>
+<span id="cb1-28"><a href="#cb1-28" aria-hidden="true" tabindex="-1"></a>             <span class="at">color =</span> <span class="st">"red"</span>, <span class="at">linetype =</span> <span class="st">"dashed"</span>, <span class="at">linewidth =</span> <span class="fl">0.6</span>) <span class="sc">+</span></span>
 <span id="cb1-29"><a href="#cb1-29" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_hline</span>(<span class="at">yintercept =</span> <span class="sc">-</span><span class="fu">log10</span>(<span class="fl">1e-5</span>),</span>
-<span id="cb1-30"><a href="#cb1-30" aria-hidden="true" tabindex="-1"></a>             <span class="at">color =</span> <span class="st">"blue"</span>,  <span class="at">linetype =</span> <span class="st">"dashed"</span>, <span class="at">linewidth =</span> <span class="fl">0.4</span>) <span class="sc">+</span></span>
-<span id="cb1-31"><a href="#cb1-31" aria-hidden="true" tabindex="-1"></a>  <span class="fu">scale_x_continuous</span>(<span class="at">label =</span> axis_df<span class="sc">$</span>CHR, <span class="at">breaks =</span> axis_df<span class="sc">$</span>center) <span class="sc">+</span></span>
-<span id="cb1-32"><a href="#cb1-32" aria-hidden="true" tabindex="-1"></a>  <span class="fu">scale_color_manual</span>(<span class="at">values =</span> <span class="fu">c</span>(<span class="st">"grey60"</span>, <span class="st">"steelblue"</span>), <span class="at">guide =</span> <span class="st">"none"</span>) <span class="sc">+</span></span>
-<span id="cb1-33"><a href="#cb1-33" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(<span class="at">x =</span> <span class="st">"Chromosome"</span>,</span>
-<span id="cb1-34"><a href="#cb1-34" aria-hidden="true" tabindex="-1"></a>       <span class="at">y =</span> <span class="fu">expression</span>(<span class="sc">-</span>log[<span class="dv">10</span>](<span class="fu">italic</span>(p))),</span>
-<span id="cb1-35"><a href="#cb1-35" aria-hidden="true" tabindex="-1"></a>       <span class="at">title =</span> <span class="st">"Manhattan Plot"</span>) <span class="sc">+</span></span>
-<span id="cb1-36"><a href="#cb1-36" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme_classic</span>() <span class="sc">+</span></span>
-<span id="cb1-37"><a href="#cb1-37" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme</span>(<span class="at">axis.text.x =</span> <span class="fu">element_text</span>(<span class="at">size =</span> <span class="dv">7</span>))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<span id="cb1-30"><a href="#cb1-30" aria-hidden="true" tabindex="-1"></a>             <span class="at">color =</span> <span class="st">"orange"</span>, <span class="at">linetype =</span> <span class="st">"dotted"</span>, <span class="at">linewidth =</span> <span class="fl">0.5</span>) <span class="sc">+</span></span>
+<span id="cb1-31"><a href="#cb1-31" aria-hidden="true" tabindex="-1"></a>  <span class="fu">scale_x_continuous</span>(</span>
+<span id="cb1-32"><a href="#cb1-32" aria-hidden="true" tabindex="-1"></a>    <span class="at">breaks =</span> axis_df<span class="sc">$</span>center,</span>
+<span id="cb1-33"><a href="#cb1-33" aria-hidden="true" tabindex="-1"></a>    <span class="at">labels =</span> axis_df<span class="sc">$</span>CHR,</span>
+<span id="cb1-34"><a href="#cb1-34" aria-hidden="true" tabindex="-1"></a>    <span class="at">expand =</span> <span class="fu">c</span>(<span class="fl">0.02</span>, <span class="dv">0</span>)</span>
+<span id="cb1-35"><a href="#cb1-35" aria-hidden="true" tabindex="-1"></a>  ) <span class="sc">+</span></span>
+<span id="cb1-36"><a href="#cb1-36" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(<span class="at">x =</span> <span class="st">"Chromosome"</span>,</span>
+<span id="cb1-37"><a href="#cb1-37" aria-hidden="true" tabindex="-1"></a>       <span class="at">y =</span> <span class="fu">expression</span>(<span class="sc">-</span>log[<span class="dv">10</span>](p)),</span>
+<span id="cb1-38"><a href="#cb1-38" aria-hidden="true" tabindex="-1"></a>       <span class="at">title =</span> <span class="st">"Manhattan Plot: GWAS Results"</span>) <span class="sc">+</span></span>
+<span id="cb1-39"><a href="#cb1-39" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme_classic</span>() <span class="sc">+</span></span>
+<span id="cb1-40"><a href="#cb1-40" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme</span>(<span class="at">legend.position =</span> <span class="st">"none"</span>,</span>
+<span id="cb1-41"><a href="#cb1-41" aria-hidden="true" tabindex="-1"></a>        <span class="at">axis.text.x =</span> <span class="fu">element_text</span>(<span class="at">size =</span> <span class="dv">7</span>))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <hr>
 </section>
 </section>
 <section id="qq-图与基因组膨胀因子" class="level2" data-number="19.4">
-<h2 data-number="19.4" class="anchored" data-anchor-id="qq-图与基因组膨胀因子"><span class="header-section-number">19.4</span> 3.5.3 QQ 图与基因组膨胀因子</h2>
-<p>QQ 图将排序后的观测 <span class="math inline">\(-\log_{10}(p)\)</span> 与期望值对比，用于诊断统计模型是否存在系统性偏差。</p>
-<ul>
-<li><strong>理想情况</strong>：绝大多数点沿对角线分布（零假设为真的位点），尾部真实信号偏离对角线；</li>
-<li><strong>全局向上偏离（inflation）</strong>：提示群体分层未充分控制，需增加 PCA 主成分或引入 MLM；</li>
-<li><strong>全局向下偏离（deflation）</strong>：通常由样本量不足或过于保守的模型导致。</li>
-</ul>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb2"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="co"># QQ 图</span></span>
+<h2 data-number="19.4" class="anchored" data-anchor-id="qq-图与基因组膨胀因子"><span class="header-section-number">19.4</span> QQ 图与基因组膨胀因子</h2>
+<section id="qq-图的系统解读" class="level3" data-number="19.4.1">
+<h3 data-number="19.4.1" class="anchored" data-anchor-id="qq-图的系统解读"><span class="header-section-number">19.4.1</span> QQ 图的系统解读</h3>
+<p>QQ 图（Quantile-Quantile Plot）是评估 GWAS 统计假设是否成立的关键诊断工具。其横轴为期望 <span class="math inline">\(-\log_{10}(p)\)</span>（假设所有 SNP 均为零假设下的均匀分布），纵轴为观测值。<strong>理想 QQ 图的形态</strong>：绝大多数点（约 99% 以上）沿 <span class="math inline">\(y = x\)</span> 对角线分布，仅在图的右上角（高显著性区域）出现偏离，形成”钩形（hook）“上翘，代表真实关联信号。<strong>全局膨胀（global inflation）</strong>：曲线从低 <span class="math inline">\(-\log_{10}(p)\)</span> 区域便开始系统性上偏对角线，<span class="math inline">\(\lambda_{GC}\)</span> 明显大于 1，主要原因有三：群体分层校正不足、样本间存在未被考虑的亲缘关系，或极强的多基因性。<strong>全局通缩（deflation）</strong>：曲线整体低于对角线，提示样本量过小（检验力不足）或模型过度校正。</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb2"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="co"># QQ 图（基于真实 GWAS 结果）</span></span>
 <span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>observed <span class="ot">&lt;-</span> <span class="fu">sort</span>(<span class="sc">-</span><span class="fu">log10</span>(gwas<span class="sc">$</span>P), <span class="at">decreasing =</span> <span class="cn">TRUE</span>)</span>
 <span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a>expected <span class="ot">&lt;-</span> <span class="sc">-</span><span class="fu">log10</span>(<span class="fu">ppoints</span>(<span class="fu">length</span>(observed)))</span>
 <span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a></span>
@@ -782,243 +819,845 @@ window.Quarto = {
 <span id="cb2-18"><a href="#cb2-18" aria-hidden="true" tabindex="-1"></a>                    <span class="at">na.rm =</span> <span class="cn">TRUE</span>) <span class="sc">/</span></span>
 <span id="cb2-19"><a href="#cb2-19" aria-hidden="true" tabindex="-1"></a>             <span class="fu">qchisq</span>(<span class="fl">0.5</span>, <span class="at">df =</span> <span class="dv">1</span>, <span class="at">lower.tail =</span> <span class="cn">FALSE</span>)</span>
 <span id="cb2-20"><a href="#cb2-20" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="fu">sprintf</span>(<span class="st">"lambda_GC = %.4f</span><span class="sc">\n</span><span class="st">"</span>, lambda_gc))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</section>
+<section id="基因组膨胀因子genomic-inflation-factor" class="level3" data-number="19.4.2">
+<h3 data-number="19.4.2" class="anchored" data-anchor-id="基因组膨胀因子genomic-inflation-factor"><span class="header-section-number">19.4.2</span> 基因组膨胀因子（Genomic Inflation Factor）</h3>
+<p><strong>基因组膨胀因子（Genomic Inflation Factor，<span class="math inline">\(\lambda_{GC}\)</span>）</strong> 是 GWAS 中评估全基因组范围内系统性统计偏差的核心诊断指标，最早由 Devlin 和 Roeder（1999）在基因组控制（Genomic Control，GC）框架下提出。其定义为：</p>
+<p><span class="math display">\[
+\lambda_{GC} = \frac{\text{median}(\chi^2_{1,\,\text{observed}})}{F_{\chi^2_1}^{-1}(0.5)} = \frac{\text{median}(\chi^2_{1,\,\text{observed}})}{0.4549}
+\]</span></p>
+<p>其中分母 <span class="math inline">\(F_{\chi^2_1}^{-1}(0.5) \approx 0.4549\)</span> 为自由度为 1 的 <span class="math inline">\(\chi^2\)</span> 分布的理论中位数。在零假设成立且样本相互独立的情况下，<span class="math inline">\(\lambda_{GC}\)</span> 的期望值为 1.0。选用<strong>中位数</strong>而非均值是刻意的：中位数对右尾极端值（即真实关联信号）不敏感，能更稳健地反映背景分布的系统偏差。</p>
+<section id="膨胀的来源" class="level4" data-number="19.4.2.1">
+<h4 data-number="19.4.2.1" class="anchored" data-anchor-id="膨胀的来源"><span class="header-section-number">19.4.2.1</span> 膨胀的来源</h4>
+<p>导致 <span class="math inline">\(\lambda_{GC} &gt; 1\)</span> 的原因可分为以下三类：</p>
+<p><strong>（1）群体分层（Population Stratification）</strong>：若病例组和对照组在祖先构成上存在差异，则任何与群体起源相关的 SNP 都会产生虚增的 <span class="math inline">\(\chi^2\)</span> 值。群体分层导致的膨胀均匀作用于全基因组，QQ 图曲线从低 <span class="math inline">\(-\log_{10}(p)\)</span> 区域即开始整体高于对角线。</p>
+<p><strong>（2）隐匿亲缘关系（Cryptic Relatedness）</strong>：若研究样本中存在未被记录的亲缘关系，相关个体在基因型和表型上均产生系统性相似，违背样本独立性假设，同样导致全局 <span class="math inline">\(\lambda_{GC}\)</span> 升高。混合线性模型通过将基因组亲缘关系矩阵（GRM）纳入随机效应，可同时校正分层与隐匿亲缘关系。</p>
+<p><strong>（3）真实的多基因性（Polygenicity）</strong>：对于高度多基因性的复杂性状（如身高、BMI、精神分裂症），成千上万个 SNP 各携带微弱但真实的效应，导致全基因组 <span class="math inline">\(\chi^2\)</span> 统计量整体性升高。在超大型队列（如 UK Biobank，<span class="math inline">\(N \approx 50\)</span> 万）中，<span class="math inline">\(\lambda_{GC}\)</span> 可能达到 1.5 甚至更高，完全源于多基因性而非统计假象。</p>
+</section>
+<section id="lambda_gc-的尺度依赖性" class="level4" data-number="19.4.2.2">
+<h4 data-number="19.4.2.2" class="anchored" data-anchor-id="lambda_gc-的尺度依赖性"><span class="header-section-number">19.4.2.2</span> <span class="math inline">\(\lambda_{GC}\)</span> 的尺度依赖性</h4>
+<p><span class="math inline">\(\lambda_{GC}\)</span> 的数值与样本量高度相关。理论上，<span class="math inline">\(\lambda_{GC}\)</span> 随样本量 <span class="math inline">\(N\)</span> 近似线性增长：</p>
+<p><span class="math display">\[
+\lambda_{GC} \approx 1 + \frac{N \cdot h^2_{\text{SNP}}}{M}
+\]</span></p>
+<p>为便于跨研究比较，可将 <span class="math inline">\(\lambda_{GC}\)</span> 标准化至 <span class="math inline">\(N = 1000\)</span> 的等效值：</p>
+<p><span class="math display">\[
+\lambda_{1000} = 1 + (\lambda_{GC} - 1) \times \frac{1000}{N_{\text{median}}}
+\]</span></p>
+<p><strong>在不同样本量的研究之间直接比较 <span class="math inline">\(\lambda_{GC}\)</span> 是无意义的</strong>，应改用 <span class="math inline">\(\lambda_{1000}\)</span> 评估残余系统偏差。</p>
+</section>
+<section id="基因组控制校正及其局限" class="level4" data-number="19.4.2.3">
+<h4 data-number="19.4.2.3" class="anchored" data-anchor-id="基因组控制校正及其局限"><span class="header-section-number">19.4.2.3</span> 基因组控制校正及其局限</h4>
+<p>当确认 <span class="math inline">\(\lambda_{GC}\)</span> 升高源于系统偏差（而非多基因性）时，可通过基因组控制对所有 <span class="math inline">\(\chi^2\)</span> 统计量进行缩放校正：</p>
+<p><span class="math display">\[
+\chi^2_{\text{corrected}} = \frac{\chi^2_{\text{observed}}}{\lambda_{GC}}
+\]</span></p>
+<p>然而，GC 校正存在两项根本性局限：第一，对全基因组所有位点施加相同的缩放系数，无法区分真实信号与噪声，会同时压缩真实关联信号和假阳性；第二，无法区分膨胀来源——若膨胀主要来自多基因性而非分层，校正将丢失真实信号。</p>
+<div class="warning">
+<p><strong>切勿在多基因性导致膨胀时使用 GC 校正</strong></p>
+<p>若 LD Score 回归（LDSC）分析显示截距接近 1.0，说明膨胀主要来源于多基因信号而非系统偏差，此时对统计量施加 <span class="math inline">\(\lambda_{GC}\)</span> 校正将不当压缩真实信号，增加假阴性。正确做法是保留原始 p 值，并在报告中注明膨胀来源。</p>
+</div>
+</section>
+<section id="ld-score-回归区分膨胀来源" class="level4" data-number="19.4.2.4">
+<h4 data-number="19.4.2.4" class="anchored" data-anchor-id="ld-score-回归区分膨胀来源"><span class="header-section-number">19.4.2.4</span> LD Score 回归：区分膨胀来源</h4>
+<p><strong>LD Score 回归（LD Score Regression，LDSC）</strong> 是当前区分群体分层与多基因性导致的 <span class="math inline">\(\lambda_{GC}\)</span> 升高的标准方法。其核心原理为：若膨胀来自真实的多基因信号，则位点的 <span class="math inline">\(\chi^2\)</span> 统计量期望值应与该位点的 LD Score（<span class="math inline">\(\ell_j = \sum_k r^2_{jk}\)</span>）成正比；若膨胀来自群体分层（与 LD 结构无关的全局偏差），则截距项应升高：</p>
+<p><span class="math display">\[
+E[\chi^2_j] = \frac{Nh^2_{\text{SNP}}}{M} \ell_j + Na + 1
+\]</span></p>
+<p><strong>截距接近 1 意味着无显著分层，<span class="math inline">\(\lambda_{GC}\)</span> 的膨胀完全可以归因于多基因性</strong>；截距显著大于 1 则提示需要进一步的分层校正。</p>
+<p>{{Wiki:LD_score_regression}}</p>
+</section>
+<section id="解读-lambda_gc-的实践指南" class="level4" data-number="19.4.2.5">
+<h4 data-number="19.4.2.5" class="anchored" data-anchor-id="解读-lambda_gc-的实践指南"><span class="header-section-number">19.4.2.5</span> 解读 <span class="math inline">\(\lambda_{GC}\)</span> 的实践指南</h4>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 33%">
+<col style="width: 33%">
+<col style="width: 33%">
+</colgroup>
+<thead>
+<tr class="header">
+<th><span class="math inline">\(\lambda_{GC}\)</span> 范围</th>
+<th>可能原因</th>
+<th>建议操作</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>0.95 – 1.05</td>
+<td>无系统偏差（正常）</td>
+<td>无需处理</td>
+</tr>
+<tr class="even">
+<td>1.05 – 1.10</td>
+<td>轻微分层或小样本噪声</td>
+<td>确认 PCA 校正是否充分</td>
+</tr>
+<tr class="odd">
+<td>&gt; 1.10（小样本，<span class="math inline">\(N &lt; 10{,}000\)</span>）</td>
+<td>群体分层或亲缘关系</td>
+<td>增加 PCA 主成分数或使用 MLM</td>
+</tr>
+<tr class="even">
+<td>&gt; 1.10（大样本，<span class="math inline">\(N &gt; 100{,}000\)</span>）</td>
+<td>多基因性为主</td>
+<td>运行 LDSC 判断来源，不建议 GC 校正</td>
+</tr>
+<tr class="odd">
+<td>&lt; 0.95</td>
+<td>过度校正或样本量不足</td>
+<td>检查 QC 流程，避免去除过多样本</td>
+</tr>
+</tbody>
+</table>
+</section>
+</section>
+<section id="模拟实验pca-校正前后的-qq-图对比" class="level3" data-number="19.4.3">
+<h3 data-number="19.4.3" class="anchored" data-anchor-id="模拟实验pca-校正前后的-qq-图对比"><span class="header-section-number">19.4.3</span> 模拟实验：PCA 校正前后的 QQ 图对比</h3>
+<p>以下代码模拟一个含有两个亚群的 GWAS 数据集，分别展示<strong>未经群体结构校正</strong>和<strong>纳入前两个主成分校正后</strong>的 QQ 图。模拟采用现实中较为常见的不平衡招募设计：两亚群的等位基因频率差异约为 0.15（对应中等强度 <span class="math inline">\(F_{ST}\)</span>），病例中 75% 来自亚群1，对照中 75% 来自亚群2。这一设计贴近多中心招募或多民族队列中常见的祖先-表型混淆情形，足以产生视觉上清晰可辨的 QQ 图膨胀（<span class="math inline">\(\lambda_{GC} \approx 1.5\)</span>–<span class="math inline">\(2.5\)</span>），同时保留了真实信号在校正后的可见性。</p>
+<p><strong>第一步：构建含群体结构的基因型矩阵</strong></p>
+<p>两个亚群（各 400 人）在每个 SNP 上具有不同的等位基因频率。<code>maf1</code> 为亚群1的 MAF，<code>maf2</code> 通过在 <code>maf1</code> 基础上叠加均值为 0、标准差为 0.15 的正态扰动获得，使两群间的平均 MAF 差约为 0.15，对应中等强度的群体分化（<span class="math inline">\(F_{ST}\)</span>）。每个个体的基因型在加性模型下独立地服从 <span class="math inline">\(\text{Binomial}(2, \text{maf})\)</span>，分别为 0、1、2 个效应等位基因拷贝数。</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb3"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">2024</span>)</span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(ggplot2)</span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a>n_per_pop <span class="ot">&lt;-</span> <span class="dv">400</span></span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a>n         <span class="ot">&lt;-</span> n_per_pop <span class="sc">*</span> <span class="dv">2</span></span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a>M         <span class="ot">&lt;-</span> <span class="dv">5000</span></span>
+<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a>n_causal  <span class="ot">&lt;-</span> <span class="dv">20</span></span>
+<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-9"><a href="#cb3-9" aria-hidden="true" tabindex="-1"></a><span class="co"># Per-SNP MAF in each subpopulation; mean |Δmaf| ≈ 0.15</span></span>
+<span id="cb3-10"><a href="#cb3-10" aria-hidden="true" tabindex="-1"></a>maf1 <span class="ot">&lt;-</span> <span class="fu">runif</span>(M, <span class="fl">0.10</span>, <span class="fl">0.50</span>)</span>
+<span id="cb3-11"><a href="#cb3-11" aria-hidden="true" tabindex="-1"></a>maf2 <span class="ot">&lt;-</span> <span class="fu">pmin</span>(<span class="fu">pmax</span>(maf1 <span class="sc">+</span> <span class="fu">rnorm</span>(M, <span class="dv">0</span>, <span class="fl">0.15</span>), <span class="fl">0.05</span>), <span class="fl">0.95</span>)</span>
+<span id="cb3-12"><a href="#cb3-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-13"><a href="#cb3-13" aria-hidden="true" tabindex="-1"></a><span class="co"># Genotype matrices: each entry is 0/1/2 allele copies under HWE</span></span>
+<span id="cb3-14"><a href="#cb3-14" aria-hidden="true" tabindex="-1"></a>G1 <span class="ot">&lt;-</span> <span class="fu">matrix</span>(<span class="fu">rbinom</span>(n_per_pop <span class="sc">*</span> M, <span class="dv">2</span>, <span class="fu">rep</span>(maf1, <span class="at">each =</span> n_per_pop)),</span>
+<span id="cb3-15"><a href="#cb3-15" aria-hidden="true" tabindex="-1"></a>             <span class="at">nrow =</span> n_per_pop, <span class="at">ncol =</span> M)</span>
+<span id="cb3-16"><a href="#cb3-16" aria-hidden="true" tabindex="-1"></a>G2 <span class="ot">&lt;-</span> <span class="fu">matrix</span>(<span class="fu">rbinom</span>(n_per_pop <span class="sc">*</span> M, <span class="dv">2</span>, <span class="fu">rep</span>(maf2, <span class="at">each =</span> n_per_pop)),</span>
+<span id="cb3-17"><a href="#cb3-17" aria-hidden="true" tabindex="-1"></a>             <span class="at">nrow =</span> n_per_pop, <span class="at">ncol =</span> M)</span>
+<span id="cb3-18"><a href="#cb3-18" aria-hidden="true" tabindex="-1"></a>G  <span class="ot">&lt;-</span> <span class="fu">rbind</span>(G1, G2)   <span class="co"># combined: n x M</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><strong>第二步：模拟存在群体分层的病例/对照表型</strong></p>
+<p>病例和对照在两个亚群间的分配并不均等：亚群1中 75% 为病例（300 人），亚群2中 75% 为对照（300 人）。这种不平衡使”病例”在一定程度上等价于”亚群1成员”，从而将亚群间的任何等位基因频率差异都转化为虚假的关联信号。在现实中，这类情形常见于多中心 GWAS——各中心的病例/对照比例不同，且各中心招募的人群在祖先构成上有所差异。</p>
+<p>随后通过<strong>阈值模型（liability threshold model）</strong> 在分层表型基础上叠加少量真实遗传信号：计算 20 个因果 SNP 对个体遗传负担（liability）的贡献，将遗传负担最高的 25% 个体的病例/对照标签翻转，使真实信号以中等强度混入分层噪声中。</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb4"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="co"># 75% of cases come from pop1, 75% of controls from pop2</span></span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a>n_case_p1 <span class="ot">&lt;-</span> <span class="fu">round</span>(n_per_pop <span class="sc">*</span> <span class="fl">0.75</span>)</span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a>n_ctrl_p1 <span class="ot">&lt;-</span> n_per_pop <span class="sc">-</span> n_case_p1</span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a>n_case_p2 <span class="ot">&lt;-</span> n_per_pop <span class="sc">-</span> <span class="fu">round</span>(n_per_pop <span class="sc">*</span> <span class="fl">0.75</span>)</span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a>n_ctrl_p2 <span class="ot">&lt;-</span> n_per_pop <span class="sc">-</span> n_case_p2</span>
+<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a>y <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="fu">rep</span>(<span class="dv">1</span>L, n_case_p1), <span class="fu">rep</span>(<span class="dv">0</span>L, n_ctrl_p1),</span>
+<span id="cb4-8"><a href="#cb4-8" aria-hidden="true" tabindex="-1"></a>       <span class="fu">rep</span>(<span class="dv">1</span>L, n_case_p2), <span class="fu">rep</span>(<span class="dv">0</span>L, n_ctrl_p2))</span>
+<span id="cb4-9"><a href="#cb4-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-10"><a href="#cb4-10" aria-hidden="true" tabindex="-1"></a><span class="co"># Liability threshold model: overlay weak true signals on top of stratification</span></span>
+<span id="cb4-11"><a href="#cb4-11" aria-hidden="true" tabindex="-1"></a>causal_idx   <span class="ot">&lt;-</span> <span class="fu">sample</span>(M, n_causal)</span>
+<span id="cb4-12"><a href="#cb4-12" aria-hidden="true" tabindex="-1"></a>causal_betas <span class="ot">&lt;-</span> <span class="fu">rnorm</span>(n_causal, <span class="at">sd =</span> <span class="fl">0.5</span>)</span>
+<span id="cb4-13"><a href="#cb4-13" aria-hidden="true" tabindex="-1"></a>liability    <span class="ot">&lt;-</span> <span class="fu">as.numeric</span>(G[, causal_idx] <span class="sc">%*%</span> causal_betas <span class="sc">+</span> <span class="fu">rnorm</span>(n, <span class="at">sd =</span> <span class="dv">1</span>))</span>
+<span id="cb4-14"><a href="#cb4-14" aria-hidden="true" tabindex="-1"></a>flip_mask    <span class="ot">&lt;-</span> liability <span class="sc">&gt;</span> <span class="fu">quantile</span>(liability, <span class="fl">0.75</span>)</span>
+<span id="cb4-15"><a href="#cb4-15" aria-hidden="true" tabindex="-1"></a>y[flip_mask] <span class="ot">&lt;-</span> <span class="dv">1</span>L <span class="sc">-</span> y[flip_mask]   <span class="co"># flip top-25% liability individuals</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><strong>第三步：单 SNP 关联检验函数</strong></p>
+<p><code>gwas_pval()</code> 对单个 SNP 拟合 logistic 回归，返回基因型系数的 Wald 检验双侧 p 值。当传入 <code>covariates</code> 参数（即主成分矩阵）时，模型变为 <span class="math inline">\(\text{logit}(p_i) = \beta_0 + \beta_g g_i + \boldsymbol{\gamma}^\top \mathbf{PC}_i\)</span>，PCA 校正即通过这一协变量调整实现。<code>glm.fit()</code> 直接操作设计矩阵，避免公式解析开销，在逐 SNP 循环中效率更高。标准误通过费雪信息矩阵（<span class="math inline">\(\mathbf{X}^\top \mathbf{W} \mathbf{X}\)</span>，<span class="math inline">\(\mathbf{W}\)</span> 为 IRLS 权重对角矩阵）的对角元素求得。</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb5"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a>gwas_pval <span class="ot">&lt;-</span> <span class="cf">function</span>(g, phenotype, <span class="at">covariates =</span> <span class="cn">NULL</span>) {</span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span> (<span class="fu">var</span>(g) <span class="sc">==</span> <span class="dv">0</span>) <span class="fu">return</span>(<span class="fl">1.0</span>)   <span class="co"># skip monomorphic SNPs</span></span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a>  X   <span class="ot">&lt;-</span> <span class="cf">if</span> (<span class="fu">is.null</span>(covariates)) <span class="fu">cbind</span>(<span class="dv">1</span>, g) <span class="cf">else</span> <span class="fu">cbind</span>(<span class="dv">1</span>, g, covariates)</span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a>  fit <span class="ot">&lt;-</span> <span class="fu">glm.fit</span>(X, phenotype, <span class="at">family =</span> <span class="fu">binomial</span>())</span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a>  <span class="co"># SE from observed Fisher information: diag( (X'WX)^{-1} )[2]</span></span>
+<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a>  coef_g <span class="ot">&lt;-</span> fit<span class="sc">$</span>coefficients[<span class="dv">2</span>]</span>
+<span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a>  se_g   <span class="ot">&lt;-</span> <span class="fu">sqrt</span>(<span class="fu">diag</span>(<span class="fu">solve</span>(<span class="fu">crossprod</span>(X <span class="sc">*</span> <span class="fu">sqrt</span>(fit<span class="sc">$</span>weights))))[<span class="dv">2</span>])</span>
+<span id="cb5-8"><a href="#cb5-8" aria-hidden="true" tabindex="-1"></a>  <span class="dv">2</span> <span class="sc">*</span> <span class="fu">pnorm</span>(<span class="fu">abs</span>(coef_g <span class="sc">/</span> se_g), <span class="at">lower.tail =</span> <span class="cn">FALSE</span>)</span>
+<span id="cb5-9"><a href="#cb5-9" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><strong>第四步：提取主成分用于分层校正</strong></p>
+<p>对基因型矩阵进行列标准化（零均值、单位方差），再进行奇异值分解（SVD），取左奇异向量的前两列作为个体的主成分得分。这与 EIGENSTRAT 的核心步骤等价（参见专题 3.4 PCA 校正原理小节）。<code>svd(..., nu = 2, nv = 0)</code> 仅计算前两个左奇异向量，避免对 <span class="math inline">\(5000 \times 5000\)</span> 右奇异矩阵的无效计算。</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb6"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a>G_std <span class="ot">&lt;-</span> <span class="fu">scale</span>(G)</span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a>G_std[<span class="fu">is.nan</span>(G_std)] <span class="ot">&lt;-</span> <span class="dv">0</span>        <span class="co"># replace NaN from zero-variance SNPs</span></span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a>pcs   <span class="ot">&lt;-</span> <span class="fu">svd</span>(G_std, <span class="at">nu =</span> <span class="dv">2</span>, <span class="at">nv =</span> <span class="dv">0</span>)<span class="sc">$</span>u   <span class="co"># n x 2 PC scores</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><strong>第五步：执行关联检验并计算 <span class="math inline">\(\lambda_{GC}\)</span></strong></p>
+<p>对 5,000 个 SNP 分别在未校正和 PCA 校正两种模型下进行检验。<code>calc_lambda()</code> 将 p 值转换为 <span class="math inline">\(\chi^2_1\)</span> 统计量后，计算其中位数与理论中位数 0.4549 之比，即为 <span class="math inline">\(\lambda_{GC}\)</span>。</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb7"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">"Running uncorrected GWAS ...</span><span class="sc">\n</span><span class="st">"</span>)</span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a>p_unc <span class="ot">&lt;-</span> <span class="fu">vapply</span>(<span class="fu">seq_len</span>(M), <span class="cf">function</span>(j) <span class="fu">gwas_pval</span>(G[, j], y),          <span class="fu">numeric</span>(<span class="dv">1</span>))</span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">"Running PCA-corrected GWAS ...</span><span class="sc">\n</span><span class="st">"</span>)</span>
+<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a>p_cor <span class="ot">&lt;-</span> <span class="fu">vapply</span>(<span class="fu">seq_len</span>(M), <span class="cf">function</span>(j) <span class="fu">gwas_pval</span>(G[, j], y, pcs),     <span class="fu">numeric</span>(<span class="dv">1</span>))</span>
+<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-7"><a href="#cb7-7" aria-hidden="true" tabindex="-1"></a>calc_lambda <span class="ot">&lt;-</span> <span class="cf">function</span>(pvals) {</span>
+<span id="cb7-8"><a href="#cb7-8" aria-hidden="true" tabindex="-1"></a>  chi2 <span class="ot">&lt;-</span> <span class="fu">qchisq</span>(pvals, <span class="at">df =</span> <span class="dv">1</span>, <span class="at">lower.tail =</span> <span class="cn">FALSE</span>)</span>
+<span id="cb7-9"><a href="#cb7-9" aria-hidden="true" tabindex="-1"></a>  <span class="fu">median</span>(chi2) <span class="sc">/</span> <span class="fu">qchisq</span>(<span class="fl">0.5</span>, <span class="at">df =</span> <span class="dv">1</span>, <span class="at">lower.tail =</span> <span class="cn">FALSE</span>)</span>
+<span id="cb7-10"><a href="#cb7-10" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb7-11"><a href="#cb7-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-12"><a href="#cb7-12" aria-hidden="true" tabindex="-1"></a>lam_unc <span class="ot">&lt;-</span> <span class="fu">calc_lambda</span>(p_unc)</span>
+<span id="cb7-13"><a href="#cb7-13" aria-hidden="true" tabindex="-1"></a>lam_cor <span class="ot">&lt;-</span> <span class="fu">calc_lambda</span>(p_cor)</span>
+<span id="cb7-14"><a href="#cb7-14" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="fu">sprintf</span>(<span class="st">"lambda_GC  uncorrected : %.3f</span><span class="sc">\n</span><span class="st">"</span>, lam_unc))</span>
+<span id="cb7-15"><a href="#cb7-15" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="fu">sprintf</span>(<span class="st">"lambda_GC  PCA-corrected: %.3f</span><span class="sc">\n</span><span class="st">"</span>, lam_cor))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><strong>第六步：绘制 QQ 图</strong></p>
+<p><code>qq_df()</code> 将 p 值转换为 <span class="math inline">\(-\log_{10}(p)\)</span>，并按排序秩生成期望分位数 <span class="math inline">\(-\log_{10}((i - 0.5)/M)\)</span>（Blom 近似，避免端点的 0 和 <span class="math inline">\(\infty\)</span>）。<code>pmax(pvals, 1e-300)</code> 防止数值下溢导致的 <code>Inf</code> 点破坏图形比例。两条曲线以不同颜色叠加，图例中直接嵌入各自的 <span class="math inline">\(\lambda_{GC}\)</span> 值，无需读者另行查阅。</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb8"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a>qq_df <span class="ot">&lt;-</span> <span class="cf">function</span>(pvals, label) {</span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a>  n_ <span class="ot">&lt;-</span> <span class="fu">length</span>(pvals)</span>
+<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">data.frame</span>(</span>
+<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a>    <span class="at">exp =</span> <span class="sc">-</span><span class="fu">log10</span>((<span class="fu">seq_len</span>(n_) <span class="sc">-</span> <span class="fl">0.5</span>) <span class="sc">/</span> n_),</span>
+<span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a>    <span class="at">obs =</span> <span class="fu">sort</span>(<span class="sc">-</span><span class="fu">log10</span>(<span class="fu">pmax</span>(pvals, <span class="fl">1e-300</span>)), <span class="at">decreasing =</span> <span class="cn">TRUE</span>),</span>
+<span id="cb8-6"><a href="#cb8-6" aria-hidden="true" tabindex="-1"></a>    <span class="at">grp =</span> label</span>
+<span id="cb8-7"><a href="#cb8-7" aria-hidden="true" tabindex="-1"></a>  )</span>
+<span id="cb8-8"><a href="#cb8-8" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb8-9"><a href="#cb8-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-10"><a href="#cb8-10" aria-hidden="true" tabindex="-1"></a>df <span class="ot">&lt;-</span> <span class="fu">rbind</span>(</span>
+<span id="cb8-11"><a href="#cb8-11" aria-hidden="true" tabindex="-1"></a>  <span class="fu">qq_df</span>(p_unc, <span class="fu">sprintf</span>(<span class="st">"Uncorrected  (λ = %.2f)"</span>, lam_unc)),</span>
+<span id="cb8-12"><a href="#cb8-12" aria-hidden="true" tabindex="-1"></a>  <span class="fu">qq_df</span>(p_cor, <span class="fu">sprintf</span>(<span class="st">"PCA-corrected (λ = %.2f)"</span>, lam_cor))</span>
+<span id="cb8-13"><a href="#cb8-13" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb8-14"><a href="#cb8-14" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-15"><a href="#cb8-15" aria-hidden="true" tabindex="-1"></a><span class="fu">ggplot</span>(df, <span class="fu">aes</span>(<span class="at">x =</span> exp, <span class="at">y =</span> obs, <span class="at">color =</span> grp)) <span class="sc">+</span></span>
+<span id="cb8-16"><a href="#cb8-16" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_point</span>(<span class="at">size =</span> <span class="fl">0.5</span>, <span class="at">alpha =</span> <span class="fl">0.5</span>) <span class="sc">+</span></span>
+<span id="cb8-17"><a href="#cb8-17" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_abline</span>(<span class="at">slope =</span> <span class="dv">1</span>, <span class="at">intercept =</span> <span class="dv">0</span>,</span>
+<span id="cb8-18"><a href="#cb8-18" aria-hidden="true" tabindex="-1"></a>              <span class="at">color =</span> <span class="st">"black"</span>, <span class="at">linetype =</span> <span class="st">"dashed"</span>, <span class="at">linewidth =</span> <span class="fl">0.8</span>) <span class="sc">+</span></span>
+<span id="cb8-19"><a href="#cb8-19" aria-hidden="true" tabindex="-1"></a>  <span class="fu">scale_color_manual</span>(<span class="at">values =</span> <span class="fu">c</span>(<span class="st">"firebrick"</span>, <span class="st">"steelblue"</span>)) <span class="sc">+</span></span>
+<span id="cb8-20"><a href="#cb8-20" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(</span>
+<span id="cb8-21"><a href="#cb8-21" aria-hidden="true" tabindex="-1"></a>    <span class="at">x     =</span> <span class="fu">expression</span>(Expected <span class="sc">~</span> <span class="sc">-</span>log[<span class="dv">10</span>](<span class="fu">italic</span>(p))),</span>
+<span id="cb8-22"><a href="#cb8-22" aria-hidden="true" tabindex="-1"></a>    <span class="at">y     =</span> <span class="fu">expression</span>(Observed <span class="sc">~</span> <span class="sc">-</span>log[<span class="dv">10</span>](<span class="fu">italic</span>(p))),</span>
+<span id="cb8-23"><a href="#cb8-23" aria-hidden="true" tabindex="-1"></a>    <span class="at">title =</span> <span class="st">"QQ Plot: Effect of PCA Correction on Population Stratification"</span>,</span>
+<span id="cb8-24"><a href="#cb8-24" aria-hidden="true" tabindex="-1"></a>    <span class="at">color =</span> <span class="cn">NULL</span></span>
+<span id="cb8-25"><a href="#cb8-25" aria-hidden="true" tabindex="-1"></a>  ) <span class="sc">+</span></span>
+<span id="cb8-26"><a href="#cb8-26" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme_classic</span>() <span class="sc">+</span></span>
+<span id="cb8-27"><a href="#cb8-27" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme</span>(<span class="at">legend.position =</span> <span class="fu">c</span>(<span class="fl">0.28</span>, <span class="fl">0.90</span>),</span>
+<span id="cb8-28"><a href="#cb8-28" aria-hidden="true" tabindex="-1"></a>        <span class="at">legend.background =</span> <span class="fu">element_rect</span>(<span class="at">fill =</span> <span class="st">"white"</span>, <span class="at">color =</span> <span class="cn">NA</span>),</span>
+<span id="cb8-29"><a href="#cb8-29" aria-hidden="true" tabindex="-1"></a>        <span class="at">legend.text =</span> <span class="fu">element_text</span>(<span class="at">size =</span> <span class="dv">9</span>))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>两条曲线的对比呈现以下典型特征：未校正曲线（红色）从中低 <span class="math inline">\(-\log_{10}(p)\)</span> 区域开始系统性偏离对角线，<span class="math inline">\(\lambda_{GC}\)</span> 约为 1.5–2.5，反映中等强度的分层混杂；PCA 校正曲线（蓝色）背景分布回归对角线（<span class="math inline">\(\lambda_{GC}\)</span> 接近 1），仅在右上角因少数因果 SNP 出现轻微上翘，代表真实的遗传信号。这一对比模式在现实多中心 GWAS 中十分常见，正是 QQ 图作为模型诊断工具的典型应用场景。</p>
+<hr>
+</section>
+</section>
+<section id="多重检验校正" class="level2" data-number="19.5">
+<h2 data-number="19.5" class="anchored" data-anchor-id="多重检验校正"><span class="header-section-number">19.5</span> 多重检验校正</h2>
+<section id="多重比较问题" class="level3" data-number="19.5.1">
+<h3 data-number="19.5.1" class="anchored" data-anchor-id="多重比较问题"><span class="header-section-number">19.5.1</span> 多重比较问题</h3>
+<p>GWAS 对数百万个 SNP 同时进行独立检验。若以 <span class="math inline">\(\alpha = 0.05\)</span> 为单次检验显著性阈值，则仅凭随机机会，预期假阳性数量为：</p>
+<p><span class="math display">\[
+E[\text{false positives}] = 0.05 \times M
+\]</span></p>
+<p>当 <span class="math inline">\(M = 10^6\)</span> 时，期望假阳性数量高达 50,000 个，远超任何真实信号。解决多重比较问题有两条主线：其一是严格控制<strong>家族性 I 类错误率（Family-Wise Error Rate，FWER）</strong>，确保整个实验中犯至少一次假阳性的概率不超过 <span class="math inline">\(\alpha\)</span>；其二是控制<strong>错误发现率（False Discovery Rate，FDR）</strong>，允许一定比例的假阳性，以换取更高的统计检验力。</p>
+</section>
+<section id="bonferroni-校正与-5-times-10-8-阈值的由来" class="level3" data-number="19.5.2">
+<h3 data-number="19.5.2" class="anchored" data-anchor-id="bonferroni-校正与-5-times-10-8-阈值的由来"><span class="header-section-number">19.5.2</span> Bonferroni 校正与 <span class="math inline">\(5 \times 10^{-8}\)</span> 阈值的由来</h3>
+<p><strong>Bonferroni 校正</strong>将全局显著性水平 <span class="math inline">\(\alpha\)</span> 均摊至每次检验：</p>
+<p><span class="math display">\[
+\alpha_{\text{adjusted}} = \frac{\alpha}{M}
+\]</span></p>
+<p>若以 <span class="math inline">\(\alpha = 0.05\)</span> 且有效独立检验数 <span class="math inline">\(M_{\text{eff}} \approx 10^6\)</span>（人类基因组约 100 万个独立 LD 区块），则：</p>
+<p><span class="math display">\[
+\alpha_{\text{Bonferroni}} = \frac{0.05}{10^6} = 5 \times 10^{-8}
+\]</span></p>
+<p>这正是人类 GWAS 中广泛采用的显著性阈值的来源。该值并非来自严格的理论推导，而是基于约 100 万个独立 SNP 的经验估计，由 Risch 和 Merikangas 于 1996 年提出，随后被反复验证具有合理的假阳性控制效果。Bonferroni 校正的核心假设是<strong>所有检验相互独立</strong>。在 GWAS 中，相邻 SNP 之间由于 LD 而相关，这意味着 Bonferroni 校正理论上过于保守。更精确的有效独立 SNP 数 <span class="math inline">\(M_{\text{eff}}\)</span> 可以通过 Galwey 方法或 Li-Ji 方法估计，也可通过<strong>置换检验</strong>直接从数据的 LD 结构生成经验阈值。</p>
+<div class="warning">
+<p><strong>Bonferroni 阈值不可普适于所有物种</strong></p>
+<p><span class="math inline">\(5 \times 10^{-8}\)</span> 仅适用于人类 GWAS。对于其他物种，应根据实际的有效独立 SNP 数（可通过 LD 结构估算）重新计算阈值。例如，<em>Arabidopsis thaliana</em> 或 <em>E. coli</em> 的 LD 结构与人类差异悬殊，直接套用该阈值将导致过于保守或过于宽松的结论。</p>
+</div>
+</section>
+<section id="错误发现率fdr与-benjamini-hochberg-程序" class="level3" data-number="19.5.3">
+<h3 data-number="19.5.3" class="anchored" data-anchor-id="错误发现率fdr与-benjamini-hochberg-程序"><span class="header-section-number">19.5.3</span> 错误发现率（FDR）与 Benjamini-Hochberg 程序</h3>
+<p><strong>错误发现率（False Discovery Rate，FDR）</strong>控制的是所有显著结果中假阳性的<strong>比例</strong>，而 Bonferroni 控制的是犯至少一次 I 类错误的<strong>概率</strong>。</p>
+<p><strong>Benjamini-Hochberg（BH）程序</strong>：设 <span class="math inline">\(p_{(1)} \leq p_{(2)} \leq \cdots \leq p_{(M)}\)</span> 为 <span class="math inline">\(M\)</span> 个检验的排序 p 值，令 FDR 阈值为 <span class="math inline">\(q\)</span>，则：</p>
+<p><span class="math display">\[
+\text{拒绝所有满足 } p_{(i)} \leq \frac{i}{M} \cdot q \text{ 的零假设}
+\]</span></p>
+<p>BH 程序的一个关键假设是检验之间独立或正相关，对于 GWAS 中由 LD 导致的正相关结构，BH 程序是有效的。在大规模探索性研究（如 eQTL 分析、差异表达分析）中，FDR 控制比 Bonferroni 更为常用。</p>
+<p>以下代码以一个小规模示例（20 次检验）展示 BH 程序的逐步执行逻辑，并与 R 内置的 <code>p.adjust()</code> 函数结果进行对照验证：</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb9"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="co"># ── BH procedure: step-by-step illustration ──────────────────────────────────</span></span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">42</span>)</span>
+<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a>M <span class="ot">&lt;-</span> <span class="dv">20</span>          <span class="co"># total number of tests</span></span>
+<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a>q <span class="ot">&lt;-</span> <span class="fl">0.05</span>        <span class="co"># target FDR level</span></span>
+<span id="cb9-5"><a href="#cb9-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-6"><a href="#cb9-6" aria-hidden="true" tabindex="-1"></a><span class="co"># Simulate p-values: 15 null (uniform) + 5 true signals (small p)</span></span>
+<span id="cb9-7"><a href="#cb9-7" aria-hidden="true" tabindex="-1"></a>p_vals <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="fu">runif</span>(<span class="dv">15</span>), <span class="fu">runif</span>(<span class="dv">5</span>, <span class="at">min =</span> <span class="dv">0</span>, <span class="at">max =</span> <span class="fl">0.01</span>))</span>
+<span id="cb9-8"><a href="#cb9-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-9"><a href="#cb9-9" aria-hidden="true" tabindex="-1"></a><span class="co"># Step 1: rank p-values in ascending order</span></span>
+<span id="cb9-10"><a href="#cb9-10" aria-hidden="true" tabindex="-1"></a>rank_order <span class="ot">&lt;-</span> <span class="fu">order</span>(p_vals)</span>
+<span id="cb9-11"><a href="#cb9-11" aria-hidden="true" tabindex="-1"></a>p_sorted   <span class="ot">&lt;-</span> p_vals[rank_order]</span>
+<span id="cb9-12"><a href="#cb9-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-13"><a href="#cb9-13" aria-hidden="true" tabindex="-1"></a><span class="co"># Step 2: compute BH critical values  i/M * q  for each rank i</span></span>
+<span id="cb9-14"><a href="#cb9-14" aria-hidden="true" tabindex="-1"></a>bh_critical <span class="ot">&lt;-</span> (<span class="fu">seq_len</span>(M) <span class="sc">/</span> M) <span class="sc">*</span> q</span>
+<span id="cb9-15"><a href="#cb9-15" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-16"><a href="#cb9-16" aria-hidden="true" tabindex="-1"></a><span class="co"># Step 3: find the largest rank k such that p_(k) &lt;= k/M * q</span></span>
+<span id="cb9-17"><a href="#cb9-17" aria-hidden="true" tabindex="-1"></a>k_max <span class="ot">&lt;-</span> <span class="fu">max</span>(<span class="fu">c</span>(<span class="dv">0</span>, <span class="fu">which</span>(p_sorted <span class="sc">&lt;=</span> bh_critical)))</span>
+<span id="cb9-18"><a href="#cb9-18" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-19"><a href="#cb9-19" aria-hidden="true" tabindex="-1"></a><span class="co"># Step 4: reject all hypotheses with rank &lt;= k_max</span></span>
+<span id="cb9-20"><a href="#cb9-20" aria-hidden="true" tabindex="-1"></a>rejected_original <span class="ot">&lt;-</span> rank_order[<span class="fu">seq_len</span>(k_max)]</span>
+<span id="cb9-21"><a href="#cb9-21" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-22"><a href="#cb9-22" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="fu">sprintf</span>(<span class="st">"Largest qualifying rank k: %d</span><span class="sc">\n</span><span class="st">"</span>, k_max))</span>
+<span id="cb9-23"><a href="#cb9-23" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="fu">sprintf</span>(<span class="st">"Hypotheses rejected (original indices): %s</span><span class="sc">\n</span><span class="st">"</span>,</span>
+<span id="cb9-24"><a href="#cb9-24" aria-hidden="true" tabindex="-1"></a>            <span class="fu">paste</span>(<span class="fu">sort</span>(rejected_original), <span class="at">collapse =</span> <span class="st">", "</span>)))</span>
+<span id="cb9-25"><a href="#cb9-25" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-26"><a href="#cb9-26" aria-hidden="true" tabindex="-1"></a><span class="co"># Verify against R built-in p.adjust</span></span>
+<span id="cb9-27"><a href="#cb9-27" aria-hidden="true" tabindex="-1"></a>q_vals    <span class="ot">&lt;-</span> <span class="fu">p.adjust</span>(p_vals, <span class="at">method =</span> <span class="st">"BH"</span>)</span>
+<span id="cb9-28"><a href="#cb9-28" aria-hidden="true" tabindex="-1"></a>n_bh_base <span class="ot">&lt;-</span> <span class="fu">sum</span>(q_vals <span class="sc">&lt;</span> q)</span>
+<span id="cb9-29"><a href="#cb9-29" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="fu">sprintf</span>(<span class="st">"p.adjust(BH) significant count: %d</span><span class="sc">\n</span><span class="st">"</span>, n_bh_base))</span>
+<span id="cb9-30"><a href="#cb9-30" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="fu">sprintf</span>(<span class="st">"Manual BH significant count:    %d</span><span class="sc">\n</span><span class="st">"</span>, <span class="fu">length</span>(rejected_original)))</span>
+<span id="cb9-31"><a href="#cb9-31" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-32"><a href="#cb9-32" aria-hidden="true" tabindex="-1"></a><span class="co"># Visualise the BH procedure</span></span>
+<span id="cb9-33"><a href="#cb9-33" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(ggplot2)</span>
+<span id="cb9-34"><a href="#cb9-34" aria-hidden="true" tabindex="-1"></a>df_bh <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(</span>
+<span id="cb9-35"><a href="#cb9-35" aria-hidden="true" tabindex="-1"></a>  <span class="at">rank     =</span> <span class="fu">seq_len</span>(M),</span>
+<span id="cb9-36"><a href="#cb9-36" aria-hidden="true" tabindex="-1"></a>  <span class="at">p_sorted =</span> p_sorted,</span>
+<span id="cb9-37"><a href="#cb9-37" aria-hidden="true" tabindex="-1"></a>  <span class="at">bh_crit  =</span> bh_critical,</span>
+<span id="cb9-38"><a href="#cb9-38" aria-hidden="true" tabindex="-1"></a>  <span class="at">rejected =</span> <span class="fu">seq_len</span>(M) <span class="sc">&lt;=</span> k_max</span>
+<span id="cb9-39"><a href="#cb9-39" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb9-40"><a href="#cb9-40" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-41"><a href="#cb9-41" aria-hidden="true" tabindex="-1"></a><span class="fu">ggplot</span>(df_bh, <span class="fu">aes</span>(<span class="at">x =</span> rank)) <span class="sc">+</span></span>
+<span id="cb9-42"><a href="#cb9-42" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_line</span>(<span class="fu">aes</span>(<span class="at">y =</span> bh_critical), <span class="at">color =</span> <span class="st">"steelblue"</span>,</span>
+<span id="cb9-43"><a href="#cb9-43" aria-hidden="true" tabindex="-1"></a>            <span class="at">linetype =</span> <span class="st">"dashed"</span>, <span class="at">linewidth =</span> <span class="fl">0.8</span>) <span class="sc">+</span></span>
+<span id="cb9-44"><a href="#cb9-44" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_point</span>(<span class="fu">aes</span>(<span class="at">y =</span> p_sorted, <span class="at">color =</span> rejected), <span class="at">size =</span> <span class="fl">2.5</span>) <span class="sc">+</span></span>
+<span id="cb9-45"><a href="#cb9-45" aria-hidden="true" tabindex="-1"></a>  <span class="fu">scale_color_manual</span>(<span class="at">values =</span> <span class="fu">c</span>(<span class="st">"FALSE"</span> <span class="ot">=</span> <span class="st">"grey50"</span>, <span class="st">"TRUE"</span> <span class="ot">=</span> <span class="st">"firebrick"</span>),</span>
+<span id="cb9-46"><a href="#cb9-46" aria-hidden="true" tabindex="-1"></a>                     <span class="at">labels =</span> <span class="fu">c</span>(<span class="st">"Not rejected"</span>, <span class="st">"Rejected (BH)"</span>)) <span class="sc">+</span></span>
+<span id="cb9-47"><a href="#cb9-47" aria-hidden="true" tabindex="-1"></a>  <span class="fu">annotate</span>(<span class="st">"text"</span>, <span class="at">x =</span> M <span class="sc">*</span> <span class="fl">0.6</span>, <span class="at">y =</span> <span class="fu">max</span>(bh_critical) <span class="sc">*</span> <span class="fl">0.6</span>,</span>
+<span id="cb9-48"><a href="#cb9-48" aria-hidden="true" tabindex="-1"></a>           <span class="at">label =</span> <span class="st">"BH critical line: i/M × q"</span>, <span class="at">color =</span> <span class="st">"steelblue"</span>, <span class="at">size =</span> <span class="fl">3.5</span>) <span class="sc">+</span></span>
+<span id="cb9-49"><a href="#cb9-49" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(<span class="at">x =</span> <span class="st">"Rank (i)"</span>, <span class="at">y =</span> <span class="st">"p-value"</span>,</span>
+<span id="cb9-50"><a href="#cb9-50" aria-hidden="true" tabindex="-1"></a>       <span class="at">title =</span> <span class="st">"Benjamini-Hochberg Procedure"</span>, <span class="at">color =</span> <span class="cn">NULL</span>) <span class="sc">+</span></span>
+<span id="cb9-51"><a href="#cb9-51" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme_classic</span>() <span class="sc">+</span></span>
+<span id="cb9-52"><a href="#cb9-52" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme</span>(<span class="at">legend.position =</span> <span class="st">"top"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>上图中，蓝色虚线为 BH 临界线 <span class="math inline">\(i/M \times q\)</span>；红色点为被拒绝的零假设，灰色点为未拒绝。BH 程序在第 <span class="math inline">\(k\)</span> 个排序位置”截断”，拒绝所有排名在 <span class="math inline">\(k\)</span> 及以前的假设。这一”一刀切”特性确保了 q 值的单调性，也是 <code>p.adjust()</code> 内部实现中从右向左取累积最小值（<code>cummin</code>）的原因。</p>
 <div class="tip">
-<p><strong><span class="math inline">\(\lambda_{GC}\)</span> 的校正</strong></p>
-<p>当 <span class="math inline">\(\lambda_{GC}\)</span> 因样本量极大（如 <span class="math inline">\(n &gt; 100,000\)</span>）而偏高时，并非一定反映群体分层，也可能是多基因遗传结构（polygenicity）的正常表现。此时应使用 <strong>LD Score 回归（LDSC）</strong> 区分膨胀来源：若截距接近 1，则膨胀主要由多基因性贡献；若截距显著大于 1，则提示混杂因素存在。</p>
+<p><strong><code>p.adjust()</code> 与手动 BH 的等价性</strong></p>
+<p>R 的 <code>p.adjust(p, method = "BH")</code> 返回的是经过单调调整的 <strong>q 值</strong>，以 <code>q_i &lt; 0.05</code> 筛选等价于手动 BH 程序以 FDR <span class="math inline">\(= 0.05\)</span> 执行拒绝。两者在数值上完全一致，实际分析中直接使用 <code>p.adjust()</code> 即可；手动推导的目的在于理解其统计逻辑。</p>
+</div>
+</section>
+<section id="置换检验" class="level3" data-number="19.5.4">
+<h3 data-number="19.5.4" class="anchored" data-anchor-id="置换检验"><span class="header-section-number">19.5.4</span> 置换检验</h3>
+<p><strong>置换检验（Permutation test）</strong> 通过随机打乱表型标签来生成经验零分布，是估计全基因组显著性阈值的最直接方法。其完整步骤如下：</p>
+<ol type="1">
+<li><strong>记录原始统计量</strong>：对真实数据运行完整的 GWAS，记录所有 <span class="math inline">\(M\)</span> 个 SNP 的关联统计量（如卡方值或 Wald 统计量），并以最大统计量 <span class="math inline">\(T_{\text{obs}} = \max_j T_j\)</span> 作为初始参考。</li>
+<li><strong>表型置换</strong>：随机打乱 <span class="math inline">\(n\)</span> 个样本的表型标签（保持基因型矩阵不变），在置换数据上重新运行完整的 GWAS，记录该次置换的最大统计量 <span class="math inline">\(T_b^*\)</span>。</li>
+<li><strong>重复</strong>：重复步骤 2 共 <span class="math inline">\(B\)</span> 次（通常 <span class="math inline">\(B \geq 1,000\)</span>；若需要高精度的极端尾部分位数，可增至 <span class="math inline">\(B = 10,000\)</span>），得到置换最大统计量的经验分布 <span class="math inline">\(\{T_1^*, T_2^*, \ldots, T_B^*\}\)</span>。</li>
+<li><strong>确定阈值</strong>：以 <span class="math inline">\(B\)</span> 次置换中最大统计量的 <span class="math inline">\(1 - \alpha\)</span> 分位数（<span class="math inline">\(\alpha = 0.05\)</span>）作为显著性阈值，即满足该阈值的位点在全基因组 FWER <span class="math inline">\(\leq \alpha\)</span> 的意义下显著。</li>
+</ol>
+<p>置换检验的核心优势在于：它不假设 SNP 检验相互独立，而是直接从数据的 LD 结构生成经验零分布，因此既不像 Bonferroni 那样过度保守（Bonferroni 假设完全独立，会高估有效检验数），也不会遗漏 LD 结构带来的依赖关系。对于 LD 结构异常（如存在大量高 LD SNP）或芯片设计非均匀的数据集，置换检验生成的阈值比通用的 <span class="math inline">\(5 \times 10^{-8}\)</span> 更适合该数据。</p>
+<p>然而，置换检验在实际应用中面临两大局限：其一，<strong>计算代价极高</strong>——对于 <span class="math inline">\(n = 5,000\)</span> 个样本、<span class="math inline">\(M = 500,000\)</span> 个 SNP 的 GWAS，每次完整置换的计算量与原始 GWAS 相当，<span class="math inline">\(B = 1,000\)</span> 次置换意味着 1,000 倍的计算开销，通常需要分布式计算集群；其二，<strong>群体分层下的置换失效问题</strong>——简单随机置换打乱了样本-表型配对关系，但若数据中存在群体分层，打乱后的数据因群体结构与表型失去对应关系，导致零分布被”人为净化”，实际上低估了未校正检验统计量的真实零分布（等于用比较干净的数据估计比较脏的真实数据的阈值）。解决方法是<strong>残差置换（residual permutation）</strong>：先对表型对群体主成分（PCA）进行回归，对残差进行置换，再还原为置换后的表型，从而保留群体结构信息。</p>
+<p>以下 R 代码给出一个小规模演示（仅用于教学理解，非真实 GWAS 规模）：</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb10"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Small-scale permutation test demonstration</span></span>
+<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">42</span>)</span>
+<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a>n_indiv <span class="ot">&lt;-</span> <span class="dv">200</span>   <span class="co"># samples</span></span>
+<span id="cb10-4"><a href="#cb10-4" aria-hidden="true" tabindex="-1"></a>n_snp   <span class="ot">&lt;-</span> <span class="dv">1000</span>  <span class="co"># SNPs (GWAS-scale would be millions)</span></span>
+<span id="cb10-5"><a href="#cb10-5" aria-hidden="true" tabindex="-1"></a>B       <span class="ot">&lt;-</span> <span class="dv">500</span>   <span class="co"># permutation replicates</span></span>
+<span id="cb10-6"><a href="#cb10-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-7"><a href="#cb10-7" aria-hidden="true" tabindex="-1"></a><span class="co"># Simulate genotypes and phenotype (no true associations)</span></span>
+<span id="cb10-8"><a href="#cb10-8" aria-hidden="true" tabindex="-1"></a>geno  <span class="ot">&lt;-</span> <span class="fu">matrix</span>(<span class="fu">rbinom</span>(n_indiv <span class="sc">*</span> n_snp, <span class="dv">2</span>, <span class="fl">0.3</span>), <span class="at">nrow =</span> n_indiv)</span>
+<span id="cb10-9"><a href="#cb10-9" aria-hidden="true" tabindex="-1"></a>pheno <span class="ot">&lt;-</span> <span class="fu">rnorm</span>(n_indiv)</span>
+<span id="cb10-10"><a href="#cb10-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-11"><a href="#cb10-11" aria-hidden="true" tabindex="-1"></a><span class="co"># Original GWAS: chi-square test for each SNP (simplified)</span></span>
+<span id="cb10-12"><a href="#cb10-12" aria-hidden="true" tabindex="-1"></a>chisq_obs <span class="ot">&lt;-</span> <span class="fu">apply</span>(geno, <span class="dv">2</span>, <span class="cf">function</span>(g) {</span>
+<span id="cb10-13"><a href="#cb10-13" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span> (<span class="fu">var</span>(g) <span class="sc">&lt;</span> <span class="fl">1e-8</span>) <span class="fu">return</span>(<span class="dv">0</span>)</span>
+<span id="cb10-14"><a href="#cb10-14" aria-hidden="true" tabindex="-1"></a>  <span class="fu">cor</span>(g, pheno)<span class="sc">^</span><span class="dv">2</span> <span class="sc">*</span> (n_indiv <span class="sc">-</span> <span class="dv">2</span>) <span class="sc">/</span> (<span class="dv">1</span> <span class="sc">-</span> <span class="fu">cor</span>(g, pheno)<span class="sc">^</span><span class="dv">2</span>)</span>
+<span id="cb10-15"><a href="#cb10-15" aria-hidden="true" tabindex="-1"></a>})</span>
+<span id="cb10-16"><a href="#cb10-16" aria-hidden="true" tabindex="-1"></a>T_obs <span class="ot">&lt;-</span> <span class="fu">max</span>(chisq_obs)</span>
+<span id="cb10-17"><a href="#cb10-17" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-18"><a href="#cb10-18" aria-hidden="true" tabindex="-1"></a><span class="co"># Permutation loop</span></span>
+<span id="cb10-19"><a href="#cb10-19" aria-hidden="true" tabindex="-1"></a>T_perm <span class="ot">&lt;-</span> <span class="fu">numeric</span>(B)</span>
+<span id="cb10-20"><a href="#cb10-20" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> (b <span class="cf">in</span> <span class="fu">seq_len</span>(B)) {</span>
+<span id="cb10-21"><a href="#cb10-21" aria-hidden="true" tabindex="-1"></a>  pheno_perm <span class="ot">&lt;-</span> <span class="fu">sample</span>(pheno)</span>
+<span id="cb10-22"><a href="#cb10-22" aria-hidden="true" tabindex="-1"></a>  chisq_b    <span class="ot">&lt;-</span> <span class="fu">apply</span>(geno, <span class="dv">2</span>, <span class="cf">function</span>(g) {</span>
+<span id="cb10-23"><a href="#cb10-23" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> (<span class="fu">var</span>(g) <span class="sc">&lt;</span> <span class="fl">1e-8</span>) <span class="fu">return</span>(<span class="dv">0</span>)</span>
+<span id="cb10-24"><a href="#cb10-24" aria-hidden="true" tabindex="-1"></a>    <span class="fu">cor</span>(g, pheno_perm)<span class="sc">^</span><span class="dv">2</span> <span class="sc">*</span> (n_indiv <span class="sc">-</span> <span class="dv">2</span>) <span class="sc">/</span> (<span class="dv">1</span> <span class="sc">-</span> <span class="fu">cor</span>(g, pheno_perm)<span class="sc">^</span><span class="dv">2</span>)</span>
+<span id="cb10-25"><a href="#cb10-25" aria-hidden="true" tabindex="-1"></a>  })</span>
+<span id="cb10-26"><a href="#cb10-26" aria-hidden="true" tabindex="-1"></a>  T_perm[b] <span class="ot">&lt;-</span> <span class="fu">max</span>(chisq_b)</span>
+<span id="cb10-27"><a href="#cb10-27" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb10-28"><a href="#cb10-28" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-29"><a href="#cb10-29" aria-hidden="true" tabindex="-1"></a><span class="co"># Empirical threshold at alpha = 0.05</span></span>
+<span id="cb10-30"><a href="#cb10-30" aria-hidden="true" tabindex="-1"></a>threshold_perm <span class="ot">&lt;-</span> <span class="fu">quantile</span>(T_perm, <span class="fl">0.95</span>)</span>
+<span id="cb10-31"><a href="#cb10-31" aria-hidden="true" tabindex="-1"></a><span class="co"># Equivalent p-value threshold</span></span>
+<span id="cb10-32"><a href="#cb10-32" aria-hidden="true" tabindex="-1"></a>p_threshold_perm <span class="ot">&lt;-</span> <span class="fu">pchisq</span>(threshold_perm, <span class="at">df =</span> <span class="dv">1</span>, <span class="at">lower.tail =</span> <span class="cn">FALSE</span>)</span>
+<span id="cb10-33"><a href="#cb10-33" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-34"><a href="#cb10-34" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="fu">sprintf</span>(<span class="st">"Permutation threshold (chi-sq): %.2f</span><span class="sc">\n</span><span class="st">"</span>, threshold_perm))</span>
+<span id="cb10-35"><a href="#cb10-35" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="fu">sprintf</span>(<span class="st">"Equivalent p-value: %.3e</span><span class="sc">\n</span><span class="st">"</span>, p_threshold_perm))</span>
+<span id="cb10-36"><a href="#cb10-36" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="fu">sprintf</span>(<span class="st">"Bonferroni p-value: %.3e</span><span class="sc">\n</span><span class="st">"</span>, <span class="fl">0.05</span> <span class="sc">/</span> n_snp))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 17%">
+<col style="width: 29%">
+<col style="width: 29%">
+<col style="width: 23%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>方法</th>
+<th>控制目标</th>
+<th>适用场景</th>
+<th>检验力</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Bonferroni</td>
+<td>家族性 I 类错误率（FWER）</td>
+<td>少量独立假设；后续验证实验代价极高</td>
+<td>保守，检验力低</td>
+</tr>
+<tr class="even">
+<td>FDR (BH)</td>
+<td>错误发现率</td>
+<td>大规模探索性分析；允许一定比例假阳性</td>
+<td>较高</td>
+</tr>
+<tr class="odd">
+<td>置换检验</td>
+<td>经验分布下的 FWER</td>
+<td>LD 结构复杂或非标准数据</td>
+<td>计算代价高</td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="r-示例三种校正方法比较" class="level3" data-number="19.5.5">
+<h3 data-number="19.5.5" class="anchored" data-anchor-id="r-示例三种校正方法比较"><span class="header-section-number">19.5.5</span> R 示例：三种校正方法比较</h3>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb11"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">123</span>)</span>
+<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a>M <span class="ot">&lt;-</span> <span class="fl">1e6</span>  <span class="co"># simulated number of SNP tests</span></span>
+<span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-4"><a href="#cb11-4" aria-hidden="true" tabindex="-1"></a><span class="co"># Simulate p-values: mostly null, a few true signals</span></span>
+<span id="cb11-5"><a href="#cb11-5" aria-hidden="true" tabindex="-1"></a>p_null   <span class="ot">&lt;-</span> <span class="fu">runif</span>(M <span class="sc">-</span> <span class="dv">50</span>)</span>
+<span id="cb11-6"><a href="#cb11-6" aria-hidden="true" tabindex="-1"></a>p_signal <span class="ot">&lt;-</span> <span class="fu">runif</span>(<span class="dv">50</span>, <span class="at">min =</span> <span class="dv">0</span>, <span class="at">max =</span> <span class="fl">1e-7</span>)</span>
+<span id="cb11-7"><a href="#cb11-7" aria-hidden="true" tabindex="-1"></a>p_all    <span class="ot">&lt;-</span> <span class="fu">c</span>(p_null, p_signal)</span>
+<span id="cb11-8"><a href="#cb11-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-9"><a href="#cb11-9" aria-hidden="true" tabindex="-1"></a><span class="co"># Bonferroni</span></span>
+<span id="cb11-10"><a href="#cb11-10" aria-hidden="true" tabindex="-1"></a>bonf_threshold <span class="ot">&lt;-</span> <span class="fl">0.05</span> <span class="sc">/</span> M</span>
+<span id="cb11-11"><a href="#cb11-11" aria-hidden="true" tabindex="-1"></a>n_bonf <span class="ot">&lt;-</span> <span class="fu">sum</span>(p_all <span class="sc">&lt;</span> bonf_threshold)</span>
+<span id="cb11-12"><a href="#cb11-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-13"><a href="#cb11-13" aria-hidden="true" tabindex="-1"></a><span class="co"># FDR (BH) at q = 0.05</span></span>
+<span id="cb11-14"><a href="#cb11-14" aria-hidden="true" tabindex="-1"></a>p_adj_bh <span class="ot">&lt;-</span> <span class="fu">p.adjust</span>(p_all, <span class="at">method =</span> <span class="st">"BH"</span>)</span>
+<span id="cb11-15"><a href="#cb11-15" aria-hidden="true" tabindex="-1"></a>n_bh     <span class="ot">&lt;-</span> <span class="fu">sum</span>(p_adj_bh <span class="sc">&lt;</span> <span class="fl">0.05</span>)</span>
+<span id="cb11-16"><a href="#cb11-16" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-17"><a href="#cb11-17" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="fu">sprintf</span>(<span class="st">"Bonferroni significant SNPs: %d</span><span class="sc">\n</span><span class="st">"</span>, n_bonf))</span>
+<span id="cb11-18"><a href="#cb11-18" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="fu">sprintf</span>(<span class="st">"FDR (BH) significant SNPs:  %d</span><span class="sc">\n</span><span class="st">"</span>, n_bh))</span>
+<span id="cb11-19"><a href="#cb11-19" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="fu">sprintf</span>(<span class="st">"True signal SNPs:            %d</span><span class="sc">\n</span><span class="st">"</span>, <span class="dv">50</span>))</span>
+<span id="cb11-20"><a href="#cb11-20" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-21"><a href="#cb11-21" aria-hidden="true" tabindex="-1"></a><span class="co"># Visualize p-value distribution</span></span>
+<span id="cb11-22"><a href="#cb11-22" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(ggplot2)</span>
+<span id="cb11-23"><a href="#cb11-23" aria-hidden="true" tabindex="-1"></a><span class="fu">ggplot</span>(<span class="fu">data.frame</span>(<span class="at">p =</span> p_all), <span class="fu">aes</span>(<span class="at">x =</span> p)) <span class="sc">+</span></span>
+<span id="cb11-24"><a href="#cb11-24" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_histogram</span>(<span class="at">bins =</span> <span class="dv">100</span>, <span class="at">fill =</span> <span class="st">"grey70"</span>, <span class="at">color =</span> <span class="st">"white"</span>) <span class="sc">+</span></span>
+<span id="cb11-25"><a href="#cb11-25" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_vline</span>(<span class="at">xintercept =</span> bonf_threshold,</span>
+<span id="cb11-26"><a href="#cb11-26" aria-hidden="true" tabindex="-1"></a>             <span class="at">color =</span> <span class="st">"red"</span>, <span class="at">linetype =</span> <span class="st">"solid"</span>, <span class="at">linewidth =</span> <span class="fl">0.8</span>) <span class="sc">+</span></span>
+<span id="cb11-27"><a href="#cb11-27" aria-hidden="true" tabindex="-1"></a>  <span class="fu">annotate</span>(<span class="st">"text"</span>, <span class="at">x =</span> bonf_threshold <span class="sc">*</span> <span class="dv">3</span>, <span class="at">y =</span> <span class="cn">Inf</span>,</span>
+<span id="cb11-28"><a href="#cb11-28" aria-hidden="true" tabindex="-1"></a>           <span class="at">label =</span> <span class="st">"Bonferroni"</span>, <span class="at">vjust =</span> <span class="dv">2</span>, <span class="at">color =</span> <span class="st">"red"</span>, <span class="at">size =</span> <span class="fl">3.5</span>) <span class="sc">+</span></span>
+<span id="cb11-29"><a href="#cb11-29" aria-hidden="true" tabindex="-1"></a>  <span class="fu">scale_x_continuous</span>(<span class="at">labels =</span> scales<span class="sc">::</span>scientific) <span class="sc">+</span></span>
+<span id="cb11-30"><a href="#cb11-30" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(<span class="at">x =</span> <span class="st">"p-value"</span>, <span class="at">y =</span> <span class="st">"Count"</span>,</span>
+<span id="cb11-31"><a href="#cb11-31" aria-hidden="true" tabindex="-1"></a>       <span class="at">title =</span> <span class="st">"p-value Distribution (Simulated GWAS)"</span>) <span class="sc">+</span></span>
+<span id="cb11-32"><a href="#cb11-32" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme_classic</span>()</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<hr>
+</section>
+</section>
+<section id="统计检验力与样本量估计" class="level2" data-number="19.6">
+<h2 data-number="19.6" class="anchored" data-anchor-id="统计检验力与样本量估计"><span class="header-section-number">19.6</span> 统计检验力与样本量估计</h2>
+<p>统计检验力（statistical power）是在真实效应存在时，正确拒绝零假设的概率。GWAS 中检验力受以下因素共同决定：样本量 <span class="math inline">\(n\)</span>、效应量 <span class="math inline">\(\beta\)</span>（或 OR）、次等位基因频率（MAF）以及显著性阈值 <span class="math inline">\(\alpha\)</span>。</p>
+<p>在加性线性模型下，非中心参数（Non-Centrality Parameter，NCP）近似为：</p>
+<p><span class="math display">\[
+\text{NCP} = \frac{n \cdot \beta^2 \cdot 2p(1-p)}{\sigma^2}
+\]</span></p>
+<p>其中 <span class="math inline">\(p\)</span> 为 MAF，<span class="math inline">\(\sigma^2\)</span> 为表型残差方差，对应 <span class="math inline">\(\chi^2\)</span> 分布的非中心参数。</p>
+<section id="检验力对-maf-的依赖" class="level3" data-number="19.6.1">
+<h3 data-number="19.6.1" class="anchored" data-anchor-id="检验力对-maf-的依赖"><span class="header-section-number">19.6.1</span> 检验力对 MAF 的依赖</h3>
+<p>上式揭示了一个重要结论：<strong>低频变异在相同样本量下的检验力显著低于常见变异</strong>。这是因为 <span class="math inline">\(2p(1-p)\)</span> 在 <span class="math inline">\(p = 0.5\)</span> 时最大，当 <span class="math inline">\(p = 0.05\)</span> 时该项值约为 0.095，而 <span class="math inline">\(p = 0.3\)</span> 时为 0.42，相差约 4.4 倍。对于极低频变异（MAF &lt; 0.01），常规 SNP 芯片往往不予收录，且标准 GWAS 框架几乎没有检验力，这是推动外显子测序和全基因组测序以及专为低频变异设计的聚合检验（burden test）和 SKAT 检验发展的核心动力。</p>
+</section>
+<section id="gwas-的规模效应" class="level3" data-number="19.6.2">
+<h3 data-number="19.6.2" class="anchored" data-anchor-id="gwas-的规模效应"><span class="header-section-number">19.6.2</span> GWAS 的规模效应</h3>
+<p>GWAS 历史上最引人注目的趋势之一是对样本量的持续追求。以 BMI 为例，2007 年第一个 GWAS 在约 17,000 个样本中发现了 FTO 基因区域；到 2015 年，样本量扩大至 34 万，发现了 97 个独立位点；到 2022 年，UK Biobank 和全球 GWAS 联合已将样本量推向百万级，已知独立 BMI 相关位点超过 900 个。这一趋势深刻说明：GWAS 的统计检验力在样本量接近线性增长时，能够以超线性的速度发现新位点，因为越来越多具有微小效应量的位点越过了显著性阈值。</p>
+<p>以下代码基于加性线性模型的 NCP 公式，计算不同样本量与效应量组合下的统计检验力，并绘制检验力曲线（MAF 固定为 0.2，<span class="math inline">\(\alpha = 5 \times 10^{-8}\)</span>）。虚线标注 80% 的常用检验力目标，可直观读取每条曲线达到该目标所需的最低样本量。</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb12"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="co"># GWAS power calculation under additive linear model</span></span>
+<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a>gwas_power <span class="ot">&lt;-</span> <span class="cf">function</span>(n, beta, maf, <span class="at">sigma2 =</span> <span class="fl">1.0</span>, <span class="at">alpha =</span> <span class="fl">5e-8</span>) {</span>
+<span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a>  ncp          <span class="ot">&lt;-</span> n <span class="sc">*</span> beta<span class="sc">^</span><span class="dv">2</span> <span class="sc">*</span> <span class="dv">2</span> <span class="sc">*</span> maf <span class="sc">*</span> (<span class="dv">1</span> <span class="sc">-</span> maf) <span class="sc">/</span> sigma2</span>
+<span id="cb12-4"><a href="#cb12-4" aria-hidden="true" tabindex="-1"></a>  critical_val <span class="ot">&lt;-</span> <span class="fu">qchisq</span>(<span class="dv">1</span> <span class="sc">-</span> alpha, <span class="at">df =</span> <span class="dv">1</span>)</span>
+<span id="cb12-5"><a href="#cb12-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">pchisq</span>(critical_val, <span class="at">df =</span> <span class="dv">1</span>, <span class="at">ncp =</span> ncp, <span class="at">lower.tail =</span> <span class="cn">FALSE</span>)</span>
+<span id="cb12-6"><a href="#cb12-6" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb12-7"><a href="#cb12-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-8"><a href="#cb12-8" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(tidyverse)</span>
+<span id="cb12-9"><a href="#cb12-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-10"><a href="#cb12-10" aria-hidden="true" tabindex="-1"></a>params <span class="ot">&lt;-</span> <span class="fu">expand.grid</span>(</span>
+<span id="cb12-11"><a href="#cb12-11" aria-hidden="true" tabindex="-1"></a>  <span class="at">n    =</span> <span class="fu">seq</span>(<span class="dv">500</span>, <span class="dv">10000</span>, <span class="at">by =</span> <span class="dv">500</span>),</span>
+<span id="cb12-12"><a href="#cb12-12" aria-hidden="true" tabindex="-1"></a>  <span class="at">beta =</span> <span class="fu">c</span>(<span class="fl">0.1</span>, <span class="fl">0.2</span>, <span class="fl">0.3</span>),</span>
+<span id="cb12-13"><a href="#cb12-13" aria-hidden="true" tabindex="-1"></a>  <span class="at">maf  =</span> <span class="fl">0.2</span></span>
+<span id="cb12-14"><a href="#cb12-14" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb12-15"><a href="#cb12-15" aria-hidden="true" tabindex="-1"></a>params<span class="sc">$</span>power <span class="ot">&lt;-</span> <span class="fu">mapply</span>(gwas_power, params<span class="sc">$</span>n, params<span class="sc">$</span>beta, params<span class="sc">$</span>maf)</span>
+<span id="cb12-16"><a href="#cb12-16" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-17"><a href="#cb12-17" aria-hidden="true" tabindex="-1"></a><span class="fu">ggplot</span>(params, <span class="fu">aes</span>(<span class="at">x =</span> n, <span class="at">y =</span> power,</span>
+<span id="cb12-18"><a href="#cb12-18" aria-hidden="true" tabindex="-1"></a>                   <span class="at">color =</span> <span class="fu">factor</span>(beta), <span class="at">group =</span> <span class="fu">factor</span>(beta))) <span class="sc">+</span></span>
+<span id="cb12-19"><a href="#cb12-19" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_line</span>(<span class="at">linewidth =</span> <span class="dv">1</span>) <span class="sc">+</span></span>
+<span id="cb12-20"><a href="#cb12-20" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_hline</span>(<span class="at">yintercept =</span> <span class="fl">0.8</span>, <span class="at">linetype =</span> <span class="st">"dashed"</span>, <span class="at">color =</span> <span class="st">"grey40"</span>) <span class="sc">+</span></span>
+<span id="cb12-21"><a href="#cb12-21" aria-hidden="true" tabindex="-1"></a>  <span class="fu">scale_color_brewer</span>(<span class="at">palette =</span> <span class="st">"Set1"</span>, <span class="at">name =</span> <span class="st">"Effect size (beta)"</span>) <span class="sc">+</span></span>
+<span id="cb12-22"><a href="#cb12-22" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(<span class="at">x =</span> <span class="st">"Sample Size (n)"</span>,</span>
+<span id="cb12-23"><a href="#cb12-23" aria-hidden="true" tabindex="-1"></a>       <span class="at">y =</span> <span class="st">"Statistical Power"</span>,</span>
+<span id="cb12-24"><a href="#cb12-24" aria-hidden="true" tabindex="-1"></a>       <span class="at">title =</span> <span class="st">"GWAS Power vs. Sample Size"</span>) <span class="sc">+</span></span>
+<span id="cb12-25"><a href="#cb12-25" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme_classic</span>()</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>以下代码在效应量 <span class="math inline">\(\beta \in \{0.05, 0.10, 0.20, 0.30\}\)</span> 与 MAF <span class="math inline">\(\in \{0.05, 0.10, 0.20, 0.30\}\)</span> 的 4×4 参数网格上，逐一求解达到 80% 检验力所需的最低样本量，以表格形式呈现。</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb13"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Minimum sample size to achieve 80% power for given beta and MAF</span></span>
+<span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a>min_n_for_power <span class="ot">&lt;-</span> <span class="cf">function</span>(<span class="at">target_power =</span> <span class="fl">0.8</span>, beta, maf,</span>
+<span id="cb13-3"><a href="#cb13-3" aria-hidden="true" tabindex="-1"></a>                            <span class="at">sigma2 =</span> <span class="fl">1.0</span>, <span class="at">alpha =</span> <span class="fl">5e-8</span>) {</span>
+<span id="cb13-4"><a href="#cb13-4" aria-hidden="true" tabindex="-1"></a>  <span class="cf">for</span> (n <span class="cf">in</span> <span class="fu">seq</span>(<span class="dv">100</span>, <span class="fl">1e6</span>, <span class="at">by =</span> <span class="dv">100</span>)) {</span>
+<span id="cb13-5"><a href="#cb13-5" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> (<span class="fu">gwas_power</span>(n, beta, maf, sigma2, alpha) <span class="sc">&gt;=</span> target_power) <span class="fu">return</span>(n)</span>
+<span id="cb13-6"><a href="#cb13-6" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb13-7"><a href="#cb13-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">return</span>(<span class="cn">NA</span>)</span>
+<span id="cb13-8"><a href="#cb13-8" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb13-9"><a href="#cb13-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb13-10"><a href="#cb13-10" aria-hidden="true" tabindex="-1"></a>grid <span class="ot">&lt;-</span> <span class="fu">expand.grid</span>(</span>
+<span id="cb13-11"><a href="#cb13-11" aria-hidden="true" tabindex="-1"></a>  <span class="at">beta =</span> <span class="fu">c</span>(<span class="fl">0.05</span>, <span class="fl">0.10</span>, <span class="fl">0.20</span>, <span class="fl">0.30</span>),</span>
+<span id="cb13-12"><a href="#cb13-12" aria-hidden="true" tabindex="-1"></a>  <span class="at">maf  =</span> <span class="fu">c</span>(<span class="fl">0.05</span>, <span class="fl">0.10</span>, <span class="fl">0.20</span>, <span class="fl">0.30</span>)</span>
+<span id="cb13-13"><a href="#cb13-13" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb13-14"><a href="#cb13-14" aria-hidden="true" tabindex="-1"></a>grid<span class="sc">$</span>min_n <span class="ot">&lt;-</span> <span class="fu">mapply</span>(min_n_for_power, <span class="at">beta =</span> grid<span class="sc">$</span>beta, <span class="at">maf =</span> grid<span class="sc">$</span>maf)</span>
+<span id="cb13-15"><a href="#cb13-15" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb13-16"><a href="#cb13-16" aria-hidden="true" tabindex="-1"></a>knitr<span class="sc">::</span><span class="fu">kable</span>(</span>
+<span id="cb13-17"><a href="#cb13-17" aria-hidden="true" tabindex="-1"></a>  grid <span class="sc">%&gt;%</span> <span class="fu">pivot_wider</span>(<span class="at">names_from =</span> maf, <span class="at">values_from =</span> min_n,</span>
+<span id="cb13-18"><a href="#cb13-18" aria-hidden="true" tabindex="-1"></a>                       <span class="at">names_prefix =</span> <span class="st">"MAF="</span>),</span>
+<span id="cb13-19"><a href="#cb13-19" aria-hidden="true" tabindex="-1"></a>  <span class="at">caption =</span> <span class="st">"表3.5.1：达到80%检验力所需最低样本量（alpha = 5×10⁻⁸）"</span></span>
+<span id="cb13-20"><a href="#cb13-20" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="note">
+<p><strong>现代 GWAS 的规模</strong></p>
+<p>检验力计算揭示了为何现代 GWAS 需要数万至数十万样本。对于效应量 <span class="math inline">\(\beta = 0.1\)</span>（SD 单位）、MAF = 0.2 的位点，在 <span class="math inline">\(\alpha = 5 \times 10^{-8}\)</span> 下达到 80% 检验力需要约 30,000 个样本。复杂疾病中大量位点效应量更小，这正是 UK Biobank（50 万样本）和 Biobank Japan（20 万样本）等大型队列如此重要的根本原因。</p>
+</div>
+</section>
+<section id="元分析对统计检验力的倍增效应" class="level3" data-number="19.6.3">
+<h3 data-number="19.6.3" class="anchored" data-anchor-id="元分析对统计检验力的倍增效应"><span class="header-section-number">19.6.3</span> 元分析对统计检验力的倍增效应</h3>
+<p>当单个研究的样本量不足以检出小效应量位点时，多个 GWAS 研究的结果可以通过<strong>元分析（meta-analysis）</strong> 合并，以获得更大的有效样本量和更高的统计检验力。在固定效应加性线性模型下，元分析的非中心参数（NCP）等于各研究 NCP 之和：</p>
+<p><span class="math display">\[\text{NCP}_\text{meta} = \sum_{k=1}^{K} \text{NCP}_k = \frac{\left(\sum_{k=1}^{K} n_k\right) \cdot \beta^2 \cdot 2p(1-p)}{\sigma^2}\]</span></p>
+<p>这意味着元分析的理论检验力等价于单个样本量为 <span class="math inline">\(\sum_k n_k\)</span> 的研究——只要各研究在表型定义、基因型数据质量和协变量校正上保持一致。正因如此，当代大型 GWAS 合作联盟（如用于研究精神疾病的 PGC、用于研究身高的 GIANT、用于研究血脂的 GLGC）往往通过汇总数十个独立队列的汇总统计量实现几十万乃至百万级别的有效样本量，而无需共享原始个体水平数据。</p>
+<p>然而，元分析的检验力增益并非总能达到理论上限。若各研究的效应量存在<strong>异质性（heterogeneity）</strong>，则应使用<strong>随机效应元分析（random-effects meta-analysis）</strong>。在随机效应模型下，研究间方差 <span class="math inline">\(\tau^2\)</span>（DerSimonian-Laird 估计）使合并权重向更保守方向收缩，导致实际检验力低于固定效应模型的理论值。<strong><span class="math inline">\(I^2\)</span> 统计量</strong>（异质性指数，取值 0–100%）量化了效应量变异中可归因于研究间真实差异（而非抽样误差）的比例：<span class="math inline">\(I^2 &lt; 25\%\)</span> 为低异质性，<span class="math inline">\(25\%–75\%\)</span> 为中度异质性，<span class="math inline">\(&gt; 75\%\)</span> 为高异质性。高异质性下的元分析结果需结合亚组分析和敏感性分析审慎解读，不宜仅看合并 p 值。</p>
+<p>GWAS 元分析的标准软件为 <strong>METAL</strong>（密歇根大学开发）和 <strong>PLINK</strong> 的 <code>--meta-analysis</code> 功能。METAL 支持两种合并模式：</p>
+<ul>
+<li><strong>Z 分数加权法（Z-score based）</strong>：以样本量的平方根为权重合并每个研究的方向性 Z 分数，无需各研究报告统一的效应等位基因，对效应等位基因编码方式不敏感；</li>
+<li><strong>逆方差加权法（Inverse Variance Weighted，IVW）</strong>：以各研究效应量标准误的倒数为权重合并效应量估计，要求各研究报告相同参考等位基因的效应方向，统计效率更高，是多中心 GWAS 的首选方法。</li>
+</ul>
+<div class="tip">
+<p><strong>什么时候用元分析而不是合并原始数据？</strong></p>
+<p>原始数据合并（mega-analysis）在理论上统计效率更高，因为它可以在统一模型下估计协变量效应，避免研究间模型不一致导致的偏差。然而，mega-analysis 面临数据共享协议、受试者隐私保护和数据存储成本的现实限制。元分析使用汇总统计量（每个 SNP 仅需效应量和标准误两列数字），既能大幅扩展有效样本量，又规避了原始数据共享障碍，是现实中多中心 GWAS 合作的标准策略。GIANT 身高联盟和精神疾病基因组学联盟（PGC）均是元分析策略取得重大成功的典型案例。</p>
+</div>
+<p>以下 R 代码模拟两个独立 GWAS 研究的汇总统计量，并演示 IVW 元分析的手动实现逻辑：</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb14"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Simulated two-study GWAS meta-analysis (IVW method)</span></span>
+<span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">2024</span>)</span>
+<span id="cb14-3"><a href="#cb14-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb14-4"><a href="#cb14-4" aria-hidden="true" tabindex="-1"></a><span class="co"># Study 1: n = 5,000; Study 2: n = 8,000</span></span>
+<span id="cb14-5"><a href="#cb14-5" aria-hidden="true" tabindex="-1"></a><span class="co"># True effect: beta = 0.08, MAF = 0.25</span></span>
+<span id="cb14-6"><a href="#cb14-6" aria-hidden="true" tabindex="-1"></a>true_beta <span class="ot">&lt;-</span> <span class="fl">0.08</span></span>
+<span id="cb14-7"><a href="#cb14-7" aria-hidden="true" tabindex="-1"></a>maf       <span class="ot">&lt;-</span> <span class="fl">0.25</span></span>
+<span id="cb14-8"><a href="#cb14-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb14-9"><a href="#cb14-9" aria-hidden="true" tabindex="-1"></a><span class="co"># Approximate SE for each study: SE ~ 1 / sqrt(n * 2 * MAF * (1 - MAF))</span></span>
+<span id="cb14-10"><a href="#cb14-10" aria-hidden="true" tabindex="-1"></a>n1 <span class="ot">&lt;-</span> <span class="dv">5000</span>; n2 <span class="ot">&lt;-</span> <span class="dv">8000</span></span>
+<span id="cb14-11"><a href="#cb14-11" aria-hidden="true" tabindex="-1"></a>se1 <span class="ot">&lt;-</span> <span class="dv">1</span> <span class="sc">/</span> <span class="fu">sqrt</span>(n1 <span class="sc">*</span> <span class="dv">2</span> <span class="sc">*</span> maf <span class="sc">*</span> (<span class="dv">1</span> <span class="sc">-</span> maf))</span>
+<span id="cb14-12"><a href="#cb14-12" aria-hidden="true" tabindex="-1"></a>se2 <span class="ot">&lt;-</span> <span class="dv">1</span> <span class="sc">/</span> <span class="fu">sqrt</span>(n2 <span class="sc">*</span> <span class="dv">2</span> <span class="sc">*</span> maf <span class="sc">*</span> (<span class="dv">1</span> <span class="sc">-</span> maf))</span>
+<span id="cb14-13"><a href="#cb14-13" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb14-14"><a href="#cb14-14" aria-hidden="true" tabindex="-1"></a><span class="co"># Simulate observed effect estimates with sampling error</span></span>
+<span id="cb14-15"><a href="#cb14-15" aria-hidden="true" tabindex="-1"></a>beta1 <span class="ot">&lt;-</span> true_beta <span class="sc">+</span> <span class="fu">rnorm</span>(<span class="dv">1</span>, <span class="dv">0</span>, se1)</span>
+<span id="cb14-16"><a href="#cb14-16" aria-hidden="true" tabindex="-1"></a>beta2 <span class="ot">&lt;-</span> true_beta <span class="sc">+</span> <span class="fu">rnorm</span>(<span class="dv">1</span>, <span class="dv">0</span>, se2)</span>
+<span id="cb14-17"><a href="#cb14-17" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb14-18"><a href="#cb14-18" aria-hidden="true" tabindex="-1"></a><span class="co"># IVW meta-analysis</span></span>
+<span id="cb14-19"><a href="#cb14-19" aria-hidden="true" tabindex="-1"></a>w1 <span class="ot">&lt;-</span> <span class="dv">1</span> <span class="sc">/</span> se1<span class="sc">^</span><span class="dv">2</span></span>
+<span id="cb14-20"><a href="#cb14-20" aria-hidden="true" tabindex="-1"></a>w2 <span class="ot">&lt;-</span> <span class="dv">1</span> <span class="sc">/</span> se2<span class="sc">^</span><span class="dv">2</span></span>
+<span id="cb14-21"><a href="#cb14-21" aria-hidden="true" tabindex="-1"></a>beta_meta <span class="ot">&lt;-</span> (w1 <span class="sc">*</span> beta1 <span class="sc">+</span> w2 <span class="sc">*</span> beta2) <span class="sc">/</span> (w1 <span class="sc">+</span> w2)</span>
+<span id="cb14-22"><a href="#cb14-22" aria-hidden="true" tabindex="-1"></a>se_meta   <span class="ot">&lt;-</span> <span class="fu">sqrt</span>(<span class="dv">1</span> <span class="sc">/</span> (w1 <span class="sc">+</span> w2))</span>
+<span id="cb14-23"><a href="#cb14-23" aria-hidden="true" tabindex="-1"></a>z_meta    <span class="ot">&lt;-</span> beta_meta <span class="sc">/</span> se_meta</span>
+<span id="cb14-24"><a href="#cb14-24" aria-hidden="true" tabindex="-1"></a>p_meta    <span class="ot">&lt;-</span> <span class="dv">2</span> <span class="sc">*</span> <span class="fu">pnorm</span>(<span class="fu">abs</span>(z_meta), <span class="at">lower.tail =</span> <span class="cn">FALSE</span>)</span>
+<span id="cb14-25"><a href="#cb14-25" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb14-26"><a href="#cb14-26" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="fu">sprintf</span>(<span class="st">"Study 1: beta = %.4f, SE = %.4f, Z = %.2f</span><span class="sc">\n</span><span class="st">"</span>,</span>
+<span id="cb14-27"><a href="#cb14-27" aria-hidden="true" tabindex="-1"></a>            beta1, se1, beta1 <span class="sc">/</span> se1))</span>
+<span id="cb14-28"><a href="#cb14-28" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="fu">sprintf</span>(<span class="st">"Study 2: beta = %.4f, SE = %.4f, Z = %.2f</span><span class="sc">\n</span><span class="st">"</span>,</span>
+<span id="cb14-29"><a href="#cb14-29" aria-hidden="true" tabindex="-1"></a>            beta2, se2, beta2 <span class="sc">/</span> se2))</span>
+<span id="cb14-30"><a href="#cb14-30" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="fu">sprintf</span>(<span class="st">"Meta-analysis (IVW): beta = %.4f, SE = %.4f, Z = %.2f, p = %.2e</span><span class="sc">\n</span><span class="st">"</span>,</span>
+<span id="cb14-31"><a href="#cb14-31" aria-hidden="true" tabindex="-1"></a>            beta_meta, se_meta, z_meta, p_meta))</span>
+<span id="cb14-32"><a href="#cb14-32" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="fu">sprintf</span>(<span class="st">"Effective N (meta): %.0f vs actual N1+N2: %d</span><span class="sc">\n</span><span class="st">"</span>,</span>
+<span id="cb14-33"><a href="#cb14-33" aria-hidden="true" tabindex="-1"></a>            <span class="dv">1</span> <span class="sc">/</span> se_meta<span class="sc">^</span><span class="dv">2</span> <span class="sc">/</span> (<span class="dv">2</span> <span class="sc">*</span> maf <span class="sc">*</span> (<span class="dv">1</span> <span class="sc">-</span> maf)), n1 <span class="sc">+</span> n2))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<hr>
+</section>
+</section>
+<section id="plink-实战完整单-snp-关联分析" class="level2" data-number="19.7">
+<h2 data-number="19.7" class="anchored" data-anchor-id="plink-实战完整单-snp-关联分析"><span class="header-section-number">19.7</span> PLINK 实战：完整单 SNP 关联分析</h2>
+<p>以下展示从 QC 后数据出发，利用 PLINK 完成逻辑回归和线性回归关联分析的完整命令。</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb15"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a><span class="co"># 准备协变量文件（含 PCA 主成分和性别）</span></span>
+<span id="cb15-2"><a href="#cb15-2" aria-hidden="true" tabindex="-1"></a><span class="co"># 格式：FID IID PC1 PC2 ... PC10 SEX</span></span>
+<span id="cb15-3"><a href="#cb15-3" aria-hidden="true" tabindex="-1"></a><span class="fu">paste</span> <span class="dt">\</span></span>
+<span id="cb15-4"><a href="#cb15-4" aria-hidden="true" tabindex="-1"></a>  <span class="op">&lt;(</span><span class="fu">awk</span> <span class="st">'{print $1, $2}'</span> pca_result.eigenvec<span class="op">)</span> <span class="dt">\</span></span>
+<span id="cb15-5"><a href="#cb15-5" aria-hidden="true" tabindex="-1"></a>  <span class="op">&lt;(</span><span class="fu">awk</span> <span class="st">'{print $3,$4,$5,$6,$7,$8,$9,$10,$11,$12}'</span> pca_result.eigenvec<span class="op">)</span> <span class="dt">\</span></span>
+<span id="cb15-6"><a href="#cb15-6" aria-hidden="true" tabindex="-1"></a>  <span class="op">&lt;(</span><span class="fu">awk</span> <span class="st">'{print $5}'</span> qc_step4.fam<span class="op">)</span> <span class="dt">\</span></span>
+<span id="cb15-7"><a href="#cb15-7" aria-hidden="true" tabindex="-1"></a>  <span class="op">&gt;</span> covariates.txt</span>
+<span id="cb15-8"><a href="#cb15-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-9"><a href="#cb15-9" aria-hidden="true" tabindex="-1"></a><span class="co"># 逻辑回归（二元表型）</span></span>
+<span id="cb15-10"><a href="#cb15-10" aria-hidden="true" tabindex="-1"></a><span class="ex">plink</span> <span class="dt">\</span></span>
+<span id="cb15-11"><a href="#cb15-11" aria-hidden="true" tabindex="-1"></a>  <span class="at">--bfile</span> qc_step4 <span class="dt">\</span></span>
+<span id="cb15-12"><a href="#cb15-12" aria-hidden="true" tabindex="-1"></a>  <span class="at">--logistic</span> <span class="dt">\</span></span>
+<span id="cb15-13"><a href="#cb15-13" aria-hidden="true" tabindex="-1"></a>  <span class="at">--covar</span> covariates.txt <span class="dt">\</span></span>
+<span id="cb15-14"><a href="#cb15-14" aria-hidden="true" tabindex="-1"></a>  <span class="at">--covar-name</span> PC1,PC2,PC3,PC4,PC5,PC6,PC7,PC8,PC9,PC10,SEX <span class="dt">\</span></span>
+<span id="cb15-15"><a href="#cb15-15" aria-hidden="true" tabindex="-1"></a>  <span class="at">--hide-covar</span> <span class="dt">\</span></span>
+<span id="cb15-16"><a href="#cb15-16" aria-hidden="true" tabindex="-1"></a>  <span class="at">--out</span> gwas_logistic</span>
+<span id="cb15-17"><a href="#cb15-17" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-18"><a href="#cb15-18" aria-hidden="true" tabindex="-1"></a><span class="co"># 线性回归（连续表型）</span></span>
+<span id="cb15-19"><a href="#cb15-19" aria-hidden="true" tabindex="-1"></a><span class="ex">plink</span> <span class="dt">\</span></span>
+<span id="cb15-20"><a href="#cb15-20" aria-hidden="true" tabindex="-1"></a>  <span class="at">--bfile</span> qc_step4 <span class="dt">\</span></span>
+<span id="cb15-21"><a href="#cb15-21" aria-hidden="true" tabindex="-1"></a>  <span class="at">--linear</span> <span class="dt">\</span></span>
+<span id="cb15-22"><a href="#cb15-22" aria-hidden="true" tabindex="-1"></a>  <span class="at">--pheno</span> continuous_pheno.txt <span class="dt">\</span></span>
+<span id="cb15-23"><a href="#cb15-23" aria-hidden="true" tabindex="-1"></a>  <span class="at">--covar</span> covariates.txt <span class="dt">\</span></span>
+<span id="cb15-24"><a href="#cb15-24" aria-hidden="true" tabindex="-1"></a>  <span class="at">--covar-name</span> PC1,PC2,PC3,PC4,PC5,PC6,PC7,PC8,PC9,PC10,SEX <span class="dt">\</span></span>
+<span id="cb15-25"><a href="#cb15-25" aria-hidden="true" tabindex="-1"></a>  <span class="at">--hide-covar</span> <span class="dt">\</span></span>
+<span id="cb15-26"><a href="#cb15-26" aria-hidden="true" tabindex="-1"></a>  <span class="at">--out</span> gwas_linear</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb16"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a><span class="co"># 读取 PLINK 关联分析结果并进行后处理</span></span>
+<span id="cb16-2"><a href="#cb16-2" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(tidyverse)</span>
+<span id="cb16-3"><a href="#cb16-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-4"><a href="#cb16-4" aria-hidden="true" tabindex="-1"></a>assoc <span class="ot">&lt;-</span> <span class="fu">read_table</span>(<span class="st">"gwas_logistic.assoc.logistic"</span>,</span>
+<span id="cb16-5"><a href="#cb16-5" aria-hidden="true" tabindex="-1"></a>                    <span class="at">col_types =</span> <span class="fu">cols</span>()) <span class="sc">%&gt;%</span></span>
+<span id="cb16-6"><a href="#cb16-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(TEST <span class="sc">==</span> <span class="st">"ADD"</span>) <span class="sc">%&gt;%</span></span>
+<span id="cb16-7"><a href="#cb16-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(<span class="sc">!</span><span class="fu">is.na</span>(P)) <span class="sc">%&gt;%</span></span>
+<span id="cb16-8"><a href="#cb16-8" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">log10p =</span> <span class="sc">-</span><span class="fu">log10</span>(P))</span>
+<span id="cb16-9"><a href="#cb16-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-10"><a href="#cb16-10" aria-hidden="true" tabindex="-1"></a><span class="co"># Bonferroni 阈值</span></span>
+<span id="cb16-11"><a href="#cb16-11" aria-hidden="true" tabindex="-1"></a>bonf <span class="ot">&lt;-</span> <span class="fl">0.05</span> <span class="sc">/</span> <span class="fu">nrow</span>(assoc)</span>
+<span id="cb16-12"><a href="#cb16-12" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="fu">sprintf</span>(<span class="st">"Bonferroni threshold: %.2e</span><span class="sc">\n</span><span class="st">"</span>, bonf))</span>
+<span id="cb16-13"><a href="#cb16-13" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-14"><a href="#cb16-14" aria-hidden="true" tabindex="-1"></a>sig_hits <span class="ot">&lt;-</span> assoc <span class="sc">%&gt;%</span> <span class="fu">filter</span>(P <span class="sc">&lt;</span> bonf)</span>
+<span id="cb16-15"><a href="#cb16-15" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="fu">sprintf</span>(<span class="st">"Significant hits: %d</span><span class="sc">\n</span><span class="st">"</span>, <span class="fu">nrow</span>(sig_hits)))</span>
+<span id="cb16-16"><a href="#cb16-16" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-17"><a href="#cb16-17" aria-hidden="true" tabindex="-1"></a><span class="co"># 输出 Top 10 hits</span></span>
+<span id="cb16-18"><a href="#cb16-18" aria-hidden="true" tabindex="-1"></a>assoc <span class="sc">%&gt;%</span></span>
+<span id="cb16-19"><a href="#cb16-19" aria-hidden="true" tabindex="-1"></a>  <span class="fu">arrange</span>(P) <span class="sc">%&gt;%</span></span>
+<span id="cb16-20"><a href="#cb16-20" aria-hidden="true" tabindex="-1"></a>  <span class="fu">select</span>(CHR, SNP, BP, A1, OR, SE, P) <span class="sc">%&gt;%</span></span>
+<span id="cb16-21"><a href="#cb16-21" aria-hidden="true" tabindex="-1"></a>  <span class="fu">head</span>(<span class="dv">10</span>) <span class="sc">%&gt;%</span></span>
+<span id="cb16-22"><a href="#cb16-22" aria-hidden="true" tabindex="-1"></a>  knitr<span class="sc">::</span><span class="fu">kable</span>(<span class="at">caption =</span> <span class="st">"表3.5.2：Top 10 关联位点（逻辑回归）"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<section id="plink-结果输出的深度解读" class="level3" data-number="19.7.1">
+<h3 data-number="19.7.1" class="anchored" data-anchor-id="plink-结果输出的深度解读"><span class="header-section-number">19.7.1</span> PLINK 结果输出的深度解读</h3>
+<p>PLINK 逻辑回归输出文件（<code>.assoc.logistic</code>）每行代表一个 SNP 的关联检验结果，关键列含义如下：</p>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 27%">
+<col style="width: 27%">
+<col style="width: 45%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>列名</th>
+<th>含义</th>
+<th>注意事项</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>TEST</code></td>
+<td>检验类型</td>
+<td>仅保留 <code>ADD</code>（加性模型）行；<code>DOMDEV</code>/<code>COV_PCx</code> 等为其他检验或协变量</td>
+</tr>
+<tr class="even">
+<td><code>A1</code></td>
+<td>检验等位基因</td>
+<td>PLINK 默认以次要等位基因（minor allele）为参考；需确认编码方向</td>
+</tr>
+<tr class="odd">
+<td><code>OR</code></td>
+<td>比值比（Odds Ratio）</td>
+<td><code>OR &gt; 1</code>：携带 A1 增加患病风险；<code>OR &lt; 1</code>：A1 为保护性等位基因</td>
+</tr>
+<tr class="even">
+<td><code>SE</code></td>
+<td>log(OR) 的标准误</td>
+<td>用于构造 95% CI：<span class="math inline">\([\exp(\log(\text{OR}) \pm 1.96 \times \text{SE})]\)</span></td>
+</tr>
+<tr class="odd">
+<td><code>P</code></td>
+<td>Wald 检验 p 值</td>
+<td>极小值（如 <code>1e-300</code>）为浮点下溢，实际意义是”极显著”</td>
+</tr>
+</tbody>
+</table>
+<p>在 R 中进行结果后处理时，经常需要将 PLINK 输出的 OR 和 SE 还原为效应量 <span class="math inline">\(\beta\)</span>（即 <span class="math inline">\(\log(\text{OR})\)</span>）及其置信区间，以便与其他软件的结果比较或进行元分析：</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb17"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Convert OR to log-OR with 95% CI and prepare for downstream use</span></span>
+<span id="cb17-2"><a href="#cb17-2" aria-hidden="true" tabindex="-1"></a>sig_hits <span class="ot">&lt;-</span> sig_hits <span class="sc">%&gt;%</span></span>
+<span id="cb17-3"><a href="#cb17-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(</span>
+<span id="cb17-4"><a href="#cb17-4" aria-hidden="true" tabindex="-1"></a>    <span class="at">log_or =</span> <span class="fu">log</span>(OR),</span>
+<span id="cb17-5"><a href="#cb17-5" aria-hidden="true" tabindex="-1"></a>    <span class="at">ci_lower =</span> <span class="fu">exp</span>(log_or <span class="sc">-</span> <span class="fl">1.96</span> <span class="sc">*</span> SE),</span>
+<span id="cb17-6"><a href="#cb17-6" aria-hidden="true" tabindex="-1"></a>    <span class="at">ci_upper =</span> <span class="fu">exp</span>(log_or <span class="sc">+</span> <span class="fl">1.96</span> <span class="sc">*</span> SE),</span>
+<span id="cb17-7"><a href="#cb17-7" aria-hidden="true" tabindex="-1"></a>    <span class="at">label =</span> <span class="fu">sprintf</span>(<span class="st">"%s (OR=%.2f, 95%%CI: %.2f-%.2f, p=%.2e)"</span>,</span>
+<span id="cb17-8"><a href="#cb17-8" aria-hidden="true" tabindex="-1"></a>                    SNP, OR, ci_lower, ci_upper, P)</span>
+<span id="cb17-9"><a href="#cb17-9" aria-hidden="true" tabindex="-1"></a>  )</span>
+<span id="cb17-10"><a href="#cb17-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb17-11"><a href="#cb17-11" aria-hidden="true" tabindex="-1"></a><span class="co"># Forest plot for top significant hits</span></span>
+<span id="cb17-12"><a href="#cb17-12" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(ggplot2)</span>
+<span id="cb17-13"><a href="#cb17-13" aria-hidden="true" tabindex="-1"></a>top10 <span class="ot">&lt;-</span> sig_hits <span class="sc">%&gt;%</span> <span class="fu">arrange</span>(P) <span class="sc">%&gt;%</span> <span class="fu">head</span>(<span class="dv">10</span>) <span class="sc">%&gt;%</span></span>
+<span id="cb17-14"><a href="#cb17-14" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">SNP =</span> <span class="fu">factor</span>(SNP, <span class="at">levels =</span> <span class="fu">rev</span>(SNP)))</span>
+<span id="cb17-15"><a href="#cb17-15" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb17-16"><a href="#cb17-16" aria-hidden="true" tabindex="-1"></a><span class="fu">ggplot</span>(top10, <span class="fu">aes</span>(<span class="at">x =</span> OR, <span class="at">xmin =</span> ci_lower, <span class="at">xmax =</span> ci_upper, <span class="at">y =</span> SNP)) <span class="sc">+</span></span>
+<span id="cb17-17"><a href="#cb17-17" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_pointrange</span>(<span class="at">color =</span> <span class="st">"steelblue"</span>, <span class="at">size =</span> <span class="fl">0.6</span>) <span class="sc">+</span></span>
+<span id="cb17-18"><a href="#cb17-18" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_vline</span>(<span class="at">xintercept =</span> <span class="dv">1</span>, <span class="at">linetype =</span> <span class="st">"dashed"</span>, <span class="at">color =</span> <span class="st">"grey50"</span>) <span class="sc">+</span></span>
+<span id="cb17-19"><a href="#cb17-19" aria-hidden="true" tabindex="-1"></a>  <span class="fu">scale_x_log10</span>() <span class="sc">+</span></span>
+<span id="cb17-20"><a href="#cb17-20" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(<span class="at">x =</span> <span class="st">"Odds Ratio (log scale)"</span>, <span class="at">y =</span> <span class="cn">NULL</span>,</span>
+<span id="cb17-21"><a href="#cb17-21" aria-hidden="true" tabindex="-1"></a>       <span class="at">title =</span> <span class="st">"Forest Plot: Top GWAS Hits"</span>) <span class="sc">+</span></span>
+<span id="cb17-22"><a href="#cb17-22" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme_classic</span>()</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</section>
+<section id="snp-遗传力估计gcta-greml" class="level3" data-number="19.7.2">
+<h3 data-number="19.7.2" class="anchored" data-anchor-id="snp-遗传力估计gcta-greml"><span class="header-section-number">19.7.2</span> SNP 遗传力估计（GCTA-GREML）</h3>
+<p>单 SNP 关联分析识别的是显著性达到全基因组阈值的位点，但这些位点通常只能解释性状总遗传方差的一小部分。<strong>遗传力（heritability，<span class="math inline">\(h^2\)</span>）</strong> 表示在总表型方差中可归因于遗传变异的比例，是理解遗传结构的基础指标。<strong>SNP 遗传力（SNP heritability，<span class="math inline">\(h^2_{\text{SNP}}\)</span>）</strong> 则进一步定义为可被芯片上所有常见 SNP 共同解释的表型方差比例，通常低于总遗传力（即存在”遗传力缺失”，missing heritability）。</p>
+<p><strong>GCTA-GREML</strong>（Genomic-relatedness-based restricted maximum likelihood）是估计 SNP 遗传力的金标准方法。其核心思想是：利用全基因组 SNP 构建遗传关系矩阵（Genomic Relationship Matrix，GRM），将表型方差分解为遗传成分和环境成分，通过<strong>限制性最大似然（REML）</strong> 估计各方差成分。GRM 的第 <span class="math inline">\((i,j)\)</span> 元素定义为两个个体在标准化基因型上的内积均值：</p>
+<p><span class="math display">\[A_{ij} = \frac{1}{M} \sum_{k=1}^{M} \frac{(x_{ik} - 2p_k)(x_{jk} - 2p_k)}{2p_k(1-p_k)}\]</span></p>
+<p>其中 <span class="math inline">\(x_{ik}\)</span> 为个体 <span class="math inline">\(i\)</span> 在 SNP <span class="math inline">\(k\)</span> 的等位基因计数（0/1/2），<span class="math inline">\(p_k\)</span> 为 SNP <span class="math inline">\(k\)</span> 的等位基因频率，<span class="math inline">\(M\)</span> 为总 SNP 数。GRM 的对角元素 <span class="math inline">\(A_{ii}\)</span> 反映个体自身的”近交系数估计”（无近交时约为 1），非对角元素 <span class="math inline">\(A_{ij}\)</span> 度量两个个体的遗传相似性（无亲缘关系的随机个体期望值约为 0）。</p>
+<p>在线性混合模型框架下，表型向量 <span class="math inline">\(\mathbf{y}\)</span> 的方差结构为：</p>
+<p><span class="math display">\[\text{Var}(\mathbf{y}) = h^2_{\text{SNP}} \cdot \mathbf{A}\sigma_y^2 + (1 - h^2_{\text{SNP}}) \cdot \mathbf{I}\sigma_y^2\]</span></p>
+<p>REML 优化对数限制似然函数（marginalizing over fixed effects），估计 <span class="math inline">\(h^2_{\text{SNP}}\)</span> 使上述方差结构与观测表型协方差矩阵最匹配。</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb18"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Step 1: Construct Genomic Relationship Matrix (GRM)</span></span>
+<span id="cb18-2"><a href="#cb18-2" aria-hidden="true" tabindex="-1"></a><span class="ex">gcta64</span> <span class="dt">\</span></span>
+<span id="cb18-3"><a href="#cb18-3" aria-hidden="true" tabindex="-1"></a>  <span class="at">--bfile</span> qc_step4 <span class="dt">\</span></span>
+<span id="cb18-4"><a href="#cb18-4" aria-hidden="true" tabindex="-1"></a>  <span class="at">--make-grm</span> <span class="dt">\</span></span>
+<span id="cb18-5"><a href="#cb18-5" aria-hidden="true" tabindex="-1"></a>  <span class="at">--out</span> grm_all_snps <span class="dt">\</span></span>
+<span id="cb18-6"><a href="#cb18-6" aria-hidden="true" tabindex="-1"></a>  <span class="at">--thread-num</span> 8</span>
+<span id="cb18-7"><a href="#cb18-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb18-8"><a href="#cb18-8" aria-hidden="true" tabindex="-1"></a><span class="co"># Step 2: Filter out closely related individuals (GRM off-diagonal &gt; 0.05)</span></span>
+<span id="cb18-9"><a href="#cb18-9" aria-hidden="true" tabindex="-1"></a><span class="ex">gcta64</span> <span class="dt">\</span></span>
+<span id="cb18-10"><a href="#cb18-10" aria-hidden="true" tabindex="-1"></a>  <span class="at">--grm</span> grm_all_snps <span class="dt">\</span></span>
+<span id="cb18-11"><a href="#cb18-11" aria-hidden="true" tabindex="-1"></a>  <span class="at">--grm-cutoff</span> 0.05 <span class="dt">\</span></span>
+<span id="cb18-12"><a href="#cb18-12" aria-hidden="true" tabindex="-1"></a>  <span class="at">--make-grm</span> <span class="dt">\</span></span>
+<span id="cb18-13"><a href="#cb18-13" aria-hidden="true" tabindex="-1"></a>  <span class="at">--out</span> grm_unrelated <span class="dt">\</span></span>
+<span id="cb18-14"><a href="#cb18-14" aria-hidden="true" tabindex="-1"></a>  <span class="at">--thread-num</span> 8</span>
+<span id="cb18-15"><a href="#cb18-15" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb18-16"><a href="#cb18-16" aria-hidden="true" tabindex="-1"></a><span class="co"># Step 3: REML estimation of SNP heritability</span></span>
+<span id="cb18-17"><a href="#cb18-17" aria-hidden="true" tabindex="-1"></a><span class="ex">gcta64</span> <span class="dt">\</span></span>
+<span id="cb18-18"><a href="#cb18-18" aria-hidden="true" tabindex="-1"></a>  <span class="at">--grm</span> grm_unrelated <span class="dt">\</span></span>
+<span id="cb18-19"><a href="#cb18-19" aria-hidden="true" tabindex="-1"></a>  <span class="at">--pheno</span> pheno.txt <span class="dt">\</span></span>
+<span id="cb18-20"><a href="#cb18-20" aria-hidden="true" tabindex="-1"></a>  <span class="at">--qcovar</span> continuous_covariates.txt <span class="dt">\</span></span>
+<span id="cb18-21"><a href="#cb18-21" aria-hidden="true" tabindex="-1"></a>  <span class="at">--covar</span> discrete_covariates.txt <span class="dt">\</span></span>
+<span id="cb18-22"><a href="#cb18-22" aria-hidden="true" tabindex="-1"></a>  <span class="at">--reml</span> <span class="dt">\</span></span>
+<span id="cb18-23"><a href="#cb18-23" aria-hidden="true" tabindex="-1"></a>  <span class="at">--out</span> heritability_result <span class="dt">\</span></span>
+<span id="cb18-24"><a href="#cb18-24" aria-hidden="true" tabindex="-1"></a>  <span class="at">--thread-num</span> 8</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>GCTA 的 <code>.hsq</code> 输出文件包含遗传方差（<span class="math inline">\(V(G)\)</span>）和残差方差（<span class="math inline">\(V(e)\)</span>）的 REML 估计及标准误，以及 <span class="math inline">\(h^2_{\text{SNP}} = V(G) / V(P)\)</span> 的点估计和置信区间。解读时需注意：（1）GREML 对样本量敏感，通常需要 <span class="math inline">\(N &gt; 3,000\)</span> 才能获得精确估计；（2）祖源不均匀的混合样本可能导致 GRM 非正定或 REML 收敛问题；（3）二元性状的 <span class="math inline">\(h^2_{\text{SNP}}\)</span> 在观测尺度（observed scale）上受患病率影响，需换算至责任尺度（liability scale）以获得可比较的遗传力估计。</p>
+<div class="tip">
+<p><strong>LDSC：无需个体数据的遗传力估计</strong></p>
+<p>当没有原始个体水平数据时，<strong>LD Score 回归（LDSC）</strong> 可直接利用 GWAS 汇总统计量估计 SNP 遗传力。其原理是在 <span class="math inline">\(\chi^2\)</span> 统计量与该 SNP 的 LD Score（即与周围 SNP 的 <span class="math inline">\(r^2\)</span> 之和）之间建立回归关系：<span class="math inline">\(E[\chi_j^2] = N h^2_{\text{SNP}} l_j / M + \text{intercept}\)</span>，斜率项反映多基因遗传信号，截距项反映分层偏差。LDSC 的计算仅需数分钟，输出的截距同时用于诊断 <span class="math inline">\(\lambda_{GC}\)</span> 的来源（参见 3.5.3 节）。</p>
 </div>
 <hr>
 </section>
-<section id="独立信号的识别ld-裁剪与条件分析" class="level2" data-number="19.5">
-<h2 data-number="19.5" class="anchored" data-anchor-id="独立信号的识别ld-裁剪与条件分析"><span class="header-section-number">19.5</span> 3.5.4 独立信号的识别：LD 裁剪与条件分析</h2>
-<section id="ld-裁剪clumping" class="level3" data-number="19.5.1">
-<h3 data-number="19.5.1" class="anchored" data-anchor-id="ld-裁剪clumping"><span class="header-section-number">19.5.1</span> 3.5.4.1 LD 裁剪（Clumping）</h3>
-<p>同一 LD 区块内的多个 SNP 因连锁不平衡而产生相关的关联信号，不能被视为独立命中。<strong>LD 裁剪</strong>以最显著的 SNP（index SNP）为核心，将其一定窗口内 <span class="math inline">\(r^2\)</span> 超过阈值的关联 SNP 合并为同一位点：</p>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb3"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="co"># PLINK LD clumping</span></span>
-<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="ex">plink</span> <span class="dt">\</span></span>
-<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a>  <span class="at">--bfile</span> qc_step4 <span class="dt">\</span></span>
-<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a>  <span class="at">--clump</span> gwas_linear.assoc.linear <span class="dt">\</span></span>
-<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a>  <span class="at">--clump-p1</span> 5e-8 <span class="dt">\</span></span>
-<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a>  <span class="at">--clump-p2</span> 1e-5 <span class="dt">\</span></span>
-<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a>  <span class="at">--clump-r2</span> 0.1 <span class="dt">\</span></span>
-<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a>  <span class="at">--clump-kb</span> 1000 <span class="dt">\</span></span>
-<span id="cb3-9"><a href="#cb3-9" aria-hidden="true" tabindex="-1"></a>  <span class="at">--clump-field</span> P <span class="dt">\</span></span>
-<span id="cb3-10"><a href="#cb3-10" aria-hidden="true" tabindex="-1"></a>  <span class="at">--out</span> gwas_clumped</span>
-<span id="cb3-11"><a href="#cb3-11" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb3-12"><a href="#cb3-12" aria-hidden="true" tabindex="-1"></a><span class="co"># 输出文件：gwas_clumped.clumped</span></span>
-<span id="cb3-13"><a href="#cb3-13" aria-hidden="true" tabindex="-1"></a><span class="co"># 每行为一个独立信号，SP2 列列出被合并的相关 SNP</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </section>
-<section id="逐步条件分析" class="level3" data-number="19.5.2">
-<h3 data-number="19.5.2" class="anchored" data-anchor-id="逐步条件分析"><span class="header-section-number">19.5.2</span> 3.5.4.2 逐步条件分析</h3>
+<section id="独立信号的识别ld-裁剪与精细定位" class="level2" data-number="19.8">
+<h2 data-number="19.8" class="anchored" data-anchor-id="独立信号的识别ld-裁剪与精细定位"><span class="header-section-number">19.8</span> 独立信号的识别：LD 裁剪与精细定位</h2>
+<section id="ld-裁剪clumping" class="level3" data-number="19.8.1">
+<h3 data-number="19.8.1" class="anchored" data-anchor-id="ld-裁剪clumping"><span class="header-section-number">19.8.1</span> LD 裁剪（Clumping）</h3>
+<p>由于 LD 的存在，显著性峰往往包含多个互相连锁的 SNP，而非单一的独立信号。<strong>LD 裁剪</strong>以最显著的 SNP（index SNP）为核心，将其一定窗口内 <span class="math inline">\(r^2\)</span> 超过阈值的关联 SNP 合并为同一位点：</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb19"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb19-1"><a href="#cb19-1" aria-hidden="true" tabindex="-1"></a><span class="co"># PLINK LD clumping</span></span>
+<span id="cb19-2"><a href="#cb19-2" aria-hidden="true" tabindex="-1"></a><span class="ex">plink</span> <span class="dt">\</span></span>
+<span id="cb19-3"><a href="#cb19-3" aria-hidden="true" tabindex="-1"></a>  <span class="at">--bfile</span> qc_step4 <span class="dt">\</span></span>
+<span id="cb19-4"><a href="#cb19-4" aria-hidden="true" tabindex="-1"></a>  <span class="at">--clump</span> gwas_logistic.assoc.logistic <span class="dt">\</span></span>
+<span id="cb19-5"><a href="#cb19-5" aria-hidden="true" tabindex="-1"></a>  <span class="at">--clump-p1</span> 5e-8 <span class="dt">\</span></span>
+<span id="cb19-6"><a href="#cb19-6" aria-hidden="true" tabindex="-1"></a>  <span class="at">--clump-p2</span> 1e-5 <span class="dt">\</span></span>
+<span id="cb19-7"><a href="#cb19-7" aria-hidden="true" tabindex="-1"></a>  <span class="at">--clump-r2</span> 0.1 <span class="dt">\</span></span>
+<span id="cb19-8"><a href="#cb19-8" aria-hidden="true" tabindex="-1"></a>  <span class="at">--clump-kb</span> 1000 <span class="dt">\</span></span>
+<span id="cb19-9"><a href="#cb19-9" aria-hidden="true" tabindex="-1"></a>  <span class="at">--clump-field</span> P <span class="dt">\</span></span>
+<span id="cb19-10"><a href="#cb19-10" aria-hidden="true" tabindex="-1"></a>  <span class="at">--out</span> gwas_clumped</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</section>
+<section id="逐步条件分析" class="level3" data-number="19.8.2">
+<h3 data-number="19.8.2" class="anchored" data-anchor-id="逐步条件分析"><span class="header-section-number">19.8.2</span> 逐步条件分析</h3>
 <p>对于同一染色体区域内可能存在多个独立信号的情况，逐步条件分析（stepwise conditional analysis）逐步将已识别的显著 SNP 作为协变量加入模型，检验是否存在额外的独立关联信号：</p>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb4"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Conditional analysis: adjust for index SNP genotype</span></span>
-<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a><span class="co"># 假设 index_snp_geno 为 index SNP 的基因型向量</span></span>
-<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a>fit_conditional <span class="ot">&lt;-</span> <span class="fu">lm</span>(pheno <span class="sc">~</span> geno_candidate <span class="sc">+</span> index_snp_geno <span class="sc">+</span> PC1 <span class="sc">+</span> PC2)</span>
-<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a><span class="fu">summary</span>(fit_conditional)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb20"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb20-1"><a href="#cb20-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Conditional analysis: adjust for index SNP genotype</span></span>
+<span id="cb20-2"><a href="#cb20-2" aria-hidden="true" tabindex="-1"></a>fit_conditional <span class="ot">&lt;-</span> <span class="fu">lm</span>(pheno <span class="sc">~</span> geno_candidate <span class="sc">+</span> index_snp_geno <span class="sc">+</span> PC1 <span class="sc">+</span> PC2)</span>
+<span id="cb20-3"><a href="#cb20-3" aria-hidden="true" tabindex="-1"></a><span class="fu">summary</span>(fit_conditional)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</section>
+<section id="精细定位的概念" class="level3" data-number="19.8.3">
+<h3 data-number="19.8.3" class="anchored" data-anchor-id="精细定位的概念"><span class="header-section-number">19.8.3</span> 精细定位的概念</h3>
+<p><strong>精细定位（fine-mapping）</strong> 是在一个显著关联区域内，从众多 LD 连锁的 SNP 中，统计推断出最可能的因果变异的过程。与 LD 剪枝不同，精细定位不满足于选取最显著的 SNP，而是试图量化每个 SNP 作为因果变异的后验概率，并构建<strong>可信集（credible set）</strong>——即以 95% 概率包含真正因果变异的最小 SNP 集合。常用的精细定位工具包括 FINEMAP、SUSIE（Sum of Single Effects）和 POLYFUN。这些方法的共同输入是 GWAS 汇总统计量和参考 LD 矩阵，输出是每个 SNP 的<strong>后验纳入概率（Posterior Inclusion Probability，PIP）</strong>。PIP 接近 1 的 SNP 是高置信度的因果变异候选。</p>
+<div class="note">
+<p><strong>精细定位的局限性</strong></p>
+<p>即使在样本量足够大的研究中，精细定位也往往无法将可信集缩小至单个 SNP，因为同一 LD 区块内的多个 SNP 具有极高的 <span class="math inline">\(r^2\)</span>，其统计证据几乎无法区分。突破这一瓶颈的方法包括：多群体精细定位（利用不同群体 LD 结构的差异缩小候选范围）和功能基因组注释（优先选取位于功能元件内的 SNP）。</p>
+</div>
+<div class="tip">
+<p><strong>后续分析深入：精细定位与功能解析</strong></p>
+<p>本节介绍了如何通过 LD 裁剪从 GWAS 结果中识别独立信号。对于如何在候选区域内进一步缩小因果变异范围（精细定位）、如何整合 eQTL 与表观基因组数据解析致因机制，以及如何开展孟德尔随机化因果推断和多群体比较分析，参见专题 3.6。</p>
+</div>
 <hr>
 </section>
 </section>
-<section id="局部关联图" class="level2" data-number="19.6">
-<h2 data-number="19.6" class="anchored" data-anchor-id="局部关联图"><span class="header-section-number">19.6</span> 3.5.5 局部关联图</h2>
+<section id="局部关联图" class="level2" data-number="19.9">
+<h2 data-number="19.9" class="anchored" data-anchor-id="局部关联图"><span class="header-section-number">19.9</span> 局部关联图</h2>
 <p>局部关联图（regional association plot，LocusZoom 风格）聚焦于候选区域（通常 ±500 kb），叠加展示：</p>
 <ul>
 <li>各 SNP 的 <span class="math inline">\(-\log_{10}(p)\)</span> 值（点的颜色反映其与 lead SNP 的 <span class="math inline">\(r^2\)</span>）；</li>
 <li>基因结构注释（编码区、非编码区、转录方向）；</li>
 <li>重组率估计（来自 HapMap 或 1000 Genomes）。</li>
 </ul>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb5"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(tidyverse)</span>
-<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(ggrepel)</span>
-<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a><span class="co"># 假设已获取候选区域的关联结果和 LD 信息</span></span>
-<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a><span class="co"># ld_with_lead: data.frame, 含 SNP, r2_with_lead 两列</span></span>
-<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a>region <span class="ot">&lt;-</span> gwas <span class="sc">%&gt;%</span></span>
-<span id="cb5-8"><a href="#cb5-8" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(CHR <span class="sc">==</span> <span class="dv">6</span>, BP <span class="sc">&gt;=</span> <span class="fl">32.4e6</span>, BP <span class="sc">&lt;=</span> <span class="fl">33.4e6</span>) <span class="sc">%&gt;%</span></span>
-<span id="cb5-9"><a href="#cb5-9" aria-hidden="true" tabindex="-1"></a>  <span class="fu">left_join</span>(ld_with_lead, <span class="at">by =</span> <span class="st">"SNP"</span>) <span class="sc">%&gt;%</span></span>
-<span id="cb5-10"><a href="#cb5-10" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(</span>
-<span id="cb5-11"><a href="#cb5-11" aria-hidden="true" tabindex="-1"></a>    <span class="at">log10p =</span> <span class="sc">-</span><span class="fu">log10</span>(P),</span>
-<span id="cb5-12"><a href="#cb5-12" aria-hidden="true" tabindex="-1"></a>    <span class="at">ld_bin =</span> <span class="fu">cut</span>(r2_with_lead,</span>
-<span id="cb5-13"><a href="#cb5-13" aria-hidden="true" tabindex="-1"></a>                 <span class="at">breaks =</span> <span class="fu">c</span>(<span class="dv">0</span>, <span class="fl">0.2</span>, <span class="fl">0.4</span>, <span class="fl">0.6</span>, <span class="fl">0.8</span>, <span class="fl">1.0</span>),</span>
-<span id="cb5-14"><a href="#cb5-14" aria-hidden="true" tabindex="-1"></a>                 <span class="at">labels =</span> <span class="fu">c</span>(<span class="st">"0.0-0.2"</span>, <span class="st">"0.2-0.4"</span>,</span>
-<span id="cb5-15"><a href="#cb5-15" aria-hidden="true" tabindex="-1"></a>                            <span class="st">"0.4-0.6"</span>, <span class="st">"0.6-0.8"</span>, <span class="st">"0.8-1.0"</span>),</span>
-<span id="cb5-16"><a href="#cb5-16" aria-hidden="true" tabindex="-1"></a>                 <span class="at">include.lowest =</span> <span class="cn">TRUE</span>)</span>
-<span id="cb5-17"><a href="#cb5-17" aria-hidden="true" tabindex="-1"></a>  )</span>
-<span id="cb5-18"><a href="#cb5-18" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb5-19"><a href="#cb5-19" aria-hidden="true" tabindex="-1"></a>ld_colors <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="st">"0.0-0.2"</span> <span class="ot">=</span> <span class="st">"#2166AC"</span>,</span>
-<span id="cb5-20"><a href="#cb5-20" aria-hidden="true" tabindex="-1"></a>               <span class="st">"0.2-0.4"</span> <span class="ot">=</span> <span class="st">"#74ADD1"</span>,</span>
-<span id="cb5-21"><a href="#cb5-21" aria-hidden="true" tabindex="-1"></a>               <span class="st">"0.4-0.6"</span> <span class="ot">=</span> <span class="st">"#FDAE61"</span>,</span>
-<span id="cb5-22"><a href="#cb5-22" aria-hidden="true" tabindex="-1"></a>               <span class="st">"0.6-0.8"</span> <span class="ot">=</span> <span class="st">"#F46D43"</span>,</span>
-<span id="cb5-23"><a href="#cb5-23" aria-hidden="true" tabindex="-1"></a>               <span class="st">"0.8-1.0"</span> <span class="ot">=</span> <span class="st">"#D73027"</span>)</span>
-<span id="cb5-24"><a href="#cb5-24" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb5-25"><a href="#cb5-25" aria-hidden="true" tabindex="-1"></a>lead_snp <span class="ot">&lt;-</span> region <span class="sc">%&gt;%</span> <span class="fu">filter</span>(P <span class="sc">==</span> <span class="fu">min</span>(P))</span>
-<span id="cb5-26"><a href="#cb5-26" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb5-27"><a href="#cb5-27" aria-hidden="true" tabindex="-1"></a><span class="fu">ggplot</span>(region, <span class="fu">aes</span>(<span class="at">x =</span> BP <span class="sc">/</span> <span class="fl">1e6</span>, <span class="at">y =</span> log10p, <span class="at">color =</span> ld_bin)) <span class="sc">+</span></span>
-<span id="cb5-28"><a href="#cb5-28" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_point</span>(<span class="at">size =</span> <span class="fl">1.5</span>, <span class="at">alpha =</span> <span class="fl">0.8</span>) <span class="sc">+</span></span>
-<span id="cb5-29"><a href="#cb5-29" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_point</span>(<span class="at">data =</span> lead_snp, <span class="at">color =</span> <span class="st">"purple"</span>, <span class="at">size =</span> <span class="dv">3</span>, <span class="at">shape =</span> <span class="dv">18</span>) <span class="sc">+</span></span>
-<span id="cb5-30"><a href="#cb5-30" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_label_repel</span>(<span class="at">data =</span> lead_snp,</span>
-<span id="cb5-31"><a href="#cb5-31" aria-hidden="true" tabindex="-1"></a>                   <span class="fu">aes</span>(<span class="at">label =</span> SNP), <span class="at">color =</span> <span class="st">"purple"</span>,</span>
-<span id="cb5-32"><a href="#cb5-32" aria-hidden="true" tabindex="-1"></a>                   <span class="at">size =</span> <span class="dv">3</span>, <span class="at">nudge_y =</span> <span class="fl">0.5</span>, <span class="at">show.legend =</span> <span class="cn">FALSE</span>) <span class="sc">+</span></span>
-<span id="cb5-33"><a href="#cb5-33" aria-hidden="true" tabindex="-1"></a>  <span class="fu">scale_color_manual</span>(<span class="at">values =</span> ld_colors,</span>
-<span id="cb5-34"><a href="#cb5-34" aria-hidden="true" tabindex="-1"></a>                     <span class="at">name =</span> <span class="fu">expression</span>(r<span class="sc">^</span><span class="dv">2</span> <span class="sc">~</span> <span class="st">"with lead SNP"</span>)) <span class="sc">+</span></span>
-<span id="cb5-35"><a href="#cb5-35" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_hline</span>(<span class="at">yintercept =</span> <span class="sc">-</span><span class="fu">log10</span>(<span class="fl">5e-8</span>),</span>
-<span id="cb5-36"><a href="#cb5-36" aria-hidden="true" tabindex="-1"></a>             <span class="at">linetype =</span> <span class="st">"dashed"</span>, <span class="at">color =</span> <span class="st">"grey40"</span>) <span class="sc">+</span></span>
-<span id="cb5-37"><a href="#cb5-37" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(<span class="at">x =</span> <span class="st">"Position (Mb)"</span>,</span>
-<span id="cb5-38"><a href="#cb5-38" aria-hidden="true" tabindex="-1"></a>       <span class="at">y =</span> <span class="fu">expression</span>(<span class="sc">-</span>log[<span class="dv">10</span>](<span class="fu">italic</span>(p))),</span>
-<span id="cb5-39"><a href="#cb5-39" aria-hidden="true" tabindex="-1"></a>       <span class="at">title =</span> <span class="st">"Regional Association Plot"</span>) <span class="sc">+</span></span>
-<span id="cb5-40"><a href="#cb5-40" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme_classic</span>()</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-<hr>
-</section>
-<section id="候选位点的功能注释" class="level2" data-number="19.7">
-<h2 data-number="19.7" class="anchored" data-anchor-id="候选位点的功能注释"><span class="header-section-number">19.7</span> 3.5.6 候选位点的功能注释</h2>
-<p>统计显著性本身不能说明机制。GWAS 的后续核心工作是将显著 SNP（通常是 LD 区块内的多个相关变异）与功能信息整合，提出生物学假说。</p>
-<section id="变异注释" class="level3" data-number="19.7.1">
-<h3 data-number="19.7.1" class="anchored" data-anchor-id="变异注释"><span class="header-section-number">19.7.1</span> 3.5.6.1 变异注释</h3>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb6"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="co"># 使用 ANNOVAR 进行功能注释</span></span>
-<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a><span class="co"># 注释类型：exonic/intronic/UTR/intergenic/splicing 等</span></span>
-<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a><span class="fu">perl</span> annotate_variation.pl <span class="dt">\</span></span>
-<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a>  <span class="at">-geneanno</span> <span class="dt">\</span></span>
-<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a>  <span class="at">-dbtype</span> refGene <span class="dt">\</span></span>
-<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a>  <span class="at">-buildver</span> hg38 <span class="dt">\</span></span>
-<span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a>  candidate_snps.txt <span class="dt">\</span></span>
-<span id="cb6-8"><a href="#cb6-8" aria-hidden="true" tabindex="-1"></a>  humandb/</span>
-<span id="cb6-9"><a href="#cb6-9" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb6-10"><a href="#cb6-10" aria-hidden="true" tabindex="-1"></a><span class="co"># 使用 bcftools annotate 添加 VEP 注释</span></span>
-<span id="cb6-11"><a href="#cb6-11" aria-hidden="true" tabindex="-1"></a><span class="ex">bcftools</span> annotate <span class="dt">\</span></span>
-<span id="cb6-12"><a href="#cb6-12" aria-hidden="true" tabindex="-1"></a>  <span class="at">-a</span> vep_annotations.vcf.gz <span class="dt">\</span></span>
-<span id="cb6-13"><a href="#cb6-13" aria-hidden="true" tabindex="-1"></a>  <span class="at">-c</span> INFO <span class="dt">\</span></span>
-<span id="cb6-14"><a href="#cb6-14" aria-hidden="true" tabindex="-1"></a>  candidate_snps.vcf.gz <span class="dt">\</span></span>
-<span id="cb6-15"><a href="#cb6-15" aria-hidden="true" tabindex="-1"></a>  <span class="at">-o</span> annotated_candidates.vcf.gz</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-</section>
-<section id="eqtl-整合与共定位" class="level3" data-number="19.7.2">
-<h3 data-number="19.7.2" class="anchored" data-anchor-id="eqtl-整合与共定位"><span class="header-section-number">19.7.2</span> 3.5.6.2 eQTL 整合与共定位</h3>
-<p><strong>表达数量性状位点（expression Quantitative Trait Locus，eQTL）</strong> 是与基因表达水平关联的遗传变异。若 GWAS 命中的 SNP 同时也是某基因的 eQTL，则该基因成为优先候选致因基因（causal gene）。</p>
-<p>GTEx（Genotype-Tissue Expression）项目提供了来自 54 种人类组织的 cis-eQTL 数据，是最常用的 eQTL 参考数据库。</p>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb7"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(tidyverse)</span>
-<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a><span class="co"># 读取 GTEx eQTL 结果（以全血为例）</span></span>
-<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a><span class="co"># 文件格式：gene_id, variant_id, tss_distance, pval_nominal, slope, ...</span></span>
-<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a>eqtl <span class="ot">&lt;-</span> <span class="fu">read_tsv</span>(<span class="st">"GTEx_Analysis_v8_eQTL/Whole_Blood.v8.signif_variant_gene_pairs.txt.gz"</span>)</span>
-<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb7-7"><a href="#cb7-7" aria-hidden="true" tabindex="-1"></a><span class="co"># 从 variant_id 解析染色体位置</span></span>
-<span id="cb7-8"><a href="#cb7-8" aria-hidden="true" tabindex="-1"></a>eqtl <span class="ot">&lt;-</span> eqtl <span class="sc">%&gt;%</span></span>
-<span id="cb7-9"><a href="#cb7-9" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(</span>
-<span id="cb7-10"><a href="#cb7-10" aria-hidden="true" tabindex="-1"></a>    <span class="at">CHR =</span> <span class="fu">as.integer</span>(<span class="fu">sub</span>(<span class="st">"chr(</span><span class="sc">\\</span><span class="st">d+)_.*"</span>, <span class="st">"</span><span class="sc">\\</span><span class="st">1"</span>, variant_id)),</span>
-<span id="cb7-11"><a href="#cb7-11" aria-hidden="true" tabindex="-1"></a>    <span class="at">BP  =</span> <span class="fu">as.integer</span>(<span class="fu">sub</span>(<span class="st">"chr</span><span class="sc">\\</span><span class="st">d+_(</span><span class="sc">\\</span><span class="st">d+)_.*"</span>, <span class="st">"</span><span class="sc">\\</span><span class="st">1"</span>, variant_id))</span>
-<span id="cb7-12"><a href="#cb7-12" aria-hidden="true" tabindex="-1"></a>  )</span>
-<span id="cb7-13"><a href="#cb7-13" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb7-14"><a href="#cb7-14" aria-hidden="true" tabindex="-1"></a><span class="co"># 候选区域内的 eQTL 重叠</span></span>
-<span id="cb7-15"><a href="#cb7-15" aria-hidden="true" tabindex="-1"></a>candidate_region <span class="ot">&lt;-</span> <span class="fu">list</span>(<span class="at">chr =</span> <span class="dv">6</span>, <span class="at">start =</span> <span class="fl">32.4e6</span>, <span class="at">end =</span> <span class="fl">33.4e6</span>)</span>
-<span id="cb7-16"><a href="#cb7-16" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb7-17"><a href="#cb7-17" aria-hidden="true" tabindex="-1"></a>overlapping_eqtl <span class="ot">&lt;-</span> eqtl <span class="sc">%&gt;%</span></span>
-<span id="cb7-18"><a href="#cb7-18" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(CHR <span class="sc">==</span> candidate_region<span class="sc">$</span>chr,</span>
-<span id="cb7-19"><a href="#cb7-19" aria-hidden="true" tabindex="-1"></a>         BP  <span class="sc">&gt;=</span> candidate_region<span class="sc">$</span>start,</span>
-<span id="cb7-20"><a href="#cb7-20" aria-hidden="true" tabindex="-1"></a>         BP  <span class="sc">&lt;=</span>  candidate_region<span class="sc">$</span>end) <span class="sc">%&gt;%</span></span>
-<span id="cb7-21"><a href="#cb7-21" aria-hidden="true" tabindex="-1"></a>  <span class="fu">arrange</span>(pval_nominal)</span>
-<span id="cb7-22"><a href="#cb7-22" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb7-23"><a href="#cb7-23" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">"eQTL genes in candidate region:</span><span class="sc">\n</span><span class="st">"</span>)</span>
-<span id="cb7-24"><a href="#cb7-24" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(<span class="fu">unique</span>(overlapping_eqtl<span class="sc">$</span>gene_id))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-</section>
-<section id="共定位分析原理" class="level3" data-number="19.7.3">
-<h3 data-number="19.7.3" class="anchored" data-anchor-id="共定位分析原理"><span class="header-section-number">19.7.3</span> 3.5.6.3 共定位分析原理</h3>
-<p><strong>共定位（colocalization）</strong> 检验两个性状（如疾病 GWAS 和 eQTL）的关联信号是否由同一个因果变异驱动，还是由同一区域内两个紧密连锁但不同的变异分别驱动。</p>
-<p><code>coloc</code> 软件包基于贝叶斯因子框架，计算五种假设的后验概率（PPH0–PPH4）：</p>
-<table class="caption-top table">
-<thead>
-<tr class="header">
-<th>假设</th>
-<th>含义</th>
-</tr>
-</thead>
-<tbody>
-<tr class="odd">
-<td>H0</td>
-<td>两个性状均无关联信号</td>
-</tr>
-<tr class="even">
-<td>H1</td>
-<td>仅性状 1 有关联信号</td>
-</tr>
-<tr class="odd">
-<td>H2</td>
-<td>仅性状 2 有关联信号</td>
-</tr>
-<tr class="even">
-<td>H3</td>
-<td>两者均有关联信号，但各自由不同变异驱动</td>
-</tr>
-<tr class="odd">
-<td>H4</td>
-<td>两者共享同一因果变异</td>
-</tr>
-</tbody>
-</table>
-<p><strong>PPH4 &gt; 0.8</strong> 通常被视为共定位的证据阈值。</p>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb8"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(coloc)</span>
-<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a><span class="co"># 准备 GWAS 数据集（以候选区域为例）</span></span>
-<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a>dataset_gwas <span class="ot">&lt;-</span> <span class="fu">list</span>(</span>
-<span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a>  <span class="at">beta   =</span> region<span class="sc">$</span>beta,</span>
-<span id="cb8-6"><a href="#cb8-6" aria-hidden="true" tabindex="-1"></a>  <span class="at">varbeta =</span> region<span class="sc">$</span>se<span class="sc">^</span><span class="dv">2</span>,</span>
-<span id="cb8-7"><a href="#cb8-7" aria-hidden="true" tabindex="-1"></a>  <span class="at">N      =</span> <span class="dv">50000</span>,</span>
-<span id="cb8-8"><a href="#cb8-8" aria-hidden="true" tabindex="-1"></a>  <span class="at">type   =</span> <span class="st">"quant"</span>,</span>
-<span id="cb8-9"><a href="#cb8-9" aria-hidden="true" tabindex="-1"></a>  <span class="at">snp    =</span> region<span class="sc">$</span>SNP</span>
-<span id="cb8-10"><a href="#cb8-10" aria-hidden="true" tabindex="-1"></a>)</span>
-<span id="cb8-11"><a href="#cb8-11" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb8-12"><a href="#cb8-12" aria-hidden="true" tabindex="-1"></a><span class="co"># 准备 eQTL 数据集</span></span>
-<span id="cb8-13"><a href="#cb8-13" aria-hidden="true" tabindex="-1"></a>dataset_eqtl <span class="ot">&lt;-</span> <span class="fu">list</span>(</span>
-<span id="cb8-14"><a href="#cb8-14" aria-hidden="true" tabindex="-1"></a>  <span class="at">beta    =</span> overlapping_eqtl<span class="sc">$</span>slope,</span>
-<span id="cb8-15"><a href="#cb8-15" aria-hidden="true" tabindex="-1"></a>  <span class="at">varbeta =</span> overlapping_eqtl<span class="sc">$</span>slope_se<span class="sc">^</span><span class="dv">2</span>,</span>
-<span id="cb8-16"><a href="#cb8-16" aria-hidden="true" tabindex="-1"></a>  <span class="at">N       =</span> <span class="dv">670</span>,          <span class="co"># GTEx whole blood sample size</span></span>
-<span id="cb8-17"><a href="#cb8-17" aria-hidden="true" tabindex="-1"></a>  <span class="at">type    =</span> <span class="st">"quant"</span>,</span>
-<span id="cb8-18"><a href="#cb8-18" aria-hidden="true" tabindex="-1"></a>  <span class="at">snp     =</span> overlapping_eqtl<span class="sc">$</span>variant_id</span>
-<span id="cb8-19"><a href="#cb8-19" aria-hidden="true" tabindex="-1"></a>)</span>
-<span id="cb8-20"><a href="#cb8-20" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb8-21"><a href="#cb8-21" aria-hidden="true" tabindex="-1"></a><span class="co"># 运行共定位</span></span>
-<span id="cb8-22"><a href="#cb8-22" aria-hidden="true" tabindex="-1"></a>result_coloc <span class="ot">&lt;-</span> <span class="fu">coloc.abf</span>(<span class="at">dataset1 =</span> dataset_gwas,</span>
-<span id="cb8-23"><a href="#cb8-23" aria-hidden="true" tabindex="-1"></a>                           <span class="at">dataset2 =</span> dataset_eqtl)</span>
-<span id="cb8-24"><a href="#cb8-24" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb8-25"><a href="#cb8-25" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">"PP.H4 (shared causal variant):"</span>, result_coloc<span class="sc">$</span>summary[<span class="st">"PP.H4.abf"</span>], <span class="st">"</span><span class="sc">\n</span><span class="st">"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-<p>{{Wiki:Quantitative_trait_locus}}</p>
-<hr>
-</section>
-</section>
-<section id="候选位点解析的整合框架" class="level2" data-number="19.8">
-<h2 data-number="19.8" class="anchored" data-anchor-id="候选位点解析的整合框架"><span class="header-section-number">19.8</span> 3.5.7 候选位点解析的整合框架</h2>
-<p>将上述步骤整合为标准解析流程：</p>
-<pre><code>GWAS 全局结果
-      │
-      ▼
-  LD clumping → 独立显著位点列表
-      │
-      ▼
-  候选区域定义 (lead SNP ± 500 kb)
-      │
-      ├──► 变异功能注释 (ANNOVAR / VEP)
-      │         └── 编码变异？非编码？剪接位点？
-      │
-      ├──► eQTL 查询 (GTEx / tissue-specific)
-      │         └── 候选效应基因
-      │
-      ├──► 共定位分析 (coloc / SuSiE-coloc)
-      │         └── PPH4 &gt; 0.8 → 强共定位证据
-      │
-      ├──► 染色质可及性 / 组蛋白修饰 (ENCODE / Roadmap)
-      │         └── 候选调控元件 (enhancer, promoter)
-      │
-      └──► 整合结论：候选致因基因与致因变异</code></pre>
-<div class="info">
-<p><strong>黄金法则：从统计显著到生物学假说</strong></p>
-<p>GWAS 的统计命中仅是起点，而非终点。由于 LD 的存在，lead SNP 通常不是真正的致因变异（causal variant），而是其标记物。候选基因的确立需要多组学证据的汇聚：功能注释、eQTL 证据、共定位分析和实验验证（如 CRISPR 功能筛选）共同构成因果推断的基础。</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb21"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb21-1"><a href="#cb21-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(tidyverse)</span>
+<span id="cb21-2"><a href="#cb21-2" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(ggrepel)</span>
+<span id="cb21-3"><a href="#cb21-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb21-4"><a href="#cb21-4" aria-hidden="true" tabindex="-1"></a><span class="co"># 假设已获取候选区域的关联结果和 LD 信息</span></span>
+<span id="cb21-5"><a href="#cb21-5" aria-hidden="true" tabindex="-1"></a>region <span class="ot">&lt;-</span> gwas <span class="sc">%&gt;%</span></span>
+<span id="cb21-6"><a href="#cb21-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(CHR <span class="sc">==</span> <span class="dv">6</span>, BP <span class="sc">&gt;=</span> <span class="fl">32.4e6</span>, BP <span class="sc">&lt;=</span> <span class="fl">33.4e6</span>) <span class="sc">%&gt;%</span></span>
+<span id="cb21-7"><a href="#cb21-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">left_join</span>(ld_with_lead, <span class="at">by =</span> <span class="st">"SNP"</span>) <span class="sc">%&gt;%</span></span>
+<span id="cb21-8"><a href="#cb21-8" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(</span>
+<span id="cb21-9"><a href="#cb21-9" aria-hidden="true" tabindex="-1"></a>    <span class="at">log10p =</span> <span class="sc">-</span><span class="fu">log10</span>(P),</span>
+<span id="cb21-10"><a href="#cb21-10" aria-hidden="true" tabindex="-1"></a>    <span class="at">ld_bin =</span> <span class="fu">cut</span>(r2_with_lead,</span>
+<span id="cb21-11"><a href="#cb21-11" aria-hidden="true" tabindex="-1"></a>                 <span class="at">breaks =</span> <span class="fu">c</span>(<span class="dv">0</span>, <span class="fl">0.2</span>, <span class="fl">0.4</span>, <span class="fl">0.6</span>, <span class="fl">0.8</span>, <span class="fl">1.0</span>),</span>
+<span id="cb21-12"><a href="#cb21-12" aria-hidden="true" tabindex="-1"></a>                 <span class="at">labels =</span> <span class="fu">c</span>(<span class="st">"0.0-0.2"</span>, <span class="st">"0.2-0.4"</span>,</span>
+<span id="cb21-13"><a href="#cb21-13" aria-hidden="true" tabindex="-1"></a>                            <span class="st">"0.4-0.6"</span>, <span class="st">"0.6-0.8"</span>, <span class="st">"0.8-1.0"</span>),</span>
+<span id="cb21-14"><a href="#cb21-14" aria-hidden="true" tabindex="-1"></a>                 <span class="at">include.lowest =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb21-15"><a href="#cb21-15" aria-hidden="true" tabindex="-1"></a>  )</span>
+<span id="cb21-16"><a href="#cb21-16" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb21-17"><a href="#cb21-17" aria-hidden="true" tabindex="-1"></a>ld_colors <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="st">"0.0-0.2"</span> <span class="ot">=</span> <span class="st">"#2166AC"</span>,</span>
+<span id="cb21-18"><a href="#cb21-18" aria-hidden="true" tabindex="-1"></a>               <span class="st">"0.2-0.4"</span> <span class="ot">=</span> <span class="st">"#74ADD1"</span>,</span>
+<span id="cb21-19"><a href="#cb21-19" aria-hidden="true" tabindex="-1"></a>               <span class="st">"0.4-0.6"</span> <span class="ot">=</span> <span class="st">"#FDAE61"</span>,</span>
+<span id="cb21-20"><a href="#cb21-20" aria-hidden="true" tabindex="-1"></a>               <span class="st">"0.6-0.8"</span> <span class="ot">=</span> <span class="st">"#F46D43"</span>,</span>
+<span id="cb21-21"><a href="#cb21-21" aria-hidden="true" tabindex="-1"></a>               <span class="st">"0.8-1.0"</span> <span class="ot">=</span> <span class="st">"#D73027"</span>)</span>
+<span id="cb21-22"><a href="#cb21-22" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb21-23"><a href="#cb21-23" aria-hidden="true" tabindex="-1"></a>lead_snp <span class="ot">&lt;-</span> region <span class="sc">%&gt;%</span> <span class="fu">filter</span>(P <span class="sc">==</span> <span class="fu">min</span>(P))</span>
+<span id="cb21-24"><a href="#cb21-24" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb21-25"><a href="#cb21-25" aria-hidden="true" tabindex="-1"></a><span class="fu">ggplot</span>(region, <span class="fu">aes</span>(<span class="at">x =</span> BP <span class="sc">/</span> <span class="fl">1e6</span>, <span class="at">y =</span> log10p, <span class="at">color =</span> ld_bin)) <span class="sc">+</span></span>
+<span id="cb21-26"><a href="#cb21-26" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_point</span>(<span class="at">size =</span> <span class="fl">1.5</span>, <span class="at">alpha =</span> <span class="fl">0.8</span>) <span class="sc">+</span></span>
+<span id="cb21-27"><a href="#cb21-27" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_point</span>(<span class="at">data =</span> lead_snp, <span class="at">color =</span> <span class="st">"purple"</span>, <span class="at">size =</span> <span class="dv">3</span>, <span class="at">shape =</span> <span class="dv">18</span>) <span class="sc">+</span></span>
+<span id="cb21-28"><a href="#cb21-28" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_label_repel</span>(<span class="at">data =</span> lead_snp,</span>
+<span id="cb21-29"><a href="#cb21-29" aria-hidden="true" tabindex="-1"></a>                   <span class="fu">aes</span>(<span class="at">label =</span> SNP), <span class="at">color =</span> <span class="st">"purple"</span>,</span>
+<span id="cb21-30"><a href="#cb21-30" aria-hidden="true" tabindex="-1"></a>                   <span class="at">size =</span> <span class="dv">3</span>, <span class="at">nudge_y =</span> <span class="fl">0.5</span>, <span class="at">show.legend =</span> <span class="cn">FALSE</span>) <span class="sc">+</span></span>
+<span id="cb21-31"><a href="#cb21-31" aria-hidden="true" tabindex="-1"></a>  <span class="fu">scale_color_manual</span>(<span class="at">values =</span> ld_colors,</span>
+<span id="cb21-32"><a href="#cb21-32" aria-hidden="true" tabindex="-1"></a>                     <span class="at">name =</span> <span class="fu">expression</span>(r<span class="sc">^</span><span class="dv">2</span> <span class="sc">~</span> <span class="st">"with lead SNP"</span>)) <span class="sc">+</span></span>
+<span id="cb21-33"><a href="#cb21-33" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_hline</span>(<span class="at">yintercept =</span> <span class="sc">-</span><span class="fu">log10</span>(<span class="fl">5e-8</span>),</span>
+<span id="cb21-34"><a href="#cb21-34" aria-hidden="true" tabindex="-1"></a>             <span class="at">linetype =</span> <span class="st">"dashed"</span>, <span class="at">color =</span> <span class="st">"grey40"</span>) <span class="sc">+</span></span>
+<span id="cb21-35"><a href="#cb21-35" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(<span class="at">x =</span> <span class="st">"Position (Mb)"</span>,</span>
+<span id="cb21-36"><a href="#cb21-36" aria-hidden="true" tabindex="-1"></a>       <span class="at">y =</span> <span class="fu">expression</span>(<span class="sc">-</span>log[<span class="dv">10</span>](<span class="fu">italic</span>(p))),</span>
+<span id="cb21-37"><a href="#cb21-37" aria-hidden="true" tabindex="-1"></a>       <span class="at">title =</span> <span class="st">"Regional Association Plot"</span>) <span class="sc">+</span></span>
+<span id="cb21-38"><a href="#cb21-38" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme_classic</span>()</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<section id="局部关联图的深度解读" class="level3" data-number="19.9.1">
+<h3 data-number="19.9.1" class="anchored" data-anchor-id="局部关联图的深度解读"><span class="header-section-number">19.9.1</span> 局部关联图的深度解读</h3>
+<p>局部关联图蕴含的信息远超单纯的 p 值展示，有经验的研究者会从中读取以下几类信息：</p>
+<p><strong>信号轮廓（signal shape）</strong> 反映 LD 结构的质量。理想的真实信号表现为以 lead SNP（紫色菱形）为核心、颜色由红（高 <span class="math inline">\(r^2\)</span>）向蓝（低 <span class="math inline">\(r^2\)</span>）平滑过渡的单峰结构，峰宽与当地 LD 区块范围一致。若出现双峰（两个颜色不相关的 <span class="math inline">\(r^2\)</span> 模式），则提示该区域可能存在两个独立信号，需要进行条件分析（参见 3.5.7 节）。若背景 SNP 的 <span class="math inline">\(r^2\)</span> 颜色呈现棋盘格花纹，则可能是局部 LD 块状结构（block structure）的体现。</p>
+<p><strong>基因结构叠加</strong>是确认候选效应基因的第一步。显著信号的物理位置相对于周围基因的分布（exonic、intronic、intergenic）直接影响功能注释的优先策略：落在外显子上的编码变异可直接预测氨基酸变化；落在非编码区的变异需要结合表观基因组数据（H3K27ac、ATAC-seq）判断调控功能；完全位于基因间区的信号则需查询远端增强子或非编码 RNA 数据库。</p>
+<p><strong>重组率（recombination rate）</strong> 曲线（通常叠加在图底部，单位为 cM/Mb）标志着 LD 区块的边界。高重组率位点（峰值）通常对应 LD 断点（recombination hotspot），用于判断候选区域的精确边界——若 lead SNP 恰好位于 LD 断点附近，则信号边界清晰，精细定位候选集较小；若位于长 LD 区块中央，则候选集更大。</p>
+<div class="note">
+<p><strong>局部关联图 vs.&nbsp;精细定位图</strong></p>
+<p>局部关联图（regional association plot）以统计证据（<span class="math inline">\(-\log_{10} p\)</span>）和 LD 结构为核心展示，适合初步评估信号形态和候选基因范围；精细定位图（fine-mapping PIP plot）则以每个 SNP 的后验纳入概率（PIP）为 y 轴，直接展示因果变异候选的统计置信度。两类图形互补：前者提供直觉感知，后者提供量化的贝叶斯证据。发表于高影响力期刊的 GWAS 研究通常同时呈现两类图形。</p>
 </div>
+</section>
+<section id="使用-gassocplot-生成专业级局部关联图" class="level3" data-number="19.9.2">
+<h3 data-number="19.9.2" class="anchored" data-anchor-id="使用-gassocplot-生成专业级局部关联图"><span class="header-section-number">19.9.2</span> 使用 gassocplot 生成专业级局部关联图</h3>
+<p><strong>gassocplot</strong> 是专为 GWAS 局部关联图设计的 R 包，可直接整合 GWAS 汇总统计量、LD 矩阵和基因注释，生成符合发表规范的多面板图形：</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb22"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb22-1"><a href="#cb22-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Professional regional association plot with gassocplot</span></span>
+<span id="cb22-2"><a href="#cb22-2" aria-hidden="true" tabindex="-1"></a><span class="co"># install.packages("gassocplot")  # or devtools::install_github(...)</span></span>
+<span id="cb22-3"><a href="#cb22-3" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(gassocplot)</span>
+<span id="cb22-4"><a href="#cb22-4" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(tidyverse)</span>
+<span id="cb22-5"><a href="#cb22-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb22-6"><a href="#cb22-6" aria-hidden="true" tabindex="-1"></a><span class="co"># Prepare marker data (columns: marker, chr, pos, p)</span></span>
+<span id="cb22-7"><a href="#cb22-7" aria-hidden="true" tabindex="-1"></a>marker_data <span class="ot">&lt;-</span> gwas <span class="sc">%&gt;%</span></span>
+<span id="cb22-8"><a href="#cb22-8" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(CHR <span class="sc">==</span> <span class="dv">6</span>, BP <span class="sc">&gt;=</span> <span class="dv">32400000</span>, BP <span class="sc">&lt;=</span> <span class="dv">33400000</span>) <span class="sc">%&gt;%</span></span>
+<span id="cb22-9"><a href="#cb22-9" aria-hidden="true" tabindex="-1"></a>  <span class="fu">select</span>(<span class="at">marker =</span> SNP, <span class="at">chr =</span> CHR, <span class="at">pos =</span> BP, <span class="at">p =</span> P)</span>
+<span id="cb22-10"><a href="#cb22-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb22-11"><a href="#cb22-11" aria-hidden="true" tabindex="-1"></a><span class="co"># Specify lead SNP (most significant in region)</span></span>
+<span id="cb22-12"><a href="#cb22-12" aria-hidden="true" tabindex="-1"></a>lead <span class="ot">&lt;-</span> marker_data <span class="sc">%&gt;%</span> <span class="fu">slice_min</span>(p, <span class="at">n =</span> <span class="dv">1</span>) <span class="sc">%&gt;%</span> <span class="fu">pull</span>(marker)</span>
+<span id="cb22-13"><a href="#cb22-13" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb22-14"><a href="#cb22-14" aria-hidden="true" tabindex="-1"></a><span class="co"># LD matrix must be pre-computed (e.g., from 1000G reference panel)</span></span>
+<span id="cb22-15"><a href="#cb22-15" aria-hidden="true" tabindex="-1"></a><span class="co"># Here we use a placeholder: in practice, compute with PLINK --r2 or LDlinkR</span></span>
+<span id="cb22-16"><a href="#cb22-16" aria-hidden="true" tabindex="-1"></a>ld_mat_region <span class="ot">&lt;-</span> <span class="fu">compute_ld_from_plink</span>(</span>
+<span id="cb22-17"><a href="#cb22-17" aria-hidden="true" tabindex="-1"></a>  <span class="at">bfile    =</span> <span class="st">"1kg_eur_chr6"</span>,</span>
+<span id="cb22-18"><a href="#cb22-18" aria-hidden="true" tabindex="-1"></a>  <span class="at">snp_list =</span> marker_data<span class="sc">$</span>marker,</span>
+<span id="cb22-19"><a href="#cb22-19" aria-hidden="true" tabindex="-1"></a>  <span class="at">lead_snp =</span> lead</span>
+<span id="cb22-20"><a href="#cb22-20" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb22-21"><a href="#cb22-21" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb22-22"><a href="#cb22-22" aria-hidden="true" tabindex="-1"></a><span class="co"># Stack plot: association + recombination rate + genes</span></span>
+<span id="cb22-23"><a href="#cb22-23" aria-hidden="true" tabindex="-1"></a><span class="fu">stack_assoc_plot</span>(</span>
+<span id="cb22-24"><a href="#cb22-24" aria-hidden="true" tabindex="-1"></a>  <span class="at">markers   =</span> marker_data,</span>
+<span id="cb22-25"><a href="#cb22-25" aria-hidden="true" tabindex="-1"></a>  <span class="at">corr      =</span> ld_mat_region,</span>
+<span id="cb22-26"><a href="#cb22-26" aria-hidden="true" tabindex="-1"></a>  <span class="at">lead      =</span> lead,</span>
+<span id="cb22-27"><a href="#cb22-27" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Optional: provide recombination rate track</span></span>
+<span id="cb22-28"><a href="#cb22-28" aria-hidden="true" tabindex="-1"></a>  <span class="co"># recomb   = recomb_rate_df,</span></span>
+<span id="cb22-29"><a href="#cb22-29" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Optional: provide gene track from GTF</span></span>
+<span id="cb22-30"><a href="#cb22-30" aria-hidden="true" tabindex="-1"></a>  <span class="co"># genes    = genes_in_region</span></span>
+<span id="cb22-31"><a href="#cb22-31" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>当 <code>gassocplot</code> 不可用时，也可通过在 ggplot2 框架中手动构建多面板布局（<code>patchwork</code> 包拼接上下面板）实现同等功能。完整的发表级局部关联图通常包括：顶部关联信号散点图、中部重组率曲线（来自 1000G Phase 3），以及底部基因轨道（来自 Ensembl GTF 注释的箭头图）。</p>
+<hr>
 <hr>
 </section>
-<section id="课后自测-post-lesson-quiz" class="level2" data-number="19.9">
-<h2 data-number="19.9" class="anchored" data-anchor-id="课后自测-post-lesson-quiz"><span class="header-section-number">19.9</span> 课后自测 (Post-Lesson Quiz)</h2>
+</section>
+<section id="课后自测-post-lesson-quiz" class="level2" data-number="19.10">
+<h2 data-number="19.10" class="anchored" data-anchor-id="课后自测-post-lesson-quiz"><span class="header-section-number">19.10</span> 课后自测 (Post-Lesson Quiz)</h2>
 <ol type="1">
 <li><p>在曼哈顿图中，显著位点通常表现为一”柱”相关联的 SNP，而非单个孤立点。请从连锁不平衡（LD）的角度解释这一现象，并说明 LD 裁剪（clumping）如何从中识别独立信号。</p></li>
 <li><p>QQ 图中，若绝大多数点沿对角线分布，仅尾部出现上翘，这意味着什么？若全体点均整体偏离对角线向上，又意味着什么？</p></li>
-<li><p>什么是 eQTL？GTEx 数据库在 GWAS 后续分析中扮演什么角色？请描述利用 eQTL 信息确认候选致因基因的基本思路。</p></li>
-<li><p>共定位分析（coloc）中的五个假设（H0–H4）各代表什么？PPH4 &gt; 0.8 的生物学含义是什么？</p></li>
-<li><p>假设某 GWAS 在 chr6:32,800,000 处发现一个显著 SNP（<span class="math inline">\(p = 3.2 \times 10^{-9}\)</span>），该位点位于基因间区（intergenic region），但距一个已知免疫基因的增强子（enhancer）仅 5 kb。请描述你将采取哪些后续步骤来评估该 SNP 是否可能通过调控该基因的表达来影响表型。</p></li>
+<li><p>在一项样本量为 50 万的多基因性状 GWAS 中，<span class="math inline">\(\lambda_{GC} = 1.8\)</span>，但 LD Score 回归显示截距为 1.02，这说明什么？应如何解释该结果，是否需要对统计量进行 GC 校正？</p></li>
+<li><p>已知人类基因组有效独立 SNP 数约为 100 万个，请推导出 Bonferroni 校正后的显著性阈值 <span class="math inline">\(5 \times 10^{-8}\)</span>，并说明该值对其他物种是否同样适用。</p></li>
+<li><p>错误发现率（FDR）与 Bonferroni 校正分别控制的是什么？请举例说明各自更适合的使用场景。</p></li>
+<li><p>一项 GWAS 研究中，某 SNP 的 MAF = 0.15，加性效应量 <span class="math inline">\(\beta = 0.12\)</span>（以标准差为单位），表型残差方差 <span class="math inline">\(\sigma^2 = 1\)</span>。在 <span class="math inline">\(\alpha = 5 \times 10^{-8}\)</span> 的显著性阈值下，达到 80% 统计检验力需要多少样本？请编写 R 代码验证你的答案。</p></li>
+<li><p>在群体分层模拟实验中，即使 SNP 与表型没有真实的生物学因果关系，朴素（未校正）的关联检验仍然可能产生极小的 p 值。请解释这种现象的统计学机制，并说明 PCA 校正如何解决该问题。</p></li>
 </ol>
 <details>
 <summary>
@@ -1027,9 +1666,11 @@ window.Quarto = {
 <ol type="1">
 <li><p><em>同一 LD 区块内的 SNP 彼此高度相关（高 <span class="math inline">\(r^2\)</span>），因此若某一致因变异（或其紧密连锁的标记物）与表型真实关联，该区块内所有与其连锁的 SNP 也会显示出类似的关联信号，形成”信号柱”。LD 裁剪以 p 值最小的 SNP（index SNP）为核心，将其特定窗口内 <span class="math inline">\(r^2\)</span> 超过阈值（如 0.1）的所有 SNP 归并为同一位点，仅保留 index SNP 代表该独立信号，从而在全基因组范围内统计独立命中数量。</em></p></li>
 <li><p><em>仅尾部上翘说明统计模型整体校准良好（零假设下的位点符合均匀分布），少数位点产生了真实的关联信号，这是理想的 GWAS 结果模式。全体点整体偏离对角线向上（inflation）则提示存在系统性偏差，最常见原因是群体分层未充分控制、隐性亲缘关系（cryptic relatedness）或基因型质量问题，应计算 <span class="math inline">\(\lambda_{GC}\)</span> 并采用 MLM 或增加 PCA 主成分进行校正。</em></p></li>
-<li><p><em>eQTL（表达数量性状位点）是与基因表达水平统计关联的遗传变异。GTEx 提供了 54 种人类组织中的 cis-eQTL 图谱，当 GWAS 命中 SNP 与某基因的 eQTL 重叠时，该基因成为优先候选致因基因。基本思路为：在候选区域内查询 GTEx（选择与表型最相关的组织），若 lead SNP 同时是该基因的显著 eQTL，则进一步开展共定位分析（coloc）以确认二者是否共享同一因果变异。</em></p></li>
-<li><p><em>H0：两个性状在该区域均无关联信号；H1：仅 GWAS 性状有信号；H2：仅 eQTL 性状有信号；H3：两者均有信号但由不同变异驱动（LD 区块内两个独立因果变异）；H4：两者共享同一因果变异（最强的致因基因证据）。PPH4 &gt; 0.8 意味着在贝叶斯框架下，有超过 80% 的后验概率支持 GWAS 信号与该基因的 eQTL 信号由同一遗传变异驱动，提供了该基因为因果效应基因的强有力分子证据。</em></p></li>
-<li><p><em>后续步骤包括：（1）利用 ANNOVAR 或 VEP 注释该 SNP 及其 LD 伙伴变异（<span class="math inline">\(r^2 &gt; 0.8\)</span>）的功能类别，关注是否有变异落在增强子区域；（2）在 GTEx 数据库中查询该 SNP 或其 LD 伙伴是否为该免疫基因在相关组织中的 eQTL；（3）若存在 eQTL 关联，运行 coloc 分析评估 PPH4；（4）查询 ENCODE 或 Roadmap 数据，确认该增强子在相关细胞类型中是否具有活性标志（H3K27ac、ATAC-seq 峰）；（5）综合以上多组学证据，形成假说：该 SNP 通过改变增强子活性调控目标基因表达，进而影响表型；（6）如条件允许，通过 CRISPR 编辑或等位基因特异性报告基因实验进行功能验证。</em></p></li>
+<li><p><em><span class="math inline">\(\lambda_{GC} = 1.8\)</span> 表明 GWAS <span class="math inline">\(\chi^2\)</span> 统计量的中位数是理论期望的 1.8 倍，如按传统解读则提示严重的系统性偏差。然而，LD Score 回归截距为 1.02（接近 1），说明全局膨胀几乎全部来源于真实的多基因性（polygenic signal），而非统计假象：在 50 万样本的超大型队列中，成千上万个效应极小的真实位点都略微超过零假设，使中位 <span class="math inline">\(\chi^2\)</span> 整体升高，截距接近 1 则意味着无分层偏差。此时不应对统计量做基因组控制（GC）校正，因为那样会损失真实信号。正确做法是保留原始 p 值，用 LDSC 截距向读者说明膨胀来源于多基因性。</em></p></li>
+<li><p><em>全局显著性水平 <span class="math inline">\(\alpha = 0.05\)</span>，有效独立检验数 <span class="math inline">\(M_{\text{eff}} \approx 10^6\)</span>，则 Bonferroni 校正后每次检验的阈值为 <span class="math inline">\(\alpha / M_{\text{eff}} = 0.05 / 10^6 = 5 \times 10^{-8}\)</span>。该值不适用于其他物种：例如，拟南芥（Arabidopsis thaliana）基因组较小且 LD 衰减较快，有效独立 SNP 数与人类差异显著，应根据该物种实际 LD 结构重新估算有效检验数并计算相应阈值。</em></p></li>
+<li><p><em>Bonferroni 校正控制的是家族性 I 类错误率（FWER），即在所有检验中犯至少一次假阳性的概率不超过 <span class="math inline">\(\alpha\)</span>。FDR（BH 程序）控制的是错误发现率，即所有显著结果中假阳性所占的期望比例不超过 <span class="math inline">\(q\)</span>。Bonferroni 更适合检验数量少、每次假阳性代价极高的场景（如临床诊断基因检测）；FDR 更适合大规模探索性分析（如转录组差异表达分析），在允许一定比例假阳性的前提下保留更多真实信号。</em></p></li>
+<li><p><em>利用 NCP 公式 <span class="math inline">\(\text{NCP} = n \cdot \beta^2 \cdot 2p(1-p) / \sigma^2\)</span>，代入 <span class="math inline">\(\beta = 0.12\)</span>、<span class="math inline">\(p = 0.15\)</span>、<span class="math inline">\(\sigma^2 = 1\)</span>，需要迭代求解使得检验力达到 80% 的 <span class="math inline">\(n\)</span>。R 代码验证：调用 <code>min_n_for_power(beta = 0.12, maf = 0.15)</code> 函数（见 3.5.5 节），预期结果约为 60,000–90,000 样本（具体取决于迭代精度）。</em></p></li>
+<li><p><em>群体分层混杂的统计机制：若两个亚群在某 SNP 的等位基因频率上存在差异，同时在表型均值上也存在差异，则该 SNP 的等位基因与表型在混合样本中表现出统计相关，即使在各亚群内部二者完全不相关。这是因为群体标签既是 SNP 频率的预测因子，也是表型的预测因子，形成了混杂路径。PCA 校正通过将基因组主成分作为固定效应协变量纳入回归模型，将群体标签引起的表型差异”吸收”为协变量效应，从而使 SNP 系数的估计只反映亚群内部的关联，消除跨群体的混杂。</em></p></li>
 </ol>
 </details>
 
@@ -1445,8 +2086,8 @@ window.Quarto = {
       </a>          
   </div>
   <div class="nav-page nav-page-next">
-      <a href="./genomics_variant_lesson5.html" class="pagination-link" aria-label="精细定位与功能验证及更多">
-        <span class="nav-page-text"><span class="chapter-number">19</span>&nbsp; <span class="chapter-title">精细定位与功能验证及更多</span></span> <i class="bi bi-arrow-right-short"></i>
+      <a href="./genomics_variant_lesson5.html" class="pagination-link" aria-label="精细定位、功能注释与因果推断">
+        <span class="nav-page-text"><span class="chapter-number">19</span>&nbsp; <span class="chapter-title">精细定位、功能注释与因果推断</span></span> <i class="bi bi-arrow-right-short"></i>
       </a>
   </div>
 </nav>
