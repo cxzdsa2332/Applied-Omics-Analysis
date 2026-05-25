@@ -595,66 +595,66 @@ $$
 
 大样本近似的适用条件为所有格子的期望频次 $E_{ij} \geq 5$。当期望频次过小时（常见于 MAF 极低的位点），Pearson 卡方的近似失效，应改用 Fisher 精确检验（Fisher's exact test），后者无需大样本假设，直接基于超几何分布计算精确 p 值，但计算代价较高。
 
-#### 等位基因检验的理论基础
+#### 基因型检验与等位基因检验的比较
 
-**等位基因检验（allelic test）** 将每个个体的两个等位基因视为独立观测（2×2 列联表：病例/对照 × 效应/参考等位基因），自由度为 1。其统计检验力通常高于 2×3 基因型检验，原因在于等位基因检验的自由度更少，在效应主要来自加性分量时，聚焦于等位基因层面相当于对加性效应施加了更强的约束，从而提高了检验力。
+两种检验在数据组织方式、统计假设和适用场景上存在本质差异，理解这些差异是选择正确检验方法的前提。
 
-然而，等位基因检验有一个隐含假设：两条同源染色体的等位基因相互独立，即 HWE 成立。若某位点显著偏离 HWE，则将两条单倍型当作独立观测会引入额外的伪相关，导致等位基因检验产生偏差。因此，等位基因检验须在 HWE 过滤之后进行，而实践中 QC 阶段已对对照组执行了 HWE 过滤（见 3.4.3 节），从而为等位基因检验的有效性提供了保障。
+**列联表结构的差异**
 
-:::tip
-**等位基因检验 vs. 基因型检验**
+基因型检验构建 **2×3 列联表**：行为病例/对照，列为三种基因型（BB/AB/AA，对应次等位基因计数 0/1/2），每个个体贡献一行观测。等位基因检验将每个个体的两条单倍型"拆分"为独立观测，构建 **2×2 列联表**：行为病例/对照状态（每个个体重复两次），列为参考/效应等位基因。这一拆分使有效样本量从 $N$ 个个体翻倍至 $2N$ 条单倍型，但前提是两条单倍型在统计上相互独立——这正是 HWE 假设的核心内容。
 
-实践中更常用 **等位基因检验（allelic test）**，即将每个个体的两条单倍型视为独立观测，构建 2×2 列联表（病例/对照 × 两种等位基因）。该方法自由度为 1，统计检验力通常更高，但要求基因型频率满足 HWE，否则等位基因独立性假设不成立。
-:::
+| 维度 | 基因型检验（Genotype test） | 等位基因检验（Allelic test） |
+|---|---|---|
+| 列联表规格 | 2×3（个体为观测单元） | 2×2（单倍型为观测单元） |
+| 自由度 | df = 2 | df = 1 |
+| HWE 依赖性 | **不依赖** HWE | **要求** HWE 成立 |
+| 加性效应下检验力 | 较低（多余 1 个 df） | 较高（df 聚焦加性分量） |
+| 对非加性效应的敏感性 | 可同时检出显性、隐性、超显性效应 | 仅对加性分量敏感，对非加性效应检验力低 |
+| 期望频次最小要求 | 所有 6 个格子 $E_{ij} \geq 5$ | 所有 4 个格子 $E_{ij} \geq 5$ |
+| MAF 极低时的稳健性 | 纯合次等位基因格子期望频次易 < 5 | 2×2 格子更易满足期望频次条件 |
+| PLINK 实现 | `--assoc model --model genotype` | `--assoc`（默认输出）|
+| 典型应用 | 遗传模式未知、疑有显性/隐性效应时 | GWAS 主扫描（HWE 已过滤后） |
 
-以下模拟数据演示卡方检验与等位基因检验的实施步骤。模拟设定：样本量 $n = 1{,}000$，次等位基因频率 MAF = 0.3，基因型按加性模型对患病概率（基线 log-odds = −1，加性效应 0.5）产生影响，采用逻辑函数生成二元表型。
+**检验力差异的统计机制**
+
+自由度决定了在相同非中心参数（NCP）下的检验力。等位基因检验 df = 1，基因型检验 df = 2；在效应为纯加性时，基因型检验多出的 1 个自由度消耗在检测偏离加性的分量上，而该分量的真实效应为零，相当于引入了额外的随机噪声，导致 p 值系统性偏大。以 NCP = 10 为例，df = 1 的卡方检验功效约 86%，而 df = 2 的检验功效约 76%。这一约 10 个百分点的差距在 GWAS 规模（百万 SNP，显著阈值 $5 \times 10^{-8}$）下会转化为数量可观的真实信号漏检。
+
+**HWE 偏离时等位基因检验的失效机制**
+
+等位基因检验将两条单倍型当作独立同分布（i.i.d.）的观测，但若某位点偏离 HWE（如杂合子不足，$P(AB) < 2pq$），则同一个体的两个等位基因之间存在统计依赖（给定一条等位基因为 $A$，另一条也为 $A$ 的概率高于随机期望）。这种依赖使得等位基因检验的方差估计偏小，等价于人为缩小了标准误，导致统计量虚增、p 值偏小——即使位点真实无关联也可能出现显著结果。**这是 GWAS QC 流程中对照组 HWE 过滤必须先于等位基因检验执行的直接原因。**
+
+以下模拟数据同时演示两种检验的实施步骤，并通过手动计算期望频次矩阵验证统计量的推导过程。模拟设定：样本量 $n = 1{,}000$，MAF = 0.3，加性效应（基线 log-odds = −1，$\beta_{\text{SNP}} = 0.5$）。
 
 ```r
 set.seed(42)
 n    <- 1000
-geno <- rbinom(n, 2, prob = 0.3)          # genotype: 0/1/2 (minor allele count)
-case <- rbinom(n, 1, plogis(-1 + 0.5 * geno))  # binary phenotype,p = 1/(1+exp(1-0.5*geno))
+geno <- rbinom(n, 2, prob = 0.3)                    # genotype: 0/1/2 minor allele copies
+case <- rbinom(n, 1, plogis(-1 + 0.5 * geno))       # binary phenotype under additive model
 
-# 2x3 genotype table (case/control x 0/1/2 minor allele copies)
-tbl_geno <- table(case, geno)
-chisq.test(tbl_geno)
+# ---- Build contingency tables ----
+tbl_geno   <- table(case, geno)                     # 2x3: case/ctrl x genotype (0/1/2)
 
-# allelic test: expand each individual into 2 haplotype alleles
-# geno=0 -> (0,0); geno=1 -> (0,1) or (1,0); geno=2 -> (1,1)
-allele1     <- ifelse(geno >= 1, 1L, 0L)   # first allele copy
-allele2     <- ifelse(geno == 2, 1L, 0L)   # second allele copy
-alleles     <- c(allele1, allele2)
-case_allele <- rep(case, 2)
-tbl_allele  <- table(case_allele, alleles)
-chisq.test(tbl_allele)
-```
+# allelic test: unpack each individual into 2 haplotype alleles (valid only under HWE)
+# geno=0 -> (0,0);  geno=1 -> (0,1) or (1,0);  geno=2 -> (1,1)
+allele1     <- ifelse(geno >= 1, 1L, 0L)
+allele2     <- ifelse(geno == 2, 1L, 0L)
+tbl_allele  <- table(rep(case, 2), c(allele1, allele2))  # 2x2: case/ctrl x allele (0/1)
 
-以下手动依据期望频次公式逐步计算卡方统计量，不调用 `chisq.test()`，可直接与上方内置函数的输出对比，验证数值一致性。
+# ---- Manual chi-square for 2x3 genotype table ----
+row_g  <- rowSums(tbl_geno);  col_g  <- colSums(tbl_geno);  N_g  <- sum(tbl_geno)
+exp_g  <- outer(row_g, col_g) / N_g
+chi2_g <- sum((tbl_geno - exp_g)^2 / exp_g)
+df_g   <- (nrow(tbl_geno) - 1) * (ncol(tbl_geno) - 1)        # (2-1)*(3-1) = 2
+p_g    <- pchisq(chi2_g, df = df_g, lower.tail = FALSE)
+cat(sprintf("Genotype test  (df=%d): chi2 = %.4f,  p = %.4e\n", df_g, chi2_g, p_g))
 
-```r
-# Manual chi-square: 2x3 genotype table
-obs_geno  <- tbl_geno
-row_tot   <- rowSums(obs_geno)
-col_tot   <- colSums(obs_geno)
-n_tot     <- sum(obs_geno)
-exp_geno  <- outer(row_tot, col_tot) / n_tot
-chi2_stat <- sum((obs_geno - exp_geno)^2 / exp_geno)
-df_stat   <- (nrow(obs_geno) - 1) * (ncol(obs_geno) - 1)
-p_geno    <- pchisq(chi2_stat, df = df_stat, lower.tail = FALSE)
-cat(sprintf("Genotype test  (manual): chi2 = %.4f, df = %d, p = %.4e\n",
-            chi2_stat, df_stat, p_geno))
-
-# Manual chi-square: 2x2 allelic table
-obs_al   <- tbl_allele
-row_al   <- rowSums(obs_al)
-col_al   <- colSums(obs_al)
-n_al     <- sum(obs_al)
-exp_al   <- outer(row_al, col_al) / n_al
-chi2_al  <- sum((obs_al - exp_al)^2 / exp_al)
-df_al    <- (nrow(obs_al) - 1) * (ncol(obs_al) - 1)
-p_al     <- pchisq(chi2_al, df = df_al, lower.tail = FALSE)
-cat(sprintf("Allelic test   (manual): chi2 = %.4f, df = %d, p = %.4e\n",
-            chi2_al, df_al, p_al))
+# ---- Manual chi-square for 2x2 allelic table ----
+row_a  <- rowSums(tbl_allele); col_a  <- colSums(tbl_allele); N_a  <- sum(tbl_allele)
+exp_a  <- outer(row_a, col_a) / N_a
+chi2_a <- sum((tbl_allele - exp_a)^2 / exp_a)
+df_a   <- (nrow(tbl_allele) - 1) * (ncol(tbl_allele) - 1)    # (2-1)*(2-1) = 1
+p_a    <- pchisq(chi2_a, df = df_a, lower.tail = FALSE)
+cat(sprintf("Allelic test   (df=%d): chi2 = %.4f,  p = %.4e\n", df_a, chi2_a, p_a))
 ```
 
 :::warning
@@ -684,56 +684,200 @@ $$
 三种检验统计量在加性效应下的检验力排序为：趋势检验 $\approx$ 等位基因检验 $>$ 基因型检验（df=2）。等位基因检验与趋势检验在 HWE 成立时数值上几乎等价，但等位基因检验在 HWE 偏离时有偏；趋势检验在 HWE 不成立时仍保持正确的 I 类错误控制。因此，PLINK 默认的 `--assoc` 输出的是等位基因检验结果，而更严格的分析流程（如 `--trend`）应采用趋势检验。
 :::
 
-以下代码在同一模拟数据集上分别计算卡方基因型检验、等位基因检验和 Cochran-Armitage 趋势检验，并对比三者的 p 值：
+以下代码在上方同一模拟数据集（`geno`、`case`，`set.seed(42)`，$n=1000$，MAF = 0.3）上，将 Cochran-Armitage 趋势检验与已计算的两种卡方统计量并排比较，展示三者的 p 值差异：
 
 ```r
-set.seed(42)
-n    <- 1000
-geno <- rbinom(n, 2, 0.3)
-case <- rbinom(n, 1, plogis(-1 + 0.5 * geno))
-
-# --- Genotype chi-square (df=2) ---
-tbl_geno <- table(case, geno)
-p_geno   <- chisq.test(tbl_geno)$p.value
-
-# --- Allelic test (df=1) ---
-alleles     <- c(ifelse(geno >= 1, 1L, 0L), ifelse(geno == 2, 1L, 0L))
-case_allele <- rep(case, 2)
-p_allele    <- chisq.test(table(case_allele, alleles))$p.value
-
-# --- Cochran-Armitage trend test (df=1, no HWE requirement) ---
+# ---- Cochran-Armitage trend test (df=1, no HWE requirement) ----
+# Reuses geno, case, tbl_geno from the chi-square section above.
 # T = [sum_j x_j r_j - p_bar * sum_j x_j n_j]^2 /
 #     [p_bar*(1-p_bar)*(sum_j x_j^2 n_j - (sum_j x_j n_j)^2/N)]
-r_j    <- tapply(case, geno, sum)           # cases per genotype: geno 0,1,2
-n_j    <- table(geno)                       # total per genotype
-x_j    <- as.numeric(names(n_j))           # 0, 1, 2
-N_tot  <- length(case)
-p_bar  <- mean(case)
+r_j   <- tapply(case, geno, sum)         # disease cases per genotype group (0/1/2)
+n_j   <- table(geno)                     # total count per genotype group
+x_j   <- as.numeric(names(n_j))         # additive scores: 0, 1, 2
+N_tot <- length(case)
+p_bar <- mean(case)                      # overall disease prevalence
 
-numer  <- (sum(x_j * r_j) - p_bar * sum(x_j * n_j))^2
-denom  <- p_bar * (1 - p_bar) *
-          (sum(x_j^2 * n_j) - sum(x_j * n_j)^2 / N_tot)
-T_ca   <- numer / denom
-p_ca   <- pchisq(T_ca, df = 1, lower.tail = FALSE)
+numer <- (sum(x_j * r_j) - p_bar * sum(x_j * n_j))^2
+denom <- p_bar * (1 - p_bar) *
+         (sum(x_j^2 * n_j) - sum(x_j * n_j)^2 / N_tot)
+T_ca  <- numer / denom
+p_ca  <- pchisq(T_ca, df = 1, lower.tail = FALSE)
 
-cat(sprintf("Genotype test  (df=2): p = %.4e\n", p_geno))
-cat(sprintf("Allelic test   (df=1): p = %.4e\n", p_allele))
+# ---- Three-way comparison (all from the same simulated dataset) ----
+cat(sprintf("Genotype test  (df=2): p = %.4e\n", p_g))   # from chi-square section
+cat(sprintf("Allelic test   (df=1): p = %.4e\n", p_a))   # from chi-square section
 cat(sprintf("C-A trend test (df=1): p = %.4e\n", p_ca))
 ```
 
 ### 逻辑回归（Logistic Regression）
 
-逻辑回归是病例-对照 GWAS 的标准方法，其优势在于可以将协变量（如年龄、性别、PCA 主成分）纳入模型：
+逻辑回归是病例-对照 GWAS 的标准方法，其优势在于可以将协变量（如年龄、性别、PCA 主成分）纳入模型，同时提供对效应量（OR）的自然解释。模型形式为：
 
 $$
 \log\frac{P(Y=1)}{P(Y=0)} = \beta_0 + \beta_{\text{SNP}} \cdot G + \beta_1 X_1 + \cdots + \beta_k X_k
 $$
 
-其中 $G$ 为 SNP 编码（加性模型：0/1/2，计次等位基因数），$X_1, \ldots, X_k$ 为协变量，$\beta_{\text{SNP}}$ 的指数 $e^{\beta_{\text{SNP}}}$ 即为 **优势比（Odds Ratio，OR）**。
+其中 $G$ 为 SNP 的加性编码（0/1/2，计次等位基因数），$\beta_{\text{SNP}}$ 的指数 $e^{\beta_{\text{SNP}}}$ 即为 **优势比（Odds Ratio，OR）**。
 
-**OR 的解读**需要特别小心。OR = 1.2 意味着每增加一个次等位基因，患病的优势（odds）增加 20%，而非患病概率增加 20%。当疾病患病率较低时（< 10%），OR 近似于相对风险（Relative Risk，RR）；当患病率较高时，OR 会系统性高估 RR。GWAS 发现的位点 OR 通常在 1.05 至 1.5 之间，效应量之小往往令非遗传学背景的研究者感到意外——这正是复杂疾病多基因遗传架构的真实写照，无数微小效应量的变异协同作用，共同决定疾病风险。OR < 1 意味着该等位基因具有保护作用，OR > 1 意味着增加患病风险；GWAS 报告时应明确标注效应等位基因（effect allele）与参考等位基因（reference allele），避免混淆。
+#### 从模型到对数似然函数的完整推导
 
-以下模拟数据演示含协变量的逻辑回归关联检验。模拟设定：$n = 1{,}000$，MAF = 0.3，性别（二元）随机分配；真实效应为 SNP 加性效应 $\beta_{\text{SNP}} = 0.6$（log-odds），性别效应 0.4，基线 log-odds = −2（对应约 12% 的基础患病率）。期望 OR ≈ $e^{0.6} \approx 1.82$。
+**第一步：从线性预测量到概率**
+
+逻辑回归的出发点是为每个个体构造一个**线性预测量（linear predictor）**：
+
+$$
+\eta_i = \beta_0 + \beta_{\text{SNP}} \cdot G_i + \beta_1 X_{i1} + \cdots + \beta_k X_{ik} = \mathbf{x}_i^\top \boldsymbol{\beta}
+$$
+
+$\eta_i$ 的取值范围为 $(-\infty, +\infty)$，而概率必须在 $[0,1]$ 内。为将 $\eta_i$ 映射到概率，逻辑回归使用 **logistic 函数（S 型函数）** 作为**逆连接函数（inverse link function）**：
+
+$$
+\mu_i = P(Y_i = 1 \mid \mathbf{x}_i) = \sigma(\eta_i) = \frac{1}{1 + e^{-\eta_i}} = \frac{e^{\eta_i}}{1 + e^{\eta_i}}
+$$
+
+这一步与模型公式的等价性可直接验证：将 $P(Y=1)/P(Y=0)$ 取对数（即对 odds 取对数），得到**对数优势（log-odds，logit）**：
+
+$$
+\log\frac{\mu_i}{1-\mu_i} = \log\frac{\sigma(\eta_i)}{1-\sigma(\eta_i)} = \log\frac{e^{\eta_i}/(1+e^{\eta_i})}{1/(1+e^{\eta_i})} = \log e^{\eta_i} = \eta_i = \mathbf{x}_i^\top\boldsymbol{\beta}
+$$
+
+因此，模型公式中写"对数优势等于线性预测量"与"患病概率等于 $\sigma(\mathbf{x}_i^\top\boldsymbol{\beta})$"完全等价——前者是模型的**正向表达**（便于解释系数），后者是**反向表达**（便于计算概率和构造似然函数）。同时，logistic 函数有一个重要性质：
+
+$$
+1 - \sigma(\eta) = \sigma(-\eta) = \frac{1}{1 + e^{\eta}}
+$$
+
+这将在后续化简中频繁用到。
+
+**第二步：构造单个样本的似然**
+
+给定参数 $\boldsymbol{\beta}$，第 $i$ 个样本的观测结局 $y_i \in \{0, 1\}$ 服从以 $\mu_i$ 为参数的**伯努利分布（Bernoulli distribution）**，其概率质量函数为：
+
+$$
+P(Y_i = y_i \mid \mathbf{x}_i;\, \boldsymbol{\beta}) = \mu_i^{y_i}(1-\mu_i)^{1-y_i}
+$$
+
+这一写法可以统一表达两种情况：当 $y_i = 1$ 时上式等于 $\mu_i$；当 $y_i = 0$ 时等于 $1-\mu_i$。该概率即为参数 $\boldsymbol{\beta}$ 关于第 $i$ 个观测的**似然贡献（likelihood contribution）**。
+
+**第三步：构造全样本联合似然**
+
+假设 $n$ 个样本独立采集（GWAS 无关个体的核心假设），联合似然为各样本似然贡献之积：
+
+$$
+L(\boldsymbol{\beta}) = \prod_{i=1}^n \mu_i^{y_i}(1-\mu_i)^{1-y_i}
+$$
+
+连乘在数值计算中易下溢（underflow），且对乘积求导不便。取自然对数转换为对数似然：
+
+$$
+\ell(\boldsymbol{\beta}) = \log L(\boldsymbol{\beta}) = \sum_{i=1}^n \left[ y_i \log \mu_i + (1-y_i)\log(1-\mu_i) \right]
+$$
+
+**第四步：代入 logistic 函数化简**
+
+将 $\mu_i = \sigma(\eta_i) = e^{\eta_i}/(1+e^{\eta_i})$ 和 $1-\mu_i = 1/(1+e^{\eta_i})$ 代入：
+
+$$
+\log \mu_i = \log\frac{e^{\eta_i}}{1+e^{\eta_i}} = \eta_i - \log(1+e^{\eta_i})
+$$
+
+$$
+\log(1-\mu_i) = \log\frac{1}{1+e^{\eta_i}} = -\log(1+e^{\eta_i})
+$$
+
+代入对数似然的求和式：
+
+$$
+\ell(\boldsymbol{\beta}) = \sum_{i=1}^n \left[ y_i\bigl(\eta_i - \log(1+e^{\eta_i})\bigr) + (1-y_i)\bigl(-\log(1+e^{\eta_i})\bigr) \right]
+$$
+
+展开合并 $\log(1+e^{\eta_i})$ 项：
+
+$$
+\boxed{\ell(\boldsymbol{\beta}) = \sum_{i=1}^n \left[ y_i\,\mathbf{x}_i^\top\boldsymbol{\beta} - \log\!\left(1 + e^{\mathbf{x}_i^\top\boldsymbol{\beta}}\right) \right]}
+$$
+
+这正是逻辑回归对数似然函数的标准形式。第一项 $y_i\eta_i$ 反映观测结局对预测的"奖励"（病例的 $\eta_i$ 越大贡献越大），第二项 $-\log(1+e^{\eta_i})$ 是对所有样本的惩罚项，防止 $\boldsymbol{\beta}$ 无限增大。
+
+:::note
+**对数似然函数的凹性保证唯一最大值**
+
+$\ell(\boldsymbol{\beta})$ 关于 $\boldsymbol{\beta}$ 是**严格凹函数（strictly concave）**：其 Hessian 矩阵 $\mathbf{H} = -\mathbf{X}^\top\mathbf{W}\mathbf{X}$（见下节推导）在 $\mathbf{X}$ 列满秩时负定，因此对数似然没有局部极大值，任何迭代算法（Newton-Raphson、梯度上升）只要收敛就必然找到全局最大值。完全分离情形是唯一例外：当某列 $\mathbf{x}$ 能完美分开 $y=0$ 和 $y=1$ 时，$\ell(\boldsymbol{\beta})$ 单调递增无上界，MLE 不存在。
+:::
+
+**第五步：求导得到得分函数与 Hessian**
+
+对 $\ell(\boldsymbol{\beta})$ 关于 $\boldsymbol{\beta}$ 求一阶偏导，利用复合函数求导和 $\partial\sigma(\eta)/\partial\eta = \sigma(\eta)(1-\sigma(\eta)) = \mu_i(1-\mu_i)$：
+
+$$
+\frac{\partial \ell}{\partial \boldsymbol{\beta}} = \sum_{i=1}^n \left[ y_i \mathbf{x}_i - \frac{e^{\eta_i}}{1+e^{\eta_i}} \mathbf{x}_i \right] = \sum_{i=1}^n (y_i - \mu_i)\mathbf{x}_i = \mathbf{X}^\top(\mathbf{y} - \boldsymbol{\mu})
+$$
+
+令得分函数为零即为 MLE 的一阶条件 $\mathbf{X}^\top(\mathbf{y} - \boldsymbol{\mu}) = \mathbf{0}$，无解析解，需数值迭代。对得分函数再次求导得 Hessian：
+
+$$
+\mathbf{H} = \frac{\partial^2 \ell}{\partial \boldsymbol{\beta}\partial\boldsymbol{\beta}^\top} = -\sum_{i=1}^n \mu_i(1-\mu_i)\,\mathbf{x}_i\mathbf{x}_i^\top = -\mathbf{X}^\top\mathbf{W}\mathbf{X}
+$$
+
+其中 $\mathbf{W} = \text{diag}(\mu_1(1-\mu_1),\,\ldots,\,\mu_n(1-\mu_n))$ 为对角权重矩阵，每个对角元素 $w_i = \mu_i(1-\mu_i) \in (0, 0.25]$ 恰好是伯努利分布在 $\mu_i$ 处的方差。**Fisher 信息矩阵** $\mathcal{I}(\boldsymbol{\beta}) = -\mathbf{H} = \mathbf{X}^\top\mathbf{W}\mathbf{X}$ 的逆矩阵给出参数估计的渐近协方差：
+
+$$
+\text{Var}(\hat{\boldsymbol{\beta}}) \approx \mathcal{I}(\hat{\boldsymbol{\beta}})^{-1} = \left(\mathbf{X}^\top\hat{\mathbf{W}}\mathbf{X}\right)^{-1}
+$$
+
+#### Newton-Raphson 迭代与 IRLS 等价性
+
+**Newton-Raphson 更新公式**利用二阶 Taylor 展开将非线性优化局部线性化：
+
+$$
+\boldsymbol{\beta}^{(t+1)} = \boldsymbol{\beta}^{(t)} - \mathbf{H}^{-1} \nabla_{\boldsymbol{\beta}}\ell = \boldsymbol{\beta}^{(t)} + (\mathbf{X}^\top\mathbf{W}^{(t)}\mathbf{X})^{-1} \mathbf{X}^\top(\mathbf{y} - \boldsymbol{\mu}^{(t)})
+$$
+
+每次迭代更新三个量：预测概率 $\boldsymbol{\mu}^{(t)}$、权重矩阵 $\mathbf{W}^{(t)}$ 和梯度 $\mathbf{X}^\top(\mathbf{y}-\boldsymbol{\mu}^{(t)})$。
+
+NR 迭代与**迭代加权最小二乘（Iteratively Reweighted Least Squares，IRLS）** 完全等价。将更新公式改写为加权线性回归的形式，令**工作响应向量（working response）** 为：
+
+$$
+\mathbf{z}^{(t)} = \boldsymbol{\eta}^{(t)} + (\mathbf{W}^{(t)})^{-1}(\mathbf{y} - \boldsymbol{\mu}^{(t)})
+$$
+
+其中 $\boldsymbol{\eta}^{(t)} = \mathbf{X}\boldsymbol{\beta}^{(t)}$。则每步 NR 更新等价于以权重 $\mathbf{W}^{(t)}$ 对 $\mathbf{z}^{(t)}$ 拟合加权线性回归：
+
+$$
+\boldsymbol{\beta}^{(t+1)} = \left(\mathbf{X}^\top\mathbf{W}^{(t)}\mathbf{X}\right)^{-1} \mathbf{X}^\top\mathbf{W}^{(t)}\mathbf{z}^{(t)}
+$$
+
+IRLS 的物理意义是：每次迭代在当前参数估计附近，用一个线性化的加权最小二乘问题近似原非线性优化问题，并将该近似问题的解作为下一步的参数估计。这一等价关系是 R 的 `glm()` 内部实现逻辑回归的数学基础，也是 EIGENSTRAT 在逻辑回归中应用 FWL 定理的技术支撑（见后续 PCA 校正节）。
+
+#### OR 的定量特征与解读限制
+
+**OR 的基本含义**：$e^{\beta_{\text{SNP}}}$ 表示每增加一个次等位基因，患病的**优势（odds = $p/(1-p)$）** 变为原来的 $e^{\beta_{\text{SNP}}}$ 倍，而非患病**概率**变为该倍数。这一区别在低患病率（< 10%）时影响很小（OR ≈ RR），但在高患病率时 OR 会系统性高估相对风险 RR。
+
+**OR 与 RR 的定量关系**（Woolf 近似）：
+
+$$
+\text{RR} = \frac{\text{OR}}{(1 - p_0) + p_0 \cdot \text{OR}}
+$$
+
+其中 $p_0$ 为参考基因型（次等位基因计数 = 0）的患病率。当 $p_0 = 0.05$ 且 OR = 1.5 时，RR $\approx$ 1.48；当 $p_0 = 0.30$ 且 OR = 1.5 时，RR $\approx$ 1.30——高患病率时 OR 高估 RR 达 15%。
+
+**OR 的置信区间**由参数估计的标准误推导：
+
+$$
+95\%\ \text{CI of OR} = \exp\left(\hat{\beta}_{\text{SNP}} \pm 1.96 \cdot \widehat{\text{SE}}(\hat{\beta}_{\text{SNP}})\right)
+$$
+
+其中 $\widehat{\text{SE}} = \sqrt{[(\mathbf{X}^\top\hat{\mathbf{W}}\mathbf{X})^{-1}]_{jj}}$（第 $j$ 个参数对应的对角元素）。置信区间不包含 1 与 Wald p 值显著（$< 0.05$）完全等价。
+
+**GWAS 中 OR 的典型范围**：复杂疾病 GWAS 发现的常见变异 OR 通常在 1.05 至 1.3 之间，罕见功能变异可达 2–5。OR 远小于孟德尔单基因疾病的效应量（如 BRCA1 致病突变的 OR > 10），反映复杂疾病的高度多基因性：每个常见变异仅贡献微弱但真实的风险增量。
+
+:::warning
+**完全分离（Complete Separation）导致 MLE 发散**
+
+当某个协变量能完美预测结局（如某种基因型仅出现在病例组）时，逻辑回归的 MLE 不收敛——对应系数趋向 $+\infty$ 或 $-\infty$，标准误也随之发散。这一问题称为**完全分离（complete separation）** 或 Hauck-Donner 效应。在 GWAS 中，MAF 极低的位点（如 MAC < 10）最容易发生完全分离，此时 `glm()` 仍会返回结果但会打印警告"fitted probabilities numerically 0 or 1"，且 OR 和 p 值完全不可信。解决方案包括：过滤 MAC < 20 的位点（标准 GWAS QC），或使用 Firth 偏校正逻辑回归（`logistf` R 包）。
+:::
+
+以下模拟数据演示含协变量的逻辑回归关联检验，并通过手动 NR 迭代验证 `glm()` 结果，同时输出 OR 的置信区间。模拟设定：$n = 1{,}000$，MAF = 0.3，性别（二元）随机分配；$\beta_{\text{SNP}} = 0.6$，基线 log-odds = −2（患病率约 12%），期望 OR ≈ $e^{0.6} \approx 1.82$。
 
 ```r
 set.seed(42)
@@ -742,42 +886,53 @@ geno <- rbinom(n, 2, 0.3)
 sex  <- rbinom(n, 1, 0.5)
 case <- rbinom(n, 1, plogis(-2 + 0.6 * geno + 0.4 * sex))
 
-fit <- glm(case ~ geno + sex, family = binomial)
+# ---- glm() reference ----
+fit          <- glm(case ~ geno + sex, family = binomial)
 coef_summary <- summary(fit)$coefficients
+b_glm        <- coef_summary["geno", "Estimate"]
+se_glm       <- coef_summary["geno", "Std. Error"]
 
-cat("OR  =", round(exp(coef_summary["geno", "Estimate"]), 3), "\n")
-cat("p   =", signif(coef_summary["geno", "Pr(>|z|)"], 3), "\n")
-```
+cat(sprintf("glm()  OR  = %.3f  (95%% CI: %.3f – %.3f)\n",
+            exp(b_glm),
+            exp(b_glm - 1.96 * se_glm),
+            exp(b_glm + 1.96 * se_glm)))
+cat(sprintf("glm()  p   = %.3e\n", coef_summary["geno", "Pr(>|z|)"]))
 
-以下使用 Newton-Raphson 迭代手动求解逻辑回归的最大似然估计，不调用 `glm()`。每次迭代根据得分函数（一阶导数）和 Fisher 信息矩阵（二阶导数）更新参数向量；收敛后利用 Fisher 信息矩阵的逆矩阵计算标准误，最终得到 OR 与 Wald p 值。
-
-```r
-# Manual logistic regression via Newton-Raphson MLE
-X <- cbind(intercept = 1, geno = geno, sex = sex)
-y <- case
-
+# ---- Manual Newton-Raphson MLE ----
+# Derive: score = X'(y - mu),  Hessian = -X'WX,  NR step = -(H)^{-1} score
+X    <- cbind(intercept = 1, geno = geno, sex = sex)
+y    <- case
 beta <- rep(0, ncol(X))
 
 for (iter in seq_len(200)) {
-  eta      <- as.vector(X %*% beta)
-  mu       <- 1 / (1 + exp(-eta))            # predicted probability
-  W        <- mu * (1 - mu)                  # IRLS weights
-  score    <- t(X) %*% (y - mu)             # gradient (score vector)
-  hess     <- -t(X) %*% (X * W)             # Hessian
-  delta    <- solve(-hess, score)            # Newton step
-  beta_new <- beta + delta
-  if (max(abs(delta)) < 1e-9) break
-  beta     <- beta_new
+  eta   <- as.vector(X %*% beta)
+  mu    <- 1 / (1 + exp(-eta))            # predicted probability: sigma(eta)
+  W     <- mu * (1 - mu)                  # diagonal of weight matrix W
+  score <- t(X) %*% (y - mu)             # gradient: X'(y - mu)
+  hess  <- -t(X) %*% (X * W)             # Hessian:  -X'WX
+  delta <- solve(-hess, score)            # Newton step: (X'WX)^{-1} X'(y-mu)
+  beta  <- beta + delta
+  if (max(abs(delta)) < 1e-10) break
 }
 
-# Standard errors from observed Fisher information
-fisher_info <- t(X) %*% (X * W)
-se_manual   <- sqrt(diag(solve(fisher_info)))
-z_manual    <- beta / se_manual
-p_manual    <- 2 * pnorm(abs(z_manual), lower.tail = FALSE)
+# Asymptotic covariance: Var(beta_hat) = (X'WX)^{-1}
+fisher_info <- t(X) %*% (X * W)          # = X'WX evaluated at convergence
+se_nr       <- sqrt(diag(solve(fisher_info)))
+z_nr        <- beta / se_nr
+p_nr        <- 2 * pnorm(abs(z_nr), lower.tail = FALSE)
 
-cat(sprintf("OR  (manual NR) = %.3f\n", exp(beta[2])))
-cat(sprintf("p   (manual NR) = %.3e\n", p_manual[2]))
+cat(sprintf("NR MLE OR  = %.3f  (95%% CI: %.3f – %.3f)\n",
+            exp(beta[2]),
+            exp(beta[2] - 1.96 * se_nr[2]),
+            exp(beta[2] + 1.96 * se_nr[2])))
+cat(sprintf("NR MLE p   = %.3e\n", p_nr[2]))
+
+# ---- OR vs RR: Woolf approximation at p0 = baseline prevalence ----
+p0   <- plogis(-2)                        # prevalence when geno=0, sex=0
+OR   <- exp(beta[2])
+RR   <- OR / ((1 - p0) + p0 * OR)        # Woolf formula
+cat(sprintf("\nOR = %.3f,  estimated RR = %.3f  (baseline prevalence p0 = %.3f)\n",
+            OR, RR, p0))
 ```
 
 #### 逻辑回归中的 PCA 校正
@@ -904,61 +1059,155 @@ cat(sprintf("PCA-correct OR = %.3f,  p = %.2e\n", m2$OR[2], m2$p[2]))
 
 ### 线性回归（连续性状）
 
-对于连续表型（如血压、身高、产量），使用普通最小二乘回归：
+对于连续表型（如血压、身高、产量），GWAS 使用**普通最小二乘（Ordinary Least Squares，OLS）** 线性回归：
 
 $$
-Y = \beta_0 + \beta_{\text{SNP}} \cdot G + \beta_1 X_1 + \cdots + \beta_k X_k + \varepsilon, \quad \varepsilon \sim \mathcal{N}(0, \sigma^2)
+Y = \beta_0 + \beta_{\text{SNP}} \cdot G + \beta_1 X_1 + \cdots + \beta_k X_k + \varepsilon, \quad \varepsilon \sim \mathcal{N}(0, \sigma^2\mathbf{I})
 $$
 
-$\beta_{\text{SNP}}$ 为每增加一个次等位基因副本时表型均值的变化量（加性效应），其显著性通过 t 检验评估。在标准化表型（均值 0，方差 1）的情况下，$\beta_{\text{SNP}}$ 即为**以标准差为单位的效应量**，便于跨研究比较。
+$\beta_{\text{SNP}}$ 为每增加一个次等位基因副本时表型均值的绝对变化量；其显著性通过 $t$ 检验（等价于 $F$ 检验）评估，自由度为 $n - p$（$p$ 为参数总数含截距）。
 
-以下模拟数据演示含协变量的线性回归关联检验。模拟设定：$n = 1{,}000$，MAF = 0.3；真实加性效应 $\beta_{\text{SNP}} = 0.5$，性别效应 0.8，残差标准差 1.5，截距 2.0。
+#### OLS 估计量的推导与最优性
+
+OLS 的目标是最小化残差平方和 $\text{RSS} = \|\mathbf{y} - \mathbf{X}\boldsymbol{\beta}\|^2$。对 $\boldsymbol{\beta}$ 求导并令其为零，得**正规方程（normal equations）**：
+
+$$
+\mathbf{X}^\top\mathbf{X}\hat{\boldsymbol{\beta}} = \mathbf{X}^\top\mathbf{y}
+$$
+
+当 $\mathbf{X}$ 列满秩时，解析解为：
+
+$$
+\hat{\boldsymbol{\beta}}_{\text{OLS}} = (\mathbf{X}^\top\mathbf{X})^{-1}\mathbf{X}^\top\mathbf{y}
+$$
+
+残差方差的无偏估计为 $\hat{\sigma}^2 = \mathbf{e}^\top\mathbf{e}/(n-p)$，其中 $\mathbf{e} = \mathbf{y} - \mathbf{X}\hat{\boldsymbol{\beta}}$；参数的协方差矩阵为 $\text{Var}(\hat{\boldsymbol{\beta}}) = \hat{\sigma}^2(\mathbf{X}^\top\mathbf{X})^{-1}$。
+
+**Gauss-Markov 定理**保证了 OLS 估计量在特定条件下的最优性：若误差满足（1）零均值 $\mathbb{E}[\varepsilon_i] = 0$，（2）同方差 $\text{Var}(\varepsilon_i) = \sigma^2$，（3）不相关 $\text{Cov}(\varepsilon_i, \varepsilon_j) = 0$（$i \neq j$），则 $\hat{\boldsymbol{\beta}}_{\text{OLS}}$ 是所有**线性无偏估计量（Linear Unbiased Estimators）** 中方差最小的，即 OLS 为**BLUE（Best Linear Unbiased Estimator）**。
+
+:::warning
+**Gauss-Markov 条件在 GWAS 中的违反**
+
+当样本存在亲缘关系或群体分层时，条件（3）被违反——同一家系或同一群体内的个体残差存在系统性相关，OLS 的协方差矩阵估计偏小，导致 $t$ 统计量虚增。混合线性模型（MLM）通过将协方差结构 $\mathbf{V} = \sigma_g^2\mathbf{K} + \sigma_e^2\mathbf{I}$ 显式建模，用广义最小二乘（GLS）替代 OLS，恢复 BLUE 性质（参见后续 MLM 节）。
+:::
+
+#### 效应量指标：$\beta$、标准化效应量与 PVE
+
+**绝对效应量 $\hat{\beta}_{\text{SNP}}$** 的单位与表型相同，难以跨研究比较（血压单位为 mmHg，身高单位为 cm）。GWAS 通常在分析前对表型进行**标准化**（均值 0，方差 1），此时 $\hat{\beta}_{\text{SNP}}$ 变为**标准化效应量**：每增加一个次等位基因，表型变化的标准差倍数，记为 $\hat{\beta}^*$。标准化效应量具有无量纲性，可直接跨性状、跨研究比较。
+
+**单个 SNP 解释的表型方差比例（Proportion of Variance Explained，PVE）** 定义为：
+
+$$
+\text{PVE} = \frac{\hat{\beta}_{\text{SNP}}^2 \cdot \text{Var}(G)}{\text{Var}(Y)} = \frac{2p(1-p)\hat{\beta}_{\text{SNP}}^2}{\text{Var}(Y)}
+$$
+
+其中 $\text{Var}(G) = 2p(1-p)$（加性编码下双等位基因 SNP 的方差）。在标准化表型（$\text{Var}(Y) = 1$）且已知 MAF $p$ 时，$\text{PVE} = 2p(1-p)(\hat{\beta}^*)^2$。GWAS 发现的常见变异单位点 PVE 通常在 $0.01\%$ 至 $1\%$ 之间，身高 GWAS 中效应最强的位点（*HMGA2* 附近）PVE $\approx 0.3\%$。
+
+**$R^2$、$F$ 统计量与 $t$ 统计量的等价关系**
+
+对于单 SNP 检验，$t$ 统计量、$F$ 统计量和偏 $R^2$ 之间存在精确的换算关系：
+
+$$
+F = t^2, \qquad \text{partial-}R^2 = \frac{F}{F + (n - p)} \approx \frac{t^2}{n} \quad (n \gg p)
+$$
+
+因此，$\hat{\beta}_{\text{SNP}}$ 的 $t$ 统计量本身就是效应量的度量：在相同样本量和 MAF 下，$t$ 值越大表示效应量越大。GWAS 软件（PLINK、REGENIE）的输出文件通常同时报告 $\hat{\beta}$、SE、$t$（或 $Z$）和 $p$，由这四个量可以相互推导出 PVE。
+
+#### 残差诊断
+
+线性回归的推断依赖误差的正态性和同方差性。在 GWAS 中，连续性状（如身高、BMI）往往存在轻微偏态或异方差，残差诊断是评估模型假设是否成立的常规步骤。
+
+**正态 Q-Q 图（Normal Q-Q Plot）**：将标准化残差的分位数与标准正态分位数比较，若点落在对角线附近则残差近似正态；偏离表明存在厚尾（heavy tail）或偏态，通常需要对表型进行 Box-Cox 变换或 rank-based inverse normal transformation（RINT）。
+
+**Scale-Location 图**：纵轴为 $\sqrt{|\text{标准化残差}|}$，横轴为拟合值；若存在异方差（如方差随表型均值增大），图中会出现明显的上升或下降趋势。
+
+以下模拟数据演示含协变量的线性回归关联检验，包括手动 OLS 推导、效应量指标计算和残差诊断。模拟设定：$n = 1{,}000$，MAF = 0.3；$\beta_{\text{SNP}} = 0.5$，性别效应 0.8，残差标准差 1.5，截距 2.0。
 
 ```r
 set.seed(42)
-n    <- 1000
-geno <- rbinom(n, 2, 0.3)
-sex  <- rbinom(n, 1, 0.5)
+n     <- 1000
+geno  <- rbinom(n, 2, 0.3)
+sex   <- rbinom(n, 1, 0.5)
 pheno <- 2.0 + 0.5 * geno + 0.8 * sex + rnorm(n, sd = 1.5)
 
-fit <- lm(pheno ~ geno + sex)
-coef_summary <- summary(fit)$coefficients
+# ---- Manual OLS via matrix algebra ----
+X_mat     <- cbind(intercept = 1, geno = geno, sex = sex)
+y_vec     <- pheno
+n_obs     <- nrow(X_mat)
+p_par     <- ncol(X_mat)
 
-cat("beta =", round(coef_summary["geno", "Estimate"], 3), "\n")
-cat("p    =", signif(coef_summary["geno", "Pr(>|t|)"], 3), "\n")
+XtX       <- t(X_mat) %*% X_mat          # p x p: X'X
+Xty       <- t(X_mat) %*% y_vec          # p x 1: X'y
+beta_ols  <- solve(XtX, Xty)             # OLS solution: (X'X)^{-1} X'y
+
+resid_ols  <- y_vec - X_mat %*% beta_ols
+sigma2_hat <- sum(resid_ols^2) / (n_obs - p_par)   # unbiased residual variance
+se_ols     <- sqrt(diag(sigma2_hat * solve(XtX)))  # sqrt of diagonal of Var(beta)
+t_stat     <- beta_ols / se_ols
+p_ols      <- 2 * pt(abs(t_stat), df = n_obs - p_par, lower.tail = FALSE)
+
+cat(sprintf("beta_SNP (OLS)  = %.4f  (true = 0.5)\n", beta_ols["geno"]))
+cat(sprintf("SE              = %.4f\n", se_ols["geno"]))
+cat(sprintf("t               = %.4f,  p = %.4e\n", t_stat["geno"], p_ols["geno"]))
+
+# ---- Effect size metrics ----
+maf      <- mean(geno) / 2                        # estimated MAF
+var_g    <- 2 * maf * (1 - maf)                  # Var(G) under additive encoding
+var_y    <- var(y_vec)
+PVE      <- var_g * beta_ols["geno"]^2 / var_y   # proportion of variance explained
+cat(sprintf("\nMAF             = %.3f\n", maf))
+cat(sprintf("Var(G)          = %.4f\n", var_g))
+cat(sprintf("PVE             = %.4f%%  (true ≈ %.4f%%)\n",
+            PVE * 100, var_g * 0.5^2 / (var_g * 0.5^2 + 0.8^2 * 0.25 + 1.5^2) * 100))
+
+# Standardised effect size: beta* (effect in SD units of standardised phenotype)
+pheno_std <- scale(pheno)                         # mean 0, variance 1
+fit_std   <- lm(pheno_std ~ geno + sex)
+beta_star <- coef(fit_std)["geno"]
+cat(sprintf("beta* (standardised) = %.4f  [1 minor allele ↔ %.3f SD]\n",
+            beta_star, beta_star))
+
+# ---- Residual diagnostics (base R) ----
+library(ggplot2)
+fit_lm   <- lm(pheno ~ geno + sex)
+std_resid <- rstandard(fit_lm)                    # standardised residuals
+fitted_v  <- fitted(fit_lm)
+
+# Normal Q-Q plot
+qqdf <- data.frame(
+  theoretical = qnorm(ppoints(length(std_resid))),
+  sample      = sort(std_resid)
+)
+ggplot(qqdf, aes(x = theoretical, y = sample)) +
+  geom_point(size = 0.7, alpha = 0.6, color = "steelblue") +
+  geom_abline(slope = 1, intercept = 0, color = "red", linetype = "dashed") +
+  labs(x = "Theoretical Quantiles (N(0,1))",
+       y = "Standardised Residuals",
+       title = "Normal Q-Q Plot of OLS Residuals") +
+  theme_classic()
+
+# Scale-Location plot: detect heteroscedasticity
+sldf <- data.frame(fitted = fitted_v,
+                   sqrt_abs_resid = sqrt(abs(std_resid)))
+ggplot(sldf, aes(x = fitted, y = sqrt_abs_resid)) +
+  geom_point(size = 0.7, alpha = 0.4, color = "steelblue") +
+  geom_smooth(method = "loess", se = FALSE, color = "red", linewidth = 0.8) +
+  labs(x = "Fitted Values", y = expression(sqrt("|Standardised Residuals|")),
+       title = "Scale-Location Plot",
+       subtitle = "Flat red line = homoscedastic; upward trend = variance increases with mean") +
+  theme_classic()
 ```
 
-以下通过矩阵运算手动实现普通最小二乘（OLS）估计，不调用 `lm()`。OLS 解析解为 $\hat{\boldsymbol{\beta}} = (\mathbf{X}^\top\mathbf{X})^{-1}\mathbf{X}^\top\mathbf{y}$；残差方差估计为 $\hat{\sigma}^2 = \mathbf{e}^\top\mathbf{e}/(n-p)$；系数标准误来自协方差矩阵 $\hat{\sigma}^2(\mathbf{X}^\top\mathbf{X})^{-1}$ 的对角元素，显著性通过 t 分布检验。
+:::tip
+**GWAS 连续性状的标准预处理流程**
 
-```r
-# Manual OLS linear regression via matrix algebra
-X_mat <- cbind(intercept = 1, geno = geno, sex = sex)
-y_vec <- pheno
-n_obs <- nrow(X_mat)
-p_par <- ncol(X_mat)
-
-# OLS estimator: beta = (X'X)^{-1} X'y
-XtX      <- t(X_mat) %*% X_mat
-Xty      <- t(X_mat) %*% y_vec
-beta_ols <- solve(XtX, Xty)
-
-# Residuals and variance estimate
-resid_ols <- y_vec - X_mat %*% beta_ols
-sigma2_hat <- sum(resid_ols^2) / (n_obs - p_par)
-
-# Standard errors and t-statistics
-se_ols  <- sqrt(diag(sigma2_hat * solve(XtX)))
-t_stat  <- beta_ols / se_ols
-p_ols   <- 2 * pt(abs(t_stat), df = n_obs - p_par, lower.tail = FALSE)
-
-cat(sprintf("beta (manual OLS) = %.3f\n", beta_ols["geno"]))
-cat(sprintf("p    (manual OLS) = %.3e\n", p_ols["geno"]))
-```
+在运行线性回归之前，连续性状通常经过以下预处理：（1）**正态化变换**——对偏态表型（BMI、CRP 等）先取对数或进行 rank-based inverse normal transformation（RINT），使残差更接近正态；（2）**协变量回归残差化**——将表型对年龄、性别、年龄²、技术批次等固定协变量做线性回归，取残差后进行关联检验，等价于在完整模型中同时纳入这些协变量（FWL 定理保证两者系数相同）；（3）**表型标准化**——将经过残差化的表型标准化为均值 0、标准差 1，使 $\hat{\beta}$ 具有可比的跨性状含义。
+:::
 
 :::note
 **线性回归中的 PCA 校正**
 
-线性回归同样可将 PCA 主成分作为协变量纳入模型以控制群体分层，原理与逻辑回归完全相同。完整的三向对比模拟（无校正 / 真实标签校正 / PCA 校正）已在后续"群体分层的危害"小节中详细演示，此处不再重复。
+线性回归与逻辑回归的 PCA 校正原理完全相同：将前 $K$ 个主成分作为协变量纳入模型。对于线性模型，FWL 定理严格成立——预先将表型和所有 SNP 对主成分矩阵做残差化，与直接在含主成分的完整模型中估计 $\hat{\beta}_{\text{SNP}}$ 数值上完全等价。完整的三向对比模拟（无校正 / 真实标签校正 / PCA 校正）在后续"群体分层的危害"小节中演示。
 :::
 
 ---

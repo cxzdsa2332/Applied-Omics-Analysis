@@ -516,38 +516,118 @@ cat(sprintf("Bonferroni p-value: %.3e\n", 0.05 / n_snp))
 ### R 示例：三种校正方法比较
 
 ```r
+library(ggplot2)
 set.seed(123)
-M <- 1e6  # simulated number of SNP tests
 
-# Simulate p-values: mostly null, a few true signals
+# ── Part 1: Bonferroni & FDR on M = 1e6 simulated tests ─────────────────────
+M        <- 1e6
 p_null   <- runif(M - 50)
 p_signal <- runif(50, min = 0, max = 1e-7)
 p_all    <- c(p_null, p_signal)
 
-# Bonferroni
+# Bonferroni (FWER control)
 bonf_threshold <- 0.05 / M
-n_bonf <- sum(p_all < bonf_threshold)
+n_bonf         <- sum(p_all < bonf_threshold)
 
-# FDR (BH) at q = 0.05
+# FDR — Benjamini-Hochberg (q = 0.05)
 p_adj_bh <- p.adjust(p_all, method = "BH")
 n_bh     <- sum(p_adj_bh < 0.05)
 
-cat(sprintf("Bonferroni significant SNPs: %d\n", n_bonf))
-cat(sprintf("FDR (BH) significant SNPs:  %d\n", n_bh))
-cat(sprintf("True signal SNPs:            %d\n", 50))
+# ── Part 2: Permutation test on a smaller subset (computationally feasible) ──
+# We work with n_snp = 10,000 SNPs and n_sample = 200 individuals.
+# Phenotype is continuous; association statistic is the squared correlation r².
+# B = 500 permutations of phenotype labels.
+set.seed(456)
+n_snp    <- 10000
+n_sample <- 200
+B        <- 500
 
-# Visualize p-value distribution
-library(ggplot2)
-ggplot(data.frame(p = p_all), aes(x = p)) +
-  geom_histogram(bins = 100, fill = "grey70", color = "white") +
+# Simulate genotype matrix (additive coding 0/1/2) and a null phenotype
+G     <- matrix(rbinom(n_snp * n_sample, 2, prob = 0.3),
+                nrow = n_sample, ncol = n_snp)
+pheno <- rnorm(n_sample)
+
+# Observed chi-square statistics (score test ≈ n * r²)
+obs_stat <- apply(G, 2, function(g) {
+  fit <- lm(pheno ~ g)
+  summary(fit)$coefficients["g", "t value"]^2   # t² = F = chi-sq (df=1)
+})
+
+# Permutation: record the maximum statistic across all SNPs per permutation
+max_stat_perm <- replicate(B, {
+  pheno_perm <- sample(pheno)
+  max(apply(G, 2, function(g) {
+    fit <- lm(pheno_perm ~ g)
+    summary(fit)$coefficients["g", "t value"]^2
+  }))
+})
+
+# Empirical threshold at FWER = 5%
+perm_threshold_stat <- quantile(max_stat_perm, 0.95)
+# Convert back to p-value scale (chi-sq df = 1)
+perm_threshold_p    <- pchisq(perm_threshold_stat, df = 1, lower.tail = FALSE)
+n_perm              <- sum(pchisq(obs_stat, df = 1, lower.tail = FALSE) < perm_threshold_p)
+
+# ── Summary ──────────────────────────────────────────────────────────────────
+cat("=== Bonferroni vs FDR (M = 1e6 tests, 50 true signals) ===\n")
+cat(sprintf("  Bonferroni (alpha/M = %.2e):  %d significant SNPs\n",
+            bonf_threshold, n_bonf))
+cat(sprintf("  FDR BH    (q = 0.05):         %d significant SNPs\n", n_bh))
+cat(sprintf("  True signal SNPs:              50\n\n"))
+
+cat("=== Permutation test (n_snp = 10,000, B = 500, null data) ===\n")
+cat(sprintf("  Permutation threshold (chi-sq): %.3f\n", perm_threshold_stat))
+cat(sprintf("  Equivalent p-value threshold:   %.3e\n", perm_threshold_p))
+cat(sprintf("  Bonferroni equivalent:          %.3e\n", 0.05 / n_snp))
+cat(sprintf("  SNPs passing permutation cutoff: %d (expected ~0 under null)\n", n_perm))
+
+# ── Visualization: p-value histogram with Bonferroni & FDR thresholds ────────
+# Identify BH threshold as the largest p-value still declared significant
+bh_threshold <- if (n_bh > 0) max(p_all[p_adj_bh < 0.05]) else NA
+
+df_plot <- data.frame(p = p_all)
+
+p_hist <- ggplot(df_plot, aes(x = p)) +
+  geom_histogram(bins = 100, fill = "grey75", color = "white") +
   geom_vline(xintercept = bonf_threshold,
-             color = "red", linetype = "solid", linewidth = 0.8) +
-  annotate("text", x = bonf_threshold * 3, y = Inf,
-           label = "Bonferroni", vjust = 2, color = "red", size = 3.5) +
+             color = "#D62728", linetype = "solid", linewidth = 0.9) +
+  annotate("text", x = bonf_threshold * 4, y = Inf,
+           label = "Bonferroni", vjust = 2, hjust = 0,
+           color = "#D62728", size = 3.2) +
+  { if (!is.na(bh_threshold))
+      list(
+        geom_vline(xintercept = bh_threshold,
+                   color = "#1F77B4", linetype = "dashed", linewidth = 0.9),
+        annotate("text", x = bh_threshold * 4, y = Inf,
+                 label = "FDR (BH)", vjust = 3.5, hjust = 0,
+                 color = "#1F77B4", size = 3.2)
+      )
+  } +
   scale_x_continuous(labels = scales::scientific) +
   labs(x = "p-value", y = "Count",
-       title = "p-value Distribution (Simulated GWAS)") +
-  theme_classic()
+       title = "p-value Distribution with Bonferroni and FDR Thresholds",
+       subtitle = sprintf("M = %s tests | %d true signals", format(M, big.mark = ","), 50)) +
+  theme_classic(base_size = 12)
+
+print(p_hist)
+
+# ── Visualization: permutation null distribution ──────────────────────────────
+df_perm <- data.frame(max_stat = max_stat_perm)
+
+p_perm <- ggplot(df_perm, aes(x = max_stat)) +
+  geom_histogram(bins = 40, fill = "#AEC7E8", color = "white") +
+  geom_vline(xintercept = perm_threshold_stat,
+             color = "#D62728", linetype = "dashed", linewidth = 0.9) +
+  annotate("text", x = perm_threshold_stat, y = Inf,
+           label = sprintf("95th pct = %.2f", perm_threshold_stat),
+           vjust = 2, hjust = -0.1, color = "#D62728", size = 3.2) +
+  labs(x = "Maximum chi-square statistic per permutation",
+       y = "Count",
+       title = "Permutation Null Distribution of Maximum Statistic",
+       subtitle = sprintf("B = %d permutations, n_snp = %d", B, n_snp)) +
+  theme_classic(base_size = 12)
+
+print(p_perm)
 ```
 
 ---
@@ -563,6 +643,18 @@ $$
 $$
 
 其中 $p$ 为 MAF，$\sigma^2$ 为表型残差方差，对应 $\chi^2$ 分布的非中心参数。
+
+### 二元表型（病例-对照）的检验力近似
+
+上述 NCP 公式适用于连续表型。对于病例-对照设计，表型为 0/1 二值变量，logistic 回归的 Wald 检验在大样本下仍渐近服从 $\chi^2_1$，其非中心参数可由以下公式近似：
+
+$$
+\text{NCP}_\text{cc} \approx \frac{n \cdot \beta^2 \cdot 2p(1-p) \cdot K(1-K)}{\pi(1-\pi)}
+$$
+
+其中 $n = n_\text{case} + n_\text{control}$ 为总样本量，$K$ 为人群患病率，$\pi = n_\text{case} / n$ 为样本中病例比例，$\beta$ 为加性对数OR。当样本比例 $\pi$ 偏离患病率 $K$ 时（过采样病例），检验力显著依赖于二者的比值：以 $K = 0.01$、$\pi = 0.5$（1:1 设计）为例，$K(1-K)/[\pi(1-\pi)] \approx 0.04$，因此病例-对照 GWAS 在相同总样本量下的检验力远低于对应的连续表型研究，需要更大样本量弥补这一损失。
+
+在实践中，当 $K$ 未知或变动时，更稳健的方式是将统计检验力换算至**责任尺度（liability scale）** 后再比较，可使用 `GPC`（Genetic Power Calculator）或 `pwr.2p.test` 等工具直接输入样本量、OR 和 MAF 求解病例-对照检验力。
 
 ### 检验力对 MAF 的依赖
 
@@ -848,7 +940,13 @@ GCTA 的 `.hsq` 输出文件包含遗传方差（$V(G)$）和残差方差（$V(e
 
 ### LD 裁剪（Clumping）
 
-由于 LD 的存在，显著性峰往往包含多个互相连锁的 SNP，而非单一的独立信号。**LD 裁剪**以最显著的 SNP（index SNP）为核心，将其一定窗口内 $r^2$ 超过阈值的关联 SNP 合并为同一位点：
+由于 LD 的存在，显著性峰往往包含多个互相连锁的 SNP，而非单一的独立信号。**LD 裁剪**以最显著的 SNP（index SNP）为核心，将其一定窗口内 $r^2$ 超过阈值的关联 SNP 合并为同一位点，输出每个独立信号的代表 SNP。
+
+:::note
+**LD 裁剪（clumping）与 LD 修剪（pruning）的区别**
+
+LD 修剪（`--indep-pairwise`，参见专题 3.2 QC 章节）以滑动窗口逐对移除高 LD 的 SNP，结果集中保留低 LD 标记，用于 PCA、亲缘关系矩阵等需要弱相关标记的计算。LD 裁剪则以 p 值为权重，优先保留关联证据最强的 SNP，专门用于识别独立关联信号，两者目的和参数体系完全不同，不可混用。
+:::
 
 ```bash
 # PLINK LD clumping
@@ -863,24 +961,134 @@ plink \
   --out gwas_clumped
 ```
 
-### 逐步条件分析
+各参数含义如下表所示：
 
-对于同一染色体区域内可能存在多个独立信号的情况，逐步条件分析（stepwise conditional analysis）逐步将已识别的显著 SNP 作为协变量加入模型，检验是否存在额外的独立关联信号：
+| 参数 | 作用 | 典型值 | 说明 |
+|------|------|--------|------|
+| `--clump-p1` | index SNP 的 p 值阈值 | `5e-8` | 仅以达到该阈值的 SNP 作为潜在 index SNP |
+| `--clump-p2` | 候选成员 SNP 的 p 值上限 | `1e-5` | 仅考虑 p < p2 的 SNP 作为 index SNP 的 LD 伴随体 |
+| `--clump-r2` | LD 阈值 | `0.1` | $r^2 >$ 该值的 SNP 与 index SNP 归为同一簇 |
+| `--clump-kb` | 物理窗口半径（kb） | `1000` | 仅在 index SNP 上下游 1 Mb 内搜索候选成员 |
+
+输出文件 `gwas_clumped.clumped` 每行对应一个独立信号，核心列为：`INDEX_SNP`（代表 SNP）、`TOTAL`（该簇内 SNP 总数）、`NSIG`（其中 p < p1 的 SNP 数）以及 `SP2`（成员 SNP 列表）。独立信号数量即为输出行数，可直接统计：
 
 ```r
-# Conditional analysis: adjust for index SNP genotype
-fit_conditional <- lm(pheno ~ geno_candidate + index_snp_geno + PC1 + PC2)
-summary(fit_conditional)
+# Count independent loci after clumping
+clumped <- read_table("gwas_clumped.clumped", col_types = cols())
+cat(sprintf("Independent significant loci: %d\n", nrow(clumped)))
+
+# Retrieve index SNPs for downstream analysis
+index_snps <- clumped$SNP
 ```
 
-### 精细定位的概念
+### 逐步条件分析
 
-**精细定位（fine-mapping）** 是在一个显著关联区域内，从众多 LD 连锁的 SNP 中，统计推断出最可能的因果变异的过程。与 LD 剪枝不同，精细定位不满足于选取最显著的 SNP，而是试图量化每个 SNP 作为因果变异的后验概率，并构建**可信集（credible set）**——即以 95% 概率包含真正因果变异的最小 SNP 集合。常用的精细定位工具包括 FINEMAP、SUSIE（Sum of Single Effects）和 POLYFUN。这些方法的共同输入是 GWAS 汇总统计量和参考 LD 矩阵，输出是每个 SNP 的**后验纳入概率（Posterior Inclusion Probability，PIP）**。PIP 接近 1 的 SNP 是高置信度的因果变异候选。
+当局部关联图（见下节）或生物学先验提示同一区域可能存在多个独立信号时，应进行**逐步条件分析（stepwise conditional analysis）**：将已识别的 index SNP 基因型作为额外协变量纳入模型，检验该区域内是否仍有残余关联。
+
+PLINK 通过 `--condition` 或 `--condition-list` 直接支持条件关联分析：
+
+```bash
+# Conditional analysis: condition on index SNP rs1234567
+plink \
+  --bfile qc_step4 \
+  --logistic \
+  --covar covariates.txt \
+  --condition rs1234567 \
+  --hide-covar \
+  --out gwas_conditional_step1
+
+# If a second independent signal is found (e.g., rs7654321),
+# condition on both index SNPs simultaneously
+plink \
+  --bfile qc_step4 \
+  --logistic \
+  --covar covariates.txt \
+  --condition-list two_index_snps.txt \
+  --hide-covar \
+  --out gwas_conditional_step2
+```
+
+判断是否存在第二个独立信号的准则：在条件模型中，若某 SNP 仍满足 $p < 5 \times 10^{-8}$ 且与第一个 index SNP 的 $r^2 < 0.1$，则视为独立的第二信号，将其纳入下一轮条件模型，直至区域内无新显著位点。多数区域在 2–3 轮后收敛；若发现 5 个以上独立信号，则需核实该区域是否存在复杂的结构变异（如拷贝数变异或倒位多态性）。
+
+:::tip
+**条件分析的替代方案：近似贝叶斯因子法**
+
+当样本量足够大（$N > 10{,}000$）时，基于 Bayes Factor 的方法（如 FINEMAP 的多因果变异模式）能在单次分析中同时推断区域内因果变异的数量和位置，无需逐步迭代。该方法将在精细定位小节中进一步介绍。
+:::
+
+### 精细定位的概念与 SuSiE 实现
+
+**精细定位（fine-mapping）** 是在一个显著关联区域内，从众多 LD 连锁的 SNP 中，统计推断出最可能的因果变异的过程。与 LD 裁剪不同，精细定位不满足于选取最显著的 SNP，而是试图量化每个 SNP 作为因果变异的后验概率，并构建**可信集（credible set）**——即以 95% 概率包含真正因果变异的最小 SNP 集合。常用工具包括 FINEMAP、**SuSiE**（Sum of Single Effects）和 POLYFUN。各工具的共同输入是 GWAS 汇总统计量和参考 LD 矩阵，输出是每个 SNP 的**后验纳入概率（Posterior Inclusion Probability，PIP）**。PIP 接近 1 的 SNP 是高置信度的因果变异候选。
+
+**SuSiE** 将区域内的关联信号分解为 $L$ 个单效应（single effect）的加性叠加，每个单效应对应一个独立信号，通过变分贝叶斯推断（Variational Bayes）同时估计 $L$ 个可信集。以下代码以模拟数据演示 SuSiE 的完整运行流程：
+
+```r
+# install.packages("susieR")
+library(susieR)
+
+# ── Simulate a regional dataset with 2 independent causal SNPs ────────────────
+set.seed(42)
+n_ind <- 3000   # individuals
+n_snp <- 200    # SNPs in the candidate region
+
+# Correlated genotype matrix (simulate LD structure with AR(1) correlation)
+sigma_ld <- toeplitz(0.7^(0:(n_snp - 1)))
+L_chol   <- chol(sigma_ld)
+G_raw    <- matrix(rnorm(n_ind * n_snp), n_ind, n_snp) %*% L_chol
+G        <- round(pmin(pmax(G_raw, -2), 2))   # crude 0/1/2 quantization
+
+# Two causal SNPs at positions 50 and 150
+causal_idx <- c(50, 150)
+beta_true  <- c(0.4, -0.3)
+pheno      <- G[, causal_idx] %*% beta_true + rnorm(n_ind)
+
+# ── Run SuSiE with L = 5 (allow up to 5 independent signals) ─────────────────
+fit_susie <- susie(G, pheno, L = 5, verbose = FALSE)
+
+# Posterior Inclusion Probabilities
+pip <- fit_susie$pip
+cat(sprintf("Top 5 SNPs by PIP:\n"))
+top5 <- order(pip, decreasing = TRUE)[1:5]
+for (i in top5) {
+  cat(sprintf("  SNP %3d: PIP = %.3f%s\n", i, pip[i],
+              if (i %in% causal_idx) "  <-- true causal" else ""))
+}
+
+# 95% credible sets
+cs <- susie_get_cs(fit_susie, coverage = 0.95)
+cat(sprintf("\nNumber of credible sets found: %d\n", length(cs$cs)))
+for (k in seq_along(cs$cs)) {
+  cat(sprintf("  CS%d: %d SNPs, min r2 = %.3f\n",
+              k, length(cs$cs[[k]]), cs$purity$min.abs.corr[k]^2))
+}
+
+# ── Visualize PIP along the region ───────────────────────────────────────────
+library(ggplot2)
+df_pip <- data.frame(
+  pos     = seq_len(n_snp),
+  pip     = pip,
+  causal  = seq_len(n_snp) %in% causal_idx
+)
+
+ggplot(df_pip, aes(x = pos, y = pip)) +
+  geom_point(aes(color = causal), size = 1.5, alpha = 0.8) +
+  scale_color_manual(values = c("FALSE" = "grey60", "TRUE" = "#D62728"),
+                     labels = c("Non-causal", "True causal")) +
+  geom_hline(yintercept = 0.9, linetype = "dashed", color = "steelblue",
+             linewidth = 0.7) +
+  annotate("text", x = n_snp * 0.05, y = 0.92,
+           label = "PIP = 0.9", color = "steelblue", size = 3.2) +
+  labs(x = "SNP position in region", y = "Posterior Inclusion Probability (PIP)",
+       title = "SuSiE Fine-Mapping: PIP Profile",
+       color = NULL) +
+  theme_classic(base_size = 12) +
+  theme(legend.position = "top")
+```
 
 :::note
 **精细定位的局限性**
 
-即使在样本量足够大的研究中，精细定位也往往无法将可信集缩小至单个 SNP，因为同一 LD 区块内的多个 SNP 具有极高的 $r^2$，其统计证据几乎无法区分。突破这一瓶颈的方法包括：多群体精细定位（利用不同群体 LD 结构的差异缩小候选范围）和功能基因组注释（优先选取位于功能元件内的 SNP）。
+即使在样本量足够大的研究中，精细定位也往往无法将可信集缩小至单个 SNP，因为同一 LD 区块内的多个 SNP 具有极高的 $r^2$，其统计证据几乎无法区分。突破这一瓶颈的方法包括：多群体精细定位（利用不同群体 LD 结构的差异缩小候选范围）和功能基因组注释（优先将高 PIP 的 SNP 与 H3K27ac 峰、ATAC-seq 开放染色质区域等功能元件相交，以生物学证据辅助统计推断）。
 :::
 
 :::tip
@@ -1016,6 +1224,12 @@ stack_assoc_plot(
 
 7. 在群体分层模拟实验中，即使 SNP 与表型没有真实的生物学因果关系，朴素（未校正）的关联检验仍然可能产生极小的 p 值。请解释这种现象的统计学机制，并说明 PCA 校正如何解决该问题。
 
+8. LD 裁剪（clumping）与 LD 修剪（pruning）的目的和参数体系有何本质区别？在 GWAS 分析流程中，两者分别在哪个步骤使用？
+
+9. SuSiE 精细定位输出的"可信集（credible set）"与直接选取 p 值最小 SNP 相比，有何统计学优势？若某区域有两个独立信号，SuSiE 应如何配置 $L$ 参数，输出会呈现什么形态？
+
+10. 在一项病例（$n_\text{case} = 5{,}000$）对照（$n_\text{control} = 5{,}000$）研究中，某 SNP 的 MAF = 0.20，加性 $\log\text{OR} = 0.15$，人群患病率 $K = 0.05$。与同样总样本量（$n = 10{,}000$）的连续表型研究（$\beta = 0.15$，$\sigma^2 = 1$）相比，哪个设计的统计检验力更高？请利用本节 NCP 公式进行定量比较。
+
 
 <details>
 <summary><strong>参考答案 (Reference Answers)</strong></summary>
@@ -1033,6 +1247,12 @@ stack_assoc_plot(
 6. *利用 NCP 公式 $\text{NCP} = n \cdot \beta^2 \cdot 2p(1-p) / \sigma^2$，代入 $\beta = 0.12$、$p = 0.15$、$\sigma^2 = 1$，需要迭代求解使得检验力达到 80% 的 $n$。R 代码验证：调用 `min_n_for_power(beta = 0.12, maf = 0.15)` 函数（见 3.5.5 节），预期结果约为 60,000–90,000 样本（具体取决于迭代精度）。*
 
 7. *群体分层混杂的统计机制：若两个亚群在某 SNP 的等位基因频率上存在差异，同时在表型均值上也存在差异，则该 SNP 的等位基因与表型在混合样本中表现出统计相关，即使在各亚群内部二者完全不相关。这是因为群体标签既是 SNP 频率的预测因子，也是表型的预测因子，形成了混杂路径。PCA 校正通过将基因组主成分作为固定效应协变量纳入回归模型，将群体标签引起的表型差异"吸收"为协变量效应，从而使 SNP 系数的估计只反映亚群内部的关联，消除跨群体的混杂。*
+
+8. *LD 修剪（pruning）以滑动窗口逐对去除超过 $r^2$ 阈值的 SNP，保留一组低 LD 的近似独立标记集，不考虑关联 p 值；用于 QC 阶段的 PCA 计算和亲缘关系矩阵构建。LD 裁剪（clumping）则以 p 值为权重，优先保留关联证据最强的 SNP 作为 index SNP，并将其窗口内高 LD 的伴随 SNP 归并至同一簇；用于关联分析结束后的独立信号计数。两者目的不同，参数体系也不同（pruning 使用 `--indep-pairwise`，clumping 使用 `--clump`），不可替换使用。*
+
+9. *可信集具有三方面统计优势：（1）它以 95% 覆盖概率明确量化了不确定性，而单选最小 p 值 SNP 的不确定性是隐性的；（2）在强 LD 区块中，多个 SNP 可能具有几乎等价的统计证据，可信集诚实地纳入所有候选，而非武断地选取其中一个；（3）可信集的大小本身反映了精细定位的分辨率——集合越小，对因果变异的定位越精确。若区域存在两个独立信号，应将 $L$ 设为 $\geq 2$，此时 SuSiE 会输出两个可信集，每个可信集对应一个独立信号，且两个集合中的 SNP 通常位于不同的染色体区段（彼此 $r^2$ 较低）。*
+
+10. *连续表型 NCP = $10000 \times 0.15^2 \times 2 \times 0.2 \times 0.8 / 1 = 72$。病例-对照 NCP = $10000 \times 0.15^2 \times 2 \times 0.2 \times 0.8 \times 0.05 \times 0.95 / (0.5 \times 0.5) \approx 10.26$。连续表型 NCP 约为病例-对照的 7 倍，前者检验力远高于后者。其根本原因是在 $K = 0.05$ 的稀有疾病中，$K(1-K) = 0.0475$ 远小于 $\pi(1-\pi) = 0.25$（1:1 设计），二值表型的信息量损失严重。这是为何大型生物银行（UK Biobank）对慢性病以连续表型代理指标（如血压、BMI）替代二值病例/对照标签进行 GWAS 时往往能发现更多位点的直接原因。*
 
 
 </details>
