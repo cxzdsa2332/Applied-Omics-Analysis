@@ -463,6 +463,13 @@ plink --bfile 1kg_chr22_common \
 
 # Count retained vs removed SNPs
 wc -l pruned_snps.prune.in pruned_snps.prune.out
+
+#给 SNP 自动生成唯一ID
+plink \
+  --bfile 1kg_chr22_common \
+  --set-missing-var-ids @:# \
+  --make-bed \
+  --out 1kg_chr22_fixed
 ```
 
 ---
@@ -691,7 +698,9 @@ ggplot(results, aes(x = pos_kb, y = neg_log_p, color = is_causal)) +
 
 # 综合实践：LD 图谱分析完整流程
 
-以下展示从 1000 Genomes chr22 数据出发、计算 LD 矩阵并可视化区块结构的端到端流程，作为本专题实践练习的参考模板。
+本节以 1000 Genomes Project 的第 22 号染色体数据为对象，演示从读取基因型文件、计算成对 $r^2$ 矩阵、绘制 LD 热图，到定量刻画 LD 随距离衰减的端到端分析流程。所用数据已在本专题前置 PLINK 步骤中下载并预处理，存储为 PLINK 二进制格式（`.bed/.bim/.fam`）；所用 R 包 `snpStats` 在 Bioconductor 中维护，其核心数据结构 `SnpMatrix` 以紧凑的 `raw` 类型存储基因型（每个基因型仅占 1 字节），使得在内存中保存数十万 SNP 的全样本基因型矩阵成为可能。
+
+## 步骤一：读取 PLINK 二进制文件
 
 ```r
 # R: full LD analysis pipeline on 1000 Genomes chr22 data
@@ -703,20 +712,40 @@ library(ggplot2)
 library(data.table)
 
 # ---- 1. Read PLINK binary files ----
-plink_data <- read.plink("1kg_chr22_common")
+plink_data <- read.plink("1kg_chr22_fixed")
 geno    <- plink_data$genotypes   # SnpMatrix object
 bim     <- plink_data$map          # SNP annotation
 
 cat(sprintf("Loaded: %d samples x %d SNPs\n",
             nrow(geno), ncol(geno)))
+```
 
+`read.plink()` 同时读取三个文件：`.bed` 中存储压缩基因型，`.bim` 中存储 SNP 注释（染色体、位置、等位基因），`.fam` 中存储样本信息。函数返回一个列表，`$genotypes` 为 `SnpMatrix` 对象（行为样本，列为 SNP），`$map` 为对应的 SNP 注释数据框。`cat(sprintf(...))` 打印维度以验证文件读取正确：1000 Genomes 第三阶段全球面板包含 2504 个样本，chr22 的常见变异（MAF > 1%）经 PLINK QC 后约有 4 万个 SNP。若维度与预期不符，应检查 PLINK 预处理步骤中的过滤参数是否正确应用。
+
+## 步骤二：提取目标区域
+
+```r
 # ---- 2. Select a 200-SNP region for LD visualization ----
 region_snps <- bim$snp.name[bim$position > 20e6 & bim$position < 20.5e6]
 geno_region <- geno[, colnames(geno) %in% region_snps]
 n_selected  <- ncol(geno_region)
 cat(sprintf("Selected %d SNPs in chr22:20.0–20.5 Mb for LD heatmap\n",
             n_selected))
+```
 
+LD 热图在全染色体尺度（数万个 SNP）上绘制时，矩阵规模为 $N^2$ 级（$4\text{万}^2 = 16$ 亿个格子），既超出内存限制，也失去可读性。因此，实践中通常选取一个 0.5–1 Mb 的候选区域（本例为 chr22:20.0–20.5 Mb）进行精细可视化。该区段在 1000 Genomes 欧洲人群中平均 LD 衰减距离约 100 kb，0.5 Mb 窗口足以同时展示短程高 LD 区块和长程 LD 的衰减趋势。
+
+`bim$position > 20e6 & bim$position < 20.5e6` 通过基因组坐标筛选 SNP 名称，再以列名匹配的方式对 `SnpMatrix` 做列子集，得到区域基因型矩阵 `geno_region`。
+
+:::tip
+**区域选择的实践考量**
+
+选取目标区域时，优先选择在文献中已有已知关联信号或生物学功能位点的区段（如 chr22 上的 *MYH9* 基因座），这样绘制的 LD 热图能够直观看到真实关联峰的 LD 背景，而不仅仅是随机背景 LD 的统计抽样。可用 UCSC Genome Browser 或 OMIM 预先了解目标区域的基因组特征。
+:::
+
+## 步骤三：计算成对 $r^2$ 矩阵
+
+```r
 # ---- 3. Compute pairwise LD (r2) using snpStats ----
 ld_result <- ld(geno_region, stats = "R.squared", depth = n_selected - 1)
 r2_matrix <- as.matrix(ld_result)
@@ -725,7 +754,24 @@ r2_matrix <- as.matrix(ld_result)
 r2_full <- r2_matrix
 r2_full[lower.tri(r2_full)] <- t(r2_matrix)[lower.tri(r2_matrix)]
 diag(r2_full) <- 1
+```
 
+`snpStats::ld()` 是计算成对 LD 的核心函数。参数说明：
+
+- `stats = "R.squared"`：计算 $r^2$（线性相关系数的平方），而非 $D'$。$r^2$ 与 GWAS 功效传递比例存在直接对应关系（代理 SNP 对目标位点的功效传递效率约为 $r^2$），是功效分析和标签 SNP 选取的标准度量。
+- `depth = n_selected - 1`：计算每个 SNP 与所有其他 SNP 的 LD，即全成对矩阵（`depth` 控制计算半带宽，设为最大值时等于全矩阵）。对于较大的窗口（> 1000 个 SNP），可适当降低 `depth`（如 500）以节省计算时间，牺牲远距离 SNP 对的 $r^2$ 信息。
+
+`ld()` 出于存储效率只返回**上三角矩阵**（即 SNP_A 索引 < SNP_B 索引的 $r^2$ 值），对角线为 `NA`。后续三行代码将上三角对称填充到下三角，并将对角线设为 1（每个 SNP 与自身完全相关），使矩阵成为完整的对称正定矩阵，方便后续热图绘制。
+
+:::note
+**计算复杂度与内存**
+
+$N$ 个 SNP 的全成对 $r^2$ 矩阵有 $N(N-1)/2$ 个元素。本例 $N \approx 200$，矩阵约 2 万个元素，计算和存储均无压力。若 $N = 10000$（约 5 kb 间距覆盖 50 Mb 区域），则矩阵含 5000 万个 `double` 值，占用约 400 MB 内存，此时应考虑分块计算或仅保存 $r^2 > 0.1$ 的稀疏表示。
+:::
+
+## 步骤四：LD 热图可视化
+
+```r
 # ---- 4. LD heatmap (melt to long format for ggplot2) ----
 r2_long <- as.data.table(reshape2::melt(r2_full,
                                          varnames = c("SNP_A", "SNP_B"),
@@ -747,7 +793,22 @@ ggplot(r2_long, aes(x = idx_a, y = idx_b, fill = r2)) +
   theme(axis.text = element_blank(),
         axis.ticks = element_blank(),
         panel.grid = element_blank())
+```
 
+`reshape2::melt()` 将宽格式的 $N \times N$ 矩阵转换为长格式（每行一个 SNP 对及其 $r^2$ 值），这是 `ggplot2` 所需的"整洁数据（tidy data）"格式。随后用 `match()` 将 SNP 名称转换为整数索引，作为热图的横纵坐标轴。
+
+颜色方案的设计反映了 LD 强度的生物学分级：
+- 白色（$r^2 < 0.2$）：弱 LD，两位点近似独立，代理效率低；
+- 浅黄至橙色（$0.2 \leq r^2 < 0.5$）：中等 LD，标签 SNP 可传递部分关联信号；
+- 深红色（$r^2 \geq 0.8$）：强 LD，标准标签 SNP 阈值，代理效率 $\geq 80\%$。
+
+在欧洲人群 chr22 数据中，正确生成的热图应呈现**沿对角线的三角形红色斑块**，每个斑块对应一个 LD 区块：区块内部 SNP 两两之间 $r^2$ 接近 1（深红），区块之间 $r^2$ 骤降至接近 0（白色）。斑块之间的白色间隔对应历史重组热点——这些位置正是 LD 区块边界的物理标记。
+
+{{Wiki:Linkage_disequilibrium}}
+
+## 步骤五：LD 衰减分析
+
+```r
 # ---- 5. LD decay within the selected region ----
 positions <- bim$position[bim$snp.name %in% region_snps]
 r2_long[, dist_kb := abs(positions[idx_a] - positions[idx_b]) / 1000]
@@ -762,6 +823,43 @@ decay_summary <- r2_long[dist_kb > 0,
 cat("\n=== LD Decay within chr22:20-20.5 Mb ===\n")
 print(decay_summary)
 ```
+
+LD 衰减分析将每对 SNP 的 $r^2$ 按物理距离分组，计算各距离区间内 $r^2$ 的均值，从而得到 **LD 衰减曲线（LD decay curve）** 的离散近似。具体步骤如下：
+
+1. `positions` 从 `.bim` 文件中提取目标区域各 SNP 的物理坐标（单位：碱基对）。
+2. `dist_kb` 计算每对 SNP 的物理间距（单位：kb），排除 `dist_kb == 0`（SNP 与自身的距离）。
+3. `cut()` 按非等宽的距离区间分箱：短距离（0–20 kb）区间较密，因为这是 LD 变化最剧烈的区段，需要更精细的分辨率；长距离（50–500 kb）区间较宽，因为此时 $r^2$ 已趋于平稳。
+4. `data.table` 的 `by = dist_bin` 分组计算，高效地在每个距离区间内取均值。
+
+在 1000 Genomes 欧洲人群（CEU）中，预期的衰减模式为：0–5 kb 区间均值 $r^2 \approx 0.6$–0.8，10–20 kb 区间降至 $\approx 0.3$–0.5，100–200 kb 区间降至 $\approx 0.05$–0.1，并在更长距离趋于背景 LD 水平（$\approx 0.02$–0.05，主要来自低频 SNP 对的随机 LD）。若衰减速率明显偏快（如欧洲人群中 20 kb 处均值 $r^2 < 0.1$），可能提示 QC 过滤过于严格导致 SNP 密度不足；若衰减速率明显偏慢（100 kb 处均值 $r^2 > 0.3$），则需检查样本是否存在群体分层或亲缘关系未被过滤，这两者均会人为地维持远距离 LD。
+
+:::info
+**黄金法则：LD 衰减曲线的群体间比较价值**
+
+对多个参考群体分别运行上述流程，将衰减曲线叠加比较，可以直观验证群体遗传学的核心结论：非洲人群（YRI）有效群体大（$N_e \approx 10{,}000$–15,000），LD 在 10–20 kb 就衰减至背景水平；欧洲/亚洲人群（$N_e \approx 2{,}000$–5,000）LD 可维持至 50–200 kb；而高度驯化的作物品系或近交系（$N_e \approx 100$–500）LD 可延伸至 Mb 尺度。这一对比是理解跨群体 GWAS 芯片设计差异的直观基础。
+:::
+
+## 完整流程总结
+
+上述五步构成了 LD 图谱分析的标准操作路径，各步骤的输入-输出关系如下：
+
+```
+PLINK 二进制文件 (.bed/.bim/.fam)
+        │
+        ▼  read.plink()
+  SnpMatrix 对象 + SNP 注释表
+        │
+        ▼  坐标筛选
+  目标区域基因型子矩阵
+        │
+        ▼  snpStats::ld()
+  上三角 r² 矩阵  →  对称填充  →  完整 N×N r² 矩阵
+        │                                │
+        ▼  melt() + ggplot2              ▼  按距离分箱 + 均值
+    LD 热图（区块结构）            LD 衰减表（定量描述）
+```
+
+在实际 GWAS 研究中，上述分析通常在以下两个场景中重复使用：第一，研究开始前的数据质控阶段，通过 LD 衰减曲线验证样本群体来源与预期一致；第二，关联峰精细分析阶段，对显著信号区间绘制局部 LD 热图，判断哪些 SNP 处于同一 LD 区块中（共同代表同一因果变异），哪些 SNP 已跨越区块边界（需单独检验）。
 
 ---
 
