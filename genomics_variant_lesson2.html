@@ -6,7 +6,7 @@
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
-<meta name="dcterms.date" content="2026-05-24">
+<meta name="dcterms.date" content="2026-05-25">
 
 <title>16&nbsp; 全基因组 SNP 鉴定、连锁不平衡图谱与基因型数据处理 – Introduction to Applied High-throughput Biological Data Analysis</title>
 <style>
@@ -298,7 +298,7 @@ window.Quarto = {
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./genomics_variant_lesson5.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">19</span>&nbsp; <span class="chapter-title">精细定位、功能注释与因果推断</span></span></a>
+ <span class="menu-text"><span class="chapter-number">19</span>&nbsp; <span class="chapter-title">精细定位、功能注释、因果推断与更多</span></span></a>
   </div>
 </li>
       </ul>
@@ -655,7 +655,13 @@ window.Quarto = {
   </ul></li>
   <li><a href="#综合实践ld-图谱分析完整流程" id="toc-综合实践ld-图谱分析完整流程" class="nav-link" data-scroll-target="#综合实践ld-图谱分析完整流程"><span class="header-section-number">26</span> 综合实践：LD 图谱分析完整流程</a>
   <ul class="collapse">
-  <li><a href="#课后自测-post-lesson-quiz" id="toc-课后自测-post-lesson-quiz" class="nav-link" data-scroll-target="#课后自测-post-lesson-quiz"><span class="header-section-number">26.1</span> 课后自测 (Post-Lesson Quiz)</a></li>
+  <li><a href="#步骤一读取-plink-二进制文件" id="toc-步骤一读取-plink-二进制文件" class="nav-link" data-scroll-target="#步骤一读取-plink-二进制文件"><span class="header-section-number">26.1</span> 步骤一：读取 PLINK 二进制文件</a></li>
+  <li><a href="#步骤二提取目标区域" id="toc-步骤二提取目标区域" class="nav-link" data-scroll-target="#步骤二提取目标区域"><span class="header-section-number">26.2</span> 步骤二：提取目标区域</a></li>
+  <li><a href="#步骤三计算成对-r2-矩阵" id="toc-步骤三计算成对-r2-矩阵" class="nav-link" data-scroll-target="#步骤三计算成对-r2-矩阵"><span class="header-section-number">26.3</span> 步骤三：计算成对 <span class="math inline">\(r^2\)</span> 矩阵</a></li>
+  <li><a href="#步骤四ld-热图可视化" id="toc-步骤四ld-热图可视化" class="nav-link" data-scroll-target="#步骤四ld-热图可视化"><span class="header-section-number">26.4</span> 步骤四：LD 热图可视化</a></li>
+  <li><a href="#步骤五ld-衰减分析" id="toc-步骤五ld-衰减分析" class="nav-link" data-scroll-target="#步骤五ld-衰减分析"><span class="header-section-number">26.5</span> 步骤五：LD 衰减分析</a></li>
+  <li><a href="#完整流程总结" id="toc-完整流程总结" class="nav-link" data-scroll-target="#完整流程总结"><span class="header-section-number">26.6</span> 完整流程总结</a></li>
+  <li><a href="#课后自测-post-lesson-quiz" id="toc-课后自测-post-lesson-quiz" class="nav-link" data-scroll-target="#课后自测-post-lesson-quiz"><span class="header-section-number">26.7</span> 课后自测 (Post-Lesson Quiz)</a></li>
   </ul></li>
   </ul>
 <div class="toc-actions"><ul><li><a href="https://github.com/cxzdsa2332/Applied-Omics-Analysis/edit/main/genomics_variant_lesson2.qmd" class="toc-action"><i class="bi bi-github"></i>Edit this page</a></li><li><a href="https://github.com/cxzdsa2332/Applied-Omics-Analysis/issues/new" class="toc-action"><i class="bi empty"></i>Report an issue</a></li><li><a href="https://github.com/cxzdsa2332/Applied-Omics-Analysis/blob/main/genomics_variant_lesson2.qmd" class="toc-action"><i class="bi empty"></i>View source</a></li></ul></div></nav>
@@ -676,7 +682,7 @@ window.Quarto = {
     <div>
     <div class="quarto-title-meta-heading">Published</div>
     <div class="quarto-title-meta-contents">
-      <p class="date">May 24, 2026</p>
+      <p class="date">May 25, 2026</p>
     </div>
   </div>
   
@@ -1200,7 +1206,14 @@ window.Quarto = {
 <span id="cb6-14"><a href="#cb6-14" aria-hidden="true" tabindex="-1"></a>      <span class="at">--out</span> 1kg_chr22_pruned</span>
 <span id="cb6-15"><a href="#cb6-15" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb6-16"><a href="#cb6-16" aria-hidden="true" tabindex="-1"></a><span class="co"># Count retained vs removed SNPs</span></span>
-<span id="cb6-17"><a href="#cb6-17" aria-hidden="true" tabindex="-1"></a><span class="fu">wc</span> <span class="at">-l</span> pruned_snps.prune.in pruned_snps.prune.out</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<span id="cb6-17"><a href="#cb6-17" aria-hidden="true" tabindex="-1"></a><span class="fu">wc</span> <span class="at">-l</span> pruned_snps.prune.in pruned_snps.prune.out</span>
+<span id="cb6-18"><a href="#cb6-18" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-19"><a href="#cb6-19" aria-hidden="true" tabindex="-1"></a><span class="co">#给 SNP 自动生成唯一ID</span></span>
+<span id="cb6-20"><a href="#cb6-20" aria-hidden="true" tabindex="-1"></a><span class="ex">plink</span> <span class="dt">\</span></span>
+<span id="cb6-21"><a href="#cb6-21" aria-hidden="true" tabindex="-1"></a>  <span class="at">--bfile</span> 1kg_chr22_common <span class="dt">\</span></span>
+<span id="cb6-22"><a href="#cb6-22" aria-hidden="true" tabindex="-1"></a>  <span class="at">--set-missing-var-ids</span> @:# <span class="dt">\</span></span>
+<span id="cb6-23"><a href="#cb6-23" aria-hidden="true" tabindex="-1"></a>  <span class="at">--make-bed</span> <span class="dt">\</span></span>
+<span id="cb6-24"><a href="#cb6-24" aria-hidden="true" tabindex="-1"></a>  <span class="at">--out</span> 1kg_chr22_fixed</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <hr>
 </section>
 </section>
@@ -1450,7 +1463,9 @@ window.Quarto = {
 </section>
 <section id="综合实践ld-图谱分析完整流程" class="level1" data-number="26">
 <h1 data-number="26"><span class="header-section-number">26</span> 综合实践：LD 图谱分析完整流程</h1>
-<p>以下展示从 1000 Genomes chr22 数据出发、计算 LD 矩阵并可视化区块结构的端到端流程，作为本专题实践练习的参考模板。</p>
+<p>本节以 1000 Genomes Project 的第 22 号染色体数据为对象，演示从读取基因型文件、计算成对 <span class="math inline">\(r^2\)</span> 矩阵、绘制 LD 热图，到定量刻画 LD 随距离衰减的端到端分析流程。所用数据已在本专题前置 PLINK 步骤中下载并预处理，存储为 PLINK 二进制格式（<code>.bed/.bim/.fam</code>）；所用 R 包 <code>snpStats</code> 在 Bioconductor 中维护，其核心数据结构 <code>SnpMatrix</code> 以紧凑的 <code>raw</code> 类型存储基因型（每个基因型仅占 1 字节），使得在内存中保存数十万 SNP 的全样本基因型矩阵成为可能。</p>
+<section id="步骤一读取-plink-二进制文件" class="level2" data-number="26.1">
+<h2 data-number="26.1" class="anchored" data-anchor-id="步骤一读取-plink-二进制文件"><span class="header-section-number">26.1</span> 步骤一：读取 PLINK 二进制文件</h2>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb11"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="co"># R: full LD analysis pipeline on 1000 Genomes chr22 data</span></span>
 <span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a><span class="co"># Tools: snpStats, ggplot2</span></span>
 <span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a><span class="co"># Data: 1kg_chr22_common.bed/.bim/.fam (prepared via PLINK above)</span></span>
@@ -1460,67 +1475,127 @@ window.Quarto = {
 <span id="cb11-7"><a href="#cb11-7" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(data.table)</span>
 <span id="cb11-8"><a href="#cb11-8" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb11-9"><a href="#cb11-9" aria-hidden="true" tabindex="-1"></a><span class="co"># ---- 1. Read PLINK binary files ----</span></span>
-<span id="cb11-10"><a href="#cb11-10" aria-hidden="true" tabindex="-1"></a>plink_data <span class="ot">&lt;-</span> <span class="fu">read.plink</span>(<span class="st">"1kg_chr22_common"</span>)</span>
+<span id="cb11-10"><a href="#cb11-10" aria-hidden="true" tabindex="-1"></a>plink_data <span class="ot">&lt;-</span> <span class="fu">read.plink</span>(<span class="st">"1kg_chr22_fixed"</span>)</span>
 <span id="cb11-11"><a href="#cb11-11" aria-hidden="true" tabindex="-1"></a>geno    <span class="ot">&lt;-</span> plink_data<span class="sc">$</span>genotypes   <span class="co"># SnpMatrix object</span></span>
 <span id="cb11-12"><a href="#cb11-12" aria-hidden="true" tabindex="-1"></a>bim     <span class="ot">&lt;-</span> plink_data<span class="sc">$</span>map          <span class="co"># SNP annotation</span></span>
 <span id="cb11-13"><a href="#cb11-13" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb11-14"><a href="#cb11-14" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="fu">sprintf</span>(<span class="st">"Loaded: %d samples x %d SNPs</span><span class="sc">\n</span><span class="st">"</span>,</span>
-<span id="cb11-15"><a href="#cb11-15" aria-hidden="true" tabindex="-1"></a>            <span class="fu">nrow</span>(geno), <span class="fu">ncol</span>(geno)))</span>
-<span id="cb11-16"><a href="#cb11-16" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb11-17"><a href="#cb11-17" aria-hidden="true" tabindex="-1"></a><span class="co"># ---- 2. Select a 200-SNP region for LD visualization ----</span></span>
-<span id="cb11-18"><a href="#cb11-18" aria-hidden="true" tabindex="-1"></a>region_snps <span class="ot">&lt;-</span> bim<span class="sc">$</span>snp.name[bim<span class="sc">$</span>position <span class="sc">&gt;</span> <span class="fl">20e6</span> <span class="sc">&amp;</span> bim<span class="sc">$</span>position <span class="sc">&lt;</span> <span class="fl">20.5e6</span>]</span>
-<span id="cb11-19"><a href="#cb11-19" aria-hidden="true" tabindex="-1"></a>geno_region <span class="ot">&lt;-</span> geno[, <span class="fu">colnames</span>(geno) <span class="sc">%in%</span> region_snps]</span>
-<span id="cb11-20"><a href="#cb11-20" aria-hidden="true" tabindex="-1"></a>n_selected  <span class="ot">&lt;-</span> <span class="fu">ncol</span>(geno_region)</span>
-<span id="cb11-21"><a href="#cb11-21" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="fu">sprintf</span>(<span class="st">"Selected %d SNPs in chr22:20.0–20.5 Mb for LD heatmap</span><span class="sc">\n</span><span class="st">"</span>,</span>
-<span id="cb11-22"><a href="#cb11-22" aria-hidden="true" tabindex="-1"></a>            n_selected))</span>
-<span id="cb11-23"><a href="#cb11-23" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb11-24"><a href="#cb11-24" aria-hidden="true" tabindex="-1"></a><span class="co"># ---- 3. Compute pairwise LD (r2) using snpStats ----</span></span>
-<span id="cb11-25"><a href="#cb11-25" aria-hidden="true" tabindex="-1"></a>ld_result <span class="ot">&lt;-</span> <span class="fu">ld</span>(geno_region, <span class="at">stats =</span> <span class="st">"R.squared"</span>, <span class="at">depth =</span> n_selected <span class="sc">-</span> <span class="dv">1</span>)</span>
-<span id="cb11-26"><a href="#cb11-26" aria-hidden="true" tabindex="-1"></a>r2_matrix <span class="ot">&lt;-</span> <span class="fu">as.matrix</span>(ld_result)</span>
-<span id="cb11-27"><a href="#cb11-27" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb11-28"><a href="#cb11-28" aria-hidden="true" tabindex="-1"></a><span class="co"># Fill lower triangle (ld() returns upper triangle only)</span></span>
-<span id="cb11-29"><a href="#cb11-29" aria-hidden="true" tabindex="-1"></a>r2_full <span class="ot">&lt;-</span> r2_matrix</span>
-<span id="cb11-30"><a href="#cb11-30" aria-hidden="true" tabindex="-1"></a>r2_full[<span class="fu">lower.tri</span>(r2_full)] <span class="ot">&lt;-</span> <span class="fu">t</span>(r2_matrix)[<span class="fu">lower.tri</span>(r2_matrix)]</span>
-<span id="cb11-31"><a href="#cb11-31" aria-hidden="true" tabindex="-1"></a><span class="fu">diag</span>(r2_full) <span class="ot">&lt;-</span> <span class="dv">1</span></span>
-<span id="cb11-32"><a href="#cb11-32" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb11-33"><a href="#cb11-33" aria-hidden="true" tabindex="-1"></a><span class="co"># ---- 4. LD heatmap (melt to long format for ggplot2) ----</span></span>
-<span id="cb11-34"><a href="#cb11-34" aria-hidden="true" tabindex="-1"></a>r2_long <span class="ot">&lt;-</span> <span class="fu">as.data.table</span>(reshape2<span class="sc">::</span><span class="fu">melt</span>(r2_full,</span>
-<span id="cb11-35"><a href="#cb11-35" aria-hidden="true" tabindex="-1"></a>                                         <span class="at">varnames =</span> <span class="fu">c</span>(<span class="st">"SNP_A"</span>, <span class="st">"SNP_B"</span>),</span>
-<span id="cb11-36"><a href="#cb11-36" aria-hidden="true" tabindex="-1"></a>                                         <span class="at">value.name =</span> <span class="st">"r2"</span>))</span>
-<span id="cb11-37"><a href="#cb11-37" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb11-38"><a href="#cb11-38" aria-hidden="true" tabindex="-1"></a><span class="co"># Use SNP index for axis positioning</span></span>
-<span id="cb11-39"><a href="#cb11-39" aria-hidden="true" tabindex="-1"></a>r2_long[, idx_a <span class="sc">:</span><span class="er">=</span> <span class="fu">match</span>(SNP_A, <span class="fu">rownames</span>(r2_full))]</span>
-<span id="cb11-40"><a href="#cb11-40" aria-hidden="true" tabindex="-1"></a>r2_long[, idx_b <span class="sc">:</span><span class="er">=</span> <span class="fu">match</span>(SNP_B, <span class="fu">rownames</span>(r2_full))]</span>
-<span id="cb11-41"><a href="#cb11-41" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb11-42"><a href="#cb11-42" aria-hidden="true" tabindex="-1"></a><span class="fu">ggplot</span>(r2_long, <span class="fu">aes</span>(<span class="at">x =</span> idx_a, <span class="at">y =</span> idx_b, <span class="at">fill =</span> r2)) <span class="sc">+</span></span>
-<span id="cb11-43"><a href="#cb11-43" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_tile</span>() <span class="sc">+</span></span>
-<span id="cb11-44"><a href="#cb11-44" aria-hidden="true" tabindex="-1"></a>  <span class="fu">scale_fill_gradientn</span>(<span class="at">colors =</span> <span class="fu">c</span>(<span class="st">"white"</span>, <span class="st">"lightyellow"</span>, <span class="st">"orange"</span>, <span class="st">"firebrick"</span>),</span>
-<span id="cb11-45"><a href="#cb11-45" aria-hidden="true" tabindex="-1"></a>                        <span class="at">values =</span> <span class="fu">c</span>(<span class="dv">0</span>, <span class="fl">0.2</span>, <span class="fl">0.5</span>, <span class="dv">1</span>),</span>
-<span id="cb11-46"><a href="#cb11-46" aria-hidden="true" tabindex="-1"></a>                        <span class="at">na.value =</span> <span class="st">"white"</span>,</span>
-<span id="cb11-47"><a href="#cb11-47" aria-hidden="true" tabindex="-1"></a>                        <span class="at">name =</span> <span class="fu">expression</span>(r<span class="sc">^</span><span class="dv">2</span>)) <span class="sc">+</span></span>
-<span id="cb11-48"><a href="#cb11-48" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(<span class="at">title =</span> <span class="st">"LD Heatmap: Chr22:20.0–20.5 Mb (1000 Genomes, n=2504)"</span>,</span>
-<span id="cb11-49"><a href="#cb11-49" aria-hidden="true" tabindex="-1"></a>       <span class="at">x =</span> <span class="st">"SNP index"</span>, <span class="at">y =</span> <span class="st">"SNP index"</span>) <span class="sc">+</span></span>
-<span id="cb11-50"><a href="#cb11-50" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme_minimal</span>(<span class="at">base_size =</span> <span class="dv">12</span>) <span class="sc">+</span></span>
-<span id="cb11-51"><a href="#cb11-51" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme</span>(<span class="at">axis.text =</span> <span class="fu">element_blank</span>(),</span>
-<span id="cb11-52"><a href="#cb11-52" aria-hidden="true" tabindex="-1"></a>        <span class="at">axis.ticks =</span> <span class="fu">element_blank</span>(),</span>
-<span id="cb11-53"><a href="#cb11-53" aria-hidden="true" tabindex="-1"></a>        <span class="at">panel.grid =</span> <span class="fu">element_blank</span>())</span>
-<span id="cb11-54"><a href="#cb11-54" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb11-55"><a href="#cb11-55" aria-hidden="true" tabindex="-1"></a><span class="co"># ---- 5. LD decay within the selected region ----</span></span>
-<span id="cb11-56"><a href="#cb11-56" aria-hidden="true" tabindex="-1"></a>positions <span class="ot">&lt;-</span> bim<span class="sc">$</span>position[bim<span class="sc">$</span>snp.name <span class="sc">%in%</span> region_snps]</span>
-<span id="cb11-57"><a href="#cb11-57" aria-hidden="true" tabindex="-1"></a>r2_long[, dist_kb <span class="sc">:</span><span class="er">=</span> <span class="fu">abs</span>(positions[idx_a] <span class="sc">-</span> positions[idx_b]) <span class="sc">/</span> <span class="dv">1000</span>]</span>
-<span id="cb11-58"><a href="#cb11-58" aria-hidden="true" tabindex="-1"></a>r2_long[, dist_bin <span class="sc">:</span><span class="er">=</span> <span class="fu">cut</span>(dist_kb,</span>
-<span id="cb11-59"><a href="#cb11-59" aria-hidden="true" tabindex="-1"></a>                           <span class="at">breaks =</span> <span class="fu">c</span>(<span class="dv">0</span>, <span class="dv">5</span>, <span class="dv">10</span>, <span class="dv">20</span>, <span class="dv">50</span>, <span class="dv">100</span>, <span class="dv">200</span>, <span class="dv">500</span>),</span>
-<span id="cb11-60"><a href="#cb11-60" aria-hidden="true" tabindex="-1"></a>                           <span class="at">labels =</span> <span class="fu">c</span>(<span class="st">"0-5"</span>, <span class="st">"5-10"</span>, <span class="st">"10-20"</span>,</span>
-<span id="cb11-61"><a href="#cb11-61" aria-hidden="true" tabindex="-1"></a>                                      <span class="st">"20-50"</span>, <span class="st">"50-100"</span>, <span class="st">"100-200"</span>, <span class="st">"200-500"</span>))]</span>
-<span id="cb11-62"><a href="#cb11-62" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb11-63"><a href="#cb11-63" aria-hidden="true" tabindex="-1"></a>decay_summary <span class="ot">&lt;-</span> r2_long[dist_kb <span class="sc">&gt;</span> <span class="dv">0</span>,</span>
-<span id="cb11-64"><a href="#cb11-64" aria-hidden="true" tabindex="-1"></a>                           .(<span class="at">mean_r2 =</span> <span class="fu">mean</span>(r2, <span class="at">na.rm =</span> <span class="cn">TRUE</span>)),</span>
-<span id="cb11-65"><a href="#cb11-65" aria-hidden="true" tabindex="-1"></a>                           by <span class="ot">=</span> dist_bin]</span>
-<span id="cb11-66"><a href="#cb11-66" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">"</span><span class="sc">\n</span><span class="st">=== LD Decay within chr22:20-20.5 Mb ===</span><span class="sc">\n</span><span class="st">"</span>)</span>
-<span id="cb11-67"><a href="#cb11-67" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(decay_summary)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<span id="cb11-15"><a href="#cb11-15" aria-hidden="true" tabindex="-1"></a>            <span class="fu">nrow</span>(geno), <span class="fu">ncol</span>(geno)))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><code>read.plink()</code> 同时读取三个文件：<code>.bed</code> 中存储压缩基因型，<code>.bim</code> 中存储 SNP 注释（染色体、位置、等位基因），<code>.fam</code> 中存储样本信息。函数返回一个列表，<code>$genotypes</code> 为 <code>SnpMatrix</code> 对象（行为样本，列为 SNP），<code>$map</code> 为对应的 SNP 注释数据框。<code>cat(sprintf(...))</code> 打印维度以验证文件读取正确：1000 Genomes 第三阶段全球面板包含 2504 个样本，chr22 的常见变异（MAF &gt; 1%）经 PLINK QC 后约有 4 万个 SNP。若维度与预期不符，应检查 PLINK 预处理步骤中的过滤参数是否正确应用。</p>
+</section>
+<section id="步骤二提取目标区域" class="level2" data-number="26.2">
+<h2 data-number="26.2" class="anchored" data-anchor-id="步骤二提取目标区域"><span class="header-section-number">26.2</span> 步骤二：提取目标区域</h2>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb12"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="co"># ---- 2. Select a 200-SNP region for LD visualization ----</span></span>
+<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a>region_snps <span class="ot">&lt;-</span> bim<span class="sc">$</span>snp.name[bim<span class="sc">$</span>position <span class="sc">&gt;</span> <span class="fl">20e6</span> <span class="sc">&amp;</span> bim<span class="sc">$</span>position <span class="sc">&lt;</span> <span class="fl">20.5e6</span>]</span>
+<span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a>geno_region <span class="ot">&lt;-</span> geno[, <span class="fu">colnames</span>(geno) <span class="sc">%in%</span> region_snps]</span>
+<span id="cb12-4"><a href="#cb12-4" aria-hidden="true" tabindex="-1"></a>n_selected  <span class="ot">&lt;-</span> <span class="fu">ncol</span>(geno_region)</span>
+<span id="cb12-5"><a href="#cb12-5" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="fu">sprintf</span>(<span class="st">"Selected %d SNPs in chr22:20.0–20.5 Mb for LD heatmap</span><span class="sc">\n</span><span class="st">"</span>,</span>
+<span id="cb12-6"><a href="#cb12-6" aria-hidden="true" tabindex="-1"></a>            n_selected))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>LD 热图在全染色体尺度（数万个 SNP）上绘制时，矩阵规模为 <span class="math inline">\(N^2\)</span> 级（<span class="math inline">\(4\text{万}^2 = 16\)</span> 亿个格子），既超出内存限制，也失去可读性。因此，实践中通常选取一个 0.5–1 Mb 的候选区域（本例为 chr22:20.0–20.5 Mb）进行精细可视化。该区段在 1000 Genomes 欧洲人群中平均 LD 衰减距离约 100 kb，0.5 Mb 窗口足以同时展示短程高 LD 区块和长程 LD 的衰减趋势。</p>
+<p><code>bim$position &gt; 20e6 &amp; bim$position &lt; 20.5e6</code> 通过基因组坐标筛选 SNP 名称，再以列名匹配的方式对 <code>SnpMatrix</code> 做列子集，得到区域基因型矩阵 <code>geno_region</code>。</p>
+<div class="tip">
+<p><strong>区域选择的实践考量</strong></p>
+<p>选取目标区域时，优先选择在文献中已有已知关联信号或生物学功能位点的区段（如 chr22 上的 <em>MYH9</em> 基因座），这样绘制的 LD 热图能够直观看到真实关联峰的 LD 背景，而不仅仅是随机背景 LD 的统计抽样。可用 UCSC Genome Browser 或 OMIM 预先了解目标区域的基因组特征。</p>
+</div>
+</section>
+<section id="步骤三计算成对-r2-矩阵" class="level2" data-number="26.3">
+<h2 data-number="26.3" class="anchored" data-anchor-id="步骤三计算成对-r2-矩阵"><span class="header-section-number">26.3</span> 步骤三：计算成对 <span class="math inline">\(r^2\)</span> 矩阵</h2>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb13"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a><span class="co"># ---- 3. Compute pairwise LD (r2) using snpStats ----</span></span>
+<span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a>ld_result <span class="ot">&lt;-</span> <span class="fu">ld</span>(geno_region, <span class="at">stats =</span> <span class="st">"R.squared"</span>, <span class="at">depth =</span> n_selected <span class="sc">-</span> <span class="dv">1</span>)</span>
+<span id="cb13-3"><a href="#cb13-3" aria-hidden="true" tabindex="-1"></a>r2_matrix <span class="ot">&lt;-</span> <span class="fu">as.matrix</span>(ld_result)</span>
+<span id="cb13-4"><a href="#cb13-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb13-5"><a href="#cb13-5" aria-hidden="true" tabindex="-1"></a><span class="co"># Fill lower triangle (ld() returns upper triangle only)</span></span>
+<span id="cb13-6"><a href="#cb13-6" aria-hidden="true" tabindex="-1"></a>r2_full <span class="ot">&lt;-</span> r2_matrix</span>
+<span id="cb13-7"><a href="#cb13-7" aria-hidden="true" tabindex="-1"></a>r2_full[<span class="fu">lower.tri</span>(r2_full)] <span class="ot">&lt;-</span> <span class="fu">t</span>(r2_matrix)[<span class="fu">lower.tri</span>(r2_matrix)]</span>
+<span id="cb13-8"><a href="#cb13-8" aria-hidden="true" tabindex="-1"></a><span class="fu">diag</span>(r2_full) <span class="ot">&lt;-</span> <span class="dv">1</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><code>snpStats::ld()</code> 是计算成对 LD 的核心函数。参数说明：</p>
+<ul>
+<li><code>stats = "R.squared"</code>：计算 <span class="math inline">\(r^2\)</span>（线性相关系数的平方），而非 <span class="math inline">\(D'\)</span>。<span class="math inline">\(r^2\)</span> 与 GWAS 功效传递比例存在直接对应关系（代理 SNP 对目标位点的功效传递效率约为 <span class="math inline">\(r^2\)</span>），是功效分析和标签 SNP 选取的标准度量。</li>
+<li><code>depth = n_selected - 1</code>：计算每个 SNP 与所有其他 SNP 的 LD，即全成对矩阵（<code>depth</code> 控制计算半带宽，设为最大值时等于全矩阵）。对于较大的窗口（&gt; 1000 个 SNP），可适当降低 <code>depth</code>（如 500）以节省计算时间，牺牲远距离 SNP 对的 <span class="math inline">\(r^2\)</span> 信息。</li>
+</ul>
+<p><code>ld()</code> 出于存储效率只返回<strong>上三角矩阵</strong>（即 SNP_A 索引 &lt; SNP_B 索引的 <span class="math inline">\(r^2\)</span> 值），对角线为 <code>NA</code>。后续三行代码将上三角对称填充到下三角，并将对角线设为 1（每个 SNP 与自身完全相关），使矩阵成为完整的对称正定矩阵，方便后续热图绘制。</p>
+<div class="note">
+<p><strong>计算复杂度与内存</strong></p>
+<p><span class="math inline">\(N\)</span> 个 SNP 的全成对 <span class="math inline">\(r^2\)</span> 矩阵有 <span class="math inline">\(N(N-1)/2\)</span> 个元素。本例 <span class="math inline">\(N \approx 200\)</span>，矩阵约 2 万个元素，计算和存储均无压力。若 <span class="math inline">\(N = 10000\)</span>（约 5 kb 间距覆盖 50 Mb 区域），则矩阵含 5000 万个 <code>double</code> 值，占用约 400 MB 内存，此时应考虑分块计算或仅保存 <span class="math inline">\(r^2 &gt; 0.1\)</span> 的稀疏表示。</p>
+</div>
+</section>
+<section id="步骤四ld-热图可视化" class="level2" data-number="26.4">
+<h2 data-number="26.4" class="anchored" data-anchor-id="步骤四ld-热图可视化"><span class="header-section-number">26.4</span> 步骤四：LD 热图可视化</h2>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb14"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a><span class="co"># ---- 4. LD heatmap (melt to long format for ggplot2) ----</span></span>
+<span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a>r2_long <span class="ot">&lt;-</span> <span class="fu">as.data.table</span>(reshape2<span class="sc">::</span><span class="fu">melt</span>(r2_full,</span>
+<span id="cb14-3"><a href="#cb14-3" aria-hidden="true" tabindex="-1"></a>                                         <span class="at">varnames =</span> <span class="fu">c</span>(<span class="st">"SNP_A"</span>, <span class="st">"SNP_B"</span>),</span>
+<span id="cb14-4"><a href="#cb14-4" aria-hidden="true" tabindex="-1"></a>                                         <span class="at">value.name =</span> <span class="st">"r2"</span>))</span>
+<span id="cb14-5"><a href="#cb14-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb14-6"><a href="#cb14-6" aria-hidden="true" tabindex="-1"></a><span class="co"># Use SNP index for axis positioning</span></span>
+<span id="cb14-7"><a href="#cb14-7" aria-hidden="true" tabindex="-1"></a>r2_long[, idx_a <span class="sc">:</span><span class="er">=</span> <span class="fu">match</span>(SNP_A, <span class="fu">rownames</span>(r2_full))]</span>
+<span id="cb14-8"><a href="#cb14-8" aria-hidden="true" tabindex="-1"></a>r2_long[, idx_b <span class="sc">:</span><span class="er">=</span> <span class="fu">match</span>(SNP_B, <span class="fu">rownames</span>(r2_full))]</span>
+<span id="cb14-9"><a href="#cb14-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb14-10"><a href="#cb14-10" aria-hidden="true" tabindex="-1"></a><span class="fu">ggplot</span>(r2_long, <span class="fu">aes</span>(<span class="at">x =</span> idx_a, <span class="at">y =</span> idx_b, <span class="at">fill =</span> r2)) <span class="sc">+</span></span>
+<span id="cb14-11"><a href="#cb14-11" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_tile</span>() <span class="sc">+</span></span>
+<span id="cb14-12"><a href="#cb14-12" aria-hidden="true" tabindex="-1"></a>  <span class="fu">scale_fill_gradientn</span>(<span class="at">colors =</span> <span class="fu">c</span>(<span class="st">"white"</span>, <span class="st">"lightyellow"</span>, <span class="st">"orange"</span>, <span class="st">"firebrick"</span>),</span>
+<span id="cb14-13"><a href="#cb14-13" aria-hidden="true" tabindex="-1"></a>                        <span class="at">values =</span> <span class="fu">c</span>(<span class="dv">0</span>, <span class="fl">0.2</span>, <span class="fl">0.5</span>, <span class="dv">1</span>),</span>
+<span id="cb14-14"><a href="#cb14-14" aria-hidden="true" tabindex="-1"></a>                        <span class="at">na.value =</span> <span class="st">"white"</span>,</span>
+<span id="cb14-15"><a href="#cb14-15" aria-hidden="true" tabindex="-1"></a>                        <span class="at">name =</span> <span class="fu">expression</span>(r<span class="sc">^</span><span class="dv">2</span>)) <span class="sc">+</span></span>
+<span id="cb14-16"><a href="#cb14-16" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(<span class="at">title =</span> <span class="st">"LD Heatmap: Chr22:20.0–20.5 Mb (1000 Genomes, n=2504)"</span>,</span>
+<span id="cb14-17"><a href="#cb14-17" aria-hidden="true" tabindex="-1"></a>       <span class="at">x =</span> <span class="st">"SNP index"</span>, <span class="at">y =</span> <span class="st">"SNP index"</span>) <span class="sc">+</span></span>
+<span id="cb14-18"><a href="#cb14-18" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme_minimal</span>(<span class="at">base_size =</span> <span class="dv">12</span>) <span class="sc">+</span></span>
+<span id="cb14-19"><a href="#cb14-19" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme</span>(<span class="at">axis.text =</span> <span class="fu">element_blank</span>(),</span>
+<span id="cb14-20"><a href="#cb14-20" aria-hidden="true" tabindex="-1"></a>        <span class="at">axis.ticks =</span> <span class="fu">element_blank</span>(),</span>
+<span id="cb14-21"><a href="#cb14-21" aria-hidden="true" tabindex="-1"></a>        <span class="at">panel.grid =</span> <span class="fu">element_blank</span>())</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><code>reshape2::melt()</code> 将宽格式的 <span class="math inline">\(N \times N\)</span> 矩阵转换为长格式（每行一个 SNP 对及其 <span class="math inline">\(r^2\)</span> 值），这是 <code>ggplot2</code> 所需的”整洁数据（tidy data）“格式。随后用 <code>match()</code> 将 SNP 名称转换为整数索引，作为热图的横纵坐标轴。</p>
+<p>颜色方案的设计反映了 LD 强度的生物学分级： - 白色（<span class="math inline">\(r^2 &lt; 0.2\)</span>）：弱 LD，两位点近似独立，代理效率低； - 浅黄至橙色（<span class="math inline">\(0.2 \leq r^2 &lt; 0.5\)</span>）：中等 LD，标签 SNP 可传递部分关联信号； - 深红色（<span class="math inline">\(r^2 \geq 0.8\)</span>）：强 LD，标准标签 SNP 阈值，代理效率 <span class="math inline">\(\geq 80\%\)</span>。</p>
+<p>在欧洲人群 chr22 数据中，正确生成的热图应呈现<strong>沿对角线的三角形红色斑块</strong>，每个斑块对应一个 LD 区块：区块内部 SNP 两两之间 <span class="math inline">\(r^2\)</span> 接近 1（深红），区块之间 <span class="math inline">\(r^2\)</span> 骤降至接近 0（白色）。斑块之间的白色间隔对应历史重组热点——这些位置正是 LD 区块边界的物理标记。</p>
+<p>{{Wiki:Linkage_disequilibrium}}</p>
+</section>
+<section id="步骤五ld-衰减分析" class="level2" data-number="26.5">
+<h2 data-number="26.5" class="anchored" data-anchor-id="步骤五ld-衰减分析"><span class="header-section-number">26.5</span> 步骤五：LD 衰减分析</h2>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb15"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a><span class="co"># ---- 5. LD decay within the selected region ----</span></span>
+<span id="cb15-2"><a href="#cb15-2" aria-hidden="true" tabindex="-1"></a>positions <span class="ot">&lt;-</span> bim<span class="sc">$</span>position[bim<span class="sc">$</span>snp.name <span class="sc">%in%</span> region_snps]</span>
+<span id="cb15-3"><a href="#cb15-3" aria-hidden="true" tabindex="-1"></a>r2_long[, dist_kb <span class="sc">:</span><span class="er">=</span> <span class="fu">abs</span>(positions[idx_a] <span class="sc">-</span> positions[idx_b]) <span class="sc">/</span> <span class="dv">1000</span>]</span>
+<span id="cb15-4"><a href="#cb15-4" aria-hidden="true" tabindex="-1"></a>r2_long[, dist_bin <span class="sc">:</span><span class="er">=</span> <span class="fu">cut</span>(dist_kb,</span>
+<span id="cb15-5"><a href="#cb15-5" aria-hidden="true" tabindex="-1"></a>                           <span class="at">breaks =</span> <span class="fu">c</span>(<span class="dv">0</span>, <span class="dv">5</span>, <span class="dv">10</span>, <span class="dv">20</span>, <span class="dv">50</span>, <span class="dv">100</span>, <span class="dv">200</span>, <span class="dv">500</span>),</span>
+<span id="cb15-6"><a href="#cb15-6" aria-hidden="true" tabindex="-1"></a>                           <span class="at">labels =</span> <span class="fu">c</span>(<span class="st">"0-5"</span>, <span class="st">"5-10"</span>, <span class="st">"10-20"</span>,</span>
+<span id="cb15-7"><a href="#cb15-7" aria-hidden="true" tabindex="-1"></a>                                      <span class="st">"20-50"</span>, <span class="st">"50-100"</span>, <span class="st">"100-200"</span>, <span class="st">"200-500"</span>))]</span>
+<span id="cb15-8"><a href="#cb15-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-9"><a href="#cb15-9" aria-hidden="true" tabindex="-1"></a>decay_summary <span class="ot">&lt;-</span> r2_long[dist_kb <span class="sc">&gt;</span> <span class="dv">0</span>,</span>
+<span id="cb15-10"><a href="#cb15-10" aria-hidden="true" tabindex="-1"></a>                           .(<span class="at">mean_r2 =</span> <span class="fu">mean</span>(r2, <span class="at">na.rm =</span> <span class="cn">TRUE</span>)),</span>
+<span id="cb15-11"><a href="#cb15-11" aria-hidden="true" tabindex="-1"></a>                           by <span class="ot">=</span> dist_bin]</span>
+<span id="cb15-12"><a href="#cb15-12" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">"</span><span class="sc">\n</span><span class="st">=== LD Decay within chr22:20-20.5 Mb ===</span><span class="sc">\n</span><span class="st">"</span>)</span>
+<span id="cb15-13"><a href="#cb15-13" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(decay_summary)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>LD 衰减分析将每对 SNP 的 <span class="math inline">\(r^2\)</span> 按物理距离分组，计算各距离区间内 <span class="math inline">\(r^2\)</span> 的均值，从而得到 <strong>LD 衰减曲线（LD decay curve）</strong> 的离散近似。具体步骤如下：</p>
+<ol type="1">
+<li><code>positions</code> 从 <code>.bim</code> 文件中提取目标区域各 SNP 的物理坐标（单位：碱基对）。</li>
+<li><code>dist_kb</code> 计算每对 SNP 的物理间距（单位：kb），排除 <code>dist_kb == 0</code>（SNP 与自身的距离）。</li>
+<li><code>cut()</code> 按非等宽的距离区间分箱：短距离（0–20 kb）区间较密，因为这是 LD 变化最剧烈的区段，需要更精细的分辨率；长距离（50–500 kb）区间较宽，因为此时 <span class="math inline">\(r^2\)</span> 已趋于平稳。</li>
+<li><code>data.table</code> 的 <code>by = dist_bin</code> 分组计算，高效地在每个距离区间内取均值。</li>
+</ol>
+<p>在 1000 Genomes 欧洲人群（CEU）中，预期的衰减模式为：0–5 kb 区间均值 <span class="math inline">\(r^2 \approx 0.6\)</span>–0.8，10–20 kb 区间降至 <span class="math inline">\(\approx 0.3\)</span>–0.5，100–200 kb 区间降至 <span class="math inline">\(\approx 0.05\)</span>–0.1，并在更长距离趋于背景 LD 水平（<span class="math inline">\(\approx 0.02\)</span>–0.05，主要来自低频 SNP 对的随机 LD）。若衰减速率明显偏快（如欧洲人群中 20 kb 处均值 <span class="math inline">\(r^2 &lt; 0.1\)</span>），可能提示 QC 过滤过于严格导致 SNP 密度不足；若衰减速率明显偏慢（100 kb 处均值 <span class="math inline">\(r^2 &gt; 0.3\)</span>），则需检查样本是否存在群体分层或亲缘关系未被过滤，这两者均会人为地维持远距离 LD。</p>
+<div class="info">
+<p><strong>黄金法则：LD 衰减曲线的群体间比较价值</strong></p>
+<p>对多个参考群体分别运行上述流程，将衰减曲线叠加比较，可以直观验证群体遗传学的核心结论：非洲人群（YRI）有效群体大（<span class="math inline">\(N_e \approx 10{,}000\)</span>–15,000），LD 在 10–20 kb 就衰减至背景水平；欧洲/亚洲人群（<span class="math inline">\(N_e \approx 2{,}000\)</span>–5,000）LD 可维持至 50–200 kb；而高度驯化的作物品系或近交系（<span class="math inline">\(N_e \approx 100\)</span>–500）LD 可延伸至 Mb 尺度。这一对比是理解跨群体 GWAS 芯片设计差异的直观基础。</p>
+</div>
+</section>
+<section id="完整流程总结" class="level2" data-number="26.6">
+<h2 data-number="26.6" class="anchored" data-anchor-id="完整流程总结"><span class="header-section-number">26.6</span> 完整流程总结</h2>
+<p>上述五步构成了 LD 图谱分析的标准操作路径，各步骤的输入-输出关系如下：</p>
+<pre><code>PLINK 二进制文件 (.bed/.bim/.fam)
+        │
+        ▼  read.plink()
+  SnpMatrix 对象 + SNP 注释表
+        │
+        ▼  坐标筛选
+  目标区域基因型子矩阵
+        │
+        ▼  snpStats::ld()
+  上三角 r² 矩阵  →  对称填充  →  完整 N×N r² 矩阵
+        │                                │
+        ▼  melt() + ggplot2              ▼  按距离分箱 + 均值
+    LD 热图（区块结构）            LD 衰减表（定量描述）</code></pre>
+<p>在实际 GWAS 研究中，上述分析通常在以下两个场景中重复使用：第一，研究开始前的数据质控阶段，通过 LD 衰减曲线验证样本群体来源与预期一致；第二，关联峰精细分析阶段，对显著信号区间绘制局部 LD 热图，判断哪些 SNP 处于同一 LD 区块中（共同代表同一因果变异），哪些 SNP 已跨越区块边界（需单独检验）。</p>
 <hr>
-<section id="课后自测-post-lesson-quiz" class="level2" data-number="26.1">
-<h2 data-number="26.1" class="anchored" data-anchor-id="课后自测-post-lesson-quiz"><span class="header-section-number">26.1</span> 课后自测 (Post-Lesson Quiz)</h2>
+</section>
+<section id="课后自测-post-lesson-quiz" class="level2" data-number="26.7">
+<h2 data-number="26.7" class="anchored" data-anchor-id="课后自测-post-lesson-quiz"><span class="header-section-number">26.7</span> 课后自测 (Post-Lesson Quiz)</h2>
 <ol type="1">
 <li><p>在一项针对欧洲人群的 GWAS 研究中，研究者使用了 Illumina OmniExpress 芯片（约 700k SNP），并在分析前执行了基因型插补（参考面板：HRC，约 4000 万 SNP）。(a) 插补后，可用于关联分析的 SNP 数量从 700k 扩大到约 1500 万。这一扩增的技术前提是什么？若改在西非人群中执行同样的插补流程，预期插补质量会如何变化？(b) 某位点的插补 <span class="math inline">\(R^2 = 0.45\)</span>，MAF = 0.03。研究者应如何处理这个位点？</p></li>
 <li><p>连锁不平衡的两个常用度量指标 <span class="math inline">\(r^2\)</span> 和 <span class="math inline">\(D'\)</span> 各有侧重。请从定义出发，解释为什么 <span class="math inline">\(D'\)</span> 在小样本时会系统性地偏高，而 <span class="math inline">\(r^2\)</span> 则更适合作为 GWAS 功效分析中的 LD 度量。两者各在什么分析场景中是更合适的选择？</p></li>
