@@ -3061,7 +3061,7 @@
     "href": "genomics_variant_lesson5.html#动态性状的-gwas功能作图方法",
     "title": "19  精细定位、功能注释、因果推断与更多",
     "section": "20.9 动态性状的 GWAS：功能作图方法",
-    "text": "20.9 动态性状的 GWAS：功能作图方法\n{{Wiki:Quantitative_trait_locus}}\n\n20.9.1 纵向表型的映射挑战\n标准 GWAS 以单时间点表型（如某次测量的身高、血压值）为分析对象，将其视为固定标量与基因型关联。然而，许多生物学性状天然具有时间动态性（time-varying nature）：生长速率、药物代谢曲线、疾病进展轨迹、季节性表达波动……这些性状的生物学核心不在于某一时刻的表型值，而在于整条动态轨迹的遗传控制机制。对这类性状逐时间点独立做 GWAS 有两大缺陷：其一，大量低效的重复检验造成严重的多重检验负担；其二，完全丢失了时间点之间的生物学依赖结构，等于抛弃了最具信息量的动态信息。\n功能作图（Functional Mapping，FM） 正是为解决上述问题而提出的统计框架。其核心思想是：将生物数学模型（描述性状动态规律的参数方程）直接嵌入 QTL/GWAS 关联分析的似然函数，用数量性状的发育参数而非原始表型值作为遗传效应的载体。这一框架由邬荣领（Rongling Wu）、马长兴（Changxing Ma）和 George Casella 于 2002 年在 Genetics 上正式提出，随后在 Nature Reviews Genetics（2006）上系统综述，发展为功能基因组学中动态性状遗传解析的基础理论之一。\n\n\n20.9.2 功能作图的数学框架\n设 \\(n\\) 个个体在 \\(T\\) 个时间点 \\(t_1, t_2, \\ldots, t_T\\) 上各测量一次表型。个体 \\(i\\) 的观测向量为 \\(\\mathbf{y}_i = (y_{i1}, y_{i2}, \\ldots, y_{iT})^\\top\\)。在 QTL/SNP 关联分析框架下，将个体按基因型 \\(g \\in \\{AA, Aa, aa\\}\\)（加性模型下简化为 0/1/2）分组，每组的期望轨迹由参数化曲线描述：\n\\[E[y_{it} \\mid g_i = g] = f(t;\\, \\boldsymbol{\\theta}_g)\\]\n其中 \\(\\boldsymbol{\\theta}_g\\) 是第 \\(g\\) 组基因型的曲线参数向量（如 Logistic 模型的渐近值 \\(a\\)、增长率 \\(r\\)、拐点 \\(t_0\\)），不同基因型之间曲线参数的差异即为 QTL 效应。\n均值模型——三参数 Logistic 生长曲线：\n\\[f(t;\\, a, r, t_0) = \\frac{a}{1 + e^{-r(t - t_0)}}\\]\n\n\\(a\\)：渐近值（最终体量上限）；\n\\(r\\)：增长率（曲线陡峭程度）；\n\\(t_0\\)：拐点时刻（增长速率最大处）。\n\n在加性模型下，两个纯合基因型（\\(g = 0\\) 和 \\(g = 2\\)）的参数向量 \\(\\boldsymbol{\\theta}_0 = (a_0, r_0, t_{0,0})\\) 与 \\(\\boldsymbol{\\theta}_2 = (a_2, r_2, t_{0,2})\\) 直接反映等位基因替换对生长轨迹各维度的加性效应。\n协方差结构——结构化时间相关：\n纵向测量之间存在时间自相关，不满足独立性假设。功能作图采用AR(1) 自回归结构对残差协方差建模：\n\\[\\Sigma_{jk} = \\sigma^2 \\rho^{|t_j - t_k|}\\]\n其中 \\(\\sigma^2\\) 为残差方差，\\(\\rho\\) 为相邻时间点间的自相关系数（\\(0 &lt; \\rho &lt; 1\\)）。AR(1) 结构的闭合形式逆矩阵和行列式使得计算复杂度从 \\(O(T^3)\\) 降至 \\(O(T)\\)，是功能作图计算可行的关键技巧。\n混合模型似然函数：\n\\[\\ln L(\\boldsymbol{\\Theta}) = \\sum_{i=1}^{n} \\ln \\left[\\sum_{g=0}^{2} p_g \\cdot \\phi(\\mathbf{y}_i;\\, \\boldsymbol{\\mu}_g,\\, \\boldsymbol{\\Sigma})\\right]\\]\n其中 \\(p_g\\) 为各基因型频率（由 Hardy-Weinberg 平衡和等位基因频率确定），\\(\\phi(\\cdot;\\, \\boldsymbol{\\mu}_g, \\boldsymbol{\\Sigma})\\) 为多元正态密度函数，均值向量 \\(\\boldsymbol{\\mu}_g = (f(t_1;\\boldsymbol{\\theta}_g), \\ldots, f(t_T;\\boldsymbol{\\theta}_g))^\\top\\)。通过 EM 算法迭代估计 \\(\\boldsymbol{\\Theta} = \\{\\boldsymbol{\\theta}_0, \\boldsymbol{\\theta}_2, \\sigma^2, \\rho\\}\\)，计算似然比统计量（LRT）检验 \\(H_0: \\boldsymbol{\\theta}_0 = \\boldsymbol{\\theta}_2\\)（无 QTL 效应）。\n\n参数的生物学可解释性是功能作图的核心优势\n传统多时间点 GWAS 报告的是”在时间点 \\(t_k\\) 处，等位基因 A 将表型平均提升 \\(\\beta_k\\) 个单位”——这些 \\(\\beta_k\\) 是统计描述，缺乏生物学含义的整合。功能作图报告的是”等位基因 A 将渐近体量 \\(a\\) 提升 \\(\\Delta a\\)，同时不影响生长速率 \\(r\\)“——每个参数对应一个具有生物学意义的发育维度，检验效力也因参数聚合了整条曲线信息而显著高于逐点检验。\n\n\n\n20.9.3 正交 Legendre 多项式：非参数化扩展\n当研究者不确定数据适合哪种生物数学曲线时，可改用正交 Legendre 多项式（Legendre Orthogonal Polynomials，LOP） 作为均值函数的非参数化基底：\n\\[f(t;\\, \\boldsymbol{\\phi}) = \\sum_{k=0}^{K} \\phi_k P_k(\\tilde{t})\\]\n其中 \\(P_k(\\tilde{t})\\) 为 \\(k\\) 阶 Legendre 多项式（\\(\\tilde{t} \\in [-1, 1]\\) 为归一化时间），\\(\\phi_k\\) 为各基底的展开系数。阶数 \\(K\\) 通过 AIC/BIC 模型选择确定（通常 \\(K = 3\\)–\\(5\\) 即可捕捉主要动态特征）。不同基因型的 LOP 系数向量 \\(\\boldsymbol{\\phi}_g\\) 之差即为遗传效应的非参数估计。Legendre 多项式基底因正交性使设计矩阵数值稳定，且可通过 \\(R\\) 的 poly() 函数直接生成。\n\n\n20.9.4 R 模拟实现\n以下代码从零开始模拟一个功能作图场景：100 个个体在 10 个时间点上的纵向生长数据，含一个影响 Logistic 增长曲线参数的 QTL，演示模型拟合与基因型轨迹差异可视化。\n# Functional mapping simulation and fitting\n# Simulates longitudinal growth data with a QTL affecting curve parameters\nset.seed(2024)\nlibrary(ggplot2)\n\n# --- 1. Parameters ---\nn        &lt;- 150          # sample size\nt_obs    &lt;- seq(1, 10)   # 10 time points\nT        &lt;- length(t_obs)\nmaf      &lt;- 0.35         # minor allele frequency of QTL\n\n# Logistic growth: f(t; a, r, t0) = a / (1 + exp(-r*(t - t0)))\nlogistic_growth &lt;- function(t, a, r, t0) a / (1 + exp(-r * (t - t0)))\n\n# Genotype-specific curve parameters (additive model)\n# Genotype AA (g=0): slower, lower asymptote\n# Genotype Aa (g=1): intermediate (midpoint)\n# Genotype aa (g=2): faster, higher asymptote\ntheta &lt;- list(\n  \"0\" = c(a = 8.0, r = 0.5, t0 = 5.0),   # AA\n  \"1\" = c(a = 9.5, r = 0.7, t0 = 4.5),   # Aa\n  \"2\" = c(a = 11.0, r = 0.9, t0 = 4.0)   # aa\n)\n\n# --- 2. Simulate genotypes under HWE ---\np    &lt;- maf\nq    &lt;- 1 - p\nfreq &lt;- c(q^2, 2*p*q, p^2)   # P(AA), P(Aa), P(aa)\ngeno &lt;- sample(0:2, n, replace = TRUE, prob = freq)\n\n# --- 3. AR(1) covariance matrix ---\nrho   &lt;- 0.75\nsigma &lt;- 1.2\nar1_cov &lt;- function(T, sigma, rho) {\n  Sigma &lt;- matrix(0, T, T)\n  for (i in seq_len(T))\n    for (j in seq_len(T))\n      Sigma[i, j] &lt;- sigma^2 * rho^abs(i - j)\n  Sigma\n}\nSigma &lt;- ar1_cov(T, sigma, rho)\nL     &lt;- t(chol(Sigma))   # Cholesky for simulation\n\n# --- 4. Simulate phenotype trajectories ---\nsim_data &lt;- lapply(seq_len(n), function(i) {\n  g  &lt;- geno[i]\n  mu &lt;- logistic_growth(t_obs,\n                        a  = theta[[as.character(g)]][\"a\"],\n                        r  = theta[[as.character(g)]][\"r\"],\n                        t0 = theta[[as.character(g)]][\"t0\"])\n  y  &lt;- mu + as.vector(L %*% rnorm(T))\n  data.frame(id = i, genotype = g, time = t_obs, y = y)\n})\ndat &lt;- do.call(rbind, sim_data)\n\n# --- 5. Visualize observed trajectories by genotype ---\ngeno_labels &lt;- c(\"0\" = \"AA (g=0)\", \"1\" = \"Aa (g=1)\", \"2\" = \"aa (g=2)\")\ndat$geno_label &lt;- factor(geno_labels[as.character(dat$genotype)],\n                          levels = geno_labels)\n\n# Mean trajectory per genotype\nmean_traj &lt;- aggregate(y ~ time + geno_label, dat, mean)\n\nggplot(dat, aes(x = time, y = y, group = id, color = geno_label)) +\n  geom_line(alpha = 0.15, linewidth = 0.3) +\n  geom_line(data = mean_traj,\n            aes(x = time, y = y, group = geno_label, color = geno_label),\n            linewidth = 1.4, inherit.aes = FALSE) +\n  scale_color_manual(values = c(\"steelblue\", \"darkorange\", \"firebrick\")) +\n  labs(x = \"Time\", y = \"Phenotype\",\n       title = \"Functional Mapping: Longitudinal Trajectories by Genotype\",\n       subtitle = sprintf(\"n=%d, MAF=%.2f; QTL affects a, r, and t0 of logistic curve\",\n                          n, maf),\n       color = \"Genotype\") +\n  theme_classic() +\n  theme(legend.position = \"top\")\n\n# --- 6. Fit functional mapping model via numerical optimization ---\n# Log-likelihood under logistic mean + AR(1) covariance\nneg_loglik_fm &lt;- function(params, dat, t_obs, T) {\n  # params: a0, r0, t0_0, a2, r2, t0_2, sigma, rho\n  a0   &lt;- params[1]; r0  &lt;- params[2]; tt0_0 &lt;- params[3]\n  a2   &lt;- params[4]; r2  &lt;- params[5]; tt0_2 &lt;- params[6]\n  sig  &lt;- exp(params[7])   # log-parameterized for positivity\n  rho_ &lt;- plogis(params[8]) * 0.999 + 0.001   # [0.001, 1)\n\n  # AR(1) covariance and its inverse\n  Sigma &lt;- ar1_cov(T, sig, rho_)\n  tryCatch({\n    Sigma_inv &lt;- solve(Sigma)\n    log_det   &lt;- determinant(Sigma, logarithm = TRUE)$modulus\n  }, error = function(e) return(1e9))\n\n  maf_est &lt;- mean(dat$genotype) / 2\n  freq_g  &lt;- c((1-maf_est)^2, 2*maf_est*(1-maf_est), maf_est^2)\n\n  # Mean curves for each genotype\n  mu_list &lt;- list(\n    logistic_growth(t_obs, a0, r0, tt0_0),\n    logistic_growth(t_obs, (a0+a2)/2, (r0+r2)/2, (tt0_0+tt0_2)/2),  # Aa midpoint\n    logistic_growth(t_obs, a2, r2, tt0_2)\n  )\n\n  # Mixture log-likelihood (sum over individuals)\n  ll &lt;- 0\n  for (i in unique(dat$id)) {\n    y_i  &lt;- dat$y[dat$id == i]\n    g_i  &lt;- dat$genotype[dat$id == i][1]\n    comp &lt;- numeric(3)\n    for (g in 0:2) {\n      resid &lt;- y_i - mu_list[[g + 1]]\n      comp[g+1] &lt;- freq_g[g+1] *\n        exp(-0.5 * (t(resid) %*% Sigma_inv %*% resid +\n                    log_det + T * log(2 * pi)))\n    }\n    ll &lt;- ll + log(sum(comp) + 1e-300)\n  }\n  -ll   # return negative log-likelihood for minimization\n}\n\n# Initial values near true parameters\ninit_params &lt;- c(a0 = 8.5, r0 = 0.55, tt0_0 = 4.8,\n                 a2 = 10.5, r2 = 0.85, tt0_2 = 4.2,\n                 log_sigma = log(1.0), logit_rho = qlogis(0.7))\n\ncat(\"Fitting functional mapping model (this may take ~30 seconds)...\\n\")\nfit &lt;- optim(init_params, neg_loglik_fm,\n             dat = dat, t_obs = t_obs, T = T,\n             method = \"Nelder-Mead\",\n             control = list(maxit = 2000, reltol = 1e-6))\n\n# Extract fitted parameters\np_hat   &lt;- fit$par\na0_hat  &lt;- p_hat[1]; r0_hat  &lt;- p_hat[2]; t0_0_hat &lt;- p_hat[3]\na2_hat  &lt;- p_hat[4]; r2_hat  &lt;- p_hat[5]; t0_2_hat &lt;- p_hat[6]\nsig_hat &lt;- exp(p_hat[7])\nrho_hat &lt;- plogis(p_hat[8]) * 0.999 + 0.001\n\ncat(sprintf(\"Fitted AA  curve: a=%.2f, r=%.3f, t0=%.2f\\n\",\n            a0_hat, r0_hat, t0_0_hat))\ncat(sprintf(\"Fitted aa  curve: a=%.2f, r=%.3f, t0=%.2f\\n\",\n            a2_hat, r2_hat, t0_2_hat))\ncat(sprintf(\"Covariance: sigma=%.3f, rho=%.3f\\n\", sig_hat, rho_hat))\n\n# --- 7. LRT: test QTL effect (H0: theta_0 == theta_2) ---\n# H0: fit single curve for all genotypes\nneg_loglik_null &lt;- function(params, dat, t_obs, T) {\n  a  &lt;- params[1]; r  &lt;- params[2]; t0 &lt;- params[3]\n  sig &lt;- exp(params[4]); rho_ &lt;- plogis(params[5]) * 0.999 + 0.001\n  Sigma     &lt;- ar1_cov(T, sig, rho_)\n  Sigma_inv &lt;- solve(Sigma)\n  log_det   &lt;- determinant(Sigma, logarithm = TRUE)$modulus\n  mu &lt;- logistic_growth(t_obs, a, r, t0)\n  ll &lt;- 0\n  for (i in unique(dat$id)) {\n    y_i   &lt;- dat$y[dat$id == i]\n    resid &lt;- y_i - mu\n    ll    &lt;- ll - 0.5 * (t(resid) %*% Sigma_inv %*% resid +\n                          log_det + T * log(2*pi))\n  }\n  -ll\n}\n\nfit_null &lt;- optim(c(9.5, 0.7, 4.5, log(1.0), qlogis(0.7)),\n                  neg_loglik_null,\n                  dat = dat, t_obs = t_obs, T = T,\n                  method = \"Nelder-Mead\",\n                  control = list(maxit = 2000))\n\nlrt_stat &lt;- 2 * (fit_null$value - fit$value)\ndf_lrt   &lt;- 6 - 3   # alternative (6 params) vs null (3 params)\np_lrt    &lt;- pchisq(lrt_stat, df = df_lrt, lower.tail = FALSE)\ncat(sprintf(\"\\nLRT statistic = %.2f (df=%d), p = %.4e\\n\",\n            lrt_stat, df_lrt, p_lrt))\n\n# --- 8. Overlay fitted curves on data plot ---\nt_fine    &lt;- seq(1, 10, length.out = 100)\nfit_curves &lt;- rbind(\n  data.frame(time = t_fine, y = logistic_growth(t_fine, a0_hat, r0_hat, t0_0_hat),\n             geno_label = \"AA (g=0)\", type = \"Fitted\"),\n  data.frame(time = t_fine, y = logistic_growth(t_fine, a2_hat, r2_hat, t0_2_hat),\n             geno_label = \"aa (g=2)\", type = \"Fitted\")\n)\n\nggplot(mean_traj, aes(x = time, y = y, color = geno_label)) +\n  geom_point(size = 2.5) +\n  geom_line(linetype = \"dashed\", linewidth = 0.8) +\n  geom_line(data = fit_curves[fit_curves$geno_label != \"Aa (g=1)\", ],\n            aes(x = time, y = y, color = geno_label),\n            linewidth = 1.3, inherit.aes = FALSE) +\n  scale_color_manual(values = c(\"steelblue\", \"firebrick\")) +\n  annotate(\"text\", x = 2, y = 10.5,\n           label = sprintf(\"LRT = %.1f, p = %.2e\", lrt_stat, p_lrt),\n           hjust = 0, size = 3.5, color = \"grey20\") +\n  labs(x = \"Time\", y = \"Mean phenotype\",\n       title = \"Fitted Logistic Curves vs. Observed Means\",\n       subtitle = \"Dashed = observed group mean; Solid = fitted FM curve\",\n       color = \"Genotype\") +\n  theme_classic() +\n  theme(legend.position = \"top\")\n结果解读：模拟设计中，aa 基因型个体具有更高的渐近值（\\(a_2 = 11.0 &gt; a_0 = 8.0\\)）、更快的增长速率（\\(r_2 = 0.9 &gt; r_0 = 0.5\\)）和更早的拐点（\\(t_{0,2} = 4.0 &lt; t_{0,0} = 5.0\\)）。LRT 统计量检验这三个曲线参数是否在基因型间存在显著差异，等价于检验该 SNP 是否影响生长动态的任意一个维度，自由度为 \\(\\Delta k = 6 - 3 = 3\\)（完整模型 6 个曲线参数 vs 零假设 3 个）。\n\n\n20.9.5 Funmap2：R 包实现\nFunmap2（GitHub: wzhy2000/Funmap2）是功能作图的完整 R 实现，支持 9 种曲线函数（Logistic、Gompertz、Richards、双指数等）和 13 种协方差结构，并提供自动模型选择（AIC/BIC）与排列检验（permutation test）计算经验显著性阈值。基本调用流程如下：\n# Funmap2 usage skeleton (requires installation from GitHub)\n# devtools::install_github(\"wzhy2000/Funmap2\")\nlibrary(Funmap2)\n\n# ftm() is the main function: longitudinal QTL mapping\n# Arguments:\n#   phe.mat  : n × T phenotype matrix (rows = individuals, cols = time points)\n#   geno.mat : n × M genotype matrix (0/1/2 coded)\n#   times    : T-length vector of time points\n#   curve    : curve model — \"Logistic\", \"Gompertz\", \"BiExp\", etc.\n#   covar    : covariance model — \"AR1\", \"SAD1\", \"ARMA\", etc.\nresult &lt;- ftm(\n  phe.mat  = phe_matrix,\n  geno.mat = geno_matrix,\n  times    = t_obs,\n  curve    = \"Logistic\",\n  covar    = \"AR1\"\n)\n\n# Extract LRT profile (like a Manhattan plot for longitudinal QTL)\nplot(result)\n\n# Get significant QTL at 5% threshold (via permutation)\nsummary(result, threshold = 0.05)\n\n\n20.9.6 功能作图的延伸与局限\n功能作图框架在过去二十年中延伸至多个方向，包括：反应规范映射（reaction norm mapping）——以环境梯度（温度、光照）替换时间轴，映射基因型-环境交互效应；网络功能作图——以系统发育树或代谢网络约束为先验，映射发育网络的遗传控制；高维纵向 GWAS——结合 LASSO 或 Elastic Net 正则化在全基因组范围内扩展功能作图。\n然而，功能作图的实践也存在若干值得关注的局限，其中一项根本性约束来自其历史设计背景：Wu 等（2002）的原始框架是为受控实验交配群体（如回交 BC、F2、重组自交系 RIL）量身设计的。在这类群体中，各基因型频率由孟德尔分离比例精确确定（无需从群体等位基因频率估算），且实验设计本身消除了群体分层——所有个体来自同一受控杂交，亲缘关系均一可知，因此既无群体结构混杂（Q），也无隐性亲缘关系干扰（K）。\n当功能作图被移植至自然群体或人类 GWAS 场景时，这一假设前提不再成立。自然群体中个体间存在不同程度的亲缘关系与祖源分层，若不加以校正，纵向表型中嵌入的家系内相关或亚群体表型差异会被错误地归因于 SNP 效应，产生系统性假阳性。解决方案是将功能作图的似然框架与混合线性模型的 Q+K 校正相结合：将主成分（Q 矩阵）作为固定效应协变量纳入均值方程，将全基因组亲缘关系矩阵（K 矩阵，即 GRM）引入残差协方差结构，以消除群体分层和隐性亲缘的双重混杂。这一整合尚未在主流功能作图软件中得到充分实现，是将该方法推广至人类纵向队列 GWAS 的重要方法论挑战。\n此外，功能作图还面临其他实践局限：其一，对生物数学模型的选择具有主观性，错误的曲线模型会导致参数偏差；其二，AR(1) 协方差假设未必适合所有纵向数据（如非等间隔时间点或缺失数据较多时）；其三，计算开销远高于标准 GWAS，在基因组规模（数百万 SNP）下需要并行计算或两阶段筛选策略。对于现代大规模 GWAS 数据，通常先用标准单点 GWAS 初步筛选候选区域，再对候选 SNP 子集运行功能作图以获取动态效应的精细描述。\n\n功能作图的实际应用场景\n功能作图特别适合以下研究设计：（1）动植物育种——作物产量的生长曲线、体重增长轨迹的 QTL 定位；（2）药物基因组学——不同基因型对药物的时序反应曲线（药效动力学 PD 轨迹）；（3）纵向队列研究——老龄化研究中认知能力下降曲线、BMI 随年龄变化轨迹的遗传架构；（4）生理节律研究——昼夜节律、季节性表型波动的遗传基础。",
+    "text": "20.9 动态性状的 GWAS：功能作图方法\n{{Wiki:Quantitative_trait_locus}}\n\n20.9.1 纵向表型的映射挑战\n标准 GWAS 以单时间点表型（如某次测量的身高、血压值）为分析对象，将其视为固定标量与基因型关联。然而，许多生物学性状天然具有时间动态性（time-varying nature）：生长速率、药物代谢曲线、疾病进展轨迹、季节性表达波动……这些性状的生物学核心不在于某一时刻的表型值，而在于整条动态轨迹的遗传控制机制。对这类性状逐时间点独立做 GWAS 有两大缺陷：其一，大量低效的重复检验造成严重的多重检验负担；其二，完全丢失了时间点之间的生物学依赖结构，等于抛弃了最具信息量的动态信息。\n功能作图（Functional Mapping，FM） 正是为解决上述问题而提出的统计框架。其核心思想是：将生物数学模型（描述性状动态规律的参数方程）直接嵌入 QTL/GWAS 关联分析的似然函数，用数量性状的发育参数而非原始表型值作为遗传效应的载体。这一框架由邬荣领（Rongling Wu）、马长兴（Changxing Ma）和 George Casella 于 2002 年在 Genetics 上正式提出，随后在 Nature Reviews Genetics（2006）上系统综述，发展为功能基因组学中动态性状遗传解析的基础理论之一。\n\n\n20.9.2 功能作图的数学框架\n设 \\(n\\) 个个体在 \\(T\\) 个时间点 \\(t_1, t_2, \\ldots, t_T\\) 上各测量一次表型。个体 \\(i\\) 的观测向量为 \\(\\mathbf{y}_i = (y_{i1}, y_{i2}, \\ldots, y_{iT})^\\top\\)。在 QTL/SNP 关联分析框架下，将个体按基因型 \\(g \\in \\{AA, Aa, aa\\}\\)（加性模型下简化为 0/1/2）分组，每组的期望轨迹由参数化曲线描述：\n\\[E[y_{it} \\mid g_i = g] = f(t;\\, \\boldsymbol{\\theta}_g)\\]\n其中 \\(\\boldsymbol{\\theta}_g\\) 是第 \\(g\\) 组基因型的曲线参数向量（如 Logistic 模型的渐近值 \\(a\\)、增长率 \\(r\\)、拐点 \\(t_0\\)），不同基因型之间曲线参数的差异即为 QTL 效应。\n均值模型——三参数 Logistic 生长曲线：\n\\[f(t;\\, a, r, t_0) = \\frac{a}{1 + e^{-r(t - t_0)}}\\]\n\n\\(a\\)：渐近值（最终体量上限）；\n\\(r\\)：增长率（曲线陡峭程度）；\n\\(t_0\\)：拐点时刻（增长速率最大处）。\n\n在加性模型下，两个纯合基因型（\\(g = 0\\) 和 \\(g = 2\\)）的参数向量 \\(\\boldsymbol{\\theta}_0 = (a_0, r_0, t_{0,0})\\) 与 \\(\\boldsymbol{\\theta}_2 = (a_2, r_2, t_{0,2})\\) 直接反映等位基因替换对生长轨迹各维度的加性效应。\n协方差结构——结构化时间相关：\n纵向测量之间存在时间自相关，不满足独立性假设。功能作图采用AR(1) 自回归结构对残差协方差建模：\n\\[\\Sigma_{jk} = \\sigma^2 \\rho^{|t_j - t_k|}\\]\n其中 \\(\\sigma^2\\) 为残差方差，\\(\\rho\\) 为相邻时间点间的自相关系数（\\(0 &lt; \\rho &lt; 1\\)）。AR(1) 结构的闭合形式逆矩阵和行列式使得计算复杂度从 \\(O(T^3)\\) 降至 \\(O(T)\\)，是功能作图计算可行的关键技巧。\n混合模型似然函数：\n\\[\\ln L(\\boldsymbol{\\Theta}) = \\sum_{i=1}^{n} \\ln \\left[\\sum_{g=0}^{2} p_g \\cdot \\phi(\\mathbf{y}_i;\\, \\boldsymbol{\\mu}_g,\\, \\boldsymbol{\\Sigma})\\right]\\]\n其中 \\(p_g\\) 为各基因型频率（由 Hardy-Weinberg 平衡和等位基因频率确定），\\(\\phi(\\cdot;\\, \\boldsymbol{\\mu}_g, \\boldsymbol{\\Sigma})\\) 为多元正态密度函数，均值向量 \\(\\boldsymbol{\\mu}_g = (f(t_1;\\boldsymbol{\\theta}_g), \\ldots, f(t_T;\\boldsymbol{\\theta}_g))^\\top\\)。通过 EM 算法迭代估计 \\(\\boldsymbol{\\Theta} = \\{\\boldsymbol{\\theta}_0, \\boldsymbol{\\theta}_2, \\sigma^2, \\rho\\}\\)，计算似然比统计量（LRT）检验 \\(H_0: \\boldsymbol{\\theta}_0 = \\boldsymbol{\\theta}_2\\)（无 QTL 效应）。\n\n参数的生物学可解释性是功能作图的核心优势\n传统多时间点 GWAS 报告的是”在时间点 \\(t_k\\) 处，等位基因 A 将表型平均提升 \\(\\beta_k\\) 个单位”——这些 \\(\\beta_k\\) 是统计描述，缺乏生物学含义的整合。功能作图报告的是”等位基因 A 将渐近体量 \\(a\\) 提升 \\(\\Delta a\\)，同时不影响生长速率 \\(r\\)“——每个参数对应一个具有生物学意义的发育维度，检验效力也因参数聚合了整条曲线信息而显著高于逐点检验。\n\n\n\n20.9.3 正交 Legendre 多项式：非参数化扩展\n当研究者不确定数据适合哪种生物数学曲线时，可改用正交 Legendre 多项式（Legendre Orthogonal Polynomials，LOP） 作为均值函数的非参数化基底：\n\\[f(t;\\, \\boldsymbol{\\phi}) = \\sum_{k=0}^{K} \\phi_k P_k(\\tilde{t})\\]\n其中 \\(P_k(\\tilde{t})\\) 为 \\(k\\) 阶 Legendre 多项式（\\(\\tilde{t} \\in [-1, 1]\\) 为归一化时间），\\(\\phi_k\\) 为各基底的展开系数。阶数 \\(K\\) 通过 AIC/BIC 模型选择确定（通常 \\(K = 3\\)–\\(5\\) 即可捕捉主要动态特征）。不同基因型的 LOP 系数向量 \\(\\boldsymbol{\\phi}_g\\) 之差即为遗传效应的非参数估计。Legendre 多项式基底因正交性使设计矩阵数值稳定，且可通过 \\(R\\) 的 poly() 函数直接生成。\n\n\n20.9.4 R 模拟实现\n以下代码从零开始模拟一个功能作图场景：100 个个体在 10 个时间点上的纵向生长数据，含一个影响 Logistic 增长曲线参数的 QTL，演示模型拟合与基因型轨迹差异可视化。\n# Functional mapping simulation and fitting\n# Simulates longitudinal growth data with a QTL affecting curve parameters\nset.seed(2024)\nlibrary(ggplot2)\n\n# --- 1. Parameters ---\nn        &lt;- 150          # sample size\nt_obs    &lt;- seq(1, 10)   # 10 time points\nT        &lt;- length(t_obs)\nmaf      &lt;- 0.35         # minor allele frequency of QTL\n\n# Logistic growth: f(t; a, r, t0) = a / (1 + exp(-r*(t - t0)))\nlogistic_growth &lt;- function(t, a, r, t0) a / (1 + exp(-r * (t - t0)))\n\n# Genotype-specific curve parameters (additive model)\n# Genotype AA (g=0): slower, lower asymptote\n# Genotype Aa (g=1): intermediate (midpoint)\n# Genotype aa (g=2): faster, higher asymptote\ntheta &lt;- list(\n  \"0\" = c(a = 8.0, r = 0.5, t0 = 5.0),   # AA\n  \"1\" = c(a = 9.5, r = 0.7, t0 = 4.5),   # Aa\n  \"2\" = c(a = 11.0, r = 0.9, t0 = 4.0)   # aa\n)\n\n# --- 2. Simulate genotypes under HWE ---\np    &lt;- maf\nq    &lt;- 1 - p\nfreq &lt;- c(q^2, 2*p*q, p^2)   # P(AA), P(Aa), P(aa)\ngeno &lt;- sample(0:2, n, replace = TRUE, prob = freq)\n\n# --- 3. AR(1) covariance matrix ---\nrho   &lt;- 0.75\nsigma &lt;- 1.2\nar1_cov &lt;- function(T, sigma, rho) {\n  Sigma &lt;- matrix(0, T, T)\n  for (i in seq_len(T))\n    for (j in seq_len(T))\n      Sigma[i, j] &lt;- sigma^2 * rho^abs(i - j)\n  Sigma\n}\nSigma &lt;- ar1_cov(T, sigma, rho)\nL     &lt;- t(chol(Sigma))   # Cholesky for simulation\n\n# --- 4. Simulate phenotype trajectories ---\nsim_data &lt;- lapply(seq_len(n), function(i) {\n  g  &lt;- geno[i]\n  mu &lt;- logistic_growth(t_obs,\n                        a  = theta[[as.character(g)]][\"a\"],\n                        r  = theta[[as.character(g)]][\"r\"],\n                        t0 = theta[[as.character(g)]][\"t0\"])\n  y  &lt;- mu + as.vector(L %*% rnorm(T))\n  data.frame(id = i, genotype = g, time = t_obs, y = y)\n})\ndat &lt;- do.call(rbind, sim_data)\n\n# --- 5. Visualize observed trajectories by genotype ---\ngeno_labels &lt;- c(\"0\" = \"AA (g=0)\", \"1\" = \"Aa (g=1)\", \"2\" = \"aa (g=2)\")\ndat$geno_label &lt;- factor(geno_labels[as.character(dat$genotype)],\n                          levels = geno_labels)\n\n# Mean trajectory per genotype\nmean_traj &lt;- aggregate(y ~ time + geno_label, dat, mean)\n\nggplot(dat, aes(x = time, y = y, group = id, color = geno_label)) +\n  geom_line(alpha = 0.15, linewidth = 0.3) +\n  geom_line(data = mean_traj,\n            aes(x = time, y = y, group = geno_label, color = geno_label),\n            linewidth = 1.4, inherit.aes = FALSE) +\n  scale_color_manual(values = c(\"steelblue\", \"darkorange\", \"firebrick\")) +\n  labs(x = \"Time\", y = \"Phenotype\",\n       title = \"Functional Mapping: Longitudinal Trajectories by Genotype\",\n       subtitle = sprintf(\"n=%d, MAF=%.2f; QTL affects a, r, and t0 of logistic curve\",\n                          n, maf),\n       color = \"Genotype\") +\n  theme_classic() +\n  theme(legend.position = \"top\")\n\n# --- 6. Fit functional mapping model via numerical optimization ---\n# Log-likelihood under logistic mean + AR(1) covariance\nneg_loglik_fm &lt;- function(params, dat, t_obs, T) {\n  # params: a0, r0, t0_0, a2, r2, t0_2, sigma, rho\n  a0   &lt;- params[1]; r0  &lt;- params[2]; tt0_0 &lt;- params[3]\n  a2   &lt;- params[4]; r2  &lt;- params[5]; tt0_2 &lt;- params[6]\n  sig  &lt;- exp(params[7])   # log-parameterized for positivity\n  rho_ &lt;- plogis(params[8]) * 0.999 + 0.001   # [0.001, 1)\n\n  # AR(1) covariance and its inverse\n  Sigma &lt;- ar1_cov(T, sig, rho_)\n  tryCatch({\n    Sigma_inv &lt;- solve(Sigma)\n    log_det   &lt;- determinant(Sigma, logarithm = TRUE)$modulus\n  }, error = function(e) return(1e9))\n\n  maf_est &lt;- mean(dat$genotype) / 2\n  freq_g  &lt;- c((1-maf_est)^2, 2*maf_est*(1-maf_est), maf_est^2)\n\n  # Mean curves for each genotype\n  mu_list &lt;- list(\n    logistic_growth(t_obs, a0, r0, tt0_0),\n    logistic_growth(t_obs, (a0+a2)/2, (r0+r2)/2, (tt0_0+tt0_2)/2),  # Aa midpoint\n    logistic_growth(t_obs, a2, r2, tt0_2)\n  )\n\n  # Mixture log-likelihood (sum over individuals)\n  ll &lt;- 0\n  for (i in unique(dat$id)) {\n    y_i  &lt;- dat$y[dat$id == i]\n    g_i  &lt;- dat$genotype[dat$id == i][1]\n    comp &lt;- numeric(3)\n    for (g in 0:2) {\n      resid &lt;- y_i - mu_list[[g + 1]]\n      comp[g+1] &lt;- freq_g[g+1] *\n        exp(-0.5 * (t(resid) %*% Sigma_inv %*% resid +\n                    log_det + T * log(2 * pi)))\n    }\n    ll &lt;- ll + log(sum(comp) + 1e-300)\n  }\n  -ll   # return negative log-likelihood for minimization\n}\n\n# Initial values near true parameters\ninit_params &lt;- c(a0 = 8.5, r0 = 0.55, tt0_0 = 4.8,\n                 a2 = 10.5, r2 = 0.85, tt0_2 = 4.2,\n                 log_sigma = log(1.0), logit_rho = qlogis(0.7))\n\ncat(\"Fitting functional mapping model (this may take ~30 seconds)...\\n\")\nfit &lt;- optim(init_params, neg_loglik_fm,\n             dat = dat, t_obs = t_obs, T = T,\n             method = \"Nelder-Mead\",\n             control = list(maxit = 2000, reltol = 1e-6))\n\n# Extract fitted parameters\np_hat   &lt;- fit$par\na0_hat  &lt;- p_hat[1]; r0_hat  &lt;- p_hat[2]; t0_0_hat &lt;- p_hat[3]\na2_hat  &lt;- p_hat[4]; r2_hat  &lt;- p_hat[5]; t0_2_hat &lt;- p_hat[6]\nsig_hat &lt;- exp(p_hat[7])\nrho_hat &lt;- plogis(p_hat[8]) * 0.999 + 0.001\n\ncat(sprintf(\"Fitted AA  curve: a=%.2f, r=%.3f, t0=%.2f\\n\",\n            a0_hat, r0_hat, t0_0_hat))\ncat(sprintf(\"Fitted Aa  curve: a=%.2f, r=%.3f, t0=%.2f\\n\",\n            (a0_hat+a2_hat)/2, (r0_hat+r2_hat)/2, (t0_0_hat+t0_2_hat)/2))\ncat(sprintf(\"Fitted aa  curve: a=%.2f, r=%.3f, t0=%.2f\\n\",\n            a2_hat, r2_hat, t0_2_hat))\ncat(sprintf(\"Covariance: sigma=%.3f, rho=%.3f\\n\", sig_hat, rho_hat))\n\n# --- 7. LRT: test QTL effect (H0: theta_0 == theta_2) ---\n# H0: fit single curve for all genotypes\nneg_loglik_null &lt;- function(params, dat, t_obs, T) {\n  a  &lt;- params[1]; r  &lt;- params[2]; t0 &lt;- params[3]\n  sig &lt;- exp(params[4]); rho_ &lt;- plogis(params[5]) * 0.999 + 0.001\n  Sigma     &lt;- ar1_cov(T, sig, rho_)\n  Sigma_inv &lt;- solve(Sigma)\n  log_det   &lt;- determinant(Sigma, logarithm = TRUE)$modulus\n  mu &lt;- logistic_growth(t_obs, a, r, t0)\n  ll &lt;- 0\n  for (i in unique(dat$id)) {\n    y_i   &lt;- dat$y[dat$id == i]\n    resid &lt;- y_i - mu\n    ll    &lt;- ll - 0.5 * (t(resid) %*% Sigma_inv %*% resid +\n                          log_det + T * log(2*pi))\n  }\n  -ll\n}\n\nfit_null &lt;- optim(c(9.5, 0.7, 4.5, log(1.0), qlogis(0.7)),\n                  neg_loglik_null,\n                  dat = dat, t_obs = t_obs, T = T,\n                  method = \"Nelder-Mead\",\n                  control = list(maxit = 2000))\n\nlrt_stat &lt;- 2 * (fit_null$value - fit$value)\ndf_lrt   &lt;- 6 - 3   # alternative (6 params) vs null (3 params)\np_lrt    &lt;- pchisq(lrt_stat, df = df_lrt, lower.tail = FALSE)\ncat(sprintf(\"\\nLRT statistic = %.2f (df=%d), p = %.4e\\n\",\n            lrt_stat, df_lrt, p_lrt))\n\n# --- 8. Overlay fitted curves on data plot ---\nt_fine    &lt;- seq(1, 10, length.out = 100)\na1_hat  &lt;- (a0_hat + a2_hat) / 2\nr1_hat  &lt;- (r0_hat + r2_hat) / 2\nt0_1_hat &lt;- (t0_0_hat + t0_2_hat) / 2\nfit_curves &lt;- rbind(\n  data.frame(time = t_fine, y = logistic_growth(t_fine, a0_hat, r0_hat, t0_0_hat),\n             geno_label = \"AA (g=0)\", type = \"Fitted\"),\n  data.frame(time = t_fine, y = logistic_growth(t_fine, a1_hat, r1_hat, t0_1_hat),\n             geno_label = \"Aa (g=1)\", type = \"Fitted\"),\n  data.frame(time = t_fine, y = logistic_growth(t_fine, a2_hat, r2_hat, t0_2_hat),\n             geno_label = \"aa (g=2)\", type = \"Fitted\")\n)\nfit_curves$geno_label &lt;- factor(fit_curves$geno_label,\n                                 levels = c(\"AA (g=0)\", \"Aa (g=1)\", \"aa (g=2)\"))\n\nggplot(mean_traj, aes(x = time, y = y, color = geno_label)) +\n  geom_point(size = 2.5) +\n  geom_line(linetype = \"dashed\", linewidth = 0.8) +\n  geom_line(data = fit_curves,\n            aes(x = time, y = y, color = geno_label),\n            linewidth = 1.3, inherit.aes = FALSE) +\n  scale_color_manual(values = c(\"steelblue\", \"darkorange\", \"firebrick\")) +\n  annotate(\"text\", x = 2, y = 10.5,\n           label = sprintf(\"LRT = %.1f, p = %.2e\", lrt_stat, p_lrt),\n           hjust = 0, size = 3.5, color = \"grey20\") +\n  labs(x = \"Time\", y = \"Mean phenotype\",\n       title = \"Fitted Logistic Curves vs. Observed Means\",\n       subtitle = \"Dashed = observed group mean; Solid = fitted FM curve\",\n       color = \"Genotype\") +\n  theme_classic() +\n  theme(legend.position = \"top\")\n结果解读：模拟设计中，aa 基因型个体具有更高的渐近值（\\(a_2 = 11.0 &gt; a_0 = 8.0\\)）、更快的增长速率（\\(r_2 = 0.9 &gt; r_0 = 0.5\\)）和更早的拐点（\\(t_{0,2} = 4.0 &lt; t_{0,0} = 5.0\\)）。LRT 统计量检验这三个曲线参数是否在基因型间存在显著差异，等价于检验该 SNP 是否影响生长动态的任意一个维度，自由度为 \\(\\Delta k = 6 - 3 = 3\\)（完整模型 6 个曲线参数 vs 零假设 3 个）。\n\n\n20.9.5 Funmap2：R 包实现\nFunmap2（GitHub: wzhy2000/Funmap2）是功能作图的完整 R 实现，支持 9 种曲线函数（Logistic、Gompertz、Richards、双指数等）和 13 种协方差结构，并提供自动模型选择（AIC/BIC）与排列检验（permutation test）计算经验显著性阈值。基本调用流程如下：\n# Funmap2 usage skeleton (requires installation from GitHub)\n# devtools::install_github(\"wzhy2000/Funmap2\")\nlibrary(Funmap2)\n\n# ftm() is the main function: longitudinal QTL mapping\n# Arguments:\n#   phe.mat  : n × T phenotype matrix (rows = individuals, cols = time points)\n#   geno.mat : n × M genotype matrix (0/1/2 coded)\n#   times    : T-length vector of time points\n#   curve    : curve model — \"Logistic\", \"Gompertz\", \"BiExp\", etc.\n#   covar    : covariance model — \"AR1\", \"SAD1\", \"ARMA\", etc.\nresult &lt;- ftm(\n  phe.mat  = phe_matrix,\n  geno.mat = geno_matrix,\n  times    = t_obs,\n  curve    = \"Logistic\",\n  covar    = \"AR1\"\n)\n\n# Extract LRT profile (like a Manhattan plot for longitudinal QTL)\nplot(result)\n\n# Get significant QTL at 5% threshold (via permutation)\nsummary(result, threshold = 0.05)\n\n\n20.9.6 功能作图的延伸与局限\n功能作图框架在过去二十年中延伸至多个方向，包括：反应规范映射（reaction norm mapping）——以环境梯度（温度、光照）替换时间轴，映射基因型-环境交互效应；网络功能作图——以系统发育树或代谢网络约束为先验，映射发育网络的遗传控制；高维纵向 GWAS——结合 LASSO 或 Elastic Net 正则化在全基因组范围内扩展功能作图。\n然而，功能作图的实践也存在若干值得关注的局限，其中一项根本性约束来自其历史设计背景：Wu 等（2002）的原始框架是为受控实验交配群体（如回交 BC、F2、重组自交系 RIL）量身设计的。在这类群体中，各基因型频率由孟德尔分离比例精确确定（无需从群体等位基因频率估算），且实验设计本身消除了群体分层——所有个体来自同一受控杂交，亲缘关系均一可知，因此既无群体结构混杂（Q），也无隐性亲缘关系干扰（K）。\n当功能作图被移植至自然群体或人类 GWAS 场景时，这一假设前提不再成立。自然群体中个体间存在不同程度的亲缘关系与祖源分层，若不加以校正，纵向表型中嵌入的家系内相关或亚群体表型差异会被错误地归因于 SNP 效应，产生系统性假阳性。解决方案是将功能作图的似然框架与混合线性模型的 Q+K 校正相结合：将主成分（Q 矩阵）作为固定效应协变量纳入均值方程，将全基因组亲缘关系矩阵（K 矩阵，即 GRM）引入残差协方差结构，以消除群体分层和隐性亲缘的双重混杂。这一整合尚未在主流功能作图软件中得到充分实现，是将该方法推广至人类纵向队列 GWAS 的重要方法论挑战。\n此外，功能作图还面临其他实践局限：其一，对生物数学模型的选择具有主观性，错误的曲线模型会导致参数偏差；其二，AR(1) 协方差假设未必适合所有纵向数据（如非等间隔时间点或缺失数据较多时）；其三，计算开销远高于标准 GWAS，在基因组规模（数百万 SNP）下需要并行计算或两阶段筛选策略。对于现代大规模 GWAS 数据，通常先用标准单点 GWAS 初步筛选候选区域，再对候选 SNP 子集运行功能作图以获取动态效应的精细描述。\n\n功能作图的实际应用场景\n功能作图特别适合以下研究设计：（1）动植物育种——作物产量的生长曲线、体重增长轨迹的 QTL 定位；（2）药物基因组学——不同基因型对药物的时序反应曲线（药效动力学 PD 轨迹）；（3）纵向队列研究——老龄化研究中认知能力下降曲线、BMI 随年龄变化轨迹的遗传架构；（4）生理节律研究——昼夜节律、季节性表型波动的遗传基础。",
     "crumbs": [
       "第一阶段：基础与基因组",
       "<span class='chapter-number'>19</span>  <span class='chapter-title'>精细定位、功能注释、因果推断与更多</span>"
@@ -3087,6 +3087,798 @@
     "crumbs": [
       "第一阶段：基础与基因组",
       "<span class='chapter-number'>19</span>  <span class='chapter-title'>精细定位、功能注释、因果推断与更多</span>"
+    ]
+  },
+  {
+    "objectID": "04-transcriptomics-basic.html",
+    "href": "04-transcriptomics-basic.html",
+    "title": "20  Bulk 转录组分析基础：质量控制、定量与差异表达",
+    "section": "",
+    "text": "21 整体概述\nBulk RNA-seq 是转录组学研究的基石技术，自 2008 年前后逐步取代微阵列（Microarray），成为差异表达研究的主流范式。其核心分析问题可以概括为：在给定实验条件下，哪些基因的转录水平发生了统计显著的变化，变化幅度有多大，以及这些变化在生物学功能层面意味着什么。要回答这些问题，分析者需要依次完成三个阶段的工作：原始数据的质量控制与预处理、基因表达量的精确定量、以及在统计模型框架下的差异表达检验与功能解读。本章聚焦上述三个基础阶段，系统讲解从原始 FASTQ 文件到差异表达基因功能注释的完整标准流程，着重阐明每一步骤的方法论原理与参数选择逻辑，为第5章高级转录组分析奠定基础。\n学习目标：掌握 RNA-seq 数据的质量评估标准与预处理策略；理解 splice-aware 比对与两种主流定量方法（基于比对计数 vs 伪比对）的原理差异；能独立运行 DESeq2 差异表达分析流程并进行 GO/KEGG/GSEA 功能富集解读。",
+    "crumbs": [
+      "第二阶段：转录组与单细胞",
+      "<span class='chapter-number'>20</span>  <span class='chapter-title'>Bulk 转录组分析基础：质量控制、定量与差异表达</span>"
+    ]
+  },
+  {
+    "objectID": "04-transcriptomics-basic.html#专题-4.1测序原理文库特性与原始数据质量控制",
+    "href": "04-transcriptomics-basic.html#专题-4.1测序原理文库特性与原始数据质量控制",
+    "title": "20  Bulk 转录组分析基础：质量控制、定量与差异表达",
+    "section": "23.1 专题 4.1：测序原理、文库特性与原始数据质量控制",
+    "text": "23.1 专题 4.1：测序原理、文库特性与原始数据质量控制\nRNA-seq 数据的质量特征与 DNA 测序数据存在系统性差异，这些差异根植于文库构建方式的不同。poly-A 富集文库会优先捕获转录本 3’ 端，导致 3’/5’ 覆盖度不均；rRNA 去除（RiboZero）文库则覆盖分布更均匀，但可能残留非编码 RNA 信号。链特异性文库（Strand-specific library）记录了 RNA 链的方向信息，能区分正反链重叠基因的表达，是现代 RNA-seq 实验的标配。本专题系统讲解上述文库类型的特性，以及如何通过 FastQC 和 MultiQC 识别文库特有的质控异常信号，并利用 fastp 完成 Adapter 修剪与质量过滤。\n核心概念：\n\nRNA-seq 文库构建两条路线：poly-A 富集（mRNA-seq）vs rRNA 去除（Total RNA-seq）；各自的覆盖度偏差模式\n链特异性文库：TruSeq Stranded 的 dUTP 策略；链方向的生物信息学确认（infer_experiment.py / RSeQC）\nFastQC 关键模块解读：Per base sequence quality、Per sequence GC content、Sequence Duplication Levels、Overrepresented sequences\nRNA-seq 特有的质控指标：rRNA 污染比例、3’ 端偏差（read_distribution.py）、外显子/内含子/基因间区比例\nfastp 参数选择：--detect_adapter_for_pe（自动检测）vs 手动指定；--trim_poly_x 处理 poly-A read-through\nMultiQC 汇总报告：多样本质控状态的快速纵览\n\n实践内容：对 pasilla 数据集（SRR1039508–SRR1039517，10 个样本）运行 FastQC → fastp 修剪 → FastQC 复检 → MultiQC 汇总，识别链特异性方向并确认文库类型，生成贯穿全章的样本元数据表。",
+    "crumbs": [
+      "第二阶段：转录组与单细胞",
+      "<span class='chapter-number'>20</span>  <span class='chapter-title'>Bulk 转录组分析基础：质量控制、定量与差异表达</span>"
+    ]
+  },
+  {
+    "objectID": "04-transcriptomics-basic.html#专题-4.2splice-aware-比对与表达量定量",
+    "href": "04-transcriptomics-basic.html#专题-4.2splice-aware-比对与表达量定量",
+    "title": "20  Bulk 转录组分析基础：质量控制、定量与差异表达",
+    "section": "23.2 专题 4.2：Splice-Aware 比对与表达量定量",
+    "text": "23.2 专题 4.2：Splice-Aware 比对与表达量定量\nRNA-seq 比对面临 DNA 比对所没有的根本挑战：成熟 mRNA 已切除内含子，一个跨越剪接位点的读段（junction read）在基因组上对应两段不连续的区间，普通比对工具无法正确处理。splice-aware 比对算法（STAR、HISAT2）通过两步策略解决这一问题：先将读段映射至外显子区域，再利用已知或新发现的剪接位点将跨越内含子的部分正确拼接。在定量层面，本专题深入对比两种主流策略：featureCounts 依赖比对结果逐外显子计数，而 Salmon 的伪比对（quasi-mapping）直接将读段与转录本序列匹配，无需全基因组比对，速度更快且内置偏差校正模型。\n{{Wiki:RNA-Seq}}\n核心概念：\n\nSTAR 两步比对：种子查找（Maximal Mappable Prefix, MMP）→ 剪接位点验证；两遍比对（2-pass mode）提高新型剪接位点检出率\nHISAT2 的层次图 FM 索引（Hierarchical Graph FM-index）：全局基因组索引 + 局部剪接图索引\nGTF 注释文件的作用：外显子坐标提供 featureCounts 计数边界；转录本序列用于 Salmon 索引构建\nfeatureCounts 参数：-s（链特异性方向，0/1/2）；-p（双端模式）；多比对读段处理策略\nSalmon 工作流：salmon index（转录本索引）→ salmon quant（伪比对定量）；--gcBias 与 --seqBias 校正\nTPM vs FPKM vs 原始计数（raw counts）：各自适用场景；DESeq2 必须使用原始计数的原因\ntximport：将 Salmon 转录本级别定量汇总至基因级别，传递推断不确定性（inferential replicates）\n\n实践内容：STAR 双端比对 pasilla 数据集至 GRCh38 参考基因组；featureCounts 链特异性计数；Salmon 伪比对定量；tximport 汇总；散点图对比两种定量方法的基因计数相关性。",
+    "crumbs": [
+      "第二阶段：转录组与单细胞",
+      "<span class='chapter-number'>20</span>  <span class='chapter-title'>Bulk 转录组分析基础：质量控制、定量与差异表达</span>"
+    ]
+  },
+  {
+    "objectID": "04-transcriptomics-basic.html#专题-4.3差异表达分析",
+    "href": "04-transcriptomics-basic.html#专题-4.3差异表达分析",
+    "title": "20  Bulk 转录组分析基础：质量控制、定量与差异表达",
+    "section": "24.1 专题 4.3：差异表达分析",
+    "text": "24.1 专题 4.3：差异表达分析\n差异表达分析（Differential Expression Analysis, DEA）的统计问题本质是：在有限重复数（通常 3–5 个）条件下，如何可靠估计每个基因的表达变异，并从数以万计的基因中识别出真实的表达差异，同时将假阳性率控制在可接受水平。RNA-seq 计数数据具有两个关键统计特性：均值与方差之间存在正相关（过离散，Overdispersion），使普通泊松模型不适用；低表达基因的方差估计极不稳定。DESeq2 通过跨基因的离散度缩减估计（Empirical Bayes shrinkage）解决上述问题，是当前 RNA-seq 差异表达分析的黄金标准工具之一。\n{{Wiki:Negative_binomial_distribution}}\n核心概念：\n\n归一化的必要性：测序深度差异（文库大小）的校正；DESeq2 大小因子（Size Factor）的几何均值估计方法\n负二项分布模型：均值参数 \\(\\mu_{ij}\\) 与离散参数 \\(\\alpha_i\\)；过离散的生物学与技术来源\nDESeq2 离散度估计流程：基因特异性粗估计 → 拟合趋势曲线 → MAP 缩减（shrink towards trend）\nWald 检验与对数倍数变化（Log2 Fold Change, LFC）：LFC 缩减（apeglm）消除低计数基因极端值\n似然比检验（LRT）：适用于多因子模型或时间序列实验\n多重检验校正：Benjamini-Hochberg 过程；独立假设加权（IHW）提高检验效力\nedgeR 拟似然框架（quasi-likelihood F-test）：与 DESeq2 的方法论对比\n结果可视化：MA 图、火山图（Volcano plot）、样本间距离热图、PCA 图\n\n实践内容：使用 tximport 导入的 pasilla 计数矩阵构建 DESeqDataSet；运行 DESeq2 标准流程；筛选差异基因（|LFC| &gt; 1，padj &lt; 0.05）；生成 MA 图与火山图；对比 apeglm 缩减前后 LFC 估计差异。",
+    "crumbs": [
+      "第二阶段：转录组与单细胞",
+      "<span class='chapter-number'>20</span>  <span class='chapter-title'>Bulk 转录组分析基础：质量控制、定量与差异表达</span>"
+    ]
+  },
+  {
+    "objectID": "04-transcriptomics-basic.html#专题-4.4功能富集分析",
+    "href": "04-transcriptomics-basic.html#专题-4.4功能富集分析",
+    "title": "20  Bulk 转录组分析基础：质量控制、定量与差异表达",
+    "section": "24.2 专题 4.4：功能富集分析",
+    "text": "24.2 专题 4.4：功能富集分析\n差异表达基因列表本身仅回答了”哪些基因变了”，而”这些变化在生物学上意味着什么”需要通过功能富集分析来回答。本专题介绍两类主流富集策略：过表示富集分析（Over-Representation Analysis, ORA）对差异基因列表进行超几何检验，检验特定功能集合是否被显著富集；基因集富集分析（Gene Set Enrichment Analysis, GSEA）不设定差异基因阈值，而是对全部基因按表达变化排序后计算富集得分，能检出整体趋势性变化。两种方法各有适用场景，实际分析中通常互为补充。\n{{Wiki:Gene_ontology}}\n核心概念：\n\n功能数据库体系：Gene Ontology（GO）的三个本体（BP/MF/CC）；KEGG 通路数据库；MSigDB 基因集合库（Hallmark、C2、C5）\nORA 统计原理：超几何检验；背景基因集的选择（全基因组 vs 检出基因）对结果的影响\nGSEA 算法：基因排序指标的选择；加权富集得分（ES）计算；标准化富集得分（NES）；leading edge 基因的生物学意义\nclusterProfiler 工具链：enrichGO()、enrichKEGG()、gseGO()、gseKEGG()；simplify() 去冗余\n富集结果可视化：dotplot、cnetplot、emapplot、ridgeplot（GSEA）\n富集结果的常见误读：功能注释覆盖度不均引入的偏差；通路重叠导致的假象；背景集选择不当\n\n实践内容：对 pasilla 差异基因运行 clusterProfiler GO ORA 与 KEGG ORA；运行 GSEA（全基因组按 Wald stat 排序）；使用 dotplot 与 emapplot 可视化；对比 ORA 与 GSEA 结果异同并分析差异原因。",
+    "crumbs": [
+      "第二阶段：转录组与单细胞",
+      "<span class='chapter-number'>20</span>  <span class='chapter-title'>Bulk 转录组分析基础：质量控制、定量与差异表达</span>"
+    ]
+  },
+  {
+    "objectID": "transcriptomics_basic_lesson1.html",
+    "href": "transcriptomics_basic_lesson1.html",
+    "title": "21  测序原理、文库特性与原始数据质量控制",
+    "section": "",
+    "text": "21.1 学习目标\n完成本专题后，学生应能够：",
+    "crumbs": [
+      "第二阶段：转录组与单细胞",
+      "<span class='chapter-number'>21</span>  <span class='chapter-title'>测序原理、文库特性与原始数据质量控制</span>"
+    ]
+  },
+  {
+    "objectID": "transcriptomics_basic_lesson1.html#学习目标",
+    "href": "transcriptomics_basic_lesson1.html#学习目标",
+    "title": "21  测序原理、文库特性与原始数据质量控制",
+    "section": "",
+    "text": "区分 poly-A 富集与 rRNA 去除两种 RNA-seq 文库策略的适用场景与覆盖度差异；\n解释链特异性文库的 dUTP 构建原理，并使用 infer_experiment.py 确认链方向；\n解读 FastQC 报告中的六个核心质控模块，识别 RNA-seq 特有的异常模式；\n编写 fastp 修剪命令并正确设置 Adapter 和质量过滤参数；\n使用 MultiQC 生成多样本质控汇总报告并识别批次异常样本。",
+    "crumbs": [
+      "第二阶段：转录组与单细胞",
+      "<span class='chapter-number'>21</span>  <span class='chapter-title'>测序原理、文库特性与原始数据质量控制</span>"
+    ]
+  },
+  {
+    "objectID": "transcriptomics_basic_lesson1.html#从-microarray-到-rna-seq范式转变",
+    "href": "transcriptomics_basic_lesson1.html#从-microarray-到-rna-seq范式转变",
+    "title": "21  测序原理、文库特性与原始数据质量控制",
+    "section": "21.2 从 Microarray 到 RNA-seq：范式转变",
+    "text": "21.2 从 Microarray 到 RNA-seq：范式转变\n在 RNA-seq 出现之前，转录组研究的主流工具是微阵列（Microarray）。微阵列依赖于已知序列的探针杂交，只能检测预先设计好的转录本，动态范围有限（约 2 个数量级），且在低表达基因和高同源性基因上信噪比差。2008 年，多个研究组几乎同时发表了使用高通量测序直接测量 RNA 分子的方法，即 RNA-seq。这一范式转变带来了质的飞跃：RNA-seq 不依赖先验序列知识，能够发现新的转录本、检测可变剪接事件，动态范围扩展至 4–5 个数量级，并且理论上可以达到单碱基分辨率。\n\n历史注记： RNA-seq 的早期代表性论文包括 Mortazavi et al.（2008，Nature Methods）对小鼠肌肉组织的 mRNA 测序，以及 Wang et al.（2008，Nature）对人类转录组可变剪接的系统分析。这两篇论文奠定了 RNA-seq 分析的基本框架，至今仍是该领域引用最高的文献之一。\n\n尽管技术进步迅速，RNA-seq 的核心分析流程在过去十余年间已趋于成熟和标准化。理解这一流程的每个步骤背后的原理，不仅有助于正确执行分析，更重要的是能在遇到异常数据时准确定位问题来源。",
+    "crumbs": [
+      "第二阶段：转录组与单细胞",
+      "<span class='chapter-number'>21</span>  <span class='chapter-title'>测序原理、文库特性与原始数据质量控制</span>"
+    ]
+  },
+  {
+    "objectID": "transcriptomics_basic_lesson1.html#rna-seq-文库构建两条技术路线",
+    "href": "transcriptomics_basic_lesson1.html#rna-seq-文库构建两条技术路线",
+    "title": "21  测序原理、文库特性与原始数据质量控制",
+    "section": "21.3 RNA-seq 文库构建：两条技术路线",
+    "text": "21.3 RNA-seq 文库构建：两条技术路线\n\n21.3.1 poly-A 富集（mRNA-seq）\npoly-A 富集文库利用 oligo-dT 磁珠捕获含有 poly-A 尾的成熟 mRNA。由于真核细胞总 RNA 中约 80% 是核糖体 RNA（rRNA），直接建库会导致测序资源被 rRNA 大量占用。poly-A 富集有效去除 rRNA，使 mRNA 分子富集至总 reads 的 90% 以上。\n优势：操作简便，成本低，信噪比高。\n局限性：\n\n只能捕获含 poly-A 尾的 RNA，遗漏组蛋白 mRNA（无 poly-A 尾）和大多数非编码 RNA；\noligo-dT 对 mRNA 3’ 端的结合亲和力高于 5’ 端，导致转录本的 3’ 端覆盖度偏高，称为3’ 端偏差（3’ bias）；\nRNA 质量要求高：降解的 RNA（RIN &lt; 7）会加剧 3’ 端偏差，导致 5’ 端几乎无覆盖。\n\n\n\n21.3.2 rRNA 去除（Total RNA-seq / Ribo-Zero）\nrRNA 去除文库通过与 rRNA 互补的探针捕获并去除 rRNA，保留其余全部 RNA 分子，包括 pre-mRNA、lncRNA、circRNA、组蛋白 mRNA 等。\n优势：覆盖全转录组，适合研究非编码 RNA；对 RNA 质量要求相对宽松；覆盖度更均匀。\n局限性：成本较高；低表达 mRNA 的检出灵敏度略低于 poly-A 富集方法（因为非 mRNA 分子占用了部分测序资源）。\n\n选择建议： 若研究目标明确为蛋白质编码基因的差异表达，且 RNA 质量良好（RIN ≥ 8），优先选择 poly-A 富集；若需要研究非编码 RNA、RNA 降解样本，或希望覆盖更完整的转录组，选择 rRNA 去除方案。本章使用的 pasilla 数据集（SRR1039508–SRR1039517）为 poly-A 富集文库。\n\n\n\n21.3.3 链特异性文库\n常规 RNA-seq 文库在逆转录后会丢失链方向信息——测序 read 无法判断来自正义链（sense strand）还是反义链（antisense strand）。对于有大量正反链重叠基因或需要区分正反义转录的研究，链方向信息至关重要。\n目前最主流的链特异性文库构建方法是 dUTP 法（TruSeq Stranded 采用此方案），流程如下：\n\nmRNA 随机打断；\n逆转录合成第一链 cDNA（方向为 3’→5’，与 mRNA 反向互补）；\n以第一链为模板，合成含 dUTP 而非 dTTP 的第二链 cDNA；\n用尿嘧啶-DNA 糖基化酶（UDG）降解含 dUTP 的第二链；\n剩余第一链加接头，测序。\n\n由于测序的 read 来自第一链（反义链），read 2（R2）与原始 mRNA 方向相同，read 1（R1）与 mRNA 反向互补，即所谓的 RF 链方向（Illumina TruSeq Stranded 标准）。\n{{Wiki:RNA-Seq}}",
+    "crumbs": [
+      "第二阶段：转录组与单细胞",
+      "<span class='chapter-number'>21</span>  <span class='chapter-title'>测序原理、文库特性与原始数据质量控制</span>"
+    ]
+  },
+  {
+    "objectID": "transcriptomics_basic_lesson1.html#链方向的生物信息学确认",
+    "href": "transcriptomics_basic_lesson1.html#链方向的生物信息学确认",
+    "title": "21  测序原理、文库特性与原始数据质量控制",
+    "section": "21.4 链方向的生物信息学确认",
+    "text": "21.4 链方向的生物信息学确认\n在开始比对前，必须确认文库的链特异性方向，因为后续定量步骤（featureCounts 的 -s 参数、Salmon 的 --libType 参数）需要明确指定。错误的链方向设置会导致约 50% 的 reads 被丢弃或错误计数。\n推荐工具：RSeQC 的 infer_experiment.py\n该工具从比对的 BAM 文件中随机抽取读段，与参考注释中基因的转录方向进行对比，统计 read 方向与基因注释一致和不一致的比例：\n# Install RSeQC\npip install RSeQC\n\n# Download reference BED file (gene annotation in BED12 format)\n# Convert GTF to BED12 using gtfToGenePred + genePredToBed\ngtfToGenePred Homo_sapiens.GRCh38.109.gtf stdout | \\\n  genePredToBed stdin annotation.bed\n\n# Infer experiment strand\ninfer_experiment.py -r annotation.bed -i sample_sorted.bam -s 200000\n典型输出解读：\nThis is PairEnd Data\nFraction of reads failed to determine: 0.0250\nFraction of reads explained by \"1++,1--,2+-,2-+\": 0.0368  # RF: antisense\nFraction of reads explained by \"1+-,1-+,2++,2--\": 0.9382  # FR: sense\n上述结果表明该样本为 FR-stranded（约 94% reads 与 mRNA 同向），即 read 1 与 mRNA 同向，对应 featureCounts 的 -s 1 参数。\n\n常见错误： 不同测序平台和文库制备试剂盒对应不同的链方向编码。Illumina TruSeq Stranded mRNA 通常为 RF（-s 2），而某些文库为 FR（-s 1）。务必对每批数据独立确认，不要依赖试剂盒说明书假设。",
+    "crumbs": [
+      "第二阶段：转录组与单细胞",
+      "<span class='chapter-number'>21</span>  <span class='chapter-title'>测序原理、文库特性与原始数据质量控制</span>"
+    ]
+  },
+  {
+    "objectID": "transcriptomics_basic_lesson1.html#原始数据质量控制",
+    "href": "transcriptomics_basic_lesson1.html#原始数据质量控制",
+    "title": "21  测序原理、文库特性与原始数据质量控制",
+    "section": "21.5 原始数据质量控制",
+    "text": "21.5 原始数据质量控制\n\n21.5.1 FastQC：单样本质量评估\nFastQC 是 RNA-seq 质控的标准起点，对 FASTQ 文件执行 10 余项统计检测。以下是 RNA-seq 数据最关键的六个模块：\n1. Per Base Sequence Quality\n展示每个循环（cycle）位置上碱基质量分数的箱形图分布。RNA-seq 与 DNA-seq 的正常模式相同：read 末端（3’ 端）质量通常低于 5’ 端，这是信号强度随测序循环递减的结果。\n\n绿色区域（Q ≥ 28）：合格；\n黄色区域（20 ≤ Q &lt; 28）：边界；\n红色区域（Q &lt; 20）：不合格，提示需要截短。\n\n2. Per Tile Sequence Quality（仅 Illumina）\n显示流动槽（Flow Cell）上各 Tile 位置的质量。异常的 Tile 图案（蓝色代表高质量，橙/红代表低质量）提示测序过程中的物理问题（气泡、污染、激光问题），通常无法通过过滤解决。\n3. Per Sequence GC Content\n正常 RNA-seq 数据应呈现与物种基因组 GC 含量一致的单峰正态分布。RNA-seq 特有的异常模式：\n\n双峰或宽分布：提示 rRNA 污染（rRNA 的 GC 含量与 mRNA 显著不同）或样本混合；\n窄高峰偏移：提示 Adapter 二聚体（Adapter dimer）污染，通常位于 GC 约 50% 的位置。\n\n4. Sequence Duplication Levels\n显示各重复度级别的 reads 比例。RNA-seq 数据天然存在较高的重复率，因为高表达基因会产生大量相同序列的 cDNA，这与 DNA 测序中重复暗示 PCR 扩增偏差的情形不同。因此，RNA-seq 不建议对重复 reads 进行常规去除（除非有 UMI 标记）。FastQC 的 Duplicate Levels 模块对 RNA-seq 通常显示 WARN 或 FAIL，可忽略。\n5. Overrepresented Sequences\n列出出现频率超过 0.1% 的序列及其可能来源。需要关注的异常：\n\n未被去除的 Illumina Universal Adapter 序列（AGATCGGAAGAGC...）；\npoly-A 或 poly-T 序列（提示 Read-through 发生）；\n特定基因的 3’ 端序列（严重 3’ 偏差时高表达基因的 3’ 末端大量重复）。\n\n6. Adapter Content\n直接检测各循环位置上 Adapter 序列的比例。若在 read 末端 20–30 bp 处出现 Adapter 信号，说明 Insert Size 小于 read 长度，发生了 Read-through，需要进行 Adapter 修剪。\n\n\n21.5.2 fastp：Adapter 修剪与质量过滤\nfastp 是目前速度最快、功能最全面的 FASTQ 预处理工具，集 Adapter 检测、质量过滤、低复杂度过滤于一体，并输出内置 HTML 质控报告。\n# fastp for paired-end RNA-seq (TruSeq Stranded mRNA)\nfastp \\\n  --in1 SRR1039508_1.fastq.gz \\\n  --in2 SRR1039508_2.fastq.gz \\\n  --out1 SRR1039508_1_trimmed.fastq.gz \\\n  --out2 SRR1039508_2_trimmed.fastq.gz \\\n  --json SRR1039508_fastp.json \\\n  --html SRR1039508_fastp.html \\\n  --detect_adapter_for_pe \\\n  --trim_poly_x \\\n  --qualified_quality_phred 20 \\\n  --length_required 36 \\\n  --thread 8\n\n# Key parameters explained:\n# --detect_adapter_for_pe  : auto-detect adapter sequences for PE data\n# --trim_poly_x            : trim poly-A/T/G/C tails (RNA-seq specific)\n# --qualified_quality_phred: minimum base quality threshold (Q20)\n# --length_required        : discard reads shorter than 36 bp after trimming\n参数选择逻辑：\n\n--detect_adapter_for_pe：自动检测时 fastp 会从数据中推断接头序列，适合不确定接头类型的情况；若已知接头（如 Illumina TruSeq：AGATCGGAAGAGCACACGTCTGAAC），可用 --adapter_sequence 明确指定，速度更快且更可靠；\n--trim_poly_x：去除 read 末端的 poly-A/T 尾，这在 RNA-seq 中尤为重要；\n--qualified_quality_phred 20：去除质量低于 Q20 的碱基，对应错误率 1%；\n--length_required 36：修剪后过短的 reads 对比对没有贡献，反而增加多比对（multimapping）风险。\n\n\n黄金法则：先质控，后比对。 始终在 fastp 修剪后再次运行 FastQC，确认质控效果。FastQC-fastp-FastQC 的三步流程是 RNA-seq 质控的标准操作规程（SOP）。",
+    "crumbs": [
+      "第二阶段：转录组与单细胞",
+      "<span class='chapter-number'>21</span>  <span class='chapter-title'>测序原理、文库特性与原始数据质量控制</span>"
+    ]
+  },
+  {
+    "objectID": "transcriptomics_basic_lesson1.html#转录组层面质控超越碱基质量",
+    "href": "transcriptomics_basic_lesson1.html#转录组层面质控超越碱基质量",
+    "title": "21  测序原理、文库特性与原始数据质量控制",
+    "section": "21.6 转录组层面质控：超越碱基质量",
+    "text": "21.6 转录组层面质控：超越碱基质量\nFastQC 只反映读段本身的质量，而转录组层面的质控需要将 reads 与参考基因组比对后才能评估。以下指标在 RNA-seq 中尤为重要：\n\n21.6.1 RSeQC：转录本覆盖均匀性\n# Read distribution across genomic features\nread_distribution.py -r annotation.bed -i sample_sorted.bam\n\n# Expected output (poly-A enriched library):\n# Total Reads                   20,547,893\n# Total Tags                    21,034,510\n# CDS_Exons                    17,234,102  (81.9%)  &lt;-- should be majority\n# 5'UTR_Exons                   1,024,391   (4.9%)\n# 3'UTR_Exons                   1,887,234   (9.0%)\n# Introns                         789,342   (3.8%)\n# Intergenic                      99,441    (0.5%)\n\n# 3' bias assessment\ngeneBody_coverage.py -r annotation.bed \\\n  -i sample1.bam,sample2.bam,sample3.bam \\\n  -o coverage_output\ngeneBody_coverage.py 将转录本从 5’ 端（0%）到 3’ 端（100%）归一化，绘制覆盖度曲线。正常 poly-A 富集样本呈现轻微的 3’ 端升高；若 5’ 端覆盖度极低（RNA 降解），说明样本质量差，下游分析需谨慎。\n\n\n21.6.2 MultiQC：多样本汇总\nMultiQC 自动扫描当前目录及子目录中的 FastQC、STAR、featureCounts、Salmon 等工具的输出文件，生成多样本汇总报告：\n# Run MultiQC on all output files in current directory\nmultiqc . --outdir multiqc_report --filename multiqc_report\n\n# Expected output: multiqc_report.html\n\nMultiQC 使用建议： 在比对和定量完成后，再次在包含所有输出目录的父目录中运行 MultiQC，生成从质控到定量全流程的综合报告，便于发现样本间的系统性差异（如某几个样本比对率显著偏低、特定样本的 GC 分布偏移等）。",
+    "crumbs": [
+      "第二阶段：转录组与单细胞",
+      "<span class='chapter-number'>21</span>  <span class='chapter-title'>测序原理、文库特性与原始数据质量控制</span>"
+    ]
+  },
+  {
+    "objectID": "transcriptomics_basic_lesson1.html#实践pasilla-数据集质控流程",
+    "href": "transcriptomics_basic_lesson1.html#实践pasilla-数据集质控流程",
+    "title": "21  测序原理、文库特性与原始数据质量控制",
+    "section": "21.7 实践：pasilla 数据集质控流程",
+    "text": "21.7 实践：pasilla 数据集质控流程\n以下代码演示对 pasilla 数据集中一个样本（SRR1039508）的完整质控流程。实际分析中应对所有 10 个样本循环执行。\n# === Environment setup ===\n# Tools required: sra-tools, fastqc, fastp, multiqc, rseqc\n# Activate conda environment with all tools installed\nconda activate rnaseq-env\n\n# === Step 1: Download pasilla dataset ===\n# Use ENA FTP for faster download (preferred over NCBI SRA)\n# pasilla dataset: 8 samples (4 treated + 4 untreated)\n# SRR1039508 = untreated sample 1 (GSM1275862)\n\nmkdir -p data/raw data/trimmed data/qc/fastqc data/qc/fastp\n\n# Download via ENA FTP\nwget -P data/raw \\\n  ftp://ftp.sra.ebi.ac.uk/vol1/fastq/SRR103/008/SRR1039508/SRR1039508_1.fastq.gz \\\n  ftp://ftp.sra.ebi.ac.uk/vol1/fastq/SRR103/008/SRR1039508/SRR1039508_2.fastq.gz\n\n# === Step 2: Pre-trimming QC ===\nfastqc \\\n  data/raw/SRR1039508_1.fastq.gz \\\n  data/raw/SRR1039508_2.fastq.gz \\\n  --outdir data/qc/fastqc \\\n  --threads 8\n\n# === Step 3: Adapter trimming with fastp ===\nfastp \\\n  --in1  data/raw/SRR1039508_1.fastq.gz \\\n  --in2  data/raw/SRR1039508_2.fastq.gz \\\n  --out1 data/trimmed/SRR1039508_1.fastq.gz \\\n  --out2 data/trimmed/SRR1039508_2.fastq.gz \\\n  --json data/qc/fastp/SRR1039508_fastp.json \\\n  --html data/qc/fastp/SRR1039508_fastp.html \\\n  --detect_adapter_for_pe \\\n  --trim_poly_x \\\n  --qualified_quality_phred 20 \\\n  --length_required 36 \\\n  --thread 8\n\n# === Step 4: Post-trimming QC ===\nfastqc \\\n  data/trimmed/SRR1039508_1.fastq.gz \\\n  data/trimmed/SRR1039508_2.fastq.gz \\\n  --outdir data/qc/fastqc/post_trim \\\n  --threads 8\n\n# === Step 5: Generate MultiQC report ===\nmultiqc data/qc/ \\\n  --outdir data/qc/multiqc \\\n  --filename pasilla_qc_report\n完成后，打开 data/qc/multiqc/pasilla_qc_report.html，重点检查以下几点：\n\nAdapter Content：修剪后所有样本的接头含量应降至接近 0%；\nSequence Length Distribution：正常修剪后应在 36–150 bp 范围内分布，peak 在 150 bp；\nPer Sequence GC Content：10 个样本的 GC 分布应高度一致，偏离的样本提示潜在污染或批次问题。",
+    "crumbs": [
+      "第二阶段：转录组与单细胞",
+      "<span class='chapter-number'>21</span>  <span class='chapter-title'>测序原理、文库特性与原始数据质量控制</span>"
+    ]
+  },
+  {
+    "objectID": "transcriptomics_basic_lesson1.html#rna-完整性与样本质量评级",
+    "href": "transcriptomics_basic_lesson1.html#rna-完整性与样本质量评级",
+    "title": "21  测序原理、文库特性与原始数据质量控制",
+    "section": "21.8 RNA 完整性与样本质量评级",
+    "text": "21.8 RNA 完整性与样本质量评级\n在送测之前，RNA 样本的完整性（Integrity）是决定数据质量的关键先决条件。降解的 RNA 在 poly-A 富集建库时会产生严重的 3’ 端偏差，甚至导致整个实验失败。\n\n21.8.1 RNA 完整性评分（RIN）\nRNA 完整性数字（RNA Integrity Number, RIN）是由 Agilent Bioanalyzer 或 Fragment Analyzer 根据 28S/18S rRNA 峰比值与降解特征自动计算的 1–10 评分：\n\n\n\nRIN 值\n完整性描述\n适用场景\n\n\n\n\n9–10\n完整，无降解\n所有建库方法\n\n\n7–8\n轻度降解\npoly-A 富集可接受\n\n\n5–6\n中度降解\n推荐 rRNA 去除；总 RNA 分析\n\n\n&lt; 5\n严重降解\n仅适合 3’ 端定向建库或放弃\n\n\n\n\nRIN 的局限性： RIN 基于 rRNA 完整性推断 mRNA 完整性，但两者降解速率不同。植物样本（叶绿体 rRNA 比例高）和 FFPE（福尔马林固定石蜡包埋）样本的 RIN 解读需要额外谨慎。FFPE 样本通常 RIN &lt; 3，但用 DV200（&gt; 200 nt 片段的比例）评估更适合。\n\n\n\n21.8.2 Phred 质量分数的数学基础\nIllumina 测序仪为每个碱基分配一个 Phred 质量分数 \\(Q\\)，定义为：\n\\[Q = -10 \\log_{10} P_{\\text{error}}\\]\n其中 \\(P_{\\text{error}}\\) 是该碱基被错误识别的概率。常用对应关系：\n\n\n\nQ 值\n错误率\n碱基准确率\n\n\n\n\nQ10\n10%\n90%\n\n\nQ20\n1%\n99%\n\n\nQ30\n0.1%\n99.9%\n\n\nQ40\n0.01%\n99.99%\n\n\n\n在 FASTQ 文件中，每个碱基的 Q 值用单个 ASCII 字符编码（Phred+33 编码）：实际字符 = chr(Q + 33)。例如，I 对应 ASCII 73，Q = 73 - 33 = 40。",
+    "crumbs": [
+      "第二阶段：转录组与单细胞",
+      "<span class='chapter-number'>21</span>  <span class='chapter-title'>测序原理、文库特性与原始数据质量控制</span>"
+    ]
+  },
+  {
+    "objectID": "transcriptomics_basic_lesson1.html#批次效应的早期检测",
+    "href": "transcriptomics_basic_lesson1.html#批次效应的早期检测",
+    "title": "21  测序原理、文库特性与原始数据质量控制",
+    "section": "21.9 批次效应的早期检测",
+    "text": "21.9 批次效应的早期检测\n批次效应（Batch Effect）是 RNA-seq 实验中最常见的技术干扰来源之一，指由于样本在不同时间、不同操作人员、不同试剂批次或不同测序机器上处理，引入的与生物学处理无关的系统性变异。批次效应如果未被识别和校正，会产生大量假阳性差异基因，严重时可完全掩盖真实的生物学信号。\n\n历史案例： 2010 年 Nature Methods 上发表了一篇影响深远的文章，展示了两篇顶级期刊（Nature、Science）的 TCGA 癌症基因组数据中存在显著的批次效应，部分”发现”的分子亚型实际上是不同测序批次的人工产物。这一事件推动了批次效应校正成为 RNA-seq 分析的标准步骤。\n\n\n21.9.1 批次效应的来源\n\n文库制备批次：不同日期制备的文库，试剂状态和操作细节差异；\n测序批次：不同 Flow Cell、不同 Lane 之间的系统误差；\nRNA 提取批次：提取试剂盒批次、RIN 差异；\n实验操作人员：不同人员的操作差异；\n样本保存方式：新鲜组织 vs 冻存 vs FFPE。\n\n\n\n21.9.2 PCA 检测批次效应\n主成分分析（PCA）是检测批次效应最直观的方法。在 PCA 图中，用不同颜色标记处理组和批次：若 PC1/PC2 的分离方向与处理组一致，说明生物学信号主导；若分离方向与批次一致，说明批次效应超过了生物学效应。\nlibrary(DESeq2)\nlibrary(ggplot2)\n\n# Assume dds has been created and vst applied\nvsd &lt;- vst(dds, blind = TRUE)\n\n# Add batch information to colData\n# (in real experiments, record batch during sample collection)\ncolData(dds)$batch &lt;- factor(c(\"batch1\", \"batch1\", \"batch2\",\n                               \"batch1\", \"batch2\", \"batch2\"))\n\n# PCA colored by condition AND batch\npca_data &lt;- plotPCA(vsd, intgroup = c(\"condition\", \"batch\"),\n                    returnData = TRUE)\npercent_var &lt;- round(100 * attr(pca_data, \"percentVar\"))\n\nggplot(pca_data, aes(x = PC1, y = PC2,\n                     color = condition, shape = batch)) +\n  geom_point(size = 4) +\n  xlab(paste0(\"PC1: \", percent_var[1], \"% variance\")) +\n  ylab(paste0(\"PC2: \", percent_var[2], \"% variance\")) +\n  labs(title = \"PCA: check for batch effects\",\n       subtitle = \"Shape = batch; Color = condition\") +\n  theme_classic()\n\n# If batch separates samples more than condition,\n# batch correction is needed before DEA (see Lesson 3)\n\n\n21.9.3 RLE 图：检测系统性偏移\n相对对数表达量图（Relative Log Expression, RLE）是另一种有效的批次效应检测工具。对每个样本，计算每个基因的表达量与所有样本中该基因中位数的差值（对数尺度），然后绘制箱形图。正常情况下，所有样本的箱体中位线应接近 0；若某些样本整体偏移，说明存在系统性偏差。\nlibrary(EDASeq)\n\n# Compute RLE plot from raw counts\ncounts_matrix &lt;- counts(dds)\nrle_data &lt;- log2(counts_matrix + 1) -\n  rowMedians(log2(counts_matrix + 1))\n\nrle_df &lt;- as.data.frame(rle_data)\nrle_long &lt;- tidyr::pivot_longer(rle_df, everything(),\n                                names_to = \"sample\",\n                                values_to = \"rle\")\n\nggplot(rle_long, aes(x = sample, y = rle, fill = sample)) +\n  geom_boxplot(outlier.size = 0.3) +\n  geom_hline(yintercept = 0, linetype = \"dashed\",\n             color = \"firebrick\") +\n  labs(title = \"RLE Plot: check for systematic expression shifts\",\n       y = \"Relative Log Expression\",\n       x = \"Sample\") +\n  theme_classic() +\n  theme(axis.text.x = element_text(angle = 45, hjust = 1),\n        legend.position = \"none\")\n\n实践规范： 批次效应的检测应在 DEA 之前完成。若发现批次效应，有两种处理策略：（1）将批次作为协变量加入线性模型（推荐，保留批次内信息）；（2）使用 ComBat/limma::removeBatchEffect 从表达矩阵中直接去除批次效应（适合可视化，但不推荐直接用于 DEA 输入）。详见 Lesson 3 批次效应校正部分。",
+    "crumbs": [
+      "第二阶段：转录组与单细胞",
+      "<span class='chapter-number'>21</span>  <span class='chapter-title'>测序原理、文库特性与原始数据质量控制</span>"
+    ]
+  },
+  {
+    "objectID": "transcriptomics_basic_lesson1.html#关于-pasilla-数据集",
+    "href": "transcriptomics_basic_lesson1.html#关于-pasilla-数据集",
+    "title": "21  测序原理、文库特性与原始数据质量控制",
+    "section": "21.10 关于 pasilla 数据集",
+    "text": "21.10 关于 pasilla 数据集\npasilla（西班牙语”葡萄干辣椒”）数据集来自 Brooks et al.（2011）对果蝇 RBP 蛋白 pasilla 基因的 RNA-seq 研究，但本教材使用的 SRR1039508–SRR1039517 是 DESeq2 Bioconductor 包教程中广泛使用的人类 A549 细胞系数据集（地塞米松 dex 处理 vs 对照），技术社区习惯沿用”pasilla”这一称呼。\n\n\n\n样本 ID\n处理\n配对类型\n\n\n\n\nSRR1039508\nuntreated\npaired\n\n\nSRR1039509\nuntreated\nsingle\n\n\nSRR1039512\nuntreated\npaired\n\n\nSRR1039513\nuntreated\nsingle\n\n\nSRR1039516\ntreated (dex)\npaired\n\n\nSRR1039517\ntreated (dex)\nsingle\n\n\n\n\n注意： 该数据集中混合了单端（single-end）和双端（paired-end）样本。DESeq2 分析应仅使用双端样本（SRR1039508、SRR1039512、SRR1039516）或在模型中将配对类型作为协变量处理。本章实践部分使用双端样本。",
+    "crumbs": [
+      "第二阶段：转录组与单细胞",
+      "<span class='chapter-number'>21</span>  <span class='chapter-title'>测序原理、文库特性与原始数据质量控制</span>"
+    ]
+  },
+  {
+    "objectID": "transcriptomics_basic_lesson1.html#课后自测-post-lesson-quiz",
+    "href": "transcriptomics_basic_lesson1.html#课后自测-post-lesson-quiz",
+    "title": "21  测序原理、文库特性与原始数据质量控制",
+    "section": "21.11 课后自测 (Post-Lesson Quiz)",
+    "text": "21.11 课后自测 (Post-Lesson Quiz)\n\npoly-A 富集文库和 rRNA 去除文库在非编码 RNA 检测能力上有何本质区别？请举例说明各自适合的研究场景。\n在 RNA-seq 链特异性检测中，infer_experiment.py 输出如下结果：\"1++,1--,2+-,2-+\"：0.89，\"1+-,1-+,2++,2--\"：0.05。这说明该样本的链方向是什么？featureCounts 应使用 -s 参数的哪个值？\n为什么 RNA-seq 数据的 FastQC Sequence Duplication Levels 通常会显示 WARN 或 FAIL，但这并不意味着数据质量有问题？\nfastp 的 --trim_poly_x 参数在 RNA-seq 分析中为何特别重要？如果不修剪 poly-A 尾，会对下游比对步骤产生什么影响？\n在 MultiQC 报告中，你发现 10 个样本中有 2 个样本的比对率比其他样本低 15%，且 GC 分布出现双峰。可能的原因是什么？你会如何进一步排查？\n\n\n\n参考答案 (Reference Answers)\n\n\npoly-A 富集文库仅捕获含 poly-A 尾的成熟 mRNA，无法检测组蛋白 mRNA、lncRNA、circRNA 等非编码 RNA，适合研究蛋白质编码基因差异表达；rRNA 去除文库保留全部非 rRNA 分子，适合研究 lncRNA、circRNA 等非编码 RNA，以及使用降解 RNA 的样本（如 FFPE 组织）。\n该样本为 RF-stranded（read 1 与 mRNA 反向互补，read 2 与 mRNA 同向），即 Illumina TruSeq Stranded 标准方向。featureCounts 应使用 -s 2（RF 方向）。\nRNA-seq 中高表达基因会产生大量具有相同序列的 cDNA 片段，这是生物学现象而非 PCR 扩增偏差。FastQC 无法区分生物学重复与 PCR 重复，因此对 RNA-seq 数据的重复率警告通常可以忽略。只有在有 UMI 标记的文库中，才能真正区分并去除 PCR 重复。\npoly-A 富集步骤有时会捕获 poly-A 本身延伸到 read 中（特别是 Insert Size 较短时），这些 poly-A 序列在基因组比对时无法有效映射，会显著降低比对率并产生软截断（soft-clipping）。修剪 poly-A 尾可提高比对率 1–5%，特别是在短 Insert Size 的样本中效果更明显。\n可能原因：（1）这 2 个样本存在 rRNA 或 DNA 污染（GC 双峰）；（2）文库构建失败导致 Adapter 二聚体过多；（3）物种或组织来源不同（如样本混淆）；（4）RNA 降解严重导致短片段偏多。排查步骤：检查 FastQC 的 Overrepresented Sequences 模块确认污染类型；查看 RSeQC read_distribution 结果中各基因组区域的 reads 比例；若 rRNA 比例高，考虑重新建库。",
+    "crumbs": [
+      "第二阶段：转录组与单细胞",
+      "<span class='chapter-number'>21</span>  <span class='chapter-title'>测序原理、文库特性与原始数据质量控制</span>"
+    ]
+  },
+  {
+    "objectID": "transcriptomics_basic_lesson2.html",
+    "href": "transcriptomics_basic_lesson2.html",
+    "title": "22  Splice-Aware 比对与表达量定量",
+    "section": "",
+    "text": "22.1 学习目标\n完成本专题后，学生应能够：",
+    "crumbs": [
+      "第二阶段：转录组与单细胞",
+      "<span class='chapter-number'>22</span>  <span class='chapter-title'>Splice-Aware 比对与表达量定量</span>"
+    ]
+  },
+  {
+    "objectID": "transcriptomics_basic_lesson2.html#学习目标",
+    "href": "transcriptomics_basic_lesson2.html#学习目标",
+    "title": "22  Splice-Aware 比对与表达量定量",
+    "section": "",
+    "text": "解释 splice-aware 比对的必要性，描述 STAR 两步比对策略的核心逻辑；\n理解 GTF 注释文件中 gene_id、transcript_id、exon 的层级关系；\n使用 STAR 完成 RNA-seq 双端比对，正确设置链特异性参数；\n区分 featureCounts（比对后计数）与 Salmon（伪比对）的方法论差异，并在实际项目中做出合理选择；\n使用 tximport 将 Salmon 转录本级别定量汇总至基因级别；\n理解 TPM、FPKM 与原始计数的计算公式与适用场景，解释 DESeq2 必须使用原始计数的原因。",
+    "crumbs": [
+      "第二阶段：转录组与单细胞",
+      "<span class='chapter-number'>22</span>  <span class='chapter-title'>Splice-Aware 比对与表达量定量</span>"
+    ]
+  },
+  {
+    "objectID": "transcriptomics_basic_lesson2.html#为什么-rna-seq-比对需要特殊处理",
+    "href": "transcriptomics_basic_lesson2.html#为什么-rna-seq-比对需要特殊处理",
+    "title": "22  Splice-Aware 比对与表达量定量",
+    "section": "22.2 为什么 RNA-seq 比对需要特殊处理？",
+    "text": "22.2 为什么 RNA-seq 比对需要特殊处理？\n\n22.2.1 Read-through 与剪接位点的挑战\n在 DNA 测序中，read 是基因组连续区域的测序结果，比对工具只需在基因组上找到一段连续的最优匹配即可。RNA-seq 则面临根本性的不同：成熟 mRNA 经过剪接，内含子已被去除。当一个 150 bp 的 read 跨越剪接位点时，它实际上对应基因组上两段不连续的外显子区域，中间隔着长达数千甚至数万 bp 的内含子。\n若使用普通的 DNA 比对工具（如 Bowtie2），跨剪接位点的读段将无法被正确比对，或被强制比对到错误位置，导致：\n\nJunction read（约占 20–30% 的 reads）丢失，降低定量精度；\n新型剪接位点无法被发现；\n外显子边界附近的覆盖度出现人为缺口。\n\n{{Wiki:RNA_splicing}}\n\n\n22.2.2 Splice-Aware 比对的解决思路\nSplice-aware 比对工具通过两类策略处理跨剪接位点的 reads：\n策略一：外显子图谱索引（HISAT2）：在构建基因组索引时，将已知的剪接位点信息编码进图结构索引，比对时直接在图上搜索最优路径，既能利用先验知识，又支持发现新剪接位点。\n策略二：种子-延伸（STAR）：先将 read 的各段子序列分别映射到基因组，识别出可能的剪接位点，再将片段在剪接位点处拼合。",
+    "crumbs": [
+      "第二阶段：转录组与单细胞",
+      "<span class='chapter-number'>22</span>  <span class='chapter-title'>Splice-Aware 比对与表达量定量</span>"
+    ]
+  },
+  {
+    "objectID": "transcriptomics_basic_lesson2.html#starrna-seq-比对的工业标准",
+    "href": "transcriptomics_basic_lesson2.html#starrna-seq-比对的工业标准",
+    "title": "22  Splice-Aware 比对与表达量定量",
+    "section": "22.3 STAR：RNA-seq 比对的工业标准",
+    "text": "22.3 STAR：RNA-seq 比对的工业标准\nSTAR（Spliced Transcripts Alignment to a Reference）是目前使用最广泛的 RNA-seq 比对工具，兼顾速度（基于 RAM 的高速索引）与准确性（支持 2-pass 模式发现新剪接位点）。\n\n22.3.1 STAR 比对算法原理\nSTAR 的比对分为两个核心阶段：\n第一阶段：种子查找（Maximal Mappable Prefix, MMP）\nSTAR 从 read 的每个位置出发，在基因组索引中寻找能精确匹配的最长前缀序列（MMP）。这一步利用了后缀数组（Suffix Array）索引实现高速查找。对于一个跨越剪接位点的 read，MMP 会在第一个外显子末端停止延伸，产生一个”未映射尾部”。\n第二阶段：拼接与比对评分\n对每个 MMP 片段，STAR 在其末端的基因组区域内搜索可能的剪接信号（GT-AG 规则，GT…AG 是内含子两端的保守序列），将未映射的尾部延伸至下一个外显子起始位置，验证拼合后的比对得分。得分最高的比对方案即为最终结果。\n\n两遍比对（2-pass mode）： STAR 的第一遍比对（1-pass）利用注释中的已知剪接位点；在第一遍完成后，将发现的所有新剪接位点加入索引，再进行第二遍比对（2-pass）。这显著提高了低表达基因的新剪接位点检出率，推荐在正式分析中开启（--twopassMode Basic）。\n\n\n\n22.3.2 GTF 注释文件的作用\nGTF（General Transfer Format）文件描述基因组注释，是 STAR 索引构建和 featureCounts 计数的必要输入。理解其层级结构有助于正确设置工具参数。\n# GTF 文件结构示例（第9列含关键属性）\n# chr  source  feature  start     end    .  strand  .  attributes\nchr1  ENSEMBL  gene     65419     71585  .  +  .  gene_id \"ENSG00000186092\"; gene_name \"OR4F5\";\nchr1  ENSEMBL  transcript 65419  71585  .  +  .  gene_id \"ENSG00000186092\"; transcript_id \"ENST00000641515\";\nchr1  ENSEMBL  exon     65419     65433  .  +  .  gene_id \"ENSG00000186092\"; transcript_id \"ENST00000641515\";\nchr1  ENSEMBL  exon     65520     65573  .  +  .  gene_id \"ENSG00000186092\"; transcript_id \"ENST00000641515\";\n关键层级：gene → transcript → exon。featureCounts 在 exon 级别计数，通过 gene_id 属性将结果汇总至基因层面。\n\n\n22.3.3 STAR 索引构建与比对\n# === Step 1: Build STAR genome index ===\n# Requires ~30 GB RAM for human genome (GRCh38)\n# --sjdbOverhang: read length - 1 (for 150 bp reads: 149)\nmkdir -p index/STAR_GRCh38\n\nSTAR \\\n  --runMode genomeGenerate \\\n  --genomeDir index/STAR_GRCh38 \\\n  --genomeFastaFiles Homo_sapiens.GRCh38.dna.primary_assembly.fa \\\n  --sjdbGtfFile Homo_sapiens.GRCh38.109.gtf \\\n  --sjdbOverhang 149 \\\n  --runThreadN 16\n\n# === Step 2: Align paired-end reads (with 2-pass mode) ===\nmkdir -p results/star/SRR1039508\n\nSTAR \\\n  --runThreadN 16 \\\n  --genomeDir index/STAR_GRCh38 \\\n  --readFilesIn \\\n    data/trimmed/SRR1039508_1.fastq.gz \\\n    data/trimmed/SRR1039508_2.fastq.gz \\\n  --readFilesCommand zcat \\\n  --outSAMtype BAM SortedByCoordinate \\\n  --outSAMattributes NH HI AS NM MD \\\n  --outFileNamePrefix results/star/SRR1039508/ \\\n  --outFilterType BySJout \\\n  --alignSJoverhangMin 8 \\\n  --alignSJDBoverhangMin 1 \\\n  --outFilterMismatchNmax 999 \\\n  --outFilterMismatchNoverReadLmax 0.04 \\\n  --alignIntronMin 20 \\\n  --alignIntronMax 1000000 \\\n  --alignMatesGapMax 1000000 \\\n  --twopassMode Basic\n\n# === Step 3: Index BAM file ===\nsamtools index results/star/SRR1039508/Aligned.sortedByCoord.out.bam\n\n# Key STAR output files:\n# Aligned.sortedByCoord.out.bam  -- sorted, indexed BAM\n# Log.final.out                  -- alignment summary statistics\n# SJ.out.tab                     -- splice junction table\nSTAR Log.final.out 关键指标解读：\n# Good alignment results (expected ranges):\nUniquely mapped reads %       |  80-95%   (&lt; 75% may indicate quality issues)\n% of reads mapped to multiple loci  |  5-15%   (high in repetitive regions)\n% of reads unmapped: too short |  &lt; 5%    (high suggests over-trimming)",
+    "crumbs": [
+      "第二阶段：转录组与单细胞",
+      "<span class='chapter-number'>22</span>  <span class='chapter-title'>Splice-Aware 比对与表达量定量</span>"
+    ]
+  },
+  {
+    "objectID": "transcriptomics_basic_lesson2.html#表达量定量两种主流策略",
+    "href": "transcriptomics_basic_lesson2.html#表达量定量两种主流策略",
+    "title": "22  Splice-Aware 比对与表达量定量",
+    "section": "22.4 表达量定量：两种主流策略",
+    "text": "22.4 表达量定量：两种主流策略\n\n22.4.1 策略一：比对后计数（featureCounts）\nfeatureCounts 是 Subread 工具包的组成部分，逐个统计每个基因的外显子区域内的比对 reads 数量。其优点是流程直观、结果可解释性强；缺点是对多比对 reads 的处理较为简单，且不估计转录本层面的不确定性。\n# featureCounts: count reads per gene (using exon features)\n# -s 2 = RF-stranded (TruSeq Stranded mRNA)\n# -p   = paired-end mode\n# -B   = both mates must be mapped\n# -C   = exclude chimeric reads\n\nfeatureCounts \\\n  -T 16 \\\n  -a Homo_sapiens.GRCh38.109.gtf \\\n  -o results/featureCounts/pasilla_counts.txt \\\n  -s 2 \\\n  -p -B -C \\\n  --countReadPairs \\\n  results/star/SRR1039508/Aligned.sortedByCoord.out.bam \\\n  results/star/SRR1039512/Aligned.sortedByCoord.out.bam \\\n  results/star/SRR1039516/Aligned.sortedByCoord.out.bam\n\n# featureCounts output: tab-delimited matrix\n# Rows = genes (Ensembl ID), Columns = samples\n# First 6 columns: GeneID, Chr, Start, End, Strand, Length\n重叠歧义处理：当一个 read 跨越两个基因的外显子时，featureCounts 默认丢弃该 read（--fracOverlap 0）。对于重叠基因密集的区域，可使用 --fraction 参数将 read 计数按重叠比例分配，但这会产生非整数计数，不适用于 DESeq2。\n\n\n22.4.2 策略二：伪比对定量（Salmon）\nSalmon 采用了完全不同的范式：不进行全基因组比对，而是将 reads 与转录本序列进行快速匹配（quasi-mapping），利用 k-mer 哈希索引定位读段到最可能的转录本。这种方式在速度上快 10–50 倍，同时内置了多种偏差校正模型。\n\n黄金法则： Salmon 内置的 GC 偏差校正（--gcBias）和序列偏差校正（--seqBias）在大多数真实 RNA-seq 数据上能提高定量精度，特别是对 GC 含量极端的基因。建议默认开启两者。\n\n# === Step 1: Build Salmon index from transcript sequences ===\n# Extract transcript sequences from genome + GTF using gffread\ngffread Homo_sapiens.GRCh38.109.gtf \\\n  -g Homo_sapiens.GRCh38.dna.primary_assembly.fa \\\n  -w transcripts.fa\n\n# Build Salmon index (with decoy-aware indexing for higher accuracy)\n# The decoy file is the genome itself (for selective alignment)\ngrep \"^&gt;\" Homo_sapiens.GRCh38.dna.primary_assembly.fa | \\\n  cut -d \" \" -f 1 | sed 's/&gt;//' &gt; decoys.txt\n\ncat transcripts.fa Homo_sapiens.GRCh38.dna.primary_assembly.fa &gt; gentrome.fa\n\nsalmon index \\\n  --transcripts gentrome.fa \\\n  --decoys decoys.txt \\\n  --index index/salmon_GRCh38 \\\n  --gencode \\\n  --threads 16\n\n# === Step 2: Quantify each sample ===\n# --libType A = auto-detect library type\n# --gcBias    = correct for GC content bias\n# --seqBias   = correct for sequence-specific bias\n# --validateMappings = use selective alignment (recommended)\n\nsalmon quant \\\n  --index index/salmon_GRCh38 \\\n  --libType A \\\n  --mates1 data/trimmed/SRR1039508_1.fastq.gz \\\n  --mates2 data/trimmed/SRR1039508_2.fastq.gz \\\n  --output results/salmon/SRR1039508 \\\n  --gcBias \\\n  --seqBias \\\n  --validateMappings \\\n  --threads 16\n\n# Output: results/salmon/SRR1039508/quant.sf\n# Columns: Name (transcript ID), Length, EffectiveLength, TPM, NumReads\n理解选择性比对（Selective Alignment）：常规 Salmon 的 quasi-mapping 速度极快，但可能将来自类似序列的 reads 错误分配。Selective Alignment（--validateMappings）引入了一个额外验证步骤：对候选转录本执行完整的序列比对打分，显著减少了假阳性映射，在准确性上接近 STAR 全基因组比对，而速度仍比 STAR 快 3–5 倍。\n\n\n22.4.3 使用 tximport 汇总 Salmon 结果\nSalmon 在转录本层面进行定量，而下游分析（DESeq2）通常在基因层面进行。tximport 包负责将转录本级别的 TPM 和 counts 汇总至基因层面，同时传递 Salmon 的不确定性估计（Bootstrap 分位数），为 DESeq2 提供更可靠的输入。\nlibrary(tximport)\nlibrary(DESeq2)\n\n# Create transcript-to-gene mapping table\n# Using biomaRt or pre-downloaded tx2gene file\nlibrary(biomaRt)\nmart &lt;- useMart(\"ensembl\", dataset = \"hsapiens_gene_ensembl\")\ntx2gene &lt;- getBM(\n  attributes = c(\"ensembl_transcript_id_version\", \"ensembl_gene_id\"),\n  mart = mart\n)\n# Save for reuse\nwrite.csv(tx2gene, \"tx2gene_GRCh38.csv\", row.names = FALSE)\n\n# Define sample paths\nsample_ids &lt;- c(\"SRR1039508\", \"SRR1039512\", \"SRR1039516\",\n                \"SRR1039509\", \"SRR1039513\", \"SRR1039517\")\nfiles &lt;- file.path(\"results/salmon\", sample_ids, \"quant.sf\")\nnames(files) &lt;- sample_ids\n\n# Import and summarize to gene level\ntxi &lt;- tximport(\n  files,\n  type = \"salmon\",\n  tx2gene = tx2gene,\n  ignoreTxVersion = TRUE   # strip version numbers from transcript IDs\n)\n\n# txi is a list with: counts, abundance (TPM), length, countsFromAbundance\n# Use txi$counts for DESeq2 input (scaled to gene-level counts)\ndim(txi$counts)   # genes x samples matrix",
+    "crumbs": [
+      "第二阶段：转录组与单细胞",
+      "<span class='chapter-number'>22</span>  <span class='chapter-title'>Splice-Aware 比对与表达量定量</span>"
+    ]
+  },
+  {
+    "objectID": "transcriptomics_basic_lesson2.html#定量单位的选择tpmfpkm-与原始计数",
+    "href": "transcriptomics_basic_lesson2.html#定量单位的选择tpmfpkm-与原始计数",
+    "title": "22  Splice-Aware 比对与表达量定量",
+    "section": "22.5 定量单位的选择：TPM、FPKM 与原始计数",
+    "text": "22.5 定量单位的选择：TPM、FPKM 与原始计数\n\n22.5.1 各单位的计算公式\n三种常见定量单位针对不同的偏差进行校正：\nFPKM（Fragments Per Kilobase of transcript per Million mapped reads）： \\[\\text{FPKM}_i = \\frac{C_i}{L_i / 10^3 \\times N / 10^6} = \\frac{C_i \\times 10^9}{L_i \\times N}\\]\n其中 \\(C_i\\) 是基因 \\(i\\) 的 read 数，\\(L_i\\) 是基因有效长度（bp），\\(N\\) 是样本的总 mapped reads 数。同时校正基因长度和测序深度。\nTPM（Transcripts Per Million）： \\[\\text{TPM}_i = \\frac{C_i / L_i}{\\sum_j (C_j / L_j)} \\times 10^6\\]\n先对每个基因做长度校正，再将所有基因的 TPM 归一化使总和为 10^6。TPM 的关键优势：同一样本中所有基因的 TPM 之和恒为 10^6，使不同样本间同一基因的 TPM 可以直接比较（FPKM 无此性质）。\n原始计数（Raw Counts）：featureCounts 或 tximport 输出的未经归一化整数计数，仅校正了测序深度差异（由 DESeq2 的 Size Factor 在分析过程中处理）。\n\n\n22.5.2 为什么 DESeq2 必须使用原始计数？\nDESeq2 的负二项分布统计模型要求输入未归一化的整数计数，原因如下：\n\n模型假设：负二项分布模拟的是测序过程中随机抽样的计数数据；TPM/FPKM 是连续值且不服从此分布；\n内部归一化：DESeq2 通过 Size Factor 在模型内部处理测序深度差异，外部归一化会破坏模型的统计假设；\n方差估计：DESeq2 的过离散度（Overdispersion）估计依赖于计数数据的整数性质。\n\n\n严重错误提示： 将 TPM 或 FPKM 值输入 DESeq2 是一个严重的统计错误，会导致假阳性率失控。正确的做法是：DESeq2 和 edgeR 使用原始计数；跨样本可视化和基因水平比较使用 TPM；FPKM 已基本被 TPM 取代，不推荐使用。",
+    "crumbs": [
+      "第二阶段：转录组与单细胞",
+      "<span class='chapter-number'>22</span>  <span class='chapter-title'>Splice-Aware 比对与表达量定量</span>"
+    ]
+  },
+  {
+    "objectID": "transcriptomics_basic_lesson2.html#两种定量策略的比较",
+    "href": "transcriptomics_basic_lesson2.html#两种定量策略的比较",
+    "title": "22  Splice-Aware 比对与表达量定量",
+    "section": "22.6 两种定量策略的比较",
+    "text": "22.6 两种定量策略的比较\n\n\n\n特性\nfeatureCounts\nSalmon\n\n\n\n\n比对方式\n基于全基因组 BAM 比对\n伪比对/选择性比对\n\n\n速度\n较慢（依赖 STAR 输出）\n极快（直接从 FASTQ）\n\n\n偏差校正\n无\nGC bias、序列偏差\n\n\n多比对处理\n简单（丢弃或分数分配）\nEM 算法最优分配\n\n\n不确定性估计\n无\nBootstrap 区间\n\n\n输出层级\n基因级别\n转录本级别（需 tximport）\n\n\nDESeq2 兼容性\n直接兼容\n需通过 tximport\n\n\n推荐场景\n快速分析、已有 BAM 文件\n新项目、需要偏差校正",
+    "crumbs": [
+      "第二阶段：转录组与单细胞",
+      "<span class='chapter-number'>22</span>  <span class='chapter-title'>Splice-Aware 比对与表达量定量</span>"
+    ]
+  },
+  {
+    "objectID": "transcriptomics_basic_lesson2.html#实践完整比对与定量流程",
+    "href": "transcriptomics_basic_lesson2.html#实践完整比对与定量流程",
+    "title": "22  Splice-Aware 比对与表达量定量",
+    "section": "22.7 实践：完整比对与定量流程",
+    "text": "22.7 实践：完整比对与定量流程\n# === Complete pipeline for all 6 paired-end pasilla samples ===\n# Assumes STAR index is already built\n\nSAMPLES=(\"SRR1039508\" \"SRR1039512\" \"SRR1039516\"\n         \"SRR1039509\" \"SRR1039513\" \"SRR1039517\")\n\nfor SAMPLE in \"${SAMPLES[@]}\"; do\n  echo \"Processing: ${SAMPLE}\"\n\n  # STAR alignment\n  mkdir -p results/star/${SAMPLE}\n  STAR \\\n    --runThreadN 16 \\\n    --genomeDir index/STAR_GRCh38 \\\n    --readFilesIn \\\n      data/trimmed/${SAMPLE}_1.fastq.gz \\\n      data/trimmed/${SAMPLE}_2.fastq.gz \\\n    --readFilesCommand zcat \\\n    --outSAMtype BAM SortedByCoordinate \\\n    --outSAMattributes NH HI AS NM MD \\\n    --outFileNamePrefix results/star/${SAMPLE}/ \\\n    --twopassMode Basic \\\n    --runThreadN 16\n\n  samtools index results/star/${SAMPLE}/Aligned.sortedByCoord.out.bam\n\n  # Salmon quantification\n  salmon quant \\\n    --index index/salmon_GRCh38 \\\n    --libType A \\\n    --mates1 data/trimmed/${SAMPLE}_1.fastq.gz \\\n    --mates2 data/trimmed/${SAMPLE}_2.fastq.gz \\\n    --output results/salmon/${SAMPLE} \\\n    --gcBias --seqBias --validateMappings \\\n    --threads 16\ndone\n\n# === featureCounts on all BAM files simultaneously ===\nfeatureCounts \\\n  -T 16 \\\n  -a Homo_sapiens.GRCh38.109.gtf \\\n  -o results/featureCounts/pasilla_counts.txt \\\n  -s 2 -p -B -C --countReadPairs \\\n  results/star/SRR1039508/Aligned.sortedByCoord.out.bam \\\n  results/star/SRR1039512/Aligned.sortedByCoord.out.bam \\\n  results/star/SRR1039516/Aligned.sortedByCoord.out.bam\n# === R: Compare featureCounts vs Salmon quantification ===\nlibrary(tximport)\nlibrary(readr)\nlibrary(ggplot2)\n\n# Load featureCounts output\nfc_data &lt;- read.table(\n  \"results/featureCounts/pasilla_counts.txt\",\n  header = TRUE, skip = 1, row.names = 1\n)\nfc_counts &lt;- fc_data[, 7:ncol(fc_data)]\ncolnames(fc_counts) &lt;- c(\"SRR1039508\", \"SRR1039512\", \"SRR1039516\")\n\n# Load Salmon via tximport\ntx2gene &lt;- read.csv(\"tx2gene_GRCh38.csv\")\nfiles &lt;- file.path(\"results/salmon\",\n                   c(\"SRR1039508\", \"SRR1039512\", \"SRR1039516\"),\n                   \"quant.sf\")\nnames(files) &lt;- c(\"SRR1039508\", \"SRR1039512\", \"SRR1039516\")\ntxi &lt;- tximport(files, type = \"salmon\",\n                tx2gene = tx2gene, ignoreTxVersion = TRUE)\n\n# Align gene IDs and compute correlation\ncommon_genes &lt;- intersect(rownames(fc_counts), rownames(txi$counts))\nfc_s1 &lt;- fc_counts[common_genes, \"SRR1039508\"]\nsalmon_s1 &lt;- txi$counts[common_genes, \"SRR1039508\"]\n\ncor_val &lt;- cor(log1p(fc_s1), log1p(salmon_s1))\n\n# Scatter plot comparison\ndf_compare &lt;- data.frame(\n  featureCounts = log1p(fc_s1),\n  Salmon        = log1p(salmon_s1)\n)\n\nggplot(df_compare, aes(x = featureCounts, y = Salmon)) +\n  geom_point(alpha = 0.2, size = 0.5, color = \"steelblue\") +\n  geom_abline(slope = 1, intercept = 0,\n              color = \"firebrick\", linetype = \"dashed\") +\n  annotate(\"text\", x = 2, y = 12,\n           label = sprintf(\"Pearson r = %.4f\", cor_val),\n           size = 4) +\n  labs(\n    x = \"log1p(featureCounts)\",\n    y = \"log1p(Salmon)\",\n    title = \"featureCounts vs Salmon: SRR1039508\",\n    subtitle = \"Each point = one gene; diagonal = perfect agreement\"\n  ) +\n  theme_classic()",
+    "crumbs": [
+      "第二阶段：转录组与单细胞",
+      "<span class='chapter-number'>22</span>  <span class='chapter-title'>Splice-Aware 比对与表达量定量</span>"
+    ]
+  },
+  {
+    "objectID": "transcriptomics_basic_lesson2.html#sambam-格式解析",
+    "href": "transcriptomics_basic_lesson2.html#sambam-格式解析",
+    "title": "22  Splice-Aware 比对与表达量定量",
+    "section": "22.8 SAM/BAM 格式解析",
+    "text": "22.8 SAM/BAM 格式解析\n理解比对输出文件的格式，是排查比对问题和下游分析的基础。STAR 和 HISAT2 均输出 SAM（Sequence Alignment/Map）格式或其二进制压缩版 BAM。\n\n22.8.1 SAM 文件结构\nSAM 文件由两部分组成：以 @ 开头的头部（Header）行，以及每条 read 的比对记录行（11 个强制字段 + 可选标签）。\n# View BAM file header\nsamtools view -H sample.bam | head -20\n\n# View first 5 alignment records\nsamtools view sample.bam | head -5\n\n# Example alignment record:\n# QNAME   FLAG  RNAME  POS    MAPQ  CIGAR    RNEXT  PNEXT  TLEN  SEQ   QUAL\n# SRR...1   99   chr1  65419   255  90M60N60M  =    65560   201  ACGT..  IIII..\n关键字段解读：\nFLAG（比对标志位）：16 位整数，每位代表一个属性。常用位：\n\n\n\n值\n含义\n\n\n\n\n1 (0x1)\n双端测序读段\n\n\n4 (0x4)\n该 read 未比对\n\n\n16 (0x10)\n比对在反链\n\n\n64 (0x40)\nRead 1\n\n\n128 (0x80)\nRead 2\n\n\n\n一条 FLAG = 99 的 read 含义：99 = 64+32+2+1，即双端读段（1）、配对正确（2）、配对 read 在反链（32）、本 read 是 Read 1（64）。\nCIGAR 字符串：描述 read 如何与参考序列对齐：\n\n\n\n符号\n含义\n\n\n\n\nM\n匹配（含错配）\n\n\nN\n跳跃（对应内含子）\n\n\nS\n软截断（read 末端未比对，序列保留）\n\n\nI\n插入\n\n\nD\n缺失\n\n\n\n例如 90M2000N60M 表示：read 前 90 bp 比对到外显子，跳过 2000 bp 内含子，后 60 bp 比对到下一个外显子——这是一条典型的 junction read。\n# Useful samtools commands for QC\n# Check alignment statistics\nsamtools flagstat sample.bam\n\n# Check per-chromosome mapping rates\nsamtools idxstats sample.bam\n\n# View only uniquely mapped reads (MAPQ &gt;= 255 for STAR)\nsamtools view -q 255 sample.bam | head -5\n\n# Check insert size distribution (for paired-end data)\nsamtools stats sample.bam | grep \"^IS\" | \\\n  awk '{print $2, $3}' &gt; insert_sizes.txt\n\n\n22.8.2 多比对 reads 的处理策略\n当一条 read 能比对到基因组多个位置时，称为多比对 read（multimapper）。多比对的主要来源：\n\n重复元件：LINE、SINE、转座子家族中高度相似的拷贝；\n同源基因家族：如组蛋白基因簇、嗅觉受体基因家族；\n假基因：与功能基因高度相似但无功能的序列拷贝。\n\n不同工具对多比对的处理策略：\n\n\n\n\n\n\n\n\n工具\n策略\n适用场景\n\n\n\n\nSTAR（默认）\n保留所有位置，NH:i:N 标记总数\n保留信息，下游工具决策\n\n\nfeatureCounts\n丢弃（-M 保留）\n保守计数\n\n\nfeatureCounts + --fraction\n按位置数均等分配（产生小数）\n估计总体趋势，不适合 DEA\n\n\nSalmon\nEM 算法优化分配\n转录本级别定量首选\n\n\n\n# Check multimapping rate from STAR log\ngrep \"% of reads mapped to multiple loci\" \\\n  results/star/SRR1039508/Log.final.out\n\n# Count uniquely vs multi-mapped reads\nsamtools view -c -q 255 sample.bam   # uniquely mapped (MAPQ=255 in STAR)\nsamtools view -c -F 4 sample.bam     # all mapped",
+    "crumbs": [
+      "第二阶段：转录组与单细胞",
+      "<span class='chapter-number'>22</span>  <span class='chapter-title'>Splice-Aware 比对与表达量定量</span>"
+    ]
+  },
+  {
+    "objectID": "transcriptomics_basic_lesson2.html#定量结果的质量诊断",
+    "href": "transcriptomics_basic_lesson2.html#定量结果的质量诊断",
+    "title": "22  Splice-Aware 比对与表达量定量",
+    "section": "22.9 定量结果的质量诊断",
+    "text": "22.9 定量结果的质量诊断\n在完成比对和定量后，应对结果矩阵进行基本诊断，发现异常样本或基因。\nlibrary(DESeq2)\nlibrary(ggplot2)\n\n# Load count matrix from featureCounts\ncounts_raw &lt;- read.table(\n  \"results/featureCounts/pasilla_counts.txt\",\n  header = TRUE, skip = 1, row.names = 1\n)\ncounts &lt;- counts_raw[, 7:ncol(counts_raw)]\ncolnames(counts) &lt;- c(\"untreated1\", \"untreated2\", \"treated1\")\n\n# === Diagnostic 1: Library size distribution ===\nlib_sizes &lt;- colSums(counts)\nbarplot(lib_sizes / 1e6,\n        main = \"Library sizes (millions of mapped reads)\",\n        ylab = \"Mapped reads (M)\",\n        col  = \"steelblue\")\nabline(h = mean(lib_sizes) / 1e6, col = \"firebrick\",\n       lty = 2, lwd = 2)\n# Rule of thumb: samples with &lt; 5M reads may have low power;\n# samples with 2-fold difference in library size require careful normalization\n\n# === Diagnostic 2: Genes detected per sample ===\ngenes_detected &lt;- colSums(counts &gt; 0)\ncat(\"Genes detected per sample:\\n\")\nprint(genes_detected)\n# Expected: 12,000 - 18,000 for human poly-A enriched library\n\n# === Diagnostic 3: Top expressed genes ===\ntop_genes &lt;- head(sort(rowMeans(counts), decreasing = TRUE), 20)\ncat(\"\\nTop 20 most expressed genes (mean counts):\\n\")\nprint(top_genes)\n# Warning: if top genes are rRNA/mitochondrial, library QC failed\n\n# === Diagnostic 4: Expression density plot ===\nlog_counts &lt;- log1p(as.matrix(counts))\nplot(density(log_counts[, 1]),\n     main = \"Expression density (log1p counts)\",\n     xlab = \"log1p(count)\", col = \"steelblue\", lwd = 2)\nfor (i in 2:ncol(log_counts)) {\n  lines(density(log_counts[, i]),\n        col = c(\"darkorange\", \"firebrick\")[i - 1], lwd = 2)\n}\nlegend(\"topright\", colnames(counts),\n       col = c(\"steelblue\", \"darkorange\", \"firebrick\"), lwd = 2)\n# All samples should have similar distribution shape",
+    "crumbs": [
+      "第二阶段：转录组与单细胞",
+      "<span class='chapter-number'>22</span>  <span class='chapter-title'>Splice-Aware 比对与表达量定量</span>"
+    ]
+  },
+  {
+    "objectID": "transcriptomics_basic_lesson2.html#课后自测-post-lesson-quiz",
+    "href": "transcriptomics_basic_lesson2.html#课后自测-post-lesson-quiz",
+    "title": "22  Splice-Aware 比对与表达量定量",
+    "section": "22.10 课后自测 (Post-Lesson Quiz)",
+    "text": "22.10 课后自测 (Post-Lesson Quiz)\n\n一个 150 bp 的 RNA-seq read 跨越了一个约 5,000 bp 的内含子：read 的前 90 bp 来自外显子 3，后 60 bp 来自外显子 4。若使用 Bowtie2（非 splice-aware）比对，这条 read 可能会发生什么？使用 STAR 后结果有何不同？\nSTAR 的两遍比对（2-pass mode）与一遍比对相比，主要在哪类 reads 的处理上有优势？其背后的原理是什么？\nfeatureCounts 的 -s 参数有三个选项（0、1、2）。若对一个 RF-stranded 文库（TruSeq Stranded）使用了 -s 0（非链特异性），会对计数结果产生什么影响？\n下列哪种情况适合使用 FPKM/TPM，哪种情况必须使用原始计数？\n\n（a）在论文图表中比较同一样本内不同基因的表达水平；\n（b）使用 DESeq2 进行差异表达分析；\n（c）比较不同物种中同一基因家族的相对表达。\n\nSalmon 的 --gcBias 校正对哪类基因的定量影响最大？请说明原因。\n\n\n\n参考答案 (Reference Answers)\n\n\n使用 Bowtie2，该 read 无法被连续比对（中间隔着 5,000 bp 内含子），可能被标记为未比对（unmapped）、或被强制映射到基因组上错误的连续区域（如假基因）。使用 STAR，MMP 算法会在外显子 3 末端识别 GT 剪接信号，将前 90 bp 映射至外显子 3，后 60 bp 映射至外显子 4，正确识别这条 junction read 并计入两个外显子的交界处。\n2-pass 模式主要对低表达基因的新型剪接位点（novel splice junctions）有显著优势。第一遍比对发现的新剪接位点被加入临时索引，第二遍比对时这些新位点能辅助低表达 junction reads 的正确定位——这些 reads 在第一遍中因缺乏索引支持而无法被精确比对，在第二遍中则能利用高表达样本发现的剪接位点信息正确映射。\n使用 -s 0（非链特异性），featureCounts 会同时计算正链和反链上的 reads。对于位于正反链都有基因的重叠区域，会引入反义链 reads 的噪声，导致计数虚高；对于无重叠的单基因区域，影响较小。整体效果是增加了假阳性信号，降低了链特异性差异的检测能力。\n（a）可视化同一样本内不同基因相对水平 → 使用 TPM（已做长度与深度双校正，同样本内可比）；（b）DESeq2 差异表达 → 必须使用原始计数（整数，满足负二项模型假设）；（c）跨物种比较 → 使用 TPM（深度和长度已校正），但需注意基因长度在不同物种间可能不同，应谨慎解读。\nGC 偏差校正对 GC 含量极端的基因影响最大——即 GC 含量极高（&gt; 70%）或极低（&lt; 30%）的基因。这些基因在 PCR 扩增过程中效率不同（GC 富集区域扩增效率低），导致它们的 reads 数量系统性偏低或偏高。Salmon 的 GC bias 校正通过对每个基因按其 GC 含量估计一个校正因子，补偿这一系统性偏差。",
+    "crumbs": [
+      "第二阶段：转录组与单细胞",
+      "<span class='chapter-number'>22</span>  <span class='chapter-title'>Splice-Aware 比对与表达量定量</span>"
+    ]
+  },
+  {
+    "objectID": "transcriptomics_basic_lesson3.html",
+    "href": "transcriptomics_basic_lesson3.html",
+    "title": "23  差异表达分析",
+    "section": "",
+    "text": "23.1 学习目标\n完成本专题后，学生应能够：",
+    "crumbs": [
+      "第二阶段：转录组与单细胞",
+      "<span class='chapter-number'>23</span>  <span class='chapter-title'>差异表达分析</span>"
+    ]
+  },
+  {
+    "objectID": "transcriptomics_basic_lesson3.html#学习目标",
+    "href": "transcriptomics_basic_lesson3.html#学习目标",
+    "title": "23  差异表达分析",
+    "section": "",
+    "text": "解释 RNA-seq 计数数据的过离散（Overdispersion）现象及其统计意义；\n描述 DESeq2 的三步核心流程：大小因子估计、离散度估计与 Wald 检验；\n理解 LFC 缩减（apeglm）在处理低计数基因时的作用；\n解释 Benjamini-Hochberg 方法的 FDR 控制逻辑；\n独立运行 DESeq2 完整分析流程并生成 MA 图与火山图；\n理解 DESeq2 与 edgeR 在统计框架上的主要差异。",
+    "crumbs": [
+      "第二阶段：转录组与单细胞",
+      "<span class='chapter-number'>23</span>  <span class='chapter-title'>差异表达分析</span>"
+    ]
+  },
+  {
+    "objectID": "transcriptomics_basic_lesson3.html#为什么需要统计检验",
+    "href": "transcriptomics_basic_lesson3.html#为什么需要统计检验",
+    "title": "23  差异表达分析",
+    "section": "23.2 为什么需要统计检验？",
+    "text": "23.2 为什么需要统计检验？\n直觉上，比较两组间某个基因的平均表达量似乎是简单的问题。然而 RNA-seq 实验通常只有 3–5 个生物学重复，这在统计上是非常小的样本量。考虑到以下挑战：\n\n生物学变异：同一处理条件下不同生物重复间的天然表达差异；\n技术变异：文库制备、测序的随机误差；\n多重检验问题：对数万个基因同时检验，即使假设全部基因不差异表达，仅凭随机波动也会产生大量假阳性；\n\n专门针对 RNA-seq 计数数据设计的统计模型因此不可或缺。",
+    "crumbs": [
+      "第二阶段：转录组与单细胞",
+      "<span class='chapter-number'>23</span>  <span class='chapter-title'>差异表达分析</span>"
+    ]
+  },
+  {
+    "objectID": "transcriptomics_basic_lesson3.html#泊松模型为何不够用",
+    "href": "transcriptomics_basic_lesson3.html#泊松模型为何不够用",
+    "title": "23  差异表达分析",
+    "section": "23.3 泊松模型为何不够用？",
+    "text": "23.3 泊松模型为何不够用？\n最直观的计数模型是泊松分布（Poisson distribution）：给定基因 \\(i\\) 在样本 \\(j\\) 中的期望计数 \\(\\mu_{ij}\\)，实际观测计数 \\(K_{ij}\\) 服从 \\(\\text{Pois}(\\mu_{ij})\\)。泊松分布有一个严格的约束：方差等于均值（\\(\\text{Var}(K) = \\mu\\)）。\n然而，RNA-seq 数据的实测情况是：方差往往远大于均值，尤其对高表达基因而言。这一现象称为过离散（Overdispersion），其来源包括：\n\n生物学变异：即使在相同实验条件下，不同个体（或细胞系传代）间基因表达存在真实差异；\n批次效应：文库制备时间或操作人员的差异引入系统性偏差；\n细胞异质性：在组织样本中，不同细胞类型的比例在个体间存在差异。\n\n{{Wiki:Negative_binomial_distribution}}\n负二项分布（Negative Binomial Distribution） 通过引入额外的离散参数 \\(\\alpha_i\\) 来描述过离散：\n\\[K_{ij} \\sim \\text{NB}(\\mu_{ij},\\ \\alpha_i)\\]\n方差结构为：\\(\\text{Var}(K_{ij}) = \\mu_{ij} + \\alpha_i \\mu_{ij}^2\\)\n其中 \\(\\alpha_i\\) 称为基因特异性离散参数（gene-wise dispersion），\\(\\alpha_i = 0\\) 时退化为泊松分布。\n\n直觉理解： 离散参数 \\(\\alpha_i\\) 量化了”超出泊松预测的额外变异”。对于细胞周期调控基因，不同细胞处于不同周期阶段导致 \\(\\alpha_i\\) 较大；对于管家基因（housekeeping genes），\\(\\alpha_i\\) 通常较小。DESeq2 需要精确估计 \\(\\alpha_i\\) 才能进行可靠的差异检验。",
+    "crumbs": [
+      "第二阶段：转录组与单细胞",
+      "<span class='chapter-number'>23</span>  <span class='chapter-title'>差异表达分析</span>"
+    ]
+  },
+  {
+    "objectID": "transcriptomics_basic_lesson3.html#deseq2-统计框架",
+    "href": "transcriptomics_basic_lesson3.html#deseq2-统计框架",
+    "title": "23  差异表达分析",
+    "section": "23.4 DESeq2 统计框架",
+    "text": "23.4 DESeq2 统计框架\n\n23.4.1 第一步：大小因子估计（Size Factor Estimation）\n不同样本的测序深度（总 reads 数）不同，直接比较原始计数会引入假性差异。DESeq2 通过以下方法估计每个样本的大小因子（Size Factor）\\(s_j\\)：\n\n计算参考值：对每个基因，计算其在所有样本中计数值的几何均值 \\(\\bar{K}_i = \\left(\\prod_{j=1}^{n} K_{ij}\\right)^{1/n}\\)；\n计算比值：对每个样本 \\(j\\)，计算每个基因相对于参考值的比值 \\(K_{ij} / \\bar{K}_i\\)；\n取中位数：大小因子 \\(s_j\\) 为所有基因比值的中位数（而非均值，中位数对高表达异常基因的干扰更鲁棒）。\n\n\\[s_j = \\text{median}_i\\left(\\frac{K_{ij}}{\\bar{K}_i}\\right)\\]\n归一化后的计数为 \\(\\tilde{K}_{ij} = K_{ij} / s_j\\)。\n这种方法的优雅之处在于：若少数基因（如管家基因）在所有条件下表达稳定，则这些基因的比值在不同样本间一致，中位数准确反映测序深度差异，而不受少数差异表达基因的影响。\n\n\n23.4.2 第二步：离散度估计\n由于每个基因通常只有 3–6 个重复，基因特异性离散度的估计极不稳定（方差估计本身有很大的方差）。DESeq2 采用Empirical Bayes 离散度缩减策略：\n\n初始估计：对每个基因分别用最大似然估计 \\(\\hat{\\alpha}_i\\)（不共享信息，噪声大）；\n拟合趋势：将所有基因的 \\(\\hat{\\alpha}_i\\) 对基因平均表达量 \\(\\bar{\\mu}_i\\) 建立参数化趋势曲线（通常为负幂律关系）；\nMAP 缩减：用贝叶斯后验最大估计（Maximum A Posteriori，MAP）将基因特异性估计向趋势曲线收缩：高于趋势的 \\(\\hat{\\alpha}_i\\) 被下调，低于趋势的被上调。\n\n\\[\\tilde{\\alpha}_i = \\text{arg max}\\left[\\mathcal{L}(\\alpha_i | K_{i\\cdot}) + \\log p(\\alpha_i | \\bar{\\alpha}(\\bar{\\mu}_i))\\right]\\]\n\n黄金法则： 离散度缩减（shrinkage）是小样本 RNA-seq 分析的核心思想。若不借鉴其他基因的信息，3 个重复的数据根本无法可靠估计每个基因的方差。DESeq2 通过假设”同等表达量的基因应具有相似的离散度”来共享统计强度，这是其在少重复条件下仍表现良好的关键原因。\n\n离散度估计诊断图：\n# After running DESeq2, plot dispersion estimates\nplotDispEsts(dds)\n# Expected pattern:\n# - Blue dots: gene-wise MLE estimates (noisy)\n# - Red curve: fitted trend\n# - Black dots: MAP-shrunken final estimates\n# - Circled dots: outlier genes (not shrunken, kept at MLE)\n\n\n23.4.3 第三步：Wald 检验\n在模型 \\(\\log_2(\\mu_{ij}) = \\beta_{i0} + \\beta_{i1} x_j + \\log(s_j)\\) 中，\\(\\beta_{i1}\\) 即为基因 \\(i\\) 的对数倍数变化（Log2 Fold Change, LFC）。Wald 检验统计量为：\n\\[W_i = \\frac{\\hat{\\beta}_{i1}}{\\text{SE}(\\hat{\\beta}_{i1})}\\]\n在零假设（\\(\\beta_{i1} = 0\\)，即无差异表达）下，\\(W_i\\) 近似服从标准正态分布。对应 p 值经 Benjamini-Hochberg 方法校正为 adjusted p-value（padj）。\n\n\n23.4.4 LFC 缩减（apeglm）\n对于计数极少的基因，即使 \\(\\hat{\\beta}_{i1}\\) 的数值很大（看似差异表达），其置信区间极宽，这种估计不可靠。apeglm 包提供了一种针对 LFC 的适应性 Laplace 先验缩减，将低置信度的 LFC 估计向 0 收缩：\nlibrary(apeglm)\nres_shrunk &lt;- lfcShrink(dds, coef = \"condition_treated_vs_untreated\",\n                        type = \"apeglm\")\n# Genes with low counts get LFC shrunk toward 0\n# Genes with high counts retain their original LFC estimates\n这一步骤对火山图和热图的可视化尤为重要：未经缩减的 LFC 中，低表达基因的极端值会主导视觉呈现；缩减后的 LFC 更准确反映生物学上有意义的变化。",
+    "crumbs": [
+      "第二阶段：转录组与单细胞",
+      "<span class='chapter-number'>23</span>  <span class='chapter-title'>差异表达分析</span>"
+    ]
+  },
+  {
+    "objectID": "transcriptomics_basic_lesson3.html#deseq2-完整实践",
+    "href": "transcriptomics_basic_lesson3.html#deseq2-完整实践",
+    "title": "23  差异表达分析",
+    "section": "23.5 DESeq2 完整实践",
+    "text": "23.5 DESeq2 完整实践\nlibrary(DESeq2)\nlibrary(ggplot2)\nlibrary(ggrepel)\n\n# === Step 1: Load count data ===\n# Using featureCounts output\ncount_matrix &lt;- read.table(\n  \"results/featureCounts/pasilla_counts.txt\",\n  header = TRUE, skip = 1, row.names = 1\n)\ncounts &lt;- count_matrix[, 7:ncol(count_matrix)]\ncolnames(counts) &lt;- c(\"untreated1\", \"untreated2\", \"treated1\")\n\n# Sample metadata\nsample_info &lt;- data.frame(\n  condition = factor(c(\"untreated\", \"untreated\", \"treated\")),\n  row.names = colnames(counts)\n)\n\n# === Step 2: Create DESeqDataSet ===\ndds &lt;- DESeqDataSetFromMatrix(\n  countData = counts,\n  colData   = sample_info,\n  design    = ~ condition\n)\n\n# Pre-filter: remove genes with very low counts (speeds up analysis)\nkeep &lt;- rowSums(counts(dds) &gt;= 10) &gt;= 2\ndds  &lt;- dds[keep, ]\ncat(\"Genes after filtering:\", nrow(dds), \"\\n\")\n\n# Set reference level\ndds$condition &lt;- relevel(dds$condition, ref = \"untreated\")\n\n# === Step 3: Run DESeq2 ===\ndds &lt;- DESeq(dds)\n# Internally: estimateSizeFactors -&gt; estimateDispersions -&gt; nbinomWaldTest\n\n# Check size factors\nsizeFactors(dds)\n\n# === Step 4: Extract results ===\nres &lt;- results(dds,\n               contrast = c(\"condition\", \"treated\", \"untreated\"),\n               alpha    = 0.05)   # FDR threshold for independent filtering\n\nsummary(res)\n# Output:\n# LFC &gt; 0 (up)     : XXX, X%\n# LFC &lt; 0 (down)   : XXX, X%\n# outliers [1]     : XXX, X%\n# low counts [2]   : XXX, X%\n\n# === Step 5: LFC shrinkage ===\nlibrary(apeglm)\nres_shrunk &lt;- lfcShrink(\n  dds,\n  coef = \"condition_treated_vs_untreated\",\n  type = \"apeglm\",\n  res  = res\n)\n\n# === Step 6: Filter significant DEGs ===\nsig_genes &lt;- subset(res_shrunk,\n                    padj &lt; 0.05 & abs(log2FoldChange) &gt; 1)\ncat(\"Significant DEGs (|LFC|&gt;1, padj&lt;0.05):\", nrow(sig_genes), \"\\n\")\n\n# Sort by padj\nsig_genes &lt;- sig_genes[order(sig_genes$padj), ]\nhead(sig_genes, 10)\n\n# === Step 7: Visualization ===\n\n# --- MA plot ---\nplotMA(res_shrunk,\n       ylim = c(-5, 5),\n       main = \"MA Plot: DESeq2 (apeglm shrinkage)\",\n       alpha = 0.05)\n# Blue dots: significant (padj &lt; 0.05)\n# Grey dots: not significant\n# Shrinkage reduces extreme LFC for low-count genes\n\n# --- Volcano plot ---\nres_df &lt;- as.data.frame(res_shrunk)\nres_df$gene &lt;- rownames(res_df)\nres_df$significance &lt;- \"Not significant\"\nres_df$significance[res_df$padj &lt; 0.05 & res_df$log2FoldChange &gt;  1] &lt;- \"Up\"\nres_df$significance[res_df$padj &lt; 0.05 & res_df$log2FoldChange &lt; -1] &lt;- \"Down\"\n\n# Label top 20 genes by padj\ntop_genes &lt;- head(res_df[order(res_df$padj, na.last = TRUE), ], 20)\n\nggplot(res_df, aes(x = log2FoldChange, y = -log10(padj),\n                   color = significance)) +\n  geom_point(alpha = 0.5, size = 0.8) +\n  geom_text_repel(data = top_genes,\n                  aes(label = gene),\n                  size = 2.5, max.overlaps = 20) +\n  scale_color_manual(\n    values = c(\"Up\" = \"firebrick\", \"Down\" = \"steelblue\",\n               \"Not significant\" = \"grey70\")\n  ) +\n  geom_vline(xintercept = c(-1, 1), linetype = \"dashed\", color = \"grey40\") +\n  geom_hline(yintercept = -log10(0.05), linetype = \"dashed\", color = \"grey40\") +\n  labs(\n    x = \"Log2 Fold Change (treated / untreated)\",\n    y = \"-log10(adjusted p-value)\",\n    title = \"Volcano Plot: Dexamethasone Treatment vs Control\",\n    subtitle = sprintf(\"Significant DEGs: %d up, %d down\",\n                       sum(res_df$significance == \"Up\", na.rm = TRUE),\n                       sum(res_df$significance == \"Down\", na.rm = TRUE)),\n    color = \"Direction\"\n  ) +\n  theme_classic() +\n  theme(legend.position = \"top\")\n\n23.5.1 样本质量评估：PCA 与距离热图\n在运行 DEA 之前（或之后验证），应当可视化样本间的整体相似性，以发现潜在的批次效应或异常样本。\n# Variance-stabilizing transformation for visualization\nvsd &lt;- vst(dds, blind = TRUE)\n\n# --- PCA plot ---\nplotPCA(vsd, intgroup = \"condition\") +\n  geom_point(size = 4) +\n  theme_classic() +\n  labs(title = \"PCA: pasilla samples (VST-transformed counts)\")\n\n# --- Sample distance heatmap ---\nlibrary(pheatmap)\nsample_dists &lt;- dist(t(assay(vsd)))\nsample_dist_matrix &lt;- as.matrix(sample_dists)\n\npheatmap(\n  sample_dist_matrix,\n  clustering_distance_rows = sample_dists,\n  clustering_distance_cols = sample_dists,\n  col = colorRampPalette(c(\"steelblue\", \"white\"))(50),\n  main = \"Sample-to-sample distances (VST)\"\n)",
+    "crumbs": [
+      "第二阶段：转录组与单细胞",
+      "<span class='chapter-number'>23</span>  <span class='chapter-title'>差异表达分析</span>"
+    ]
+  },
+  {
+    "objectID": "transcriptomics_basic_lesson3.html#edger另一种主流框架",
+    "href": "transcriptomics_basic_lesson3.html#edger另一种主流框架",
+    "title": "23  差异表达分析",
+    "section": "23.6 edgeR：另一种主流框架",
+    "text": "23.6 edgeR：另一种主流框架\nedgeR 与 DESeq2 共享负二项分布的统计框架，但在离散度估计和检验统计量上有所不同。\n\n\n\n特性\nDESeq2\nedgeR\n\n\n\n\n归一化方法\n几何均值大小因子\nTMM（加权修剪均值）\n\n\n离散度估计\n共享趋势 + MAP 缩减\n共享、趋势或基因特异性\n\n\n检验统计量\nWald 检验\n精确检验（exact test）或 QLF 检验\n\n\n多因子设计\nGLM\nGLM\n\n\n推荐场景\n通用；对低重复数友好\n大样本；极端表达基因\n\n\n\nlibrary(edgeR)\n\n# Create DGEList object\ndge &lt;- DGEList(counts = counts, group = sample_info$condition)\n\n# TMM normalization\ndge &lt;- calcNormFactors(dge, method = \"TMM\")\n\n# Estimate dispersion\ndge &lt;- estimateDisp(dge)\n\n# Exact test (for simple two-group comparison)\net &lt;- exactTest(dge, pair = c(\"untreated\", \"treated\"))\nres_edger &lt;- topTags(et, n = Inf)$table\nsig_edger &lt;- subset(res_edger, FDR &lt; 0.05 & abs(logFC) &gt; 1)\ncat(\"edgeR significant DEGs:\", nrow(sig_edger), \"\\n\")\n\n实践建议： 在条件许可时，同时运行 DESeq2 和 edgeR，取两者共同显著的差异基因（交集）作为高置信度结果。这种”共识 DEG”策略能有效降低方法选择带来的偏差。",
+    "crumbs": [
+      "第二阶段：转录组与单细胞",
+      "<span class='chapter-number'>23</span>  <span class='chapter-title'>差异表达分析</span>"
+    ]
+  },
+  {
+    "objectID": "transcriptomics_basic_lesson3.html#limma-voom基于线性模型的差异表达分析",
+    "href": "transcriptomics_basic_lesson3.html#limma-voom基于线性模型的差异表达分析",
+    "title": "23  差异表达分析",
+    "section": "23.7 limma-voom：基于线性模型的差异表达分析",
+    "text": "23.7 limma-voom：基于线性模型的差异表达分析\nlimma（Linear Models for Microarray and RNA-seq data）最初为微阵列数据设计，其核心是一套基于经验贝叶斯的线性模型框架。voom（Mean-Variance Modelling at the Observational Level）是 limma 为 RNA-seq 计数数据设计的适配器：通过对 log-CPM 值建立均值-方差关系模型，将计数数据的异方差性转化为线性模型可处理的加权数据。\n\n23.7.1 limma-voom 的优势场景\nlimma-voom 在以下场景中有独特优势：\n\n大样本量（n &gt; 20/组）：此时负二项模型的渐近假设较好，但 limma 的线性模型框架更灵活；\n复杂实验设计：含多个因子、交互项、成对样本（区组设计）的实验；\n连续型协变量：如年龄、体重、肿瘤纯度等连续变量作为协变量；\n与微阵列数据整合分析：当需要同时分析两种数据类型时，统一框架更便于比较。\n\n\n\n23.7.2 voom 原理\nvoom 首先将原始计数转化为 log-CPM（Count Per Million）：\n\\[y_{ij} = \\log_2\\left(\\frac{K_{ij} + 0.5}{N_j + 1} \\times 10^6\\right)\\]\n然后通过 LOWESS 拟合估计每个基因的均值-方差趋势，为每条观测值（每个样本-基因对）分配权重 \\(w_{ij}\\)，使得方差在加权后趋于均匀（满足普通线性模型的等方差假设）。\n\\[w_{ij} \\propto \\frac{1}{\\hat{\\sigma}^2(y_{ij})}\\]\n拥有权重的 log-CPM 数据便可以直接使用标准的线性模型进行差异检验，并通过 limma 的经验贝叶斯方差缩减提高统计效力。\nlibrary(limma)\nlibrary(edgeR)\n\n# === limma-voom workflow ===\n\n# Step 1: Create DGEList and normalize\ndge &lt;- DGEList(counts = counts, group = sample_info$condition)\ndge &lt;- calcNormFactors(dge, method = \"TMM\")\n\n# Step 2: Design matrix\n# Simple two-group comparison\ndesign &lt;- model.matrix(~ condition, data = sample_info)\ncolnames(design)  # \"(Intercept)\" and \"conditiontreated\"\n\n# Step 3: voom transformation\n# Plot shows mean-variance trend and precision weights\nv &lt;- voom(dge, design, plot = TRUE)\n# voom() returns:\n#   v$E       - log2 CPM matrix (normalized)\n#   v$weights - precision weights per observation\n#   v$design  - design matrix\n\n# Step 4: Fit linear model\nfit &lt;- lmFit(v, design)\n\n# Step 5: Empirical Bayes moderation of standard errors\nfit &lt;- eBayes(fit, trend = TRUE, robust = TRUE)\n# trend = TRUE: allow prior variance to depend on average expression\n# robust = TRUE: protect against outlier samples\n\n# Step 6: Extract results\nres_limma &lt;- topTable(\n  fit,\n  coef     = \"conditiontreated\",  # coefficient to test\n  number   = Inf,\n  adjust.method = \"BH\",\n  sort.by  = \"P\"\n)\n\n# Results columns:\n# logFC, AveExpr, t (moderated t-statistic), P.Value, adj.P.Val, B (log-odds)\nsig_limma &lt;- subset(res_limma, adj.P.Val &lt; 0.05 & abs(logFC) &gt; 1)\ncat(\"limma-voom significant DEGs:\", nrow(sig_limma), \"\\n\")\n\n# === Three-method comparison ===\n# Combine significant gene lists from DESeq2, edgeR, limma-voom\nlibrary(ggVennDiagram)\n\ngene_sets &lt;- list(\n  DESeq2    = rownames(sig_genes),\n  edgeR     = rownames(sig_edger),\n  limma_voom = rownames(sig_limma)\n)\n\nggVennDiagram(gene_sets, label = \"count\") +\n  scale_fill_gradient(low = \"white\", high = \"steelblue\") +\n  labs(title = \"DEG overlap: DESeq2 vs edgeR vs limma-voom\")\n\n\n23.7.3 复杂实验设计：多因子模型\nlimma-voom 的线性模型框架在处理复杂实验设计时尤为直观。以下演示含批次协变量的双因子设计：\n# Example: treatment + batch as covariates\nsample_meta &lt;- data.frame(\n  condition = factor(c(\"untreated\", \"untreated\", \"treated\",\n                       \"untreated\", \"treated\",  \"treated\")),\n  batch     = factor(c(\"A\", \"A\", \"A\", \"B\", \"B\", \"B\")),\n  row.names = colnames(counts)\n)\n\n# Design matrix with batch as blocking factor\ndesign_batch &lt;- model.matrix(~ batch + condition, data = sample_meta)\n# This is the recommended approach: model batch explicitly\n\nv_batch &lt;- voom(dge, design_batch, plot = FALSE)\nfit_batch &lt;- lmFit(v_batch, design_batch)\nfit_batch &lt;- eBayes(fit_batch, trend = TRUE, robust = TRUE)\n\n# Extract treatment effect AFTER accounting for batch\nres_batch_corrected &lt;- topTable(\n  fit_batch,\n  coef   = \"conditiontreated\",\n  number = Inf,\n  adjust.method = \"BH\"\n)",
+    "crumbs": [
+      "第二阶段：转录组与单细胞",
+      "<span class='chapter-number'>23</span>  <span class='chapter-title'>差异表达分析</span>"
+    ]
+  },
+  {
+    "objectID": "transcriptomics_basic_lesson3.html#deseq2-核心步骤的手动-r-实现",
+    "href": "transcriptomics_basic_lesson3.html#deseq2-核心步骤的手动-r-实现",
+    "title": "23  差异表达分析",
+    "section": "23.8 DESeq2 核心步骤的手动 R 实现",
+    "text": "23.8 DESeq2 核心步骤的手动 R 实现\n理解统计方法的最佳途径是动手重现其核心计算。以下代码从零开始实现 DESeq2 大小因子估计和归一化步骤，以加深对算法的理解。\n# === Manual implementation of DESeq2 core steps ===\n\n# Simulated count matrix (3 untreated + 3 treated)\nset.seed(2024)\nn_genes   &lt;- 1000\nn_samples &lt;- 6\ncounts_sim &lt;- matrix(\n  rnbinom(n_genes * n_samples, mu = 100, size = 5),\n  nrow = n_genes,\n  dimnames = list(\n    paste0(\"gene\", 1:n_genes),\n    paste0(\"sample\", 1:n_samples)\n  )\n)\n# Introduce artificial library size differences\ncounts_sim[, 4:6] &lt;- round(counts_sim[, 4:6] * 2)\n\n# --- Step 1: Compute geometric mean per gene ---\n# Genes with zero counts in any sample are excluded (log(0) = -Inf)\nlog_counts  &lt;- log(counts_sim)\nlog_counts[is.infinite(log_counts)] &lt;- NA\n\ngeom_means  &lt;- exp(rowMeans(log_counts, na.rm = TRUE))\nvalid_genes &lt;- !is.na(geom_means) & geom_means &gt; 0\ncat(\"Genes used for size factor estimation:\", sum(valid_genes), \"\\n\")\n\n# --- Step 2: Compute ratio of each sample to geometric mean ---\nratios &lt;- sweep(counts_sim[valid_genes, ], 1,\n                geom_means[valid_genes], \"/\")\n\n# --- Step 3: Size factor = median of ratios per sample ---\nsize_factors_manual &lt;- apply(ratios, 2, median)\ncat(\"\\nManual size factors:\\n\")\nprint(round(size_factors_manual, 4))\n\n# Compare with DESeq2 built-in\nlibrary(DESeq2)\ndds_sim &lt;- DESeqDataSetFromMatrix(\n  countData = counts_sim,\n  colData   = data.frame(\n    condition = rep(c(\"untreated\", \"treated\"), each = 3)\n  ),\n  design = ~ condition\n)\ndds_sim &lt;- estimateSizeFactors(dds_sim)\ncat(\"\\nDESeq2 size factors:\\n\")\nprint(round(sizeFactors(dds_sim), 4))\n# Should match manual calculation\n\n# --- Step 4: Normalize counts ---\nnorm_counts_manual &lt;- sweep(counts_sim, 2,\n                             size_factors_manual, \"/\")\nnorm_counts_deseq2 &lt;- counts(dds_sim, normalized = TRUE)\n\n# Verify normalization: library sizes after normalization\ncat(\"\\nNormalized library sizes (should be similar):\\n\")\nprint(round(colSums(norm_counts_manual) / 1e3, 1), \"K reads\")\n\n# --- Visualize size factor effect ---\npar(mfrow = c(1, 2))\nboxplot(log1p(counts_sim),\n        main = \"Raw counts (log1p)\",\n        las = 2, col = \"lightblue\")\nboxplot(log1p(norm_counts_manual),\n        main = \"Normalized counts (log1p)\",\n        las = 2, col = \"lightgreen\")\npar(mfrow = c(1, 1))\n# === Manual BH correction to understand the algorithm ===\n\n# Generate p-values from a simulated experiment\nset.seed(42)\nm &lt;- 10000   # total genes tested\nn_true_de &lt;- 500  # truly DE genes (with small p-values)\n\n# Simulate p-values: mixture of uniform (null) and beta (alternative)\np_null &lt;- runif(m - n_true_de)\np_alt  &lt;- rbeta(n_true_de, shape1 = 0.5, shape2 = 10)\np_values &lt;- c(p_null, p_alt)\n\n# --- Manual BH procedure ---\nm_total &lt;- length(p_values)\nsorted_idx &lt;- order(p_values)\nsorted_p   &lt;- p_values[sorted_idx]\nranks      &lt;- seq_len(m_total)\n\n# BH adjusted p-values\nbh_adjusted &lt;- numeric(m_total)\nfor (i in seq(m_total, 1)) {\n  if (i == m_total) {\n    bh_adjusted[i] &lt;- sorted_p[i]\n  } else {\n    bh_adjusted[i] &lt;- min(sorted_p[i] * m_total / i,\n                          bh_adjusted[i + 1])\n  }\n}\n\n# Map back to original gene order\npadj_manual &lt;- numeric(m_total)\npadj_manual[sorted_idx] &lt;- bh_adjusted\n\n# Compare with R built-in\npadj_r &lt;- p.adjust(p_values, method = \"BH\")\ncat(\"Max difference between manual and R BH:\",\n    max(abs(padj_manual - padj_r)), \"\\n\")  # Should be ~0\n\n# Visualize: p-value histogram (good sanity check!)\nhist(p_values,\n     breaks = 50, col = \"steelblue\",\n     main = \"P-value distribution (uniform null + signal)\",\n     xlab = \"p-value\")\nabline(h = (m - n_true_de) / 50, col = \"firebrick\",\n       lty = 2, lwd = 2)  # expected uniform component\n\np 值直方图的诊断价值： 良好的 RNA-seq 差异分析结果，其 p 值直方图应呈现：在靠近 0 的区间有一个峰（真实 DE 基因的信号），其余区间呈均匀分布（零假设下的均匀分布）。若整体呈右偏或 p = 1 处有尖峰，提示数据中存在未处理的批次效应或离群样本。",
+    "crumbs": [
+      "第二阶段：转录组与单细胞",
+      "<span class='chapter-number'>23</span>  <span class='chapter-title'>差异表达分析</span>"
+    ]
+  },
+  {
+    "objectID": "transcriptomics_basic_lesson3.html#批次效应检测评估与校正",
+    "href": "transcriptomics_basic_lesson3.html#批次效应检测评估与校正",
+    "title": "23  差异表达分析",
+    "section": "23.9 批次效应：检测、评估与校正",
+    "text": "23.9 批次效应：检测、评估与校正\n批次效应在 RNA-seq 数据中几乎普遍存在。在第1专题中已介绍其早期检测（PCA、RLE 图），本节深入讨论如何在差异表达分析框架中正确处理批次效应。\n\n23.9.1 批次效应与生物学变异的解耦\n批次效应处理的核心原则是：将批次效应从统计模型中”解释”出去，而非简单地从数据中删除。前者（在设计矩阵中加入批次协变量）是统计上正确的方法；后者（先校正再进行 DEA）会导致 p 值过于乐观，因为校正后的数据减少了方差，而检验时仍然使用校正后的自由度。\n\n\n23.9.2 方法一：在设计矩阵中包含批次变量（推荐）\n# === Approach 1: Include batch in design matrix (RECOMMENDED) ===\n# This is statistically correct: batch effects are modeled out\n# while preserving within-batch variation for DEA\n\nlibrary(DESeq2)\n\n# Simulate a dataset with batch effects\nset.seed(2024)\nn_genes   &lt;- 5000\nn_samples &lt;- 8   # 4 treated + 4 untreated, split across 2 batches\n\ncounts_batch &lt;- matrix(\n  rnbinom(n_genes * n_samples, mu = 200, size = 4),\n  nrow = n_genes,\n  dimnames = list(paste0(\"gene\", seq_len(n_genes)),\n                  paste0(\"sample\", seq_len(n_samples)))\n)\n\n# Add systematic batch effect to samples 1,2,5,6 (batch B)\nbatch_effect &lt;- rnorm(n_genes, mean = 0, sd = 0.5)\ncounts_batch[, c(1, 2, 5, 6)] &lt;- round(\n  counts_batch[, c(1, 2, 5, 6)] * exp(batch_effect)\n)\n\nsample_meta_batch &lt;- data.frame(\n  condition = factor(rep(c(\"untreated\", \"treated\"), each = 4)),\n  batch     = factor(c(\"B\", \"B\", \"A\", \"A\", \"B\", \"B\", \"A\", \"A\")),\n  row.names = paste0(\"sample\", seq_len(n_samples))\n)\n\n# Check confounding: are batch and condition confounded?\ntable(sample_meta_batch$condition, sample_meta_batch$batch)\n# If each condition appears in each batch, design is balanced (good)\n# If all treated = batch A, all untreated = batch B → completely confounded (bad)\n\n# Build DESeqDataSet with batch in design\ndds_b &lt;- DESeqDataSetFromMatrix(\n  countData = counts_batch,\n  colData   = sample_meta_batch,\n  design    = ~ batch + condition  # batch BEFORE condition of interest\n)\ndds_b &lt;- DESeq(dds_b)\n\n# Results: treatment effect after controlling for batch\nres_b &lt;- results(dds_b,\n                 contrast = c(\"condition\", \"treated\", \"untreated\"))\nsummary(res_b)\n\n\n23.9.3 方法二：ComBat / limma::removeBatchEffect（仅用于可视化）\n有时需要生成去除批次效应的表达矩阵用于可视化（如热图、PCA），而非用于 DEA。此时可使用 ComBat（基于经验贝叶斯，sva 包）或 limma::removeBatchEffect。\n\n严格限制： 通过 removeBatchEffect() 或 ComBat() 校正后的矩阵仅适用于可视化，不应作为 DEA 工具（DESeq2/edgeR）的输入。原因：批次校正会人为降低样本间方差，使随后的统计检验的 p 值过于乐观（假阳性率升高）。\n\nlibrary(sva)\nlibrary(limma)\n\n# === ComBat for batch correction (visualization only) ===\n# Input: log-normalized expression matrix\nvsd_matrix &lt;- assay(vst(dds_b, blind = FALSE))\n\n# ComBat (parametric, assumes Gaussian batch effects)\ncombat_corrected &lt;- ComBat(\n  dat     = vsd_matrix,\n  batch   = sample_meta_batch$batch,\n  mod     = model.matrix(~ condition, data = sample_meta_batch),\n  par.prior = TRUE   # parametric (faster); set FALSE for non-parametric\n)\n\n# limma::removeBatchEffect (simpler, deterministic)\nlimma_corrected &lt;- removeBatchEffect(\n  vsd_matrix,\n  batch     = sample_meta_batch$batch,\n  design    = model.matrix(~ condition, data = sample_meta_batch)\n)\n\n# === Compare PCA before and after correction ===\nlibrary(ggplot2)\n\npca_before &lt;- prcomp(t(vsd_matrix), scale. = TRUE)\npca_after  &lt;- prcomp(t(limma_corrected), scale. = TRUE)\n\npca_plot &lt;- function(pca_obj, title) {\n  df &lt;- data.frame(\n    PC1 = pca_obj$x[, 1],\n    PC2 = pca_obj$x[, 2],\n    condition = sample_meta_batch$condition,\n    batch = sample_meta_batch$batch\n  )\n  var_exp &lt;- round(summary(pca_obj)$importance[2, 1:2] * 100, 1)\n  ggplot(df, aes(x = PC1, y = PC2,\n                 color = condition, shape = batch)) +\n    geom_point(size = 4) +\n    labs(title = title,\n         x = paste0(\"PC1 (\", var_exp[1], \"%)\"),\n         y = paste0(\"PC2 (\", var_exp[2], \"%)\")) +\n    theme_classic()\n}\n\nlibrary(patchwork)\npca_plot(pca_before, \"Before batch correction\") +\npca_plot(pca_after,  \"After batch correction (limma)\")\n\n\n23.9.4 评估批次效应是否成功去除\n# kBET: k-nearest neighbor batch effect test\n# Tests whether batch labels are uniformly distributed in KNN neighborhoods\n# install.packages(\"remotes\")\n# remotes::install_github(\"theislab/kBET\")\nlibrary(kBET)\n\n# Run kBET on corrected data\nbatch_labels &lt;- as.integer(sample_meta_batch$batch)\n\nkbet_result &lt;- kBET(\n  df    = t(limma_corrected),  # samples x features\n  batch = batch_labels,\n  plot  = FALSE\n)\ncat(\"kBET rejection rate (should be low if batch corrected):\",\n    kbet_result$stats$kBET.observed, \"\\n\")\n# Low rejection rate → batch effect successfully removed",
+    "crumbs": [
+      "第二阶段：转录组与单细胞",
+      "<span class='chapter-number'>23</span>  <span class='chapter-title'>差异表达分析</span>"
+    ]
+  },
+  {
+    "objectID": "transcriptomics_basic_lesson3.html#多重检验校正benjamini-hochberg-方法",
+    "href": "transcriptomics_basic_lesson3.html#多重检验校正benjamini-hochberg-方法",
+    "title": "23  差异表达分析",
+    "section": "23.10 多重检验校正：Benjamini-Hochberg 方法",
+    "text": "23.10 多重检验校正：Benjamini-Hochberg 方法\n当对 20,000 个基因同时进行假设检验时，若使用单个 p-value &lt; 0.05 的阈值，仅由随机波动就可能产生约 1,000 个假阳性（20,000 × 0.05）。\nBenjamini-Hochberg（BH）方法控制的是假发现率（False Discovery Rate, FDR），即显著结果中假阳性的比例：\n\\[\\text{FDR} = E\\left[\\frac{V}{R}\\right]\\]\n其中 \\(V\\) 是假阳性数，\\(R\\) 是总显著结果数。\nBH 过程：将所有 \\(m\\) 个 p 值从小到大排序为 \\(p_{(1)} \\leq p_{(2)} \\leq \\cdots \\leq p_{(m)}\\)，调整后的 p 值为：\n\\[p_{(i)}^{\\text{adj}} = \\min_{j \\geq i}\\left(\\frac{m}{j} p_{(j)}\\right)\\]\n当 padj &lt; 0.05 时，意味着在所有报告的显著基因中，平均有不超过 5% 是假阳性。这比未校正的 p-value &lt; 0.05 宽松得多，但比 Bonferroni 校正（\\(\\alpha / m\\)）宽松，在保持统计功效的同时控制了假阳性率。",
+    "crumbs": [
+      "第二阶段：转录组与单细胞",
+      "<span class='chapter-number'>23</span>  <span class='chapter-title'>差异表达分析</span>"
+    ]
+  },
+  {
+    "objectID": "transcriptomics_basic_lesson3.html#课后自测-post-lesson-quiz",
+    "href": "transcriptomics_basic_lesson3.html#课后自测-post-lesson-quiz",
+    "title": "23  差异表达分析",
+    "section": "23.11 课后自测 (Post-Lesson Quiz)",
+    "text": "23.11 课后自测 (Post-Lesson Quiz)\n\n某基因在 3 个处理组样本中的计数分别为 [5, 3, 7]，在 3 个对照组中为 [4, 6, 2]。为什么对这类低计数基因的差异检验结果不可靠？DESeq2 如何通过离散度缩减改善这一问题？\nDESeq2 的大小因子估计使用中位数而非均值，这一设计选择的统计依据是什么？请举例说明在什么情况下使用均值会产生错误结果。\n对同一数据集分别使用 Wald 检验和似然比检验（LRT），它们的适用场景有何不同？在分析一个含有 4 个时间点的时间序列实验时，应优先选择哪种检验方式？\n若 MA 图中显示低表达基因（左侧）的 LFC 值散布极广（有 ±5 log2 fold change 的点），而高表达基因（右侧）的 LFC 集中在较窄范围内，这说明了什么？应如何处理？\nBH 校正后的 padj = 0.03 意味着什么？是否意味着该基因有 97% 的概率是真正差异表达的？请阐述正确的解读方式。\n\n\n\n参考答案 (Reference Answers)\n\n\n低计数基因的计数估计本身具有高度不确定性——在 Poisson 或负二项分布下，计数 5 的置信区间可覆盖 1–15 的范围。有限样本（3 个）使得均值估计极不稳定，标准误差大，导致 Wald 检验统计量小，检验效力低。DESeq2 通过离散度缩减：借鉴同等表达量水平的其他基因的离散度信息，将基因特异性估计向全局趋势缩减，从而在有限样本条件下获得更稳定的方差估计，避免低计数基因的离散度被过度高估（这会导致假阴性）或过度低估（导致假阳性）。\n使用均值（mean）计算大小因子时，若某个样本中有几个极高表达的基因（如应激响应基因被激活），这些基因的极大计数值会拉高均值，导致大小因子被高估，进而使该样本的所有基因计数被过度下调，引入系统性偏差。中位数对这类极端值鲁棒：即使 1–2 个基因的计数异常高，中位数几乎不受影响，大小因子估计更稳健。例如，若处理组中一个基因的计数是对照的 1000 倍，使用均值会使处理组大小因子大幅增大，masking 其他真正差异表达的基因。\nWald 检验适用于两组间单一系数的检验（如 treated vs untreated）；似然比检验（LRT）通过比较完整模型与去除某个因子的简化模型的对数似然差，适用于多因子模型或多水平因子的显著性检验。对于含 4 个时间点的时间序列实验，应优先使用 LRT（test = \"LRT\"，reduced = ~ 1），因为它能检验”时间因子整体是否对表达有影响”，而不是仅比较两个时间点之间的差异。\n这说明低表达基因（低 mean counts）的 LFC 估计极不稳定，散布极广是由统计不确定性而非真实的生物学差异造成的。应对措施是使用 lfcShrink(type = \"apeglm\")：该方法对低置信度的 LFC 估计进行向 0 的收缩，低计数基因的 LFC 会被拉近 0，从而在 MA 图和后续可视化中消除视觉上的虚假极端值。\npadj = 0.03 的正确解读是：在所有报告为显著（padj &lt; 0.05）的基因集合中，预期有不超过 5% 是假阳性（FDR 控制）。它不意味着该单个基因有 97% 的概率是真正差异表达的——这是 FDR 与局部 FDR（local FDR）或后验概率的混淆。padj 是一个多重检验校正后的 p 值，控制的是整体假发现率，而不是该特定基因的后验真实性概率。",
+    "crumbs": [
+      "第二阶段：转录组与单细胞",
+      "<span class='chapter-number'>23</span>  <span class='chapter-title'>差异表达分析</span>"
+    ]
+  },
+  {
+    "objectID": "transcriptomics_basic_lesson4.html",
+    "href": "transcriptomics_basic_lesson4.html",
+    "title": "24  功能富集分析",
+    "section": "",
+    "text": "24.1 学习目标\n完成本专题后，学生应能够：",
+    "crumbs": [
+      "第二阶段：转录组与单细胞",
+      "<span class='chapter-number'>24</span>  <span class='chapter-title'>功能富集分析</span>"
+    ]
+  },
+  {
+    "objectID": "transcriptomics_basic_lesson4.html#学习目标",
+    "href": "transcriptomics_basic_lesson4.html#学习目标",
+    "title": "24  功能富集分析",
+    "section": "",
+    "text": "描述 Gene Ontology（GO）三个本体的层级结构与生物学含义；\n阐述过表示富集分析（ORA）的超几何检验原理，并解释背景基因集选择的重要性；\n描述 GSEA 的基因集富集得分计算逻辑，解释 NES 与 leading edge 基因的意义；\n区分 ORA 与 GSEA 的适用场景，能根据数据特点做出合理选择；\n使用 clusterProfiler 独立完成 GO ORA、KEGG ORA 与 GSEA 分析，并生成规范的可视化图表；\n识别富集分析结果中的常见陷阱与过度解读风险。",
+    "crumbs": [
+      "第二阶段：转录组与单细胞",
+      "<span class='chapter-number'>24</span>  <span class='chapter-title'>功能富集分析</span>"
+    ]
+  },
+  {
+    "objectID": "transcriptomics_basic_lesson4.html#从差异基因到生物学意义",
+    "href": "transcriptomics_basic_lesson4.html#从差异基因到生物学意义",
+    "title": "24  功能富集分析",
+    "section": "24.2 从差异基因到生物学意义",
+    "text": "24.2 从差异基因到生物学意义\n差异表达分析的产出是一张基因列表——数百到数千个在处理与对照间有统计显著变化的基因。然而，基因的名字本身（ENSG00000186092、TP53、MYC）并不能直接告诉我们”这些基因的变化意味着什么生物学过程被激活或抑制”。\n功能富集分析（Functional Enrichment Analysis）通过将差异基因与人工整理的功能数据库（如 GO、KEGG）比对，将孤立的基因列表转化为有生物学意义的通路和功能模块，是 RNA-seq 分析中将统计结果转化为生物学假设的关键步骤。",
+    "crumbs": [
+      "第二阶段：转录组与单细胞",
+      "<span class='chapter-number'>24</span>  <span class='chapter-title'>功能富集分析</span>"
+    ]
+  },
+  {
+    "objectID": "transcriptomics_basic_lesson4.html#功能注释数据库",
+    "href": "transcriptomics_basic_lesson4.html#功能注释数据库",
+    "title": "24  功能富集分析",
+    "section": "24.3 功能注释数据库",
+    "text": "24.3 功能注释数据库\n\n24.3.1 Gene Ontology（GO）\nGene Ontology 是一个层级化的受控词汇（controlled vocabulary）系统，将基因的功能划分为三个独立的本体（Ontology）：\n{{Wiki:Gene_ontology}}\n生物学过程（Biological Process, BP）：描述基因参与的生物学事件，从宏观（“免疫应答”）到微观（“受体酪氨酸激酶信号传导”）形成层级结构。这是 RNA-seq 分析中最常用的 GO 本体。\n分子功能（Molecular Function, MF）：描述基因产物在分子层面的活性（如”ATP 结合”、“DNA 结合转录因子活性”）。注意：MF 描述的是功能，而非执行该功能的生物学背景。\n细胞组分（Cellular Component, CC）：描述基因产物定位的细胞结构（如”线粒体内膜”、“核糖体大亚基”）。\nGO 采用有向无环图（Directed Acyclic Graph, DAG）结构：每个 GO term 可以有多个亲本节点。一个基因被注释到某个 term 时，也隐含地注释到该 term 的所有祖先节点。这种层级传播（ancestral propagation）在富集分析中需要特别处理，否则会产生大量冗余的显著结果（父 term 因包含子 term 的基因而自动显著）。\n\n\n24.3.2 KEGG 通路数据库\nKEGG（Kyoto Encyclopedia of Genes and Genomes）将基因分配到可手工策划的信号通路图（pathway map）中，直观展示基因产物在信号传导、代谢途径中的相互关系。与 GO 的抽象词汇不同，KEGG 通路图可以直接可视化，显示哪些节点（基因）在实验中被激活（上调）或抑制（下调）。\n\n数据库局限性： GO 和 KEGG 的注释覆盖度存在物种偏差——人类、小鼠等模式生物的注释远比非模式生物完善。对于覆盖率低的物种，富集分析结果会呈现系统性偏差，应与直接证据结合解读。\n\n\n\n24.3.3 MSigDB 基因集合库\nMolecular Signatures Database（MSigDB）提供了广泛的人工策划基因集，常用于 GSEA：\n\nH（Hallmark gene sets）：50 个代表性生物学过程的基因集，去冗余、高置信度，适合入门分析；\nC2（Curated gene sets）：来自已发表文献和通路数据库的实验验证基因集；\nC5（Ontology gene sets）：GO BP/MF/CC 基因集的系统整理版本。\n\n\n\n24.3.4 Reactome 通路数据库\nReactome 是一个开放获取、经过专家人工策划的通路数据库，覆盖人类及多个模式生物。与 KEGG 相比，Reactome 具有以下特点：\n\n更细粒度的层级：通路可嵌套至反应（Reaction）和参与分子（Participant）层级，生物学意义更精确；\n开放获取：完全免费，且提供 Bioconductor 接口（ReactomePA 包）；\n与 KEGG 互补：两个数据库在通路覆盖上存在差异，联合使用可提高召回率。\n\nlibrary(ReactomePA)\n\n# Reactome ORA\nreactome_ora &lt;- enrichPathway(\n  gene          = sig_entrez,\n  organism      = \"human\",\n  pvalueCutoff  = 0.05,\n  pAdjustMethod = \"BH\",\n  universe      = universe_entrez,\n  readable      = TRUE\n)\n\ndotplot(reactome_ora, showCategory = 15) +\n  labs(title = \"Reactome ORA: dex treatment vs control\")\n\n# Reactome GSEA\nreactome_gsea &lt;- gsePathway(\n  geneList      = ranked_genes,\n  organism      = \"human\",\n  minGSSize     = 15,\n  pvalueCutoff  = 0.05,\n  pAdjustMethod = \"BH\",\n  seed          = 42\n)",
+    "crumbs": [
+      "第二阶段：转录组与单细胞",
+      "<span class='chapter-number'>24</span>  <span class='chapter-title'>功能富集分析</span>"
+    ]
+  },
+  {
+    "objectID": "transcriptomics_basic_lesson4.html#过表示富集分析over-representation-analysisora",
+    "href": "transcriptomics_basic_lesson4.html#过表示富集分析over-representation-analysisora",
+    "title": "24  功能富集分析",
+    "section": "24.4 过表示富集分析（Over-Representation Analysis，ORA）",
+    "text": "24.4 过表示富集分析（Over-Representation Analysis，ORA）\n\n24.4.1 超几何检验原理\nORA 将差异表达基因（DEGs）与某个功能基因集进行重叠分析，通过超几何检验（hypergeometric test）评估重叠程度是否超出随机预期。\n假设： - \\(N\\)：背景基因集总数（通常为检测到有表达的所有基因）； - \\(K\\)：某 GO term 中基因总数； - \\(n\\)：显著 DEGs 总数； - \\(k\\)：DEGs 中属于该 GO term 的基因数。\np 值为从 \\(N\\) 个基因中随机抽取 \\(n\\) 个，至少有 \\(k\\) 个属于该 GO term 的概率：\n\\[p = \\sum_{i=k}^{\\min(n,K)} \\frac{\\binom{K}{i}\\binom{N-K}{n-i}}{\\binom{N}{n}}\\]\n这等同于从一个含 \\(K\\) 个”红球”和 \\(N-K\\) 个”黑球”的瓮中不放回地抽取 \\(n\\) 个球，至少抽到 \\(k\\) 个红球的概率。\n\n背景基因集的选择至关重要。 若将背景集设为”全基因组所有基因”（而非”在该实验中检测到有表达的基因”），则分母 \\(N\\) 偏大，导致 \\(\\frac{k}{n}\\) 相对 \\(\\frac{K}{N}\\) 的比值（富集倍数）被低估，p 值偏保守。更严重的是，若使用”全基因组”作为背景，但实际实验只能检测到一部分基因，则对每个 GO term 中有多少基因”在实验中可被检测”的假设是错误的。始终使用实验检测到的基因作为背景集。\n\n\n\n24.4.2 ORA 的适用场景与局限性\n适用场景：有明确的差异基因列表（如 |LFC| &gt; 1，padj &lt; 0.05）；需要快速识别最显著富集的功能类别。\n局限性：\n\n阈值依赖性：结果对差异基因的筛选阈值极为敏感。调整 LFC 阈值从 0.5 到 1.5，富集结果可能截然不同；\n丢失趋势信息：将所有 DEGs 视为等效，忽视了上调和下调的方向性，以及表达变化幅度；\n忽略非显著基因的信息：接近但未达到阈值的基因被完全排除在外。",
+    "crumbs": [
+      "第二阶段：转录组与单细胞",
+      "<span class='chapter-number'>24</span>  <span class='chapter-title'>功能富集分析</span>"
+    ]
+  },
+  {
+    "objectID": "transcriptomics_basic_lesson4.html#基因集富集分析gsea",
+    "href": "transcriptomics_basic_lesson4.html#基因集富集分析gsea",
+    "title": "24  功能富集分析",
+    "section": "24.5 基因集富集分析（GSEA）",
+    "text": "24.5 基因集富集分析（GSEA）\n\n24.5.1 算法原理\nGSEA 不设定差异基因阈值，而是将全部基因按某个相关性指标（通常为 DESeq2 的 Wald stat 或 LFC × -log10(padj) 的乘积）从正到负排序，形成一个有序的基因列表 \\(L = [g_1, g_2, \\ldots, g_N]\\)。\n对于每个基因集 \\(S\\)，GSEA 沿有序列表计算富集得分（Enrichment Score, ES）：\n\\[ES = \\max_{j} \\left( \\text{running sum at position } j \\right)\\]\n其中 running sum 的规则是： - 遇到基因集 \\(S\\) 中的基因 → running sum 向上增加（增量与排序指标的绝对值成比例，使用加权版本）； - 遇到不在 \\(S\\) 中的基因 → running sum 向下减少（均等减量）。\nES 越大，表示基因集 \\(S\\) 在排序列表的顶端（高度上调基因中）越富集；ES 越负，表示在底端（高度下调基因中）越富集。\n标准化富集得分（NES）：由于不同基因集大小不同，需要将 ES 标准化。方法是将真实 ES 除以同大小随机基因集排列置换的平均 |ES|，得到 NES。NES &gt; 1.5 通常视为有意义的正向富集。\n{{Wiki:Gene_set_enrichment_analysis}}\n\n\n24.5.2 Leading Edge 分析\nES 曲线达到最大值（或最小值）的位置，将基因列表分成两部分：最大值之前的基因集 \\(S\\) 成员称为 leading edge 基因，即驱动富集得分的核心基因子集。这些基因是生物学解读的焦点——它们既在基因集 \\(S\\) 中，又在排序列表的极端位置，最有可能是生物学上真正相关的效应基因。\n\n黄金法则： GSEA 的 leading edge 基因是实验结果与已知通路知识的交汇点。对 leading edge 基因的深入文献检索，往往是从计算分析迈向生物学发现的最关键一步。",
+    "crumbs": [
+      "第二阶段：转录组与单细胞",
+      "<span class='chapter-number'>24</span>  <span class='chapter-title'>功能富集分析</span>"
+    ]
+  },
+  {
+    "objectID": "transcriptomics_basic_lesson4.html#clusterprofiler-实践",
+    "href": "transcriptomics_basic_lesson4.html#clusterprofiler-实践",
+    "title": "24  功能富集分析",
+    "section": "24.6 clusterProfiler 实践",
+    "text": "24.6 clusterProfiler 实践\nlibrary(clusterProfiler)\nlibrary(org.Hs.eg.db)\nlibrary(enrichplot)\nlibrary(ggplot2)\n\n# === Load DESeq2 results ===\n# Assuming res_shrunk is the apeglm-shrunken result from Lesson 3\nres_df &lt;- as.data.frame(res_shrunk)\nres_df$gene_id &lt;- rownames(res_df)\n\n# Convert Ensembl IDs to Entrez IDs (required by KEGG)\ngene_map &lt;- bitr(\n  rownames(res_df),\n  fromType = \"ENSEMBL\",\n  toType   = c(\"ENTREZID\", \"SYMBOL\"),\n  OrgDb    = org.Hs.eg.db\n)\nres_df &lt;- merge(res_df, gene_map, by.x = \"gene_id\", by.y = \"ENSEMBL\")\n\n# === Part 1: GO Over-Representation Analysis (ORA) ===\n\n# Define significant DEGs (|LFC| &gt; 1, padj &lt; 0.05)\nsig_genes &lt;- subset(res_df, padj &lt; 0.05 & abs(log2FoldChange) &gt; 1)\nsig_entrez &lt;- sig_genes$ENTREZID\n\n# Universe = all genes tested (expressed in the experiment)\nuniverse_entrez &lt;- res_df$ENTREZID\n\n# GO BP enrichment\ngo_bp &lt;- enrichGO(\n  gene          = sig_entrez,\n  OrgDb         = org.Hs.eg.db,\n  keyType       = \"ENTREZID\",\n  ont           = \"BP\",        # Biological Process\n  pAdjustMethod = \"BH\",\n  pvalueCutoff  = 0.05,\n  qvalueCutoff  = 0.2,\n  universe      = universe_entrez,\n  readable      = TRUE         # convert ENTREZID to SYMBOL in output\n)\n\n# Remove redundant GO terms (keep most specific)\ngo_bp_simplified &lt;- simplify(go_bp,\n                              cutoff    = 0.7,\n                              by        = \"p.adjust\",\n                              select_fun = min)\n\n# Visualize: dotplot\ndotplot(go_bp_simplified, showCategory = 20) +\n  labs(title = \"GO Biological Process: dex treatment vs control\",\n       x = \"Gene Ratio\") +\n  theme(axis.text.y = element_text(size = 8))\n\n# Visualize: enrichment map (shows GO term similarity network)\ngo_bp_sim &lt;- pairwise_termsim(go_bp_simplified)\nemapplot(go_bp_sim, showCategory = 30, cex_label_category = 0.7) +\n  labs(title = \"GO BP Enrichment Map\")\n\n# === Part 2: KEGG Pathway Enrichment ===\nkegg_res &lt;- enrichKEGG(\n  gene          = sig_entrez,\n  organism      = \"hsa\",       # Homo sapiens\n  pAdjustMethod = \"BH\",\n  pvalueCutoff  = 0.05,\n  universe      = universe_entrez\n)\n\n# Visualize KEGG pathway on its map (requires internet)\n# browseKEGG(kegg_res, \"hsa04657\")  # example: IL-17 signaling pathway\n\ndotplot(kegg_res, showCategory = 15) +\n  labs(title = \"KEGG Pathway ORA: dex treatment vs control\")\n\n# === Part 3: GSEA ===\n\n# Create ranked gene list: sorted by Wald statistic (recommended for GSEA)\n# stat = LFC / SE = Wald stat, captures both magnitude and significance\nranked_genes &lt;- res_df$stat\nnames(ranked_genes) &lt;- res_df$ENTREZID\nranked_genes &lt;- sort(ranked_genes, decreasing = TRUE)\nranked_genes &lt;- ranked_genes[!is.na(ranked_genes)]\n\n# GO GSEA\ngsea_go &lt;- gseGO(\n  geneList      = ranked_genes,\n  OrgDb         = org.Hs.eg.db,\n  keyType       = \"ENTREZID\",\n  ont           = \"BP\",\n  minGSSize     = 15,\n  maxGSSize     = 500,\n  pvalueCutoff  = 0.05,\n  pAdjustMethod = \"BH\",\n  eps           = 1e-10,\n  seed          = 42\n)\n\n# KEGG GSEA\ngsea_kegg &lt;- gseKEGG(\n  geneList      = ranked_genes,\n  organism      = \"hsa\",\n  minGSSize     = 15,\n  maxGSSize     = 500,\n  pvalueCutoff  = 0.05,\n  pAdjustMethod = \"BH\",\n  seed          = 42\n)\n\n# Visualize: ridgeplot (shows distribution of ranked genes per pathway)\nridgeplot(gsea_kegg, showCategory = 15, fill = \"p.adjust\") +\n  labs(title = \"GSEA KEGG: gene rank distribution per pathway\")\n\n# Visualize: GSEA running enrichment plot for top pathway\ngseaplot2(gsea_kegg,\n          geneSetID = 1,     # top-ranked pathway\n          title     = gsea_kegg$Description[1])\n\n24.6.1 理解 GSEA 富集图\ngseaplot2() 生成的经典 GSEA 图包含三个面板：\n\n顶部折线图：Running Enrichment Score (RES) 曲线，纵轴为累积富集得分，达到最大值处即为 ES；\n中间条形图：基因集 \\(S\\) 中各基因在有序列表中的位置（黑色竖线），聚集在左侧表示上调富集，聚集在右侧表示下调富集；\n底部梯度条：基因排序指标（Wald stat）从正（左）到负（右）的热图，颜色越红表示上调越强，越蓝表示下调越强。",
+    "crumbs": [
+      "第二阶段：转录组与单细胞",
+      "<span class='chapter-number'>24</span>  <span class='chapter-title'>功能富集分析</span>"
+    ]
+  },
+  {
+    "objectID": "transcriptomics_basic_lesson4.html#ora-与-gsea-的结果比较",
+    "href": "transcriptomics_basic_lesson4.html#ora-与-gsea-的结果比较",
+    "title": "24  功能富集分析",
+    "section": "24.7 ORA 与 GSEA 的结果比较",
+    "text": "24.7 ORA 与 GSEA 的结果比较\n# Compare ORA vs GSEA results for the same dataset\nlibrary(dplyr)\n\n# Extract significant pathways from both methods\nora_pathways  &lt;- go_bp_simplified@result %&gt;%\n  filter(p.adjust &lt; 0.05) %&gt;%\n  select(Description, p.adjust, Count) %&gt;%\n  mutate(method = \"ORA\")\n\ngsea_pathways &lt;- gsea_go@result %&gt;%\n  filter(p.adjust &lt; 0.05) %&gt;%\n  select(Description, p.adjust, NES) %&gt;%\n  mutate(method = \"GSEA\")\n\n# Count overlap\ncat(\"ORA significant GO BP terms:\", nrow(ora_pathways), \"\\n\")\ncat(\"GSEA significant GO BP terms:\", nrow(gsea_pathways), \"\\n\")\noverlap &lt;- intersect(ora_pathways$Description, gsea_pathways$Description)\ncat(\"Overlapping terms:\", length(overlap), \"\\n\")\n典型差异分析：\n\nORA 发现的通路通常是 DEG 中高度富集的核心功能，倾向于选择包含已知标志物基因的 GO terms；\nGSEA 额外捕捉整体趋势性变化，能发现一组基因集体微小上调（每个基因单独看未达显著阈值）的通路；\n若两方法均显著的通路，生物学可靠性更高；仅 GSEA 显著的通路值得进一步验证；仅 ORA 显著的通路可能受阈值选择影响较大。",
+    "crumbs": [
+      "第二阶段：转录组与单细胞",
+      "<span class='chapter-number'>24</span>  <span class='chapter-title'>功能富集分析</span>"
+    ]
+  },
+  {
+    "objectID": "transcriptomics_basic_lesson4.html#多数据库结果整合与高级可视化",
+    "href": "transcriptomics_basic_lesson4.html#多数据库结果整合与高级可视化",
+    "title": "24  功能富集分析",
+    "section": "24.8 多数据库结果整合与高级可视化",
+    "text": "24.8 多数据库结果整合与高级可视化\n当同时使用 GO、KEGG 和 Reactome 进行富集分析时，如何高效整合和展示来自不同数据库的结果，是数据呈现的重要技巧。\n\n24.8.1 UpSet 图：跨方法/数据库重叠分析\nUpSet 图是韦恩图的扩展，适合比较超过 3 个集合的重叠情况，能清晰展示哪些基因被多个数据库/方法共同检出。\nlibrary(UpSetR)\n\n# Compile significant genes from each enrichment approach\n# (genes appearing in any significant term's geneID list)\nextract_genes &lt;- function(enrich_obj, padj_cut = 0.05) {\n  sig &lt;- enrich_obj@result[enrich_obj@result$p.adjust &lt; padj_cut, ]\n  unique(unlist(strsplit(sig$geneID, \"/\")))\n}\n\ngene_sets_db &lt;- list(\n  GO_BP_ORA   = extract_genes(go_bp_simplified),\n  KEGG_ORA    = extract_genes(kegg_res),\n  Reactome_ORA = extract_genes(reactome_ora),\n  GSEA_KEGG   = extract_genes(gsea_kegg)\n)\n\n# Convert to binary matrix for UpSetR\nall_genes &lt;- unique(unlist(gene_sets_db))\nupset_mat  &lt;- lapply(gene_sets_db, function(g) as.integer(all_genes %in% g))\nupset_df   &lt;- as.data.frame(do.call(cbind, upset_mat))\nrownames(upset_df) &lt;- all_genes\n\nupset(upset_df,\n      sets.bar.color = \"steelblue\",\n      order.by = \"freq\",\n      main.bar.color = \"firebrick\",\n      text.scale = 1.2)\n\n\n24.8.2 差异基因热图：Top DEG 的表达谱可视化\n展示差异最显著基因在各样本间的表达模式，是论文图表的标配。\nlibrary(pheatmap)\nlibrary(RColorBrewer)\n\n# Select top 50 DEGs by padj (bidirectional)\ntop_up   &lt;- head(rownames(sig_genes[order(sig_genes$log2FoldChange,\n                                           decreasing = TRUE), ]), 25)\ntop_down &lt;- head(rownames(sig_genes[order(sig_genes$log2FoldChange), ]), 25)\ntop_degs  &lt;- c(top_up, top_down)\n\n# Get VST-normalized expression for heatmap\nvsd_mat &lt;- assay(vst(dds, blind = FALSE))\nheatmap_mat &lt;- vsd_mat[top_degs, ]\n\n# Row-scale (Z-score per gene)\nheatmap_scaled &lt;- t(scale(t(heatmap_mat)))\n\n# Annotation for columns\ncol_anno &lt;- data.frame(\n  condition = sample_info$condition,\n  row.names = rownames(sample_info)\n)\nanno_colors &lt;- list(\n  condition = c(untreated = \"steelblue\", treated = \"firebrick\")\n)\n\npheatmap(\n  heatmap_scaled,\n  annotation_col  = col_anno,\n  annotation_colors = anno_colors,\n  cluster_rows    = TRUE,\n  cluster_cols    = TRUE,\n  show_rownames   = TRUE,\n  show_colnames   = TRUE,\n  color           = colorRampPalette(\n    rev(brewer.pal(11, \"RdBu\")))(100),\n  breaks          = seq(-3, 3, length.out = 101),\n  fontsize_row    = 7,\n  main            = \"Top 50 DEGs: Z-score normalized expression\"\n)\n\n\n24.8.3 KEGG 通路可视化：pathview\npathview 将差异表达数据直接叠加到 KEGG 通路图上，用颜色编码基因的上调/下调状态，是展示具体通路机制的有效方式。\nlibrary(pathview)\n\n# Prepare named vector: gene LFC values, names = Entrez IDs\nlfc_vector &lt;- setNames(res_df$log2FoldChange, res_df$ENTREZID)\nlfc_vector &lt;- lfc_vector[!is.na(lfc_vector)]\n\n# Find top KEGG pathway from ORA results\ntop_kegg_id &lt;- kegg_res@result$ID[1]  # e.g., \"hsa04657\"\ncat(\"Visualizing pathway:\", kegg_res@result$Description[1], \"\\n\")\n\n# Generate pathway map (downloads from KEGG website)\npathview(\n  gene.data  = lfc_vector,\n  pathway.id = top_kegg_id,\n  species    = \"hsa\",\n  gene.idtype = \"ENTREZ\",\n  low  = list(gene = \"steelblue\"),\n  high = list(gene = \"firebrick\"),\n  mid  = list(gene = \"white\"),\n  out.suffix = \"dex_treatment\"\n)\n# Output: hsa04657.dex_treatment.png in working directory",
+    "crumbs": [
+      "第二阶段：转录组与单细胞",
+      "<span class='chapter-number'>24</span>  <span class='chapter-title'>功能富集分析</span>"
+    ]
+  },
+  {
+    "objectID": "transcriptomics_basic_lesson4.html#结果解读的批判性原则",
+    "href": "transcriptomics_basic_lesson4.html#结果解读的批判性原则",
+    "title": "24  功能富集分析",
+    "section": "24.9 结果解读的批判性原则",
+    "text": "24.9 结果解读的批判性原则\n\n避免过度解读富集分析结果\n以下是富集分析中最常见的误用：\n\n功能注释覆盖度偏差：GO 对某些功能（如”DNA 修复”）的注释非常详细，对另一些（如”细胞极性建立”）则稀疏。覆盖度高的功能更容易出现在富集结果中，并非一定是最重要的。\n通路重叠假象：许多 GO terms 共享大量基因（如”细胞周期调控”与”DNA 损伤应答”的基因高度重叠）。多个显著 terms 可能被同一组基因驱动，并非独立的生物学信号。使用 simplify() 或 emapplot() 可帮助识别冗余。\n背景集选择偏差：参见 ORA 部分的警告。\n将 p 值大小等同于生物学重要性：富集分析 p 值主要受基因集大小影响（大的基因集更容易显著），而非效应量大小。应结合 Gene Ratio（或 NES）和 leading edge 基因的生物学意义综合判断。",
+    "crumbs": [
+      "第二阶段：转录组与单细胞",
+      "<span class='chapter-number'>24</span>  <span class='chapter-title'>功能富集分析</span>"
+    ]
+  },
+  {
+    "objectID": "transcriptomics_basic_lesson4.html#实践完整富集分析报告",
+    "href": "transcriptomics_basic_lesson4.html#实践完整富集分析报告",
+    "title": "24  功能富集分析",
+    "section": "24.10 实践：完整富集分析报告",
+    "text": "24.10 实践：完整富集分析报告\n# === Comprehensive enrichment analysis summary ===\n\n# Combine GO BP, KEGG ORA, GO GSEA, KEGG GSEA into a summary table\nora_summary &lt;- data.frame(\n  Method      = \"ORA\",\n  Database    = \"GO BP\",\n  Significant = nrow(go_bp_simplified@result[go_bp_simplified@result$p.adjust &lt; 0.05, ]),\n  Top5        = paste(head(go_bp_simplified@result$Description, 5), collapse = \"; \")\n)\n\ngsea_summary &lt;- data.frame(\n  Method      = \"GSEA\",\n  Database    = \"KEGG\",\n  Significant = nrow(gsea_kegg@result[gsea_kegg@result$p.adjust &lt; 0.05, ]),\n  Top5        = paste(head(gsea_kegg@result$Description, 5), collapse = \"; \")\n)\n\nsummary_table &lt;- rbind(ora_summary, gsea_summary)\nknitr::kable(summary_table,\n             caption = \"Summary of enrichment analysis results\")\n\n# === Save significant results to CSV ===\nwrite.csv(\n  go_bp_simplified@result[go_bp_simplified@result$p.adjust &lt; 0.05, ],\n  \"results/enrichment/GO_BP_ORA_significant.csv\",\n  row.names = FALSE\n)\n\nwrite.csv(\n  gsea_kegg@result[gsea_kegg@result$p.adjust &lt; 0.05, ],\n  \"results/enrichment/KEGG_GSEA_significant.csv\",\n  row.names = FALSE\n)\n\n# === Network plot: connection between DEGs and top GO terms ===\ncnetplot(go_bp_simplified,\n         showCategory = 5,\n         foldChange   = setNames(res_df$log2FoldChange, res_df$SYMBOL),\n         colorEdge    = TRUE) +\n  scale_color_gradient2(\n    low = \"steelblue\", mid = \"white\", high = \"firebrick\",\n    midpoint = 0, name = \"LFC\"\n  ) +\n  labs(title = \"Gene-Concept Network: top 5 GO BP terms\")",
+    "crumbs": [
+      "第二阶段：转录组与单细胞",
+      "<span class='chapter-number'>24</span>  <span class='chapter-title'>功能富集分析</span>"
+    ]
+  },
+  {
+    "objectID": "transcriptomics_basic_lesson4.html#课后自测-post-lesson-quiz",
+    "href": "transcriptomics_basic_lesson4.html#课后自测-post-lesson-quiz",
+    "title": "24  功能富集分析",
+    "section": "24.11 课后自测 (Post-Lesson Quiz)",
+    "text": "24.11 课后自测 (Post-Lesson Quiz)\n\n研究者对一个含 15,000 个背景基因的实验数据进行 GO ORA。某 GO term 在背景中有 200 个基因，在 500 个 DEGs 中有 30 个基因命中。这个富集是否可能显著？请写出需要计算的统计量（无需算出数值）。\n两位研究者分析同一数据集，研究者 A 使用所有检测到的基因（15,000 个）作为背景，研究者 B 使用人类全基因组所有基因（20,000 个）作为背景。谁的 ORA 结果更可靠？为什么？\nGSEA 分析显示某通路的 NES = +2.3，padj = 0.001，但该通路的 leading edge 基因只有 8 个，且这 8 个基因恰好都是同一个蛋白质复合体的亚单位。这个结果应如何解读？是否应该在摘要中报告为”该通路被显著激活”？\n你使用 clusterProfiler 的 simplify() 函数（cutoff = 0.7）对 GO BP ORA 结果去冗余，从 120 个显著 terms 减少到 35 个。这个过程的生物学依据是什么？能否会漏掉重要的生物学信息？\n对于一个疾病与健康对照的转录组研究，共识别了 3,000 个 DEGs，但经 ORA 分析后没有发现任何显著富集的通路（所有 padj &gt; 0.1）。请列举至少三种可能的原因，以及对应的诊断方法。\n\n\n\n参考答案 (Reference Answers)\n\n\n需要计算的统计量是超几何检验的 p 值：\\(N = 15000\\)，\\(K = 200\\)，\\(n = 500\\)，\\(k = 30\\)。计算公式为 \\(p = \\sum_{i=30}^{\\min(500,200)} \\frac{\\binom{200}{i}\\binom{14800}{500-i}}{\\binom{15000}{500}}\\)。期望值为 \\(n \\times K/N = 500 \\times 200/15000 \\approx 6.67\\)，实际观测 30 远超期望，富集倍数约 4.5，很可能显著。但还需经 BH 校正与其他 GO terms 比较后才能确定最终显著性。\n研究者 A（背景 = 实验检测基因，15,000 个）更可靠。使用全基因组 20,000 个基因作为背景，引入了实验无法检测的基因（如在该细胞类型中不表达的基因），这些基因按定义不可能出现在 DEG 列表中，但却虚增了 \\(N-K\\)（背景中不属于该 GO term 的基因数），导致期望重叠值降低，富集倍数虚高，p 值偏乐观（假阳性增加）。\n虽然统计上显著，但应谨慎解读。NES = +2.3 且 padj 极低，说明该通路的基因整体在排序列表顶端聚集。然而 leading edge 仅 8 个基因且属于同一蛋白复合体，意味着整个通路的富集信号实际上由单一功能模块驱动，而非通路的多个功能节点均受影响。建议在报告中具体说明是”该通路中 XX 复合体相关基因被显著上调”，而非笼统陈述”通路被激活”——后者可能误导读者认为通路的全部功能组分均受影响。\nsimplify() 通过计算 GO terms 间的语义相似度（基于共享祖先节点的程度），将高度相似（相似度 &gt; 0.7）的 terms 合并，保留最具统计意义的那个。生物学依据是 GO 的层级冗余性：子 term 和父 term 常常共享大部分基因，去冗余能减少视觉上的干扰，突出独立的生物学信号。潜在风险：若两个相似 term 对应不同的细胞类型或亚过程，合并可能丢失这种区分信息。建议在最终结论中补充检查被合并的 terms，确认无重要信息丢失。\n可能原因及诊断方法：（1）DEGs 分散在多个通路中，每个通路的命中基因数低于阈值 → 改用 GSEA（无需阈值）；（2）背景基因集设置不当（如使用了整个基因组）→ 改用实验检测基因作为背景；（3）所用功能数据库对该疾病/组织的注释覆盖度低 → 尝试不同数据库（如 Reactome、WikiPathways）；（4）差异基因筛选阈值过严，遗漏了生物学重要但未达统计阈值的基因 → 放宽 LFC 阈值后重跑 ORA；（5）实验设计问题（如批次效应主导变异）→ 检查 PCA 图，评估主要变异来源。",
+    "crumbs": [
+      "第二阶段：转录组与单细胞",
+      "<span class='chapter-number'>24</span>  <span class='chapter-title'>功能富集分析</span>"
+    ]
+  },
+  {
+    "objectID": "05-transcriptomics-advanced.html",
+    "href": "05-transcriptomics-advanced.html",
+    "title": "25  Bulk 转录组高级分析：结构变异、长读长与共表达网络",
+    "section": "",
+    "text": "26 整体概述\n标准 Bulk RNA-seq 分析（第4章）聚焦于基因表达量的变化，但转录组所携带的信息远不止于此。同一基因可以通过可变剪接（Alternative Splicing）产生具有不同功能的蛋白质异构体；染色体重排或转录通读可以产生融合转录本（Fusion Transcript），在肿瘤研究中具有重要的诊断意义；多个基因在转录层面的协同调控形成共表达模块（Co-expression Module），揭示了潜在的调控因子与生物学通路。短读长测序虽然能够检出这些结构变异的信号，但在全长异构体的精确重建方面存在固有局限。长读长测序技术（PacBio IsoSeq、Oxford Nanopore direct RNA-seq）能够直接读取全长 cDNA 或 RNA 分子，从根本上解决短读长拼接带来的歧义问题。本章在第4章基础上，系统讲解上述三个高级分析方向，并介绍在无参考基因组情形下进行 de novo 转录组组装的方法。\n学习目标：掌握可变剪接五种事件类型及 rMATS 的 PSI 差异检验框架；理解长读长转录组学的工作流程与 SQANTI3 的结构分类体系；能运用 WGCNA 识别与表型相关的共表达基因模块；了解 Trinity de novo 转录组组装的适用场景与评估方法。",
+    "crumbs": [
+      "第二阶段：转录组与单细胞",
+      "<span class='chapter-number'>25</span>  <span class='chapter-title'>Bulk 转录组高级分析：结构变异、长读长与共表达网络</span>"
+    ]
+  },
+  {
+    "objectID": "05-transcriptomics-advanced.html#专题-5.1可变剪接差异分析",
+    "href": "05-transcriptomics-advanced.html#专题-5.1可变剪接差异分析",
+    "title": "25  Bulk 转录组高级分析：结构变异、长读长与共表达网络",
+    "section": "28.1 专题 5.1：可变剪接差异分析",
+    "text": "28.1 专题 5.1：可变剪接差异分析\n可变剪接（Alternative Splicing）是真核生物转录组多样性的主要来源之一。人类基因组中超过 90% 的多外显子基因发生可变剪接，同一基因的不同异构体可编码具有不同结构域组成、亚细胞定位甚至拮抗功能的蛋白质。从测序数据中检测可变剪接需要在外显子-外显子连接处（junction reads）与外显子内部读段（skipping reads）之间进行统计比较，核心指标是外显子纳入百分比（Percent Spliced-In, PSI）。rMATS 是目前最广泛使用的可变剪接差异分析工具，支持五种基本剪接事件类型的系统检测，并使用基于重复样本的贝叶斯统计模型控制假阳性。\n{{Wiki:Alternative_splicing}}\n核心概念：\n\n可变剪接五种基本事件类型：外显子跳跃（Skipped Exon, SE）、可变 5’ 剪接位点（A5SS）、可变 3’ 剪接位点（A3SS）、内含子保留（Retained Intron, RI）、互斥外显子（Mutually Exclusive Exons, MXE）\nPSI 值的定义：\\(\\Psi = \\frac{\\text{inclusion junction reads}}{\\text{inclusion junction reads} + \\text{skipping junction reads}}\\)\nrMATS 统计框架：Beta 二项分布模型；\\(\\Delta\\Psi\\) 的贝叶斯估计；FDR 控制\n结果文件解读：.JC.txt（只用 junction reads）vs .JCEC.txt（junction + exon body reads）；IncLevelDifference 与 FDR 字段含义\nSashimi 图可视化：rmats2sashimiplot；连接弧线的粗细代表 junction reads 数量\n下游功能分析：差异剪接基因的 GO 富集；蛋白质域结构影响预测\n\n实践内容：对 pasilla 数据集（dex 处理 vs 对照）运行 rMATS；识别显著差异的 SE 事件（|ΔPSI| &gt; 0.1，FDR &lt; 0.05）；生成代表性事件的 Sashimi 图；分析差异剪接基因的 GO 功能类别分布。",
+    "crumbs": [
+      "第二阶段：转录组与单细胞",
+      "<span class='chapter-number'>25</span>  <span class='chapter-title'>Bulk 转录组高级分析：结构变异、长读长与共表达网络</span>"
+    ]
+  },
+  {
+    "objectID": "05-transcriptomics-advanced.html#专题-5.2基因融合鉴定",
+    "href": "05-transcriptomics-advanced.html#专题-5.2基因融合鉴定",
+    "title": "25  Bulk 转录组高级分析：结构变异、长读长与共表达网络",
+    "section": "28.2 专题 5.2：基因融合鉴定",
+    "text": "28.2 专题 5.2：基因融合鉴定\n基因融合（Gene Fusion）是两个原本独立的基因的转录本被拼接在一起形成嵌合体转录本的现象，通常源于染色体易位、倒置或缺失等结构变异，也可由转录通读产生。在肿瘤研究领域，特定基因融合事件具有高度的诊断与预后价值（如慢性髓系白血病的 BCR-ABL1、前列腺癌的 TMPRSS2-ERG）。STAR-Fusion 通过两步过滤策略——先由 STAR 识别跨基因边界的嵌合比对，再利用 FusionInspector 在局部重建的融合转录本上进行读段重比对验证——实现了高精度的融合事件检测。\n核心概念：\n\n基因融合的产生机制：染色体易位（translocation）、倒置（inversion）、缺失（deletion）与转录通读（read-through transcription）\nSTAR 嵌合比对参数：--chimSegmentMin（最小嵌合片段长度）；嵌合读段（chimeric reads）与 Chimeric.out.junction 文件\nSTAR-Fusion 过滤策略：FusionInspector 局部重比对验证；FFPM（Fusion Fragments Per Million）计数；已知假阳性数据库（FusionFilter/CTAT library）过滤\n融合事件分类：框内融合（in-frame）vs 框外融合；保留功能域的融合与截短融合\nArriba 替代工具：直接从 STAR 比对结果检测融合，内置高质量可视化模块\n验证策略：RT-PCR + Sanger 测序；扩增子测序验证低表达融合\n\n实践内容：在含已知融合事件的模拟 RNA-seq 数据上运行 STAR-Fusion；解读输出结果中的关键字段；使用 Arriba 可视化代表性融合转录本的结构。",
+    "crumbs": [
+      "第二阶段：转录组与单细胞",
+      "<span class='chapter-number'>25</span>  <span class='chapter-title'>Bulk 转录组高级分析：结构变异、长读长与共表达网络</span>"
+    ]
+  },
+  {
+    "objectID": "05-transcriptomics-advanced.html#专题-5.3pacbio-isoseq-与-oxford-nanopore-全长转录组",
+    "href": "05-transcriptomics-advanced.html#专题-5.3pacbio-isoseq-与-oxford-nanopore-全长转录组",
+    "title": "25  Bulk 转录组高级分析：结构变异、长读长与共表达网络",
+    "section": "29.1 专题 5.3：PacBio IsoSeq 与 Oxford Nanopore 全长转录组",
+    "text": "29.1 专题 5.3：PacBio IsoSeq 与 Oxford Nanopore 全长转录组\n短读长测序（150 bp）在重建全长转录本时面临本质性困难：当一个基因有多个相似的异构体时，短读段无法可靠地归属到特定转录本，尤其是在内含子较多或异构体共享大量外显子的情况下。PacBio IsoSeq 技术通过环形一致性测序（CCS）生成平均长度 2–15 kb、准确率高于 99% 的长读段，能够直接覆盖整条转录本从 5’ 帽到 poly-A 尾。Oxford Nanopore direct RNA-seq 则省去逆转录步骤，直接对 RNA 分子测序，保留天然的碱基修饰信息，但原始读段错误率较高（约 5–10%）。两种技术的分析流程既有共性，也有各自的特殊处理步骤。\n{{Wiki:Pacific_Biosciences}}\n核心概念：\n\nPacBio CCS（Circular Consensus Sequencing）：SMRTbell 文库结构；多轮测序取均值的准确率提升机制；HiFi reads 的定义（≥ 3 次亚读段，准确率 ≥ Q20）\nIsoSeq3 工作流：CCS → lima（primer/barcode 去除）→ isoseq3 refine（poly-A 修剪，FLNC 过滤）→ isoseq3 cluster（聚类去冗余）→ pbmm2 比对 → isoseq3 collapse（同一基因座转录本合并）\nOxford Nanopore direct RNA-seq：纳米孔电流信号直接读取 RNA；dorado 碱基识别（替代旧版 guppy）；minimap2 -ax splice -uf 比对参数（-uf 指定正链偏向）\n长读长比对的挑战：高错误率导致的剪接位点模糊；--junc-bed 利用已知剪接位点锚定比对\nStringTie2 长读长模式：-L 参数启用长读长优化；转录本组装与表达量估计\n短读长辅助（Hybrid approach）：利用 Illumina 高精度数据校正长读长剪接位点\n\n实践内容：演示 IsoSeq3 完整工作流（从 CCS BAM 到 collapsed GFF）；演示 Nanopore dRNA-seq minimap2 比对与 StringTie2 组装；生成两种技术检测到的转录本数量与长度分布对比图。",
+    "crumbs": [
+      "第二阶段：转录组与单细胞",
+      "<span class='chapter-number'>25</span>  <span class='chapter-title'>Bulk 转录组高级分析：结构变异、长读长与共表达网络</span>"
+    ]
+  },
+  {
+    "objectID": "05-transcriptomics-advanced.html#专题-5.4sqanti3-质量评估与-trinity-de-novo-组装",
+    "href": "05-transcriptomics-advanced.html#专题-5.4sqanti3-质量评估与-trinity-de-novo-组装",
+    "title": "25  Bulk 转录组高级分析：结构变异、长读长与共表达网络",
+    "section": "29.2 专题 5.4：SQANTI3 质量评估与 Trinity de novo 组装",
+    "text": "29.2 专题 5.4：SQANTI3 质量评估与 Trinity de novo 组装\n长读长组装产生的转录本需要系统的质量评估：哪些是已知的注释转录本（FSM/ISM），哪些是新型连接（NNC），哪些可能是文库构建产生的伪影（Intrapriming、RT-switching）。SQANTI3 是专为长读长转录本设计的综合评估工具，提供详细的结构分类、质量指标计算与 ML 过滤。在无参考基因组的场景下，Trinity 提供了基于短读长的 de novo 转录组组装路线，通过 de Bruijn 图算法重建转录本序列（de Bruijn 图原理参见第2章基因组组装）。\n核心概念：\n\nSQANTI3 结构分类：FSM（Full Splice Match）、ISM（Incomplete Splice Match）、NIC（Novel in Catalog）、NNC（Novel Not in Catalog）、Antisense、Intergenic、Genic Genomic、Fusion\nSQANTI3 质量指标：CAGE peak 支持（5’ 端真实性）、poly-A signal 支持（3’ 端真实性）、覆盖深度、RT-switching 评分\nSQANTI3 filter：随机森林分类器识别 Intrapriming 与 RT-switching 伪异构体；rules 模式 vs ML 模式\nTrinity de novo 组装：基于 k-mer de Bruijn 图；Trinity 特有的 Butterfly 模块处理可变剪接\nTrinity 输出质量评估：BUSCO（转录组完整性，参见第2章）；TransRate（读段支持度）；N50 指标的局限性\nde novo 转录组的适用场景：非模式生物研究、宏转录组分析\n\n实践内容：SQANTI3 对 IsoSeq3 输出转录本进行结构分类，生成分类统计图与质量分布可视化；演示 SQANTI3 filter 去除低质伪异构体前后的转录本数量变化；展示 Trinity de novo 组装小型转录组并用 BUSCO 评估完整性。",
+    "crumbs": [
+      "第二阶段：转录组与单细胞",
+      "<span class='chapter-number'>25</span>  <span class='chapter-title'>Bulk 转录组高级分析：结构变异、长读长与共表达网络</span>"
+    ]
+  },
+  {
+    "objectID": "05-transcriptomics-advanced.html#专题-5.5加权基因共表达网络分析",
+    "href": "05-transcriptomics-advanced.html#专题-5.5加权基因共表达网络分析",
+    "title": "25  Bulk 转录组高级分析：结构变异、长读长与共表达网络",
+    "section": "30.1 专题 5.5：加权基因共表达网络分析",
+    "text": "30.1 专题 5.5：加权基因共表达网络分析\n差异表达分析聚焦于单个基因层面的变化，而基因的功能往往通过协同调控网络来实现。加权基因共表达网络分析（Weighted Gene Co-expression Network Analysis, WGCNA）将多样本的基因表达矩阵转化为基因-基因相关性网络，并通过层次聚类将相关基因划分为模块（Module）。每个模块可通过模块特征基因（Module Eigengene, ME）——该模块中基因表达的第一主成分——与样本表型信息建立关联，从而识别与特定生物学状态相关的功能基因集，进而发现模块内连接度最高的枢纽基因（Hub gene）作为候选调控因子。\n{{Wiki:Gene_co-expression_network}}\n核心概念：\n\nWGCNA 前提条件：样本数要求（通常 ≥ 15）；表达量归一化（vst 或 rlog 转换）；离群样本检测（层次聚类 + Euclidean distance + Z score 过滤）\n软阈值（Soft Threshold）选择：幂律拟合（scale-free topology fit index）；pickSoftThreshold() 函数；\\(R^2 \\geq 0.85\\) 准则\n相关性度量：Pearson 相关（默认）vs 双权中点相关（bicor，对异常值更鲁棒）\n模块构建：层次聚类 + 动态树切割（Dynamic Tree Cut）；minModuleSize（最小模块大小）；mergeCutHeight（模块合并阈值）\n模块-表型关联：ME 与样本性状的 Pearson 相关矩阵；模块成员度（kME）；基因显著性（Gene Significance, GS）\n枢纽基因识别：模块内连接度（Intramodular Connectivity）；kME &gt; 0.8 且 GS &gt; 0.5 的交集作为枢纽基因候选\nWGCNA 与 DEA 的整合：差异基因在各模块中的富集检验\n\n实践内容：使用 pasilla 数据集（DESeq2 vst 归一化表达矩阵）运行 WGCNA；选择软阈值并构建共表达网络；识别与 dex 处理状态相关的核心模块；绘制模块-表型关联热图；从显著模块中筛选枢纽基因并进行 GO 富集验证。",
+    "crumbs": [
+      "第二阶段：转录组与单细胞",
+      "<span class='chapter-number'>25</span>  <span class='chapter-title'>Bulk 转录组高级分析：结构变异、长读长与共表达网络</span>"
+    ]
+  },
+  {
+    "objectID": "06-scrna-basic.html",
+    "href": "06-scrna-basic.html",
+    "title": "31  单细胞与空间转录组基础：上游处理、标准分析流程与 Visium 基础",
+    "section": "",
+    "text": "32 整体概述\n单细胞 RNA-seq（scRNA-seq）和空间转录组学（Spatial Transcriptomics）的出现，根本性地改变了转录组研究的分辨率边界。Bulk RNA-seq 提供的是细胞群体的平均转录谱，无法区分组织内不同细胞类型的个体贡献；scRNA-seq 将分辨率推进至单个细胞，揭示了细胞类型的异质性、稀有细胞群的存在以及细胞状态的连续性；空间转录组学则在保留组织切片空间坐标的前提下测量基因表达，将转录图谱嵌入形态学背景，回答基因表达”在哪里”的问题。尽管两项技术分析框架各有侧重，但它们在数据结构、质量控制逻辑和降维聚类方法上存在深度共性，因此本章将二者的基础分析流程并列讲解，强调方法论上的统一性与各自的技术特殊性。\n学习目标：理解 10x Genomics Chromium 液滴微流控与 Visium 空间条形码阵列的技术原理；掌握 Cell Ranger、Space Ranger 的上游处理流程；能独立运行 Seurat 标准单细胞分析流程（QC → 归一化 → 降维 → 聚类 → 细胞类型注释）；掌握 Visium 数据的空间高变基因（SVG）分析与空间聚类基本方法。",
+    "crumbs": [
+      "第二阶段：转录组与单细胞",
+      "<span class='chapter-number'>31</span>  <span class='chapter-title'>单细胞与空间转录组基础：上游处理、标准分析流程与 Visium 基础</span>"
+    ]
+  },
+  {
+    "objectID": "06-scrna-basic.html#专题-6.110x-genomics-技术原理与上游处理",
+    "href": "06-scrna-basic.html#专题-6.110x-genomics-技术原理与上游处理",
+    "title": "31  单细胞与空间转录组基础：上游处理、标准分析流程与 Visium 基础",
+    "section": "34.1 专题 6.1：10x Genomics 技术原理与上游处理",
+    "text": "34.1 专题 6.1：10x Genomics 技术原理与上游处理\n单细胞 RNA-seq 的核心技术挑战在于：如何在数以千计的细胞中为每个细胞的 mRNA 分子打上独一无二的”地址”，以便在测序完成后将读段归属到正确的细胞。10x Genomics Chromium 平台通过液滴微流控（droplet microfluidics）优雅地解决了这一问题：每个凝胶珠（gel bead）表面携带数十万个具有相同细胞条形码（Cell Barcode）但不同分子条形码（UMI）的寡核苷酸，在微流控芯片中与单个细胞和逆转录试剂共同被包裹进油滴（GEM），完成细胞特异性的 cDNA 合成。Cell Ranger（官方流程）和 STARsolo（开源替代）负责将测序读段通过 Barcode 解码、UMI 去重，最终生成稀疏格式的细胞×基因表达矩阵。\n{{Wiki:Microfluidics}}\n核心概念：\n\n10x Chromium 液滴微流控：GEM（凝胶珠乳液，Gel bead-in-EMulsion）形成原理；Barcode + UMI + poly-T 捕获探针的结构\nCell Ranger 核心步骤：cellranger mkfastq（BCL → FASTQ）→ cellranger count（Barcode 白名单过滤 → STAR 比对 → UMI 计数 → 空细胞过滤）\nBarcode 纠错：1 个碱基错误的 Barcode 向白名单序列的校正逻辑\nUMI 去重：基于图的 UMI 去重（directional network）；--include-introns 参数对核 RNA（snRNA-seq）的影响\n空细胞过滤：EmptyDrops 算法；膝点（Knee point）启发式方法；两者的适用场景对比\nSTARsolo 作为 Cell Ranger 的开源替代：参数映射关系；输出格式兼容性\n输出格式：barcodes.tsv.gz / features.tsv.gz / matrix.mtx.gz 稀疏矩阵三文件结构；read10x() 加载\n\n实践内容：使用 Cell Ranger 处理 PBMC 3k 数据（SeuratData::InstallData(\"pbmc3k\")）；解读 Cell Ranger Web Summary 报告中的关键指标（Valid Barcodes、Median Genes per Cell、Saturation）；用 STARsolo 复现并比较结果。",
+    "crumbs": [
+      "第二阶段：转录组与单细胞",
+      "<span class='chapter-number'>31</span>  <span class='chapter-title'>单细胞与空间转录组基础：上游处理、标准分析流程与 Visium 基础</span>"
+    ]
+  },
+  {
+    "objectID": "06-scrna-basic.html#专题-6.2单细胞数据质量控制与预处理",
+    "href": "06-scrna-basic.html#专题-6.2单细胞数据质量控制与预处理",
+    "title": "31  单细胞与空间转录组基础：上游处理、标准分析流程与 Visium 基础",
+    "section": "34.2 专题 6.2：单细胞数据质量控制与预处理",
+    "text": "34.2 专题 6.2：单细胞数据质量控制与预处理\nscRNA-seq 数据的质量控制与 Bulk RNA-seq 有本质区别：前者需要在细胞层面逐一判断质量，而非在样本层面做整体评估。低质量细胞（dying cells、破膜细胞）表现为基因检出数极少或线粒体基因比例异常高；多细胞复合体（Doublets）表现为基因检出数异常高，会在后续分析中产生虚假的”中间态”细胞群。此外，稀疏的零值矩阵要求特殊的归一化策略，普通的 CPM/RPKM 归一化会放大技术噪声。SCTransform 通过正则化负二项回归模型，同时完成测序深度校正、技术变异建模和高变基因选择，是目前最受推荐的 scRNA-seq 归一化方法。\n核心概念：\n\nscRNA-seq 质控三指标：每细胞基因数（nFeature_RNA）、每细胞 UMI 数（nCount_RNA）、线粒体基因比例（percent.mt）；三者联合判读的逻辑\n基于 MAD 的自适应阈值设定（isOutlier() from scuttle）：相比固定阈值的优势\nDoublet 检测方法：DoubletFinder（模拟 Doublet + KNN 评分）；Scrublet（PCA 空间中的双细胞得分）\n归一化策略对比：LogNormalize（NormalizeData()，简单但偏差大）vs SCTransform（正则化负二项回归，推荐）\n高变基因（HVGs）选择：FindVariableFeatures() 的 VST 方法；选取 2000–3000 个 HVG 的惯例与依据\n数据缩放（Scaling）：ScaleData() 的线性回归去除混淆变量（nCount、percent.mt）\n\n实践内容：PBMC 3k 数据的质控可视化（小提琴图 + 散点图）；MAD 阈值 vs 固定阈值的细胞过滤比较；SCTransform 归一化；Scrublet Doublet 检测；HVG 选择与表达量分布可视化。",
+    "crumbs": [
+      "第二阶段：转录组与单细胞",
+      "<span class='chapter-number'>31</span>  <span class='chapter-title'>单细胞与空间转录组基础：上游处理、标准分析流程与 Visium 基础</span>"
+    ]
+  },
+  {
+    "objectID": "06-scrna-basic.html#专题-6.3降维聚类与细胞类型注释",
+    "href": "06-scrna-basic.html#专题-6.3降维聚类与细胞类型注释",
+    "title": "31  单细胞与空间转录组基础：上游处理、标准分析流程与 Visium 基础",
+    "section": "34.3 专题 6.3：降维、聚类与细胞类型注释",
+    "text": "34.3 专题 6.3：降维、聚类与细胞类型注释\n在质控和归一化完成后，scRNA-seq 分析的核心目标是识别细胞类型。这一过程依赖于降维和聚类两步操作的组合：PCA 将高维基因表达空间压缩至 20–50 个主成分，去除技术噪声的同时保留主要生物学变异；在 PCA 空间中构建 k-近邻图（KNN graph），再通过图聚类算法（Leiden / Louvain）识别细胞社区；最后以 UMAP 或 t-SNE 生成二维嵌入，用于可视化。细胞类型注释通过差异表达分析（FindAllMarkers()）识别每个聚类的特征基因，结合已知的细胞类型 Marker 基因数据库（PanglaoDB、CellMarker）或自动注释工具（SingleR、CellTypist）完成。\n{{Wiki:UMAP}}\n核心概念：\n\nPCA 在 scRNA-seq 中的作用：消除基因空间的冗余；ElbowPlot() 选择主成分数量；HVG 仅用于 PCA 输入而非全基因组\nKNN 图构建：FindNeighbors() 中 dims 参数（使用的 PC 数）和 k.param（邻居数）的影响\nLeiden 聚类（FindClusters()）：分辨率（resolution）参数对聚类粒度的控制；0.3–0.8 为常用范围\nUMAP vs t-SNE：UMAP 保留全局结构的优势；t-SNE 参数（perplexity）对局部结构的影响；两者均不保留定量距离意义\nMarker 基因鉴定：FindAllMarkers() 的 Wilcoxon 秩和检验；min.pct 和 logfc.threshold 参数\n自动细胞类型注释：SingleR 的参考数据库匹配策略（ENCODE, HCA）；CellTypist 的机器学习分类器\n注释验证：FeaturePlot() 可视化已知 Marker；DotPlot() 展示跨聚类 Marker 表达模式\n\n实践内容：PBMC 3k 数据完整运行 PCA → KNN → Leiden 聚类 → UMAP；FindAllMarkers() 识别各聚类 Marker；结合 PanglaoDB 手动注释；运行 SingleR（ENCODE 参考）自动注释；对比手动与自动注释的一致性。",
+    "crumbs": [
+      "第二阶段：转录组与单细胞",
+      "<span class='chapter-number'>31</span>  <span class='chapter-title'>单细胞与空间转录组基础：上游处理、标准分析流程与 Visium 基础</span>"
+    ]
+  },
+  {
+    "objectID": "06-scrna-basic.html#专题-6.4visium-技术原理与上游处理",
+    "href": "06-scrna-basic.html#专题-6.4visium-技术原理与上游处理",
+    "title": "31  单细胞与空间转录组基础：上游处理、标准分析流程与 Visium 基础",
+    "section": "35.1 专题 6.4：Visium 技术原理与上游处理",
+    "text": "35.1 专题 6.4：Visium 技术原理与上游处理\n10x Genomics Visium 平台将 RNA-seq 与组织成像结合：在载玻片上预先印刷含空间条形码的 poly-T 捕获阵列，每个捕获点（Spot）直径 55 µm，中心间距 100 µm，排列为六角形网格。组织切片铺在阵列上经固定和透化处理后，细胞内 mRNA 扩散并与最近的 Spot 的捕获探针杂交，完成空间标记的 cDNA 合成。同时，组织切片用苏木精-伊红（H&E）染色并拍摄高分辨率图像，用于验证组织形态并指导分析。Space Ranger 负责将测序读段与图像对齐，将 Spot 坐标与表达量整合为空间表达矩阵，输出 Seurat 和 Squidpy 均可直接读取的数据结构。\n{{Wiki:Spatial_transcriptomics}}\n核心概念：\n\nVisium 捕获阵列结构：Spot 直径 55 µm、间距 100 µm、六角网格排列；每张切片约 4992 个捕获 Spot\nSpot 分辨率的局限性：55 µm 内通常含 1–10 个细胞（取决于组织类型）；Spot 是混合信号而非单细胞信号\nSpace Ranger 工作流：spaceranger count；--tissue-detection-algorithm（Spot 自动检测）；Fiducial 框架对齐\nLoupe Browser：Space Ranger 输出的交互式可视化工具；手动调整 Spot 选择范围\n空间数据格式：spatial/ 目录中的坐标文件（tissue_positions.csv）；高分辨率与低分辨率图像\nRead10X_Visium()（Seurat）/ sc.read_visium()（Scanpy）加载数据；SpatiallyVariableFeatures() 函数\nStereo-seq（华大基因）：纳米级空间分辨率；Stereopy 分析框架；与 Visium 的技术对比\n\n实践内容：加载 stxBrain（SeuratData，10x Visium 小鼠脑前切片）；解读 Space Ranger Web Summary；使用 SpatialFeaturePlot() 可视化经典脑区 Marker 基因的空间表达模式。",
+    "crumbs": [
+      "第二阶段：转录组与单细胞",
+      "<span class='chapter-number'>31</span>  <span class='chapter-title'>单细胞与空间转录组基础：上游处理、标准分析流程与 Visium 基础</span>"
+    ]
+  },
+  {
+    "objectID": "06-scrna-basic.html#专题-6.5空间数据质控归一化与空间高变基因分析",
+    "href": "06-scrna-basic.html#专题-6.5空间数据质控归一化与空间高变基因分析",
+    "title": "31  单细胞与空间转录组基础：上游处理、标准分析流程与 Visium 基础",
+    "section": "35.2 专题 6.5：空间数据质控、归一化与空间高变基因分析",
+    "text": "35.2 专题 6.5：空间数据质控、归一化与空间高变基因分析\n空间转录组数据的质控逻辑与 scRNA-seq 相似，但需要额外结合 H&E 图像进行空间质检：位于组织边缘或脱落区域的 Spot 即便通过了表达量阈值，也应予以去除。归一化策略同样可采用 SCTransform 或 LogNormalize，但需注意 Spot 的”测序深度”受到捕获效率空间不均匀性的影响。空间高变基因（Spatially Variable Genes, SVG）分析是空间转录组特有的核心步骤，其目标是识别在组织中呈现显著空间自相关表达模式的基因，这类基因往往对应功能特异的细胞层或组织区域。空间聚类则将基因表达信息与空间坐标信息结合，识别具有相似转录特征且在空间上毗邻的区域（Spatial Domain）。\n核心概念：\n\n空间 QC 指标：每 Spot 检出基因数、每 Spot UMI 数、线粒体比例；结合 H&E 图像的视觉检查\n归一化：SCTransform 在空间数据上的适用性；Spatial Normalization 的特殊考量（捕获效率空间异质性）\nSVG 识别方法：Moran’s I 统计量（FindSpatiallyVariableFeatures() 默认方法）；基于高斯过程的 SpatialDE\nMoran’s I 原理：空间权重矩阵的构建（六角近邻 vs k-NN）；期望值与检验统计量的解释\n空间聚类：FindClusters() 结合 PCA（忽略空间坐标）vs BayesSpace（纳入空间坐标的 t 分布贝叶斯模型）\nBayesSpace 原理：Markov Random Field 先验约束相邻 Spot 属于相同域的概率；超参数 q（域数量）选择\n空间可视化：SpatialPlot()、SpatialFeaturePlot()；颜色映射与透明度的规范表达\n\n实践内容：stxBrain 数据的空间 QC 与 SCTransform 归一化；FindSpatiallyVariableFeatures() 识别 SVG 并可视化前 10 个 SVG 的空间表达图；BayesSpace 空间聚类（q = 7，对应主要脑区）；将聚类结果叠加到 H&E 图像上可视化并对照已知小鼠脑解剖区域。",
+    "crumbs": [
+      "第二阶段：转录组与单细胞",
+      "<span class='chapter-number'>31</span>  <span class='chapter-title'>单细胞与空间转录组基础：上游处理、标准分析流程与 Visium 基础</span>"
+    ]
+  },
+  {
+    "objectID": "07-scrna-advanced.html",
+    "href": "07-scrna-advanced.html",
+    "title": "37  单细胞与空间转录组高级分析：动态推断、多组学与空间解析",
+    "section": "",
+    "text": "38 整体概述\n在细胞类型鉴定与空间聚类的基础上（第6章），单细胞和空间转录组数据还蕴藏着更深层次的生物学信息：细胞是如何分化的？分化过程是否具有方向性？不同细胞类型之间通过哪些分子对话相互协调？转录因子如何驱动细胞状态的转变？混合了多种细胞类型的 Visium Spot，各个细胞类型分别位于组织的哪些区域？本章围绕上述问题，系统讲解单细胞与空间转录组的高级计算分析方法。在单细胞层面，涵盖拟时序分析（Trajectory Inference）、细胞通讯分析（Cell-Cell Communication）、基因调控网络推断（GRN）、RNA Velocity 以及单细胞多组学（CITE-seq、10x Multiome）；在空间层面，涵盖细胞解卷积（Deconvolution）、空间域整合分析以及以 MERFISH 为代表的成像型空间转录组技术。\n学习目标：掌握拟时序分析的算法逻辑与 Monocle 3 的实操方法；理解 CellChat / CellPhoneDB 的配体-受体推断框架；能运行 CITE-seq WNN 多模态分析和 10x Multiome 联合分析；掌握 cell2location 细胞解卷积的原理与实操；了解 MERFISH 成像型空间转录组的技术原理与分析流程。",
+    "crumbs": [
+      "第二阶段：转录组与单细胞",
+      "<span class='chapter-number'>37</span>  <span class='chapter-title'>单细胞与空间转录组高级分析：动态推断、多组学与空间解析</span>"
+    ]
+  },
+  {
+    "objectID": "07-scrna-advanced.html#专题-7.1拟时序分析与-rna-velocity",
+    "href": "07-scrna-advanced.html#专题-7.1拟时序分析与-rna-velocity",
+    "title": "37  单细胞与空间转录组高级分析：动态推断、多组学与空间解析",
+    "section": "40.1 专题 7.1：拟时序分析与 RNA Velocity",
+    "text": "40.1 专题 7.1：拟时序分析与 RNA Velocity\n细胞分化是一个连续的动态过程，但 scRNA-seq 对每个细胞只产生一次”快照”。拟时序分析（Trajectory Inference, TI）通过假设转录组相似的细胞处于相近的分化状态，利用细胞间的转录组距离重建分化路径，给每个细胞赋予一个”伪时间”（Pseudotime）坐标。这一思路的核心在于：细胞在分化过程中的转录变化是渐进的，即使我们无法追踪单个细胞随时间的变化，大量细胞的横断面数据依然包含了足够的轨迹信息。RNA Velocity 从另一个角度补充了这一方法：通过比较 pre-mRNA（未剪接，spliced）与成熟 mRNA（已剪接，unspliced）的丰度比值，推断每个基因的转录速率方向，从而为拟时序轨迹赋予真实的时间方向性。\n{{Wiki:Cell_potency}}\n核心概念：\n\n拟时序方法演进：DDRTree（Monocle 2）→ 学习图（Learned Graph, Monocle 3）→ 主曲线（Slingshot）→ 最优传输（WaddingtonOT）\nMonocle 3 的学习图策略：UMAP 空间中的最小生成树；choose_graph_segments() 手动指定根节点；graph_test() 拟时序差异检验\nSlingshot 的主曲线拟合：多谱系支持；与现有 UMAP 嵌入的兼容性\nRNA Velocity 的 ODE 模型：\\(\\frac{du}{dt} = \\alpha - \\beta u\\)；\\(\\frac{ds}{dt} = \\beta u - \\gamma s\\)；\\(u\\)（未剪接）稳态假设\nscVelo 的概率扩展：动力学模式（Dynamical model）vs 稳态模式（Steady-state model）；基因级别的动力学参数估计\n轨迹可视化：速率流场（velocity stream）叠加 UMAP 的方向箭头；scv.pl.velocity_embedding_stream()\n拟时序分析的局限：对高度异质性数据和多谱系分化的敏感性；树形假设对环形轨迹的不适用\n\n实践内容：PBMC 3k 数据 Monocle 3 拟时序分析（以单核细胞分化轨迹为例）；graph_test() 识别拟时序差异基因；scVelo Dynamical model 计算 RNA Velocity；速率流场可视化；对比 Monocle 3 与 scVelo 方向推断的一致性。",
+    "crumbs": [
+      "第二阶段：转录组与单细胞",
+      "<span class='chapter-number'>37</span>  <span class='chapter-title'>单细胞与空间转录组高级分析：动态推断、多组学与空间解析</span>"
+    ]
+  },
+  {
+    "objectID": "07-scrna-advanced.html#专题-7.2细胞通讯分析",
+    "href": "07-scrna-advanced.html#专题-7.2细胞通讯分析",
+    "title": "37  单细胞与空间转录组高级分析：动态推断、多组学与空间解析",
+    "section": "40.2 专题 7.2：细胞通讯分析",
+    "text": "40.2 专题 7.2：细胞通讯分析\n多细胞生物的正常生理功能依赖于细胞间持续的信号交流。传统研究通过体外共培养或免疫组化等方法研究细胞通讯，而 scRNA-seq 数据提供了一种计算推断细胞通讯的新途径：若细胞类型 A 高表达某配体，而细胞类型 B 高表达该配体对应的受体，则推断 A-B 之间存在该信号通路的潜在通讯。CellChat 和 CellPhoneDB 是两款主流的细胞通讯推断工具，均依赖于经过人工整理的配体-受体数据库，但在统计框架和通路抽象层次上有所不同。\n核心概念：\n\n配体-受体数据库：CellChat 的 CellChatDB（含复合体受体）；CellPhoneDB 数据库（含亚单位拆分）；数据库的局限性与选择原则\nCellChat 通讯概率计算：配体-受体表达的质量传播（mass action law）；多亚单位受体复合体的几何均值处理；computeCommunProb() 函数\n通路抽象：信号通路（Signaling Pathway）层面的汇总；netVisual_aggregate() 的弦图可视化\n全局通讯模式：identifyCommunicationPatterns() 的 NMF 分解识别细胞类型的通讯角色（信号发送者 vs 接收者）\n通讯强度与特异性的区分：中心性指标（Outdegree / Indegree）的生物学意义\nCellPhoneDB vs CellChat 方法论对比：置换检验（permutation test）的统计策略；假阳性控制\n\n实践内容：PBMC 3k 注释数据运行 CellChat；弦图可视化主要细胞类型间的通讯强度；识别 MHC II 信号通路中的核心通讯对；使用 netAnalysis_computeCentrality() 分析各细胞类型的信号枢纽角色。",
+    "crumbs": [
+      "第二阶段：转录组与单细胞",
+      "<span class='chapter-number'>37</span>  <span class='chapter-title'>单细胞与空间转录组高级分析：动态推断、多组学与空间解析</span>"
+    ]
+  },
+  {
+    "objectID": "07-scrna-advanced.html#专题-7.3基因调控网络推断",
+    "href": "07-scrna-advanced.html#专题-7.3基因调控网络推断",
+    "title": "37  单细胞与空间转录组高级分析：动态推断、多组学与空间解析",
+    "section": "40.3 专题 7.3：基因调控网络推断",
+    "text": "40.3 专题 7.3：基因调控网络推断\n差异表达分析和拟时序分析揭示了基因表达的变化规律，但未能揭示驱动这些变化的调控因子——转录因子（Transcription Factor, TF）及其靶基因网络。SCENIC（Single Cell rEgulatory Network Inference and Clustering）是目前最广泛使用的单细胞基因调控网络（Gene Regulatory Network, GRN）推断工具，其核心思路是：先利用 GENIE3 / GRNBoost2 从共表达矩阵中推断 TF-靶基因候选关系，再通过 RcisTarget 筛选在靶基因启动子区域富集有该 TF binding motif 的候选对，最终用 AUCell 计算每个细胞中各调控模块（Regulon）的活性得分。\n核心概念：\n\nSCENIC 三步流程：GRNBoost2 共表达网络构建 → RcisTarget motif 富集过滤 → AUCell 调控子活性打分\nRegulon（调控子）的定义：一个转录因子及其经过 motif 验证的靶基因集合\nAUCell 打分原理：基因集富集的曲线下面积（AUC）；细胞间调控活性差异的量化\nGRNBoost2 vs GENIE3：基于梯度提升树 vs 随机森林的重要性评分；计算效率对比\nRcisTarget 数据库：基因组 cisTarget 分数矩阵；物种特异性数据库选择\nSCENIC 结果的生物学解读：Regulon-cell type 特异性热图；驱动分化轨迹的关键 TF 识别\npySCENIC（Python 版本）：大规模数据的计算效率优势；与 Scanpy/AnnData 生态的兼容\n\n实践内容：演示 pySCENIC 在 PBMC 3k 数据上的完整运行流程（GRNBoost2 → RcisTarget → AUCell）；热图可视化各细胞类型的 Regulon 活性谱；识别 T 细胞亚群的关键转录因子调控模块。",
+    "crumbs": [
+      "第二阶段：转录组与单细胞",
+      "<span class='chapter-number'>37</span>  <span class='chapter-title'>单细胞与空间转录组高级分析：动态推断、多组学与空间解析</span>"
+    ]
+  },
+  {
+    "objectID": "07-scrna-advanced.html#专题-7.4cite-seq-多模态分析",
+    "href": "07-scrna-advanced.html#专题-7.4cite-seq-多模态分析",
+    "title": "37  单细胞与空间转录组高级分析：动态推断、多组学与空间解析",
+    "section": "41.1 专题 7.4：CITE-seq 多模态分析",
+    "text": "41.1 专题 7.4：CITE-seq 多模态分析\n细胞的表型特征不仅体现在转录组层面，蛋白质表面标志物同样是细胞类型鉴定的经典依据（如流式细胞术中的 CD 抗原分类）。CITE-seq（Cellular Indexing of Transcriptomes and Epitopes by Sequencing）通过将抗体与含条形码的寡核苷酸（ADT, Antibody-Derived Tag）偶联，在同一细胞中同时测量 mRNA 和表面蛋白，将流式细胞术的蛋白质分辨力与转录组测量相结合。由于蛋白质表面抗原标志物的细胞特异性通常强于单个 mRNA，CITE-seq 能够更精确地解析传统 RNA 聚类难以区分的细胞亚群。Seurat 的加权最近邻（Weighted Nearest Neighbor, WNN）算法综合了 RNA 和 ADT 两种模态的信息，根据每个细胞各模态的信息量自适应地赋予权重，实现了真正意义上的多模态聚类。\n核心概念：\n\nCITE-seq 文库结构：ADT 文库与 RNA 文库的共同条形码索引；cellranger multi 联合处理\nADT 归一化：CLR（Centered Log-Ratio）归一化；ADT 数据的稀疏性与 RNA 数据的差异\nSeurat WNN 算法：每个细胞的模态特异性邻图权重估计；FindMultiModalNeighbors() 函数；wnn.umap 嵌入\n多模态聚类的生物学优势：用 ADT 信号区分 RNA 相似但蛋白质不同的细胞亚群（如 CD4+ 与 CD8+ T 细胞）\n模态权重可视化：VlnPlot() 展示各细胞类型中 RNA vs ADT 权重的分布；信息量差异的生物学解释\nbmcite 数据集：30,672 骨髓细胞；25 种表面蛋白 ADT；Seurat CITE-seq vignette 标准数据集\n\n实践内容：加载 bmcite（SeuratData）；分别构建 RNA PCA 和 ADT LSI 降维；运行 WNN 多模态聚类；对比 RNA 单模态聚类 vs WNN 多模态聚类对 NK 细胞亚群的分辨能力；SpatialFeaturePlot() 可视化 ADT 蛋白表达。",
+    "crumbs": [
+      "第二阶段：转录组与单细胞",
+      "<span class='chapter-number'>37</span>  <span class='chapter-title'>单细胞与空间转录组高级分析：动态推断、多组学与空间解析</span>"
+    ]
+  },
+  {
+    "objectID": "07-scrna-advanced.html#专题-7.510x-multiome-与-scatac-seq-分析",
+    "href": "07-scrna-advanced.html#专题-7.510x-multiome-与-scatac-seq-分析",
+    "title": "37  单细胞与空间转录组高级分析：动态推断、多组学与空间解析",
+    "section": "41.2 专题 7.5：10x Multiome 与 scATAC-seq 分析",
+    "text": "41.2 专题 7.5：10x Multiome 与 scATAC-seq 分析\n10x Genomics Multiome ATAC + Gene Expression 平台从同一细胞核中同时测量 RNA 和染色质可及性（Chromatin Accessibility），在单细胞层面直接揭示基因表达与顺式调控元件的关联。与 CITE-seq 的蛋白质组合不同，Multiome 的两种模态均来自核酸测量，但 scATAC-seq 数据的极度稀疏性（每个细胞通常只有数千个 open peak）要求完全不同的预处理和降维策略。Signac（基于 Seurat 框架的 scATAC-seq 分析包）提供了从 peak 矩阵到 motif 富集分析的完整工具链。\n{{Wiki:ATAC-seq}}\n核心概念：\n\nscATAC-seq 原理：Tn5 转座酶在开放染色质区域优先插入接头；每个细胞的 peak×cell 矩阵极度稀疏（~98% 零值）\nscATAC-seq 质控指标：TSS 富集得分（TSS Enrichment Score）；核小体信号强度（Nucleosome Signal）；每细胞 peak 中 reads 比例（FRiP）\nLSI（Latent Semantic Indexing）降维：TF-IDF 加权 → SVD；替代 PCA 处理 scATAC 稀疏矩阵的原因\nGene Activity Score：将 peak 信号汇总到基因体+启动子区域，生成类基因表达矩阵；用于初步细胞注释\n10x Multiome 分析：CreateChromatinAssay() 构建 ATAC assay；RNA 与 ATAC 双 assay 的 Seurat 对象\n跨模态整合（label transfer）：FindTransferAnchors() 以已注释的 scRNA-seq 数据为参考，向 scATAC-seq 细胞传递标签\nChromVAR motif 活性分析：计算每个细胞的 TF motif 可及性变异（偏差）；RunChromVAR() 函数\n\n实践内容：加载 pbmcMultiome（SeuratData，11,909 PBMC，RNA + ATAC）；Signac scATAC QC 与 LSI 降维；WNN 多模态聚类（RNA + ATAC）；FindTransferAnchors() 以 PBMC 3k 为参考进行细胞类型标签传递；ChromVAR 分析 T 细胞亚群的 TF motif 可及性差异。",
+    "crumbs": [
+      "第二阶段：转录组与单细胞",
+      "<span class='chapter-number'>37</span>  <span class='chapter-title'>单细胞与空间转录组高级分析：动态推断、多组学与空间解析</span>"
+    ]
+  },
+  {
+    "objectID": "07-scrna-advanced.html#专题-7.6细胞解卷积与-scrna-seq-空间整合",
+    "href": "07-scrna-advanced.html#专题-7.6细胞解卷积与-scrna-seq-空间整合",
+    "title": "37  单细胞与空间转录组高级分析：动态推断、多组学与空间解析",
+    "section": "42.1 专题 7.6：细胞解卷积与 scRNA-seq 空间整合",
+    "text": "42.1 专题 7.6：细胞解卷积与 scRNA-seq 空间整合\nVisium 平台的 Spot 直径（55 µm）通常涵盖多个细胞，每个 Spot 的转录谱是多种细胞类型的混合信号。细胞解卷积（Cell Type Deconvolution）的目标是利用已知细胞类型的转录特征（来自 scRNA-seq 参考图谱），将 Spot 的混合信号拆分为各细胞类型的丰度估计，从而在低分辨率的空间数据上恢复细胞类型的空间分布信息。cell2location 是目前精度最高的解卷积工具之一，基于层次贝叶斯模型，将细胞类型签名矩阵学习和空间丰度估计分为两个阶段进行，能够处理技术批次效应和细胞类型丰度的空间不均匀性。\n核心概念：\n\n细胞解卷积模型分类：基于线性回归（RCTD）→ 基于概率生成模型（cell2location）→ 基于深度学习（Tangram）\ncell2location 两阶段框架：第一阶段——从 scRNA-seq 数据学习细胞类型签名矩阵（NB 回归，RegressionModel）；第二阶段——利用签名矩阵推断每个 Spot 的细胞类型丰度（层次贝叶斯，Cell2location）\n技术批次处理：实验批次作为协变量纳入第一阶段模型；batch_key 参数\n参考图谱的选择原则：细胞类型覆盖度（与目标组织的匹配程度）；细胞数量要求（每种类型 ≥ 50 个细胞）\nRCTD（Robust Cell Type Decomposition）：基于泊松/负二项最大似然的稳健回归；doublet_mode（允许每 Spot 两种主要细胞类型）\n解卷积结果的空间可视化：每种细胞类型丰度的空间热图；与 H&E 图像的叠加对比\n解卷积精度评估：模拟 Spot 的定量基准测试；空间共定位分析（已知共存细胞类型的验证）\n\n实践内容：使用 stxBrain（Visium 小鼠脑）和 mousecortexref（SeuratData，Azimuth 小鼠皮层 scRNA-seq 参考）运行 cell2location 细胞解卷积；可视化主要脑区细胞类型（兴奋性神经元、抑制性神经元、星形胶质细胞）的空间丰度热图；与 Allen Brain Atlas 解剖图谱对照验证。",
+    "crumbs": [
+      "第二阶段：转录组与单细胞",
+      "<span class='chapter-number'>37</span>  <span class='chapter-title'>单细胞与空间转录组高级分析：动态推断、多组学与空间解析</span>"
+    ]
+  },
+  {
+    "objectID": "07-scrna-advanced.html#专题-7.7成像型空间转录组merfish-原理与分析",
+    "href": "07-scrna-advanced.html#专题-7.7成像型空间转录组merfish-原理与分析",
+    "title": "37  单细胞与空间转录组高级分析：动态推断、多组学与空间解析",
+    "section": "42.2 专题 7.7：成像型空间转录组：MERFISH 原理与分析",
+    "text": "42.2 专题 7.7：成像型空间转录组：MERFISH 原理与分析\n以 MERFISH（Multiplexed Error-Robust FISH）和 seqFISH+ 为代表的成像型空间转录组技术突破了基于测序的 Visium 平台的分辨率限制，通过荧光原位杂交（FISH）循环直接在原位读取 RNA 分子，分辨率可达 100–200 nm，自然实现单细胞乃至亚细胞分辨率。与 Visium 相比，成像型技术的主要限制在于通量：由于每个基因需要一组专门设计的探针组，单次实验通常只能同时检测数百至数千个基因，而非转录组规模的全基因组覆盖。成像数据的分析流程在 RNA 检测之前增加了图像处理与细胞分割的关键步骤。\n{{Wiki:Fluorescence_in_situ_hybridization}}\n核心概念：\n\nMERFISH 编码策略：基于汉明码的多轮荧光标记；误差纠正能力（HD ≥ 4 编码的比较）；每轮杂交的 ON/OFF 编码矩阵\nseqFISH+ 的序贯荧光标记：高密度探针库设计；与 MERFISH 在通量和误差率上的对比\nMERFISH 数据格式：3D 荧光图像栈（z × y × x × channel）；vizgen.brain（SeuratData）数据集结构\n细胞分割（Cell Segmentation）：基于 DAPI 或 poly-T 染色的细胞核/细胞质边界划定；Cellpose 深度学习分割算法\nmRNA 点检测（Spot Detection）：单分子 FISH 点的高斯拟合；假阳性控制（空白条形码对照）\n亚细胞 RNA 定位分析：RNA 在核周 vs 胞质 vs 突起的分布统计；与 RNA Velocity 的结合潜力\nVizgen MERSCOPE 与 10x Xenium：两种商业化 MERFISH 平台的技术规格对比\n\n实践内容：加载 vizgen.brain（SeuratData，MERFISH 小鼠脑）；演示细胞分割后的表达矩阵构建；与 PBMC scRNA-seq 参考图谱进行 label transfer 细胞类型注释；亚细胞 RNA 分布可视化；对比同一脑区 MERFISH（高分辨率，有限基因）与 Visium（低分辨率，全转录组）数据的互补信息。",
+    "crumbs": [
+      "第二阶段：转录组与单细胞",
+      "<span class='chapter-number'>37</span>  <span class='chapter-title'>单细胞与空间转录组高级分析：动态推断、多组学与空间解析</span>"
     ]
   },
   {

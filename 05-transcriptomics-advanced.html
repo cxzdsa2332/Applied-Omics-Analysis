@@ -2,12 +2,13 @@
 <html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
 
 <meta charset="utf-8">
-<meta name="generator" content="quarto-1.9.37">
+<meta name="generator" content="quarto-1.9.38">
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
+<meta name="dcterms.date" content="2026-05-30">
 
-<title>transcriptomics-advanced – Introduction to Applied High-throughput Biological Data Analysis</title>
+<title>25&nbsp; Bulk 转录组高级分析：结构变异、长读长与共表达网络 – Introduction to Applied High-throughput Biological Data Analysis</title>
 <style>
 /* Default styles provided by pandoc.
 ** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
@@ -34,17 +35,17 @@ ul.task-list li input[type="checkbox"] {
 <script src="site_libs/quarto-search/quarto-search.js"></script>
 <meta name="quarto:offset" content="./">
 <link href="./transcriptomics_adv_lesson1.html" rel="next">
-<link href="./transcriptomics_basic_lesson5.html" rel="prev">
+<link href="./transcriptomics_basic_lesson4.html" rel="prev">
 <script src="site_libs/quarto-html/quarto.js" type="module"></script>
 <script src="site_libs/quarto-html/tabsets/tabsets.js" type="module"></script>
 <script src="site_libs/quarto-html/popper.min.js"></script>
 <script src="site_libs/quarto-html/tippy.umd.min.js"></script>
 <script src="site_libs/quarto-html/anchor.min.js"></script>
 <link href="site_libs/quarto-html/tippy.css" rel="stylesheet">
-<link href="site_libs/quarto-html/quarto-syntax-highlighting-7f8f88aac4f3542376d5c11b86a4c14d.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<link href="site_libs/quarto-html/quarto-syntax-highlighting-15634bcf2e68342d4ad2dfa704d543f6.css" rel="stylesheet" id="quarto-text-highlighting-styles">
 <script src="site_libs/bootstrap/bootstrap.min.js"></script>
 <link href="site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
-<link href="site_libs/bootstrap/bootstrap-e7e3da65392cb4ec45f097b2453bf8a7.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
+<link href="site_libs/bootstrap/bootstrap-48abc47ddc2cbc14860ddec9e9fdb395.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
 <script id="quarto-search-options" type="application/json">{
   "location": "sidebar",
   "copy-button": false,
@@ -73,6 +74,35 @@ ul.task-list li input[type="checkbox"] {
   }
 }</script>
 
+  <script src="https://cdnjs.cloudflare.com/polyfill/v3/polyfill.min.js?features=es6"></script>
+  <script defer="" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js" type="text/javascript"></script>
+
+<script type="text/javascript">
+const typesetMath = (el) => {
+  if (window.MathJax) {
+    // MathJax Typeset
+    window.MathJax.typeset([el]);
+  } else if (window.katex) {
+    // KaTeX Render
+    var mathElements = el.getElementsByClassName("math");
+    var macros = [];
+    for (var i = 0; i < mathElements.length; i++) {
+      var texText = mathElements[i].firstChild;
+      if (mathElements[i].tagName == "SPAN" && texText && texText.data) {
+        window.katex.render(texText.data, mathElements[i], {
+          displayMode: mathElements[i].classList.contains('display'),
+          throwOnError: false,
+          macros: macros,
+          fleqn: false
+        });
+      }
+    }
+  }
+}
+window.Quarto = {
+  typesetMath
+};
+</script>
 
 </head>
 
@@ -85,7 +115,7 @@ ul.task-list li input[type="checkbox"] {
       <button type="button" class="quarto-btn-toggle btn" data-bs-toggle="collapse" role="button" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
         <i class="bi bi-layout-text-sidebar-reverse"></i>
       </button>
-        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="./04-transcriptomics-basic.html">第二阶段：转录组与单细胞</a></li><li class="breadcrumb-item"><a href="./05-transcriptomics-advanced.html"><span class="chapter-number">26</span>&nbsp; <span class="chapter-title">05-transcriptomics-advanced.html</span></a></li></ol></nav>
+        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="./04-transcriptomics-basic.html">第二阶段：转录组与单细胞</a></li><li class="breadcrumb-item"><a href="./05-transcriptomics-advanced.html"><span class="chapter-number">25</span>&nbsp; <span class="chapter-title">Bulk 转录组高级分析：结构变异、长读长与共表达网络</span></a></li></ol></nav>
         <a class="flex-grow-1" role="navigation" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">      
         </a>
       <button type="button" class="btn quarto-search-button" aria-label="Search" onclick="window.quartoOpenSearch();">
@@ -250,145 +280,139 @@ ul.task-list li input[type="checkbox"] {
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./04-transcriptomics-basic.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">20</span>&nbsp; <span class="chapter-title">04-transcriptomics-basic.html</span></span></a>
+ <span class="menu-text"><span class="chapter-number">20</span>&nbsp; <span class="chapter-title">Bulk 转录组分析基础：质量控制、定量与差异表达</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./transcriptomics_basic_lesson1.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">21</span>&nbsp; <span class="chapter-title">第四章 课时1</span></span></a>
+ <span class="menu-text"><span class="chapter-number">21</span>&nbsp; <span class="chapter-title">测序原理、文库特性与原始数据质量控制</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./transcriptomics_basic_lesson2.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">22</span>&nbsp; <span class="chapter-title">第四章 课时2</span></span></a>
+ <span class="menu-text"><span class="chapter-number">22</span>&nbsp; <span class="chapter-title">Splice-Aware 比对与表达量定量</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./transcriptomics_basic_lesson3.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">23</span>&nbsp; <span class="chapter-title">第四章 课时3</span></span></a>
+ <span class="menu-text"><span class="chapter-number">23</span>&nbsp; <span class="chapter-title">差异表达分析</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./transcriptomics_basic_lesson4.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">24</span>&nbsp; <span class="chapter-title">第四章 课时4</span></span></a>
-  </div>
-</li>
-          <li class="sidebar-item">
-  <div class="sidebar-item-container"> 
-  <a href="./transcriptomics_basic_lesson5.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">25</span>&nbsp; <span class="chapter-title">第四章 课时5</span></span></a>
+ <span class="menu-text"><span class="chapter-number">24</span>&nbsp; <span class="chapter-title">功能富集分析</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./05-transcriptomics-advanced.html" class="sidebar-item-text sidebar-link active">
- <span class="menu-text"><span class="chapter-number">26</span>&nbsp; <span class="chapter-title">05-transcriptomics-advanced.html</span></span></a>
+ <span class="menu-text"><span class="chapter-number">25</span>&nbsp; <span class="chapter-title">Bulk 转录组高级分析：结构变异、长读长与共表达网络</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./transcriptomics_adv_lesson1.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">27</span>&nbsp; <span class="chapter-title">第五章 课时1</span></span></a>
+ <span class="menu-text"><span class="chapter-number">26</span>&nbsp; <span class="chapter-title">第五章 课时1</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./transcriptomics_adv_lesson2.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">28</span>&nbsp; <span class="chapter-title">第五章 课时2</span></span></a>
+ <span class="menu-text"><span class="chapter-number">27</span>&nbsp; <span class="chapter-title">第五章 课时2</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./transcriptomics_adv_lesson3.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">29</span>&nbsp; <span class="chapter-title">第五章 课时3</span></span></a>
+ <span class="menu-text"><span class="chapter-number">28</span>&nbsp; <span class="chapter-title">第五章 课时3</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./transcriptomics_adv_lesson4.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">30</span>&nbsp; <span class="chapter-title">第五章 课时4</span></span></a>
+ <span class="menu-text"><span class="chapter-number">29</span>&nbsp; <span class="chapter-title">第五章 课时4</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./transcriptomics_adv_lesson5.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">31</span>&nbsp; <span class="chapter-title">第五章 课时5</span></span></a>
+ <span class="menu-text"><span class="chapter-number">30</span>&nbsp; <span class="chapter-title">第五章 课时5</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./06-scrna-basic.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">32</span>&nbsp; <span class="chapter-title">06-scrna-basic.html</span></span></a>
+ <span class="menu-text"><span class="chapter-number">31</span>&nbsp; <span class="chapter-title">单细胞与空间转录组基础：上游处理、标准分析流程与 Visium 基础</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./scrna_basic_lesson1.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">33</span>&nbsp; <span class="chapter-title">第六章 课时1</span></span></a>
+ <span class="menu-text"><span class="chapter-number">32</span>&nbsp; <span class="chapter-title">第六章 课时1</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./scrna_basic_lesson2.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">34</span>&nbsp; <span class="chapter-title">第六章 课时2</span></span></a>
+ <span class="menu-text"><span class="chapter-number">33</span>&nbsp; <span class="chapter-title">第六章 课时2</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./scrna_basic_lesson3.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">35</span>&nbsp; <span class="chapter-title">第六章 课时3</span></span></a>
+ <span class="menu-text"><span class="chapter-number">34</span>&nbsp; <span class="chapter-title">第六章 课时3</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./scrna_basic_lesson4.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">36</span>&nbsp; <span class="chapter-title">第六章 课时4</span></span></a>
+ <span class="menu-text"><span class="chapter-number">35</span>&nbsp; <span class="chapter-title">第六章 课时4</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./scrna_basic_lesson5.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">37</span>&nbsp; <span class="chapter-title">第六章 课时5</span></span></a>
+ <span class="menu-text"><span class="chapter-number">36</span>&nbsp; <span class="chapter-title">第六章 课时5</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./07-scrna-advanced.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">38</span>&nbsp; <span class="chapter-title">07-scrna-advanced.html</span></span></a>
+ <span class="menu-text"><span class="chapter-number">37</span>&nbsp; <span class="chapter-title">单细胞与空间转录组高级分析：动态推断、多组学与空间解析</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./scrna_adv_lesson1.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">39</span>&nbsp; <span class="chapter-title">第七章 课时1</span></span></a>
+ <span class="menu-text"><span class="chapter-number">38</span>&nbsp; <span class="chapter-title">第七章 课时1</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./scrna_adv_lesson2.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">40</span>&nbsp; <span class="chapter-title">第七章 课时2</span></span></a>
+ <span class="menu-text"><span class="chapter-number">39</span>&nbsp; <span class="chapter-title">第七章 课时2</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./scrna_adv_lesson3.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">41</span>&nbsp; <span class="chapter-title">第七章 课时3</span></span></a>
+ <span class="menu-text"><span class="chapter-number">40</span>&nbsp; <span class="chapter-title">第七章 课时3</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./scrna_adv_lesson4.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">42</span>&nbsp; <span class="chapter-title">第七章 课时4</span></span></a>
+ <span class="menu-text"><span class="chapter-number">41</span>&nbsp; <span class="chapter-title">第七章 课时4</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./scrna_adv_lesson5.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">43</span>&nbsp; <span class="chapter-title">第七章 课时5</span></span></a>
+ <span class="menu-text"><span class="chapter-number">42</span>&nbsp; <span class="chapter-title">第七章 课时5</span></span></a>
   </div>
 </li>
       </ul>
@@ -405,121 +429,121 @@ ul.task-list li input[type="checkbox"] {
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./08-epigenomics.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">44</span>&nbsp; <span class="chapter-title">08-epigenomics.html</span></span></a>
+ <span class="menu-text"><span class="chapter-number">43</span>&nbsp; <span class="chapter-title">08-epigenomics.html</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./epigenomics_lesson1.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">45</span>&nbsp; <span class="chapter-title">第八章 课时1</span></span></a>
+ <span class="menu-text"><span class="chapter-number">44</span>&nbsp; <span class="chapter-title">第八章 课时1</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./epigenomics_lesson2.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">46</span>&nbsp; <span class="chapter-title">第八章 课时2</span></span></a>
+ <span class="menu-text"><span class="chapter-number">45</span>&nbsp; <span class="chapter-title">第八章 课时2</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./epigenomics_lesson3.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">47</span>&nbsp; <span class="chapter-title">第八章 课时3</span></span></a>
+ <span class="menu-text"><span class="chapter-number">46</span>&nbsp; <span class="chapter-title">第八章 课时3</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./epigenomics_lesson4.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">48</span>&nbsp; <span class="chapter-title">第八章 课时4</span></span></a>
+ <span class="menu-text"><span class="chapter-number">47</span>&nbsp; <span class="chapter-title">第八章 课时4</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./epigenomics_lesson5.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">49</span>&nbsp; <span class="chapter-title">第八章 课时5</span></span></a>
+ <span class="menu-text"><span class="chapter-number">48</span>&nbsp; <span class="chapter-title">第八章 课时5</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./09-proteometab.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">50</span>&nbsp; <span class="chapter-title">09-proteometab.html</span></span></a>
+ <span class="menu-text"><span class="chapter-number">49</span>&nbsp; <span class="chapter-title">09-proteometab.html</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./proteometab_lesson1.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">51</span>&nbsp; <span class="chapter-title">第九章 课时1</span></span></a>
+ <span class="menu-text"><span class="chapter-number">50</span>&nbsp; <span class="chapter-title">第九章 课时1</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./proteometab_lesson2.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">52</span>&nbsp; <span class="chapter-title">第九章 课时2</span></span></a>
+ <span class="menu-text"><span class="chapter-number">51</span>&nbsp; <span class="chapter-title">第九章 课时2</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./proteometab_lesson3.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">53</span>&nbsp; <span class="chapter-title">第九章 课时3</span></span></a>
+ <span class="menu-text"><span class="chapter-number">52</span>&nbsp; <span class="chapter-title">第九章 课时3</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./proteometab_lesson4.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">54</span>&nbsp; <span class="chapter-title">第九章 课时4</span></span></a>
+ <span class="menu-text"><span class="chapter-number">53</span>&nbsp; <span class="chapter-title">第九章 课时4</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./proteometab_lesson5.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">55</span>&nbsp; <span class="chapter-title">第九章 课时5</span></span></a>
+ <span class="menu-text"><span class="chapter-number">54</span>&nbsp; <span class="chapter-title">第九章 课时5</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./10-integration.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">56</span>&nbsp; <span class="chapter-title">10-integration.html</span></span></a>
+ <span class="menu-text"><span class="chapter-number">55</span>&nbsp; <span class="chapter-title">10-integration.html</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./integration_lesson1.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">57</span>&nbsp; <span class="chapter-title">第十章 课时1</span></span></a>
+ <span class="menu-text"><span class="chapter-number">56</span>&nbsp; <span class="chapter-title">第十章 课时1</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./integration_lesson2.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">58</span>&nbsp; <span class="chapter-title">第十章 课时2</span></span></a>
+ <span class="menu-text"><span class="chapter-number">57</span>&nbsp; <span class="chapter-title">第十章 课时2</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./integration_lesson3.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">59</span>&nbsp; <span class="chapter-title">第十章 课时3</span></span></a>
+ <span class="menu-text"><span class="chapter-number">58</span>&nbsp; <span class="chapter-title">第十章 课时3</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./integration_lesson4.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">60</span>&nbsp; <span class="chapter-title">第十章 课时4</span></span></a>
+ <span class="menu-text"><span class="chapter-number">59</span>&nbsp; <span class="chapter-title">第十章 课时4</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./integration_lesson5.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">61</span>&nbsp; <span class="chapter-title">第十章 课时5</span></span></a>
+ <span class="menu-text"><span class="chapter-number">60</span>&nbsp; <span class="chapter-title">第十章 课时5</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./11-summary.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">62</span>&nbsp; <span class="chapter-title">11-summary.html</span></span></a>
+ <span class="menu-text"><span class="chapter-number">61</span>&nbsp; <span class="chapter-title">11-summary.html</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./summary_lesson1.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">63</span>&nbsp; <span class="chapter-title">第十一章 课时1</span></span></a>
+ <span class="menu-text"><span class="chapter-number">62</span>&nbsp; <span class="chapter-title">第十一章 课时1</span></span></a>
   </div>
 </li>
       </ul>
@@ -535,17 +559,181 @@ ul.task-list li input[type="checkbox"] {
 </nav>
 <div id="quarto-sidebar-glass" class="quarto-sidebar-collapse-item" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item"></div>
 <!-- margin-sidebar -->
-    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar zindex-bottom">
-        
+    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+        <nav id="TOC" role="doc-toc" class="toc-active">
+    <h2 id="toc-title">Table of contents</h2>
+   
+  <ul>
+  <li><a href="#整体概述" id="toc-整体概述" class="nav-link active" data-scroll-target="#整体概述"><span class="header-section-number">26</span> 整体概述</a></li>
+  <li><a href="#结构导览" id="toc-结构导览" class="nav-link" data-scroll-target="#结构导览"><span class="header-section-number">27</span> 结构导览</a></li>
+  <li><a href="#模块-a转录组结构分析" id="toc-模块-a转录组结构分析" class="nav-link" data-scroll-target="#模块-a转录组结构分析"><span class="header-section-number">28</span> 模块 A：转录组结构分析</a>
+  <ul class="collapse">
+  <li><a href="#专题-5.1可变剪接差异分析" id="toc-专题-5.1可变剪接差异分析" class="nav-link" data-scroll-target="#专题-5.1可变剪接差异分析"><span class="header-section-number">28.1</span> 专题 5.1：可变剪接差异分析</a></li>
+  <li><a href="#专题-5.2基因融合鉴定" id="toc-专题-5.2基因融合鉴定" class="nav-link" data-scroll-target="#专题-5.2基因融合鉴定"><span class="header-section-number">28.2</span> 专题 5.2：基因融合鉴定</a></li>
+  </ul></li>
+  <li><a href="#模块-b长读长转录组学" id="toc-模块-b长读长转录组学" class="nav-link" data-scroll-target="#模块-b长读长转录组学"><span class="header-section-number">29</span> 模块 B：长读长转录组学</a>
+  <ul class="collapse">
+  <li><a href="#专题-5.3pacbio-isoseq-与-oxford-nanopore-全长转录组" id="toc-专题-5.3pacbio-isoseq-与-oxford-nanopore-全长转录组" class="nav-link" data-scroll-target="#专题-5.3pacbio-isoseq-与-oxford-nanopore-全长转录组"><span class="header-section-number">29.1</span> 专题 5.3：PacBio IsoSeq 与 Oxford Nanopore 全长转录组</a></li>
+  <li><a href="#专题-5.4sqanti3-质量评估与-trinity-de-novo-组装" id="toc-专题-5.4sqanti3-质量评估与-trinity-de-novo-组装" class="nav-link" data-scroll-target="#专题-5.4sqanti3-质量评估与-trinity-de-novo-组装"><span class="header-section-number">29.2</span> 专题 5.4：SQANTI3 质量评估与 Trinity de novo 组装</a></li>
+  </ul></li>
+  <li><a href="#模块-c共表达网络分析" id="toc-模块-c共表达网络分析" class="nav-link" data-scroll-target="#模块-c共表达网络分析"><span class="header-section-number">30</span> 模块 C：共表达网络分析</a>
+  <ul class="collapse">
+  <li><a href="#专题-5.5加权基因共表达网络分析" id="toc-专题-5.5加权基因共表达网络分析" class="nav-link" data-scroll-target="#专题-5.5加权基因共表达网络分析"><span class="header-section-number">30.1</span> 专题 5.5：加权基因共表达网络分析</a></li>
+  </ul></li>
+  </ul>
+<div class="toc-actions"><ul><li><a href="https://github.com/cxzdsa2332/Applied-Omics-Analysis/edit/main/05-transcriptomics-advanced.qmd" class="toc-action"><i class="bi bi-github"></i>Edit this page</a></li><li><a href="https://github.com/cxzdsa2332/Applied-Omics-Analysis/issues/new" class="toc-action"><i class="bi empty"></i>Report an issue</a></li><li><a href="https://github.com/cxzdsa2332/Applied-Omics-Analysis/blob/main/05-transcriptomics-advanced.qmd" class="toc-action"><i class="bi empty"></i>View source</a></li></ul></div></nav>
     </div>
 <!-- main -->
-<main class="content" id="quarto-document-content"><header id="title-block-header" class="quarto-title-block"><nav class="quarto-page-breadcrumbs quarto-title-breadcrumbs d-none d-lg-block" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="./04-transcriptomics-basic.html">第二阶段：转录组与单细胞</a></li><li class="breadcrumb-item"><a href="./05-transcriptomics-advanced.html"><span class="chapter-number">26</span>&nbsp; <span class="chapter-title">05-transcriptomics-advanced.html</span></a></li></ol></nav></header>
+<main class="content" id="quarto-document-content">
+
+<header id="title-block-header" class="quarto-title-block default"><nav class="quarto-page-breadcrumbs quarto-title-breadcrumbs d-none d-lg-block" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="./04-transcriptomics-basic.html">第二阶段：转录组与单细胞</a></li><li class="breadcrumb-item"><a href="./05-transcriptomics-advanced.html"><span class="chapter-number">25</span>&nbsp; <span class="chapter-title">Bulk 转录组高级分析：结构变异、长读长与共表达网络</span></a></li></ol></nav>
+<div class="quarto-title">
+<h1 class="title"><span class="chapter-number">25</span>&nbsp; <span class="chapter-title">Bulk 转录组高级分析：结构变异、长读长与共表达网络</span></h1>
+</div>
 
 
 
+<div class="quarto-title-meta">
+
+    
+    <div>
+    <div class="quarto-title-meta-heading">Published</div>
+    <div class="quarto-title-meta-contents">
+      <p class="date">May 30, 2026</p>
+    </div>
+  </div>
+  
+    
+  </div>
+  
 
 
+</header>
 
+
+<section id="整体概述" class="level1" data-number="26">
+<h1 data-number="26"><span class="header-section-number">26</span> 整体概述</h1>
+<p>标准 Bulk RNA-seq 分析（第4章）聚焦于基因表达量的变化，但转录组所携带的信息远不止于此。同一基因可以通过可变剪接（Alternative Splicing）产生具有不同功能的蛋白质异构体；染色体重排或转录通读可以产生融合转录本（Fusion Transcript），在肿瘤研究中具有重要的诊断意义；多个基因在转录层面的协同调控形成共表达模块（Co-expression Module），揭示了潜在的调控因子与生物学通路。短读长测序虽然能够检出这些结构变异的信号，但在全长异构体的精确重建方面存在固有局限。长读长测序技术（PacBio IsoSeq、Oxford Nanopore direct RNA-seq）能够直接读取全长 cDNA 或 RNA 分子，从根本上解决短读长拼接带来的歧义问题。本章在第4章基础上，系统讲解上述三个高级分析方向，并介绍在无参考基因组情形下进行 de novo 转录组组装的方法。</p>
+<p><strong>学习目标</strong>：掌握可变剪接五种事件类型及 rMATS 的 PSI 差异检验框架；理解长读长转录组学的工作流程与 SQANTI3 的结构分类体系；能运用 WGCNA 识别与表型相关的共表达基因模块；了解 Trinity de novo 转录组组装的适用场景与评估方法。</p>
+<hr>
+</section>
+<section id="结构导览" class="level1" data-number="27">
+<h1 data-number="27"><span class="header-section-number">27</span> 结构导览</h1>
+<p>本章分为三个模块，共五个专题，围绕”超越表达量”的高级分析主题组织：</p>
+<pre><code>输入：来自第4章的清洁 reads（BAM）+ 原始 FASTQ + 计数矩阵
+  │
+  ├── 模块 A：转录组结构分析（专题 5.1–5.2）
+  │     ↓ rMATS → 可变剪接差异事件（PSI 检验）
+  │     ↓ STAR-Fusion / Arriba → 基因融合鉴定
+  │
+  ├── 模块 B：长读长转录组学（专题 5.3–5.4）
+  │     ↓ IsoSeq3 / Nanopore dRNA-seq → minimap2 比对
+  │     ↓ SQANTI3 结构分类与质量过滤
+  │     ↓ Trinity（无参场景）→ de novo 转录组 + BUSCO 评估
+  │
+  └── 模块 C：共表达网络分析（专题 5.5）
+        ↓ WGCNA 软阈值选择 → 模块构建 → 模块-表型关联 → 枢纽基因</code></pre>
+<p>模块 A 和模块 C 以第4章产出的比对结果和计数矩阵为输入；模块 B 是独立的长读长分析路径，与短读长结果互为验证。</p>
+<hr>
+</section>
+<section id="模块-a转录组结构分析" class="level1" data-number="28">
+<h1 data-number="28"><span class="header-section-number">28</span> 模块 A：转录组结构分析</h1>
+<div class="note">
+<p><strong>模块目标：</strong> 理解可变剪接与基因融合的生物学机制，掌握基于短读长数据的结构变异检测方法，能解读 rMATS 的 PSI 差异检验结果与 STAR-Fusion 的输出报告。</p>
+</div>
+<section id="专题-5.1可变剪接差异分析" class="level2" data-number="28.1">
+<h2 data-number="28.1" class="anchored" data-anchor-id="专题-5.1可变剪接差异分析"><span class="header-section-number">28.1</span> 专题 5.1：可变剪接差异分析</h2>
+<p>可变剪接（Alternative Splicing）是真核生物转录组多样性的主要来源之一。人类基因组中超过 90% 的多外显子基因发生可变剪接，同一基因的不同异构体可编码具有不同结构域组成、亚细胞定位甚至拮抗功能的蛋白质。从测序数据中检测可变剪接需要在外显子-外显子连接处（junction reads）与外显子内部读段（skipping reads）之间进行统计比较，核心指标是外显子纳入百分比（Percent Spliced-In, PSI）。rMATS 是目前最广泛使用的可变剪接差异分析工具，支持五种基本剪接事件类型的系统检测，并使用基于重复样本的贝叶斯统计模型控制假阳性。</p>
+<p>{{Wiki:Alternative_splicing}}</p>
+<p><strong>核心概念</strong>：</p>
+<ul>
+<li>可变剪接五种基本事件类型：外显子跳跃（Skipped Exon, SE）、可变 5’ 剪接位点（A5SS）、可变 3’ 剪接位点（A3SS）、内含子保留（Retained Intron, RI）、互斥外显子（Mutually Exclusive Exons, MXE）</li>
+<li>PSI 值的定义：<span class="math inline">\(\Psi = \frac{\text{inclusion junction reads}}{\text{inclusion junction reads} + \text{skipping junction reads}}\)</span></li>
+<li>rMATS 统计框架：Beta 二项分布模型；<span class="math inline">\(\Delta\Psi\)</span> 的贝叶斯估计；FDR 控制</li>
+<li>结果文件解读：<code>.JC.txt</code>（只用 junction reads）vs <code>.JCEC.txt</code>（junction + exon body reads）；<code>IncLevelDifference</code> 与 <code>FDR</code> 字段含义</li>
+<li>Sashimi 图可视化：rmats2sashimiplot；连接弧线的粗细代表 junction reads 数量</li>
+<li>下游功能分析：差异剪接基因的 GO 富集；蛋白质域结构影响预测</li>
+</ul>
+<p><strong>实践内容</strong>：对 pasilla 数据集（dex 处理 vs 对照）运行 rMATS；识别显著差异的 SE 事件（|ΔPSI| &gt; 0.1，FDR &lt; 0.05）；生成代表性事件的 Sashimi 图；分析差异剪接基因的 GO 功能类别分布。</p>
+<hr>
+</section>
+<section id="专题-5.2基因融合鉴定" class="level2" data-number="28.2">
+<h2 data-number="28.2" class="anchored" data-anchor-id="专题-5.2基因融合鉴定"><span class="header-section-number">28.2</span> 专题 5.2：基因融合鉴定</h2>
+<p>基因融合（Gene Fusion）是两个原本独立的基因的转录本被拼接在一起形成嵌合体转录本的现象，通常源于染色体易位、倒置或缺失等结构变异，也可由转录通读产生。在肿瘤研究领域，特定基因融合事件具有高度的诊断与预后价值（如慢性髓系白血病的 BCR-ABL1、前列腺癌的 TMPRSS2-ERG）。STAR-Fusion 通过两步过滤策略——先由 STAR 识别跨基因边界的嵌合比对，再利用 FusionInspector 在局部重建的融合转录本上进行读段重比对验证——实现了高精度的融合事件检测。</p>
+<p><strong>核心概念</strong>：</p>
+<ul>
+<li>基因融合的产生机制：染色体易位（translocation）、倒置（inversion）、缺失（deletion）与转录通读（read-through transcription）</li>
+<li>STAR 嵌合比对参数：<code>--chimSegmentMin</code>（最小嵌合片段长度）；嵌合读段（chimeric reads）与 Chimeric.out.junction 文件</li>
+<li>STAR-Fusion 过滤策略：FusionInspector 局部重比对验证；FFPM（Fusion Fragments Per Million）计数；已知假阳性数据库（FusionFilter/CTAT library）过滤</li>
+<li>融合事件分类：框内融合（in-frame）vs 框外融合；保留功能域的融合与截短融合</li>
+<li>Arriba 替代工具：直接从 STAR 比对结果检测融合，内置高质量可视化模块</li>
+<li>验证策略：RT-PCR + Sanger 测序；扩增子测序验证低表达融合</li>
+</ul>
+<p><strong>实践内容</strong>：在含已知融合事件的模拟 RNA-seq 数据上运行 STAR-Fusion；解读输出结果中的关键字段；使用 Arriba 可视化代表性融合转录本的结构。</p>
+<hr>
+</section>
+</section>
+<section id="模块-b长读长转录组学" class="level1" data-number="29">
+<h1 data-number="29"><span class="header-section-number">29</span> 模块 B：长读长转录组学</h1>
+<div class="note">
+<p><strong>模块目标：</strong> 理解长读长测序在全长异构体分析中的技术优势与误差特征，掌握 IsoSeq3 与 Nanopore 的分析流程，能使用 SQANTI3 对转录本进行结构分类与质量评估，了解 Trinity de novo 组装的适用场景。</p>
+</div>
+<section id="专题-5.3pacbio-isoseq-与-oxford-nanopore-全长转录组" class="level2" data-number="29.1">
+<h2 data-number="29.1" class="anchored" data-anchor-id="专题-5.3pacbio-isoseq-与-oxford-nanopore-全长转录组"><span class="header-section-number">29.1</span> 专题 5.3：PacBio IsoSeq 与 Oxford Nanopore 全长转录组</h2>
+<p>短读长测序（150 bp）在重建全长转录本时面临本质性困难：当一个基因有多个相似的异构体时，短读段无法可靠地归属到特定转录本，尤其是在内含子较多或异构体共享大量外显子的情况下。PacBio IsoSeq 技术通过环形一致性测序（CCS）生成平均长度 2–15 kb、准确率高于 99% 的长读段，能够直接覆盖整条转录本从 5’ 帽到 poly-A 尾。Oxford Nanopore direct RNA-seq 则省去逆转录步骤，直接对 RNA 分子测序，保留天然的碱基修饰信息，但原始读段错误率较高（约 5–10%）。两种技术的分析流程既有共性，也有各自的特殊处理步骤。</p>
+<p>{{Wiki:Pacific_Biosciences}}</p>
+<p><strong>核心概念</strong>：</p>
+<ul>
+<li>PacBio CCS（Circular Consensus Sequencing）：SMRTbell 文库结构；多轮测序取均值的准确率提升机制；HiFi reads 的定义（≥ 3 次亚读段，准确率 ≥ Q20）</li>
+<li>IsoSeq3 工作流：CCS → <code>lima</code>（primer/barcode 去除）→ <code>isoseq3 refine</code>（poly-A 修剪，FLNC 过滤）→ <code>isoseq3 cluster</code>（聚类去冗余）→ <code>pbmm2</code> 比对 → <code>isoseq3 collapse</code>（同一基因座转录本合并）</li>
+<li>Oxford Nanopore direct RNA-seq：纳米孔电流信号直接读取 RNA；<code>dorado</code> 碱基识别（替代旧版 <code>guppy</code>）；<code>minimap2 -ax splice -uf</code> 比对参数（<code>-uf</code> 指定正链偏向）</li>
+<li>长读长比对的挑战：高错误率导致的剪接位点模糊；<code>--junc-bed</code> 利用已知剪接位点锚定比对</li>
+<li>StringTie2 长读长模式：<code>-L</code> 参数启用长读长优化；转录本组装与表达量估计</li>
+<li>短读长辅助（Hybrid approach）：利用 Illumina 高精度数据校正长读长剪接位点</li>
+</ul>
+<p><strong>实践内容</strong>：演示 IsoSeq3 完整工作流（从 CCS BAM 到 collapsed GFF）；演示 Nanopore dRNA-seq minimap2 比对与 StringTie2 组装；生成两种技术检测到的转录本数量与长度分布对比图。</p>
+<hr>
+</section>
+<section id="专题-5.4sqanti3-质量评估与-trinity-de-novo-组装" class="level2" data-number="29.2">
+<h2 data-number="29.2" class="anchored" data-anchor-id="专题-5.4sqanti3-质量评估与-trinity-de-novo-组装"><span class="header-section-number">29.2</span> 专题 5.4：SQANTI3 质量评估与 Trinity de novo 组装</h2>
+<p>长读长组装产生的转录本需要系统的质量评估：哪些是已知的注释转录本（FSM/ISM），哪些是新型连接（NNC），哪些可能是文库构建产生的伪影（Intrapriming、RT-switching）。SQANTI3 是专为长读长转录本设计的综合评估工具，提供详细的结构分类、质量指标计算与 ML 过滤。在无参考基因组的场景下，Trinity 提供了基于短读长的 de novo 转录组组装路线，通过 de Bruijn 图算法重建转录本序列（de Bruijn 图原理参见第2章基因组组装）。</p>
+<p><strong>核心概念</strong>：</p>
+<ul>
+<li>SQANTI3 结构分类：FSM（Full Splice Match）、ISM（Incomplete Splice Match）、NIC（Novel in Catalog）、NNC（Novel Not in Catalog）、Antisense、Intergenic、Genic Genomic、Fusion</li>
+<li>SQANTI3 质量指标：CAGE peak 支持（5’ 端真实性）、poly-A signal 支持（3’ 端真实性）、覆盖深度、RT-switching 评分</li>
+<li>SQANTI3 filter：随机森林分类器识别 Intrapriming 与 RT-switching 伪异构体；<code>rules</code> 模式 vs <code>ML</code> 模式</li>
+<li>Trinity de novo 组装：基于 k-mer de Bruijn 图；Trinity 特有的 Butterfly 模块处理可变剪接</li>
+<li>Trinity 输出质量评估：BUSCO（转录组完整性，参见第2章）；TransRate（读段支持度）；N50 指标的局限性</li>
+<li>de novo 转录组的适用场景：非模式生物研究、宏转录组分析</li>
+</ul>
+<p><strong>实践内容</strong>：SQANTI3 对 IsoSeq3 输出转录本进行结构分类，生成分类统计图与质量分布可视化；演示 SQANTI3 filter 去除低质伪异构体前后的转录本数量变化；展示 Trinity de novo 组装小型转录组并用 BUSCO 评估完整性。</p>
+<hr>
+</section>
+</section>
+<section id="模块-c共表达网络分析" class="level1" data-number="30">
+<h1 data-number="30"><span class="header-section-number">30</span> 模块 C：共表达网络分析</h1>
+<div class="note">
+<p><strong>模块目标：</strong> 理解 WGCNA 的理论框架，能正确选择软阈值、构建共表达模块并进行模块-表型关联分析，从显著模块中识别枢纽基因。</p>
+</div>
+<section id="专题-5.5加权基因共表达网络分析" class="level2" data-number="30.1">
+<h2 data-number="30.1" class="anchored" data-anchor-id="专题-5.5加权基因共表达网络分析"><span class="header-section-number">30.1</span> 专题 5.5：加权基因共表达网络分析</h2>
+<p>差异表达分析聚焦于单个基因层面的变化，而基因的功能往往通过协同调控网络来实现。加权基因共表达网络分析（Weighted Gene Co-expression Network Analysis, WGCNA）将多样本的基因表达矩阵转化为基因-基因相关性网络，并通过层次聚类将相关基因划分为模块（Module）。每个模块可通过模块特征基因（Module Eigengene, ME）——该模块中基因表达的第一主成分——与样本表型信息建立关联，从而识别与特定生物学状态相关的功能基因集，进而发现模块内连接度最高的枢纽基因（Hub gene）作为候选调控因子。</p>
+<p>{{Wiki:Gene_co-expression_network}}</p>
+<p><strong>核心概念</strong>：</p>
+<ul>
+<li>WGCNA 前提条件：样本数要求（通常 ≥ 15）；表达量归一化（vst 或 rlog 转换）；离群样本检测（层次聚类 + Euclidean distance + Z score 过滤）</li>
+<li>软阈值（Soft Threshold）选择：幂律拟合（scale-free topology fit index）；<code>pickSoftThreshold()</code> 函数；<span class="math inline">\(R^2 \geq 0.85\)</span> 准则</li>
+<li>相关性度量：Pearson 相关（默认）vs 双权中点相关（bicor，对异常值更鲁棒）</li>
+<li>模块构建：层次聚类 + 动态树切割（Dynamic Tree Cut）；<code>minModuleSize</code>（最小模块大小）；<code>mergeCutHeight</code>（模块合并阈值）</li>
+<li>模块-表型关联：ME 与样本性状的 Pearson 相关矩阵；模块成员度（kME）；基因显著性（Gene Significance, GS）</li>
+<li>枢纽基因识别：模块内连接度（Intramodular Connectivity）；<code>kME &gt; 0.8</code> 且 <code>GS &gt; 0.5</code> 的交集作为枢纽基因候选</li>
+<li>WGCNA 与 DEA 的整合：差异基因在各模块中的富集检验</li>
+</ul>
+<p><strong>实践内容</strong>：使用 pasilla 数据集（DESeq2 vst 归一化表达矩阵）运行 WGCNA；选择软阈值并构建共表达网络；识别与 dex 处理状态相关的核心模块；绘制模块-表型关联热图；从显著模块中筛选枢纽基因并进行 GO 富集验证。</p>
+
+
+</section>
+</section>
 
 </main> <!-- /main -->
 <script id="quarto-html-after-body" type="application/javascript">
@@ -950,13 +1138,13 @@ ul.task-list li input[type="checkbox"] {
   </script>
 <nav class="page-navigation">
   <div class="nav-page nav-page-previous">
-      <a href="./transcriptomics_basic_lesson5.html" class="pagination-link" aria-label="第四章 课时5">
-        <i class="bi bi-arrow-left-short"></i> <span class="nav-page-text"><span class="chapter-number">25</span>&nbsp; <span class="chapter-title">第四章 课时5</span></span>
+      <a href="./transcriptomics_basic_lesson4.html" class="pagination-link" aria-label="功能富集分析">
+        <i class="bi bi-arrow-left-short"></i> <span class="nav-page-text"><span class="chapter-number">24</span>&nbsp; <span class="chapter-title">功能富集分析</span></span>
       </a>          
   </div>
   <div class="nav-page nav-page-next">
       <a href="./transcriptomics_adv_lesson1.html" class="pagination-link" aria-label="第五章 课时1">
-        <span class="nav-page-text"><span class="chapter-number">27</span>&nbsp; <span class="chapter-title">第五章 课时1</span></span> <i class="bi bi-arrow-right-short"></i>
+        <span class="nav-page-text"><span class="chapter-number">26</span>&nbsp; <span class="chapter-title">第五章 课时1</span></span> <i class="bi bi-arrow-right-short"></i>
       </a>
   </div>
 </nav>
@@ -965,4 +1153,4 @@ ul.task-list li input[type="checkbox"] {
 
 
 
-<footer class="footer"><div class="nav-footer"><div class="nav-footer-center"><div class="toc-actions"><ul><li><a href="https://github.com/cxzdsa2332/Applied-Omics-Analysis/edit/main/05-transcriptomics-advanced.qmd" class="toc-action"><i class="bi bi-github"></i>Edit this page</a></li><li><a href="https://github.com/cxzdsa2332/Applied-Omics-Analysis/issues/new" class="toc-action"><i class="bi empty"></i>Report an issue</a></li><li><a href="https://github.com/cxzdsa2332/Applied-Omics-Analysis/blob/main/05-transcriptomics-advanced.qmd" class="toc-action"><i class="bi empty"></i>View source</a></li></ul></div></div></div></footer></body></html>
+<footer class="footer"><div class="nav-footer"><div class="nav-footer-center"><div class="toc-actions d-sm-block d-md-none"><ul><li><a href="https://github.com/cxzdsa2332/Applied-Omics-Analysis/edit/main/05-transcriptomics-advanced.qmd" class="toc-action"><i class="bi bi-github"></i>Edit this page</a></li><li><a href="https://github.com/cxzdsa2332/Applied-Omics-Analysis/issues/new" class="toc-action"><i class="bi empty"></i>Report an issue</a></li><li><a href="https://github.com/cxzdsa2332/Applied-Omics-Analysis/blob/main/05-transcriptomics-advanced.qmd" class="toc-action"><i class="bi empty"></i>View source</a></li></ul></div></div></div></footer></body></html>
