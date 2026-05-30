@@ -6,8 +6,9 @@
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
+<meta name="dcterms.date" content="2026-05-30">
 
-<title>24&nbsp; 第四章 课时4 – Introduction to Applied High-throughput Biological Data Analysis</title>
+<title>24&nbsp; 功能富集分析 – Introduction to Applied High-throughput Biological Data Analysis</title>
 <style>
 /* Default styles provided by pandoc.
 ** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
@@ -23,6 +24,41 @@ ul.task-list li input[type="checkbox"] {
   margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
   vertical-align: middle;
 }
+/* CSS for syntax highlighting */
+html { -webkit-text-size-adjust: 100%; }
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
 </style>
 
 
@@ -33,7 +69,7 @@ ul.task-list li input[type="checkbox"] {
 <script src="site_libs/quarto-search/fuse.min.js"></script>
 <script src="site_libs/quarto-search/quarto-search.js"></script>
 <meta name="quarto:offset" content="./">
-<link href="./transcriptomics_basic_lesson5.html" rel="next">
+<link href="./05-transcriptomics-advanced.html" rel="next">
 <link href="./transcriptomics_basic_lesson3.html" rel="prev">
 <script src="site_libs/quarto-html/quarto.js" type="module"></script>
 <script src="site_libs/quarto-html/tabsets/tabsets.js" type="module"></script>
@@ -44,7 +80,7 @@ ul.task-list li input[type="checkbox"] {
 <link href="site_libs/quarto-html/quarto-syntax-highlighting-845c23b38eaddc0f92fda52bfe77a8c8.css" rel="stylesheet" id="quarto-text-highlighting-styles">
 <script src="site_libs/bootstrap/bootstrap.min.js"></script>
 <link href="site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
-<link href="site_libs/bootstrap/bootstrap-ffc4c3fc79587ee79da4865b6a08975e.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
+<link href="site_libs/bootstrap/bootstrap-5ccb035bea26c1e21f80f44cf7c27909.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
 <script id="quarto-search-options" type="application/json">{
   "location": "sidebar",
   "copy-button": false,
@@ -73,6 +109,35 @@ ul.task-list li input[type="checkbox"] {
   }
 }</script>
 
+  <script src="https://cdnjs.cloudflare.com/polyfill/v3/polyfill.min.js?features=es6"></script>
+  <script defer="" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js" type="text/javascript"></script>
+
+<script type="text/javascript">
+const typesetMath = (el) => {
+  if (window.MathJax) {
+    // MathJax Typeset
+    window.MathJax.typeset([el]);
+  } else if (window.katex) {
+    // KaTeX Render
+    var mathElements = el.getElementsByClassName("math");
+    var macros = [];
+    for (var i = 0; i < mathElements.length; i++) {
+      var texText = mathElements[i].firstChild;
+      if (mathElements[i].tagName == "SPAN" && texText && texText.data) {
+        window.katex.render(texText.data, mathElements[i], {
+          displayMode: mathElements[i].classList.contains('display'),
+          throwOnError: false,
+          macros: macros,
+          fleqn: false
+        });
+      }
+    }
+  }
+}
+window.Quarto = {
+  typesetMath
+};
+</script>
 
 </head>
 
@@ -85,7 +150,7 @@ ul.task-list li input[type="checkbox"] {
       <button type="button" class="quarto-btn-toggle btn" data-bs-toggle="collapse" role="button" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
         <i class="bi bi-layout-text-sidebar-reverse"></i>
       </button>
-        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="./04-transcriptomics-basic.html">第二阶段：转录组与单细胞</a></li><li class="breadcrumb-item"><a href="./transcriptomics_basic_lesson4.html"><span class="chapter-number">24</span>&nbsp; <span class="chapter-title">第四章 课时4</span></a></li></ol></nav>
+        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="./04-transcriptomics-basic.html">第二阶段：转录组与单细胞</a></li><li class="breadcrumb-item"><a href="./transcriptomics_basic_lesson4.html"><span class="chapter-number">24</span>&nbsp; <span class="chapter-title">功能富集分析</span></a></li></ol></nav>
         <a class="flex-grow-1" role="navigation" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">      
         </a>
       <button type="button" class="btn quarto-search-button" aria-label="Search" onclick="window.quartoOpenSearch();">
@@ -131,7 +196,7 @@ ul.task-list li input[type="checkbox"] {
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./01-intro.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">2</span>&nbsp; <span class="chapter-title">分子基础与计算生态启蒙</span></span></a>
+ <span class="menu-text"><span class="chapter-number">2</span>&nbsp; <span class="chapter-title">生物信息学入门：从分子到数据</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
@@ -167,37 +232,37 @@ ul.task-list li input[type="checkbox"] {
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./02-genomics-qc.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">8</span>&nbsp; <span class="chapter-title">基因组 —— 质量控制、变异检测与功能注释</span></span></a>
+ <span class="menu-text"><span class="chapter-number">8</span>&nbsp; <span class="chapter-title">基因组数据分析：质量控制、从头组装与变异检测</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./genomics_qc_lesson1.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">9</span>&nbsp; <span class="chapter-title">第二章 课时1</span></span></a>
+ <span class="menu-text"><span class="chapter-number">9</span>&nbsp; <span class="chapter-title">原始下机数据的数字表现</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./genomics_qc_lesson2.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">10</span>&nbsp; <span class="chapter-title">第二章 课时2</span></span></a>
+ <span class="menu-text"><span class="chapter-number">10</span>&nbsp; <span class="chapter-title">数据预处理与参考基因组比对</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./genomics_qc_lesson3.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">11</span>&nbsp; <span class="chapter-title">第二章 课时3</span></span></a>
+ <span class="menu-text"><span class="chapter-number">11</span>&nbsp; <span class="chapter-title">从头基因组组装：当没有参考基因组时</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./genomics_qc_lesson4.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">12</span>&nbsp; <span class="chapter-title">第二章 课时4</span></span></a>
+ <span class="menu-text"><span class="chapter-number">12</span>&nbsp; <span class="chapter-title">变异检测算法与 VCF 通用格式</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./genomics_qc_lesson5.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">13</span>&nbsp; <span class="chapter-title">第二章 课时5</span></span></a>
+ <span class="menu-text"><span class="chapter-number">13</span>&nbsp; <span class="chapter-title">功能注释、GATK 最佳实践与可视化</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
@@ -209,31 +274,31 @@ ul.task-list li input[type="checkbox"] {
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./genomics_variant_lesson1.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">15</span>&nbsp; <span class="chapter-title">第三章 课时1</span></span></a>
+ <span class="menu-text"><span class="chapter-number">15</span>&nbsp; <span class="chapter-title">经典分子标记、遗传图谱与 QTL 定位</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./genomics_variant_lesson2.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">16</span>&nbsp; <span class="chapter-title">第三章 课时2</span></span></a>
+ <span class="menu-text"><span class="chapter-number">16</span>&nbsp; <span class="chapter-title">全基因组 SNP 鉴定、连锁不平衡图谱与基因型数据处理</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./genomics_variant_lesson3.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">17</span>&nbsp; <span class="chapter-title">第三章 课时3</span></span></a>
+ <span class="menu-text"><span class="chapter-number">17</span>&nbsp; <span class="chapter-title">GWAS 统计模型</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./genomics_variant_lesson4.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">18</span>&nbsp; <span class="chapter-title">第三章 课时4</span></span></a>
+ <span class="menu-text"><span class="chapter-number">18</span>&nbsp; <span class="chapter-title">GWAS 结果可视化、多重检验与候选位点解析</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./genomics_variant_lesson5.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">19</span>&nbsp; <span class="chapter-title">第三章 课时5</span></span></a>
+ <span class="menu-text"><span class="chapter-number">19</span>&nbsp; <span class="chapter-title">精细定位、功能注释、因果推断与更多</span></span></a>
   </div>
 </li>
       </ul>
@@ -250,145 +315,139 @@ ul.task-list li input[type="checkbox"] {
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./04-transcriptomics-basic.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">20</span>&nbsp; <span class="chapter-title">04-transcriptomics-basic.html</span></span></a>
+ <span class="menu-text"><span class="chapter-number">20</span>&nbsp; <span class="chapter-title">Bulk 转录组分析基础：质量控制、定量与差异表达</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./transcriptomics_basic_lesson1.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">21</span>&nbsp; <span class="chapter-title">第四章 课时1</span></span></a>
+ <span class="menu-text"><span class="chapter-number">21</span>&nbsp; <span class="chapter-title">专题 4.1：测序原理、文库特性与原始数据质量控制</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./transcriptomics_basic_lesson2.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">22</span>&nbsp; <span class="chapter-title">第四章 课时2</span></span></a>
+ <span class="menu-text"><span class="chapter-number">22</span>&nbsp; <span class="chapter-title">专题 4.2：Splice-Aware 比对与表达量定量</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./transcriptomics_basic_lesson3.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">23</span>&nbsp; <span class="chapter-title">第四章 课时3</span></span></a>
+ <span class="menu-text"><span class="chapter-number">23</span>&nbsp; <span class="chapter-title">专题 4.3：差异表达分析</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./transcriptomics_basic_lesson4.html" class="sidebar-item-text sidebar-link active">
- <span class="menu-text"><span class="chapter-number">24</span>&nbsp; <span class="chapter-title">第四章 课时4</span></span></a>
-  </div>
-</li>
-          <li class="sidebar-item">
-  <div class="sidebar-item-container"> 
-  <a href="./transcriptomics_basic_lesson5.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">25</span>&nbsp; <span class="chapter-title">第四章 课时5</span></span></a>
+ <span class="menu-text"><span class="chapter-number">24</span>&nbsp; <span class="chapter-title">功能富集分析</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./05-transcriptomics-advanced.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">26</span>&nbsp; <span class="chapter-title">05-transcriptomics-advanced.html</span></span></a>
+ <span class="menu-text"><span class="chapter-number">25</span>&nbsp; <span class="chapter-title">Bulk 转录组高级分析：结构变异、长读长与共表达网络</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./transcriptomics_adv_lesson1.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">27</span>&nbsp; <span class="chapter-title">第五章 课时1</span></span></a>
+ <span class="menu-text"><span class="chapter-number">26</span>&nbsp; <span class="chapter-title">第五章 课时1</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./transcriptomics_adv_lesson2.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">28</span>&nbsp; <span class="chapter-title">第五章 课时2</span></span></a>
+ <span class="menu-text"><span class="chapter-number">27</span>&nbsp; <span class="chapter-title">第五章 课时2</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./transcriptomics_adv_lesson3.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">29</span>&nbsp; <span class="chapter-title">第五章 课时3</span></span></a>
+ <span class="menu-text"><span class="chapter-number">28</span>&nbsp; <span class="chapter-title">第五章 课时3</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./transcriptomics_adv_lesson4.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">30</span>&nbsp; <span class="chapter-title">第五章 课时4</span></span></a>
+ <span class="menu-text"><span class="chapter-number">29</span>&nbsp; <span class="chapter-title">第五章 课时4</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./transcriptomics_adv_lesson5.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">31</span>&nbsp; <span class="chapter-title">第五章 课时5</span></span></a>
+ <span class="menu-text"><span class="chapter-number">30</span>&nbsp; <span class="chapter-title">第五章 课时5</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./06-scrna-basic.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">32</span>&nbsp; <span class="chapter-title">06-scrna-basic.html</span></span></a>
+ <span class="menu-text"><span class="chapter-number">31</span>&nbsp; <span class="chapter-title">单细胞与空间转录组基础：上游处理、标准分析流程与 Visium 基础</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./scrna_basic_lesson1.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">33</span>&nbsp; <span class="chapter-title">第六章 课时1</span></span></a>
+ <span class="menu-text"><span class="chapter-number">32</span>&nbsp; <span class="chapter-title">第六章 课时1</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./scrna_basic_lesson2.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">34</span>&nbsp; <span class="chapter-title">第六章 课时2</span></span></a>
+ <span class="menu-text"><span class="chapter-number">33</span>&nbsp; <span class="chapter-title">第六章 课时2</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./scrna_basic_lesson3.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">35</span>&nbsp; <span class="chapter-title">第六章 课时3</span></span></a>
+ <span class="menu-text"><span class="chapter-number">34</span>&nbsp; <span class="chapter-title">第六章 课时3</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./scrna_basic_lesson4.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">36</span>&nbsp; <span class="chapter-title">第六章 课时4</span></span></a>
+ <span class="menu-text"><span class="chapter-number">35</span>&nbsp; <span class="chapter-title">第六章 课时4</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./scrna_basic_lesson5.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">37</span>&nbsp; <span class="chapter-title">第六章 课时5</span></span></a>
+ <span class="menu-text"><span class="chapter-number">36</span>&nbsp; <span class="chapter-title">第六章 课时5</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./07-scrna-advanced.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">38</span>&nbsp; <span class="chapter-title">07-scrna-advanced.html</span></span></a>
+ <span class="menu-text"><span class="chapter-number">37</span>&nbsp; <span class="chapter-title">单细胞与空间转录组高级分析：动态推断、多组学与空间解析</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./scrna_adv_lesson1.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">39</span>&nbsp; <span class="chapter-title">第七章 课时1</span></span></a>
+ <span class="menu-text"><span class="chapter-number">38</span>&nbsp; <span class="chapter-title">第七章 课时1</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./scrna_adv_lesson2.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">40</span>&nbsp; <span class="chapter-title">第七章 课时2</span></span></a>
+ <span class="menu-text"><span class="chapter-number">39</span>&nbsp; <span class="chapter-title">第七章 课时2</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./scrna_adv_lesson3.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">41</span>&nbsp; <span class="chapter-title">第七章 课时3</span></span></a>
+ <span class="menu-text"><span class="chapter-number">40</span>&nbsp; <span class="chapter-title">第七章 课时3</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./scrna_adv_lesson4.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">42</span>&nbsp; <span class="chapter-title">第七章 课时4</span></span></a>
+ <span class="menu-text"><span class="chapter-number">41</span>&nbsp; <span class="chapter-title">第七章 课时4</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./scrna_adv_lesson5.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">43</span>&nbsp; <span class="chapter-title">第七章 课时5</span></span></a>
+ <span class="menu-text"><span class="chapter-number">42</span>&nbsp; <span class="chapter-title">第七章 课时5</span></span></a>
   </div>
 </li>
       </ul>
@@ -405,139 +464,183 @@ ul.task-list li input[type="checkbox"] {
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./08-epigenomics.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">44</span>&nbsp; <span class="chapter-title">08-epigenomics.html</span></span></a>
+ <span class="menu-text"><span class="chapter-number">43</span>&nbsp; <span class="chapter-title">08-epigenomics.html</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./epigenomics_lesson1.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">45</span>&nbsp; <span class="chapter-title">第八章 课时1</span></span></a>
+ <span class="menu-text"><span class="chapter-number">44</span>&nbsp; <span class="chapter-title">第八章 课时1</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./epigenomics_lesson2.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">46</span>&nbsp; <span class="chapter-title">第八章 课时2</span></span></a>
+ <span class="menu-text"><span class="chapter-number">45</span>&nbsp; <span class="chapter-title">第八章 课时2</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./epigenomics_lesson3.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">47</span>&nbsp; <span class="chapter-title">第八章 课时3</span></span></a>
+ <span class="menu-text"><span class="chapter-number">46</span>&nbsp; <span class="chapter-title">第八章 课时3</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./epigenomics_lesson4.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">48</span>&nbsp; <span class="chapter-title">第八章 课时4</span></span></a>
+ <span class="menu-text"><span class="chapter-number">47</span>&nbsp; <span class="chapter-title">第八章 课时4</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./epigenomics_lesson5.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">49</span>&nbsp; <span class="chapter-title">第八章 课时5</span></span></a>
+ <span class="menu-text"><span class="chapter-number">48</span>&nbsp; <span class="chapter-title">第八章 课时5</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./09-proteometab.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">50</span>&nbsp; <span class="chapter-title">09-proteometab.html</span></span></a>
+ <span class="menu-text"><span class="chapter-number">49</span>&nbsp; <span class="chapter-title">09-proteometab.html</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./proteometab_lesson1.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">51</span>&nbsp; <span class="chapter-title">第九章 课时1</span></span></a>
+ <span class="menu-text"><span class="chapter-number">50</span>&nbsp; <span class="chapter-title">第九章 课时1</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./proteometab_lesson2.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">52</span>&nbsp; <span class="chapter-title">第九章 课时2</span></span></a>
+ <span class="menu-text"><span class="chapter-number">51</span>&nbsp; <span class="chapter-title">第九章 课时2</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./proteometab_lesson3.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">53</span>&nbsp; <span class="chapter-title">第九章 课时3</span></span></a>
+ <span class="menu-text"><span class="chapter-number">52</span>&nbsp; <span class="chapter-title">第九章 课时3</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./proteometab_lesson4.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">54</span>&nbsp; <span class="chapter-title">第九章 课时4</span></span></a>
+ <span class="menu-text"><span class="chapter-number">53</span>&nbsp; <span class="chapter-title">第九章 课时4</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./proteometab_lesson5.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">55</span>&nbsp; <span class="chapter-title">第九章 课时5</span></span></a>
+ <span class="menu-text"><span class="chapter-number">54</span>&nbsp; <span class="chapter-title">第九章 课时5</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./10-integration.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">56</span>&nbsp; <span class="chapter-title">10-integration.html</span></span></a>
+ <span class="menu-text"><span class="chapter-number">55</span>&nbsp; <span class="chapter-title">10-integration.html</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./integration_lesson1.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">57</span>&nbsp; <span class="chapter-title">第十章 课时1</span></span></a>
+ <span class="menu-text"><span class="chapter-number">56</span>&nbsp; <span class="chapter-title">第十章 课时1</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./integration_lesson2.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">58</span>&nbsp; <span class="chapter-title">第十章 课时2</span></span></a>
+ <span class="menu-text"><span class="chapter-number">57</span>&nbsp; <span class="chapter-title">第十章 课时2</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./integration_lesson3.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">59</span>&nbsp; <span class="chapter-title">第十章 课时3</span></span></a>
+ <span class="menu-text"><span class="chapter-number">58</span>&nbsp; <span class="chapter-title">第十章 课时3</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./integration_lesson4.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">60</span>&nbsp; <span class="chapter-title">第十章 课时4</span></span></a>
+ <span class="menu-text"><span class="chapter-number">59</span>&nbsp; <span class="chapter-title">第十章 课时4</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./integration_lesson5.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">61</span>&nbsp; <span class="chapter-title">第十章 课时5</span></span></a>
+ <span class="menu-text"><span class="chapter-number">60</span>&nbsp; <span class="chapter-title">第十章 课时5</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./11-summary.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">62</span>&nbsp; <span class="chapter-title">11-summary.html</span></span></a>
+ <span class="menu-text"><span class="chapter-number">61</span>&nbsp; <span class="chapter-title">11-summary.html</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./summary_lesson1.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">63</span>&nbsp; <span class="chapter-title">第十一章 课时1</span></span></a>
+ <span class="menu-text"><span class="chapter-number">62</span>&nbsp; <span class="chapter-title">第十一章 课时1</span></span></a>
   </div>
 </li>
       </ul>
   </li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./references.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">参考资料</span></a>
+  </div>
+</li>
     </ul>
     </div>
 </nav>
 <div id="quarto-sidebar-glass" class="quarto-sidebar-collapse-item" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item"></div>
 <!-- margin-sidebar -->
-    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar zindex-bottom">
-        
+    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+        <nav id="TOC" role="doc-toc" class="toc-active">
+    <h2 id="toc-title">Table of contents</h2>
+   
+  <ul>
+  <li><a href="#学习目标" id="toc-学习目标" class="nav-link active" data-scroll-target="#学习目标"><span class="header-section-number">24.1</span> 学习目标</a></li>
+  <li><a href="#从差异基因到生物学意义" id="toc-从差异基因到生物学意义" class="nav-link" data-scroll-target="#从差异基因到生物学意义"><span class="header-section-number">24.2</span> 从差异基因到生物学意义</a></li>
+  <li><a href="#功能注释数据库" id="toc-功能注释数据库" class="nav-link" data-scroll-target="#功能注释数据库"><span class="header-section-number">24.3</span> 功能注释数据库</a>
+  <ul class="collapse">
+  <li><a href="#gene-ontologygo" id="toc-gene-ontologygo" class="nav-link" data-scroll-target="#gene-ontologygo"><span class="header-section-number">24.3.1</span> Gene Ontology（GO）</a></li>
+  <li><a href="#kegg-通路数据库" id="toc-kegg-通路数据库" class="nav-link" data-scroll-target="#kegg-通路数据库"><span class="header-section-number">24.3.2</span> KEGG 通路数据库</a></li>
+  <li><a href="#msigdb-基因集合库" id="toc-msigdb-基因集合库" class="nav-link" data-scroll-target="#msigdb-基因集合库"><span class="header-section-number">24.3.3</span> MSigDB 基因集合库</a></li>
+  <li><a href="#reactome-通路数据库" id="toc-reactome-通路数据库" class="nav-link" data-scroll-target="#reactome-通路数据库"><span class="header-section-number">24.3.4</span> Reactome 通路数据库</a></li>
+  </ul></li>
+  <li><a href="#过表示富集分析over-representation-analysisora" id="toc-过表示富集分析over-representation-analysisora" class="nav-link" data-scroll-target="#过表示富集分析over-representation-analysisora"><span class="header-section-number">24.4</span> 过表示富集分析（Over-Representation Analysis，ORA）</a>
+  <ul class="collapse">
+  <li><a href="#超几何检验原理" id="toc-超几何检验原理" class="nav-link" data-scroll-target="#超几何检验原理"><span class="header-section-number">24.4.1</span> 超几何检验原理</a></li>
+  <li><a href="#ora-的适用场景与局限性" id="toc-ora-的适用场景与局限性" class="nav-link" data-scroll-target="#ora-的适用场景与局限性"><span class="header-section-number">24.4.2</span> ORA 的适用场景与局限性</a></li>
+  </ul></li>
+  <li><a href="#基因集富集分析gsea" id="toc-基因集富集分析gsea" class="nav-link" data-scroll-target="#基因集富集分析gsea"><span class="header-section-number">24.5</span> 基因集富集分析（GSEA）</a>
+  <ul class="collapse">
+  <li><a href="#算法原理" id="toc-算法原理" class="nav-link" data-scroll-target="#算法原理"><span class="header-section-number">24.5.1</span> 算法原理</a></li>
+  <li><a href="#leading-edge-分析" id="toc-leading-edge-分析" class="nav-link" data-scroll-target="#leading-edge-分析"><span class="header-section-number">24.5.2</span> Leading Edge 分析</a></li>
+  </ul></li>
+  <li><a href="#clusterprofiler-实践" id="toc-clusterprofiler-实践" class="nav-link" data-scroll-target="#clusterprofiler-实践"><span class="header-section-number">24.6</span> clusterProfiler 实践</a>
+  <ul class="collapse">
+  <li><a href="#理解-gsea-富集图" id="toc-理解-gsea-富集图" class="nav-link" data-scroll-target="#理解-gsea-富集图"><span class="header-section-number">24.6.1</span> 理解 GSEA 富集图</a></li>
+  </ul></li>
+  <li><a href="#ora-与-gsea-的结果比较" id="toc-ora-与-gsea-的结果比较" class="nav-link" data-scroll-target="#ora-与-gsea-的结果比较"><span class="header-section-number">24.7</span> ORA 与 GSEA 的结果比较</a></li>
+  <li><a href="#多数据库结果整合与高级可视化" id="toc-多数据库结果整合与高级可视化" class="nav-link" data-scroll-target="#多数据库结果整合与高级可视化"><span class="header-section-number">24.8</span> 多数据库结果整合与高级可视化</a>
+  <ul class="collapse">
+  <li><a href="#upset-图跨方法数据库重叠分析" id="toc-upset-图跨方法数据库重叠分析" class="nav-link" data-scroll-target="#upset-图跨方法数据库重叠分析"><span class="header-section-number">24.8.1</span> UpSet 图：跨方法/数据库重叠分析</a></li>
+  <li><a href="#差异基因热图top-deg-的表达谱可视化" id="toc-差异基因热图top-deg-的表达谱可视化" class="nav-link" data-scroll-target="#差异基因热图top-deg-的表达谱可视化"><span class="header-section-number">24.8.2</span> 差异基因热图：Top DEG 的表达谱可视化</a></li>
+  <li><a href="#kegg-通路可视化pathview" id="toc-kegg-通路可视化pathview" class="nav-link" data-scroll-target="#kegg-通路可视化pathview"><span class="header-section-number">24.8.3</span> KEGG 通路可视化：pathview</a></li>
+  </ul></li>
+  <li><a href="#结果解读的批判性原则" id="toc-结果解读的批判性原则" class="nav-link" data-scroll-target="#结果解读的批判性原则"><span class="header-section-number">24.9</span> 结果解读的批判性原则</a></li>
+  <li><a href="#实践完整富集分析报告" id="toc-实践完整富集分析报告" class="nav-link" data-scroll-target="#实践完整富集分析报告"><span class="header-section-number">24.10</span> 实践：完整富集分析报告</a></li>
+  <li><a href="#课后自测-post-lesson-quiz" id="toc-课后自测-post-lesson-quiz" class="nav-link" data-scroll-target="#课后自测-post-lesson-quiz"><span class="header-section-number">24.11</span> 课后自测 (Post-Lesson Quiz)</a></li>
+  </ul>
+<div class="toc-actions"><ul><li><a href="https://github.com/cxzdsa2332/Applied-Omics-Analysis/edit/main/transcriptomics_basic_lesson4.qmd" class="toc-action"><i class="bi bi-github"></i>Edit this page</a></li><li><a href="https://github.com/cxzdsa2332/Applied-Omics-Analysis/issues/new" class="toc-action"><i class="bi empty"></i>Report an issue</a></li><li><a href="https://github.com/cxzdsa2332/Applied-Omics-Analysis/blob/main/transcriptomics_basic_lesson4.qmd" class="toc-action"><i class="bi empty"></i>View source</a></li></ul></div></nav>
     </div>
 <!-- main -->
 <main class="content" id="quarto-document-content">
 
-<header id="title-block-header" class="quarto-title-block default"><nav class="quarto-page-breadcrumbs quarto-title-breadcrumbs d-none d-lg-block" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="./04-transcriptomics-basic.html">第二阶段：转录组与单细胞</a></li><li class="breadcrumb-item"><a href="./transcriptomics_basic_lesson4.html"><span class="chapter-number">24</span>&nbsp; <span class="chapter-title">第四章 课时4</span></a></li></ol></nav>
+<header id="title-block-header" class="quarto-title-block default"><nav class="quarto-page-breadcrumbs quarto-title-breadcrumbs d-none d-lg-block" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="./04-transcriptomics-basic.html">第二阶段：转录组与单细胞</a></li><li class="breadcrumb-item"><a href="./transcriptomics_basic_lesson4.html"><span class="chapter-number">24</span>&nbsp; <span class="chapter-title">功能富集分析</span></a></li></ol></nav>
 <div class="quarto-title">
-<h1 class="title"><span class="chapter-number">24</span>&nbsp; <span class="chapter-title">第四章 课时4</span></h1>
+<h1 class="title"><span class="chapter-number">24</span>&nbsp; <span class="chapter-title">功能富集分析</span></h1>
 </div>
 
 
@@ -545,6 +648,12 @@ ul.task-list li input[type="checkbox"] {
 <div class="quarto-title-meta">
 
     
+    <div>
+    <div class="quarto-title-meta-heading">Published</div>
+    <div class="quarto-title-meta-contents">
+      <p class="date">May 30, 2026</p>
+    </div>
+  </div>
   
     
   </div>
@@ -554,8 +663,481 @@ ul.task-list li input[type="checkbox"] {
 </header>
 
 
+<section id="学习目标" class="level2" data-number="24.1">
+<h2 data-number="24.1" class="anchored" data-anchor-id="学习目标"><span class="header-section-number">24.1</span> 学习目标</h2>
+<p>完成本专题后，学生应能够：</p>
+<ol type="1">
+<li>描述 Gene Ontology（GO）三个本体的层级结构与生物学含义；</li>
+<li>阐述过表示富集分析（ORA）的超几何检验原理，并解释背景基因集选择的重要性；</li>
+<li>描述 GSEA 的基因集富集得分计算逻辑，解释 NES 与 leading edge 基因的意义；</li>
+<li>区分 ORA 与 GSEA 的适用场景，能根据数据特点做出合理选择；</li>
+<li>使用 clusterProfiler 独立完成 GO ORA、KEGG ORA 与 GSEA 分析，并生成规范的可视化图表；</li>
+<li>识别富集分析结果中的常见陷阱与过度解读风险。</li>
+</ol>
+<hr>
+</section>
+<section id="从差异基因到生物学意义" class="level2" data-number="24.2">
+<h2 data-number="24.2" class="anchored" data-anchor-id="从差异基因到生物学意义"><span class="header-section-number">24.2</span> 从差异基因到生物学意义</h2>
+<p>差异表达分析的产出是一张基因列表——数百到数千个在处理与对照间有统计显著变化的基因。然而，基因的名字本身（ENSG00000186092、TP53、MYC）并不能直接告诉我们”这些基因的变化意味着什么生物学过程被激活或抑制”。</p>
+<p>功能富集分析（Functional Enrichment Analysis）通过将差异基因与人工整理的功能数据库（如 GO、KEGG）比对，将孤立的基因列表转化为有生物学意义的通路和功能模块，是 RNA-seq 分析中将统计结果转化为生物学假设的关键步骤。</p>
+<hr>
+</section>
+<section id="功能注释数据库" class="level2" data-number="24.3">
+<h2 data-number="24.3" class="anchored" data-anchor-id="功能注释数据库"><span class="header-section-number">24.3</span> 功能注释数据库</h2>
+<section id="gene-ontologygo" class="level3" data-number="24.3.1">
+<h3 data-number="24.3.1" class="anchored" data-anchor-id="gene-ontologygo"><span class="header-section-number">24.3.1</span> Gene Ontology（GO）</h3>
+<p>Gene Ontology 是一个层级化的受控词汇（controlled vocabulary）系统，将基因的功能划分为三个独立的本体（Ontology）：</p>
+<p>{{Wiki:Gene_ontology}}</p>
+<p><strong>生物学过程（Biological Process, BP）</strong>：描述基因参与的生物学事件，从宏观（“免疫应答”）到微观（“受体酪氨酸激酶信号传导”）形成层级结构。这是 RNA-seq 分析中最常用的 GO 本体。</p>
+<p><strong>分子功能（Molecular Function, MF）</strong>：描述基因产物在分子层面的活性（如”ATP 结合”、“DNA 结合转录因子活性”）。注意：MF 描述的是功能，而非执行该功能的生物学背景。</p>
+<p><strong>细胞组分（Cellular Component, CC）</strong>：描述基因产物定位的细胞结构（如”线粒体内膜”、“核糖体大亚基”）。</p>
+<p>GO 采用有向无环图（Directed Acyclic Graph, DAG）结构：每个 GO term 可以有多个亲本节点。一个基因被注释到某个 term 时，也隐含地注释到该 term 的所有祖先节点。这种层级传播（ancestral propagation）在富集分析中需要特别处理，否则会产生大量冗余的显著结果（父 term 因包含子 term 的基因而自动显著）。</p>
+</section>
+<section id="kegg-通路数据库" class="level3" data-number="24.3.2">
+<h3 data-number="24.3.2" class="anchored" data-anchor-id="kegg-通路数据库"><span class="header-section-number">24.3.2</span> KEGG 通路数据库</h3>
+<p>KEGG（Kyoto Encyclopedia of Genes and Genomes）将基因分配到可手工策划的信号通路图（pathway map）中，直观展示基因产物在信号传导、代谢途径中的相互关系。与 GO 的抽象词汇不同，KEGG 通路图可以直接可视化，显示哪些节点（基因）在实验中被激活（上调）或抑制（下调）。</p>
+<div class="note">
+<p><strong>数据库局限性：</strong> GO 和 KEGG 的注释覆盖度存在物种偏差——人类、小鼠等模式生物的注释远比非模式生物完善。对于覆盖率低的物种，富集分析结果会呈现系统性偏差，应与直接证据结合解读。</p>
+</div>
+</section>
+<section id="msigdb-基因集合库" class="level3" data-number="24.3.3">
+<h3 data-number="24.3.3" class="anchored" data-anchor-id="msigdb-基因集合库"><span class="header-section-number">24.3.3</span> MSigDB 基因集合库</h3>
+<p>Molecular Signatures Database（MSigDB）提供了广泛的人工策划基因集，常用于 GSEA：</p>
+<ul>
+<li><strong>H（Hallmark gene sets）</strong>：50 个代表性生物学过程的基因集，去冗余、高置信度，适合入门分析；</li>
+<li><strong>C2（Curated gene sets）</strong>：来自已发表文献和通路数据库的实验验证基因集；</li>
+<li><strong>C5（Ontology gene sets）</strong>：GO BP/MF/CC 基因集的系统整理版本。</li>
+</ul>
+</section>
+<section id="reactome-通路数据库" class="level3" data-number="24.3.4">
+<h3 data-number="24.3.4" class="anchored" data-anchor-id="reactome-通路数据库"><span class="header-section-number">24.3.4</span> Reactome 通路数据库</h3>
+<p>Reactome 是一个开放获取、经过专家人工策划的通路数据库，覆盖人类及多个模式生物。与 KEGG 相比，Reactome 具有以下特点：</p>
+<ul>
+<li><strong>更细粒度的层级</strong>：通路可嵌套至反应（Reaction）和参与分子（Participant）层级，生物学意义更精确；</li>
+<li><strong>开放获取</strong>：完全免费，且提供 Bioconductor 接口（<code>ReactomePA</code> 包）；</li>
+<li><strong>与 KEGG 互补</strong>：两个数据库在通路覆盖上存在差异，联合使用可提高召回率。</li>
+</ul>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb1"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(ReactomePA)</span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="co"># Reactome ORA</span></span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a>reactome_ora <span class="ot">&lt;-</span> <span class="fu">enrichPathway</span>(</span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a>  <span class="at">gene          =</span> sig_entrez,</span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a>  <span class="at">organism      =</span> <span class="st">"human"</span>,</span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a>  <span class="at">pvalueCutoff  =</span> <span class="fl">0.05</span>,</span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a>  <span class="at">pAdjustMethod =</span> <span class="st">"BH"</span>,</span>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a>  <span class="at">universe      =</span> universe_entrez,</span>
+<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a>  <span class="at">readable      =</span> <span class="cn">TRUE</span></span>
+<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb1-12"><a href="#cb1-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-13"><a href="#cb1-13" aria-hidden="true" tabindex="-1"></a><span class="fu">dotplot</span>(reactome_ora, <span class="at">showCategory =</span> <span class="dv">15</span>) <span class="sc">+</span></span>
+<span id="cb1-14"><a href="#cb1-14" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(<span class="at">title =</span> <span class="st">"Reactome ORA: dex treatment vs control"</span>)</span>
+<span id="cb1-15"><a href="#cb1-15" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-16"><a href="#cb1-16" aria-hidden="true" tabindex="-1"></a><span class="co"># Reactome GSEA</span></span>
+<span id="cb1-17"><a href="#cb1-17" aria-hidden="true" tabindex="-1"></a>reactome_gsea <span class="ot">&lt;-</span> <span class="fu">gsePathway</span>(</span>
+<span id="cb1-18"><a href="#cb1-18" aria-hidden="true" tabindex="-1"></a>  <span class="at">geneList      =</span> ranked_genes,</span>
+<span id="cb1-19"><a href="#cb1-19" aria-hidden="true" tabindex="-1"></a>  <span class="at">organism      =</span> <span class="st">"human"</span>,</span>
+<span id="cb1-20"><a href="#cb1-20" aria-hidden="true" tabindex="-1"></a>  <span class="at">minGSSize     =</span> <span class="dv">15</span>,</span>
+<span id="cb1-21"><a href="#cb1-21" aria-hidden="true" tabindex="-1"></a>  <span class="at">pvalueCutoff  =</span> <span class="fl">0.05</span>,</span>
+<span id="cb1-22"><a href="#cb1-22" aria-hidden="true" tabindex="-1"></a>  <span class="at">pAdjustMethod =</span> <span class="st">"BH"</span>,</span>
+<span id="cb1-23"><a href="#cb1-23" aria-hidden="true" tabindex="-1"></a>  <span class="at">seed          =</span> <span class="dv">42</span></span>
+<span id="cb1-24"><a href="#cb1-24" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<hr>
+</section>
+</section>
+<section id="过表示富集分析over-representation-analysisora" class="level2" data-number="24.4">
+<h2 data-number="24.4" class="anchored" data-anchor-id="过表示富集分析over-representation-analysisora"><span class="header-section-number">24.4</span> 过表示富集分析（Over-Representation Analysis，ORA）</h2>
+<section id="超几何检验原理" class="level3" data-number="24.4.1">
+<h3 data-number="24.4.1" class="anchored" data-anchor-id="超几何检验原理"><span class="header-section-number">24.4.1</span> 超几何检验原理</h3>
+<p>ORA 将差异表达基因（DEGs）与某个功能基因集进行重叠分析，通过超几何检验（hypergeometric test）评估重叠程度是否超出随机预期。</p>
+<p>假设： - <span class="math inline">\(N\)</span>：背景基因集总数（通常为检测到有表达的所有基因）； - <span class="math inline">\(K\)</span>：某 GO term 中基因总数； - <span class="math inline">\(n\)</span>：显著 DEGs 总数； - <span class="math inline">\(k\)</span>：DEGs 中属于该 GO term 的基因数。</p>
+<p>p 值为从 <span class="math inline">\(N\)</span> 个基因中随机抽取 <span class="math inline">\(n\)</span> 个，至少有 <span class="math inline">\(k\)</span> 个属于该 GO term 的概率：</p>
+<p><span class="math display">\[p = \sum_{i=k}^{\min(n,K)} \frac{\binom{K}{i}\binom{N-K}{n-i}}{\binom{N}{n}}\]</span></p>
+<p>这等同于从一个含 <span class="math inline">\(K\)</span> 个”红球”和 <span class="math inline">\(N-K\)</span> 个”黑球”的瓮中不放回地抽取 <span class="math inline">\(n\)</span> 个球，至少抽到 <span class="math inline">\(k\)</span> 个红球的概率。</p>
+<div class="warning">
+<p><strong>背景基因集的选择至关重要。</strong> 若将背景集设为”全基因组所有基因”（而非”在该实验中检测到有表达的基因”），则分母 <span class="math inline">\(N\)</span> 偏大，导致 <span class="math inline">\(\frac{k}{n}\)</span> 相对 <span class="math inline">\(\frac{K}{N}\)</span> 的比值（富集倍数）被低估，p 值偏保守。更严重的是，若使用”全基因组”作为背景，但实际实验只能检测到一部分基因，则对每个 GO term 中有多少基因”在实验中可被检测”的假设是错误的。<strong>始终使用实验检测到的基因作为背景集。</strong></p>
+</div>
+</section>
+<section id="ora-的适用场景与局限性" class="level3" data-number="24.4.2">
+<h3 data-number="24.4.2" class="anchored" data-anchor-id="ora-的适用场景与局限性"><span class="header-section-number">24.4.2</span> ORA 的适用场景与局限性</h3>
+<p><strong>适用场景</strong>：有明确的差异基因列表（如 |LFC| &gt; 1，padj &lt; 0.05）；需要快速识别最显著富集的功能类别。</p>
+<p><strong>局限性</strong>：</p>
+<ol type="1">
+<li><strong>阈值依赖性</strong>：结果对差异基因的筛选阈值极为敏感。调整 LFC 阈值从 0.5 到 1.5，富集结果可能截然不同；</li>
+<li><strong>丢失趋势信息</strong>：将所有 DEGs 视为等效，忽视了上调和下调的方向性，以及表达变化幅度；</li>
+<li><strong>忽略非显著基因的信息</strong>：接近但未达到阈值的基因被完全排除在外。</li>
+</ol>
+<hr>
+</section>
+</section>
+<section id="基因集富集分析gsea" class="level2" data-number="24.5">
+<h2 data-number="24.5" class="anchored" data-anchor-id="基因集富集分析gsea"><span class="header-section-number">24.5</span> 基因集富集分析（GSEA）</h2>
+<section id="算法原理" class="level3" data-number="24.5.1">
+<h3 data-number="24.5.1" class="anchored" data-anchor-id="算法原理"><span class="header-section-number">24.5.1</span> 算法原理</h3>
+<p>GSEA 不设定差异基因阈值，而是将<strong>全部基因</strong>按某个相关性指标（通常为 DESeq2 的 Wald stat 或 LFC × -log10(padj) 的乘积）从正到负排序，形成一个有序的基因列表 <span class="math inline">\(L = [g_1, g_2, \ldots, g_N]\)</span>。</p>
+<p>对于每个基因集 <span class="math inline">\(S\)</span>，GSEA 沿有序列表计算<strong>富集得分（Enrichment Score, ES）</strong>：</p>
+<p><span class="math display">\[ES = \max_{j} \left( \text{running sum at position } j \right)\]</span></p>
+<p>其中 running sum 的规则是： - 遇到基因集 <span class="math inline">\(S\)</span> 中的基因 → running sum 向上增加（增量与排序指标的绝对值成比例，使用加权版本）； - 遇到不在 <span class="math inline">\(S\)</span> 中的基因 → running sum 向下减少（均等减量）。</p>
+<p>ES 越大，表示基因集 <span class="math inline">\(S\)</span> 在排序列表的顶端（高度上调基因中）越富集；ES 越负，表示在底端（高度下调基因中）越富集。</p>
+<p><strong>标准化富集得分（NES）</strong>：由于不同基因集大小不同，需要将 ES 标准化。方法是将真实 ES 除以同大小随机基因集排列置换的平均 |ES|，得到 NES。NES &gt; 1.5 通常视为有意义的正向富集。</p>
+<p>{{Wiki:Gene_set_enrichment_analysis}}</p>
+</section>
+<section id="leading-edge-分析" class="level3" data-number="24.5.2">
+<h3 data-number="24.5.2" class="anchored" data-anchor-id="leading-edge-分析"><span class="header-section-number">24.5.2</span> Leading Edge 分析</h3>
+<p>ES 曲线达到最大值（或最小值）的位置，将基因列表分成两部分：最大值之前的基因集 <span class="math inline">\(S\)</span> 成员称为 <strong>leading edge 基因</strong>，即驱动富集得分的核心基因子集。这些基因是生物学解读的焦点——它们既在基因集 <span class="math inline">\(S\)</span> 中，又在排序列表的极端位置，最有可能是生物学上真正相关的效应基因。</p>
+<div class="info">
+<p><strong>黄金法则：</strong> GSEA 的 leading edge 基因是实验结果与已知通路知识的交汇点。对 leading edge 基因的深入文献检索，往往是从计算分析迈向生物学发现的最关键一步。</p>
+</div>
+<hr>
+</section>
+</section>
+<section id="clusterprofiler-实践" class="level2" data-number="24.6">
+<h2 data-number="24.6" class="anchored" data-anchor-id="clusterprofiler-实践"><span class="header-section-number">24.6</span> clusterProfiler 实践</h2>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb2"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(clusterProfiler)</span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(org.Hs.eg.db)</span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(enrichplot)</span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(ggplot2)</span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a><span class="co"># === Load DESeq2 results ===</span></span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a><span class="co"># Assuming res_shrunk is the apeglm-shrunken result from Lesson 3</span></span>
+<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a>res_df <span class="ot">&lt;-</span> <span class="fu">as.data.frame</span>(res_shrunk)</span>
+<span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a>res_df<span class="sc">$</span>gene_id <span class="ot">&lt;-</span> <span class="fu">rownames</span>(res_df)</span>
+<span id="cb2-10"><a href="#cb2-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-11"><a href="#cb2-11" aria-hidden="true" tabindex="-1"></a><span class="co"># Convert Ensembl IDs to Entrez IDs (required by KEGG)</span></span>
+<span id="cb2-12"><a href="#cb2-12" aria-hidden="true" tabindex="-1"></a>gene_map <span class="ot">&lt;-</span> <span class="fu">bitr</span>(</span>
+<span id="cb2-13"><a href="#cb2-13" aria-hidden="true" tabindex="-1"></a>  <span class="fu">rownames</span>(res_df),</span>
+<span id="cb2-14"><a href="#cb2-14" aria-hidden="true" tabindex="-1"></a>  <span class="at">fromType =</span> <span class="st">"ENSEMBL"</span>,</span>
+<span id="cb2-15"><a href="#cb2-15" aria-hidden="true" tabindex="-1"></a>  <span class="at">toType   =</span> <span class="fu">c</span>(<span class="st">"ENTREZID"</span>, <span class="st">"SYMBOL"</span>),</span>
+<span id="cb2-16"><a href="#cb2-16" aria-hidden="true" tabindex="-1"></a>  <span class="at">OrgDb    =</span> org.Hs.eg.db</span>
+<span id="cb2-17"><a href="#cb2-17" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb2-18"><a href="#cb2-18" aria-hidden="true" tabindex="-1"></a>res_df <span class="ot">&lt;-</span> <span class="fu">merge</span>(res_df, gene_map, <span class="at">by.x =</span> <span class="st">"gene_id"</span>, <span class="at">by.y =</span> <span class="st">"ENSEMBL"</span>)</span>
+<span id="cb2-19"><a href="#cb2-19" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-20"><a href="#cb2-20" aria-hidden="true" tabindex="-1"></a><span class="co"># === Part 1: GO Over-Representation Analysis (ORA) ===</span></span>
+<span id="cb2-21"><a href="#cb2-21" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-22"><a href="#cb2-22" aria-hidden="true" tabindex="-1"></a><span class="co"># Define significant DEGs (|LFC| &gt; 1, padj &lt; 0.05)</span></span>
+<span id="cb2-23"><a href="#cb2-23" aria-hidden="true" tabindex="-1"></a>sig_genes <span class="ot">&lt;-</span> <span class="fu">subset</span>(res_df, padj <span class="sc">&lt;</span> <span class="fl">0.05</span> <span class="sc">&amp;</span> <span class="fu">abs</span>(log2FoldChange) <span class="sc">&gt;</span> <span class="dv">1</span>)</span>
+<span id="cb2-24"><a href="#cb2-24" aria-hidden="true" tabindex="-1"></a>sig_entrez <span class="ot">&lt;-</span> sig_genes<span class="sc">$</span>ENTREZID</span>
+<span id="cb2-25"><a href="#cb2-25" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-26"><a href="#cb2-26" aria-hidden="true" tabindex="-1"></a><span class="co"># Universe = all genes tested (expressed in the experiment)</span></span>
+<span id="cb2-27"><a href="#cb2-27" aria-hidden="true" tabindex="-1"></a>universe_entrez <span class="ot">&lt;-</span> res_df<span class="sc">$</span>ENTREZID</span>
+<span id="cb2-28"><a href="#cb2-28" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-29"><a href="#cb2-29" aria-hidden="true" tabindex="-1"></a><span class="co"># GO BP enrichment</span></span>
+<span id="cb2-30"><a href="#cb2-30" aria-hidden="true" tabindex="-1"></a>go_bp <span class="ot">&lt;-</span> <span class="fu">enrichGO</span>(</span>
+<span id="cb2-31"><a href="#cb2-31" aria-hidden="true" tabindex="-1"></a>  <span class="at">gene          =</span> sig_entrez,</span>
+<span id="cb2-32"><a href="#cb2-32" aria-hidden="true" tabindex="-1"></a>  <span class="at">OrgDb         =</span> org.Hs.eg.db,</span>
+<span id="cb2-33"><a href="#cb2-33" aria-hidden="true" tabindex="-1"></a>  <span class="at">keyType       =</span> <span class="st">"ENTREZID"</span>,</span>
+<span id="cb2-34"><a href="#cb2-34" aria-hidden="true" tabindex="-1"></a>  <span class="at">ont           =</span> <span class="st">"BP"</span>,        <span class="co"># Biological Process</span></span>
+<span id="cb2-35"><a href="#cb2-35" aria-hidden="true" tabindex="-1"></a>  <span class="at">pAdjustMethod =</span> <span class="st">"BH"</span>,</span>
+<span id="cb2-36"><a href="#cb2-36" aria-hidden="true" tabindex="-1"></a>  <span class="at">pvalueCutoff  =</span> <span class="fl">0.05</span>,</span>
+<span id="cb2-37"><a href="#cb2-37" aria-hidden="true" tabindex="-1"></a>  <span class="at">qvalueCutoff  =</span> <span class="fl">0.2</span>,</span>
+<span id="cb2-38"><a href="#cb2-38" aria-hidden="true" tabindex="-1"></a>  <span class="at">universe      =</span> universe_entrez,</span>
+<span id="cb2-39"><a href="#cb2-39" aria-hidden="true" tabindex="-1"></a>  <span class="at">readable      =</span> <span class="cn">TRUE</span>         <span class="co"># convert ENTREZID to SYMBOL in output</span></span>
+<span id="cb2-40"><a href="#cb2-40" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb2-41"><a href="#cb2-41" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-42"><a href="#cb2-42" aria-hidden="true" tabindex="-1"></a><span class="co"># Remove redundant GO terms (keep most specific)</span></span>
+<span id="cb2-43"><a href="#cb2-43" aria-hidden="true" tabindex="-1"></a>go_bp_simplified <span class="ot">&lt;-</span> <span class="fu">simplify</span>(go_bp,</span>
+<span id="cb2-44"><a href="#cb2-44" aria-hidden="true" tabindex="-1"></a>                              <span class="at">cutoff    =</span> <span class="fl">0.7</span>,</span>
+<span id="cb2-45"><a href="#cb2-45" aria-hidden="true" tabindex="-1"></a>                              <span class="at">by        =</span> <span class="st">"p.adjust"</span>,</span>
+<span id="cb2-46"><a href="#cb2-46" aria-hidden="true" tabindex="-1"></a>                              <span class="at">select_fun =</span> min)</span>
+<span id="cb2-47"><a href="#cb2-47" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-48"><a href="#cb2-48" aria-hidden="true" tabindex="-1"></a><span class="co"># Visualize: dotplot</span></span>
+<span id="cb2-49"><a href="#cb2-49" aria-hidden="true" tabindex="-1"></a><span class="fu">dotplot</span>(go_bp_simplified, <span class="at">showCategory =</span> <span class="dv">20</span>) <span class="sc">+</span></span>
+<span id="cb2-50"><a href="#cb2-50" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(<span class="at">title =</span> <span class="st">"GO Biological Process: dex treatment vs control"</span>,</span>
+<span id="cb2-51"><a href="#cb2-51" aria-hidden="true" tabindex="-1"></a>       <span class="at">x =</span> <span class="st">"Gene Ratio"</span>) <span class="sc">+</span></span>
+<span id="cb2-52"><a href="#cb2-52" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme</span>(<span class="at">axis.text.y =</span> <span class="fu">element_text</span>(<span class="at">size =</span> <span class="dv">8</span>))</span>
+<span id="cb2-53"><a href="#cb2-53" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-54"><a href="#cb2-54" aria-hidden="true" tabindex="-1"></a><span class="co"># Visualize: enrichment map (shows GO term similarity network)</span></span>
+<span id="cb2-55"><a href="#cb2-55" aria-hidden="true" tabindex="-1"></a>go_bp_sim <span class="ot">&lt;-</span> <span class="fu">pairwise_termsim</span>(go_bp_simplified)</span>
+<span id="cb2-56"><a href="#cb2-56" aria-hidden="true" tabindex="-1"></a><span class="fu">emapplot</span>(go_bp_sim, <span class="at">showCategory =</span> <span class="dv">30</span>, <span class="at">cex_label_category =</span> <span class="fl">0.7</span>) <span class="sc">+</span></span>
+<span id="cb2-57"><a href="#cb2-57" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(<span class="at">title =</span> <span class="st">"GO BP Enrichment Map"</span>)</span>
+<span id="cb2-58"><a href="#cb2-58" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-59"><a href="#cb2-59" aria-hidden="true" tabindex="-1"></a><span class="co"># === Part 2: KEGG Pathway Enrichment ===</span></span>
+<span id="cb2-60"><a href="#cb2-60" aria-hidden="true" tabindex="-1"></a>kegg_res <span class="ot">&lt;-</span> <span class="fu">enrichKEGG</span>(</span>
+<span id="cb2-61"><a href="#cb2-61" aria-hidden="true" tabindex="-1"></a>  <span class="at">gene          =</span> sig_entrez,</span>
+<span id="cb2-62"><a href="#cb2-62" aria-hidden="true" tabindex="-1"></a>  <span class="at">organism      =</span> <span class="st">"hsa"</span>,       <span class="co"># Homo sapiens</span></span>
+<span id="cb2-63"><a href="#cb2-63" aria-hidden="true" tabindex="-1"></a>  <span class="at">pAdjustMethod =</span> <span class="st">"BH"</span>,</span>
+<span id="cb2-64"><a href="#cb2-64" aria-hidden="true" tabindex="-1"></a>  <span class="at">pvalueCutoff  =</span> <span class="fl">0.05</span>,</span>
+<span id="cb2-65"><a href="#cb2-65" aria-hidden="true" tabindex="-1"></a>  <span class="at">universe      =</span> universe_entrez</span>
+<span id="cb2-66"><a href="#cb2-66" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb2-67"><a href="#cb2-67" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-68"><a href="#cb2-68" aria-hidden="true" tabindex="-1"></a><span class="co"># Visualize KEGG pathway on its map (requires internet)</span></span>
+<span id="cb2-69"><a href="#cb2-69" aria-hidden="true" tabindex="-1"></a><span class="co"># browseKEGG(kegg_res, "hsa04657")  # example: IL-17 signaling pathway</span></span>
+<span id="cb2-70"><a href="#cb2-70" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-71"><a href="#cb2-71" aria-hidden="true" tabindex="-1"></a><span class="fu">dotplot</span>(kegg_res, <span class="at">showCategory =</span> <span class="dv">15</span>) <span class="sc">+</span></span>
+<span id="cb2-72"><a href="#cb2-72" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(<span class="at">title =</span> <span class="st">"KEGG Pathway ORA: dex treatment vs control"</span>)</span>
+<span id="cb2-73"><a href="#cb2-73" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-74"><a href="#cb2-74" aria-hidden="true" tabindex="-1"></a><span class="co"># === Part 3: GSEA ===</span></span>
+<span id="cb2-75"><a href="#cb2-75" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-76"><a href="#cb2-76" aria-hidden="true" tabindex="-1"></a><span class="co"># Create ranked gene list: sorted by Wald statistic (recommended for GSEA)</span></span>
+<span id="cb2-77"><a href="#cb2-77" aria-hidden="true" tabindex="-1"></a><span class="co"># stat = LFC / SE = Wald stat, captures both magnitude and significance</span></span>
+<span id="cb2-78"><a href="#cb2-78" aria-hidden="true" tabindex="-1"></a>ranked_genes <span class="ot">&lt;-</span> res_df<span class="sc">$</span>stat</span>
+<span id="cb2-79"><a href="#cb2-79" aria-hidden="true" tabindex="-1"></a><span class="fu">names</span>(ranked_genes) <span class="ot">&lt;-</span> res_df<span class="sc">$</span>ENTREZID</span>
+<span id="cb2-80"><a href="#cb2-80" aria-hidden="true" tabindex="-1"></a>ranked_genes <span class="ot">&lt;-</span> <span class="fu">sort</span>(ranked_genes, <span class="at">decreasing =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb2-81"><a href="#cb2-81" aria-hidden="true" tabindex="-1"></a>ranked_genes <span class="ot">&lt;-</span> ranked_genes[<span class="sc">!</span><span class="fu">is.na</span>(ranked_genes)]</span>
+<span id="cb2-82"><a href="#cb2-82" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-83"><a href="#cb2-83" aria-hidden="true" tabindex="-1"></a><span class="co"># GO GSEA</span></span>
+<span id="cb2-84"><a href="#cb2-84" aria-hidden="true" tabindex="-1"></a>gsea_go <span class="ot">&lt;-</span> <span class="fu">gseGO</span>(</span>
+<span id="cb2-85"><a href="#cb2-85" aria-hidden="true" tabindex="-1"></a>  <span class="at">geneList      =</span> ranked_genes,</span>
+<span id="cb2-86"><a href="#cb2-86" aria-hidden="true" tabindex="-1"></a>  <span class="at">OrgDb         =</span> org.Hs.eg.db,</span>
+<span id="cb2-87"><a href="#cb2-87" aria-hidden="true" tabindex="-1"></a>  <span class="at">keyType       =</span> <span class="st">"ENTREZID"</span>,</span>
+<span id="cb2-88"><a href="#cb2-88" aria-hidden="true" tabindex="-1"></a>  <span class="at">ont           =</span> <span class="st">"BP"</span>,</span>
+<span id="cb2-89"><a href="#cb2-89" aria-hidden="true" tabindex="-1"></a>  <span class="at">minGSSize     =</span> <span class="dv">15</span>,</span>
+<span id="cb2-90"><a href="#cb2-90" aria-hidden="true" tabindex="-1"></a>  <span class="at">maxGSSize     =</span> <span class="dv">500</span>,</span>
+<span id="cb2-91"><a href="#cb2-91" aria-hidden="true" tabindex="-1"></a>  <span class="at">pvalueCutoff  =</span> <span class="fl">0.05</span>,</span>
+<span id="cb2-92"><a href="#cb2-92" aria-hidden="true" tabindex="-1"></a>  <span class="at">pAdjustMethod =</span> <span class="st">"BH"</span>,</span>
+<span id="cb2-93"><a href="#cb2-93" aria-hidden="true" tabindex="-1"></a>  <span class="at">eps           =</span> <span class="fl">1e-10</span>,</span>
+<span id="cb2-94"><a href="#cb2-94" aria-hidden="true" tabindex="-1"></a>  <span class="at">seed          =</span> <span class="dv">42</span></span>
+<span id="cb2-95"><a href="#cb2-95" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb2-96"><a href="#cb2-96" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-97"><a href="#cb2-97" aria-hidden="true" tabindex="-1"></a><span class="co"># KEGG GSEA</span></span>
+<span id="cb2-98"><a href="#cb2-98" aria-hidden="true" tabindex="-1"></a>gsea_kegg <span class="ot">&lt;-</span> <span class="fu">gseKEGG</span>(</span>
+<span id="cb2-99"><a href="#cb2-99" aria-hidden="true" tabindex="-1"></a>  <span class="at">geneList      =</span> ranked_genes,</span>
+<span id="cb2-100"><a href="#cb2-100" aria-hidden="true" tabindex="-1"></a>  <span class="at">organism      =</span> <span class="st">"hsa"</span>,</span>
+<span id="cb2-101"><a href="#cb2-101" aria-hidden="true" tabindex="-1"></a>  <span class="at">minGSSize     =</span> <span class="dv">15</span>,</span>
+<span id="cb2-102"><a href="#cb2-102" aria-hidden="true" tabindex="-1"></a>  <span class="at">maxGSSize     =</span> <span class="dv">500</span>,</span>
+<span id="cb2-103"><a href="#cb2-103" aria-hidden="true" tabindex="-1"></a>  <span class="at">pvalueCutoff  =</span> <span class="fl">0.05</span>,</span>
+<span id="cb2-104"><a href="#cb2-104" aria-hidden="true" tabindex="-1"></a>  <span class="at">pAdjustMethod =</span> <span class="st">"BH"</span>,</span>
+<span id="cb2-105"><a href="#cb2-105" aria-hidden="true" tabindex="-1"></a>  <span class="at">seed          =</span> <span class="dv">42</span></span>
+<span id="cb2-106"><a href="#cb2-106" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb2-107"><a href="#cb2-107" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-108"><a href="#cb2-108" aria-hidden="true" tabindex="-1"></a><span class="co"># Visualize: ridgeplot (shows distribution of ranked genes per pathway)</span></span>
+<span id="cb2-109"><a href="#cb2-109" aria-hidden="true" tabindex="-1"></a><span class="fu">ridgeplot</span>(gsea_kegg, <span class="at">showCategory =</span> <span class="dv">15</span>, <span class="at">fill =</span> <span class="st">"p.adjust"</span>) <span class="sc">+</span></span>
+<span id="cb2-110"><a href="#cb2-110" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(<span class="at">title =</span> <span class="st">"GSEA KEGG: gene rank distribution per pathway"</span>)</span>
+<span id="cb2-111"><a href="#cb2-111" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-112"><a href="#cb2-112" aria-hidden="true" tabindex="-1"></a><span class="co"># Visualize: GSEA running enrichment plot for top pathway</span></span>
+<span id="cb2-113"><a href="#cb2-113" aria-hidden="true" tabindex="-1"></a><span class="fu">gseaplot2</span>(gsea_kegg,</span>
+<span id="cb2-114"><a href="#cb2-114" aria-hidden="true" tabindex="-1"></a>          <span class="at">geneSetID =</span> <span class="dv">1</span>,     <span class="co"># top-ranked pathway</span></span>
+<span id="cb2-115"><a href="#cb2-115" aria-hidden="true" tabindex="-1"></a>          <span class="at">title     =</span> gsea_kegg<span class="sc">$</span>Description[<span class="dv">1</span>])</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<section id="理解-gsea-富集图" class="level3" data-number="24.6.1">
+<h3 data-number="24.6.1" class="anchored" data-anchor-id="理解-gsea-富集图"><span class="header-section-number">24.6.1</span> 理解 GSEA 富集图</h3>
+<p><code>gseaplot2()</code> 生成的经典 GSEA 图包含三个面板：</p>
+<ol type="1">
+<li><strong>顶部折线图</strong>：Running Enrichment Score (RES) 曲线，纵轴为累积富集得分，达到最大值处即为 ES；</li>
+<li><strong>中间条形图</strong>：基因集 <span class="math inline">\(S\)</span> 中各基因在有序列表中的位置（黑色竖线），聚集在左侧表示上调富集，聚集在右侧表示下调富集；</li>
+<li><strong>底部梯度条</strong>：基因排序指标（Wald stat）从正（左）到负（右）的热图，颜色越红表示上调越强，越蓝表示下调越强。</li>
+</ol>
+<hr>
+</section>
+</section>
+<section id="ora-与-gsea-的结果比较" class="level2" data-number="24.7">
+<h2 data-number="24.7" class="anchored" data-anchor-id="ora-与-gsea-的结果比较"><span class="header-section-number">24.7</span> ORA 与 GSEA 的结果比较</h2>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb3"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Compare ORA vs GSEA results for the same dataset</span></span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(dplyr)</span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a><span class="co"># Extract significant pathways from both methods</span></span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a>ora_pathways  <span class="ot">&lt;-</span> go_bp_simplified<span class="sc">@</span>result <span class="sc">%&gt;%</span></span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(p.adjust <span class="sc">&lt;</span> <span class="fl">0.05</span>) <span class="sc">%&gt;%</span></span>
+<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">select</span>(Description, p.adjust, Count) <span class="sc">%&gt;%</span></span>
+<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">method =</span> <span class="st">"ORA"</span>)</span>
+<span id="cb3-9"><a href="#cb3-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-10"><a href="#cb3-10" aria-hidden="true" tabindex="-1"></a>gsea_pathways <span class="ot">&lt;-</span> gsea_go<span class="sc">@</span>result <span class="sc">%&gt;%</span></span>
+<span id="cb3-11"><a href="#cb3-11" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(p.adjust <span class="sc">&lt;</span> <span class="fl">0.05</span>) <span class="sc">%&gt;%</span></span>
+<span id="cb3-12"><a href="#cb3-12" aria-hidden="true" tabindex="-1"></a>  <span class="fu">select</span>(Description, p.adjust, NES) <span class="sc">%&gt;%</span></span>
+<span id="cb3-13"><a href="#cb3-13" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">method =</span> <span class="st">"GSEA"</span>)</span>
+<span id="cb3-14"><a href="#cb3-14" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-15"><a href="#cb3-15" aria-hidden="true" tabindex="-1"></a><span class="co"># Count overlap</span></span>
+<span id="cb3-16"><a href="#cb3-16" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">"ORA significant GO BP terms:"</span>, <span class="fu">nrow</span>(ora_pathways), <span class="st">"</span><span class="sc">\n</span><span class="st">"</span>)</span>
+<span id="cb3-17"><a href="#cb3-17" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">"GSEA significant GO BP terms:"</span>, <span class="fu">nrow</span>(gsea_pathways), <span class="st">"</span><span class="sc">\n</span><span class="st">"</span>)</span>
+<span id="cb3-18"><a href="#cb3-18" aria-hidden="true" tabindex="-1"></a>overlap <span class="ot">&lt;-</span> <span class="fu">intersect</span>(ora_pathways<span class="sc">$</span>Description, gsea_pathways<span class="sc">$</span>Description)</span>
+<span id="cb3-19"><a href="#cb3-19" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">"Overlapping terms:"</span>, <span class="fu">length</span>(overlap), <span class="st">"</span><span class="sc">\n</span><span class="st">"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><strong>典型差异分析</strong>：</p>
+<ul>
+<li>ORA 发现的通路通常是 DEG 中<strong>高度富集的核心功能</strong>，倾向于选择包含已知标志物基因的 GO terms；</li>
+<li>GSEA 额外捕捉<strong>整体趋势性变化</strong>，能发现一组基因集体微小上调（每个基因单独看未达显著阈值）的通路；</li>
+<li>若两方法均显著的通路，生物学可靠性更高；仅 GSEA 显著的通路值得进一步验证；仅 ORA 显著的通路可能受阈值选择影响较大。</li>
+</ul>
+<hr>
+</section>
+<section id="多数据库结果整合与高级可视化" class="level2" data-number="24.8">
+<h2 data-number="24.8" class="anchored" data-anchor-id="多数据库结果整合与高级可视化"><span class="header-section-number">24.8</span> 多数据库结果整合与高级可视化</h2>
+<p>当同时使用 GO、KEGG 和 Reactome 进行富集分析时，如何高效整合和展示来自不同数据库的结果，是数据呈现的重要技巧。</p>
+<section id="upset-图跨方法数据库重叠分析" class="level3" data-number="24.8.1">
+<h3 data-number="24.8.1" class="anchored" data-anchor-id="upset-图跨方法数据库重叠分析"><span class="header-section-number">24.8.1</span> UpSet 图：跨方法/数据库重叠分析</h3>
+<p>UpSet 图是韦恩图的扩展，适合比较超过 3 个集合的重叠情况，能清晰展示哪些基因被多个数据库/方法共同检出。</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb4"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(UpSetR)</span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a><span class="co"># Compile significant genes from each enrichment approach</span></span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a><span class="co"># (genes appearing in any significant term's geneID list)</span></span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a>extract_genes <span class="ot">&lt;-</span> <span class="cf">function</span>(enrich_obj, <span class="at">padj_cut =</span> <span class="fl">0.05</span>) {</span>
+<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a>  sig <span class="ot">&lt;-</span> enrich_obj<span class="sc">@</span>result[enrich_obj<span class="sc">@</span>result<span class="sc">$</span>p.adjust <span class="sc">&lt;</span> padj_cut, ]</span>
+<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">unique</span>(<span class="fu">unlist</span>(<span class="fu">strsplit</span>(sig<span class="sc">$</span>geneID, <span class="st">"/"</span>)))</span>
+<span id="cb4-8"><a href="#cb4-8" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb4-9"><a href="#cb4-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-10"><a href="#cb4-10" aria-hidden="true" tabindex="-1"></a>gene_sets_db <span class="ot">&lt;-</span> <span class="fu">list</span>(</span>
+<span id="cb4-11"><a href="#cb4-11" aria-hidden="true" tabindex="-1"></a>  <span class="at">GO_BP_ORA   =</span> <span class="fu">extract_genes</span>(go_bp_simplified),</span>
+<span id="cb4-12"><a href="#cb4-12" aria-hidden="true" tabindex="-1"></a>  <span class="at">KEGG_ORA    =</span> <span class="fu">extract_genes</span>(kegg_res),</span>
+<span id="cb4-13"><a href="#cb4-13" aria-hidden="true" tabindex="-1"></a>  <span class="at">Reactome_ORA =</span> <span class="fu">extract_genes</span>(reactome_ora),</span>
+<span id="cb4-14"><a href="#cb4-14" aria-hidden="true" tabindex="-1"></a>  <span class="at">GSEA_KEGG   =</span> <span class="fu">extract_genes</span>(gsea_kegg)</span>
+<span id="cb4-15"><a href="#cb4-15" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb4-16"><a href="#cb4-16" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-17"><a href="#cb4-17" aria-hidden="true" tabindex="-1"></a><span class="co"># Convert to binary matrix for UpSetR</span></span>
+<span id="cb4-18"><a href="#cb4-18" aria-hidden="true" tabindex="-1"></a>all_genes <span class="ot">&lt;-</span> <span class="fu">unique</span>(<span class="fu">unlist</span>(gene_sets_db))</span>
+<span id="cb4-19"><a href="#cb4-19" aria-hidden="true" tabindex="-1"></a>upset_mat  <span class="ot">&lt;-</span> <span class="fu">lapply</span>(gene_sets_db, <span class="cf">function</span>(g) <span class="fu">as.integer</span>(all_genes <span class="sc">%in%</span> g))</span>
+<span id="cb4-20"><a href="#cb4-20" aria-hidden="true" tabindex="-1"></a>upset_df   <span class="ot">&lt;-</span> <span class="fu">as.data.frame</span>(<span class="fu">do.call</span>(cbind, upset_mat))</span>
+<span id="cb4-21"><a href="#cb4-21" aria-hidden="true" tabindex="-1"></a><span class="fu">rownames</span>(upset_df) <span class="ot">&lt;-</span> all_genes</span>
+<span id="cb4-22"><a href="#cb4-22" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-23"><a href="#cb4-23" aria-hidden="true" tabindex="-1"></a><span class="fu">upset</span>(upset_df,</span>
+<span id="cb4-24"><a href="#cb4-24" aria-hidden="true" tabindex="-1"></a>      <span class="at">sets.bar.color =</span> <span class="st">"steelblue"</span>,</span>
+<span id="cb4-25"><a href="#cb4-25" aria-hidden="true" tabindex="-1"></a>      <span class="at">order.by =</span> <span class="st">"freq"</span>,</span>
+<span id="cb4-26"><a href="#cb4-26" aria-hidden="true" tabindex="-1"></a>      <span class="at">main.bar.color =</span> <span class="st">"firebrick"</span>,</span>
+<span id="cb4-27"><a href="#cb4-27" aria-hidden="true" tabindex="-1"></a>      <span class="at">text.scale =</span> <span class="fl">1.2</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</section>
+<section id="差异基因热图top-deg-的表达谱可视化" class="level3" data-number="24.8.2">
+<h3 data-number="24.8.2" class="anchored" data-anchor-id="差异基因热图top-deg-的表达谱可视化"><span class="header-section-number">24.8.2</span> 差异基因热图：Top DEG 的表达谱可视化</h3>
+<p>展示差异最显著基因在各样本间的表达模式，是论文图表的标配。</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb5"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(pheatmap)</span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(RColorBrewer)</span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a><span class="co"># Select top 50 DEGs by padj (bidirectional)</span></span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a>top_up   <span class="ot">&lt;-</span> <span class="fu">head</span>(<span class="fu">rownames</span>(sig_genes[<span class="fu">order</span>(sig_genes<span class="sc">$</span>log2FoldChange,</span>
+<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a>                                           <span class="at">decreasing =</span> <span class="cn">TRUE</span>), ]), <span class="dv">25</span>)</span>
+<span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a>top_down <span class="ot">&lt;-</span> <span class="fu">head</span>(<span class="fu">rownames</span>(sig_genes[<span class="fu">order</span>(sig_genes<span class="sc">$</span>log2FoldChange), ]), <span class="dv">25</span>)</span>
+<span id="cb5-8"><a href="#cb5-8" aria-hidden="true" tabindex="-1"></a>top_degs  <span class="ot">&lt;-</span> <span class="fu">c</span>(top_up, top_down)</span>
+<span id="cb5-9"><a href="#cb5-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-10"><a href="#cb5-10" aria-hidden="true" tabindex="-1"></a><span class="co"># Get VST-normalized expression for heatmap</span></span>
+<span id="cb5-11"><a href="#cb5-11" aria-hidden="true" tabindex="-1"></a>vsd_mat <span class="ot">&lt;-</span> <span class="fu">assay</span>(<span class="fu">vst</span>(dds, <span class="at">blind =</span> <span class="cn">FALSE</span>))</span>
+<span id="cb5-12"><a href="#cb5-12" aria-hidden="true" tabindex="-1"></a>heatmap_mat <span class="ot">&lt;-</span> vsd_mat[top_degs, ]</span>
+<span id="cb5-13"><a href="#cb5-13" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-14"><a href="#cb5-14" aria-hidden="true" tabindex="-1"></a><span class="co"># Row-scale (Z-score per gene)</span></span>
+<span id="cb5-15"><a href="#cb5-15" aria-hidden="true" tabindex="-1"></a>heatmap_scaled <span class="ot">&lt;-</span> <span class="fu">t</span>(<span class="fu">scale</span>(<span class="fu">t</span>(heatmap_mat)))</span>
+<span id="cb5-16"><a href="#cb5-16" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-17"><a href="#cb5-17" aria-hidden="true" tabindex="-1"></a><span class="co"># Annotation for columns</span></span>
+<span id="cb5-18"><a href="#cb5-18" aria-hidden="true" tabindex="-1"></a>col_anno <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(</span>
+<span id="cb5-19"><a href="#cb5-19" aria-hidden="true" tabindex="-1"></a>  <span class="at">condition =</span> sample_info<span class="sc">$</span>condition,</span>
+<span id="cb5-20"><a href="#cb5-20" aria-hidden="true" tabindex="-1"></a>  <span class="at">row.names =</span> <span class="fu">rownames</span>(sample_info)</span>
+<span id="cb5-21"><a href="#cb5-21" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb5-22"><a href="#cb5-22" aria-hidden="true" tabindex="-1"></a>anno_colors <span class="ot">&lt;-</span> <span class="fu">list</span>(</span>
+<span id="cb5-23"><a href="#cb5-23" aria-hidden="true" tabindex="-1"></a>  <span class="at">condition =</span> <span class="fu">c</span>(<span class="at">untreated =</span> <span class="st">"steelblue"</span>, <span class="at">treated =</span> <span class="st">"firebrick"</span>)</span>
+<span id="cb5-24"><a href="#cb5-24" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb5-25"><a href="#cb5-25" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-26"><a href="#cb5-26" aria-hidden="true" tabindex="-1"></a><span class="fu">pheatmap</span>(</span>
+<span id="cb5-27"><a href="#cb5-27" aria-hidden="true" tabindex="-1"></a>  heatmap_scaled,</span>
+<span id="cb5-28"><a href="#cb5-28" aria-hidden="true" tabindex="-1"></a>  <span class="at">annotation_col  =</span> col_anno,</span>
+<span id="cb5-29"><a href="#cb5-29" aria-hidden="true" tabindex="-1"></a>  <span class="at">annotation_colors =</span> anno_colors,</span>
+<span id="cb5-30"><a href="#cb5-30" aria-hidden="true" tabindex="-1"></a>  <span class="at">cluster_rows    =</span> <span class="cn">TRUE</span>,</span>
+<span id="cb5-31"><a href="#cb5-31" aria-hidden="true" tabindex="-1"></a>  <span class="at">cluster_cols    =</span> <span class="cn">TRUE</span>,</span>
+<span id="cb5-32"><a href="#cb5-32" aria-hidden="true" tabindex="-1"></a>  <span class="at">show_rownames   =</span> <span class="cn">TRUE</span>,</span>
+<span id="cb5-33"><a href="#cb5-33" aria-hidden="true" tabindex="-1"></a>  <span class="at">show_colnames   =</span> <span class="cn">TRUE</span>,</span>
+<span id="cb5-34"><a href="#cb5-34" aria-hidden="true" tabindex="-1"></a>  <span class="at">color           =</span> <span class="fu">colorRampPalette</span>(</span>
+<span id="cb5-35"><a href="#cb5-35" aria-hidden="true" tabindex="-1"></a>    <span class="fu">rev</span>(<span class="fu">brewer.pal</span>(<span class="dv">11</span>, <span class="st">"RdBu"</span>)))(<span class="dv">100</span>),</span>
+<span id="cb5-36"><a href="#cb5-36" aria-hidden="true" tabindex="-1"></a>  <span class="at">breaks          =</span> <span class="fu">seq</span>(<span class="sc">-</span><span class="dv">3</span>, <span class="dv">3</span>, <span class="at">length.out =</span> <span class="dv">101</span>),</span>
+<span id="cb5-37"><a href="#cb5-37" aria-hidden="true" tabindex="-1"></a>  <span class="at">fontsize_row    =</span> <span class="dv">7</span>,</span>
+<span id="cb5-38"><a href="#cb5-38" aria-hidden="true" tabindex="-1"></a>  <span class="at">main            =</span> <span class="st">"Top 50 DEGs: Z-score normalized expression"</span></span>
+<span id="cb5-39"><a href="#cb5-39" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</section>
+<section id="kegg-通路可视化pathview" class="level3" data-number="24.8.3">
+<h3 data-number="24.8.3" class="anchored" data-anchor-id="kegg-通路可视化pathview"><span class="header-section-number">24.8.3</span> KEGG 通路可视化：pathview</h3>
+<p>pathview 将差异表达数据直接叠加到 KEGG 通路图上，用颜色编码基因的上调/下调状态，是展示具体通路机制的有效方式。</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb6"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(pathview)</span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a><span class="co"># Prepare named vector: gene LFC values, names = Entrez IDs</span></span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a>lfc_vector <span class="ot">&lt;-</span> <span class="fu">setNames</span>(res_df<span class="sc">$</span>log2FoldChange, res_df<span class="sc">$</span>ENTREZID)</span>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a>lfc_vector <span class="ot">&lt;-</span> lfc_vector[<span class="sc">!</span><span class="fu">is.na</span>(lfc_vector)]</span>
+<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a><span class="co"># Find top KEGG pathway from ORA results</span></span>
+<span id="cb6-8"><a href="#cb6-8" aria-hidden="true" tabindex="-1"></a>top_kegg_id <span class="ot">&lt;-</span> kegg_res<span class="sc">@</span>result<span class="sc">$</span>ID[<span class="dv">1</span>]  <span class="co"># e.g., "hsa04657"</span></span>
+<span id="cb6-9"><a href="#cb6-9" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">"Visualizing pathway:"</span>, kegg_res<span class="sc">@</span>result<span class="sc">$</span>Description[<span class="dv">1</span>], <span class="st">"</span><span class="sc">\n</span><span class="st">"</span>)</span>
+<span id="cb6-10"><a href="#cb6-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-11"><a href="#cb6-11" aria-hidden="true" tabindex="-1"></a><span class="co"># Generate pathway map (downloads from KEGG website)</span></span>
+<span id="cb6-12"><a href="#cb6-12" aria-hidden="true" tabindex="-1"></a><span class="fu">pathview</span>(</span>
+<span id="cb6-13"><a href="#cb6-13" aria-hidden="true" tabindex="-1"></a>  <span class="at">gene.data  =</span> lfc_vector,</span>
+<span id="cb6-14"><a href="#cb6-14" aria-hidden="true" tabindex="-1"></a>  <span class="at">pathway.id =</span> top_kegg_id,</span>
+<span id="cb6-15"><a href="#cb6-15" aria-hidden="true" tabindex="-1"></a>  <span class="at">species    =</span> <span class="st">"hsa"</span>,</span>
+<span id="cb6-16"><a href="#cb6-16" aria-hidden="true" tabindex="-1"></a>  <span class="at">gene.idtype =</span> <span class="st">"ENTREZ"</span>,</span>
+<span id="cb6-17"><a href="#cb6-17" aria-hidden="true" tabindex="-1"></a>  <span class="at">low  =</span> <span class="fu">list</span>(<span class="at">gene =</span> <span class="st">"steelblue"</span>),</span>
+<span id="cb6-18"><a href="#cb6-18" aria-hidden="true" tabindex="-1"></a>  <span class="at">high =</span> <span class="fu">list</span>(<span class="at">gene =</span> <span class="st">"firebrick"</span>),</span>
+<span id="cb6-19"><a href="#cb6-19" aria-hidden="true" tabindex="-1"></a>  <span class="at">mid  =</span> <span class="fu">list</span>(<span class="at">gene =</span> <span class="st">"white"</span>),</span>
+<span id="cb6-20"><a href="#cb6-20" aria-hidden="true" tabindex="-1"></a>  <span class="at">out.suffix =</span> <span class="st">"dex_treatment"</span></span>
+<span id="cb6-21"><a href="#cb6-21" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb6-22"><a href="#cb6-22" aria-hidden="true" tabindex="-1"></a><span class="co"># Output: hsa04657.dex_treatment.png in working directory</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<hr>
+</section>
+</section>
+<section id="结果解读的批判性原则" class="level2" data-number="24.9">
+<h2 data-number="24.9" class="anchored" data-anchor-id="结果解读的批判性原则"><span class="header-section-number">24.9</span> 结果解读的批判性原则</h2>
+<div class="warning">
+<p><strong>避免过度解读富集分析结果</strong></p>
+<p>以下是富集分析中最常见的误用：</p>
+<ol type="1">
+<li><p><strong>功能注释覆盖度偏差</strong>：GO 对某些功能（如”DNA 修复”）的注释非常详细，对另一些（如”细胞极性建立”）则稀疏。覆盖度高的功能更容易出现在富集结果中，并非一定是最重要的。</p></li>
+<li><p><strong>通路重叠假象</strong>：许多 GO terms 共享大量基因（如”细胞周期调控”与”DNA 损伤应答”的基因高度重叠）。多个显著 terms 可能被同一组基因驱动，并非独立的生物学信号。使用 <code>simplify()</code> 或 <code>emapplot()</code> 可帮助识别冗余。</p></li>
+<li><p><strong>背景集选择偏差</strong>：参见 ORA 部分的警告。</p></li>
+<li><p><strong>将 p 值大小等同于生物学重要性</strong>：富集分析 p 值主要受基因集大小影响（大的基因集更容易显著），而非效应量大小。应结合 Gene Ratio（或 NES）和 leading edge 基因的生物学意义综合判断。</p></li>
+</ol>
+</div>
+<hr>
+</section>
+<section id="实践完整富集分析报告" class="level2" data-number="24.10">
+<h2 data-number="24.10" class="anchored" data-anchor-id="实践完整富集分析报告"><span class="header-section-number">24.10</span> 实践：完整富集分析报告</h2>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb7"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="co"># === Comprehensive enrichment analysis summary ===</span></span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a><span class="co"># Combine GO BP, KEGG ORA, GO GSEA, KEGG GSEA into a summary table</span></span>
+<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a>ora_summary <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(</span>
+<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a>  <span class="at">Method      =</span> <span class="st">"ORA"</span>,</span>
+<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a>  <span class="at">Database    =</span> <span class="st">"GO BP"</span>,</span>
+<span id="cb7-7"><a href="#cb7-7" aria-hidden="true" tabindex="-1"></a>  <span class="at">Significant =</span> <span class="fu">nrow</span>(go_bp_simplified<span class="sc">@</span>result[go_bp_simplified<span class="sc">@</span>result<span class="sc">$</span>p.adjust <span class="sc">&lt;</span> <span class="fl">0.05</span>, ]),</span>
+<span id="cb7-8"><a href="#cb7-8" aria-hidden="true" tabindex="-1"></a>  <span class="at">Top5        =</span> <span class="fu">paste</span>(<span class="fu">head</span>(go_bp_simplified<span class="sc">@</span>result<span class="sc">$</span>Description, <span class="dv">5</span>), <span class="at">collapse =</span> <span class="st">"; "</span>)</span>
+<span id="cb7-9"><a href="#cb7-9" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb7-10"><a href="#cb7-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-11"><a href="#cb7-11" aria-hidden="true" tabindex="-1"></a>gsea_summary <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(</span>
+<span id="cb7-12"><a href="#cb7-12" aria-hidden="true" tabindex="-1"></a>  <span class="at">Method      =</span> <span class="st">"GSEA"</span>,</span>
+<span id="cb7-13"><a href="#cb7-13" aria-hidden="true" tabindex="-1"></a>  <span class="at">Database    =</span> <span class="st">"KEGG"</span>,</span>
+<span id="cb7-14"><a href="#cb7-14" aria-hidden="true" tabindex="-1"></a>  <span class="at">Significant =</span> <span class="fu">nrow</span>(gsea_kegg<span class="sc">@</span>result[gsea_kegg<span class="sc">@</span>result<span class="sc">$</span>p.adjust <span class="sc">&lt;</span> <span class="fl">0.05</span>, ]),</span>
+<span id="cb7-15"><a href="#cb7-15" aria-hidden="true" tabindex="-1"></a>  <span class="at">Top5        =</span> <span class="fu">paste</span>(<span class="fu">head</span>(gsea_kegg<span class="sc">@</span>result<span class="sc">$</span>Description, <span class="dv">5</span>), <span class="at">collapse =</span> <span class="st">"; "</span>)</span>
+<span id="cb7-16"><a href="#cb7-16" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb7-17"><a href="#cb7-17" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-18"><a href="#cb7-18" aria-hidden="true" tabindex="-1"></a>summary_table <span class="ot">&lt;-</span> <span class="fu">rbind</span>(ora_summary, gsea_summary)</span>
+<span id="cb7-19"><a href="#cb7-19" aria-hidden="true" tabindex="-1"></a>knitr<span class="sc">::</span><span class="fu">kable</span>(summary_table,</span>
+<span id="cb7-20"><a href="#cb7-20" aria-hidden="true" tabindex="-1"></a>             <span class="at">caption =</span> <span class="st">"Summary of enrichment analysis results"</span>)</span>
+<span id="cb7-21"><a href="#cb7-21" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-22"><a href="#cb7-22" aria-hidden="true" tabindex="-1"></a><span class="co"># === Save significant results to CSV ===</span></span>
+<span id="cb7-23"><a href="#cb7-23" aria-hidden="true" tabindex="-1"></a><span class="fu">write.csv</span>(</span>
+<span id="cb7-24"><a href="#cb7-24" aria-hidden="true" tabindex="-1"></a>  go_bp_simplified<span class="sc">@</span>result[go_bp_simplified<span class="sc">@</span>result<span class="sc">$</span>p.adjust <span class="sc">&lt;</span> <span class="fl">0.05</span>, ],</span>
+<span id="cb7-25"><a href="#cb7-25" aria-hidden="true" tabindex="-1"></a>  <span class="st">"results/enrichment/GO_BP_ORA_significant.csv"</span>,</span>
+<span id="cb7-26"><a href="#cb7-26" aria-hidden="true" tabindex="-1"></a>  <span class="at">row.names =</span> <span class="cn">FALSE</span></span>
+<span id="cb7-27"><a href="#cb7-27" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb7-28"><a href="#cb7-28" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-29"><a href="#cb7-29" aria-hidden="true" tabindex="-1"></a><span class="fu">write.csv</span>(</span>
+<span id="cb7-30"><a href="#cb7-30" aria-hidden="true" tabindex="-1"></a>  gsea_kegg<span class="sc">@</span>result[gsea_kegg<span class="sc">@</span>result<span class="sc">$</span>p.adjust <span class="sc">&lt;</span> <span class="fl">0.05</span>, ],</span>
+<span id="cb7-31"><a href="#cb7-31" aria-hidden="true" tabindex="-1"></a>  <span class="st">"results/enrichment/KEGG_GSEA_significant.csv"</span>,</span>
+<span id="cb7-32"><a href="#cb7-32" aria-hidden="true" tabindex="-1"></a>  <span class="at">row.names =</span> <span class="cn">FALSE</span></span>
+<span id="cb7-33"><a href="#cb7-33" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb7-34"><a href="#cb7-34" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-35"><a href="#cb7-35" aria-hidden="true" tabindex="-1"></a><span class="co"># === Network plot: connection between DEGs and top GO terms ===</span></span>
+<span id="cb7-36"><a href="#cb7-36" aria-hidden="true" tabindex="-1"></a><span class="fu">cnetplot</span>(go_bp_simplified,</span>
+<span id="cb7-37"><a href="#cb7-37" aria-hidden="true" tabindex="-1"></a>         <span class="at">showCategory =</span> <span class="dv">5</span>,</span>
+<span id="cb7-38"><a href="#cb7-38" aria-hidden="true" tabindex="-1"></a>         <span class="at">foldChange   =</span> <span class="fu">setNames</span>(res_df<span class="sc">$</span>log2FoldChange, res_df<span class="sc">$</span>SYMBOL),</span>
+<span id="cb7-39"><a href="#cb7-39" aria-hidden="true" tabindex="-1"></a>         <span class="at">colorEdge    =</span> <span class="cn">TRUE</span>) <span class="sc">+</span></span>
+<span id="cb7-40"><a href="#cb7-40" aria-hidden="true" tabindex="-1"></a>  <span class="fu">scale_color_gradient2</span>(</span>
+<span id="cb7-41"><a href="#cb7-41" aria-hidden="true" tabindex="-1"></a>    <span class="at">low =</span> <span class="st">"steelblue"</span>, <span class="at">mid =</span> <span class="st">"white"</span>, <span class="at">high =</span> <span class="st">"firebrick"</span>,</span>
+<span id="cb7-42"><a href="#cb7-42" aria-hidden="true" tabindex="-1"></a>    <span class="at">midpoint =</span> <span class="dv">0</span>, <span class="at">name =</span> <span class="st">"LFC"</span></span>
+<span id="cb7-43"><a href="#cb7-43" aria-hidden="true" tabindex="-1"></a>  ) <span class="sc">+</span></span>
+<span id="cb7-44"><a href="#cb7-44" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(<span class="at">title =</span> <span class="st">"Gene-Concept Network: top 5 GO BP terms"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<hr>
+</section>
+<section id="课后自测-post-lesson-quiz" class="level2" data-number="24.11">
+<h2 data-number="24.11" class="anchored" data-anchor-id="课后自测-post-lesson-quiz"><span class="header-section-number">24.11</span> 课后自测 (Post-Lesson Quiz)</h2>
+<ol type="1">
+<li><p>研究者对一个含 15,000 个背景基因的实验数据进行 GO ORA。某 GO term 在背景中有 200 个基因，在 500 个 DEGs 中有 30 个基因命中。这个富集是否可能显著？请写出需要计算的统计量（无需算出数值）。</p></li>
+<li><p>两位研究者分析同一数据集，研究者 A 使用所有检测到的基因（15,000 个）作为背景，研究者 B 使用人类全基因组所有基因（20,000 个）作为背景。谁的 ORA 结果更可靠？为什么？</p></li>
+<li><p>GSEA 分析显示某通路的 NES = +2.3，padj = 0.001，但该通路的 leading edge 基因只有 8 个，且这 8 个基因恰好都是同一个蛋白质复合体的亚单位。这个结果应如何解读？是否应该在摘要中报告为”该通路被显著激活”？</p></li>
+<li><p>你使用 clusterProfiler 的 <code>simplify()</code> 函数（cutoff = 0.7）对 GO BP ORA 结果去冗余，从 120 个显著 terms 减少到 35 个。这个过程的生物学依据是什么？能否会漏掉重要的生物学信息？</p></li>
+<li><p>对于一个疾病与健康对照的转录组研究，共识别了 3,000 个 DEGs，但经 ORA 分析后没有发现任何显著富集的通路（所有 padj &gt; 0.1）。请列举至少三种可能的原因，以及对应的诊断方法。</p></li>
+</ol>
+<details>
+<summary>
+<strong>参考答案 (Reference Answers)</strong>
+</summary>
+<ol type="1">
+<li><p><em>需要计算的统计量是超几何检验的 p 值：<span class="math inline">\(N = 15000\)</span>，<span class="math inline">\(K = 200\)</span>，<span class="math inline">\(n = 500\)</span>，<span class="math inline">\(k = 30\)</span>。计算公式为 <span class="math inline">\(p = \sum_{i=30}^{\min(500,200)} \frac{\binom{200}{i}\binom{14800}{500-i}}{\binom{15000}{500}}\)</span>。期望值为 <span class="math inline">\(n \times K/N = 500 \times 200/15000 \approx 6.67\)</span>，实际观测 30 远超期望，富集倍数约 4.5，很可能显著。但还需经 BH 校正与其他 GO terms 比较后才能确定最终显著性。</em></p></li>
+<li><p><em>研究者 A（背景 = 实验检测基因，15,000 个）更可靠。使用全基因组 20,000 个基因作为背景，引入了实验无法检测的基因（如在该细胞类型中不表达的基因），这些基因按定义不可能出现在 DEG 列表中，但却虚增了 <span class="math inline">\(N-K\)</span>（背景中不属于该 GO term 的基因数），导致期望重叠值降低，富集倍数虚高，p 值偏乐观（假阳性增加）。</em></p></li>
+<li><p><em>虽然统计上显著，但应谨慎解读。NES = +2.3 且 padj 极低，说明该通路的基因整体在排序列表顶端聚集。然而 leading edge 仅 8 个基因且属于同一蛋白复合体，意味着整个通路的富集信号实际上由单一功能模块驱动，而非通路的多个功能节点均受影响。建议在报告中具体说明是”该通路中 XX 复合体相关基因被显著上调”，而非笼统陈述”通路被激活”——后者可能误导读者认为通路的全部功能组分均受影响。</em></p></li>
+<li><p><em><code>simplify()</code> 通过计算 GO terms 间的语义相似度（基于共享祖先节点的程度），将高度相似（相似度 &gt; 0.7）的 terms 合并，保留最具统计意义的那个。生物学依据是 GO 的层级冗余性：子 term 和父 term 常常共享大部分基因，去冗余能减少视觉上的干扰，突出独立的生物学信号。潜在风险：若两个相似 term 对应不同的细胞类型或亚过程，合并可能丢失这种区分信息。建议在最终结论中补充检查被合并的 terms，确认无重要信息丢失。</em></p></li>
+<li><p><em>可能原因及诊断方法：（1）DEGs 分散在多个通路中，每个通路的命中基因数低于阈值 → 改用 GSEA（无需阈值）；（2）背景基因集设置不当（如使用了整个基因组）→ 改用实验检测基因作为背景；（3）所用功能数据库对该疾病/组织的注释覆盖度低 → 尝试不同数据库（如 Reactome、WikiPathways）；（4）差异基因筛选阈值过严，遗漏了生物学重要但未达统计阈值的基因 → 放宽 LFC 阈值后重跑 ORA；（5）实验设计问题（如批次效应主导变异）→ 检查 PCA 图，评估主要变异来源。</em></p></li>
+</ol>
+</details>
 
 
+</section>
 
 </main> <!-- /main -->
 <script id="quarto-html-after-body" type="application/javascript">
@@ -960,13 +1542,13 @@ ul.task-list li input[type="checkbox"] {
   </script>
 <nav class="page-navigation">
   <div class="nav-page nav-page-previous">
-      <a href="./transcriptomics_basic_lesson3.html" class="pagination-link" aria-label="第四章 课时3">
-        <i class="bi bi-arrow-left-short"></i> <span class="nav-page-text"><span class="chapter-number">23</span>&nbsp; <span class="chapter-title">第四章 课时3</span></span>
+      <a href="./transcriptomics_basic_lesson3.html" class="pagination-link" aria-label="专题 4.3：差异表达分析">
+        <i class="bi bi-arrow-left-short"></i> <span class="nav-page-text"><span class="chapter-number">23</span>&nbsp; <span class="chapter-title">专题 4.3：差异表达分析</span></span>
       </a>          
   </div>
   <div class="nav-page nav-page-next">
-      <a href="./transcriptomics_basic_lesson5.html" class="pagination-link" aria-label="第四章 课时5">
-        <span class="nav-page-text"><span class="chapter-number">25</span>&nbsp; <span class="chapter-title">第四章 课时5</span></span> <i class="bi bi-arrow-right-short"></i>
+      <a href="./05-transcriptomics-advanced.html" class="pagination-link" aria-label="Bulk 转录组高级分析：结构变异、长读长与共表达网络">
+        <span class="nav-page-text"><span class="chapter-number">25</span>&nbsp; <span class="chapter-title">Bulk 转录组高级分析：结构变异、长读长与共表达网络</span></span> <i class="bi bi-arrow-right-short"></i>
       </a>
   </div>
 </nav>
@@ -975,4 +1557,4 @@ ul.task-list li input[type="checkbox"] {
 
 
 
-<footer class="footer"><div class="nav-footer"><div class="nav-footer-center"><div class="toc-actions"><ul><li><a href="https://github.com/cxzdsa2332/Applied-Omics-Analysis/edit/main/transcriptomics_basic_lesson4.qmd" class="toc-action"><i class="bi bi-github"></i>Edit this page</a></li><li><a href="https://github.com/cxzdsa2332/Applied-Omics-Analysis/issues/new" class="toc-action"><i class="bi empty"></i>Report an issue</a></li><li><a href="https://github.com/cxzdsa2332/Applied-Omics-Analysis/blob/main/transcriptomics_basic_lesson4.qmd" class="toc-action"><i class="bi empty"></i>View source</a></li></ul></div></div></div></footer></body></html>
+<footer class="footer"><div class="nav-footer"><div class="nav-footer-center"><div class="toc-actions d-sm-block d-md-none"><ul><li><a href="https://github.com/cxzdsa2332/Applied-Omics-Analysis/edit/main/transcriptomics_basic_lesson4.qmd" class="toc-action"><i class="bi bi-github"></i>Edit this page</a></li><li><a href="https://github.com/cxzdsa2332/Applied-Omics-Analysis/issues/new" class="toc-action"><i class="bi empty"></i>Report an issue</a></li><li><a href="https://github.com/cxzdsa2332/Applied-Omics-Analysis/blob/main/transcriptomics_basic_lesson4.qmd" class="toc-action"><i class="bi empty"></i>View source</a></li></ul></div></div></div></footer></body></html>

@@ -1,0 +1,149 @@
+---
+title: "单细胞与空间转录组基础：上游处理、标准分析流程与 Visium 基础"
+date: today
+format:
+  html:
+    code-fold: false
+    toc: true
+    toc-depth: 3
+    number-sections: true
+    theme: cosmo
+---
+
+# 整体概述
+
+单细胞 RNA-seq（scRNA-seq）和空间转录组学（Spatial Transcriptomics）的出现，根本性地改变了转录组研究的分辨率边界。Bulk RNA-seq 提供的是细胞群体的平均转录谱，无法区分组织内不同细胞类型的个体贡献；scRNA-seq 将分辨率推进至单个细胞，揭示了细胞类型的异质性、稀有细胞群的存在以及细胞状态的连续性；空间转录组学则在保留组织切片空间坐标的前提下测量基因表达，将转录图谱嵌入形态学背景，回答基因表达"在哪里"的问题。尽管两项技术分析框架各有侧重，但它们在数据结构、质量控制逻辑和降维聚类方法上存在深度共性，因此本章将二者的基础分析流程并列讲解，强调方法论上的统一性与各自的技术特殊性。
+
+**学习目标**：理解 10x Genomics Chromium 液滴微流控与 Visium 空间条形码阵列的技术原理；掌握 Cell Ranger、Space Ranger 的上游处理流程；能独立运行 Seurat 标准单细胞分析流程（QC → 归一化 → 降维 → 聚类 → 细胞类型注释）；掌握 Visium 数据的空间高变基因（SVG）分析与空间聚类基本方法。
+
+---
+
+# 结构导览
+
+本章分为两个模块，共五个专题，按两条平行的数据流组织：
+
+```
+原始输入
+  ├── scRNA-seq FASTQ（10x Chromium）
+  │     ↓
+  │     模块 A：单细胞 RNA-seq 基础（专题 6.1–6.3）
+  │     ↓ Cell Ranger/STARsolo 上游处理 → 稀疏表达矩阵
+  │     ↓ Seurat QC / 归一化 / HVG 选择 / PCA / UMAP / 聚类
+  │     ↓ Marker 基因鉴定 → 手动注释 + SingleR 自动注释
+  │
+  └── Visium FASTQ + 组织图像
+        ↓
+        模块 B：空间转录组基础（专题 6.4–6.5）
+        ↓ Space Ranger 定量 → AnnData/Seurat 空间对象
+        ↓ 空间 QC / 归一化 / SVG 分析 / 空间聚类
+        ↓ 空间可视化与初步生物学解读
+```
+
+两个模块在数据格式、QC 逻辑、归一化策略和聚类方法上高度共享；模块 B 的空间坐标信息构成其与模块 A 的核心差异，也为第7章的高级分析（解卷积、整合）提供输入。
+
+---
+
+# 模块 A：单细胞 RNA-seq 基础
+
+:::note
+**模块目标：** 掌握 10x Genomics 液滴微流控的技术原理与 Cell Ranger 上游处理逻辑；能对 scRNA-seq 数据执行系统性质量控制与预处理；独立完成 Seurat 标准分析流程并完成细胞类型注释。
+:::
+
+## 专题 6.1：10x Genomics 技术原理与上游处理
+
+单细胞 RNA-seq 的核心技术挑战在于：如何在数以千计的细胞中为每个细胞的 mRNA 分子打上独一无二的"地址"，以便在测序完成后将读段归属到正确的细胞。10x Genomics Chromium 平台通过液滴微流控（droplet microfluidics）优雅地解决了这一问题：每个凝胶珠（gel bead）表面携带数十万个具有相同细胞条形码（Cell Barcode）但不同分子条形码（UMI）的寡核苷酸，在微流控芯片中与单个细胞和逆转录试剂共同被包裹进油滴（GEM），完成细胞特异性的 cDNA 合成。Cell Ranger（官方流程）和 STARsolo（开源替代）负责将测序读段通过 Barcode 解码、UMI 去重，最终生成稀疏格式的细胞×基因表达矩阵。
+
+{{Wiki:Microfluidics}}
+
+**核心概念**：
+
+- 10x Chromium 液滴微流控：GEM（凝胶珠乳液，Gel bead-in-EMulsion）形成原理；Barcode + UMI + poly-T 捕获探针的结构
+- Cell Ranger 核心步骤：`cellranger mkfastq`（BCL → FASTQ）→ `cellranger count`（Barcode 白名单过滤 → STAR 比对 → UMI 计数 → 空细胞过滤）
+- Barcode 纠错：1 个碱基错误的 Barcode 向白名单序列的校正逻辑
+- UMI 去重：基于图的 UMI 去重（directional network）；`--include-introns` 参数对核 RNA（snRNA-seq）的影响
+- 空细胞过滤：EmptyDrops 算法；膝点（Knee point）启发式方法；两者的适用场景对比
+- STARsolo 作为 Cell Ranger 的开源替代：参数映射关系；输出格式兼容性
+- 输出格式：`barcodes.tsv.gz` / `features.tsv.gz` / `matrix.mtx.gz` 稀疏矩阵三文件结构；`read10x()` 加载
+
+**实践内容**：使用 Cell Ranger 处理 PBMC 3k 数据（`SeuratData::InstallData("pbmc3k")`）；解读 Cell Ranger Web Summary 报告中的关键指标（Valid Barcodes、Median Genes per Cell、Saturation）；用 STARsolo 复现并比较结果。
+
+---
+
+## 专题 6.2：单细胞数据质量控制与预处理
+
+scRNA-seq 数据的质量控制与 Bulk RNA-seq 有本质区别：前者需要在细胞层面逐一判断质量，而非在样本层面做整体评估。低质量细胞（dying cells、破膜细胞）表现为基因检出数极少或线粒体基因比例异常高；多细胞复合体（Doublets）表现为基因检出数异常高，会在后续分析中产生虚假的"中间态"细胞群。此外，稀疏的零值矩阵要求特殊的归一化策略，普通的 CPM/RPKM 归一化会放大技术噪声。SCTransform 通过正则化负二项回归模型，同时完成测序深度校正、技术变异建模和高变基因选择，是目前最受推荐的 scRNA-seq 归一化方法。
+
+**核心概念**：
+
+- scRNA-seq 质控三指标：每细胞基因数（`nFeature_RNA`）、每细胞 UMI 数（`nCount_RNA`）、线粒体基因比例（`percent.mt`）；三者联合判读的逻辑
+- 基于 MAD 的自适应阈值设定（`isOutlier()` from scuttle）：相比固定阈值的优势
+- Doublet 检测方法：DoubletFinder（模拟 Doublet + KNN 评分）；Scrublet（PCA 空间中的双细胞得分）
+- 归一化策略对比：LogNormalize（`NormalizeData()`，简单但偏差大）vs SCTransform（正则化负二项回归，推荐）
+- 高变基因（HVGs）选择：`FindVariableFeatures()` 的 VST 方法；选取 2000–3000 个 HVG 的惯例与依据
+- 数据缩放（Scaling）：`ScaleData()` 的线性回归去除混淆变量（nCount、percent.mt）
+
+**实践内容**：PBMC 3k 数据的质控可视化（小提琴图 + 散点图）；MAD 阈值 vs 固定阈值的细胞过滤比较；SCTransform 归一化；Scrublet Doublet 检测；HVG 选择与表达量分布可视化。
+
+---
+
+## 专题 6.3：降维、聚类与细胞类型注释
+
+在质控和归一化完成后，scRNA-seq 分析的核心目标是识别细胞类型。这一过程依赖于降维和聚类两步操作的组合：PCA 将高维基因表达空间压缩至 20–50 个主成分，去除技术噪声的同时保留主要生物学变异；在 PCA 空间中构建 k-近邻图（KNN graph），再通过图聚类算法（Leiden / Louvain）识别细胞社区；最后以 UMAP 或 t-SNE 生成二维嵌入，用于可视化。细胞类型注释通过差异表达分析（`FindAllMarkers()`）识别每个聚类的特征基因，结合已知的细胞类型 Marker 基因数据库（PanglaoDB、CellMarker）或自动注释工具（SingleR、CellTypist）完成。
+
+{{Wiki:UMAP}}
+
+**核心概念**：
+
+- PCA 在 scRNA-seq 中的作用：消除基因空间的冗余；`ElbowPlot()` 选择主成分数量；HVG 仅用于 PCA 输入而非全基因组
+- KNN 图构建：`FindNeighbors()` 中 `dims` 参数（使用的 PC 数）和 `k.param`（邻居数）的影响
+- Leiden 聚类（`FindClusters()`）：分辨率（`resolution`）参数对聚类粒度的控制；0.3–0.8 为常用范围
+- UMAP vs t-SNE：UMAP 保留全局结构的优势；t-SNE 参数（perplexity）对局部结构的影响；两者均不保留定量距离意义
+- Marker 基因鉴定：`FindAllMarkers()` 的 Wilcoxon 秩和检验；`min.pct` 和 `logfc.threshold` 参数
+- 自动细胞类型注释：SingleR 的参考数据库匹配策略（ENCODE, HCA）；CellTypist 的机器学习分类器
+- 注释验证：`FeaturePlot()` 可视化已知 Marker；`DotPlot()` 展示跨聚类 Marker 表达模式
+
+**实践内容**：PBMC 3k 数据完整运行 PCA → KNN → Leiden 聚类 → UMAP；`FindAllMarkers()` 识别各聚类 Marker；结合 PanglaoDB 手动注释；运行 SingleR（ENCODE 参考）自动注释；对比手动与自动注释的一致性。
+
+---
+
+# 模块 B：空间转录组基础
+
+:::note
+**模块目标：** 理解 10x Visium 空间条形码阵列的技术原理与 Space Ranger 上游处理流程；掌握空间数据的质量控制与归一化；能独立运行空间高变基因（SVG）分析与空间聚类，生成有生物学意义的空间域可视化。
+:::
+
+## 专题 6.4：Visium 技术原理与上游处理
+
+10x Genomics Visium 平台将 RNA-seq 与组织成像结合：在载玻片上预先印刷含空间条形码的 poly-T 捕获阵列，每个捕获点（Spot）直径 55 µm，中心间距 100 µm，排列为六角形网格。组织切片铺在阵列上经固定和透化处理后，细胞内 mRNA 扩散并与最近的 Spot 的捕获探针杂交，完成空间标记的 cDNA 合成。同时，组织切片用苏木精-伊红（H&E）染色并拍摄高分辨率图像，用于验证组织形态并指导分析。Space Ranger 负责将测序读段与图像对齐，将 Spot 坐标与表达量整合为空间表达矩阵，输出 Seurat 和 Squidpy 均可直接读取的数据结构。
+
+{{Wiki:Spatial_transcriptomics}}
+
+**核心概念**：
+
+- Visium 捕获阵列结构：Spot 直径 55 µm、间距 100 µm、六角网格排列；每张切片约 4992 个捕获 Spot
+- Spot 分辨率的局限性：55 µm 内通常含 1–10 个细胞（取决于组织类型）；Spot 是混合信号而非单细胞信号
+- Space Ranger 工作流：`spaceranger count`；`--tissue-detection-algorithm`（Spot 自动检测）；Fiducial 框架对齐
+- Loupe Browser：Space Ranger 输出的交互式可视化工具；手动调整 Spot 选择范围
+- 空间数据格式：`spatial/` 目录中的坐标文件（`tissue_positions.csv`）；高分辨率与低分辨率图像
+- `Read10X_Visium()`（Seurat）/ `sc.read_visium()`（Scanpy）加载数据；`SpatiallyVariableFeatures()` 函数
+- Stereo-seq（华大基因）：纳米级空间分辨率；Stereopy 分析框架；与 Visium 的技术对比
+
+**实践内容**：加载 `stxBrain`（SeuratData，10x Visium 小鼠脑前切片）；解读 Space Ranger Web Summary；使用 `SpatialFeaturePlot()` 可视化经典脑区 Marker 基因的空间表达模式。
+
+---
+
+## 专题 6.5：空间数据质控、归一化与空间高变基因分析
+
+空间转录组数据的质控逻辑与 scRNA-seq 相似，但需要额外结合 H&E 图像进行空间质检：位于组织边缘或脱落区域的 Spot 即便通过了表达量阈值，也应予以去除。归一化策略同样可采用 SCTransform 或 LogNormalize，但需注意 Spot 的"测序深度"受到捕获效率空间不均匀性的影响。空间高变基因（Spatially Variable Genes, SVG）分析是空间转录组特有的核心步骤，其目标是识别在组织中呈现显著空间自相关表达模式的基因，这类基因往往对应功能特异的细胞层或组织区域。空间聚类则将基因表达信息与空间坐标信息结合，识别具有相似转录特征且在空间上毗邻的区域（Spatial Domain）。
+
+**核心概念**：
+
+- 空间 QC 指标：每 Spot 检出基因数、每 Spot UMI 数、线粒体比例；结合 H&E 图像的视觉检查
+- 归一化：SCTransform 在空间数据上的适用性；Spatial Normalization 的特殊考量（捕获效率空间异质性）
+- SVG 识别方法：Moran's I 统计量（`FindSpatiallyVariableFeatures()` 默认方法）；基于高斯过程的 SpatialDE
+- Moran's I 原理：空间权重矩阵的构建（六角近邻 vs k-NN）；期望值与检验统计量的解释
+- 空间聚类：`FindClusters()` 结合 PCA（忽略空间坐标）vs BayesSpace（纳入空间坐标的 t 分布贝叶斯模型）
+- BayesSpace 原理：Markov Random Field 先验约束相邻 Spot 属于相同域的概率；超参数 `q`（域数量）选择
+- 空间可视化：`SpatialPlot()`、`SpatialFeaturePlot()`；颜色映射与透明度的规范表达
+
+**实践内容**：`stxBrain` 数据的空间 QC 与 SCTransform 归一化；`FindSpatiallyVariableFeatures()` 识别 SVG 并可视化前 10 个 SVG 的空间表达图；BayesSpace 空间聚类（q = 7，对应主要脑区）；将聚类结果叠加到 H&E 图像上可视化并对照已知小鼠脑解剖区域。

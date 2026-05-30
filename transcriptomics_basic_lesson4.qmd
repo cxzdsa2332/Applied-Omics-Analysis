@@ -1,2 +1,538 @@
-# 第四章 课时4
+---
+title: "功能富集分析"
+date: today
+format:
+  html:
+    code-fold: false
+    toc: true
+    toc-depth: 3
+    number-sections: true
+    theme: cosmo
+---
 
+## 学习目标
+
+完成本专题后，学生应能够：
+
+1. 描述 Gene Ontology（GO）三个本体的层级结构与生物学含义；
+2. 阐述过表示富集分析（ORA）的超几何检验原理，并解释背景基因集选择的重要性；
+3. 描述 GSEA 的基因集富集得分计算逻辑，解释 NES 与 leading edge 基因的意义；
+4. 区分 ORA 与 GSEA 的适用场景，能根据数据特点做出合理选择；
+5. 使用 clusterProfiler 独立完成 GO ORA、KEGG ORA 与 GSEA 分析，并生成规范的可视化图表；
+6. 识别富集分析结果中的常见陷阱与过度解读风险。
+
+---
+
+## 从差异基因到生物学意义
+
+差异表达分析的产出是一张基因列表——数百到数千个在处理与对照间有统计显著变化的基因。然而，基因的名字本身（ENSG00000186092、TP53、MYC）并不能直接告诉我们"这些基因的变化意味着什么生物学过程被激活或抑制"。
+
+功能富集分析（Functional Enrichment Analysis）通过将差异基因与人工整理的功能数据库（如 GO、KEGG）比对，将孤立的基因列表转化为有生物学意义的通路和功能模块，是 RNA-seq 分析中将统计结果转化为生物学假设的关键步骤。
+
+---
+
+## 功能注释数据库
+
+### Gene Ontology（GO）
+
+Gene Ontology 是一个层级化的受控词汇（controlled vocabulary）系统，将基因的功能划分为三个独立的本体（Ontology）：
+
+{{Wiki:Gene_ontology}}
+
+**生物学过程（Biological Process, BP）**：描述基因参与的生物学事件，从宏观（"免疫应答"）到微观（"受体酪氨酸激酶信号传导"）形成层级结构。这是 RNA-seq 分析中最常用的 GO 本体。
+
+**分子功能（Molecular Function, MF）**：描述基因产物在分子层面的活性（如"ATP 结合"、"DNA 结合转录因子活性"）。注意：MF 描述的是功能，而非执行该功能的生物学背景。
+
+**细胞组分（Cellular Component, CC）**：描述基因产物定位的细胞结构（如"线粒体内膜"、"核糖体大亚基"）。
+
+GO 采用有向无环图（Directed Acyclic Graph, DAG）结构：每个 GO term 可以有多个亲本节点。一个基因被注释到某个 term 时，也隐含地注释到该 term 的所有祖先节点。这种层级传播（ancestral propagation）在富集分析中需要特别处理，否则会产生大量冗余的显著结果（父 term 因包含子 term 的基因而自动显著）。
+
+### KEGG 通路数据库
+
+KEGG（Kyoto Encyclopedia of Genes and Genomes）将基因分配到可手工策划的信号通路图（pathway map）中，直观展示基因产物在信号传导、代谢途径中的相互关系。与 GO 的抽象词汇不同，KEGG 通路图可以直接可视化，显示哪些节点（基因）在实验中被激活（上调）或抑制（下调）。
+
+:::note
+**数据库局限性：** GO 和 KEGG 的注释覆盖度存在物种偏差——人类、小鼠等模式生物的注释远比非模式生物完善。对于覆盖率低的物种，富集分析结果会呈现系统性偏差，应与直接证据结合解读。
+:::
+
+### MSigDB 基因集合库
+
+Molecular Signatures Database（MSigDB）提供了广泛的人工策划基因集，常用于 GSEA：
+
+- **H（Hallmark gene sets）**：50 个代表性生物学过程的基因集，去冗余、高置信度，适合入门分析；
+- **C2（Curated gene sets）**：来自已发表文献和通路数据库的实验验证基因集；
+- **C5（Ontology gene sets）**：GO BP/MF/CC 基因集的系统整理版本。
+
+### Reactome 通路数据库
+
+Reactome 是一个开放获取、经过专家人工策划的通路数据库，覆盖人类及多个模式生物。与 KEGG 相比，Reactome 具有以下特点：
+
+- **更细粒度的层级**：通路可嵌套至反应（Reaction）和参与分子（Participant）层级，生物学意义更精确；
+- **开放获取**：完全免费，且提供 Bioconductor 接口（`ReactomePA` 包）；
+- **与 KEGG 互补**：两个数据库在通路覆盖上存在差异，联合使用可提高召回率。
+
+```r
+library(ReactomePA)
+
+# Reactome ORA
+reactome_ora <- enrichPathway(
+  gene          = sig_entrez,
+  organism      = "human",
+  pvalueCutoff  = 0.05,
+  pAdjustMethod = "BH",
+  universe      = universe_entrez,
+  readable      = TRUE
+)
+
+dotplot(reactome_ora, showCategory = 15) +
+  labs(title = "Reactome ORA: dex treatment vs control")
+
+# Reactome GSEA
+reactome_gsea <- gsePathway(
+  geneList      = ranked_genes,
+  organism      = "human",
+  minGSSize     = 15,
+  pvalueCutoff  = 0.05,
+  pAdjustMethod = "BH",
+  seed          = 42
+)
+```
+
+---
+
+## 过表示富集分析（Over-Representation Analysis，ORA）
+
+### 超几何检验原理
+
+ORA 将差异表达基因（DEGs）与某个功能基因集进行重叠分析，通过超几何检验（hypergeometric test）评估重叠程度是否超出随机预期。
+
+假设：
+- $N$：背景基因集总数（通常为检测到有表达的所有基因）；
+- $K$：某 GO term 中基因总数；
+- $n$：显著 DEGs 总数；
+- $k$：DEGs 中属于该 GO term 的基因数。
+
+p 值为从 $N$ 个基因中随机抽取 $n$ 个，至少有 $k$ 个属于该 GO term 的概率：
+
+$$p = \sum_{i=k}^{\min(n,K)} \frac{\binom{K}{i}\binom{N-K}{n-i}}{\binom{N}{n}}$$
+
+这等同于从一个含 $K$ 个"红球"和 $N-K$ 个"黑球"的瓮中不放回地抽取 $n$ 个球，至少抽到 $k$ 个红球的概率。
+
+:::warning
+**背景基因集的选择至关重要。** 若将背景集设为"全基因组所有基因"（而非"在该实验中检测到有表达的基因"），则分母 $N$ 偏大，导致 $\frac{k}{n}$ 相对 $\frac{K}{N}$ 的比值（富集倍数）被低估，p 值偏保守。更严重的是，若使用"全基因组"作为背景，但实际实验只能检测到一部分基因，则对每个 GO term 中有多少基因"在实验中可被检测"的假设是错误的。**始终使用实验检测到的基因作为背景集。**
+:::
+
+### ORA 的适用场景与局限性
+
+**适用场景**：有明确的差异基因列表（如 |LFC| > 1，padj < 0.05）；需要快速识别最显著富集的功能类别。
+
+**局限性**：
+
+1. **阈值依赖性**：结果对差异基因的筛选阈值极为敏感。调整 LFC 阈值从 0.5 到 1.5，富集结果可能截然不同；
+2. **丢失趋势信息**：将所有 DEGs 视为等效，忽视了上调和下调的方向性，以及表达变化幅度；
+3. **忽略非显著基因的信息**：接近但未达到阈值的基因被完全排除在外。
+
+---
+
+## 基因集富集分析（GSEA）
+
+### 算法原理
+
+GSEA 不设定差异基因阈值，而是将**全部基因**按某个相关性指标（通常为 DESeq2 的 Wald stat 或 LFC × -log10(padj) 的乘积）从正到负排序，形成一个有序的基因列表 $L = [g_1, g_2, \ldots, g_N]$。
+
+对于每个基因集 $S$，GSEA 沿有序列表计算**富集得分（Enrichment Score, ES）**：
+
+$$ES = \max_{j} \left( \text{running sum at position } j \right)$$
+
+其中 running sum 的规则是：
+- 遇到基因集 $S$ 中的基因 → running sum 向上增加（增量与排序指标的绝对值成比例，使用加权版本）；
+- 遇到不在 $S$ 中的基因 → running sum 向下减少（均等减量）。
+
+ES 越大，表示基因集 $S$ 在排序列表的顶端（高度上调基因中）越富集；ES 越负，表示在底端（高度下调基因中）越富集。
+
+**标准化富集得分（NES）**：由于不同基因集大小不同，需要将 ES 标准化。方法是将真实 ES 除以同大小随机基因集排列置换的平均 |ES|，得到 NES。NES > 1.5 通常视为有意义的正向富集。
+
+{{Wiki:Gene_set_enrichment_analysis}}
+
+### Leading Edge 分析
+
+ES 曲线达到最大值（或最小值）的位置，将基因列表分成两部分：最大值之前的基因集 $S$ 成员称为 **leading edge 基因**，即驱动富集得分的核心基因子集。这些基因是生物学解读的焦点——它们既在基因集 $S$ 中，又在排序列表的极端位置，最有可能是生物学上真正相关的效应基因。
+
+:::info
+**黄金法则：** GSEA 的 leading edge 基因是实验结果与已知通路知识的交汇点。对 leading edge 基因的深入文献检索，往往是从计算分析迈向生物学发现的最关键一步。
+:::
+
+---
+
+## clusterProfiler 实践
+
+```r
+library(clusterProfiler)
+library(org.Hs.eg.db)
+library(enrichplot)
+library(ggplot2)
+
+# === Load DESeq2 results ===
+# Assuming res_shrunk is the apeglm-shrunken result from Lesson 3
+res_df <- as.data.frame(res_shrunk)
+res_df$gene_id <- rownames(res_df)
+
+# Convert Ensembl IDs to Entrez IDs (required by KEGG)
+gene_map <- bitr(
+  rownames(res_df),
+  fromType = "ENSEMBL",
+  toType   = c("ENTREZID", "SYMBOL"),
+  OrgDb    = org.Hs.eg.db
+)
+res_df <- merge(res_df, gene_map, by.x = "gene_id", by.y = "ENSEMBL")
+
+# === Part 1: GO Over-Representation Analysis (ORA) ===
+
+# Define significant DEGs (|LFC| > 1, padj < 0.05)
+sig_genes <- subset(res_df, padj < 0.05 & abs(log2FoldChange) > 1)
+sig_entrez <- sig_genes$ENTREZID
+
+# Universe = all genes tested (expressed in the experiment)
+universe_entrez <- res_df$ENTREZID
+
+# GO BP enrichment
+go_bp <- enrichGO(
+  gene          = sig_entrez,
+  OrgDb         = org.Hs.eg.db,
+  keyType       = "ENTREZID",
+  ont           = "BP",        # Biological Process
+  pAdjustMethod = "BH",
+  pvalueCutoff  = 0.05,
+  qvalueCutoff  = 0.2,
+  universe      = universe_entrez,
+  readable      = TRUE         # convert ENTREZID to SYMBOL in output
+)
+
+# Remove redundant GO terms (keep most specific)
+go_bp_simplified <- simplify(go_bp,
+                              cutoff    = 0.7,
+                              by        = "p.adjust",
+                              select_fun = min)
+
+# Visualize: dotplot
+dotplot(go_bp_simplified, showCategory = 20) +
+  labs(title = "GO Biological Process: dex treatment vs control",
+       x = "Gene Ratio") +
+  theme(axis.text.y = element_text(size = 8))
+
+# Visualize: enrichment map (shows GO term similarity network)
+go_bp_sim <- pairwise_termsim(go_bp_simplified)
+emapplot(go_bp_sim, showCategory = 30, cex_label_category = 0.7) +
+  labs(title = "GO BP Enrichment Map")
+
+# === Part 2: KEGG Pathway Enrichment ===
+kegg_res <- enrichKEGG(
+  gene          = sig_entrez,
+  organism      = "hsa",       # Homo sapiens
+  pAdjustMethod = "BH",
+  pvalueCutoff  = 0.05,
+  universe      = universe_entrez
+)
+
+# Visualize KEGG pathway on its map (requires internet)
+# browseKEGG(kegg_res, "hsa04657")  # example: IL-17 signaling pathway
+
+dotplot(kegg_res, showCategory = 15) +
+  labs(title = "KEGG Pathway ORA: dex treatment vs control")
+
+# === Part 3: GSEA ===
+
+# Create ranked gene list: sorted by Wald statistic (recommended for GSEA)
+# stat = LFC / SE = Wald stat, captures both magnitude and significance
+ranked_genes <- res_df$stat
+names(ranked_genes) <- res_df$ENTREZID
+ranked_genes <- sort(ranked_genes, decreasing = TRUE)
+ranked_genes <- ranked_genes[!is.na(ranked_genes)]
+
+# GO GSEA
+gsea_go <- gseGO(
+  geneList      = ranked_genes,
+  OrgDb         = org.Hs.eg.db,
+  keyType       = "ENTREZID",
+  ont           = "BP",
+  minGSSize     = 15,
+  maxGSSize     = 500,
+  pvalueCutoff  = 0.05,
+  pAdjustMethod = "BH",
+  eps           = 1e-10,
+  seed          = 42
+)
+
+# KEGG GSEA
+gsea_kegg <- gseKEGG(
+  geneList      = ranked_genes,
+  organism      = "hsa",
+  minGSSize     = 15,
+  maxGSSize     = 500,
+  pvalueCutoff  = 0.05,
+  pAdjustMethod = "BH",
+  seed          = 42
+)
+
+# Visualize: ridgeplot (shows distribution of ranked genes per pathway)
+ridgeplot(gsea_kegg, showCategory = 15, fill = "p.adjust") +
+  labs(title = "GSEA KEGG: gene rank distribution per pathway")
+
+# Visualize: GSEA running enrichment plot for top pathway
+gseaplot2(gsea_kegg,
+          geneSetID = 1,     # top-ranked pathway
+          title     = gsea_kegg$Description[1])
+```
+
+### 理解 GSEA 富集图
+
+`gseaplot2()` 生成的经典 GSEA 图包含三个面板：
+
+1. **顶部折线图**：Running Enrichment Score (RES) 曲线，纵轴为累积富集得分，达到最大值处即为 ES；
+2. **中间条形图**：基因集 $S$ 中各基因在有序列表中的位置（黑色竖线），聚集在左侧表示上调富集，聚集在右侧表示下调富集；
+3. **底部梯度条**：基因排序指标（Wald stat）从正（左）到负（右）的热图，颜色越红表示上调越强，越蓝表示下调越强。
+
+---
+
+## ORA 与 GSEA 的结果比较
+
+```r
+# Compare ORA vs GSEA results for the same dataset
+library(dplyr)
+
+# Extract significant pathways from both methods
+ora_pathways  <- go_bp_simplified@result %>%
+  filter(p.adjust < 0.05) %>%
+  select(Description, p.adjust, Count) %>%
+  mutate(method = "ORA")
+
+gsea_pathways <- gsea_go@result %>%
+  filter(p.adjust < 0.05) %>%
+  select(Description, p.adjust, NES) %>%
+  mutate(method = "GSEA")
+
+# Count overlap
+cat("ORA significant GO BP terms:", nrow(ora_pathways), "\n")
+cat("GSEA significant GO BP terms:", nrow(gsea_pathways), "\n")
+overlap <- intersect(ora_pathways$Description, gsea_pathways$Description)
+cat("Overlapping terms:", length(overlap), "\n")
+```
+
+**典型差异分析**：
+
+- ORA 发现的通路通常是 DEG 中**高度富集的核心功能**，倾向于选择包含已知标志物基因的 GO terms；
+- GSEA 额外捕捉**整体趋势性变化**，能发现一组基因集体微小上调（每个基因单独看未达显著阈值）的通路；
+- 若两方法均显著的通路，生物学可靠性更高；仅 GSEA 显著的通路值得进一步验证；仅 ORA 显著的通路可能受阈值选择影响较大。
+
+---
+
+## 多数据库结果整合与高级可视化
+
+当同时使用 GO、KEGG 和 Reactome 进行富集分析时，如何高效整合和展示来自不同数据库的结果，是数据呈现的重要技巧。
+
+### UpSet 图：跨方法/数据库重叠分析
+
+UpSet 图是韦恩图的扩展，适合比较超过 3 个集合的重叠情况，能清晰展示哪些基因被多个数据库/方法共同检出。
+
+```r
+library(UpSetR)
+
+# Compile significant genes from each enrichment approach
+# (genes appearing in any significant term's geneID list)
+extract_genes <- function(enrich_obj, padj_cut = 0.05) {
+  sig <- enrich_obj@result[enrich_obj@result$p.adjust < padj_cut, ]
+  unique(unlist(strsplit(sig$geneID, "/")))
+}
+
+gene_sets_db <- list(
+  GO_BP_ORA   = extract_genes(go_bp_simplified),
+  KEGG_ORA    = extract_genes(kegg_res),
+  Reactome_ORA = extract_genes(reactome_ora),
+  GSEA_KEGG   = extract_genes(gsea_kegg)
+)
+
+# Convert to binary matrix for UpSetR
+all_genes <- unique(unlist(gene_sets_db))
+upset_mat  <- lapply(gene_sets_db, function(g) as.integer(all_genes %in% g))
+upset_df   <- as.data.frame(do.call(cbind, upset_mat))
+rownames(upset_df) <- all_genes
+
+upset(upset_df,
+      sets.bar.color = "steelblue",
+      order.by = "freq",
+      main.bar.color = "firebrick",
+      text.scale = 1.2)
+```
+
+### 差异基因热图：Top DEG 的表达谱可视化
+
+展示差异最显著基因在各样本间的表达模式，是论文图表的标配。
+
+```r
+library(pheatmap)
+library(RColorBrewer)
+
+# Select top 50 DEGs by padj (bidirectional)
+top_up   <- head(rownames(sig_genes[order(sig_genes$log2FoldChange,
+                                           decreasing = TRUE), ]), 25)
+top_down <- head(rownames(sig_genes[order(sig_genes$log2FoldChange), ]), 25)
+top_degs  <- c(top_up, top_down)
+
+# Get VST-normalized expression for heatmap
+vsd_mat <- assay(vst(dds, blind = FALSE))
+heatmap_mat <- vsd_mat[top_degs, ]
+
+# Row-scale (Z-score per gene)
+heatmap_scaled <- t(scale(t(heatmap_mat)))
+
+# Annotation for columns
+col_anno <- data.frame(
+  condition = sample_info$condition,
+  row.names = rownames(sample_info)
+)
+anno_colors <- list(
+  condition = c(untreated = "steelblue", treated = "firebrick")
+)
+
+pheatmap(
+  heatmap_scaled,
+  annotation_col  = col_anno,
+  annotation_colors = anno_colors,
+  cluster_rows    = TRUE,
+  cluster_cols    = TRUE,
+  show_rownames   = TRUE,
+  show_colnames   = TRUE,
+  color           = colorRampPalette(
+    rev(brewer.pal(11, "RdBu")))(100),
+  breaks          = seq(-3, 3, length.out = 101),
+  fontsize_row    = 7,
+  main            = "Top 50 DEGs: Z-score normalized expression"
+)
+```
+
+### KEGG 通路可视化：pathview
+
+pathview 将差异表达数据直接叠加到 KEGG 通路图上，用颜色编码基因的上调/下调状态，是展示具体通路机制的有效方式。
+
+```r
+library(pathview)
+
+# Prepare named vector: gene LFC values, names = Entrez IDs
+lfc_vector <- setNames(res_df$log2FoldChange, res_df$ENTREZID)
+lfc_vector <- lfc_vector[!is.na(lfc_vector)]
+
+# Find top KEGG pathway from ORA results
+top_kegg_id <- kegg_res@result$ID[1]  # e.g., "hsa04657"
+cat("Visualizing pathway:", kegg_res@result$Description[1], "\n")
+
+# Generate pathway map (downloads from KEGG website)
+pathview(
+  gene.data  = lfc_vector,
+  pathway.id = top_kegg_id,
+  species    = "hsa",
+  gene.idtype = "ENTREZ",
+  low  = list(gene = "steelblue"),
+  high = list(gene = "firebrick"),
+  mid  = list(gene = "white"),
+  out.suffix = "dex_treatment"
+)
+# Output: hsa04657.dex_treatment.png in working directory
+```
+
+---
+
+## 结果解读的批判性原则
+
+:::warning
+**避免过度解读富集分析结果**
+
+以下是富集分析中最常见的误用：
+
+1. **功能注释覆盖度偏差**：GO 对某些功能（如"DNA 修复"）的注释非常详细，对另一些（如"细胞极性建立"）则稀疏。覆盖度高的功能更容易出现在富集结果中，并非一定是最重要的。
+
+2. **通路重叠假象**：许多 GO terms 共享大量基因（如"细胞周期调控"与"DNA 损伤应答"的基因高度重叠）。多个显著 terms 可能被同一组基因驱动，并非独立的生物学信号。使用 `simplify()` 或 `emapplot()` 可帮助识别冗余。
+
+3. **背景集选择偏差**：参见 ORA 部分的警告。
+
+4. **将 p 值大小等同于生物学重要性**：富集分析 p 值主要受基因集大小影响（大的基因集更容易显著），而非效应量大小。应结合 Gene Ratio（或 NES）和 leading edge 基因的生物学意义综合判断。
+:::
+
+---
+
+## 实践：完整富集分析报告
+
+```r
+# === Comprehensive enrichment analysis summary ===
+
+# Combine GO BP, KEGG ORA, GO GSEA, KEGG GSEA into a summary table
+ora_summary <- data.frame(
+  Method      = "ORA",
+  Database    = "GO BP",
+  Significant = nrow(go_bp_simplified@result[go_bp_simplified@result$p.adjust < 0.05, ]),
+  Top5        = paste(head(go_bp_simplified@result$Description, 5), collapse = "; ")
+)
+
+gsea_summary <- data.frame(
+  Method      = "GSEA",
+  Database    = "KEGG",
+  Significant = nrow(gsea_kegg@result[gsea_kegg@result$p.adjust < 0.05, ]),
+  Top5        = paste(head(gsea_kegg@result$Description, 5), collapse = "; ")
+)
+
+summary_table <- rbind(ora_summary, gsea_summary)
+knitr::kable(summary_table,
+             caption = "Summary of enrichment analysis results")
+
+# === Save significant results to CSV ===
+write.csv(
+  go_bp_simplified@result[go_bp_simplified@result$p.adjust < 0.05, ],
+  "results/enrichment/GO_BP_ORA_significant.csv",
+  row.names = FALSE
+)
+
+write.csv(
+  gsea_kegg@result[gsea_kegg@result$p.adjust < 0.05, ],
+  "results/enrichment/KEGG_GSEA_significant.csv",
+  row.names = FALSE
+)
+
+# === Network plot: connection between DEGs and top GO terms ===
+cnetplot(go_bp_simplified,
+         showCategory = 5,
+         foldChange   = setNames(res_df$log2FoldChange, res_df$SYMBOL),
+         colorEdge    = TRUE) +
+  scale_color_gradient2(
+    low = "steelblue", mid = "white", high = "firebrick",
+    midpoint = 0, name = "LFC"
+  ) +
+  labs(title = "Gene-Concept Network: top 5 GO BP terms")
+```
+
+---
+
+## 课后自测 (Post-Lesson Quiz)
+
+1. 研究者对一个含 15,000 个背景基因的实验数据进行 GO ORA。某 GO term 在背景中有 200 个基因，在 500 个 DEGs 中有 30 个基因命中。这个富集是否可能显著？请写出需要计算的统计量（无需算出数值）。
+
+2. 两位研究者分析同一数据集，研究者 A 使用所有检测到的基因（15,000 个）作为背景，研究者 B 使用人类全基因组所有基因（20,000 个）作为背景。谁的 ORA 结果更可靠？为什么？
+
+3. GSEA 分析显示某通路的 NES = +2.3，padj = 0.001，但该通路的 leading edge 基因只有 8 个，且这 8 个基因恰好都是同一个蛋白质复合体的亚单位。这个结果应如何解读？是否应该在摘要中报告为"该通路被显著激活"？
+
+4. 你使用 clusterProfiler 的 `simplify()` 函数（cutoff = 0.7）对 GO BP ORA 结果去冗余，从 120 个显著 terms 减少到 35 个。这个过程的生物学依据是什么？能否会漏掉重要的生物学信息？
+
+5. 对于一个疾病与健康对照的转录组研究，共识别了 3,000 个 DEGs，但经 ORA 分析后没有发现任何显著富集的通路（所有 padj > 0.1）。请列举至少三种可能的原因，以及对应的诊断方法。
+
+<details>
+<summary><strong>参考答案 (Reference Answers)</strong></summary>
+
+1. *需要计算的统计量是超几何检验的 p 值：$N = 15000$，$K = 200$，$n = 500$，$k = 30$。计算公式为 $p = \sum_{i=30}^{\min(500,200)} \frac{\binom{200}{i}\binom{14800}{500-i}}{\binom{15000}{500}}$。期望值为 $n \times K/N = 500 \times 200/15000 \approx 6.67$，实际观测 30 远超期望，富集倍数约 4.5，很可能显著。但还需经 BH 校正与其他 GO terms 比较后才能确定最终显著性。*
+
+2. *研究者 A（背景 = 实验检测基因，15,000 个）更可靠。使用全基因组 20,000 个基因作为背景，引入了实验无法检测的基因（如在该细胞类型中不表达的基因），这些基因按定义不可能出现在 DEG 列表中，但却虚增了 $N-K$（背景中不属于该 GO term 的基因数），导致期望重叠值降低，富集倍数虚高，p 值偏乐观（假阳性增加）。*
+
+3. *虽然统计上显著，但应谨慎解读。NES = +2.3 且 padj 极低，说明该通路的基因整体在排序列表顶端聚集。然而 leading edge 仅 8 个基因且属于同一蛋白复合体，意味着整个通路的富集信号实际上由单一功能模块驱动，而非通路的多个功能节点均受影响。建议在报告中具体说明是"该通路中 XX 复合体相关基因被显著上调"，而非笼统陈述"通路被激活"——后者可能误导读者认为通路的全部功能组分均受影响。*
+
+4. *`simplify()` 通过计算 GO terms 间的语义相似度（基于共享祖先节点的程度），将高度相似（相似度 > 0.7）的 terms 合并，保留最具统计意义的那个。生物学依据是 GO 的层级冗余性：子 term 和父 term 常常共享大部分基因，去冗余能减少视觉上的干扰，突出独立的生物学信号。潜在风险：若两个相似 term 对应不同的细胞类型或亚过程，合并可能丢失这种区分信息。建议在最终结论中补充检查被合并的 terms，确认无重要信息丢失。*
+
+5. *可能原因及诊断方法：（1）DEGs 分散在多个通路中，每个通路的命中基因数低于阈值 → 改用 GSEA（无需阈值）；（2）背景基因集设置不当（如使用了整个基因组）→ 改用实验检测基因作为背景；（3）所用功能数据库对该疾病/组织的注释覆盖度低 → 尝试不同数据库（如 Reactome、WikiPathways）；（4）差异基因筛选阈值过严，遗漏了生物学重要但未达统计阈值的基因 → 放宽 LFC 阈值后重跑 ORA；（5）实验设计问题（如批次效应主导变异）→ 检查 PCA 图，评估主要变异来源。*
+
+</details>

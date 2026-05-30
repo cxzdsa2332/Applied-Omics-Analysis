@@ -6,8 +6,9 @@
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
+<meta name="dcterms.date" content="2026-05-30">
 
-<title>22&nbsp; 第四章 课时2 – Introduction to Applied High-throughput Biological Data Analysis</title>
+<title>22&nbsp; Splice-Aware 比对与表达量定量 – Introduction to Applied High-throughput Biological Data Analysis</title>
 <style>
 /* Default styles provided by pandoc.
 ** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
@@ -22,6 +23,41 @@ ul.task-list li input[type="checkbox"] {
   width: 0.8em;
   margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
   vertical-align: middle;
+}
+/* CSS for syntax highlighting */
+html { -webkit-text-size-adjust: 100%; }
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
 }
 </style>
 
@@ -44,7 +80,7 @@ ul.task-list li input[type="checkbox"] {
 <link href="site_libs/quarto-html/quarto-syntax-highlighting-845c23b38eaddc0f92fda52bfe77a8c8.css" rel="stylesheet" id="quarto-text-highlighting-styles">
 <script src="site_libs/bootstrap/bootstrap.min.js"></script>
 <link href="site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
-<link href="site_libs/bootstrap/bootstrap-ffc4c3fc79587ee79da4865b6a08975e.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
+<link href="site_libs/bootstrap/bootstrap-5ccb035bea26c1e21f80f44cf7c27909.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
 <script id="quarto-search-options" type="application/json">{
   "location": "sidebar",
   "copy-button": false,
@@ -73,6 +109,35 @@ ul.task-list li input[type="checkbox"] {
   }
 }</script>
 
+  <script src="https://cdnjs.cloudflare.com/polyfill/v3/polyfill.min.js?features=es6"></script>
+  <script defer="" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js" type="text/javascript"></script>
+
+<script type="text/javascript">
+const typesetMath = (el) => {
+  if (window.MathJax) {
+    // MathJax Typeset
+    window.MathJax.typeset([el]);
+  } else if (window.katex) {
+    // KaTeX Render
+    var mathElements = el.getElementsByClassName("math");
+    var macros = [];
+    for (var i = 0; i < mathElements.length; i++) {
+      var texText = mathElements[i].firstChild;
+      if (mathElements[i].tagName == "SPAN" && texText && texText.data) {
+        window.katex.render(texText.data, mathElements[i], {
+          displayMode: mathElements[i].classList.contains('display'),
+          throwOnError: false,
+          macros: macros,
+          fleqn: false
+        });
+      }
+    }
+  }
+}
+window.Quarto = {
+  typesetMath
+};
+</script>
 
 </head>
 
@@ -85,7 +150,7 @@ ul.task-list li input[type="checkbox"] {
       <button type="button" class="quarto-btn-toggle btn" data-bs-toggle="collapse" role="button" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
         <i class="bi bi-layout-text-sidebar-reverse"></i>
       </button>
-        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="./04-transcriptomics-basic.html">第二阶段：转录组与单细胞</a></li><li class="breadcrumb-item"><a href="./transcriptomics_basic_lesson2.html"><span class="chapter-number">22</span>&nbsp; <span class="chapter-title">第四章 课时2</span></a></li></ol></nav>
+        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="./04-transcriptomics-basic.html">第二阶段：转录组与单细胞</a></li><li class="breadcrumb-item"><a href="./transcriptomics_basic_lesson2.html"><span class="chapter-number">22</span>&nbsp; <span class="chapter-title">专题 4.2：Splice-Aware 比对与表达量定量</span></a></li></ol></nav>
         <a class="flex-grow-1" role="navigation" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">      
         </a>
       <button type="button" class="btn quarto-search-button" aria-label="Search" onclick="window.quartoOpenSearch();">
@@ -131,7 +196,7 @@ ul.task-list li input[type="checkbox"] {
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./01-intro.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">2</span>&nbsp; <span class="chapter-title">分子基础与计算生态启蒙</span></span></a>
+ <span class="menu-text"><span class="chapter-number">2</span>&nbsp; <span class="chapter-title">生物信息学入门：从分子到数据</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
@@ -167,37 +232,37 @@ ul.task-list li input[type="checkbox"] {
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./02-genomics-qc.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">8</span>&nbsp; <span class="chapter-title">基因组 —— 质量控制、变异检测与功能注释</span></span></a>
+ <span class="menu-text"><span class="chapter-number">8</span>&nbsp; <span class="chapter-title">基因组数据分析：质量控制、从头组装与变异检测</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./genomics_qc_lesson1.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">9</span>&nbsp; <span class="chapter-title">第二章 课时1</span></span></a>
+ <span class="menu-text"><span class="chapter-number">9</span>&nbsp; <span class="chapter-title">原始下机数据的数字表现</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./genomics_qc_lesson2.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">10</span>&nbsp; <span class="chapter-title">第二章 课时2</span></span></a>
+ <span class="menu-text"><span class="chapter-number">10</span>&nbsp; <span class="chapter-title">数据预处理与参考基因组比对</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./genomics_qc_lesson3.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">11</span>&nbsp; <span class="chapter-title">第二章 课时3</span></span></a>
+ <span class="menu-text"><span class="chapter-number">11</span>&nbsp; <span class="chapter-title">从头基因组组装：当没有参考基因组时</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./genomics_qc_lesson4.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">12</span>&nbsp; <span class="chapter-title">第二章 课时4</span></span></a>
+ <span class="menu-text"><span class="chapter-number">12</span>&nbsp; <span class="chapter-title">变异检测算法与 VCF 通用格式</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./genomics_qc_lesson5.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">13</span>&nbsp; <span class="chapter-title">第二章 课时5</span></span></a>
+ <span class="menu-text"><span class="chapter-number">13</span>&nbsp; <span class="chapter-title">功能注释、GATK 最佳实践与可视化</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
@@ -209,31 +274,31 @@ ul.task-list li input[type="checkbox"] {
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./genomics_variant_lesson1.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">15</span>&nbsp; <span class="chapter-title">第三章 课时1</span></span></a>
+ <span class="menu-text"><span class="chapter-number">15</span>&nbsp; <span class="chapter-title">经典分子标记、遗传图谱与 QTL 定位</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./genomics_variant_lesson2.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">16</span>&nbsp; <span class="chapter-title">第三章 课时2</span></span></a>
+ <span class="menu-text"><span class="chapter-number">16</span>&nbsp; <span class="chapter-title">全基因组 SNP 鉴定、连锁不平衡图谱与基因型数据处理</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./genomics_variant_lesson3.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">17</span>&nbsp; <span class="chapter-title">第三章 课时3</span></span></a>
+ <span class="menu-text"><span class="chapter-number">17</span>&nbsp; <span class="chapter-title">GWAS 统计模型</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./genomics_variant_lesson4.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">18</span>&nbsp; <span class="chapter-title">第三章 课时4</span></span></a>
+ <span class="menu-text"><span class="chapter-number">18</span>&nbsp; <span class="chapter-title">GWAS 结果可视化、多重检验与候选位点解析</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./genomics_variant_lesson5.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">19</span>&nbsp; <span class="chapter-title">第三章 课时5</span></span></a>
+ <span class="menu-text"><span class="chapter-number">19</span>&nbsp; <span class="chapter-title">精细定位、功能注释、因果推断与更多</span></span></a>
   </div>
 </li>
       </ul>
@@ -250,145 +315,139 @@ ul.task-list li input[type="checkbox"] {
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./04-transcriptomics-basic.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">20</span>&nbsp; <span class="chapter-title">04-transcriptomics-basic.html</span></span></a>
+ <span class="menu-text"><span class="chapter-number">20</span>&nbsp; <span class="chapter-title">Bulk 转录组分析基础：质量控制、定量与差异表达</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./transcriptomics_basic_lesson1.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">21</span>&nbsp; <span class="chapter-title">第四章 课时1</span></span></a>
+ <span class="menu-text"><span class="chapter-number">21</span>&nbsp; <span class="chapter-title">测序原理、文库特性与原始数据质量控制</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./transcriptomics_basic_lesson2.html" class="sidebar-item-text sidebar-link active">
- <span class="menu-text"><span class="chapter-number">22</span>&nbsp; <span class="chapter-title">第四章 课时2</span></span></a>
+ <span class="menu-text"><span class="chapter-number">22</span>&nbsp; <span class="chapter-title">专题 4.2：Splice-Aware 比对与表达量定量</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./transcriptomics_basic_lesson3.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">23</span>&nbsp; <span class="chapter-title">第四章 课时3</span></span></a>
+ <span class="menu-text"><span class="chapter-number">23</span>&nbsp; <span class="chapter-title">专题 4.3：差异表达分析</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./transcriptomics_basic_lesson4.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">24</span>&nbsp; <span class="chapter-title">第四章 课时4</span></span></a>
-  </div>
-</li>
-          <li class="sidebar-item">
-  <div class="sidebar-item-container"> 
-  <a href="./transcriptomics_basic_lesson5.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">25</span>&nbsp; <span class="chapter-title">第四章 课时5</span></span></a>
+ <span class="menu-text"><span class="chapter-number">24</span>&nbsp; <span class="chapter-title">功能富集分析</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./05-transcriptomics-advanced.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">26</span>&nbsp; <span class="chapter-title">05-transcriptomics-advanced.html</span></span></a>
+ <span class="menu-text"><span class="chapter-number">25</span>&nbsp; <span class="chapter-title">Bulk 转录组高级分析：结构变异、长读长与共表达网络</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./transcriptomics_adv_lesson1.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">27</span>&nbsp; <span class="chapter-title">第五章 课时1</span></span></a>
+ <span class="menu-text"><span class="chapter-number">26</span>&nbsp; <span class="chapter-title">第五章 课时1</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./transcriptomics_adv_lesson2.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">28</span>&nbsp; <span class="chapter-title">第五章 课时2</span></span></a>
+ <span class="menu-text"><span class="chapter-number">27</span>&nbsp; <span class="chapter-title">第五章 课时2</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./transcriptomics_adv_lesson3.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">29</span>&nbsp; <span class="chapter-title">第五章 课时3</span></span></a>
+ <span class="menu-text"><span class="chapter-number">28</span>&nbsp; <span class="chapter-title">第五章 课时3</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./transcriptomics_adv_lesson4.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">30</span>&nbsp; <span class="chapter-title">第五章 课时4</span></span></a>
+ <span class="menu-text"><span class="chapter-number">29</span>&nbsp; <span class="chapter-title">第五章 课时4</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./transcriptomics_adv_lesson5.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">31</span>&nbsp; <span class="chapter-title">第五章 课时5</span></span></a>
+ <span class="menu-text"><span class="chapter-number">30</span>&nbsp; <span class="chapter-title">第五章 课时5</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./06-scrna-basic.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">32</span>&nbsp; <span class="chapter-title">06-scrna-basic.html</span></span></a>
+ <span class="menu-text"><span class="chapter-number">31</span>&nbsp; <span class="chapter-title">单细胞与空间转录组基础：上游处理、标准分析流程与 Visium 基础</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./scrna_basic_lesson1.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">33</span>&nbsp; <span class="chapter-title">第六章 课时1</span></span></a>
+ <span class="menu-text"><span class="chapter-number">32</span>&nbsp; <span class="chapter-title">第六章 课时1</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./scrna_basic_lesson2.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">34</span>&nbsp; <span class="chapter-title">第六章 课时2</span></span></a>
+ <span class="menu-text"><span class="chapter-number">33</span>&nbsp; <span class="chapter-title">第六章 课时2</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./scrna_basic_lesson3.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">35</span>&nbsp; <span class="chapter-title">第六章 课时3</span></span></a>
+ <span class="menu-text"><span class="chapter-number">34</span>&nbsp; <span class="chapter-title">第六章 课时3</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./scrna_basic_lesson4.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">36</span>&nbsp; <span class="chapter-title">第六章 课时4</span></span></a>
+ <span class="menu-text"><span class="chapter-number">35</span>&nbsp; <span class="chapter-title">第六章 课时4</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./scrna_basic_lesson5.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">37</span>&nbsp; <span class="chapter-title">第六章 课时5</span></span></a>
+ <span class="menu-text"><span class="chapter-number">36</span>&nbsp; <span class="chapter-title">第六章 课时5</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./07-scrna-advanced.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">38</span>&nbsp; <span class="chapter-title">07-scrna-advanced.html</span></span></a>
+ <span class="menu-text"><span class="chapter-number">37</span>&nbsp; <span class="chapter-title">单细胞与空间转录组高级分析：动态推断、多组学与空间解析</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./scrna_adv_lesson1.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">39</span>&nbsp; <span class="chapter-title">第七章 课时1</span></span></a>
+ <span class="menu-text"><span class="chapter-number">38</span>&nbsp; <span class="chapter-title">第七章 课时1</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./scrna_adv_lesson2.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">40</span>&nbsp; <span class="chapter-title">第七章 课时2</span></span></a>
+ <span class="menu-text"><span class="chapter-number">39</span>&nbsp; <span class="chapter-title">第七章 课时2</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./scrna_adv_lesson3.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">41</span>&nbsp; <span class="chapter-title">第七章 课时3</span></span></a>
+ <span class="menu-text"><span class="chapter-number">40</span>&nbsp; <span class="chapter-title">第七章 课时3</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./scrna_adv_lesson4.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">42</span>&nbsp; <span class="chapter-title">第七章 课时4</span></span></a>
+ <span class="menu-text"><span class="chapter-number">41</span>&nbsp; <span class="chapter-title">第七章 课时4</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./scrna_adv_lesson5.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">43</span>&nbsp; <span class="chapter-title">第七章 课时5</span></span></a>
+ <span class="menu-text"><span class="chapter-number">42</span>&nbsp; <span class="chapter-title">第七章 课时5</span></span></a>
   </div>
 </li>
       </ul>
@@ -405,139 +464,182 @@ ul.task-list li input[type="checkbox"] {
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./08-epigenomics.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">44</span>&nbsp; <span class="chapter-title">08-epigenomics.html</span></span></a>
+ <span class="menu-text"><span class="chapter-number">43</span>&nbsp; <span class="chapter-title">08-epigenomics.html</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./epigenomics_lesson1.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">45</span>&nbsp; <span class="chapter-title">第八章 课时1</span></span></a>
+ <span class="menu-text"><span class="chapter-number">44</span>&nbsp; <span class="chapter-title">第八章 课时1</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./epigenomics_lesson2.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">46</span>&nbsp; <span class="chapter-title">第八章 课时2</span></span></a>
+ <span class="menu-text"><span class="chapter-number">45</span>&nbsp; <span class="chapter-title">第八章 课时2</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./epigenomics_lesson3.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">47</span>&nbsp; <span class="chapter-title">第八章 课时3</span></span></a>
+ <span class="menu-text"><span class="chapter-number">46</span>&nbsp; <span class="chapter-title">第八章 课时3</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./epigenomics_lesson4.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">48</span>&nbsp; <span class="chapter-title">第八章 课时4</span></span></a>
+ <span class="menu-text"><span class="chapter-number">47</span>&nbsp; <span class="chapter-title">第八章 课时4</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./epigenomics_lesson5.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">49</span>&nbsp; <span class="chapter-title">第八章 课时5</span></span></a>
+ <span class="menu-text"><span class="chapter-number">48</span>&nbsp; <span class="chapter-title">第八章 课时5</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./09-proteometab.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">50</span>&nbsp; <span class="chapter-title">09-proteometab.html</span></span></a>
+ <span class="menu-text"><span class="chapter-number">49</span>&nbsp; <span class="chapter-title">09-proteometab.html</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./proteometab_lesson1.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">51</span>&nbsp; <span class="chapter-title">第九章 课时1</span></span></a>
+ <span class="menu-text"><span class="chapter-number">50</span>&nbsp; <span class="chapter-title">第九章 课时1</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./proteometab_lesson2.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">52</span>&nbsp; <span class="chapter-title">第九章 课时2</span></span></a>
+ <span class="menu-text"><span class="chapter-number">51</span>&nbsp; <span class="chapter-title">第九章 课时2</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./proteometab_lesson3.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">53</span>&nbsp; <span class="chapter-title">第九章 课时3</span></span></a>
+ <span class="menu-text"><span class="chapter-number">52</span>&nbsp; <span class="chapter-title">第九章 课时3</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./proteometab_lesson4.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">54</span>&nbsp; <span class="chapter-title">第九章 课时4</span></span></a>
+ <span class="menu-text"><span class="chapter-number">53</span>&nbsp; <span class="chapter-title">第九章 课时4</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./proteometab_lesson5.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">55</span>&nbsp; <span class="chapter-title">第九章 课时5</span></span></a>
+ <span class="menu-text"><span class="chapter-number">54</span>&nbsp; <span class="chapter-title">第九章 课时5</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./10-integration.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">56</span>&nbsp; <span class="chapter-title">10-integration.html</span></span></a>
+ <span class="menu-text"><span class="chapter-number">55</span>&nbsp; <span class="chapter-title">10-integration.html</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./integration_lesson1.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">57</span>&nbsp; <span class="chapter-title">第十章 课时1</span></span></a>
+ <span class="menu-text"><span class="chapter-number">56</span>&nbsp; <span class="chapter-title">第十章 课时1</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./integration_lesson2.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">58</span>&nbsp; <span class="chapter-title">第十章 课时2</span></span></a>
+ <span class="menu-text"><span class="chapter-number">57</span>&nbsp; <span class="chapter-title">第十章 课时2</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./integration_lesson3.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">59</span>&nbsp; <span class="chapter-title">第十章 课时3</span></span></a>
+ <span class="menu-text"><span class="chapter-number">58</span>&nbsp; <span class="chapter-title">第十章 课时3</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./integration_lesson4.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">60</span>&nbsp; <span class="chapter-title">第十章 课时4</span></span></a>
+ <span class="menu-text"><span class="chapter-number">59</span>&nbsp; <span class="chapter-title">第十章 课时4</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./integration_lesson5.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">61</span>&nbsp; <span class="chapter-title">第十章 课时5</span></span></a>
+ <span class="menu-text"><span class="chapter-number">60</span>&nbsp; <span class="chapter-title">第十章 课时5</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./11-summary.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">62</span>&nbsp; <span class="chapter-title">11-summary.html</span></span></a>
+ <span class="menu-text"><span class="chapter-number">61</span>&nbsp; <span class="chapter-title">11-summary.html</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./summary_lesson1.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">63</span>&nbsp; <span class="chapter-title">第十一章 课时1</span></span></a>
+ <span class="menu-text"><span class="chapter-number">62</span>&nbsp; <span class="chapter-title">第十一章 课时1</span></span></a>
   </div>
 </li>
       </ul>
   </li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./references.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">参考资料</span></a>
+  </div>
+</li>
     </ul>
     </div>
 </nav>
 <div id="quarto-sidebar-glass" class="quarto-sidebar-collapse-item" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item"></div>
 <!-- margin-sidebar -->
-    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar zindex-bottom">
-        
+    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+        <nav id="TOC" role="doc-toc" class="toc-active">
+    <h2 id="toc-title">Table of contents</h2>
+   
+  <ul>
+  <li><a href="#学习目标" id="toc-学习目标" class="nav-link active" data-scroll-target="#学习目标"><span class="header-section-number">22.1</span> 学习目标</a></li>
+  <li><a href="#为什么-rna-seq-比对需要特殊处理" id="toc-为什么-rna-seq-比对需要特殊处理" class="nav-link" data-scroll-target="#为什么-rna-seq-比对需要特殊处理"><span class="header-section-number">22.2</span> 为什么 RNA-seq 比对需要特殊处理？</a>
+  <ul class="collapse">
+  <li><a href="#read-through-与剪接位点的挑战" id="toc-read-through-与剪接位点的挑战" class="nav-link" data-scroll-target="#read-through-与剪接位点的挑战"><span class="header-section-number">22.2.1</span> Read-through 与剪接位点的挑战</a></li>
+  <li><a href="#splice-aware-比对的解决思路" id="toc-splice-aware-比对的解决思路" class="nav-link" data-scroll-target="#splice-aware-比对的解决思路"><span class="header-section-number">22.2.2</span> Splice-Aware 比对的解决思路</a></li>
+  </ul></li>
+  <li><a href="#starrna-seq-比对的工业标准" id="toc-starrna-seq-比对的工业标准" class="nav-link" data-scroll-target="#starrna-seq-比对的工业标准"><span class="header-section-number">22.3</span> STAR：RNA-seq 比对的工业标准</a>
+  <ul class="collapse">
+  <li><a href="#star-比对算法原理" id="toc-star-比对算法原理" class="nav-link" data-scroll-target="#star-比对算法原理"><span class="header-section-number">22.3.1</span> STAR 比对算法原理</a></li>
+  <li><a href="#gtf-注释文件的作用" id="toc-gtf-注释文件的作用" class="nav-link" data-scroll-target="#gtf-注释文件的作用"><span class="header-section-number">22.3.2</span> GTF 注释文件的作用</a></li>
+  <li><a href="#star-索引构建与比对" id="toc-star-索引构建与比对" class="nav-link" data-scroll-target="#star-索引构建与比对"><span class="header-section-number">22.3.3</span> STAR 索引构建与比对</a></li>
+  </ul></li>
+  <li><a href="#表达量定量两种主流策略" id="toc-表达量定量两种主流策略" class="nav-link" data-scroll-target="#表达量定量两种主流策略"><span class="header-section-number">22.4</span> 表达量定量：两种主流策略</a>
+  <ul class="collapse">
+  <li><a href="#策略一比对后计数featurecounts" id="toc-策略一比对后计数featurecounts" class="nav-link" data-scroll-target="#策略一比对后计数featurecounts"><span class="header-section-number">22.4.1</span> 策略一：比对后计数（featureCounts）</a></li>
+  <li><a href="#策略二伪比对定量salmon" id="toc-策略二伪比对定量salmon" class="nav-link" data-scroll-target="#策略二伪比对定量salmon"><span class="header-section-number">22.4.2</span> 策略二：伪比对定量（Salmon）</a></li>
+  <li><a href="#使用-tximport-汇总-salmon-结果" id="toc-使用-tximport-汇总-salmon-结果" class="nav-link" data-scroll-target="#使用-tximport-汇总-salmon-结果"><span class="header-section-number">22.4.3</span> 使用 tximport 汇总 Salmon 结果</a></li>
+  </ul></li>
+  <li><a href="#定量单位的选择tpmfpkm-与原始计数" id="toc-定量单位的选择tpmfpkm-与原始计数" class="nav-link" data-scroll-target="#定量单位的选择tpmfpkm-与原始计数"><span class="header-section-number">22.5</span> 定量单位的选择：TPM、FPKM 与原始计数</a>
+  <ul class="collapse">
+  <li><a href="#各单位的计算公式" id="toc-各单位的计算公式" class="nav-link" data-scroll-target="#各单位的计算公式"><span class="header-section-number">22.5.1</span> 各单位的计算公式</a></li>
+  <li><a href="#为什么-deseq2-必须使用原始计数" id="toc-为什么-deseq2-必须使用原始计数" class="nav-link" data-scroll-target="#为什么-deseq2-必须使用原始计数"><span class="header-section-number">22.5.2</span> 为什么 DESeq2 必须使用原始计数？</a></li>
+  </ul></li>
+  <li><a href="#两种定量策略的比较" id="toc-两种定量策略的比较" class="nav-link" data-scroll-target="#两种定量策略的比较"><span class="header-section-number">22.6</span> 两种定量策略的比较</a></li>
+  <li><a href="#实践完整比对与定量流程" id="toc-实践完整比对与定量流程" class="nav-link" data-scroll-target="#实践完整比对与定量流程"><span class="header-section-number">22.7</span> 实践：完整比对与定量流程</a></li>
+  <li><a href="#sambam-格式解析" id="toc-sambam-格式解析" class="nav-link" data-scroll-target="#sambam-格式解析"><span class="header-section-number">22.8</span> SAM/BAM 格式解析</a>
+  <ul class="collapse">
+  <li><a href="#sam-文件结构" id="toc-sam-文件结构" class="nav-link" data-scroll-target="#sam-文件结构"><span class="header-section-number">22.8.1</span> SAM 文件结构</a></li>
+  <li><a href="#多比对-reads-的处理策略" id="toc-多比对-reads-的处理策略" class="nav-link" data-scroll-target="#多比对-reads-的处理策略"><span class="header-section-number">22.8.2</span> 多比对 reads 的处理策略</a></li>
+  </ul></li>
+  <li><a href="#定量结果的质量诊断" id="toc-定量结果的质量诊断" class="nav-link" data-scroll-target="#定量结果的质量诊断"><span class="header-section-number">22.9</span> 定量结果的质量诊断</a></li>
+  <li><a href="#课后自测-post-lesson-quiz" id="toc-课后自测-post-lesson-quiz" class="nav-link" data-scroll-target="#课后自测-post-lesson-quiz"><span class="header-section-number">22.10</span> 课后自测 (Post-Lesson Quiz)</a></li>
+  </ul>
+<div class="toc-actions"><ul><li><a href="https://github.com/cxzdsa2332/Applied-Omics-Analysis/edit/main/transcriptomics_basic_lesson2.qmd" class="toc-action"><i class="bi bi-github"></i>Edit this page</a></li><li><a href="https://github.com/cxzdsa2332/Applied-Omics-Analysis/issues/new" class="toc-action"><i class="bi empty"></i>Report an issue</a></li><li><a href="https://github.com/cxzdsa2332/Applied-Omics-Analysis/blob/main/transcriptomics_basic_lesson2.qmd" class="toc-action"><i class="bi empty"></i>View source</a></li></ul></div></nav>
     </div>
 <!-- main -->
 <main class="content" id="quarto-document-content">
 
-<header id="title-block-header" class="quarto-title-block default"><nav class="quarto-page-breadcrumbs quarto-title-breadcrumbs d-none d-lg-block" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="./04-transcriptomics-basic.html">第二阶段：转录组与单细胞</a></li><li class="breadcrumb-item"><a href="./transcriptomics_basic_lesson2.html"><span class="chapter-number">22</span>&nbsp; <span class="chapter-title">第四章 课时2</span></a></li></ol></nav>
+<header id="title-block-header" class="quarto-title-block default"><nav class="quarto-page-breadcrumbs quarto-title-breadcrumbs d-none d-lg-block" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="./04-transcriptomics-basic.html">第二阶段：转录组与单细胞</a></li><li class="breadcrumb-item"><a href="./transcriptomics_basic_lesson2.html"><span class="chapter-number">22</span>&nbsp; <span class="chapter-title">专题 4.2：Splice-Aware 比对与表达量定量</span></a></li></ol></nav>
 <div class="quarto-title">
-<h1 class="title"><span class="chapter-number">22</span>&nbsp; <span class="chapter-title">第四章 课时2</span></h1>
+<h1 class="title"><span class="chapter-number">22</span>&nbsp; <span class="chapter-title">Splice-Aware 比对与表达量定量</span></h1>
 </div>
 
 
@@ -545,6 +647,12 @@ ul.task-list li input[type="checkbox"] {
 <div class="quarto-title-meta">
 
     
+    <div>
+    <div class="quarto-title-meta-heading">Published</div>
+    <div class="quarto-title-meta-contents">
+      <p class="date">May 30, 2026</p>
+    </div>
+  </div>
   
     
   </div>
@@ -554,8 +662,637 @@ ul.task-list li input[type="checkbox"] {
 </header>
 
 
+<section id="学习目标" class="level2" data-number="22.1">
+<h2 data-number="22.1" class="anchored" data-anchor-id="学习目标"><span class="header-section-number">22.1</span> 学习目标</h2>
+<p>完成本专题后，学生应能够：</p>
+<ol type="1">
+<li>解释 splice-aware 比对的必要性，描述 STAR 两步比对策略的核心逻辑；</li>
+<li>理解 GTF 注释文件中 gene_id、transcript_id、exon 的层级关系；</li>
+<li>使用 STAR 完成 RNA-seq 双端比对，正确设置链特异性参数；</li>
+<li>区分 featureCounts（比对后计数）与 Salmon（伪比对）的方法论差异，并在实际项目中做出合理选择；</li>
+<li>使用 tximport 将 Salmon 转录本级别定量汇总至基因级别；</li>
+<li>理解 TPM、FPKM 与原始计数的计算公式与适用场景，解释 DESeq2 必须使用原始计数的原因。</li>
+</ol>
+<hr>
+</section>
+<section id="为什么-rna-seq-比对需要特殊处理" class="level2" data-number="22.2">
+<h2 data-number="22.2" class="anchored" data-anchor-id="为什么-rna-seq-比对需要特殊处理"><span class="header-section-number">22.2</span> 为什么 RNA-seq 比对需要特殊处理？</h2>
+<section id="read-through-与剪接位点的挑战" class="level3" data-number="22.2.1">
+<h3 data-number="22.2.1" class="anchored" data-anchor-id="read-through-与剪接位点的挑战"><span class="header-section-number">22.2.1</span> Read-through 与剪接位点的挑战</h3>
+<p>在 DNA 测序中，read 是基因组连续区域的测序结果，比对工具只需在基因组上找到一段连续的最优匹配即可。RNA-seq 则面临根本性的不同：成熟 mRNA 经过剪接，内含子已被去除。当一个 150 bp 的 read 跨越剪接位点时，它实际上对应基因组上<strong>两段不连续的外显子区域</strong>，中间隔着长达数千甚至数万 bp 的内含子。</p>
+<p>若使用普通的 DNA 比对工具（如 Bowtie2），跨剪接位点的读段将无法被正确比对，或被强制比对到错误位置，导致：</p>
+<ul>
+<li>Junction read（约占 20–30% 的 reads）丢失，降低定量精度；</li>
+<li>新型剪接位点无法被发现；</li>
+<li>外显子边界附近的覆盖度出现人为缺口。</li>
+</ul>
+<p>{{Wiki:RNA_splicing}}</p>
+</section>
+<section id="splice-aware-比对的解决思路" class="level3" data-number="22.2.2">
+<h3 data-number="22.2.2" class="anchored" data-anchor-id="splice-aware-比对的解决思路"><span class="header-section-number">22.2.2</span> Splice-Aware 比对的解决思路</h3>
+<p>Splice-aware 比对工具通过两类策略处理跨剪接位点的 reads：</p>
+<p><strong>策略一：外显子图谱索引（HISAT2）</strong>：在构建基因组索引时，将已知的剪接位点信息编码进图结构索引，比对时直接在图上搜索最优路径，既能利用先验知识，又支持发现新剪接位点。</p>
+<p><strong>策略二：种子-延伸（STAR）</strong>：先将 read 的各段子序列分别映射到基因组，识别出可能的剪接位点，再将片段在剪接位点处拼合。</p>
+<hr>
+</section>
+</section>
+<section id="starrna-seq-比对的工业标准" class="level2" data-number="22.3">
+<h2 data-number="22.3" class="anchored" data-anchor-id="starrna-seq-比对的工业标准"><span class="header-section-number">22.3</span> STAR：RNA-seq 比对的工业标准</h2>
+<p>STAR（Spliced Transcripts Alignment to a Reference）是目前使用最广泛的 RNA-seq 比对工具，兼顾速度（基于 RAM 的高速索引）与准确性（支持 2-pass 模式发现新剪接位点）。</p>
+<section id="star-比对算法原理" class="level3" data-number="22.3.1">
+<h3 data-number="22.3.1" class="anchored" data-anchor-id="star-比对算法原理"><span class="header-section-number">22.3.1</span> STAR 比对算法原理</h3>
+<p>STAR 的比对分为两个核心阶段：</p>
+<p><strong>第一阶段：种子查找（Maximal Mappable Prefix, MMP）</strong></p>
+<p>STAR 从 read 的每个位置出发，在基因组索引中寻找能精确匹配的最长前缀序列（MMP）。这一步利用了后缀数组（Suffix Array）索引实现高速查找。对于一个跨越剪接位点的 read，MMP 会在第一个外显子末端停止延伸，产生一个”未映射尾部”。</p>
+<p><strong>第二阶段：拼接与比对评分</strong></p>
+<p>对每个 MMP 片段，STAR 在其末端的基因组区域内搜索可能的剪接信号（GT-AG 规则，GT…AG 是内含子两端的保守序列），将未映射的尾部延伸至下一个外显子起始位置，验证拼合后的比对得分。得分最高的比对方案即为最终结果。</p>
+<div class="note">
+<p><strong>两遍比对（2-pass mode）：</strong> STAR 的第一遍比对（1-pass）利用注释中的已知剪接位点；在第一遍完成后，将发现的所有新剪接位点加入索引，再进行第二遍比对（2-pass）。这显著提高了低表达基因的新剪接位点检出率，推荐在正式分析中开启（<code>--twopassMode Basic</code>）。</p>
+</div>
+</section>
+<section id="gtf-注释文件的作用" class="level3" data-number="22.3.2">
+<h3 data-number="22.3.2" class="anchored" data-anchor-id="gtf-注释文件的作用"><span class="header-section-number">22.3.2</span> GTF 注释文件的作用</h3>
+<p>GTF（General Transfer Format）文件描述基因组注释，是 STAR 索引构建和 featureCounts 计数的必要输入。理解其层级结构有助于正确设置工具参数。</p>
+<pre><code># GTF 文件结构示例（第9列含关键属性）
+# chr  source  feature  start     end    .  strand  .  attributes
+chr1  ENSEMBL  gene     65419     71585  .  +  .  gene_id "ENSG00000186092"; gene_name "OR4F5";
+chr1  ENSEMBL  transcript 65419  71585  .  +  .  gene_id "ENSG00000186092"; transcript_id "ENST00000641515";
+chr1  ENSEMBL  exon     65419     65433  .  +  .  gene_id "ENSG00000186092"; transcript_id "ENST00000641515";
+chr1  ENSEMBL  exon     65520     65573  .  +  .  gene_id "ENSG00000186092"; transcript_id "ENST00000641515";</code></pre>
+<p>关键层级：<code>gene</code> → <code>transcript</code> → <code>exon</code>。featureCounts 在 <code>exon</code> 级别计数，通过 <code>gene_id</code> 属性将结果汇总至基因层面。</p>
+</section>
+<section id="star-索引构建与比对" class="level3" data-number="22.3.3">
+<h3 data-number="22.3.3" class="anchored" data-anchor-id="star-索引构建与比对"><span class="header-section-number">22.3.3</span> STAR 索引构建与比对</h3>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb2"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="co"># === Step 1: Build STAR genome index ===</span></span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a><span class="co"># Requires ~30 GB RAM for human genome (GRCh38)</span></span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a><span class="co"># --sjdbOverhang: read length - 1 (for 150 bp reads: 149)</span></span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a><span class="fu">mkdir</span> <span class="at">-p</span> index/STAR_GRCh38</span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a><span class="ex">STAR</span> <span class="dt">\</span></span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a>  <span class="at">--runMode</span> genomeGenerate <span class="dt">\</span></span>
+<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a>  <span class="at">--genomeDir</span> index/STAR_GRCh38 <span class="dt">\</span></span>
+<span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a>  <span class="at">--genomeFastaFiles</span> Homo_sapiens.GRCh38.dna.primary_assembly.fa <span class="dt">\</span></span>
+<span id="cb2-10"><a href="#cb2-10" aria-hidden="true" tabindex="-1"></a>  <span class="at">--sjdbGtfFile</span> Homo_sapiens.GRCh38.109.gtf <span class="dt">\</span></span>
+<span id="cb2-11"><a href="#cb2-11" aria-hidden="true" tabindex="-1"></a>  <span class="at">--sjdbOverhang</span> 149 <span class="dt">\</span></span>
+<span id="cb2-12"><a href="#cb2-12" aria-hidden="true" tabindex="-1"></a>  <span class="at">--runThreadN</span> 16</span>
+<span id="cb2-13"><a href="#cb2-13" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-14"><a href="#cb2-14" aria-hidden="true" tabindex="-1"></a><span class="co"># === Step 2: Align paired-end reads (with 2-pass mode) ===</span></span>
+<span id="cb2-15"><a href="#cb2-15" aria-hidden="true" tabindex="-1"></a><span class="fu">mkdir</span> <span class="at">-p</span> results/star/SRR1039508</span>
+<span id="cb2-16"><a href="#cb2-16" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-17"><a href="#cb2-17" aria-hidden="true" tabindex="-1"></a><span class="ex">STAR</span> <span class="dt">\</span></span>
+<span id="cb2-18"><a href="#cb2-18" aria-hidden="true" tabindex="-1"></a>  <span class="at">--runThreadN</span> 16 <span class="dt">\</span></span>
+<span id="cb2-19"><a href="#cb2-19" aria-hidden="true" tabindex="-1"></a>  <span class="at">--genomeDir</span> index/STAR_GRCh38 <span class="dt">\</span></span>
+<span id="cb2-20"><a href="#cb2-20" aria-hidden="true" tabindex="-1"></a>  <span class="at">--readFilesIn</span> <span class="dt">\</span></span>
+<span id="cb2-21"><a href="#cb2-21" aria-hidden="true" tabindex="-1"></a>    data/trimmed/SRR1039508_1.fastq.gz <span class="dt">\</span></span>
+<span id="cb2-22"><a href="#cb2-22" aria-hidden="true" tabindex="-1"></a>    data/trimmed/SRR1039508_2.fastq.gz <span class="dt">\</span></span>
+<span id="cb2-23"><a href="#cb2-23" aria-hidden="true" tabindex="-1"></a>  <span class="at">--readFilesCommand</span> zcat <span class="dt">\</span></span>
+<span id="cb2-24"><a href="#cb2-24" aria-hidden="true" tabindex="-1"></a>  <span class="at">--outSAMtype</span> BAM SortedByCoordinate <span class="dt">\</span></span>
+<span id="cb2-25"><a href="#cb2-25" aria-hidden="true" tabindex="-1"></a>  <span class="at">--outSAMattributes</span> NH HI AS NM MD <span class="dt">\</span></span>
+<span id="cb2-26"><a href="#cb2-26" aria-hidden="true" tabindex="-1"></a>  <span class="at">--outFileNamePrefix</span> results/star/SRR1039508/ <span class="dt">\</span></span>
+<span id="cb2-27"><a href="#cb2-27" aria-hidden="true" tabindex="-1"></a>  <span class="at">--outFilterType</span> BySJout <span class="dt">\</span></span>
+<span id="cb2-28"><a href="#cb2-28" aria-hidden="true" tabindex="-1"></a>  <span class="at">--alignSJoverhangMin</span> 8 <span class="dt">\</span></span>
+<span id="cb2-29"><a href="#cb2-29" aria-hidden="true" tabindex="-1"></a>  <span class="at">--alignSJDBoverhangMin</span> 1 <span class="dt">\</span></span>
+<span id="cb2-30"><a href="#cb2-30" aria-hidden="true" tabindex="-1"></a>  <span class="at">--outFilterMismatchNmax</span> 999 <span class="dt">\</span></span>
+<span id="cb2-31"><a href="#cb2-31" aria-hidden="true" tabindex="-1"></a>  <span class="at">--outFilterMismatchNoverReadLmax</span> 0.04 <span class="dt">\</span></span>
+<span id="cb2-32"><a href="#cb2-32" aria-hidden="true" tabindex="-1"></a>  <span class="at">--alignIntronMin</span> 20 <span class="dt">\</span></span>
+<span id="cb2-33"><a href="#cb2-33" aria-hidden="true" tabindex="-1"></a>  <span class="at">--alignIntronMax</span> 1000000 <span class="dt">\</span></span>
+<span id="cb2-34"><a href="#cb2-34" aria-hidden="true" tabindex="-1"></a>  <span class="at">--alignMatesGapMax</span> 1000000 <span class="dt">\</span></span>
+<span id="cb2-35"><a href="#cb2-35" aria-hidden="true" tabindex="-1"></a>  <span class="at">--twopassMode</span> Basic</span>
+<span id="cb2-36"><a href="#cb2-36" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-37"><a href="#cb2-37" aria-hidden="true" tabindex="-1"></a><span class="co"># === Step 3: Index BAM file ===</span></span>
+<span id="cb2-38"><a href="#cb2-38" aria-hidden="true" tabindex="-1"></a><span class="ex">samtools</span> index results/star/SRR1039508/Aligned.sortedByCoord.out.bam</span>
+<span id="cb2-39"><a href="#cb2-39" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-40"><a href="#cb2-40" aria-hidden="true" tabindex="-1"></a><span class="co"># Key STAR output files:</span></span>
+<span id="cb2-41"><a href="#cb2-41" aria-hidden="true" tabindex="-1"></a><span class="co"># Aligned.sortedByCoord.out.bam  -- sorted, indexed BAM</span></span>
+<span id="cb2-42"><a href="#cb2-42" aria-hidden="true" tabindex="-1"></a><span class="co"># Log.final.out                  -- alignment summary statistics</span></span>
+<span id="cb2-43"><a href="#cb2-43" aria-hidden="true" tabindex="-1"></a><span class="co"># SJ.out.tab                     -- splice junction table</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><strong>STAR Log.final.out 关键指标解读</strong>：</p>
+<pre><code># Good alignment results (expected ranges):
+Uniquely mapped reads %       |  80-95%   (&lt; 75% may indicate quality issues)
+% of reads mapped to multiple loci  |  5-15%   (high in repetitive regions)
+% of reads unmapped: too short |  &lt; 5%    (high suggests over-trimming)</code></pre>
+<hr>
+</section>
+</section>
+<section id="表达量定量两种主流策略" class="level2" data-number="22.4">
+<h2 data-number="22.4" class="anchored" data-anchor-id="表达量定量两种主流策略"><span class="header-section-number">22.4</span> 表达量定量：两种主流策略</h2>
+<section id="策略一比对后计数featurecounts" class="level3" data-number="22.4.1">
+<h3 data-number="22.4.1" class="anchored" data-anchor-id="策略一比对后计数featurecounts"><span class="header-section-number">22.4.1</span> 策略一：比对后计数（featureCounts）</h3>
+<p>featureCounts 是 Subread 工具包的组成部分，逐个统计每个基因的外显子区域内的比对 reads 数量。其优点是流程直观、结果可解释性强；缺点是对多比对 reads 的处理较为简单，且不估计转录本层面的不确定性。</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb4"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="co"># featureCounts: count reads per gene (using exon features)</span></span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a><span class="co"># -s 2 = RF-stranded (TruSeq Stranded mRNA)</span></span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a><span class="co"># -p   = paired-end mode</span></span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a><span class="co"># -B   = both mates must be mapped</span></span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a><span class="co"># -C   = exclude chimeric reads</span></span>
+<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a><span class="ex">featureCounts</span> <span class="dt">\</span></span>
+<span id="cb4-8"><a href="#cb4-8" aria-hidden="true" tabindex="-1"></a>  <span class="at">-T</span> 16 <span class="dt">\</span></span>
+<span id="cb4-9"><a href="#cb4-9" aria-hidden="true" tabindex="-1"></a>  <span class="at">-a</span> Homo_sapiens.GRCh38.109.gtf <span class="dt">\</span></span>
+<span id="cb4-10"><a href="#cb4-10" aria-hidden="true" tabindex="-1"></a>  <span class="at">-o</span> results/featureCounts/pasilla_counts.txt <span class="dt">\</span></span>
+<span id="cb4-11"><a href="#cb4-11" aria-hidden="true" tabindex="-1"></a>  <span class="at">-s</span> 2 <span class="dt">\</span></span>
+<span id="cb4-12"><a href="#cb4-12" aria-hidden="true" tabindex="-1"></a>  <span class="at">-p</span> <span class="at">-B</span> <span class="at">-C</span> <span class="dt">\</span></span>
+<span id="cb4-13"><a href="#cb4-13" aria-hidden="true" tabindex="-1"></a>  <span class="at">--countReadPairs</span> <span class="dt">\</span></span>
+<span id="cb4-14"><a href="#cb4-14" aria-hidden="true" tabindex="-1"></a>  results/star/SRR1039508/Aligned.sortedByCoord.out.bam <span class="dt">\</span></span>
+<span id="cb4-15"><a href="#cb4-15" aria-hidden="true" tabindex="-1"></a>  results/star/SRR1039512/Aligned.sortedByCoord.out.bam <span class="dt">\</span></span>
+<span id="cb4-16"><a href="#cb4-16" aria-hidden="true" tabindex="-1"></a>  results/star/SRR1039516/Aligned.sortedByCoord.out.bam</span>
+<span id="cb4-17"><a href="#cb4-17" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-18"><a href="#cb4-18" aria-hidden="true" tabindex="-1"></a><span class="co"># featureCounts output: tab-delimited matrix</span></span>
+<span id="cb4-19"><a href="#cb4-19" aria-hidden="true" tabindex="-1"></a><span class="co"># Rows = genes (Ensembl ID), Columns = samples</span></span>
+<span id="cb4-20"><a href="#cb4-20" aria-hidden="true" tabindex="-1"></a><span class="co"># First 6 columns: GeneID, Chr, Start, End, Strand, Length</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><strong>重叠歧义处理</strong>：当一个 read 跨越两个基因的外显子时，featureCounts 默认丢弃该 read（<code>--fracOverlap 0</code>）。对于重叠基因密集的区域，可使用 <code>--fraction</code> 参数将 read 计数按重叠比例分配，但这会产生非整数计数，不适用于 DESeq2。</p>
+</section>
+<section id="策略二伪比对定量salmon" class="level3" data-number="22.4.2">
+<h3 data-number="22.4.2" class="anchored" data-anchor-id="策略二伪比对定量salmon"><span class="header-section-number">22.4.2</span> 策略二：伪比对定量（Salmon）</h3>
+<p>Salmon 采用了完全不同的范式：<strong>不进行全基因组比对</strong>，而是将 reads 与<strong>转录本序列</strong>进行快速匹配（quasi-mapping），利用 k-mer 哈希索引定位读段到最可能的转录本。这种方式在速度上快 10–50 倍，同时内置了多种偏差校正模型。</p>
+<div class="info">
+<p><strong>黄金法则：</strong> Salmon 内置的 GC 偏差校正（<code>--gcBias</code>）和序列偏差校正（<code>--seqBias</code>）在大多数真实 RNA-seq 数据上能提高定量精度，特别是对 GC 含量极端的基因。建议默认开启两者。</p>
+</div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb5"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="co"># === Step 1: Build Salmon index from transcript sequences ===</span></span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a><span class="co"># Extract transcript sequences from genome + GTF using gffread</span></span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a><span class="ex">gffread</span> Homo_sapiens.GRCh38.109.gtf <span class="dt">\</span></span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a>  <span class="at">-g</span> Homo_sapiens.GRCh38.dna.primary_assembly.fa <span class="dt">\</span></span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a>  <span class="at">-w</span> transcripts.fa</span>
+<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a><span class="co"># Build Salmon index (with decoy-aware indexing for higher accuracy)</span></span>
+<span id="cb5-8"><a href="#cb5-8" aria-hidden="true" tabindex="-1"></a><span class="co"># The decoy file is the genome itself (for selective alignment)</span></span>
+<span id="cb5-9"><a href="#cb5-9" aria-hidden="true" tabindex="-1"></a><span class="fu">grep</span> <span class="st">"^&gt;"</span> Homo_sapiens.GRCh38.dna.primary_assembly.fa <span class="kw">|</span> <span class="dt">\</span></span>
+<span id="cb5-10"><a href="#cb5-10" aria-hidden="true" tabindex="-1"></a>  <span class="fu">cut</span> <span class="at">-d</span> <span class="st">" "</span> <span class="at">-f</span> 1 <span class="kw">|</span> <span class="fu">sed</span> <span class="st">'s/&gt;//'</span> <span class="op">&gt;</span> decoys.txt</span>
+<span id="cb5-11"><a href="#cb5-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-12"><a href="#cb5-12" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span> transcripts.fa Homo_sapiens.GRCh38.dna.primary_assembly.fa <span class="op">&gt;</span> gentrome.fa</span>
+<span id="cb5-13"><a href="#cb5-13" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-14"><a href="#cb5-14" aria-hidden="true" tabindex="-1"></a><span class="ex">salmon</span> index <span class="dt">\</span></span>
+<span id="cb5-15"><a href="#cb5-15" aria-hidden="true" tabindex="-1"></a>  <span class="at">--transcripts</span> gentrome.fa <span class="dt">\</span></span>
+<span id="cb5-16"><a href="#cb5-16" aria-hidden="true" tabindex="-1"></a>  <span class="at">--decoys</span> decoys.txt <span class="dt">\</span></span>
+<span id="cb5-17"><a href="#cb5-17" aria-hidden="true" tabindex="-1"></a>  <span class="at">--index</span> index/salmon_GRCh38 <span class="dt">\</span></span>
+<span id="cb5-18"><a href="#cb5-18" aria-hidden="true" tabindex="-1"></a>  <span class="at">--gencode</span> <span class="dt">\</span></span>
+<span id="cb5-19"><a href="#cb5-19" aria-hidden="true" tabindex="-1"></a>  <span class="at">--threads</span> 16</span>
+<span id="cb5-20"><a href="#cb5-20" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-21"><a href="#cb5-21" aria-hidden="true" tabindex="-1"></a><span class="co"># === Step 2: Quantify each sample ===</span></span>
+<span id="cb5-22"><a href="#cb5-22" aria-hidden="true" tabindex="-1"></a><span class="co"># --libType A = auto-detect library type</span></span>
+<span id="cb5-23"><a href="#cb5-23" aria-hidden="true" tabindex="-1"></a><span class="co"># --gcBias    = correct for GC content bias</span></span>
+<span id="cb5-24"><a href="#cb5-24" aria-hidden="true" tabindex="-1"></a><span class="co"># --seqBias   = correct for sequence-specific bias</span></span>
+<span id="cb5-25"><a href="#cb5-25" aria-hidden="true" tabindex="-1"></a><span class="co"># --validateMappings = use selective alignment (recommended)</span></span>
+<span id="cb5-26"><a href="#cb5-26" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-27"><a href="#cb5-27" aria-hidden="true" tabindex="-1"></a><span class="ex">salmon</span> quant <span class="dt">\</span></span>
+<span id="cb5-28"><a href="#cb5-28" aria-hidden="true" tabindex="-1"></a>  <span class="at">--index</span> index/salmon_GRCh38 <span class="dt">\</span></span>
+<span id="cb5-29"><a href="#cb5-29" aria-hidden="true" tabindex="-1"></a>  <span class="at">--libType</span> A <span class="dt">\</span></span>
+<span id="cb5-30"><a href="#cb5-30" aria-hidden="true" tabindex="-1"></a>  <span class="at">--mates1</span> data/trimmed/SRR1039508_1.fastq.gz <span class="dt">\</span></span>
+<span id="cb5-31"><a href="#cb5-31" aria-hidden="true" tabindex="-1"></a>  <span class="at">--mates2</span> data/trimmed/SRR1039508_2.fastq.gz <span class="dt">\</span></span>
+<span id="cb5-32"><a href="#cb5-32" aria-hidden="true" tabindex="-1"></a>  <span class="at">--output</span> results/salmon/SRR1039508 <span class="dt">\</span></span>
+<span id="cb5-33"><a href="#cb5-33" aria-hidden="true" tabindex="-1"></a>  <span class="at">--gcBias</span> <span class="dt">\</span></span>
+<span id="cb5-34"><a href="#cb5-34" aria-hidden="true" tabindex="-1"></a>  <span class="at">--seqBias</span> <span class="dt">\</span></span>
+<span id="cb5-35"><a href="#cb5-35" aria-hidden="true" tabindex="-1"></a>  <span class="at">--validateMappings</span> <span class="dt">\</span></span>
+<span id="cb5-36"><a href="#cb5-36" aria-hidden="true" tabindex="-1"></a>  <span class="at">--threads</span> 16</span>
+<span id="cb5-37"><a href="#cb5-37" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-38"><a href="#cb5-38" aria-hidden="true" tabindex="-1"></a><span class="co"># Output: results/salmon/SRR1039508/quant.sf</span></span>
+<span id="cb5-39"><a href="#cb5-39" aria-hidden="true" tabindex="-1"></a><span class="co"># Columns: Name (transcript ID), Length, EffectiveLength, TPM, NumReads</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><strong>理解选择性比对（Selective Alignment）</strong>：常规 Salmon 的 quasi-mapping 速度极快，但可能将来自类似序列的 reads 错误分配。Selective Alignment（<code>--validateMappings</code>）引入了一个额外验证步骤：对候选转录本执行完整的序列比对打分，显著减少了假阳性映射，在准确性上接近 STAR 全基因组比对，而速度仍比 STAR 快 3–5 倍。</p>
+</section>
+<section id="使用-tximport-汇总-salmon-结果" class="level3" data-number="22.4.3">
+<h3 data-number="22.4.3" class="anchored" data-anchor-id="使用-tximport-汇总-salmon-结果"><span class="header-section-number">22.4.3</span> 使用 tximport 汇总 Salmon 结果</h3>
+<p>Salmon 在转录本层面进行定量，而下游分析（DESeq2）通常在基因层面进行。tximport 包负责将转录本级别的 TPM 和 counts 汇总至基因层面，同时传递 Salmon 的不确定性估计（Bootstrap 分位数），为 DESeq2 提供更可靠的输入。</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb6"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(tximport)</span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(DESeq2)</span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a><span class="co"># Create transcript-to-gene mapping table</span></span>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a><span class="co"># Using biomaRt or pre-downloaded tx2gene file</span></span>
+<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(biomaRt)</span>
+<span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a>mart <span class="ot">&lt;-</span> <span class="fu">useMart</span>(<span class="st">"ensembl"</span>, <span class="at">dataset =</span> <span class="st">"hsapiens_gene_ensembl"</span>)</span>
+<span id="cb6-8"><a href="#cb6-8" aria-hidden="true" tabindex="-1"></a>tx2gene <span class="ot">&lt;-</span> <span class="fu">getBM</span>(</span>
+<span id="cb6-9"><a href="#cb6-9" aria-hidden="true" tabindex="-1"></a>  <span class="at">attributes =</span> <span class="fu">c</span>(<span class="st">"ensembl_transcript_id_version"</span>, <span class="st">"ensembl_gene_id"</span>),</span>
+<span id="cb6-10"><a href="#cb6-10" aria-hidden="true" tabindex="-1"></a>  <span class="at">mart =</span> mart</span>
+<span id="cb6-11"><a href="#cb6-11" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb6-12"><a href="#cb6-12" aria-hidden="true" tabindex="-1"></a><span class="co"># Save for reuse</span></span>
+<span id="cb6-13"><a href="#cb6-13" aria-hidden="true" tabindex="-1"></a><span class="fu">write.csv</span>(tx2gene, <span class="st">"tx2gene_GRCh38.csv"</span>, <span class="at">row.names =</span> <span class="cn">FALSE</span>)</span>
+<span id="cb6-14"><a href="#cb6-14" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-15"><a href="#cb6-15" aria-hidden="true" tabindex="-1"></a><span class="co"># Define sample paths</span></span>
+<span id="cb6-16"><a href="#cb6-16" aria-hidden="true" tabindex="-1"></a>sample_ids <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="st">"SRR1039508"</span>, <span class="st">"SRR1039512"</span>, <span class="st">"SRR1039516"</span>,</span>
+<span id="cb6-17"><a href="#cb6-17" aria-hidden="true" tabindex="-1"></a>                <span class="st">"SRR1039509"</span>, <span class="st">"SRR1039513"</span>, <span class="st">"SRR1039517"</span>)</span>
+<span id="cb6-18"><a href="#cb6-18" aria-hidden="true" tabindex="-1"></a>files <span class="ot">&lt;-</span> <span class="fu">file.path</span>(<span class="st">"results/salmon"</span>, sample_ids, <span class="st">"quant.sf"</span>)</span>
+<span id="cb6-19"><a href="#cb6-19" aria-hidden="true" tabindex="-1"></a><span class="fu">names</span>(files) <span class="ot">&lt;-</span> sample_ids</span>
+<span id="cb6-20"><a href="#cb6-20" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-21"><a href="#cb6-21" aria-hidden="true" tabindex="-1"></a><span class="co"># Import and summarize to gene level</span></span>
+<span id="cb6-22"><a href="#cb6-22" aria-hidden="true" tabindex="-1"></a>txi <span class="ot">&lt;-</span> <span class="fu">tximport</span>(</span>
+<span id="cb6-23"><a href="#cb6-23" aria-hidden="true" tabindex="-1"></a>  files,</span>
+<span id="cb6-24"><a href="#cb6-24" aria-hidden="true" tabindex="-1"></a>  <span class="at">type =</span> <span class="st">"salmon"</span>,</span>
+<span id="cb6-25"><a href="#cb6-25" aria-hidden="true" tabindex="-1"></a>  <span class="at">tx2gene =</span> tx2gene,</span>
+<span id="cb6-26"><a href="#cb6-26" aria-hidden="true" tabindex="-1"></a>  <span class="at">ignoreTxVersion =</span> <span class="cn">TRUE</span>   <span class="co"># strip version numbers from transcript IDs</span></span>
+<span id="cb6-27"><a href="#cb6-27" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb6-28"><a href="#cb6-28" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-29"><a href="#cb6-29" aria-hidden="true" tabindex="-1"></a><span class="co"># txi is a list with: counts, abundance (TPM), length, countsFromAbundance</span></span>
+<span id="cb6-30"><a href="#cb6-30" aria-hidden="true" tabindex="-1"></a><span class="co"># Use txi$counts for DESeq2 input (scaled to gene-level counts)</span></span>
+<span id="cb6-31"><a href="#cb6-31" aria-hidden="true" tabindex="-1"></a><span class="fu">dim</span>(txi<span class="sc">$</span>counts)   <span class="co"># genes x samples matrix</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<hr>
+</section>
+</section>
+<section id="定量单位的选择tpmfpkm-与原始计数" class="level2" data-number="22.5">
+<h2 data-number="22.5" class="anchored" data-anchor-id="定量单位的选择tpmfpkm-与原始计数"><span class="header-section-number">22.5</span> 定量单位的选择：TPM、FPKM 与原始计数</h2>
+<section id="各单位的计算公式" class="level3" data-number="22.5.1">
+<h3 data-number="22.5.1" class="anchored" data-anchor-id="各单位的计算公式"><span class="header-section-number">22.5.1</span> 各单位的计算公式</h3>
+<p>三种常见定量单位针对不同的偏差进行校正：</p>
+<p><strong>FPKM（Fragments Per Kilobase of transcript per Million mapped reads）</strong>： <span class="math display">\[\text{FPKM}_i = \frac{C_i}{L_i / 10^3 \times N / 10^6} = \frac{C_i \times 10^9}{L_i \times N}\]</span></p>
+<p>其中 <span class="math inline">\(C_i\)</span> 是基因 <span class="math inline">\(i\)</span> 的 read 数，<span class="math inline">\(L_i\)</span> 是基因有效长度（bp），<span class="math inline">\(N\)</span> 是样本的总 mapped reads 数。同时校正基因长度和测序深度。</p>
+<p><strong>TPM（Transcripts Per Million）</strong>： <span class="math display">\[\text{TPM}_i = \frac{C_i / L_i}{\sum_j (C_j / L_j)} \times 10^6\]</span></p>
+<p>先对每个基因做长度校正，再将所有基因的 TPM 归一化使总和为 10^6。<strong>TPM 的关键优势</strong>：同一样本中所有基因的 TPM 之和恒为 10^6，使不同样本间同一基因的 TPM 可以直接比较（FPKM 无此性质）。</p>
+<p><strong>原始计数（Raw Counts）</strong>：featureCounts 或 tximport 输出的未经归一化整数计数，仅校正了测序深度差异（由 DESeq2 的 Size Factor 在分析过程中处理）。</p>
+</section>
+<section id="为什么-deseq2-必须使用原始计数" class="level3" data-number="22.5.2">
+<h3 data-number="22.5.2" class="anchored" data-anchor-id="为什么-deseq2-必须使用原始计数"><span class="header-section-number">22.5.2</span> 为什么 DESeq2 必须使用原始计数？</h3>
+<p>DESeq2 的负二项分布统计模型要求输入<strong>未归一化的整数计数</strong>，原因如下：</p>
+<ol type="1">
+<li><strong>模型假设</strong>：负二项分布模拟的是测序过程中随机抽样的计数数据；TPM/FPKM 是连续值且不服从此分布；</li>
+<li><strong>内部归一化</strong>：DESeq2 通过 Size Factor 在模型内部处理测序深度差异，外部归一化会破坏模型的统计假设；</li>
+<li><strong>方差估计</strong>：DESeq2 的过离散度（Overdispersion）估计依赖于计数数据的整数性质。</li>
+</ol>
+<div class="warning">
+<p><strong>严重错误提示：</strong> 将 TPM 或 FPKM 值输入 DESeq2 是一个严重的统计错误，会导致假阳性率失控。正确的做法是：DESeq2 和 edgeR 使用原始计数；跨样本可视化和基因水平比较使用 TPM；FPKM 已基本被 TPM 取代，不推荐使用。</p>
+</div>
+<hr>
+</section>
+</section>
+<section id="两种定量策略的比较" class="level2" data-number="22.6">
+<h2 data-number="22.6" class="anchored" data-anchor-id="两种定量策略的比较"><span class="header-section-number">22.6</span> 两种定量策略的比较</h2>
+<table class="caption-top table">
+<thead>
+<tr class="header">
+<th>特性</th>
+<th>featureCounts</th>
+<th>Salmon</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>比对方式</td>
+<td>基于全基因组 BAM 比对</td>
+<td>伪比对/选择性比对</td>
+</tr>
+<tr class="even">
+<td>速度</td>
+<td>较慢（依赖 STAR 输出）</td>
+<td>极快（直接从 FASTQ）</td>
+</tr>
+<tr class="odd">
+<td>偏差校正</td>
+<td>无</td>
+<td>GC bias、序列偏差</td>
+</tr>
+<tr class="even">
+<td>多比对处理</td>
+<td>简单（丢弃或分数分配）</td>
+<td>EM 算法最优分配</td>
+</tr>
+<tr class="odd">
+<td>不确定性估计</td>
+<td>无</td>
+<td>Bootstrap 区间</td>
+</tr>
+<tr class="even">
+<td>输出层级</td>
+<td>基因级别</td>
+<td>转录本级别（需 tximport）</td>
+</tr>
+<tr class="odd">
+<td>DESeq2 兼容性</td>
+<td>直接兼容</td>
+<td>需通过 tximport</td>
+</tr>
+<tr class="even">
+<td>推荐场景</td>
+<td>快速分析、已有 BAM 文件</td>
+<td>新项目、需要偏差校正</td>
+</tr>
+</tbody>
+</table>
+<hr>
+</section>
+<section id="实践完整比对与定量流程" class="level2" data-number="22.7">
+<h2 data-number="22.7" class="anchored" data-anchor-id="实践完整比对与定量流程"><span class="header-section-number">22.7</span> 实践：完整比对与定量流程</h2>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb7"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="co"># === Complete pipeline for all 6 paired-end pasilla samples ===</span></span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a><span class="co"># Assumes STAR index is already built</span></span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a><span class="va">SAMPLES</span><span class="op">=</span><span class="va">(</span><span class="st">"SRR1039508"</span> <span class="st">"SRR1039512"</span> <span class="st">"SRR1039516"</span></span>
+<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a>         <span class="st">"SRR1039509"</span> <span class="st">"SRR1039513"</span> <span class="st">"SRR1039517"</span><span class="va">)</span></span>
+<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-7"><a href="#cb7-7" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> SAMPLE <span class="kw">in</span> <span class="st">"</span><span class="va">${SAMPLES</span><span class="op">[@]</span><span class="va">}</span><span class="st">"</span><span class="kw">;</span> <span class="cf">do</span></span>
+<span id="cb7-8"><a href="#cb7-8" aria-hidden="true" tabindex="-1"></a>  <span class="bu">echo</span> <span class="st">"Processing: </span><span class="va">${SAMPLE}</span><span class="st">"</span></span>
+<span id="cb7-9"><a href="#cb7-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-10"><a href="#cb7-10" aria-hidden="true" tabindex="-1"></a>  <span class="co"># STAR alignment</span></span>
+<span id="cb7-11"><a href="#cb7-11" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mkdir</span> <span class="at">-p</span> results/star/<span class="va">${SAMPLE}</span></span>
+<span id="cb7-12"><a href="#cb7-12" aria-hidden="true" tabindex="-1"></a>  <span class="ex">STAR</span> <span class="dt">\</span></span>
+<span id="cb7-13"><a href="#cb7-13" aria-hidden="true" tabindex="-1"></a>    <span class="at">--runThreadN</span> 16 <span class="dt">\</span></span>
+<span id="cb7-14"><a href="#cb7-14" aria-hidden="true" tabindex="-1"></a>    <span class="at">--genomeDir</span> index/STAR_GRCh38 <span class="dt">\</span></span>
+<span id="cb7-15"><a href="#cb7-15" aria-hidden="true" tabindex="-1"></a>    <span class="at">--readFilesIn</span> <span class="dt">\</span></span>
+<span id="cb7-16"><a href="#cb7-16" aria-hidden="true" tabindex="-1"></a>      data/trimmed/<span class="va">${SAMPLE}</span>_1.fastq.gz <span class="dt">\</span></span>
+<span id="cb7-17"><a href="#cb7-17" aria-hidden="true" tabindex="-1"></a>      data/trimmed/<span class="va">${SAMPLE}</span>_2.fastq.gz <span class="dt">\</span></span>
+<span id="cb7-18"><a href="#cb7-18" aria-hidden="true" tabindex="-1"></a>    <span class="at">--readFilesCommand</span> zcat <span class="dt">\</span></span>
+<span id="cb7-19"><a href="#cb7-19" aria-hidden="true" tabindex="-1"></a>    <span class="at">--outSAMtype</span> BAM SortedByCoordinate <span class="dt">\</span></span>
+<span id="cb7-20"><a href="#cb7-20" aria-hidden="true" tabindex="-1"></a>    <span class="at">--outSAMattributes</span> NH HI AS NM MD <span class="dt">\</span></span>
+<span id="cb7-21"><a href="#cb7-21" aria-hidden="true" tabindex="-1"></a>    <span class="at">--outFileNamePrefix</span> results/star/<span class="va">${SAMPLE}</span>/ <span class="dt">\</span></span>
+<span id="cb7-22"><a href="#cb7-22" aria-hidden="true" tabindex="-1"></a>    <span class="at">--twopassMode</span> Basic <span class="dt">\</span></span>
+<span id="cb7-23"><a href="#cb7-23" aria-hidden="true" tabindex="-1"></a>    <span class="at">--runThreadN</span> 16</span>
+<span id="cb7-24"><a href="#cb7-24" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-25"><a href="#cb7-25" aria-hidden="true" tabindex="-1"></a>  <span class="ex">samtools</span> index results/star/<span class="va">${SAMPLE}</span>/Aligned.sortedByCoord.out.bam</span>
+<span id="cb7-26"><a href="#cb7-26" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-27"><a href="#cb7-27" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Salmon quantification</span></span>
+<span id="cb7-28"><a href="#cb7-28" aria-hidden="true" tabindex="-1"></a>  <span class="ex">salmon</span> quant <span class="dt">\</span></span>
+<span id="cb7-29"><a href="#cb7-29" aria-hidden="true" tabindex="-1"></a>    <span class="at">--index</span> index/salmon_GRCh38 <span class="dt">\</span></span>
+<span id="cb7-30"><a href="#cb7-30" aria-hidden="true" tabindex="-1"></a>    <span class="at">--libType</span> A <span class="dt">\</span></span>
+<span id="cb7-31"><a href="#cb7-31" aria-hidden="true" tabindex="-1"></a>    <span class="at">--mates1</span> data/trimmed/<span class="va">${SAMPLE}</span>_1.fastq.gz <span class="dt">\</span></span>
+<span id="cb7-32"><a href="#cb7-32" aria-hidden="true" tabindex="-1"></a>    <span class="at">--mates2</span> data/trimmed/<span class="va">${SAMPLE}</span>_2.fastq.gz <span class="dt">\</span></span>
+<span id="cb7-33"><a href="#cb7-33" aria-hidden="true" tabindex="-1"></a>    <span class="at">--output</span> results/salmon/<span class="va">${SAMPLE}</span> <span class="dt">\</span></span>
+<span id="cb7-34"><a href="#cb7-34" aria-hidden="true" tabindex="-1"></a>    <span class="at">--gcBias</span> <span class="at">--seqBias</span> <span class="at">--validateMappings</span> <span class="dt">\</span></span>
+<span id="cb7-35"><a href="#cb7-35" aria-hidden="true" tabindex="-1"></a>    <span class="at">--threads</span> 16</span>
+<span id="cb7-36"><a href="#cb7-36" aria-hidden="true" tabindex="-1"></a><span class="cf">done</span></span>
+<span id="cb7-37"><a href="#cb7-37" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-38"><a href="#cb7-38" aria-hidden="true" tabindex="-1"></a><span class="co"># === featureCounts on all BAM files simultaneously ===</span></span>
+<span id="cb7-39"><a href="#cb7-39" aria-hidden="true" tabindex="-1"></a><span class="ex">featureCounts</span> <span class="dt">\</span></span>
+<span id="cb7-40"><a href="#cb7-40" aria-hidden="true" tabindex="-1"></a>  <span class="at">-T</span> 16 <span class="dt">\</span></span>
+<span id="cb7-41"><a href="#cb7-41" aria-hidden="true" tabindex="-1"></a>  <span class="at">-a</span> Homo_sapiens.GRCh38.109.gtf <span class="dt">\</span></span>
+<span id="cb7-42"><a href="#cb7-42" aria-hidden="true" tabindex="-1"></a>  <span class="at">-o</span> results/featureCounts/pasilla_counts.txt <span class="dt">\</span></span>
+<span id="cb7-43"><a href="#cb7-43" aria-hidden="true" tabindex="-1"></a>  <span class="at">-s</span> 2 <span class="at">-p</span> <span class="at">-B</span> <span class="at">-C</span> <span class="at">--countReadPairs</span> <span class="dt">\</span></span>
+<span id="cb7-44"><a href="#cb7-44" aria-hidden="true" tabindex="-1"></a>  results/star/SRR1039508/Aligned.sortedByCoord.out.bam <span class="dt">\</span></span>
+<span id="cb7-45"><a href="#cb7-45" aria-hidden="true" tabindex="-1"></a>  results/star/SRR1039512/Aligned.sortedByCoord.out.bam <span class="dt">\</span></span>
+<span id="cb7-46"><a href="#cb7-46" aria-hidden="true" tabindex="-1"></a>  results/star/SRR1039516/Aligned.sortedByCoord.out.bam</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb8"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="co"># === R: Compare featureCounts vs Salmon quantification ===</span></span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(tximport)</span>
+<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(readr)</span>
+<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(ggplot2)</span>
+<span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-6"><a href="#cb8-6" aria-hidden="true" tabindex="-1"></a><span class="co"># Load featureCounts output</span></span>
+<span id="cb8-7"><a href="#cb8-7" aria-hidden="true" tabindex="-1"></a>fc_data <span class="ot">&lt;-</span> <span class="fu">read.table</span>(</span>
+<span id="cb8-8"><a href="#cb8-8" aria-hidden="true" tabindex="-1"></a>  <span class="st">"results/featureCounts/pasilla_counts.txt"</span>,</span>
+<span id="cb8-9"><a href="#cb8-9" aria-hidden="true" tabindex="-1"></a>  <span class="at">header =</span> <span class="cn">TRUE</span>, <span class="at">skip =</span> <span class="dv">1</span>, <span class="at">row.names =</span> <span class="dv">1</span></span>
+<span id="cb8-10"><a href="#cb8-10" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb8-11"><a href="#cb8-11" aria-hidden="true" tabindex="-1"></a>fc_counts <span class="ot">&lt;-</span> fc_data[, <span class="dv">7</span><span class="sc">:</span><span class="fu">ncol</span>(fc_data)]</span>
+<span id="cb8-12"><a href="#cb8-12" aria-hidden="true" tabindex="-1"></a><span class="fu">colnames</span>(fc_counts) <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="st">"SRR1039508"</span>, <span class="st">"SRR1039512"</span>, <span class="st">"SRR1039516"</span>)</span>
+<span id="cb8-13"><a href="#cb8-13" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-14"><a href="#cb8-14" aria-hidden="true" tabindex="-1"></a><span class="co"># Load Salmon via tximport</span></span>
+<span id="cb8-15"><a href="#cb8-15" aria-hidden="true" tabindex="-1"></a>tx2gene <span class="ot">&lt;-</span> <span class="fu">read.csv</span>(<span class="st">"tx2gene_GRCh38.csv"</span>)</span>
+<span id="cb8-16"><a href="#cb8-16" aria-hidden="true" tabindex="-1"></a>files <span class="ot">&lt;-</span> <span class="fu">file.path</span>(<span class="st">"results/salmon"</span>,</span>
+<span id="cb8-17"><a href="#cb8-17" aria-hidden="true" tabindex="-1"></a>                   <span class="fu">c</span>(<span class="st">"SRR1039508"</span>, <span class="st">"SRR1039512"</span>, <span class="st">"SRR1039516"</span>),</span>
+<span id="cb8-18"><a href="#cb8-18" aria-hidden="true" tabindex="-1"></a>                   <span class="st">"quant.sf"</span>)</span>
+<span id="cb8-19"><a href="#cb8-19" aria-hidden="true" tabindex="-1"></a><span class="fu">names</span>(files) <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="st">"SRR1039508"</span>, <span class="st">"SRR1039512"</span>, <span class="st">"SRR1039516"</span>)</span>
+<span id="cb8-20"><a href="#cb8-20" aria-hidden="true" tabindex="-1"></a>txi <span class="ot">&lt;-</span> <span class="fu">tximport</span>(files, <span class="at">type =</span> <span class="st">"salmon"</span>,</span>
+<span id="cb8-21"><a href="#cb8-21" aria-hidden="true" tabindex="-1"></a>                <span class="at">tx2gene =</span> tx2gene, <span class="at">ignoreTxVersion =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb8-22"><a href="#cb8-22" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-23"><a href="#cb8-23" aria-hidden="true" tabindex="-1"></a><span class="co"># Align gene IDs and compute correlation</span></span>
+<span id="cb8-24"><a href="#cb8-24" aria-hidden="true" tabindex="-1"></a>common_genes <span class="ot">&lt;-</span> <span class="fu">intersect</span>(<span class="fu">rownames</span>(fc_counts), <span class="fu">rownames</span>(txi<span class="sc">$</span>counts))</span>
+<span id="cb8-25"><a href="#cb8-25" aria-hidden="true" tabindex="-1"></a>fc_s1 <span class="ot">&lt;-</span> fc_counts[common_genes, <span class="st">"SRR1039508"</span>]</span>
+<span id="cb8-26"><a href="#cb8-26" aria-hidden="true" tabindex="-1"></a>salmon_s1 <span class="ot">&lt;-</span> txi<span class="sc">$</span>counts[common_genes, <span class="st">"SRR1039508"</span>]</span>
+<span id="cb8-27"><a href="#cb8-27" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-28"><a href="#cb8-28" aria-hidden="true" tabindex="-1"></a>cor_val <span class="ot">&lt;-</span> <span class="fu">cor</span>(<span class="fu">log1p</span>(fc_s1), <span class="fu">log1p</span>(salmon_s1))</span>
+<span id="cb8-29"><a href="#cb8-29" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-30"><a href="#cb8-30" aria-hidden="true" tabindex="-1"></a><span class="co"># Scatter plot comparison</span></span>
+<span id="cb8-31"><a href="#cb8-31" aria-hidden="true" tabindex="-1"></a>df_compare <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(</span>
+<span id="cb8-32"><a href="#cb8-32" aria-hidden="true" tabindex="-1"></a>  <span class="at">featureCounts =</span> <span class="fu">log1p</span>(fc_s1),</span>
+<span id="cb8-33"><a href="#cb8-33" aria-hidden="true" tabindex="-1"></a>  <span class="at">Salmon        =</span> <span class="fu">log1p</span>(salmon_s1)</span>
+<span id="cb8-34"><a href="#cb8-34" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb8-35"><a href="#cb8-35" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-36"><a href="#cb8-36" aria-hidden="true" tabindex="-1"></a><span class="fu">ggplot</span>(df_compare, <span class="fu">aes</span>(<span class="at">x =</span> featureCounts, <span class="at">y =</span> Salmon)) <span class="sc">+</span></span>
+<span id="cb8-37"><a href="#cb8-37" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_point</span>(<span class="at">alpha =</span> <span class="fl">0.2</span>, <span class="at">size =</span> <span class="fl">0.5</span>, <span class="at">color =</span> <span class="st">"steelblue"</span>) <span class="sc">+</span></span>
+<span id="cb8-38"><a href="#cb8-38" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_abline</span>(<span class="at">slope =</span> <span class="dv">1</span>, <span class="at">intercept =</span> <span class="dv">0</span>,</span>
+<span id="cb8-39"><a href="#cb8-39" aria-hidden="true" tabindex="-1"></a>              <span class="at">color =</span> <span class="st">"firebrick"</span>, <span class="at">linetype =</span> <span class="st">"dashed"</span>) <span class="sc">+</span></span>
+<span id="cb8-40"><a href="#cb8-40" aria-hidden="true" tabindex="-1"></a>  <span class="fu">annotate</span>(<span class="st">"text"</span>, <span class="at">x =</span> <span class="dv">2</span>, <span class="at">y =</span> <span class="dv">12</span>,</span>
+<span id="cb8-41"><a href="#cb8-41" aria-hidden="true" tabindex="-1"></a>           <span class="at">label =</span> <span class="fu">sprintf</span>(<span class="st">"Pearson r = %.4f"</span>, cor_val),</span>
+<span id="cb8-42"><a href="#cb8-42" aria-hidden="true" tabindex="-1"></a>           <span class="at">size =</span> <span class="dv">4</span>) <span class="sc">+</span></span>
+<span id="cb8-43"><a href="#cb8-43" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(</span>
+<span id="cb8-44"><a href="#cb8-44" aria-hidden="true" tabindex="-1"></a>    <span class="at">x =</span> <span class="st">"log1p(featureCounts)"</span>,</span>
+<span id="cb8-45"><a href="#cb8-45" aria-hidden="true" tabindex="-1"></a>    <span class="at">y =</span> <span class="st">"log1p(Salmon)"</span>,</span>
+<span id="cb8-46"><a href="#cb8-46" aria-hidden="true" tabindex="-1"></a>    <span class="at">title =</span> <span class="st">"featureCounts vs Salmon: SRR1039508"</span>,</span>
+<span id="cb8-47"><a href="#cb8-47" aria-hidden="true" tabindex="-1"></a>    <span class="at">subtitle =</span> <span class="st">"Each point = one gene; diagonal = perfect agreement"</span></span>
+<span id="cb8-48"><a href="#cb8-48" aria-hidden="true" tabindex="-1"></a>  ) <span class="sc">+</span></span>
+<span id="cb8-49"><a href="#cb8-49" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme_classic</span>()</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<hr>
+</section>
+<section id="sambam-格式解析" class="level2" data-number="22.8">
+<h2 data-number="22.8" class="anchored" data-anchor-id="sambam-格式解析"><span class="header-section-number">22.8</span> SAM/BAM 格式解析</h2>
+<p>理解比对输出文件的格式，是排查比对问题和下游分析的基础。STAR 和 HISAT2 均输出 SAM（Sequence Alignment/Map）格式或其二进制压缩版 BAM。</p>
+<section id="sam-文件结构" class="level3" data-number="22.8.1">
+<h3 data-number="22.8.1" class="anchored" data-anchor-id="sam-文件结构"><span class="header-section-number">22.8.1</span> SAM 文件结构</h3>
+<p>SAM 文件由两部分组成：以 <code>@</code> 开头的<strong>头部（Header）</strong>行，以及每条 read 的<strong>比对记录</strong>行（11 个强制字段 + 可选标签）。</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb9"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="co"># View BAM file header</span></span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a><span class="ex">samtools</span> view <span class="at">-H</span> sample.bam <span class="kw">|</span> <span class="fu">head</span> <span class="at">-20</span></span>
+<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a><span class="co"># View first 5 alignment records</span></span>
+<span id="cb9-5"><a href="#cb9-5" aria-hidden="true" tabindex="-1"></a><span class="ex">samtools</span> view sample.bam <span class="kw">|</span> <span class="fu">head</span> <span class="at">-5</span></span>
+<span id="cb9-6"><a href="#cb9-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-7"><a href="#cb9-7" aria-hidden="true" tabindex="-1"></a><span class="co"># Example alignment record:</span></span>
+<span id="cb9-8"><a href="#cb9-8" aria-hidden="true" tabindex="-1"></a><span class="co"># QNAME   FLAG  RNAME  POS    MAPQ  CIGAR    RNEXT  PNEXT  TLEN  SEQ   QUAL</span></span>
+<span id="cb9-9"><a href="#cb9-9" aria-hidden="true" tabindex="-1"></a><span class="co"># SRR...1   99   chr1  65419   255  90M60N60M  =    65560   201  ACGT..  IIII..</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><strong>关键字段解读</strong>：</p>
+<p><strong>FLAG（比对标志位）</strong>：16 位整数，每位代表一个属性。常用位：</p>
+<table class="caption-top table">
+<thead>
+<tr class="header">
+<th>值</th>
+<th>含义</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>1 (0x1)</td>
+<td>双端测序读段</td>
+</tr>
+<tr class="even">
+<td>4 (0x4)</td>
+<td>该 read 未比对</td>
+</tr>
+<tr class="odd">
+<td>16 (0x10)</td>
+<td>比对在反链</td>
+</tr>
+<tr class="even">
+<td>64 (0x40)</td>
+<td>Read 1</td>
+</tr>
+<tr class="odd">
+<td>128 (0x80)</td>
+<td>Read 2</td>
+</tr>
+</tbody>
+</table>
+<p>一条 FLAG = 99 的 read 含义：99 = 64+32+2+1，即双端读段（1）、配对正确（2）、配对 read 在反链（32）、本 read 是 Read 1（64）。</p>
+<p><strong>CIGAR 字符串</strong>：描述 read 如何与参考序列对齐：</p>
+<table class="caption-top table">
+<thead>
+<tr class="header">
+<th>符号</th>
+<th>含义</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>M</td>
+<td>匹配（含错配）</td>
+</tr>
+<tr class="even">
+<td>N</td>
+<td>跳跃（对应内含子）</td>
+</tr>
+<tr class="odd">
+<td>S</td>
+<td>软截断（read 末端未比对，序列保留）</td>
+</tr>
+<tr class="even">
+<td>I</td>
+<td>插入</td>
+</tr>
+<tr class="odd">
+<td>D</td>
+<td>缺失</td>
+</tr>
+</tbody>
+</table>
+<p>例如 <code>90M2000N60M</code> 表示：read 前 90 bp 比对到外显子，跳过 2000 bp 内含子，后 60 bp 比对到下一个外显子——这是一条典型的 junction read。</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb10"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Useful samtools commands for QC</span></span>
+<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a><span class="co"># Check alignment statistics</span></span>
+<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a><span class="ex">samtools</span> flagstat sample.bam</span>
+<span id="cb10-4"><a href="#cb10-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-5"><a href="#cb10-5" aria-hidden="true" tabindex="-1"></a><span class="co"># Check per-chromosome mapping rates</span></span>
+<span id="cb10-6"><a href="#cb10-6" aria-hidden="true" tabindex="-1"></a><span class="ex">samtools</span> idxstats sample.bam</span>
+<span id="cb10-7"><a href="#cb10-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-8"><a href="#cb10-8" aria-hidden="true" tabindex="-1"></a><span class="co"># View only uniquely mapped reads (MAPQ &gt;= 255 for STAR)</span></span>
+<span id="cb10-9"><a href="#cb10-9" aria-hidden="true" tabindex="-1"></a><span class="ex">samtools</span> view <span class="at">-q</span> 255 sample.bam <span class="kw">|</span> <span class="fu">head</span> <span class="at">-5</span></span>
+<span id="cb10-10"><a href="#cb10-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-11"><a href="#cb10-11" aria-hidden="true" tabindex="-1"></a><span class="co"># Check insert size distribution (for paired-end data)</span></span>
+<span id="cb10-12"><a href="#cb10-12" aria-hidden="true" tabindex="-1"></a><span class="ex">samtools</span> stats sample.bam <span class="kw">|</span> <span class="fu">grep</span> <span class="st">"^IS"</span> <span class="kw">|</span> <span class="dt">\</span></span>
+<span id="cb10-13"><a href="#cb10-13" aria-hidden="true" tabindex="-1"></a>  <span class="fu">awk</span> <span class="st">'{print $2, $3}'</span> <span class="op">&gt;</span> insert_sizes.txt</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</section>
+<section id="多比对-reads-的处理策略" class="level3" data-number="22.8.2">
+<h3 data-number="22.8.2" class="anchored" data-anchor-id="多比对-reads-的处理策略"><span class="header-section-number">22.8.2</span> 多比对 reads 的处理策略</h3>
+<p>当一条 read 能比对到基因组多个位置时，称为<strong>多比对 read（multimapper）</strong>。多比对的主要来源：</p>
+<ul>
+<li><strong>重复元件</strong>：LINE、SINE、转座子家族中高度相似的拷贝；</li>
+<li><strong>同源基因家族</strong>：如组蛋白基因簇、嗅觉受体基因家族；</li>
+<li><strong>假基因</strong>：与功能基因高度相似但无功能的序列拷贝。</li>
+</ul>
+<p>不同工具对多比对的处理策略：</p>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 33%">
+<col style="width: 33%">
+<col style="width: 33%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>工具</th>
+<th>策略</th>
+<th>适用场景</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>STAR（默认）</td>
+<td>保留所有位置，<code>NH:i:N</code> 标记总数</td>
+<td>保留信息，下游工具决策</td>
+</tr>
+<tr class="even">
+<td>featureCounts</td>
+<td>丢弃（<code>-M</code> 保留）</td>
+<td>保守计数</td>
+</tr>
+<tr class="odd">
+<td>featureCounts + <code>--fraction</code></td>
+<td>按位置数均等分配（产生小数）</td>
+<td>估计总体趋势，不适合 DEA</td>
+</tr>
+<tr class="even">
+<td>Salmon</td>
+<td>EM 算法优化分配</td>
+<td>转录本级别定量首选</td>
+</tr>
+</tbody>
+</table>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb11"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Check multimapping rate from STAR log</span></span>
+<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a><span class="fu">grep</span> <span class="st">"% of reads mapped to multiple loci"</span> <span class="dt">\</span></span>
+<span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a>  results/star/SRR1039508/Log.final.out</span>
+<span id="cb11-4"><a href="#cb11-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-5"><a href="#cb11-5" aria-hidden="true" tabindex="-1"></a><span class="co"># Count uniquely vs multi-mapped reads</span></span>
+<span id="cb11-6"><a href="#cb11-6" aria-hidden="true" tabindex="-1"></a><span class="ex">samtools</span> view <span class="at">-c</span> <span class="at">-q</span> 255 sample.bam   <span class="co"># uniquely mapped (MAPQ=255 in STAR)</span></span>
+<span id="cb11-7"><a href="#cb11-7" aria-hidden="true" tabindex="-1"></a><span class="ex">samtools</span> view <span class="at">-c</span> <span class="at">-F</span> 4 sample.bam     <span class="co"># all mapped</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<hr>
+</section>
+</section>
+<section id="定量结果的质量诊断" class="level2" data-number="22.9">
+<h2 data-number="22.9" class="anchored" data-anchor-id="定量结果的质量诊断"><span class="header-section-number">22.9</span> 定量结果的质量诊断</h2>
+<p>在完成比对和定量后，应对结果矩阵进行基本诊断，发现异常样本或基因。</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb12"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(DESeq2)</span>
+<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(ggplot2)</span>
+<span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-4"><a href="#cb12-4" aria-hidden="true" tabindex="-1"></a><span class="co"># Load count matrix from featureCounts</span></span>
+<span id="cb12-5"><a href="#cb12-5" aria-hidden="true" tabindex="-1"></a>counts_raw <span class="ot">&lt;-</span> <span class="fu">read.table</span>(</span>
+<span id="cb12-6"><a href="#cb12-6" aria-hidden="true" tabindex="-1"></a>  <span class="st">"results/featureCounts/pasilla_counts.txt"</span>,</span>
+<span id="cb12-7"><a href="#cb12-7" aria-hidden="true" tabindex="-1"></a>  <span class="at">header =</span> <span class="cn">TRUE</span>, <span class="at">skip =</span> <span class="dv">1</span>, <span class="at">row.names =</span> <span class="dv">1</span></span>
+<span id="cb12-8"><a href="#cb12-8" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb12-9"><a href="#cb12-9" aria-hidden="true" tabindex="-1"></a>counts <span class="ot">&lt;-</span> counts_raw[, <span class="dv">7</span><span class="sc">:</span><span class="fu">ncol</span>(counts_raw)]</span>
+<span id="cb12-10"><a href="#cb12-10" aria-hidden="true" tabindex="-1"></a><span class="fu">colnames</span>(counts) <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="st">"untreated1"</span>, <span class="st">"untreated2"</span>, <span class="st">"treated1"</span>)</span>
+<span id="cb12-11"><a href="#cb12-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-12"><a href="#cb12-12" aria-hidden="true" tabindex="-1"></a><span class="co"># === Diagnostic 1: Library size distribution ===</span></span>
+<span id="cb12-13"><a href="#cb12-13" aria-hidden="true" tabindex="-1"></a>lib_sizes <span class="ot">&lt;-</span> <span class="fu">colSums</span>(counts)</span>
+<span id="cb12-14"><a href="#cb12-14" aria-hidden="true" tabindex="-1"></a><span class="fu">barplot</span>(lib_sizes <span class="sc">/</span> <span class="fl">1e6</span>,</span>
+<span id="cb12-15"><a href="#cb12-15" aria-hidden="true" tabindex="-1"></a>        <span class="at">main =</span> <span class="st">"Library sizes (millions of mapped reads)"</span>,</span>
+<span id="cb12-16"><a href="#cb12-16" aria-hidden="true" tabindex="-1"></a>        <span class="at">ylab =</span> <span class="st">"Mapped reads (M)"</span>,</span>
+<span id="cb12-17"><a href="#cb12-17" aria-hidden="true" tabindex="-1"></a>        <span class="at">col  =</span> <span class="st">"steelblue"</span>)</span>
+<span id="cb12-18"><a href="#cb12-18" aria-hidden="true" tabindex="-1"></a><span class="fu">abline</span>(<span class="at">h =</span> <span class="fu">mean</span>(lib_sizes) <span class="sc">/</span> <span class="fl">1e6</span>, <span class="at">col =</span> <span class="st">"firebrick"</span>,</span>
+<span id="cb12-19"><a href="#cb12-19" aria-hidden="true" tabindex="-1"></a>       <span class="at">lty =</span> <span class="dv">2</span>, <span class="at">lwd =</span> <span class="dv">2</span>)</span>
+<span id="cb12-20"><a href="#cb12-20" aria-hidden="true" tabindex="-1"></a><span class="co"># Rule of thumb: samples with &lt; 5M reads may have low power;</span></span>
+<span id="cb12-21"><a href="#cb12-21" aria-hidden="true" tabindex="-1"></a><span class="co"># samples with 2-fold difference in library size require careful normalization</span></span>
+<span id="cb12-22"><a href="#cb12-22" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-23"><a href="#cb12-23" aria-hidden="true" tabindex="-1"></a><span class="co"># === Diagnostic 2: Genes detected per sample ===</span></span>
+<span id="cb12-24"><a href="#cb12-24" aria-hidden="true" tabindex="-1"></a>genes_detected <span class="ot">&lt;-</span> <span class="fu">colSums</span>(counts <span class="sc">&gt;</span> <span class="dv">0</span>)</span>
+<span id="cb12-25"><a href="#cb12-25" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">"Genes detected per sample:</span><span class="sc">\n</span><span class="st">"</span>)</span>
+<span id="cb12-26"><a href="#cb12-26" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(genes_detected)</span>
+<span id="cb12-27"><a href="#cb12-27" aria-hidden="true" tabindex="-1"></a><span class="co"># Expected: 12,000 - 18,000 for human poly-A enriched library</span></span>
+<span id="cb12-28"><a href="#cb12-28" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-29"><a href="#cb12-29" aria-hidden="true" tabindex="-1"></a><span class="co"># === Diagnostic 3: Top expressed genes ===</span></span>
+<span id="cb12-30"><a href="#cb12-30" aria-hidden="true" tabindex="-1"></a>top_genes <span class="ot">&lt;-</span> <span class="fu">head</span>(<span class="fu">sort</span>(<span class="fu">rowMeans</span>(counts), <span class="at">decreasing =</span> <span class="cn">TRUE</span>), <span class="dv">20</span>)</span>
+<span id="cb12-31"><a href="#cb12-31" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">"</span><span class="sc">\n</span><span class="st">Top 20 most expressed genes (mean counts):</span><span class="sc">\n</span><span class="st">"</span>)</span>
+<span id="cb12-32"><a href="#cb12-32" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(top_genes)</span>
+<span id="cb12-33"><a href="#cb12-33" aria-hidden="true" tabindex="-1"></a><span class="co"># Warning: if top genes are rRNA/mitochondrial, library QC failed</span></span>
+<span id="cb12-34"><a href="#cb12-34" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-35"><a href="#cb12-35" aria-hidden="true" tabindex="-1"></a><span class="co"># === Diagnostic 4: Expression density plot ===</span></span>
+<span id="cb12-36"><a href="#cb12-36" aria-hidden="true" tabindex="-1"></a>log_counts <span class="ot">&lt;-</span> <span class="fu">log1p</span>(<span class="fu">as.matrix</span>(counts))</span>
+<span id="cb12-37"><a href="#cb12-37" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(<span class="fu">density</span>(log_counts[, <span class="dv">1</span>]),</span>
+<span id="cb12-38"><a href="#cb12-38" aria-hidden="true" tabindex="-1"></a>     <span class="at">main =</span> <span class="st">"Expression density (log1p counts)"</span>,</span>
+<span id="cb12-39"><a href="#cb12-39" aria-hidden="true" tabindex="-1"></a>     <span class="at">xlab =</span> <span class="st">"log1p(count)"</span>, <span class="at">col =</span> <span class="st">"steelblue"</span>, <span class="at">lwd =</span> <span class="dv">2</span>)</span>
+<span id="cb12-40"><a href="#cb12-40" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> (i <span class="cf">in</span> <span class="dv">2</span><span class="sc">:</span><span class="fu">ncol</span>(log_counts)) {</span>
+<span id="cb12-41"><a href="#cb12-41" aria-hidden="true" tabindex="-1"></a>  <span class="fu">lines</span>(<span class="fu">density</span>(log_counts[, i]),</span>
+<span id="cb12-42"><a href="#cb12-42" aria-hidden="true" tabindex="-1"></a>        <span class="at">col =</span> <span class="fu">c</span>(<span class="st">"darkorange"</span>, <span class="st">"firebrick"</span>)[i <span class="sc">-</span> <span class="dv">1</span>], <span class="at">lwd =</span> <span class="dv">2</span>)</span>
+<span id="cb12-43"><a href="#cb12-43" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb12-44"><a href="#cb12-44" aria-hidden="true" tabindex="-1"></a><span class="fu">legend</span>(<span class="st">"topright"</span>, <span class="fu">colnames</span>(counts),</span>
+<span id="cb12-45"><a href="#cb12-45" aria-hidden="true" tabindex="-1"></a>       <span class="at">col =</span> <span class="fu">c</span>(<span class="st">"steelblue"</span>, <span class="st">"darkorange"</span>, <span class="st">"firebrick"</span>), <span class="at">lwd =</span> <span class="dv">2</span>)</span>
+<span id="cb12-46"><a href="#cb12-46" aria-hidden="true" tabindex="-1"></a><span class="co"># All samples should have similar distribution shape</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<hr>
+</section>
+<section id="课后自测-post-lesson-quiz" class="level2" data-number="22.10">
+<h2 data-number="22.10" class="anchored" data-anchor-id="课后自测-post-lesson-quiz"><span class="header-section-number">22.10</span> 课后自测 (Post-Lesson Quiz)</h2>
+<ol type="1">
+<li><p>一个 150 bp 的 RNA-seq read 跨越了一个约 5,000 bp 的内含子：read 的前 90 bp 来自外显子 3，后 60 bp 来自外显子 4。若使用 Bowtie2（非 splice-aware）比对，这条 read 可能会发生什么？使用 STAR 后结果有何不同？</p></li>
+<li><p>STAR 的两遍比对（2-pass mode）与一遍比对相比，主要在哪类 reads 的处理上有优势？其背后的原理是什么？</p></li>
+<li><p>featureCounts 的 <code>-s</code> 参数有三个选项（0、1、2）。若对一个 RF-stranded 文库（TruSeq Stranded）使用了 <code>-s 0</code>（非链特异性），会对计数结果产生什么影响？</p></li>
+<li><p>下列哪种情况适合使用 FPKM/TPM，哪种情况必须使用原始计数？</p>
+<ul>
+<li>（a）在论文图表中比较同一样本内不同基因的表达水平；</li>
+<li>（b）使用 DESeq2 进行差异表达分析；</li>
+<li>（c）比较不同物种中同一基因家族的相对表达。</li>
+</ul></li>
+<li><p>Salmon 的 <code>--gcBias</code> 校正对哪类基因的定量影响最大？请说明原因。</p></li>
+</ol>
+<details>
+<summary>
+<strong>参考答案 (Reference Answers)</strong>
+</summary>
+<ol type="1">
+<li><p><em>使用 Bowtie2，该 read 无法被连续比对（中间隔着 5,000 bp 内含子），可能被标记为未比对（unmapped）、或被强制映射到基因组上错误的连续区域（如假基因）。使用 STAR，MMP 算法会在外显子 3 末端识别 GT 剪接信号，将前 90 bp 映射至外显子 3，后 60 bp 映射至外显子 4，正确识别这条 junction read 并计入两个外显子的交界处。</em></p></li>
+<li><p><em>2-pass 模式主要对低表达基因的新型剪接位点（novel splice junctions）有显著优势。第一遍比对发现的新剪接位点被加入临时索引，第二遍比对时这些新位点能辅助低表达 junction reads 的正确定位——这些 reads 在第一遍中因缺乏索引支持而无法被精确比对，在第二遍中则能利用高表达样本发现的剪接位点信息正确映射。</em></p></li>
+<li><p><em>使用 <code>-s 0</code>（非链特异性），featureCounts 会同时计算正链和反链上的 reads。对于位于正反链都有基因的重叠区域，会引入反义链 reads 的噪声，导致计数虚高；对于无重叠的单基因区域，影响较小。整体效果是增加了假阳性信号，降低了链特异性差异的检测能力。</em></p></li>
+<li><p><em>（a）可视化同一样本内不同基因相对水平 → 使用 TPM（已做长度与深度双校正，同样本内可比）；（b）DESeq2 差异表达 → 必须使用原始计数（整数，满足负二项模型假设）；（c）跨物种比较 → 使用 TPM（深度和长度已校正），但需注意基因长度在不同物种间可能不同，应谨慎解读。</em></p></li>
+<li><p><em>GC 偏差校正对 GC 含量极端的基因影响最大——即 GC 含量极高（&gt; 70%）或极低（&lt; 30%）的基因。这些基因在 PCR 扩增过程中效率不同（GC 富集区域扩增效率低），导致它们的 reads 数量系统性偏低或偏高。Salmon 的 GC bias 校正通过对每个基因按其 GC 含量估计一个校正因子，补偿这一系统性偏差。</em></p></li>
+</ol>
+</details>
 
 
+</section>
 
 </main> <!-- /main -->
 <script id="quarto-html-after-body" type="application/javascript">
@@ -960,13 +1697,13 @@ ul.task-list li input[type="checkbox"] {
   </script>
 <nav class="page-navigation">
   <div class="nav-page nav-page-previous">
-      <a href="./transcriptomics_basic_lesson1.html" class="pagination-link" aria-label="第四章 课时1">
-        <i class="bi bi-arrow-left-short"></i> <span class="nav-page-text"><span class="chapter-number">21</span>&nbsp; <span class="chapter-title">第四章 课时1</span></span>
+      <a href="./transcriptomics_basic_lesson1.html" class="pagination-link" aria-label="测序原理、文库特性与原始数据质量控制">
+        <i class="bi bi-arrow-left-short"></i> <span class="nav-page-text"><span class="chapter-number">21</span>&nbsp; <span class="chapter-title">测序原理、文库特性与原始数据质量控制</span></span>
       </a>          
   </div>
   <div class="nav-page nav-page-next">
-      <a href="./transcriptomics_basic_lesson3.html" class="pagination-link" aria-label="第四章 课时3">
-        <span class="nav-page-text"><span class="chapter-number">23</span>&nbsp; <span class="chapter-title">第四章 课时3</span></span> <i class="bi bi-arrow-right-short"></i>
+      <a href="./transcriptomics_basic_lesson3.html" class="pagination-link" aria-label="专题 4.3：差异表达分析">
+        <span class="nav-page-text"><span class="chapter-number">23</span>&nbsp; <span class="chapter-title">专题 4.3：差异表达分析</span></span> <i class="bi bi-arrow-right-short"></i>
       </a>
   </div>
 </nav>
@@ -975,4 +1712,4 @@ ul.task-list li input[type="checkbox"] {
 
 
 
-<footer class="footer"><div class="nav-footer"><div class="nav-footer-center"><div class="toc-actions"><ul><li><a href="https://github.com/cxzdsa2332/Applied-Omics-Analysis/edit/main/transcriptomics_basic_lesson2.qmd" class="toc-action"><i class="bi bi-github"></i>Edit this page</a></li><li><a href="https://github.com/cxzdsa2332/Applied-Omics-Analysis/issues/new" class="toc-action"><i class="bi empty"></i>Report an issue</a></li><li><a href="https://github.com/cxzdsa2332/Applied-Omics-Analysis/blob/main/transcriptomics_basic_lesson2.qmd" class="toc-action"><i class="bi empty"></i>View source</a></li></ul></div></div></div></footer></body></html>
+<footer class="footer"><div class="nav-footer"><div class="nav-footer-center"><div class="toc-actions d-sm-block d-md-none"><ul><li><a href="https://github.com/cxzdsa2332/Applied-Omics-Analysis/edit/main/transcriptomics_basic_lesson2.qmd" class="toc-action"><i class="bi bi-github"></i>Edit this page</a></li><li><a href="https://github.com/cxzdsa2332/Applied-Omics-Analysis/issues/new" class="toc-action"><i class="bi empty"></i>Report an issue</a></li><li><a href="https://github.com/cxzdsa2332/Applied-Omics-Analysis/blob/main/transcriptomics_basic_lesson2.qmd" class="toc-action"><i class="bi empty"></i>View source</a></li></ul></div></div></div></footer></body></html>

@@ -1,0 +1,127 @@
+---
+title: "Bulk 转录组分析基础：质量控制、定量与差异表达"
+date: today
+format:
+  html:
+    code-fold: false
+    toc: true
+    toc-depth: 3
+    number-sections: true
+    theme: cosmo
+---
+
+# 整体概述
+
+Bulk RNA-seq 是转录组学研究的基石技术，自 2008 年前后逐步取代微阵列（Microarray），成为差异表达研究的主流范式。其核心分析问题可以概括为：在给定实验条件下，哪些基因的转录水平发生了统计显著的变化，变化幅度有多大，以及这些变化在生物学功能层面意味着什么。要回答这些问题，分析者需要依次完成三个阶段的工作：原始数据的质量控制与预处理、基因表达量的精确定量、以及在统计模型框架下的差异表达检验与功能解读。本章聚焦上述三个基础阶段，系统讲解从原始 FASTQ 文件到差异表达基因功能注释的完整标准流程，着重阐明每一步骤的方法论原理与参数选择逻辑，为第5章高级转录组分析奠定基础。
+
+**学习目标**：掌握 RNA-seq 数据的质量评估标准与预处理策略；理解 splice-aware 比对与两种主流定量方法（基于比对计数 vs 伪比对）的原理差异；能独立运行 DESeq2 差异表达分析流程并进行 GO/KEGG/GSEA 功能富集解读。
+
+---
+
+# 结构导览
+
+本章分为两个模块，共四个专题，按标准 Bulk RNA-seq 分析流程组织：
+
+```
+原始 FASTQ（SRR1039508–SRR1039517，pasilla 数据集）
+  │
+  ├── 模块 A：数据质控与表达量定量（专题 4.1–4.2）
+  │     ↓ FastQC/fastp 质控 → STAR/HISAT2 比对 → featureCounts/Salmon 定量
+  │     ↓ 输出：多样本原始计数矩阵（count matrix）
+  │
+  └── 模块 B：差异表达分析与功能富集（专题 4.3–4.4）
+        ↓ DESeq2/edgeR 差异检验 → 结果过滤与可视化
+        ↓ GO/KEGG ORA → GSEA → 结果解读
+        ↓ 输出：差异基因表 + 富集通路报告
+```
+
+模块 A 的输出（原始计数矩阵）是模块 B 的直接输入；模块 B 的产出为第5章高级分析提供经过验证的起点。
+
+---
+
+# 模块 A：数据质控与表达量定量
+
+:::note
+**模块目标：** 理解 RNA-seq 文库特性对数据质量的影响，掌握 splice-aware 比对的算法原理，能在比对后计数与伪比对两种定量策略之间做出合理选择。
+:::
+
+## 专题 4.1：测序原理、文库特性与原始数据质量控制
+
+RNA-seq 数据的质量特征与 DNA 测序数据存在系统性差异，这些差异根植于文库构建方式的不同。poly-A 富集文库会优先捕获转录本 3' 端，导致 3'/5' 覆盖度不均；rRNA 去除（RiboZero）文库则覆盖分布更均匀，但可能残留非编码 RNA 信号。链特异性文库（Strand-specific library）记录了 RNA 链的方向信息，能区分正反链重叠基因的表达，是现代 RNA-seq 实验的标配。本专题系统讲解上述文库类型的特性，以及如何通过 FastQC 和 MultiQC 识别文库特有的质控异常信号，并利用 fastp 完成 Adapter 修剪与质量过滤。
+
+**核心概念**：
+
+- RNA-seq 文库构建两条路线：poly-A 富集（mRNA-seq）vs rRNA 去除（Total RNA-seq）；各自的覆盖度偏差模式
+- 链特异性文库：TruSeq Stranded 的 dUTP 策略；链方向的生物信息学确认（infer_experiment.py / RSeQC）
+- FastQC 关键模块解读：Per base sequence quality、Per sequence GC content、Sequence Duplication Levels、Overrepresented sequences
+- RNA-seq 特有的质控指标：rRNA 污染比例、3' 端偏差（read_distribution.py）、外显子/内含子/基因间区比例
+- fastp 参数选择：`--detect_adapter_for_pe`（自动检测）vs 手动指定；`--trim_poly_x` 处理 poly-A read-through
+- MultiQC 汇总报告：多样本质控状态的快速纵览
+
+**实践内容**：对 pasilla 数据集（SRR1039508–SRR1039517，10 个样本）运行 FastQC → fastp 修剪 → FastQC 复检 → MultiQC 汇总，识别链特异性方向并确认文库类型，生成贯穿全章的样本元数据表。
+
+---
+
+## 专题 4.2：Splice-Aware 比对与表达量定量
+
+RNA-seq 比对面临 DNA 比对所没有的根本挑战：成熟 mRNA 已切除内含子，一个跨越剪接位点的读段（junction read）在基因组上对应两段不连续的区间，普通比对工具无法正确处理。splice-aware 比对算法（STAR、HISAT2）通过两步策略解决这一问题：先将读段映射至外显子区域，再利用已知或新发现的剪接位点将跨越内含子的部分正确拼接。在定量层面，本专题深入对比两种主流策略：featureCounts 依赖比对结果逐外显子计数，而 Salmon 的伪比对（quasi-mapping）直接将读段与转录本序列匹配，无需全基因组比对，速度更快且内置偏差校正模型。
+
+{{Wiki:RNA-Seq}}
+
+**核心概念**：
+
+- STAR 两步比对：种子查找（Maximal Mappable Prefix, MMP）→ 剪接位点验证；两遍比对（2-pass mode）提高新型剪接位点检出率
+- HISAT2 的层次图 FM 索引（Hierarchical Graph FM-index）：全局基因组索引 + 局部剪接图索引
+- GTF 注释文件的作用：外显子坐标提供 featureCounts 计数边界；转录本序列用于 Salmon 索引构建
+- featureCounts 参数：`-s`（链特异性方向，0/1/2）；`-p`（双端模式）；多比对读段处理策略
+- Salmon 工作流：`salmon index`（转录本索引）→ `salmon quant`（伪比对定量）；`--gcBias` 与 `--seqBias` 校正
+- TPM vs FPKM vs 原始计数（raw counts）：各自适用场景；DESeq2 必须使用原始计数的原因
+- tximport：将 Salmon 转录本级别定量汇总至基因级别，传递推断不确定性（inferential replicates）
+
+**实践内容**：STAR 双端比对 pasilla 数据集至 GRCh38 参考基因组；featureCounts 链特异性计数；Salmon 伪比对定量；tximport 汇总；散点图对比两种定量方法的基因计数相关性。
+
+---
+
+# 模块 B：差异表达分析与功能富集
+
+:::note
+**模块目标：** 掌握负二项分布框架下的差异表达统计检验原理，理解多重检验校正的必要性，能独立运行 DESeq2 并解读结果；掌握 ORA 与 GSEA 两类富集分析的方法论差异与适用场景。
+:::
+
+## 专题 4.3：差异表达分析
+
+差异表达分析（Differential Expression Analysis, DEA）的统计问题本质是：在有限重复数（通常 3–5 个）条件下，如何可靠估计每个基因的表达变异，并从数以万计的基因中识别出真实的表达差异，同时将假阳性率控制在可接受水平。RNA-seq 计数数据具有两个关键统计特性：均值与方差之间存在正相关（过离散，Overdispersion），使普通泊松模型不适用；低表达基因的方差估计极不稳定。DESeq2 通过跨基因的离散度缩减估计（Empirical Bayes shrinkage）解决上述问题，是当前 RNA-seq 差异表达分析的黄金标准工具之一。
+
+{{Wiki:Negative_binomial_distribution}}
+
+**核心概念**：
+
+- 归一化的必要性：测序深度差异（文库大小）的校正；DESeq2 大小因子（Size Factor）的几何均值估计方法
+- 负二项分布模型：均值参数 $\mu_{ij}$ 与离散参数 $\alpha_i$；过离散的生物学与技术来源
+- DESeq2 离散度估计流程：基因特异性粗估计 → 拟合趋势曲线 → MAP 缩减（shrink towards trend）
+- Wald 检验与对数倍数变化（Log2 Fold Change, LFC）：LFC 缩减（apeglm）消除低计数基因极端值
+- 似然比检验（LRT）：适用于多因子模型或时间序列实验
+- 多重检验校正：Benjamini-Hochberg 过程；独立假设加权（IHW）提高检验效力
+- edgeR 拟似然框架（quasi-likelihood F-test）：与 DESeq2 的方法论对比
+- 结果可视化：MA 图、火山图（Volcano plot）、样本间距离热图、PCA 图
+
+**实践内容**：使用 tximport 导入的 pasilla 计数矩阵构建 DESeqDataSet；运行 DESeq2 标准流程；筛选差异基因（|LFC| > 1，padj < 0.05）；生成 MA 图与火山图；对比 apeglm 缩减前后 LFC 估计差异。
+
+---
+
+## 专题 4.4：功能富集分析
+
+差异表达基因列表本身仅回答了"哪些基因变了"，而"这些变化在生物学上意味着什么"需要通过功能富集分析来回答。本专题介绍两类主流富集策略：过表示富集分析（Over-Representation Analysis, ORA）对差异基因列表进行超几何检验，检验特定功能集合是否被显著富集；基因集富集分析（Gene Set Enrichment Analysis, GSEA）不设定差异基因阈值，而是对全部基因按表达变化排序后计算富集得分，能检出整体趋势性变化。两种方法各有适用场景，实际分析中通常互为补充。
+
+{{Wiki:Gene_ontology}}
+
+**核心概念**：
+
+- 功能数据库体系：Gene Ontology（GO）的三个本体（BP/MF/CC）；KEGG 通路数据库；MSigDB 基因集合库（Hallmark、C2、C5）
+- ORA 统计原理：超几何检验；背景基因集的选择（全基因组 vs 检出基因）对结果的影响
+- GSEA 算法：基因排序指标的选择；加权富集得分（ES）计算；标准化富集得分（NES）；leading edge 基因的生物学意义
+- clusterProfiler 工具链：`enrichGO()`、`enrichKEGG()`、`gseGO()`、`gseKEGG()`；`simplify()` 去冗余
+- 富集结果可视化：dotplot、cnetplot、emapplot、ridgeplot（GSEA）
+- 富集结果的常见误读：功能注释覆盖度不均引入的偏差；通路重叠导致的假象；背景集选择不当
+
+**实践内容**：对 pasilla 差异基因运行 clusterProfiler GO ORA 与 KEGG ORA；运行 GSEA（全基因组按 Wald stat 排序）；使用 dotplot 与 emapplot 可视化；对比 ORA 与 GSEA 结果异同并分析差异原因。

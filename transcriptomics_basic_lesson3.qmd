@@ -1,2 +1,748 @@
-# 第四章 课时3
+---
+title: "差异表达分析"
+date: today
+format:
+  html:
+    code-fold: false
+    toc: true
+    toc-depth: 3
+    number-sections: true
+    theme: cosmo
+---
 
+## 学习目标
+
+完成本专题后，学生应能够：
+
+1. 解释 RNA-seq 计数数据的过离散（Overdispersion）现象及其统计意义；
+2. 描述 DESeq2 的三步核心流程：大小因子估计、离散度估计与 Wald 检验；
+3. 理解 LFC 缩减（apeglm）在处理低计数基因时的作用；
+4. 解释 Benjamini-Hochberg 方法的 FDR 控制逻辑；
+5. 独立运行 DESeq2 完整分析流程并生成 MA 图与火山图；
+6. 理解 DESeq2 与 edgeR 在统计框架上的主要差异。
+
+---
+
+## 为什么需要统计检验？
+
+直觉上，比较两组间某个基因的平均表达量似乎是简单的问题。然而 RNA-seq 实验通常只有 3–5 个生物学重复，这在统计上是非常小的样本量。考虑到以下挑战：
+
+- **生物学变异**：同一处理条件下不同生物重复间的天然表达差异；
+- **技术变异**：文库制备、测序的随机误差；
+- **多重检验问题**：对数万个基因同时检验，即使假设全部基因不差异表达，仅凭随机波动也会产生大量假阳性；
+
+专门针对 RNA-seq 计数数据设计的统计模型因此不可或缺。
+
+---
+
+## 泊松模型为何不够用？
+
+最直观的计数模型是**泊松分布**（Poisson distribution）：给定基因 $i$ 在样本 $j$ 中的期望计数 $\mu_{ij}$，实际观测计数 $K_{ij}$ 服从 $\text{Pois}(\mu_{ij})$。泊松分布有一个严格的约束：**方差等于均值**（$\text{Var}(K) = \mu$）。
+
+然而，RNA-seq 数据的实测情况是：**方差往往远大于均值**，尤其对高表达基因而言。这一现象称为**过离散（Overdispersion）**，其来源包括：
+
+- **生物学变异**：即使在相同实验条件下，不同个体（或细胞系传代）间基因表达存在真实差异；
+- **批次效应**：文库制备时间或操作人员的差异引入系统性偏差；
+- **细胞异质性**：在组织样本中，不同细胞类型的比例在个体间存在差异。
+
+{{Wiki:Negative_binomial_distribution}}
+
+**负二项分布（Negative Binomial Distribution）** 通过引入额外的离散参数 $\alpha_i$ 来描述过离散：
+
+$$K_{ij} \sim \text{NB}(\mu_{ij},\ \alpha_i)$$
+
+方差结构为：$\text{Var}(K_{ij}) = \mu_{ij} + \alpha_i \mu_{ij}^2$
+
+其中 $\alpha_i$ 称为**基因特异性离散参数（gene-wise dispersion）**，$\alpha_i = 0$ 时退化为泊松分布。
+
+:::note
+**直觉理解：** 离散参数 $\alpha_i$ 量化了"超出泊松预测的额外变异"。对于细胞周期调控基因，不同细胞处于不同周期阶段导致 $\alpha_i$ 较大；对于管家基因（housekeeping genes），$\alpha_i$ 通常较小。DESeq2 需要精确估计 $\alpha_i$ 才能进行可靠的差异检验。
+:::
+
+---
+
+## DESeq2 统计框架
+
+### 第一步：大小因子估计（Size Factor Estimation）
+
+不同样本的测序深度（总 reads 数）不同，直接比较原始计数会引入假性差异。DESeq2 通过以下方法估计每个样本的大小因子（Size Factor）$s_j$：
+
+1. **计算参考值**：对每个基因，计算其在所有样本中计数值的几何均值 $\bar{K}_i = \left(\prod_{j=1}^{n} K_{ij}\right)^{1/n}$；
+2. **计算比值**：对每个样本 $j$，计算每个基因相对于参考值的比值 $K_{ij} / \bar{K}_i$；
+3. **取中位数**：大小因子 $s_j$ 为所有基因比值的**中位数**（而非均值，中位数对高表达异常基因的干扰更鲁棒）。
+
+$$s_j = \text{median}_i\left(\frac{K_{ij}}{\bar{K}_i}\right)$$
+
+归一化后的计数为 $\tilde{K}_{ij} = K_{ij} / s_j$。
+
+这种方法的优雅之处在于：若少数基因（如管家基因）在所有条件下表达稳定，则这些基因的比值在不同样本间一致，中位数准确反映测序深度差异，而不受少数差异表达基因的影响。
+
+### 第二步：离散度估计
+
+由于每个基因通常只有 3–6 个重复，基因特异性离散度的估计极不稳定（方差估计本身有很大的方差）。DESeq2 采用**Empirical Bayes 离散度缩减**策略：
+
+1. **初始估计**：对每个基因分别用最大似然估计 $\hat{\alpha}_i$（不共享信息，噪声大）；
+2. **拟合趋势**：将所有基因的 $\hat{\alpha}_i$ 对基因平均表达量 $\bar{\mu}_i$ 建立参数化趋势曲线（通常为负幂律关系）；
+3. **MAP 缩减**：用贝叶斯后验最大估计（Maximum A Posteriori，MAP）将基因特异性估计向趋势曲线收缩：高于趋势的 $\hat{\alpha}_i$ 被下调，低于趋势的被上调。
+
+$$\tilde{\alpha}_i = \text{arg max}\left[\mathcal{L}(\alpha_i | K_{i\cdot}) + \log p(\alpha_i | \bar{\alpha}(\bar{\mu}_i))\right]$$
+
+:::info
+**黄金法则：** 离散度缩减（shrinkage）是小样本 RNA-seq 分析的核心思想。若不借鉴其他基因的信息，3 个重复的数据根本无法可靠估计每个基因的方差。DESeq2 通过假设"同等表达量的基因应具有相似的离散度"来共享统计强度，这是其在少重复条件下仍表现良好的关键原因。
+:::
+
+**离散度估计诊断图**：
+
+```r
+# After running DESeq2, plot dispersion estimates
+plotDispEsts(dds)
+# Expected pattern:
+# - Blue dots: gene-wise MLE estimates (noisy)
+# - Red curve: fitted trend
+# - Black dots: MAP-shrunken final estimates
+# - Circled dots: outlier genes (not shrunken, kept at MLE)
+```
+
+### 第三步：Wald 检验
+
+在模型 $\log_2(\mu_{ij}) = \beta_{i0} + \beta_{i1} x_j + \log(s_j)$ 中，$\beta_{i1}$ 即为基因 $i$ 的**对数倍数变化（Log2 Fold Change, LFC）**。Wald 检验统计量为：
+
+$$W_i = \frac{\hat{\beta}_{i1}}{\text{SE}(\hat{\beta}_{i1})}$$
+
+在零假设（$\beta_{i1} = 0$，即无差异表达）下，$W_i$ 近似服从标准正态分布。对应 p 值经 Benjamini-Hochberg 方法校正为 adjusted p-value（padj）。
+
+### LFC 缩减（apeglm）
+
+对于计数极少的基因，即使 $\hat{\beta}_{i1}$ 的数值很大（看似差异表达），其置信区间极宽，这种估计不可靠。`apeglm` 包提供了一种针对 LFC 的适应性 Laplace 先验缩减，将低置信度的 LFC 估计向 0 收缩：
+
+```r
+library(apeglm)
+res_shrunk <- lfcShrink(dds, coef = "condition_treated_vs_untreated",
+                        type = "apeglm")
+# Genes with low counts get LFC shrunk toward 0
+# Genes with high counts retain their original LFC estimates
+```
+
+这一步骤对**火山图和热图的可视化**尤为重要：未经缩减的 LFC 中，低表达基因的极端值会主导视觉呈现；缩减后的 LFC 更准确反映生物学上有意义的变化。
+
+---
+
+## DESeq2 完整实践
+
+```r
+library(DESeq2)
+library(ggplot2)
+library(ggrepel)
+
+# === Step 1: Load count data ===
+# Using featureCounts output
+count_matrix <- read.table(
+  "results/featureCounts/pasilla_counts.txt",
+  header = TRUE, skip = 1, row.names = 1
+)
+counts <- count_matrix[, 7:ncol(count_matrix)]
+colnames(counts) <- c("untreated1", "untreated2", "treated1")
+
+# Sample metadata
+sample_info <- data.frame(
+  condition = factor(c("untreated", "untreated", "treated")),
+  row.names = colnames(counts)
+)
+
+# === Step 2: Create DESeqDataSet ===
+dds <- DESeqDataSetFromMatrix(
+  countData = counts,
+  colData   = sample_info,
+  design    = ~ condition
+)
+
+# Pre-filter: remove genes with very low counts (speeds up analysis)
+keep <- rowSums(counts(dds) >= 10) >= 2
+dds  <- dds[keep, ]
+cat("Genes after filtering:", nrow(dds), "\n")
+
+# Set reference level
+dds$condition <- relevel(dds$condition, ref = "untreated")
+
+# === Step 3: Run DESeq2 ===
+dds <- DESeq(dds)
+# Internally: estimateSizeFactors -> estimateDispersions -> nbinomWaldTest
+
+# Check size factors
+sizeFactors(dds)
+
+# === Step 4: Extract results ===
+res <- results(dds,
+               contrast = c("condition", "treated", "untreated"),
+               alpha    = 0.05)   # FDR threshold for independent filtering
+
+summary(res)
+# Output:
+# LFC > 0 (up)     : XXX, X%
+# LFC < 0 (down)   : XXX, X%
+# outliers [1]     : XXX, X%
+# low counts [2]   : XXX, X%
+
+# === Step 5: LFC shrinkage ===
+library(apeglm)
+res_shrunk <- lfcShrink(
+  dds,
+  coef = "condition_treated_vs_untreated",
+  type = "apeglm",
+  res  = res
+)
+
+# === Step 6: Filter significant DEGs ===
+sig_genes <- subset(res_shrunk,
+                    padj < 0.05 & abs(log2FoldChange) > 1)
+cat("Significant DEGs (|LFC|>1, padj<0.05):", nrow(sig_genes), "\n")
+
+# Sort by padj
+sig_genes <- sig_genes[order(sig_genes$padj), ]
+head(sig_genes, 10)
+
+# === Step 7: Visualization ===
+
+# --- MA plot ---
+plotMA(res_shrunk,
+       ylim = c(-5, 5),
+       main = "MA Plot: DESeq2 (apeglm shrinkage)",
+       alpha = 0.05)
+# Blue dots: significant (padj < 0.05)
+# Grey dots: not significant
+# Shrinkage reduces extreme LFC for low-count genes
+
+# --- Volcano plot ---
+res_df <- as.data.frame(res_shrunk)
+res_df$gene <- rownames(res_df)
+res_df$significance <- "Not significant"
+res_df$significance[res_df$padj < 0.05 & res_df$log2FoldChange >  1] <- "Up"
+res_df$significance[res_df$padj < 0.05 & res_df$log2FoldChange < -1] <- "Down"
+
+# Label top 20 genes by padj
+top_genes <- head(res_df[order(res_df$padj, na.last = TRUE), ], 20)
+
+ggplot(res_df, aes(x = log2FoldChange, y = -log10(padj),
+                   color = significance)) +
+  geom_point(alpha = 0.5, size = 0.8) +
+  geom_text_repel(data = top_genes,
+                  aes(label = gene),
+                  size = 2.5, max.overlaps = 20) +
+  scale_color_manual(
+    values = c("Up" = "firebrick", "Down" = "steelblue",
+               "Not significant" = "grey70")
+  ) +
+  geom_vline(xintercept = c(-1, 1), linetype = "dashed", color = "grey40") +
+  geom_hline(yintercept = -log10(0.05), linetype = "dashed", color = "grey40") +
+  labs(
+    x = "Log2 Fold Change (treated / untreated)",
+    y = "-log10(adjusted p-value)",
+    title = "Volcano Plot: Dexamethasone Treatment vs Control",
+    subtitle = sprintf("Significant DEGs: %d up, %d down",
+                       sum(res_df$significance == "Up", na.rm = TRUE),
+                       sum(res_df$significance == "Down", na.rm = TRUE)),
+    color = "Direction"
+  ) +
+  theme_classic() +
+  theme(legend.position = "top")
+```
+
+### 样本质量评估：PCA 与距离热图
+
+在运行 DEA 之前（或之后验证），应当可视化样本间的整体相似性，以发现潜在的批次效应或异常样本。
+
+```r
+# Variance-stabilizing transformation for visualization
+vsd <- vst(dds, blind = TRUE)
+
+# --- PCA plot ---
+plotPCA(vsd, intgroup = "condition") +
+  geom_point(size = 4) +
+  theme_classic() +
+  labs(title = "PCA: pasilla samples (VST-transformed counts)")
+
+# --- Sample distance heatmap ---
+library(pheatmap)
+sample_dists <- dist(t(assay(vsd)))
+sample_dist_matrix <- as.matrix(sample_dists)
+
+pheatmap(
+  sample_dist_matrix,
+  clustering_distance_rows = sample_dists,
+  clustering_distance_cols = sample_dists,
+  col = colorRampPalette(c("steelblue", "white"))(50),
+  main = "Sample-to-sample distances (VST)"
+)
+```
+
+---
+
+## edgeR：另一种主流框架
+
+edgeR 与 DESeq2 共享负二项分布的统计框架，但在离散度估计和检验统计量上有所不同。
+
+| 特性 | DESeq2 | edgeR |
+|---|---|---|
+| 归一化方法 | 几何均值大小因子 | TMM（加权修剪均值） |
+| 离散度估计 | 共享趋势 + MAP 缩减 | 共享、趋势或基因特异性 |
+| 检验统计量 | Wald 检验 | 精确检验（exact test）或 QLF 检验 |
+| 多因子设计 | GLM | GLM |
+| 推荐场景 | 通用；对低重复数友好 | 大样本；极端表达基因 |
+
+```r
+library(edgeR)
+
+# Create DGEList object
+dge <- DGEList(counts = counts, group = sample_info$condition)
+
+# TMM normalization
+dge <- calcNormFactors(dge, method = "TMM")
+
+# Estimate dispersion
+dge <- estimateDisp(dge)
+
+# Exact test (for simple two-group comparison)
+et <- exactTest(dge, pair = c("untreated", "treated"))
+res_edger <- topTags(et, n = Inf)$table
+sig_edger <- subset(res_edger, FDR < 0.05 & abs(logFC) > 1)
+cat("edgeR significant DEGs:", nrow(sig_edger), "\n")
+```
+
+:::tip
+**实践建议：** 在条件许可时，同时运行 DESeq2 和 edgeR，取两者共同显著的差异基因（交集）作为高置信度结果。这种"共识 DEG"策略能有效降低方法选择带来的偏差。
+:::
+
+---
+
+## limma-voom：基于线性模型的差异表达分析
+
+limma（Linear Models for Microarray and RNA-seq data）最初为微阵列数据设计，其核心是一套基于经验贝叶斯的线性模型框架。voom（Mean-Variance Modelling at the Observational Level）是 limma 为 RNA-seq 计数数据设计的适配器：通过对 log-CPM 值建立均值-方差关系模型，将计数数据的异方差性转化为线性模型可处理的加权数据。
+
+### limma-voom 的优势场景
+
+limma-voom 在以下场景中有独特优势：
+
+- **大样本量**（n > 20/组）：此时负二项模型的渐近假设较好，但 limma 的线性模型框架更灵活；
+- **复杂实验设计**：含多个因子、交互项、成对样本（区组设计）的实验；
+- **连续型协变量**：如年龄、体重、肿瘤纯度等连续变量作为协变量；
+- **与微阵列数据整合分析**：当需要同时分析两种数据类型时，统一框架更便于比较。
+
+### voom 原理
+
+voom 首先将原始计数转化为 log-CPM（Count Per Million）：
+
+$$y_{ij} = \log_2\left(\frac{K_{ij} + 0.5}{N_j + 1} \times 10^6\right)$$
+
+然后通过 LOWESS 拟合估计每个基因的均值-方差趋势，为每条观测值（每个样本-基因对）分配权重 $w_{ij}$，使得方差在加权后趋于均匀（满足普通线性模型的等方差假设）。
+
+$$w_{ij} \propto \frac{1}{\hat{\sigma}^2(y_{ij})}$$
+
+拥有权重的 log-CPM 数据便可以直接使用标准的线性模型进行差异检验，并通过 limma 的经验贝叶斯方差缩减提高统计效力。
+
+```r
+library(limma)
+library(edgeR)
+
+# === limma-voom workflow ===
+
+# Step 1: Create DGEList and normalize
+dge <- DGEList(counts = counts, group = sample_info$condition)
+dge <- calcNormFactors(dge, method = "TMM")
+
+# Step 2: Design matrix
+# Simple two-group comparison
+design <- model.matrix(~ condition, data = sample_info)
+colnames(design)  # "(Intercept)" and "conditiontreated"
+
+# Step 3: voom transformation
+# Plot shows mean-variance trend and precision weights
+v <- voom(dge, design, plot = TRUE)
+# voom() returns:
+#   v$E       - log2 CPM matrix (normalized)
+#   v$weights - precision weights per observation
+#   v$design  - design matrix
+
+# Step 4: Fit linear model
+fit <- lmFit(v, design)
+
+# Step 5: Empirical Bayes moderation of standard errors
+fit <- eBayes(fit, trend = TRUE, robust = TRUE)
+# trend = TRUE: allow prior variance to depend on average expression
+# robust = TRUE: protect against outlier samples
+
+# Step 6: Extract results
+res_limma <- topTable(
+  fit,
+  coef     = "conditiontreated",  # coefficient to test
+  number   = Inf,
+  adjust.method = "BH",
+  sort.by  = "P"
+)
+
+# Results columns:
+# logFC, AveExpr, t (moderated t-statistic), P.Value, adj.P.Val, B (log-odds)
+sig_limma <- subset(res_limma, adj.P.Val < 0.05 & abs(logFC) > 1)
+cat("limma-voom significant DEGs:", nrow(sig_limma), "\n")
+
+# === Three-method comparison ===
+# Combine significant gene lists from DESeq2, edgeR, limma-voom
+library(ggVennDiagram)
+
+gene_sets <- list(
+  DESeq2    = rownames(sig_genes),
+  edgeR     = rownames(sig_edger),
+  limma_voom = rownames(sig_limma)
+)
+
+ggVennDiagram(gene_sets, label = "count") +
+  scale_fill_gradient(low = "white", high = "steelblue") +
+  labs(title = "DEG overlap: DESeq2 vs edgeR vs limma-voom")
+```
+
+### 复杂实验设计：多因子模型
+
+limma-voom 的线性模型框架在处理复杂实验设计时尤为直观。以下演示含批次协变量的双因子设计：
+
+```r
+# Example: treatment + batch as covariates
+sample_meta <- data.frame(
+  condition = factor(c("untreated", "untreated", "treated",
+                       "untreated", "treated",  "treated")),
+  batch     = factor(c("A", "A", "A", "B", "B", "B")),
+  row.names = colnames(counts)
+)
+
+# Design matrix with batch as blocking factor
+design_batch <- model.matrix(~ batch + condition, data = sample_meta)
+# This is the recommended approach: model batch explicitly
+
+v_batch <- voom(dge, design_batch, plot = FALSE)
+fit_batch <- lmFit(v_batch, design_batch)
+fit_batch <- eBayes(fit_batch, trend = TRUE, robust = TRUE)
+
+# Extract treatment effect AFTER accounting for batch
+res_batch_corrected <- topTable(
+  fit_batch,
+  coef   = "conditiontreated",
+  number = Inf,
+  adjust.method = "BH"
+)
+```
+
+---
+
+## DESeq2 核心步骤的手动 R 实现
+
+理解统计方法的最佳途径是动手重现其核心计算。以下代码从零开始实现 DESeq2 大小因子估计和归一化步骤，以加深对算法的理解。
+
+```r
+# === Manual implementation of DESeq2 core steps ===
+
+# Simulated count matrix (3 untreated + 3 treated)
+set.seed(2024)
+n_genes   <- 1000
+n_samples <- 6
+counts_sim <- matrix(
+  rnbinom(n_genes * n_samples, mu = 100, size = 5),
+  nrow = n_genes,
+  dimnames = list(
+    paste0("gene", 1:n_genes),
+    paste0("sample", 1:n_samples)
+  )
+)
+# Introduce artificial library size differences
+counts_sim[, 4:6] <- round(counts_sim[, 4:6] * 2)
+
+# --- Step 1: Compute geometric mean per gene ---
+# Genes with zero counts in any sample are excluded (log(0) = -Inf)
+log_counts  <- log(counts_sim)
+log_counts[is.infinite(log_counts)] <- NA
+
+geom_means  <- exp(rowMeans(log_counts, na.rm = TRUE))
+valid_genes <- !is.na(geom_means) & geom_means > 0
+cat("Genes used for size factor estimation:", sum(valid_genes), "\n")
+
+# --- Step 2: Compute ratio of each sample to geometric mean ---
+ratios <- sweep(counts_sim[valid_genes, ], 1,
+                geom_means[valid_genes], "/")
+
+# --- Step 3: Size factor = median of ratios per sample ---
+size_factors_manual <- apply(ratios, 2, median)
+cat("\nManual size factors:\n")
+print(round(size_factors_manual, 4))
+
+# Compare with DESeq2 built-in
+library(DESeq2)
+dds_sim <- DESeqDataSetFromMatrix(
+  countData = counts_sim,
+  colData   = data.frame(
+    condition = rep(c("untreated", "treated"), each = 3)
+  ),
+  design = ~ condition
+)
+dds_sim <- estimateSizeFactors(dds_sim)
+cat("\nDESeq2 size factors:\n")
+print(round(sizeFactors(dds_sim), 4))
+# Should match manual calculation
+
+# --- Step 4: Normalize counts ---
+norm_counts_manual <- sweep(counts_sim, 2,
+                             size_factors_manual, "/")
+norm_counts_deseq2 <- counts(dds_sim, normalized = TRUE)
+
+# Verify normalization: library sizes after normalization
+cat("\nNormalized library sizes (should be similar):\n")
+print(round(colSums(norm_counts_manual) / 1e3, 1), "K reads")
+
+# --- Visualize size factor effect ---
+par(mfrow = c(1, 2))
+boxplot(log1p(counts_sim),
+        main = "Raw counts (log1p)",
+        las = 2, col = "lightblue")
+boxplot(log1p(norm_counts_manual),
+        main = "Normalized counts (log1p)",
+        las = 2, col = "lightgreen")
+par(mfrow = c(1, 1))
+```
+
+```r
+# === Manual BH correction to understand the algorithm ===
+
+# Generate p-values from a simulated experiment
+set.seed(42)
+m <- 10000   # total genes tested
+n_true_de <- 500  # truly DE genes (with small p-values)
+
+# Simulate p-values: mixture of uniform (null) and beta (alternative)
+p_null <- runif(m - n_true_de)
+p_alt  <- rbeta(n_true_de, shape1 = 0.5, shape2 = 10)
+p_values <- c(p_null, p_alt)
+
+# --- Manual BH procedure ---
+m_total <- length(p_values)
+sorted_idx <- order(p_values)
+sorted_p   <- p_values[sorted_idx]
+ranks      <- seq_len(m_total)
+
+# BH adjusted p-values
+bh_adjusted <- numeric(m_total)
+for (i in seq(m_total, 1)) {
+  if (i == m_total) {
+    bh_adjusted[i] <- sorted_p[i]
+  } else {
+    bh_adjusted[i] <- min(sorted_p[i] * m_total / i,
+                          bh_adjusted[i + 1])
+  }
+}
+
+# Map back to original gene order
+padj_manual <- numeric(m_total)
+padj_manual[sorted_idx] <- bh_adjusted
+
+# Compare with R built-in
+padj_r <- p.adjust(p_values, method = "BH")
+cat("Max difference between manual and R BH:",
+    max(abs(padj_manual - padj_r)), "\n")  # Should be ~0
+
+# Visualize: p-value histogram (good sanity check!)
+hist(p_values,
+     breaks = 50, col = "steelblue",
+     main = "P-value distribution (uniform null + signal)",
+     xlab = "p-value")
+abline(h = (m - n_true_de) / 50, col = "firebrick",
+       lty = 2, lwd = 2)  # expected uniform component
+```
+
+:::note
+**p 值直方图的诊断价值：** 良好的 RNA-seq 差异分析结果，其 p 值直方图应呈现：在靠近 0 的区间有一个峰（真实 DE 基因的信号），其余区间呈均匀分布（零假设下的均匀分布）。若整体呈右偏或 p = 1 处有尖峰，提示数据中存在未处理的批次效应或离群样本。
+:::
+
+---
+
+## 批次效应：检测、评估与校正
+
+批次效应在 RNA-seq 数据中几乎普遍存在。在第1专题中已介绍其早期检测（PCA、RLE 图），本节深入讨论如何在差异表达分析框架中正确处理批次效应。
+
+### 批次效应与生物学变异的解耦
+
+批次效应处理的核心原则是：**将批次效应从统计模型中"解释"出去，而非简单地从数据中删除**。前者（在设计矩阵中加入批次协变量）是统计上正确的方法；后者（先校正再进行 DEA）会导致 p 值过于乐观，因为校正后的数据减少了方差，而检验时仍然使用校正后的自由度。
+
+### 方法一：在设计矩阵中包含批次变量（推荐）
+
+```r
+# === Approach 1: Include batch in design matrix (RECOMMENDED) ===
+# This is statistically correct: batch effects are modeled out
+# while preserving within-batch variation for DEA
+
+library(DESeq2)
+
+# Simulate a dataset with batch effects
+set.seed(2024)
+n_genes   <- 5000
+n_samples <- 8   # 4 treated + 4 untreated, split across 2 batches
+
+counts_batch <- matrix(
+  rnbinom(n_genes * n_samples, mu = 200, size = 4),
+  nrow = n_genes,
+  dimnames = list(paste0("gene", seq_len(n_genes)),
+                  paste0("sample", seq_len(n_samples)))
+)
+
+# Add systematic batch effect to samples 1,2,5,6 (batch B)
+batch_effect <- rnorm(n_genes, mean = 0, sd = 0.5)
+counts_batch[, c(1, 2, 5, 6)] <- round(
+  counts_batch[, c(1, 2, 5, 6)] * exp(batch_effect)
+)
+
+sample_meta_batch <- data.frame(
+  condition = factor(rep(c("untreated", "treated"), each = 4)),
+  batch     = factor(c("B", "B", "A", "A", "B", "B", "A", "A")),
+  row.names = paste0("sample", seq_len(n_samples))
+)
+
+# Check confounding: are batch and condition confounded?
+table(sample_meta_batch$condition, sample_meta_batch$batch)
+# If each condition appears in each batch, design is balanced (good)
+# If all treated = batch A, all untreated = batch B → completely confounded (bad)
+
+# Build DESeqDataSet with batch in design
+dds_b <- DESeqDataSetFromMatrix(
+  countData = counts_batch,
+  colData   = sample_meta_batch,
+  design    = ~ batch + condition  # batch BEFORE condition of interest
+)
+dds_b <- DESeq(dds_b)
+
+# Results: treatment effect after controlling for batch
+res_b <- results(dds_b,
+                 contrast = c("condition", "treated", "untreated"))
+summary(res_b)
+```
+
+### 方法二：ComBat / limma::removeBatchEffect（仅用于可视化）
+
+有时需要生成去除批次效应的表达矩阵用于可视化（如热图、PCA），而非用于 DEA。此时可使用 ComBat（基于经验贝叶斯，sva 包）或 limma::removeBatchEffect。
+
+:::warning
+**严格限制：** 通过 `removeBatchEffect()` 或 `ComBat()` 校正后的矩阵**仅适用于可视化**，不应作为 DEA 工具（DESeq2/edgeR）的输入。原因：批次校正会人为降低样本间方差，使随后的统计检验的 p 值过于乐观（假阳性率升高）。
+:::
+
+```r
+library(sva)
+library(limma)
+
+# === ComBat for batch correction (visualization only) ===
+# Input: log-normalized expression matrix
+vsd_matrix <- assay(vst(dds_b, blind = FALSE))
+
+# ComBat (parametric, assumes Gaussian batch effects)
+combat_corrected <- ComBat(
+  dat     = vsd_matrix,
+  batch   = sample_meta_batch$batch,
+  mod     = model.matrix(~ condition, data = sample_meta_batch),
+  par.prior = TRUE   # parametric (faster); set FALSE for non-parametric
+)
+
+# limma::removeBatchEffect (simpler, deterministic)
+limma_corrected <- removeBatchEffect(
+  vsd_matrix,
+  batch     = sample_meta_batch$batch,
+  design    = model.matrix(~ condition, data = sample_meta_batch)
+)
+
+# === Compare PCA before and after correction ===
+library(ggplot2)
+
+pca_before <- prcomp(t(vsd_matrix), scale. = TRUE)
+pca_after  <- prcomp(t(limma_corrected), scale. = TRUE)
+
+pca_plot <- function(pca_obj, title) {
+  df <- data.frame(
+    PC1 = pca_obj$x[, 1],
+    PC2 = pca_obj$x[, 2],
+    condition = sample_meta_batch$condition,
+    batch = sample_meta_batch$batch
+  )
+  var_exp <- round(summary(pca_obj)$importance[2, 1:2] * 100, 1)
+  ggplot(df, aes(x = PC1, y = PC2,
+                 color = condition, shape = batch)) +
+    geom_point(size = 4) +
+    labs(title = title,
+         x = paste0("PC1 (", var_exp[1], "%)"),
+         y = paste0("PC2 (", var_exp[2], "%)")) +
+    theme_classic()
+}
+
+library(patchwork)
+pca_plot(pca_before, "Before batch correction") +
+pca_plot(pca_after,  "After batch correction (limma)")
+```
+
+### 评估批次效应是否成功去除
+
+```r
+# kBET: k-nearest neighbor batch effect test
+# Tests whether batch labels are uniformly distributed in KNN neighborhoods
+# install.packages("remotes")
+# remotes::install_github("theislab/kBET")
+library(kBET)
+
+# Run kBET on corrected data
+batch_labels <- as.integer(sample_meta_batch$batch)
+
+kbet_result <- kBET(
+  df    = t(limma_corrected),  # samples x features
+  batch = batch_labels,
+  plot  = FALSE
+)
+cat("kBET rejection rate (should be low if batch corrected):",
+    kbet_result$stats$kBET.observed, "\n")
+# Low rejection rate → batch effect successfully removed
+```
+
+---
+
+## 多重检验校正：Benjamini-Hochberg 方法
+
+当对 20,000 个基因同时进行假设检验时，若使用单个 p-value < 0.05 的阈值，仅由随机波动就可能产生约 1,000 个假阳性（20,000 × 0.05）。
+
+Benjamini-Hochberg（BH）方法控制的是**假发现率（False Discovery Rate, FDR）**，即显著结果中假阳性的比例：
+
+$$\text{FDR} = E\left[\frac{V}{R}\right]$$
+
+其中 $V$ 是假阳性数，$R$ 是总显著结果数。
+
+**BH 过程**：将所有 $m$ 个 p 值从小到大排序为 $p_{(1)} \leq p_{(2)} \leq \cdots \leq p_{(m)}$，调整后的 p 值为：
+
+$$p_{(i)}^{\text{adj}} = \min_{j \geq i}\left(\frac{m}{j} p_{(j)}\right)$$
+
+当 `padj < 0.05` 时，意味着在所有报告的显著基因中，平均有不超过 5% 是假阳性。这比未校正的 p-value < 0.05 宽松得多，但比 Bonferroni 校正（$\alpha / m$）宽松，在保持统计功效的同时控制了假阳性率。
+
+---
+
+## 课后自测 (Post-Lesson Quiz)
+
+1. 某基因在 3 个处理组样本中的计数分别为 [5, 3, 7]，在 3 个对照组中为 [4, 6, 2]。为什么对这类低计数基因的差异检验结果不可靠？DESeq2 如何通过离散度缩减改善这一问题？
+
+2. DESeq2 的大小因子估计使用中位数而非均值，这一设计选择的统计依据是什么？请举例说明在什么情况下使用均值会产生错误结果。
+
+3. 对同一数据集分别使用 Wald 检验和似然比检验（LRT），它们的适用场景有何不同？在分析一个含有 4 个时间点的时间序列实验时，应优先选择哪种检验方式？
+
+4. 若 MA 图中显示低表达基因（左侧）的 LFC 值散布极广（有 ±5 log2 fold change 的点），而高表达基因（右侧）的 LFC 集中在较窄范围内，这说明了什么？应如何处理？
+
+5. BH 校正后的 padj = 0.03 意味着什么？是否意味着该基因有 97% 的概率是真正差异表达的？请阐述正确的解读方式。
+
+<details>
+<summary><strong>参考答案 (Reference Answers)</strong></summary>
+
+1. *低计数基因的计数估计本身具有高度不确定性——在 Poisson 或负二项分布下，计数 5 的置信区间可覆盖 1–15 的范围。有限样本（3 个）使得均值估计极不稳定，标准误差大，导致 Wald 检验统计量小，检验效力低。DESeq2 通过离散度缩减：借鉴同等表达量水平的其他基因的离散度信息，将基因特异性估计向全局趋势缩减，从而在有限样本条件下获得更稳定的方差估计，避免低计数基因的离散度被过度高估（这会导致假阴性）或过度低估（导致假阳性）。*
+
+2. *使用均值（mean）计算大小因子时，若某个样本中有几个极高表达的基因（如应激响应基因被激活），这些基因的极大计数值会拉高均值，导致大小因子被高估，进而使该样本的所有基因计数被过度下调，引入系统性偏差。中位数对这类极端值鲁棒：即使 1–2 个基因的计数异常高，中位数几乎不受影响，大小因子估计更稳健。例如，若处理组中一个基因的计数是对照的 1000 倍，使用均值会使处理组大小因子大幅增大，masking 其他真正差异表达的基因。*
+
+3. *Wald 检验适用于两组间单一系数的检验（如 treated vs untreated）；似然比检验（LRT）通过比较完整模型与去除某个因子的简化模型的对数似然差，适用于多因子模型或多水平因子的显著性检验。对于含 4 个时间点的时间序列实验，应优先使用 LRT（`test = "LRT"`，`reduced = ~ 1`），因为它能检验"时间因子整体是否对表达有影响"，而不是仅比较两个时间点之间的差异。*
+
+4. *这说明低表达基因（低 mean counts）的 LFC 估计极不稳定，散布极广是由统计不确定性而非真实的生物学差异造成的。应对措施是使用 `lfcShrink(type = "apeglm")`：该方法对低置信度的 LFC 估计进行向 0 的收缩，低计数基因的 LFC 会被拉近 0，从而在 MA 图和后续可视化中消除视觉上的虚假极端值。*
+
+5. *padj = 0.03 的正确解读是：在所有报告为显著（padj < 0.05）的基因集合中，预期有不超过 5% 是假阳性（FDR 控制）。它不意味着该单个基因有 97% 的概率是真正差异表达的——这是 FDR 与局部 FDR（local FDR）或后验概率的混淆。padj 是一个多重检验校正后的 p 值，控制的是整体假发现率，而不是该特定基因的后验真实性概率。*
+
+</details>
