@@ -64,6 +64,138 @@ $$
 
 可信集越小，精细定位的分辨率越高。若某个可信集仅含 1–2 个 SNP，则这些变异是高置信度的因果候选变异。
 
+### 手动实现：单因果变异假设下的 PIP 计算
+
+在介绍 SuSiE 之前，先从最简单的场景出发——假设候选区域内**恰好只有一个因果变异**——用纯 R 手动推导每个 SNP 的 PIP。这一推导去掉了所有工具包的封装，直接展示贝叶斯精细定位的核心计算逻辑。
+
+**统计模型**：在单因果变异假设下，候选区域含 $J$ 个 SNP，零假设 $H_0$ 为无因果变异，备择假设 $H_j$ 为 SNP $j$ 是因果变异。给定 GWAS 汇总统计量（Z 分数 $z_j$）和 LD 矩阵 $\mathbf{R}$，各假设下 Z 分数向量的近似边际似然为：
+
+$$
+\log P(\mathbf{z} \mid H_j) \propto \frac{W}{1 + W} \cdot \frac{z_j^2}{2}
+$$
+
+其中 $W = n \sigma_0^2 / \sigma_e^2$ 为效应量先验方差与误差方差之比（即 Bayes Factor 的缩放因子，通常取 $W = 1$）。对每个 SNP 计算边际似然后，在等先验（$P(H_j) = 1/(J+1)$）下应用贝叶斯定理即得 PIP：
+
+$$
+\text{PIP}_j = \frac{P(\mathbf{z} \mid H_j)}{\sum_{k=0}^{J} P(\mathbf{z} \mid H_k)}
+$$
+
+以下代码完整实现这一过程，并与 `susieR` 的输出进行对照：
+
+```r
+# Manual Bayesian fine-mapping under the single-causal-variant assumption
+# All calculations use only base R — no external packages required.
+set.seed(2024)
+
+# --- Step 1: Define the simulated region ---
+# 150 SNPs; two "true" causal variants at positions 60 and 110.
+# We deliberately set up two signals to show that single-CV assumption
+# will partially recover both, but cannot fully separate them.
+n_snp  <- 150
+n_samp <- 30000
+causal_pos <- c(60, 110)
+beta_true  <- c(0.08, -0.06)   # effect sizes in SD units
+
+# --- Step 2: Simulate an LD matrix with decaying correlation ---
+# Use an AR(1) structure with rho = 0.85 within two blocks (1–80, 81–150)
+# and near-zero correlation between blocks.
+rho_in  <- 0.85
+rho_out <- 0.05
+R <- matrix(0, n_snp, n_snp)
+for (i in seq_len(n_snp)) {
+  for (j in seq_len(n_snp)) {
+    same_block <- (i <= 80 & j <= 80) | (i > 80 & j > 80)
+    rho        <- if (same_block) rho_in else rho_out
+    R[i, j]   <- rho^abs(i - j)
+  }
+}
+diag(R) <- 1.0
+
+# --- Step 3: Generate Z-scores consistent with the LD structure ---
+# Under the linear model y = X*beta + e, the marginal Z-score for SNP j is:
+#   z_j ~ N( sqrt(n) * (R %*% beta)[j] / sigma_e,  1 )
+# For simplicity set sigma_e = 1 and MAF = 0.25 for all SNPs.
+maf     <- 0.25
+# Expected signal: each causal SNP contributes to Z of all SNPs via LD
+signal_vec          <- rep(0, n_snp)
+signal_vec[causal_pos] <- beta_true
+ncp_vec             <- sqrt(n_samp * 2 * maf * (1 - maf)) * (R %*% signal_vec)
+z_scores            <- ncp_vec + rnorm(n_snp, sd = 1)
+
+# --- Step 4: Compute approximate Bayes Factors (ABFs) for each SNP ---
+# ABF_j = exp( W/(1+W) * z_j^2 / 2 ) / sqrt(1 + W)
+# where W is the prior variance on effect size (in units of 1/n).
+# We use W = 1 (corresponds to prior sd ~ 0.1 on standardised scale).
+W   <- 1.0
+log_abf <- (W / (1 + W)) * z_scores^2 / 2 - 0.5 * log(1 + W)
+
+# Null model log-likelihood (z_j ~ N(0,1) everywhere): 0 by convention.
+log_null <- 0
+
+# --- Step 5: Convert ABFs to PIPs via Bayes theorem ---
+# Assume equal prior probability for each hypothesis H_j (SNP j is causal)
+# and H_0 (no causal variant).  Prior odds: 1/(J+1) for each.
+# Posterior: normalise over all J+1 hypotheses on the log scale.
+all_log_bf      <- c(log_null, log_abf)    # length J+1: H_0 first, then H_1..H_J
+log_sum_bf      <- log(sum(exp(all_log_bf - max(all_log_bf)))) + max(all_log_bf)
+posterior_probs <- exp(all_log_bf - log_sum_bf)
+
+pip_manual <- posterior_probs[-1]   # drop H_0; keep PIP for each SNP
+
+# --- Step 6: Build a 95% credible set (greedy, sorted by PIP) ---
+order_by_pip   <- order(pip_manual, decreasing = TRUE)
+cumulative_pip <- cumsum(pip_manual[order_by_pip])
+cs_size        <- which(cumulative_pip >= 0.95)[1]
+credible_set   <- sort(order_by_pip[seq_len(cs_size)])
+
+cat(sprintf("P(H0: no causal variant) = %.4f\n", posterior_probs[1]))
+cat(sprintf("Top-5 SNPs by PIP:\n"))
+top5 <- order(pip_manual, decreasing = TRUE)[1:5]
+for (i in top5) {
+  flag <- if (i %in% causal_pos) "  <-- true causal" else ""
+  cat(sprintf("  SNP %3d: PIP = %.4f, Z = %+.2f%s\n",
+              i, pip_manual[i], z_scores[i], flag))
+}
+cat(sprintf("95%% credible set (%d SNPs): %s\n",
+            cs_size, paste(credible_set, collapse = ", ")))
+
+# --- Step 7: Visualise the PIP profile ---
+library(ggplot2)
+df_pip <- data.frame(
+  pos    = seq_len(n_snp),
+  pip    = pip_manual,
+  z_abs  = abs(z_scores),
+  causal = seq_len(n_snp) %in% causal_pos,
+  in_cs  = seq_len(n_snp) %in% credible_set
+)
+
+ggplot(df_pip, aes(x = pos, y = pip)) +
+  geom_col(aes(fill = in_cs), width = 0.9) +
+  geom_point(data = subset(df_pip, causal),
+             aes(y = pip + 0.03), shape = 25, size = 3,
+             fill = "#D62728", color = "#D62728") +
+  scale_fill_manual(values = c("FALSE" = "grey70", "TRUE" = "steelblue"),
+                    labels = c("Outside CS", "In 95% CS"),
+                    name = NULL) +
+  geom_hline(yintercept = 0.5, linetype = "dashed",
+             color = "grey30", linewidth = 0.5) +
+  labs(x = "SNP position in region",
+       y = "Posterior Inclusion Probability (PIP)",
+       title = "Manual Bayesian Fine-mapping (Single Causal Variant Assumption)",
+       subtitle = sprintf("True causal SNPs: %s | 95%% CS size: %d SNPs",
+                          paste(causal_pos, collapse = " & "), cs_size)) +
+  theme_classic(base_size = 12) +
+  theme(legend.position = "top")
+```
+
+运行结果揭示了单因果变异假设的核心局限：两个真实信号（位置 60 和 110）都分别吸引了一些 PIP，但由于模型强制只有一个因果变异，95% 可信集必然同时将两个信号区域的 SNP 纳入，导致集合偏大。这正是多效应方法（SuSiE）的动机所在——它允许 $L > 1$ 个独立效应，能分别为两个信号构建各自的可信集。
+
+:::note
+**近似贝叶斯因子（Approximate Bayes Factor，ABF）的来源**
+
+上述 ABF 公式由 Wakefield（2009）推导：假设效应量在 $H_j$ 下服从 $N(0, \sigma_0^2)$ 先验，在 GWAS 汇总统计量框架下积分掉效应量后，得到仅依赖 Z 分数和先验方差的闭合解。$W = n\sigma_0^2/\sigma_e^2$ 越大，先验越弥散，ABF 对 Z 分数的响应越平缓；$W$ 越小，先验越集中于零，ABF 对弱信号更保守。实践中通常取 $W \in \{0.5, 1, 2\}$ 后对 ABF 做平均（BMA），以降低结论对 $W$ 选择的敏感性。
+:::
+
 ### SuSiE R 实现
 
 ```r
@@ -145,34 +277,80 @@ for (l in seq_along(fit_susie$sets$cs)) {
 
 {{Wiki:Regulatory_element}}
 
-### 变异功能分类：ANNOVAR 与 VEP
+### 变异功能分类：VEP
 
-**ANNOVAR**（Annotate Variation）和 **VEP**（Variant Effect Predictor，Ensembl）是最常用的变异功能注释工具，可对每个候选 SNP 及其 LD 伙伴变异（$r^2 > 0.8$）进行多数据库联合注释，输出功能分类：
+**VEP**（Variant Effect Predictor，Ensembl）是目前最广泛使用的变异功能注释工具，可对每个候选 SNP 及其 LD 伙伴变异（$r^2 > 0.8$）进行多数据库联合注释，输出标准化的序列本体论（Sequence Ontology）功能分类：
 
 | 注释类型 | 含义 | 功能解读重要性 |
 |----------|------|---------------|
-| 非同义变异（nonsynonymous） | 导致氨基酸替换 | 高——直接改变蛋白序列 |
-| 剪接位点变异（splice site） | 影响 pre-mRNA 剪接 | 高——可能改变蛋白结构 |
+| 非同义变异（missense_variant） | 导致氨基酸替换 | 高——直接改变蛋白序列 |
+| 剪接位点变异（splice_site_variant） | 影响 pre-mRNA 剪接 | 高——可能改变蛋白结构 |
 | 5'/3' UTR 变异 | 调控翻译效率或 mRNA 稳定性 | 中——需实验验证 |
-| 内含子变异 | 落在内含子内 | 低—中（若重叠调控元件则重要） |
-| 基因间区变异（intergenic） | 基因体外 | 需结合表观基因组数据判断 |
+| 内含子变异（intron_variant） | 落在内含子内 | 低—中（若重叠调控元件则重要） |
+| 基因间区变异（intergenic_variant） | 基因体外 | 需结合表观基因组数据判断 |
+
+VEP 可通过命令行工具（本地安装）或 Ensembl REST API（无需安装）运行。推荐同时启用 `--sift`、`--polyphen` 和 `--regulatory` 插件，分别获取氨基酸替换有害性预测和调控区域注释。
 
 ```bash
-# Annotate candidate SNPs with ANNOVAR (gene-based + filter-based)
-perl annotate_variation.pl \
-  -geneanno \
-  -dbtype refGene \
-  -buildver hg38 \
-  candidate_snps.avinput \
-  humandb/
+# Input: 1000 Genomes Phase 3 chr22 VCF (hg19/GRCh37 coordinates)
+VCF=/Users/angdong/Documents/bio_example/genome/variants_1kg_chr22_full.vcf.gz
 
-# Also run region-based annotation for regulatory elements
-perl annotate_variation.pl \
-  -regionanno \
-  -dbtype phastConsElements46way \
-  -buildver hg38 \
-  candidate_snps.avinput \
-  humandb/
+# Run VEP with offline cache (GRCh37 assembly matching the 1KG VCF)
+vep \
+  --input_file  "${VCF}" \
+  --output_file variants_1kg_chr22_vep.txt \
+  --format      vcf \
+  --species     homo_sapiens \
+  --assembly    GRCh37 \
+  --cache \
+  --offline \
+  --everything \
+  --sift        b \
+  --polyphen    b \
+  --regulatory \
+  --tab \
+  --fork        4
+
+# Key output columns:
+#   Consequence       -- SO term (e.g. missense_variant, intron_variant)
+#   SIFT              -- damaging/tolerated + score
+#   PolyPhen          -- probably_damaging/benign + score
+#   BIOTYPE           -- transcript biotype (protein_coding, lncRNA, ...)
+#   REGULATORY        -- overlap with regulatory features (ENCODE)
+#   AF                -- allele frequency in gnomAD
+
+# Filter to coding consequences only
+grep -E "missense_variant|stop_gained|frameshift|splice" \
+  variants_1kg_chr22_vep.txt \
+  > variants_1kg_chr22_coding.txt
+
+echo "Coding variants: $(wc -l < variants_1kg_chr22_coding.txt)"
+```
+
+如需在 R 中解析 VEP 的 tab 输出并整合精细定位 PIP，可使用以下代码：
+
+```r
+library(tidyverse)
+
+# Read VEP tab output (skip comment lines starting with ##)
+vep <- read_tsv("variants_1kg_chr22_vep.txt", comment = "##",
+                col_types = cols(.default = "c")) %>%
+  rename(SNP = `#Uploaded_variation`)
+
+# Join with PIP from fine-mapping (assuming pip_df has columns: snp_id, pip)
+vep_pip <- vep %>%
+  left_join(pip_df, by = c("SNP" = "snp_id")) %>%
+  filter(!is.na(pip)) %>%
+  select(SNP, Consequence, SYMBOL, SIFT, PolyPhen, pip) %>%
+  arrange(desc(pip))
+
+# Flag high-PIP coding variants
+high_pip_coding <- vep_pip %>%
+  filter(pip > 0.1,
+         grepl("missense|stop|frameshift|splice", Consequence))
+
+cat(sprintf("High-PIP (>0.1) coding variants: %d\n", nrow(high_pip_coding)))
+print(high_pip_coding)
 ```
 
 ### eQTL 整合：GTEx 数据库
@@ -227,21 +405,51 @@ H3（各由独立变异驱动）不代表"无关"——该情形提示同一 LD 
 
 ```r
 library(coloc)
+set.seed(42)
 
-# Prepare GWAS dataset for candidate region
+# --- Simulate summary statistics for a 200-SNP candidate region ---
+# One shared causal variant at position 100; a second GWAS-only signal at 150.
+n_snp  <- 200
+snp_ids <- paste0("rs", 10000 + seq_len(n_snp))
+
+# GWAS: n = 50,000, two signals (shared causal at 100, GWAS-only at 150)
+gwas_n    <- 50000
+gwas_se   <- 0.02
+gwas_beta <- rnorm(n_snp, mean = 0, sd = gwas_se)
+gwas_beta[100] <- gwas_beta[100] + 0.06   # shared causal signal
+gwas_beta[150] <- gwas_beta[150] + 0.05   # GWAS-only signal
+
+region_gwas <- data.frame(
+  SNP  = snp_ids,
+  beta = gwas_beta,
+  se   = gwas_se
+)
+
+# eQTL: n = 670 (GTEx v8 whole blood), signal only at position 100 (shared)
+eqtl_n    <- 670
+eqtl_se   <- 0.08
+eqtl_beta <- rnorm(n_snp, mean = 0, sd = eqtl_se)
+eqtl_beta[100] <- eqtl_beta[100] + 0.30   # shared causal signal
+
+overlapping_eqtl <- data.frame(
+  variant_id = snp_ids,
+  slope      = eqtl_beta,
+  slope_se   = eqtl_se
+)
+
+# --- Prepare coloc input datasets ---
 dataset_gwas <- list(
   beta    = region_gwas$beta,
   varbeta = region_gwas$se^2,
-  N       = 50000,
+  N       = gwas_n,
   type    = "quant",
   snp     = region_gwas$SNP
 )
 
-# Prepare eQTL dataset for overlapping gene
 dataset_eqtl <- list(
   beta    = overlapping_eqtl$slope,
   varbeta = overlapping_eqtl$slope_se^2,
-  N       = 670,              # GTEx v8 whole blood sample size
+  N       = eqtl_n,
   type    = "quant",
   snp     = overlapping_eqtl$variant_id
 )
@@ -356,6 +564,30 @@ PRS 跨群体迁移性差的根本原因在于 LD 代理关系的群体特异性
 
 {{Wiki:Mendelian_randomization}}
 
+### 经典案例：HDL-C 与冠心病——一个改变药物研发方向的因果推断故事
+
+在过去数十年间，流行病学研究持续观察到一个稳健的负相关：血浆**高密度脂蛋白胆固醇（HDL-C）**水平越高，**冠心病（coronary heart disease，CHD）**风险越低。这一关联在数十项大型队列研究中一再得到证实，效应量之大、重复性之强，令研究者几乎不加怀疑地将其解读为"HDL-C 对心脏的保护作用"。弗雷明汉心脏研究（Framingham Heart Study）等经典数据将 HDL-C 确立为心血管风险评估的核心指标，"好胆固醇"的通俗名称也由此深入人心。
+
+这一观念在 2000 年代驱动了制药业数十亿美元的投入：若能通过药物提升 HDL-C，理应降低心脏病发作风险。胆固醇酯转运蛋白（cholesterol ester transfer protein，CETP）是 HDL 代谢的关键调控酶，抑制 CETP 可大幅提升 HDL-C 水平。辉瑞公司研发的 torcetrapib 在临床前和早期试验中表现亮眼，HDL-C 提升幅度高达 70%。然而，2006 年 ILLUMINATE 三期随机对照试验中期分析显示，torcetrapib 组患者的心血管事件和全因死亡率反而**显著升高**，试验被紧急叫停。此后，罗氏的 dalcetrapib、礼来的 evacetrapib 相继在大型三期试验中失败，全面宣告了"升高 HDL-C 即可降低心脏病风险"这一假说在药物干预层面的破产。
+
+**观察性证据为何失灵？** 其根本原因在于两种系统性偏倚的叠加：其一，**混杂因素（confounding）**——健康生活方式（运动、戒烟、合理饮食）同时提升 HDL-C 并降低 CHD 风险，真正的保护效应来自生活方式而非 HDL-C 本身；其二，**反向因果（reverse causation）**——慢性炎症和早期动脉粥样硬化既可降低 HDL-C，又是 CHD 的先兆，导致低 HDL-C 表面上"预测"了疾病，但方向颠倒。这两种机制在观察性数据中无法通过统计调整彻底去除。
+
+**孟德尔随机化的介入。** 2012 年，Voight 等人在 *The Lancet* 上发表了迄今最具影响力的 HDL-C MR 研究。他们从 GWAS 中筛选出数十个强烈影响 HDL-C 水平但对 LDL-C 和甘油三酯影响极小的遗传位点作为工具变量，在超过 10 万名个体的汇总数据中分析遗传预测的 HDL-C 水平与心肌梗死风险的关系。结论清晰且令人震惊：**遗传预测的 HDL-C 升高与心肌梗死风险无显著关联**（OR 接近 1.0），与观察性估计完全背离。与此形成鲜明对比的是，遗传预测的 LDL-C 升高与 CHD 风险呈现强烈且一致的正相关——与他汀类药物的临床试验结果高度吻合。
+
+:::note
+**观察性关联 vs. 因果效应：HDL-C 的教训**
+
+| 证据类型 | HDL-C ↑ → CHD ↓ | LDL-C ↑ → CHD ↑ |
+|----------|-----------------|-----------------|
+| 观察性流行病学 | 强烈负相关（混杂驱动） | 强烈正相关 |
+| 孟德尔随机化 | **无因果效应** | 因果效应显著 |
+| 随机对照试验（药物干预） | CETP 抑制剂全线失败 | 他汀显著降低事件率 |
+
+三类证据在 LDL-C 上高度一致；在 HDL-C 上，MR 与 RCT 共同推翻了观察性假说。这正是 MR 作为"自然界的随机对照试验"（nature's randomized controlled trial）的核心价值——在无法进行伦理上可行的干预试验时，用遗传随机化替代实验随机化，区分真实因果与混杂相关。
+:::
+
+这一案例深刻揭示了因果推断的核心难题，也奠定了 MR 在遗传流行病学中的方法论地位。自此，MR 分析成为评估生物标志物治疗靶点潜力的标准工具之一，在药物研发的靶点验证（target validation）阶段被广泛采用。
+
 ### 三个核心假设
 
 有效工具变量必须满足三个假设：
@@ -371,6 +603,276 @@ PRS 跨群体迁移性差的根本原因在于 LD 代理关系的群体特异性
      │─────────────────────────────────────────────┘
                     (假设此路径不存在)
 ```
+
+### 手动实现：从一个具体问题出发理解 MR 估计量
+
+#### 教学场景：BMI 升高会导致收缩压升高吗？
+
+观察性研究中 BMI 与收缩压（SBP）之间存在稳健的正相关，但两者均受生活方式、社会经济因素等大量混杂因素影响。我们的问题是：**BMI 的升高本身（因果地）是否会使收缩压升高？**
+
+以 FTO、MC4R 等基因区域的 GWAS 显著 SNP 作为工具变量——这些 SNP 影响 BMI，但理论上不直接影响血压（仅通过 BMI 这一中间路径），满足工具变量的三个核心假设。
+
+```
+G_j (体重相关 SNP)
+     │
+     │ γ_j（SNP→BMI 效应）
+     ↓
+    BMI (X)  ──── β_XY（因果效应？）────►  收缩压 (Y)
+     ↑                                         ↑
+     └──────── 混杂因素 U（饮食、运动）─────────┘
+               （遗传变异绕过了 U 这条路）
+```
+
+MR 的核心思路是：如果 SNP $j$ 使 BMI 平均升高 $\hat{\gamma}_j$，同时使收缩压升高 $\hat{\Gamma}_j$，那么用两者之比 $\hat{\Gamma}_j / \hat{\gamma}_j$ 就可以估计 BMI 每升高一单位对收缩压的因果效应——**Wald 比值**（Wald ratio）。
+
+#### 第一讲：用三个 SNP 手算 Wald 比值
+
+为了让计算完全透明，先从只有三个工具变量的极简情形出发：
+
+| SNP | $\hat{\gamma}_j$（BMI 效应，kg/m²/等位基因） | $\hat{\Gamma}_j$（SBP 效应，mmHg/等位基因） | Wald 比值 $\hat{\Gamma}_j / \hat{\gamma}_j$ |
+|-----|------|------|------|
+| rs1421085 (FTO) | 0.30 | 0.42 | **1.40** |
+| rs17782313 (MC4R) | 0.20 | 0.26 | **1.30** |
+| rs12748679 (TMEM18) | 0.15 | 0.22 | **1.47** |
+
+每个 Wald 比值都是对同一因果效应 $\beta_{XY}$ 的独立估计（单位：mmHg 每 kg/m² BMI）。三个值分别为 1.40、1.30、1.47，彼此接近，提示结果一致性好。若某个 SNP 的 Wald 比值与其他 SNP 严重偏离，则该 SNP 很可能存在**水平多效性**——它通过 BMI 以外的路径影响了血压。
+
+```r
+# ---- Toy example: Wald ratios for 3 SNPs ----
+# All numbers are illustrative; no external packages needed.
+snp_names <- c("rs1421085 (FTO)", "rs17782313 (MC4R)", "rs12748679 (TMEM18)")
+
+gamma_hat <- c(0.30, 0.20, 0.15)   # SNP -> BMI effects (kg/m² per allele)
+Gamma_hat <- c(0.42, 0.26, 0.22)   # SNP -> SBP effects (mmHg per allele)
+se_Gamma  <- c(0.06, 0.05, 0.07)   # standard errors of SNP -> SBP effects
+
+wald_ratio <- Gamma_hat / gamma_hat
+se_wald    <- se_Gamma / abs(gamma_hat)   # delta-method SE
+
+cat("── Wald Ratio Estimates ──────────────────────────────\n")
+for (i in seq_along(snp_names)) {
+  cat(sprintf("  %-26s  ratio = %+.3f  SE = %.3f  95%%CI [%.3f, %.3f]\n",
+              snp_names[i],
+              wald_ratio[i],
+              se_wald[i],
+              wald_ratio[i] - 1.96 * se_wald[i],
+              wald_ratio[i] + 1.96 * se_wald[i]))
+}
+```
+
+预期输出：
+
+```
+── Wald Ratio Estimates ──────────────────────────────
+  rs1421085 (FTO)            ratio = +1.400  SE = 0.200  95%CI [1.008, 1.792]
+  rs17782313 (MC4R)          ratio = +1.300  SE = 0.250  95%CI [0.810, 1.790]
+  rs12748679 (TMEM18)        ratio = +1.467  SE = 0.467  95%CI [0.552, 2.381]
+```
+
+三个 SNP 的估计均指向同一方向（BMI 每升高 1 kg/m²，SBP 约升高 1.3–1.5 mmHg），置信区间彼此高度重叠，一致性良好。现实分析中通常使用数十乃至数百个 SNP，此时需要将多个 Wald 比值合并为单一估计，三种主流方法各有侧重。
+
+:::note
+**为什么不能直接回归 SBP ~ BMI？**
+
+设想用同一批人的 BMI 和 SBP 做普通线性回归。爱运动的人既有更低的 BMI，又有更低的 SBP——这个混杂因素 U（运动习惯）会使 BMI 系数被高估（或低估）。遗传变异天然地"随机化"了 BMI：携带高 BMI 等位基因的个体，其运动习惯与不携带者平均而言没有差异（因为等位基因在减数分裂时随机分配）。因此，遗传预测的 BMI 与 SBP 之间的关系，正是剔除了 U 之后的净因果效应。
+:::
+
+#### 第二讲：三种估计量的直觉与全流程模拟
+
+现在用完整模拟（20 个 SNP，含 4 个多效性 SNP）演示三种估计量。**继续沿用 BMI → SBP 场景**：真实因果效应设为 $\beta_{XY} = 1.30$（mmHg / kg/m²），4 个"坏"SNP 存在水平多效性（直接影响血压，不经过 BMI），用于检验各方法的稳健性。
+
+```r
+# Full MR simulation: BMI (X) -> systolic blood pressure (Y)
+# Units: X = BMI (kg/m²), Y = SBP (mmHg), beta_xy = 1.30 mmHg per kg/m²
+library(ggplot2)
+set.seed(2025)
+
+# ── Parameters ──────────────────────────────────────────────────────────────
+n_iv    <- 20       # number of SNPs used as instruments
+n_samp  <- 10000    # simulated sample size
+beta_xy <- 1.30     # true causal effect: 1 kg/m² BMI -> 1.30 mmHg SBP
+n_pleio <- 4        # number of invalid SNPs (horizontal pleiotropy)
+pleio_sd <- 0.40    # SD of pleiotropic direct SNP -> SBP effects (mmHg)
+
+# Each SNP's effect on BMI (gamma_j, kg/m² per risk allele)
+gamma_j <- abs(rnorm(n_iv, mean = 0.25, sd = 0.08))
+
+# Pleiotropic direct effects on SBP (alpha_j = 0 for valid IVs)
+alpha_j  <- rep(0, n_iv)
+pleio_idx <- sample(n_iv, n_pleio)
+alpha_j[pleio_idx] <- rnorm(n_pleio, mean = 0, sd = pleio_sd)
+```
+
+数据生成模型完整地描述了每个人的观测值是怎样产生的。对每个 SNP $j$，独立模拟 10,000 名个体：
+
+- 基因型 $G \in \{0,1,2\}$（加性编码，MAF 随机）；
+- 未测量混杂因素 $U$（如运动习惯、饮食模式）；
+- 暴露 $X = \gamma_j G + 0.4U + \varepsilon_X$（BMI）；
+- 结局 $Y = \beta_{XY} X + \alpha_j G + 0.4U + \varepsilon_Y$（SBP）。
+
+注意 $Y$ 的方程中 $\alpha_j G$ 一项：对有效 SNP，$\alpha_j = 0$，该 SNP 只通过 BMI 影响 SBP；对多效性 SNP，$\alpha_j \neq 0$，该 SNP 还存在一条绕过 BMI 的直接通路。
+
+```r
+# ── Simulate individual data and extract summary statistics ──────────────────
+# gamma_vec / alpha_vec: full vectors passed via MoreArgs; index by j inside.
+# unname() strips the "G" attribute from coef(), keeping column names clean.
+simulate_one_snp <- function(j, n, gamma_vec, alpha_vec, beta_xy) {
+  maf <- runif(1, 0.10, 0.45)
+  G   <- rbinom(n, 2, maf)                                    # genotype (0/1/2)
+  U   <- rnorm(n)                                             # unmeasured confounder
+  X   <- gamma_vec[j] * G + 0.4 * U + rnorm(n, sd = 2.5)    # BMI (kg/m²)
+  Y   <- beta_xy * X + alpha_vec[j] * G + 0.4 * U +
+         rnorm(n, sd = 12)                                    # SBP (mmHg)
+
+  fit_x <- lm(X ~ G);  fit_y <- lm(Y ~ G)
+
+  c(beta_X = unname(coef(fit_x)["G"]),
+    se_X   = unname(summary(fit_x)$coefficients["G", "Std. Error"]),
+    beta_Y = unname(coef(fit_y)["G"]),
+    se_Y   = unname(summary(fit_y)$coefficients["G", "Std. Error"]))
+}
+
+ss <- as.data.frame(t(mapply(simulate_one_snp, seq_len(n_iv),
+                             MoreArgs = list(n         = n_samp,
+                                            gamma_vec = gamma_j,
+                                            alpha_vec = alpha_j,
+                                            beta_xy   = beta_xy))))
+
+# Wald ratio and its delta-method SE for each SNP
+ss$wald_ratio <- ss$beta_Y / ss$beta_X
+ss$se_wald    <- ss$se_Y / abs(ss$beta_X)
+ss$F_stat     <- (ss$beta_X / ss$se_X)^2
+ss$is_pleio   <- seq_len(n_iv) %in% pleio_idx
+
+cat(sprintf("Median F-statistic: %.1f  (all > 10: %s)\n",
+            median(ss$F_stat),
+            ifelse(all(ss$F_stat > 10), "YES", "NO")))
+```
+
+**方法一：IVW（逆方差加权）**——将所有 Wald 比值做加权平均，精度更高（SE 更小）的 SNP 权重更大。等价于以 $1/\hat{\sigma}^2_{Y_j}$ 为权重、**过原点**的加权线性回归斜率。"过原点"意味着：IVW 假设所有 SNP 均有效（$\alpha_j = 0$），不允许系统性多效性存在。
+
+```r
+# ── Method 1: IVW ────────────────────────────────────────────────────────────
+# Intuition: precision-weighted average of all Wald ratios.
+# The origin constraint assumes every SNP satisfies the exclusion restriction.
+w_ivw    <- 1 / ss$se_wald^2
+beta_ivw <- sum(w_ivw * ss$wald_ratio) / sum(w_ivw)
+se_ivw   <- sqrt(1 / sum(w_ivw))
+p_ivw    <- 2 * pnorm(-abs(beta_ivw / se_ivw))
+
+cat(sprintf("[IVW]            beta = %+.3f mmHg/unit BMI  SE = %.3f  p = %.2e\n",
+            beta_ivw, se_ivw, p_ivw))
+```
+
+**方法二：MR-Egger**——将"过原点"约束放开，允许回归直线有自由截距。截距捕捉的是：各 SNP 的多效性效应与该 SNP 工具变量强度是否存在系统性关联（方向性多效性）。若截距显著不为零，说明"坏"SNP 的多效性不是随机分布的，IVW 的估计会有偏，而 Egger 的斜率则在 InSIDE 假设成立时给出校正后的因果效应估计。代价是：自由截距消耗了一个自由度，估计的方差更大。
+
+```r
+# ── Method 2: MR-Egger ───────────────────────────────────────────────────────
+# Intuition: free the origin constraint -> the intercept absorbs average
+# directional pleiotropy; the slope estimates the causal effect after correction.
+w_egger        <- 1 / ss$se_Y^2
+fit_egger      <- lm(beta_Y ~ beta_X, data = ss, weights = w_egger)
+beta_egger     <- coef(fit_egger)["beta_X"]
+se_egger       <- summary(fit_egger)$coefficients["beta_X", "Std. Error"]
+intercept_egger <- coef(fit_egger)["(Intercept)"]
+p_intercept    <- summary(fit_egger)$coefficients["(Intercept)", "Pr(>|t|)"]
+
+cat(sprintf("[MR-Egger]       beta = %+.3f mmHg/unit BMI  SE = %.3f\n",
+            beta_egger, se_egger))
+cat(sprintf("  Intercept = %+.3f  p = %.3f  %s\n",
+            intercept_egger, p_intercept,
+            ifelse(p_intercept < 0.05,
+                   "<-- directional pleiotropy detected!", "")))
+```
+
+**方法三：加权中位数**——将所有 Wald 比值从小到大排列，找到累积权重恰好达到 50% 的那个值。这个"中间人"不受任何一侧极端值的拉偏。关键性质：**只要有效工具变量贡献了总权重的一半以上，估计量就保持一致性**——即便剩余一半的 IV 全部无效。标准误无法用 delta 法推导，改用自助法（bootstrap）模拟抽样分布。
+
+```r
+# ── Method 3: Weighted median ────────────────────────────────────────────────
+# Intuition: sort all Wald ratios by value; find the 50% cumulative-weight
+# quantile. Robust as long as the majority (by weight) of IVs are valid.
+weighted_median_mr <- function(ratios, weights) {
+  w      <- weights / sum(weights)          # normalise to sum = 1
+  ord    <- order(ratios)
+  cum_w  <- cumsum(w[ord])
+  mid    <- which(cum_w >= 0.5)[1]
+  # edge case: cumulative weight hits exactly 0.5
+  if (cum_w[mid] == 0.5 && mid < length(ratios))
+    return(mean(ratios[ord[mid + 0:1]]))
+  ratios[ord[mid]]
+}
+
+set.seed(42)
+wm_boot <- replicate(1000, {
+  idx <- sample(n_iv, replace = TRUE)
+  weighted_median_mr(ss$wald_ratio[idx], 1 / ss$se_wald[idx]^2)
+})
+
+beta_wm <- weighted_median_mr(ss$wald_ratio, 1 / ss$se_wald^2)
+se_wm   <- sd(wm_boot)
+p_wm    <- 2 * pnorm(-abs(beta_wm / se_wm))
+
+cat(sprintf("[Weighted median] beta = %+.3f mmHg/unit BMI  SE = %.3f  p = %.2e\n",
+            beta_wm, se_wm, p_wm))
+cat(sprintf("\n[True causal effect] beta_XY = %.2f mmHg per kg/m² BMI\n", beta_xy))
+```
+
+**可视化：MR 散点图**——横轴为每个 SNP 对 BMI 的效应（$\hat{\gamma}_j$），纵轴为对 SBP 的效应（$\hat{\Gamma}_j$）。若 MR 假设成立，所有点应沿过原点、斜率为 $\beta_{XY}$ 的直线分布。多效性 SNP（红色）会偏离这条直线，拉动 IVW 直线（蓝色实线）向自身倾斜；MR-Egger（红色虚线）通过自由截距对此做了校正；加权中位数（橙色点划线）则忽略了少数偏离点。
+
+```r
+# ── Scatter plot: visualise three estimators and pleiotropic SNPs ─────────────
+ss$snp_type <- ifelse(ss$is_pleio, "Invalid IV (pleiotropic)", "Valid IV")
+
+ggplot(ss, aes(x = beta_X, y = beta_Y,
+               size = 1 / se_Y^2, color = snp_type)) +
+  geom_point(alpha = 0.85) +
+  geom_abline(aes(intercept = 0, slope = beta_ivw,
+                  linetype = "IVW"), color = "steelblue",  linewidth = 1.0) +
+  geom_abline(aes(intercept = intercept_egger, slope = beta_egger,
+                  linetype = "MR-Egger"), color = "firebrick", linewidth = 1.0) +
+  geom_abline(aes(intercept = 0, slope = beta_wm,
+                  linetype = "Weighted median"), color = "darkorange", linewidth = 1.0) +
+  geom_abline(intercept = 0, slope = beta_xy,
+              color = "grey30", linewidth = 0.6, linetype = "dotted") +
+  scale_color_manual(values = c("Valid IV (pleiotropic)" = "tomato",
+                                "Valid IV" = "steelblue4"),
+                     name = NULL) +
+  scale_linetype_manual(values = c("IVW" = "solid",
+                                   "MR-Egger" = "dashed",
+                                   "Weighted median" = "dotdash"),
+                        name = "Estimator") +
+  scale_size_continuous(range = c(2, 6), guide = "none") +
+  annotate("text", x = min(ss$beta_X), y = max(ss$beta_Y),
+           hjust = 0, vjust = 1, size = 3.2,
+           label = paste0(
+             sprintf("IVW:     β = %.2f mmHg/(kg/m²)\n", beta_ivw),
+             sprintf("Egger:   β = %.2f  intercept = %.2f\n",
+                     beta_egger, intercept_egger),
+             sprintf("WMedian: β = %.2f\n", beta_wm),
+             sprintf("True:    β = %.2f  (ground truth)", beta_xy))) +
+  labs(x = expression(hat(gamma)[j] ~ "(SNP effect on BMI, kg/m² per allele)"),
+       y = expression(hat(Gamma)[j] ~ "(SNP effect on SBP, mmHg per allele)"),
+       title = "MR Scatter Plot: BMI → Systolic Blood Pressure",
+       subtitle = sprintf("%d SNPs as IVs (%d pleiotropic injected) | true β = %.2f",
+                          n_iv, n_pleio, beta_xy)) +
+  theme_classic(base_size = 12) +
+  theme(legend.position = "right")
+```
+
+**结果解读与三方法比较。** 将 `n_pleio` 设为 0 时，三种方法估计值均趋近真实效应 1.30，MR-Egger 截距 p 值不显著——这是"健康对照"状态。注入 4 个多效性 SNP 后：
+
+| 情形 | IVW | MR-Egger | 加权中位数 |
+|------|-----|----------|------------|
+| 无多效性（n_pleio = 0） | ≈ 1.30，无偏 | ≈ 1.30，截距 ≈ 0 | ≈ 1.30，稳健 |
+| 有多效性（n_pleio = 4） | 偏倚，被拉偏 | 斜率校正，但 SE 更大 | 接近 1.30，稳健 |
+
+三种方法估计结果越一致，因果推断的可信度越高；若结果分歧，则须深入检查哪些 SNP 可能为无效工具变量。
+
+:::note
+**IVW 的等价形式**
+
+IVW 估计量等价于：以 $1/\hat{\sigma}_{Yj}^2$ 为权重，对过原点约束的加权线性回归 $\hat{\Gamma}_j \sim \hat{\gamma}_j$ 求斜率。这一等价性揭示了 IVW 的核心假设：残差误差完全来自抽样误差，排除系统性水平多效性——即假设 $\alpha_j = 0$ 对所有 $j$ 成立（排他性假设严格成立）。
+:::
 
 ### MR 分析流程与敏感性分析
 
@@ -433,82 +935,286 @@ mr_scatter_plot(res, dat)
 
 ### 基本原理
 
-**多基因风险评分（Polygenic Risk Score，PRS）** 将个体基因组中所有（或筛选后的）GWAS 关联 SNP 的效应叠加，得到一个量化该个体遗传风险的单一分数：
+单个 GWAS 显著位点的效应量通常很小（优势比 OR 多在 1.05–1.20 之间），无法单独用于个体风险预测。然而，复杂性状的遗传结构往往是**高度多基因性（highly polygenic）**的——数千乃至数万个散布于全基因组的低效应位点共同贡献了相当大比例的遗传力。**多基因风险评分（Polygenic Risk Score，PRS）** 正是将这些位点的微小效应线性叠加，将个体的全基因组遗传信息压缩为一个具有连续分布的风险分数：
 
 $$
 \text{PRS}_i = \sum_{j=1}^{M} \hat{\beta}_j \cdot G_{ij}
 $$
 
-其中 $\hat{\beta}_j$ 为第 $j$ 个 SNP 在 GWAS 训练集中估计的效应量，$G_{ij}$ 为个体 $i$ 在该 SNP 的基因型编码（0/1/2）。
+其中 $\hat{\beta}_j$ 为第 $j$ 个 SNP 在 GWAS 训练集（base dataset）中估计的效应量（通常为 log OR 或线性回归系数），$G_{ij}$ 为个体 $i$ 在该 SNP 的加性基因型编码（0/1/2，按效应等位基因计数）。PRS 的本质是对个体基因组中所有风险等位基因的加权求和，权重由人群水平的 GWAS 汇总统计量提供。
 
-PRS 捕捉的是多个位点的累积遗传效应，而非单个位点的大效应，适用于复杂多基因遗传结构的表型（如身高、BMI、心血管疾病）。
+:::note
+**PRS 的多基因性假设**
+
+PRS 框架隐含两个基本假设：（1）各位点效应在统计上近似可加——不考虑上位性（epistasis）和显性偏差（dominance deviation）；（2）效应量估计可从训练群体迁移至目标个体。前者在大多数复杂性状中是合理的近似，后者则是 PRS 跨群体泛化问题的核心挑战（参见本章多群体 GWAS 部分）。
+:::
+
+### PRS 的统计框架：从遗传力到预测准确性
+
+理解 PRS 的理论上限，需从**SNP 遗传力（SNP heritability，$h^2_\text{SNP}$）**出发。$h^2_\text{SNP}$ 是所有常见 SNP 共同解释的表型方差比例，代表理想条件下 PRS 可解释的最大方差。现实中，PRS 的实际预测准确性（$R^2$ 或 AUC）受以下因素制约：
+
+1. **训练样本量**：效应量估计误差随 $n$ 减小而增大，PRS 的 $R^2$ 近似正比于 $n \cdot (h^2_{\text{SNP}})^2 / \bigl(n \cdot h^2_{\text{SNP}} + M_{\text{eff}}\bigr)$，其中 $M_{\text{eff}}$ 为有效独立 SNP 数目；
+2. **SNP 数目与效应量截断**：纳入的 SNP 越多，捕捉的多基因信号越完整，但同时也引入更多噪声；
+3. **LD 校正的质量**：连锁 SNP 之间效应量高度相关，若不处理 LD 会导致重复计数，高估具有大量代理变异的位点的贡献；
+4. **群体匹配程度**：训练集与目标集的祖源差异越大，LD 代理关系越不一致，预测性能下降越明显。
+
+不同性状的当前 PRS 预测能力差异很大：身高的 PRS $R^2$ 可达 0.25–0.35（接近家系遗传力 0.80 的 30–40%）；2 型糖尿病的 AUC 约为 0.60–0.65；精神分裂症的 PRS 在病例-对照设计中 Nagelkerke $R^2$ 约为 0.07–0.10。这些差异反映了各性状的多基因结构、GWAS 训练集规模以及环境因素比重的综合作用。
+
+### 构建流程：数据分工与过拟合防范
+
+PRS 分析涉及三个必须严格分离的数据集：
+
+```
+Base dataset (GWAS 汇总统计量)
+   │  提供效应量 β̂_j（通常来自大规模 GWAS 联盟）
+   │
+   ▼
+Target dataset（目标基因型数据）
+   ├── Validation set（验证集）：调参——选最优 p 值阈值或超参数
+   └── Test set（测试集）：报告最终预测性能
+```
+
+:::warning
+**最常见的 PRS 过拟合错误**
+
+将目标数据集（target dataset）直接用于调参（如选择最优 p 值截断阈值），再在同一数据上报告预测性能，会产生严重的乐观偏倚。正确做法是将目标数据严格划分为独立的验证集（调参）和测试集（评估），或使用交叉验证。若目标样本量不足以分割，则仅使用 base GWAS 的超参数默认值，不在目标数据上调参。
+:::
 
 ### LD 裁剪 + p 值阈值（C+T）方法
 
-最简单的 PRS 构建方法为 C+T（Clumping + Thresholding）：
+C+T（Clumping + Thresholding）是最直观的 PRS 构建方法，分为两步：首先通过 LD 裁剪去除相互连锁的 SNP（保留每个 LD 区块中关联最强的代表 SNP），再按 p 值阈值筛选纳入 PRS 计算的 SNP 集合。C+T 无需参考 LD 矩阵进行效应量校正，计算速度快，是快速原型验证的首选方案。其主要缺陷是 p 值阈值的选择依赖验证集，且丢弃了阈值以下的大量微效位点信息。
 
 ```bash
-# Step 1: LD clumping（同前，去除 LD 冗余）
+# Input: PLINK binary fileset (post-QC) and base GWAS summary statistics
+BFILE=/Users/angdong/Documents/bio_example/genome/qc_step4
+BASE=base_gwas.assoc   # columns: SNP, CHR, BP, A1, A2, BETA, SE, P
+
+# Step 1: LD clumping — retain the most significant SNP in each LD block
 plink \
-  --bfile target_genotypes \
-  --clump base_gwas.assoc \
-  --clump-p1 1.0 \
-  --clump-r2 0.1 \
-  --clump-kb 250 \
+  --bfile  "${BFILE}" \
+  --clump  "${BASE}" \
+  --clump-p1    1.0 \
+  --clump-r2    0.1 \
+  --clump-kb    250 \
   --clump-field P \
   --out clumped_snps
 
-# Step 2: 提取不同 p 值阈值下的 SNP 集合
+# Step 2: Score at multiple p-value thresholds
+# p_thresholds.txt: two columns (threshold_label  upper_p_bound)
+# p_values.txt:     two columns (SNP_id            p_value)
 for PTHRESH in 5e-8 1e-5 1e-3 0.01 0.05 0.1 0.2 0.5 1.0; do
   plink \
-    --bfile target_genotypes \
-    --score base_gwas.assoc 3 4 7 header \
+    --bfile   "${BFILE}" \
+    --score   "${BASE}" 1 4 6 header \
     --q-score-range p_thresholds.txt p_values.txt \
     --extract clumped_snps.clumped \
-    --out prs_pt_${PTHRESH}
+    --out     prs_ct_${PTHRESH}
 done
+
+# Column indices in --score: 1=SNP, 4=A1 (effect allele), 6=BETA (effect size)
 ```
 
 ```r
-# 选择最优 p 值阈值（在独立验证集中最大化 R² 或 AUC）
+# Select best p-value threshold on validation set, then report on test set
 library(tidyverse)
 
 thresholds <- c(5e-8, 1e-5, 1e-3, 0.01, 0.05, 0.1, 0.2, 0.5, 1.0)
 
-# 读取各阈值下的 PRS 并在验证集中评估
+# Evaluate each threshold on the validation set
 results <- map_df(thresholds, function(pt) {
-  prs <- read_table(sprintf("prs_pt_%.0e.profile", pt),
-                    col_types = cols()) %>%
+  prs_file <- sprintf("prs_ct_%.0e.profile", pt)
+  if (!file.exists(prs_file)) return(NULL)
+
+  prs <- read_table(prs_file, col_types = cols()) %>%
     select(IID, SCORE)
 
-  # 与表型合并（假设 pheno_df 包含 IID 和 PHENO 列）
-  merged <- left_join(pheno_df, prs, by = "IID")
+  merged <- left_join(pheno_validation, prs, by = "IID") %>%
+    filter(!is.na(SCORE))
 
+  # For binary outcomes use AUC; for continuous use R²
   fit <- lm(PHENO ~ SCORE, data = merged)
   r2  <- summary(fit)$r.squared
+  n_snps_file <- sprintf("prs_ct_%.0e.log", pt)
 
-  tibble(threshold = pt, r_squared = r2, n_snps = NA)
+  tibble(threshold = pt, r_squared = r2)
 })
 
-best_thresh <- results %>% filter(r_squared == max(r_squared))
+best_thresh <- results %>% slice_max(r_squared, n = 1)
 cat("Best p-value threshold:", best_thresh$threshold, "\n")
-cat("R² in validation set:", round(best_thresh$r_squared, 4), "\n")
+cat("Validation R²:",         round(best_thresh$r_squared, 4), "\n")
 
-# 可视化
+# Report final performance on held-out test set using best threshold only
+prs_best <- read_table(sprintf("prs_ct_%.0e.profile", best_thresh$threshold),
+                        col_types = cols()) %>% select(IID, SCORE)
+test_merged <- left_join(pheno_test, prs_best, by = "IID")
+r2_test <- summary(lm(PHENO ~ SCORE, data = test_merged))$r.squared
+cat("Test R²:", round(r2_test, 4), "\n")
+
+# Visualise threshold selection curve
 ggplot(results, aes(x = -log10(threshold), y = r_squared)) +
-  geom_line(color = "steelblue") +
-  geom_point(size = 2, color = "steelblue") +
-  geom_point(data = best_thresh, color = "red", size = 3) +
+  geom_line(color = "steelblue", linewidth = 0.8) +
+  geom_point(size = 2.5, color = "steelblue") +
+  geom_point(data = best_thresh, color = "firebrick", size = 4, shape = 18) +
   labs(x = expression(-log[10]("p-value threshold")),
        y = expression(R^2 ~ "(validation set)"),
-       title = "PRS Performance vs. p-value Threshold (C+T)") +
-  theme_classic()
+       title = "C+T PRS: Threshold Selection Curve",
+       caption = "Red diamond = best threshold") +
+  theme_classic(base_size = 12)
 ```
 
-:::note
-**LDpred2 与 PRS-CS：贝叶斯 PRS 方法**
+### 贝叶斯收缩方法：LDpred2 与 PRS-CS
 
-C+T 方法简单但次优，因为它丢弃了阈值以下大量有信息的小效应位点。LDpred2 和 PRS-CS 通过贝叶斯收缩方法在全基因组范围内同时估计所有 SNP 的后验效应量，通常比 C+T 方法有更高的预测准确性，尤其在多基因性（polygenicity）高的性状上。
+C+T 方法在统计上是次优的，原因有二：第一，它用硬截断丢弃了大量具有信息量的微效位点；第二，它用 LD 裁剪粗暴地选择代表 SNP，而未对效应量进行 LD 感知的校正。贝叶斯收缩方法从理论上解决了这两个问题。
+
+**核心思想。** 真实 GWAS 效应量估计 $\hat{\beta}_j$ 包含信号与噪声两部分，以及由 LD 引起的"效应膨胀"（neighbouring SNPs in LD inflate each other's estimates）。贝叶斯方法对真实效应量 $\beta_j$ 施加先验分布，通过最大化后验概率得到收缩估计 $\tilde{\beta}_j$，再用 $\tilde{\beta}_j$ 替代原始 $\hat{\beta}_j$ 构建 PRS：
+
+$$
+\text{PRS}^{\text{Bayes}}_i = \sum_{j=1}^{M} \tilde{\beta}_j \cdot G_{ij}
+$$
+
+**LDpred2** 假设效应量服从点-正态混合先验（spike-and-slab）：以概率 $p$ 为因果变异（效应来自 $N(0, h^2_\text{SNP} / (M \cdot p))$），以概率 $1-p$ 效应为零。其自动版本（`ldpred2-auto`）可从数据中联合估计 $h^2_\text{SNP}$ 和因果变异比例 $p$，无需外部参数调优，是目前应用最广泛的贝叶斯 PRS 方法之一。
+
+**PRS-CS** 采用连续收缩先验（continuous shrinkage prior，基于马蹄先验的变体），全局收缩参数 $\phi$ 同样可从数据自动估计（`--phi auto`），对不同多基因性程度的性状均有良好的适应性。
+
+| 方法 | 先验类型 | LD 参考面板 | 参数调优 | 适用场景 |
+|------|----------|-------------|----------|----------|
+| C+T | 无（硬截断） | 仅用于裁剪 | 需验证集选阈值 | 快速原型、小样本目标集 |
+| LDpred2-auto | 点-正态混合 | 需要（同祖源） | 自动估计 $h^2$、$p$ | 通用，训练集样本量 ≥ 5 万 |
+| PRS-CS-auto | 连续收缩（马蹄） | 需要（EUR/EAS/AFR） | 自动估计 $\phi$ | 通用，多群体支持好 |
+| PRS-CSx | 多群体连续收缩 | 多祖源联合 | 自动 | 非欧洲祖源目标人群 |
+
+```r
+library(bigsnpr)   # provides runonce(), snp_ldref(), and LDpred2 implementation
+
+# ---- LDpred2-auto workflow (bigsnpr ≥ 1.11) ----
+
+# Step 1: Load post-QC PLINK fileset into bigSNP format
+# (Only needed once; result is cached as .rds)
+snp_readBed(
+  bedfile = "/Users/angdong/Documents/bio_example/genome/qc_step4.bed",
+  backingfile = tempfile()
+)
+obj_bigsnp <- snp_attach(sub("\\.bed$", ".rds",
+  "/Users/angdong/Documents/bio_example/genome/qc_step4.bed"))
+
+G   <- obj_bigsnp$genotypes
+map <- obj_bigsnp$map
+
+# Step 2: Match summary statistics to genotype map
+# sumstats must have columns: chr, pos, a0, a1, beta, beta_se, n_eff
+info_snp <- snp_match(sumstats, map)
+
+# Step 3: Compute LD reference (sparse correlation matrix) for chr 1–22
+# Use individuals NOT in the test set as the LD reference panel
+ind_ref <- sample(nrow(G), size = round(0.5 * nrow(G)))
+corr_list <- lapply(1:22, function(chr) {
+  ind_chr <- which(map$chromosome == chr)
+  snp_cor(G, ind.col = ind_chr, ind.row = ind_ref,
+          size = 3 / 1000, infos.pos = map$physical.pos[ind_chr],
+          alpha = 1e-3)
+})
+
+# Combine into a block-diagonal sparse matrix
+corr <- do.call(Matrix::bdiag, corr_list)
+
+# Step 4: Run LDpred2-auto (jointly estimates h² and polygenicity p)
+# Returns a list of MCMC chains; use median of converged chains
+ldsc <- with(info_snp, snp_ldsc(ld_score, ld_size = nrow(G),
+                                 chi2 = (beta / beta_se)^2,
+                                 sample_size = n_eff))
+h2_init <- ldsc[["h2"]]
+
+multi_auto <- snp_ldpred2_auto(
+  corr       = corr,
+  df_beta    = info_snp,
+  h2_init    = h2_init,
+  vec_p_init = seq_log(1e-4, 0.2, length.out = 30),
+  ncores     = 4
+)
+
+# Select converged chains (filter by r² between chain betas)
+beta_auto <- sapply(multi_auto, function(auto) auto$beta_est)
+converged  <- apply(cor(beta_auto), 1, function(r) mean(r > 0.99) > 0.5)
+beta_final <- rowMeans(beta_auto[, converged])
+
+# Step 5: Compute PRS for each individual
+prs_ldpred2 <- big_prodVec(G, beta_final / sd(beta_final))
+
+cat(sprintf("LDpred2-auto: estimated h² = %.3f, polygenicity p = %.4f\n",
+            mean(sapply(multi_auto[converged], `[[`, "h2_est")),
+            mean(sapply(multi_auto[converged], `[[`, "p_est"))))
+```
+
+:::tip
+**LDpred2 实践要点**
+
+LD 参考面板必须与目标人群同祖源，且样本量建议不低于 2,000。`snp_ldpred2_auto` 的 `vec_p_init` 应覆盖宽泛的因果变异比例范围（通常 $10^{-4}$ 至 $0.2$）。收敛诊断（各链之间 $r > 0.99$）至关重要——未收敛的链会严重拉偏效应量估计。计算密集型步骤（LD 矩阵计算、MCMC 采样）建议在高性能计算集群上运行，本地演示可仅使用单条染色体。
+:::
+
+### PRS 的评估指标
+
+PRS 的预测性能因表型类型不同而采用不同指标：
+
+**连续表型（如身高、BMI、血压）**：使用 $R^2$（在独立测试集中 PRS 解释的表型方差比例）。增量 $R^2$（incremental $R^2$）是更规范的报告方式，即在协变量（年龄、性别、前十个 PCA 主成分）调整后，PRS 额外解释的方差量。
+
+**二元表型（如疾病状态）**：
+- **AUC（area under the ROC curve）**：衡量 PRS 区分病例与对照的能力，不受患病率影响；
+- **Nagelkerke $R^2$**：logistic 回归中 PRS 解释的伪决定系数，受患病率影响，跨研究比较时需用与训练集相同的患病率归一化；
+- **分位数相对风险（quantile relative risk）**：将人群按 PRS 分位数（如底部 20% 对比顶部 20%，或顶部 1% 对比中间 40–60%）分组，报告各组间疾病相对风险——这是临床沟通中最直观的报告形式。
+
+```r
+library(tidyverse)
+library(pROC)
+
+# Assume test_df: columns IID, PRS, PHENO (0/1 binary), age, sex, PC1..PC10
+
+# --- Incremental R² for continuous trait ---
+fit_null <- lm(PHENO ~ age + sex + PC1 + PC2 + PC3 + PC4 + PC5 +
+                 PC6 + PC7 + PC8 + PC9 + PC10, data = test_df)
+fit_full <- lm(PHENO ~ PRS + age + sex + PC1 + PC2 + PC3 + PC4 + PC5 +
+                 PC6 + PC7 + PC8 + PC9 + PC10, data = test_df)
+r2_increment <- summary(fit_full)$r.squared - summary(fit_null)$r.squared
+cat(sprintf("Incremental R² of PRS: %.4f\n", r2_increment))
+
+# --- AUC for binary trait ---
+fit_logit <- glm(PHENO ~ PRS + age + sex + PC1 + PC2 + PC3,
+                 data = test_df, family = binomial)
+roc_obj <- roc(test_df$PHENO, predict(fit_logit, type = "response"),
+               quiet = TRUE)
+cat(sprintf("AUC: %.3f  (95%% CI: %.3f–%.3f)\n",
+            auc(roc_obj),
+            ci.auc(roc_obj)[1],
+            ci.auc(roc_obj)[3]))
+
+# --- Quantile relative risk ---
+test_df <- test_df %>%
+  mutate(prs_decile = ntile(PRS, 10))
+
+rr_df <- test_df %>%
+  group_by(prs_decile) %>%
+  summarise(risk = mean(PHENO), n = n(), .groups = "drop") %>%
+  mutate(rr = risk / risk[prs_decile == 5])   # relative to middle decile
+
+ggplot(rr_df, aes(x = prs_decile, y = rr)) +
+  geom_col(fill = "steelblue", width = 0.7) +
+  geom_hline(yintercept = 1, linetype = "dashed", color = "grey40") +
+  scale_x_continuous(breaks = 1:10,
+                     labels = paste0("D", 1:10)) +
+  labs(x = "PRS Decile", y = "Relative Risk (vs. D5)",
+       title = "Disease Risk by PRS Decile") +
+  theme_classic(base_size = 12)
+```
+
+### PRS 的临床转化与伦理考量
+
+PRS 在临床场景中的应用尚处于早期阶段，但已在以下方向展现出实际价值：**风险分层**——将高 PRS 个体纳入更密集的筛查方案（如乳腺癌高 PRS 女性提前进行钼靶筛查）；**与家族史互补**——PRS 可识别无家族史但遗传风险高的个体，填补传统临床风险评估的盲区；**药物研发中的患者分层**——在临床试验中按 PRS 分层分析，识别对特定干预获益更大的亚组。
+
+然而，PRS 的临床应用也面临若干系统性局限与伦理挑战。首先，当前绝大多数大规模 GWAS 基于欧洲祖源人群，PRS 在非欧洲群体中的预测准确性显著下降，存在加剧健康不平等的风险。其次，高 PRS 并非疾病的决定因素，而是风险概率的上调——大多数高 PRS 个体不会患病，大多数患者的 PRS 处于中等水平，过度强调 PRS 结果可能导致不必要的医学焦虑或过度干预。此外，PRS 信息在保险和就业场景中的潜在歧视性使用是亟待监管框架覆盖的伦理议题。
+
+:::info
+**黄金法则：PRS 不等于命运**
+
+PRS 描述的是群体层面的概率分布，而非个体层面的确定性预测。在解读高 PRS 结果时，始终应结合环境因素、生活方式、临床检测结果综合判断，并以"概率性风险信息"而非"遗传诊断"的框架传达给被测者。PRS 的最大价值在于推动从"已病则治"向"未病先防"的预防医学范式转变，而非制造遗传决定论的新焦虑。
 :::
 
 ---

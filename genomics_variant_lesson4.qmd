@@ -13,7 +13,7 @@ number-sections: true
 3. 掌握 Bonferroni 校正、FDR（BH 程序）与置换检验三种多重检验校正方法的原理与适用场景，理解 FWER 与 FDR 的概念区别；
 4. 根据非中心参数（NCP）公式估算 GWAS 统计检验力，理解样本量、效应量、MAF 与显著性阈值的交互影响；
 5. 使用 PLINK 运行完整的逻辑回归和线性回归关联分析，解读输出结果，并利用 GCTA-GREML 估计 SNP 遗传力；
-6. 利用 LD 裁剪（clumping）识别独立关联信号，并利用局部关联图（LocusZoom 风格）展示候选区域内的 LD 结构与信号精细结构。
+6. 利用 LD 裁剪（clumping）和逐步条件分析识别独立关联信号，并利用局部关联图（LocusZoom 风格）展示候选区域内的 LD 结构与信号形态。
 
 ---
 
@@ -727,7 +727,9 @@ knitr::kable(
 
 ### 元分析对统计检验力的倍增效应
 
-当单个研究的样本量不足以检出小效应量位点时，多个 GWAS 研究的结果可以通过**元分析（meta-analysis）** 合并，以获得更大的有效样本量和更高的统计检验力。在固定效应加性线性模型下，元分析的非中心参数（NCP）等于各研究 NCP 之和：
+当单个研究的样本量不足以检出小效应量位点时，多个 GWAS 研究的结果可以通过**元分析（meta-analysis）** 合并，以获得更大的有效样本量和更高的统计检验力。在进入数学推导之前，先建立基本直觉：若两个研究都给出对同一真实效应量 $\beta$ 的无偏估计 $\hat\beta_1, \hat\beta_2$，应如何合并？最朴素的做法是取算术平均，但这隐含假设两个研究的精度相同；当样本量差异较大时，精度更高的估计反而会被精度低的估计"稀释"。统计学上的最优策略是按方差的倒数加权——精度越高的研究权重越大。可以证明，当各估计独立且无偏时，这种加权使合并估计的方差达到理论最小值，这正是**逆方差加权法**的核心思想。
+
+将这一直觉推广到检验力分析，则有：在固定效应加性线性模型下，元分析的非中心参数（NCP）等于各研究 NCP 之和：
 
 $$\text{NCP}_\text{meta} = \sum_{k=1}^{K} \text{NCP}_k = \frac{\left(\sum_{k=1}^{K} n_k\right) \cdot \beta^2 \cdot 2p(1-p)}{\sigma^2}$$
 
@@ -746,43 +748,63 @@ GWAS 元分析的标准软件为 **METAL**（密歇根大学开发）和 **PLINK
 原始数据合并（mega-analysis）在理论上统计效率更高，因为它可以在统一模型下估计协变量效应，避免研究间模型不一致导致的偏差。然而，mega-analysis 面临数据共享协议、受试者隐私保护和数据存储成本的现实限制。元分析使用汇总统计量（每个 SNP 仅需效应量和标准误两列数字），既能大幅扩展有效样本量，又规避了原始数据共享障碍，是现实中多中心 GWAS 合作的标准策略。GIANT 身高联盟和精神疾病基因组学联盟（PGC）均是元分析策略取得重大成功的典型案例。
 :::
 
-以下 R 代码模拟两个独立 GWAS 研究的汇总统计量，并演示 IVW 元分析的手动实现逻辑：
+以下 R 代码模拟两个独立 GWAS 研究的汇总统计量，并演示 IVW 元分析的手动实现逻辑。代码以"先设定真值、再模拟观测、最后合并"的顺序组织，便于教学过程中分步演示：
 
 ```r
 # Simulated two-study GWAS meta-analysis (IVW method)
+# Goal: combine two independent studies' summary statistics to recover
+#       statistical power equivalent to a single n1 + n2 study.
 set.seed(2024)
 
-# Study 1: n = 5,000; Study 2: n = 8,000
-# True effect: beta = 0.08, MAF = 0.25
-true_beta <- 0.08
-maf       <- 0.25
+# --- Step 1: define the ground truth we want to detect ---
+# In a real GWAS the true effect is unknown; here we fix it so that
+# we can later check whether meta-analysis recovers it correctly.
+true_beta <- 0.08      # additive effect per risk allele (SD units)
+maf       <- 0.25      # minor allele frequency of the test SNP
 
-# Approximate SE for each study: SE ~ 1 / sqrt(n * 2 * MAF * (1 - MAF))
+# --- Step 2: compute each study's expected standard error ---
+# Under an additive linear model with standardized phenotype (sigma^2 = 1),
+# Var(beta_hat) ~ 1 / (n * 2p(1-p)), so SE = 1 / sqrt(n * 2 * MAF * (1-MAF)).
+# Larger n  -> smaller SE -> higher precision -> larger meta-weight.
 n1 <- 5000; n2 <- 8000
-se1 <- 1 / sqrt(n1 * 2 * maf * (1 - maf))
-se2 <- 1 / sqrt(n2 * 2 * maf * (1 - maf))
+se1 <- 1 / sqrt(n1 * 2 * maf * (1 - maf))   # smaller study, larger SE
+se2 <- 1 / sqrt(n2 * 2 * maf * (1 - maf))   # larger  study, smaller SE
 
-# Simulate observed effect estimates with sampling error
+# --- Step 3: simulate one observed beta per study ---
+# Each cohort's reported beta_hat equals the truth plus a Gaussian
+# sampling error drawn from N(0, SE_k). This mimics what each study
+# would write into its summary-statistics file.
 beta1 <- true_beta + rnorm(1, 0, se1)
 beta2 <- true_beta + rnorm(1, 0, se2)
 
-# IVW meta-analysis
+# --- Step 4: IVW meta-analysis ---
+# Weight each study by 1 / SE^2 so that more precise studies dominate.
+# Under the fixed-effect assumption (one shared true beta, no between-
+# study heterogeneity), this weighting yields the minimum-variance
+# unbiased combined estimator.
 w1 <- 1 / se1^2
 w2 <- 1 / se2^2
-beta_meta <- (w1 * beta1 + w2 * beta2) / (w1 + w2)
-se_meta   <- sqrt(1 / (w1 + w2))
-z_meta    <- beta_meta / se_meta
-p_meta    <- 2 * pnorm(abs(z_meta), lower.tail = FALSE)
+beta_meta <- (w1 * beta1 + w2 * beta2) / (w1 + w2)   # weighted average
+se_meta   <- sqrt(1 / (w1 + w2))                     # pooled SE
+z_meta    <- beta_meta / se_meta                     # Wald Z statistic
+p_meta    <- 2 * pnorm(abs(z_meta), lower.tail = FALSE)   # two-sided p
 
+# --- Step 5: report per-study and pooled results ---
 cat(sprintf("Study 1: beta = %.4f, SE = %.4f, Z = %.2f\n",
             beta1, se1, beta1 / se1))
 cat(sprintf("Study 2: beta = %.4f, SE = %.4f, Z = %.2f\n",
             beta2, se2, beta2 / se2))
 cat(sprintf("Meta-analysis (IVW): beta = %.4f, SE = %.4f, Z = %.2f, p = %.2e\n",
             beta_meta, se_meta, z_meta, p_meta))
+
+# Effective sample size implied by the meta-analytic SE.
+# Inverting SE^2 = 1 / (N_eff * 2p(1-p)) gives N_eff = 1 / (SE^2 * 2p(1-p)).
+# A successful fixed-effect meta-analysis should produce N_eff ~ n1 + n2.
 cat(sprintf("Effective N (meta): %.0f vs actual N1+N2: %d\n",
             1 / se_meta^2 / (2 * maf * (1 - maf)), n1 + n2))
 ```
+
+运行这段代码可观察到三个关键现象，对应元分析的三条核心结论：(1) 合并估计 $\hat\beta_\text{meta}$ 比任一单独研究的估计更接近真值 $0.08$，因为大数定律使加权平均的随机误差缩小；(2) 合并 Z 统计量显著高于单研究 Z 值，对应统计检验力的提升；(3) 由 $\text{SE}_\text{meta}$ 反推的有效样本量近似等于 $n_1 + n_2 = 13{,}000$，验证了"固定效应元分析等价于单个 13,000 样本研究"的理论结论。课堂演示时，可让学生改变 `n1`、`n2`、`true_beta` 或 `maf` 的取值，体会样本量、效应量与等位基因频率如何共同决定合并 p 值与有效样本量的关系。
 
 ---
 
@@ -936,7 +958,7 @@ GCTA 的 `.hsq` 输出文件包含遗传方差（$V(G)$）和残差方差（$V(e
 
 ---
 
-## 独立信号的识别：LD 裁剪与精细定位
+## 独立信号的识别：LD 裁剪与条件分析
 
 ### LD 裁剪（Clumping）
 
@@ -1013,88 +1035,13 @@ plink \
 :::tip
 **条件分析的替代方案：近似贝叶斯因子法**
 
-当样本量足够大（$N > 10{,}000$）时，基于 Bayes Factor 的方法（如 FINEMAP 的多因果变异模式）能在单次分析中同时推断区域内因果变异的数量和位置，无需逐步迭代。该方法将在精细定位小节中进一步介绍。
-:::
-
-### 精细定位的概念与 SuSiE 实现
-
-**精细定位（fine-mapping）** 是在一个显著关联区域内，从众多 LD 连锁的 SNP 中，统计推断出最可能的因果变异的过程。与 LD 裁剪不同，精细定位不满足于选取最显著的 SNP，而是试图量化每个 SNP 作为因果变异的后验概率，并构建**可信集（credible set）**——即以 95% 概率包含真正因果变异的最小 SNP 集合。常用工具包括 FINEMAP、**SuSiE**（Sum of Single Effects）和 POLYFUN。各工具的共同输入是 GWAS 汇总统计量和参考 LD 矩阵，输出是每个 SNP 的**后验纳入概率（Posterior Inclusion Probability，PIP）**。PIP 接近 1 的 SNP 是高置信度的因果变异候选。
-
-**SuSiE** 将区域内的关联信号分解为 $L$ 个单效应（single effect）的加性叠加，每个单效应对应一个独立信号，通过变分贝叶斯推断（Variational Bayes）同时估计 $L$ 个可信集。以下代码以模拟数据演示 SuSiE 的完整运行流程：
-
-```r
-# install.packages("susieR")
-library(susieR)
-
-# ── Simulate a regional dataset with 2 independent causal SNPs ────────────────
-set.seed(42)
-n_ind <- 3000   # individuals
-n_snp <- 200    # SNPs in the candidate region
-
-# Correlated genotype matrix (simulate LD structure with AR(1) correlation)
-sigma_ld <- toeplitz(0.7^(0:(n_snp - 1)))
-L_chol   <- chol(sigma_ld)
-G_raw    <- matrix(rnorm(n_ind * n_snp), n_ind, n_snp) %*% L_chol
-G        <- round(pmin(pmax(G_raw, -2), 2))   # crude 0/1/2 quantization
-
-# Two causal SNPs at positions 50 and 150
-causal_idx <- c(50, 150)
-beta_true  <- c(0.4, -0.3)
-pheno      <- G[, causal_idx] %*% beta_true + rnorm(n_ind)
-
-# ── Run SuSiE with L = 5 (allow up to 5 independent signals) ─────────────────
-fit_susie <- susie(G, pheno, L = 5, verbose = FALSE)
-
-# Posterior Inclusion Probabilities
-pip <- fit_susie$pip
-cat(sprintf("Top 5 SNPs by PIP:\n"))
-top5 <- order(pip, decreasing = TRUE)[1:5]
-for (i in top5) {
-  cat(sprintf("  SNP %3d: PIP = %.3f%s\n", i, pip[i],
-              if (i %in% causal_idx) "  <-- true causal" else ""))
-}
-
-# 95% credible sets
-cs <- susie_get_cs(fit_susie, coverage = 0.95)
-cat(sprintf("\nNumber of credible sets found: %d\n", length(cs$cs)))
-for (k in seq_along(cs$cs)) {
-  cat(sprintf("  CS%d: %d SNPs, min r2 = %.3f\n",
-              k, length(cs$cs[[k]]), cs$purity$min.abs.corr[k]^2))
-}
-
-# ── Visualize PIP along the region ───────────────────────────────────────────
-library(ggplot2)
-df_pip <- data.frame(
-  pos     = seq_len(n_snp),
-  pip     = pip,
-  causal  = seq_len(n_snp) %in% causal_idx
-)
-
-ggplot(df_pip, aes(x = pos, y = pip)) +
-  geom_point(aes(color = causal), size = 1.5, alpha = 0.8) +
-  scale_color_manual(values = c("FALSE" = "grey60", "TRUE" = "#D62728"),
-                     labels = c("Non-causal", "True causal")) +
-  geom_hline(yintercept = 0.9, linetype = "dashed", color = "steelblue",
-             linewidth = 0.7) +
-  annotate("text", x = n_snp * 0.05, y = 0.92,
-           label = "PIP = 0.9", color = "steelblue", size = 3.2) +
-  labs(x = "SNP position in region", y = "Posterior Inclusion Probability (PIP)",
-       title = "SuSiE Fine-Mapping: PIP Profile",
-       color = NULL) +
-  theme_classic(base_size = 12) +
-  theme(legend.position = "top")
-```
-
-:::note
-**精细定位的局限性**
-
-即使在样本量足够大的研究中，精细定位也往往无法将可信集缩小至单个 SNP，因为同一 LD 区块内的多个 SNP 具有极高的 $r^2$，其统计证据几乎无法区分。突破这一瓶颈的方法包括：多群体精细定位（利用不同群体 LD 结构的差异缩小候选范围）和功能基因组注释（优先将高 PIP 的 SNP 与 H3K27ac 峰、ATAC-seq 开放染色质区域等功能元件相交，以生物学证据辅助统计推断）。
+当样本量足够大（$N > 10{,}000$）时，基于 Bayes Factor 的方法（如 FINEMAP 的多因果变异模式）能在单次分析中同时推断区域内因果变异的数量和位置，无需逐步迭代。具体原理与实现参见专题 3.6 精细定位章节。
 :::
 
 :::tip
 **后续分析深入：精细定位与功能解析**
 
-本节介绍了如何通过 LD 裁剪从 GWAS 结果中识别独立信号。对于如何在候选区域内进一步缩小因果变异范围（精细定位）、如何整合 eQTL 与表观基因组数据解析致因机制，以及如何开展孟德尔随机化因果推断和多群体比较分析，参见专题 3.6。
+本节介绍了如何通过 LD 裁剪和逐步条件分析识别独立关联信号。对于如何在候选区域内进一步缩小因果变异范围（精细定位，包括 SuSiE 与 FINEMAP）、如何整合 eQTL 与表观基因组数据解析致因机制，以及如何开展孟德尔随机化因果推断和多群体比较分析，参见专题 3.6。
 :::
 
 ---
@@ -1159,9 +1106,9 @@ ggplot(region, aes(x = BP / 1e6, y = log10p, color = ld_bin)) +
 **重组率（recombination rate）** 曲线（通常叠加在图底部，单位为 cM/Mb）标志着 LD 区块的边界。高重组率位点（峰值）通常对应 LD 断点（recombination hotspot），用于判断候选区域的精确边界——若 lead SNP 恰好位于 LD 断点附近，则信号边界清晰，精细定位候选集较小；若位于长 LD 区块中央，则候选集更大。
 
 :::note
-**局部关联图 vs. 精细定位图**
+**局部关联图与精细定位图的互补关系**
 
-局部关联图（regional association plot）以统计证据（$-\log_{10} p$）和 LD 结构为核心展示，适合初步评估信号形态和候选基因范围；精细定位图（fine-mapping PIP plot）则以每个 SNP 的后验纳入概率（PIP）为 y 轴，直接展示因果变异候选的统计置信度。两类图形互补：前者提供直觉感知，后者提供量化的贝叶斯证据。发表于高影响力期刊的 GWAS 研究通常同时呈现两类图形。
+局部关联图以统计证据（$-\log_{10} p$）和 LD 结构为核心，适合初步评估信号形态和候选基因范围，是 GWAS 发表的标准配图。精细定位图（如 SuSiE 输出的 PIP 图）则将 y 轴换为每个 SNP 的后验纳入概率，直接展示因果变异候选的贝叶斯置信度，是精细定位的输出图形。两者分别对应不同分析阶段：先通过局部关联图确认信号形态，再通过精细定位量化因果证据（参见专题 3.6）。
 :::
 
 ### 使用 gassocplot 生成专业级局部关联图
@@ -1226,9 +1173,7 @@ stack_assoc_plot(
 
 8. LD 裁剪（clumping）与 LD 修剪（pruning）的目的和参数体系有何本质区别？在 GWAS 分析流程中，两者分别在哪个步骤使用？
 
-9. SuSiE 精细定位输出的"可信集（credible set）"与直接选取 p 值最小 SNP 相比，有何统计学优势？若某区域有两个独立信号，SuSiE 应如何配置 $L$ 参数，输出会呈现什么形态？
-
-10. 在一项病例（$n_\text{case} = 5{,}000$）对照（$n_\text{control} = 5{,}000$）研究中，某 SNP 的 MAF = 0.20，加性 $\log\text{OR} = 0.15$，人群患病率 $K = 0.05$。与同样总样本量（$n = 10{,}000$）的连续表型研究（$\beta = 0.15$，$\sigma^2 = 1$）相比，哪个设计的统计检验力更高？请利用本节 NCP 公式进行定量比较。
+9. 在一项病例（$n_\text{case} = 5{,}000$）对照（$n_\text{control} = 5{,}000$）研究中，某 SNP 的 MAF = 0.20，加性 $\log\text{OR} = 0.15$，人群患病率 $K = 0.05$。与同样总样本量（$n = 10{,}000$）的连续表型研究（$\beta = 0.15$，$\sigma^2 = 1$）相比，哪个设计的统计检验力更高？请利用本节 NCP 公式进行定量比较。
 
 
 <details>
@@ -1250,9 +1195,7 @@ stack_assoc_plot(
 
 8. *LD 修剪（pruning）以滑动窗口逐对去除超过 $r^2$ 阈值的 SNP，保留一组低 LD 的近似独立标记集，不考虑关联 p 值；用于 QC 阶段的 PCA 计算和亲缘关系矩阵构建。LD 裁剪（clumping）则以 p 值为权重，优先保留关联证据最强的 SNP 作为 index SNP，并将其窗口内高 LD 的伴随 SNP 归并至同一簇；用于关联分析结束后的独立信号计数。两者目的不同，参数体系也不同（pruning 使用 `--indep-pairwise`，clumping 使用 `--clump`），不可替换使用。*
 
-9. *可信集具有三方面统计优势：（1）它以 95% 覆盖概率明确量化了不确定性，而单选最小 p 值 SNP 的不确定性是隐性的；（2）在强 LD 区块中，多个 SNP 可能具有几乎等价的统计证据，可信集诚实地纳入所有候选，而非武断地选取其中一个；（3）可信集的大小本身反映了精细定位的分辨率——集合越小，对因果变异的定位越精确。若区域存在两个独立信号，应将 $L$ 设为 $\geq 2$，此时 SuSiE 会输出两个可信集，每个可信集对应一个独立信号，且两个集合中的 SNP 通常位于不同的染色体区段（彼此 $r^2$ 较低）。*
-
-10. *连续表型 NCP = $10000 \times 0.15^2 \times 2 \times 0.2 \times 0.8 / 1 = 72$。病例-对照 NCP = $10000 \times 0.15^2 \times 2 \times 0.2 \times 0.8 \times 0.05 \times 0.95 / (0.5 \times 0.5) \approx 10.26$。连续表型 NCP 约为病例-对照的 7 倍，前者检验力远高于后者。其根本原因是在 $K = 0.05$ 的稀有疾病中，$K(1-K) = 0.0475$ 远小于 $\pi(1-\pi) = 0.25$（1:1 设计），二值表型的信息量损失严重。这是为何大型生物银行（UK Biobank）对慢性病以连续表型代理指标（如血压、BMI）替代二值病例/对照标签进行 GWAS 时往往能发现更多位点的直接原因。*
+9. *连续表型 NCP = $10000 \times 0.15^2 \times 2 \times 0.2 \times 0.8 / 1 = 72$。病例-对照 NCP = $10000 \times 0.15^2 \times 2 \times 0.2 \times 0.8 \times 0.05 \times 0.95 / (0.5 \times 0.5) \approx 10.26$。连续表型 NCP 约为病例-对照的 7 倍，前者检验力远高于后者。其根本原因是在 $K = 0.05$ 的稀有疾病中，$K(1-K) = 0.0475$ 远小于 $\pi(1-\pi) = 0.25$（1:1 设计），二值表型的信息量损失严重。这是为何大型生物银行（UK Biobank）对慢性病以连续表型代理指标（如血压、BMI）替代二值病例/对照标签进行 GWAS 时往往能发现更多位点的直接原因。*
 
 
 </details>
