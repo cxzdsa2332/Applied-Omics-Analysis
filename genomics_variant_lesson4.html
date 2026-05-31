@@ -261,7 +261,7 @@ window.Quarto = {
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./genomics_qc_lesson5.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">13</span>&nbsp; <span class="chapter-title">功能注释、GATK 最佳实践与可视化</span></span></a>
+ <span class="menu-text"><span class="chapter-number">13</span>&nbsp; <span class="chapter-title">功能注释、GATK 最佳实践与群体遗传学基础</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
@@ -631,11 +631,10 @@ window.Quarto = {
   <li><a href="#plink-结果输出的深度解读" id="toc-plink-结果输出的深度解读" class="nav-link" data-scroll-target="#plink-结果输出的深度解读"><span class="header-section-number">18.7.1</span> PLINK 结果输出的深度解读</a></li>
   <li><a href="#snp-遗传力估计gcta-greml" id="toc-snp-遗传力估计gcta-greml" class="nav-link" data-scroll-target="#snp-遗传力估计gcta-greml"><span class="header-section-number">18.7.2</span> SNP 遗传力估计（GCTA-GREML）</a></li>
   </ul></li>
-  <li><a href="#独立信号的识别ld-裁剪与精细定位" id="toc-独立信号的识别ld-裁剪与精细定位" class="nav-link" data-scroll-target="#独立信号的识别ld-裁剪与精细定位"><span class="header-section-number">18.8</span> 独立信号的识别：LD 裁剪与精细定位</a>
+  <li><a href="#独立信号的识别ld-裁剪与条件分析" id="toc-独立信号的识别ld-裁剪与条件分析" class="nav-link" data-scroll-target="#独立信号的识别ld-裁剪与条件分析"><span class="header-section-number">18.8</span> 独立信号的识别：LD 裁剪与条件分析</a>
   <ul class="collapse">
   <li><a href="#ld-裁剪clumping" id="toc-ld-裁剪clumping" class="nav-link" data-scroll-target="#ld-裁剪clumping"><span class="header-section-number">18.8.1</span> LD 裁剪（Clumping）</a></li>
   <li><a href="#逐步条件分析" id="toc-逐步条件分析" class="nav-link" data-scroll-target="#逐步条件分析"><span class="header-section-number">18.8.2</span> 逐步条件分析</a></li>
-  <li><a href="#精细定位的概念与-susie-实现" id="toc-精细定位的概念与-susie-实现" class="nav-link" data-scroll-target="#精细定位的概念与-susie-实现"><span class="header-section-number">18.8.3</span> 精细定位的概念与 SuSiE 实现</a></li>
   </ul></li>
   <li><a href="#局部关联图" id="toc-局部关联图" class="nav-link" data-scroll-target="#局部关联图"><span class="header-section-number">18.9</span> 局部关联图</a>
   <ul class="collapse">
@@ -677,7 +676,7 @@ window.Quarto = {
 <li>掌握 Bonferroni 校正、FDR（BH 程序）与置换检验三种多重检验校正方法的原理与适用场景，理解 FWER 与 FDR 的概念区别；</li>
 <li>根据非中心参数（NCP）公式估算 GWAS 统计检验力，理解样本量、效应量、MAF 与显著性阈值的交互影响；</li>
 <li>使用 PLINK 运行完整的逻辑回归和线性回归关联分析，解读输出结果，并利用 GCTA-GREML 估计 SNP 遗传力；</li>
-<li>利用 LD 裁剪（clumping）识别独立关联信号，并利用局部关联图（LocusZoom 风格）展示候选区域内的 LD 结构与信号精细结构。</li>
+<li>利用 LD 裁剪（clumping）和逐步条件分析识别独立关联信号，并利用局部关联图（LocusZoom 风格）展示候选区域内的 LD 结构与信号形态。</li>
 </ol>
 <hr>
 </section>
@@ -1384,7 +1383,8 @@ E[\text{false positives}] = 0.05 \times M
 </section>
 <section id="元分析对统计检验力的倍增效应" class="level3" data-number="18.6.4">
 <h3 data-number="18.6.4" class="anchored" data-anchor-id="元分析对统计检验力的倍增效应"><span class="header-section-number">18.6.4</span> 元分析对统计检验力的倍增效应</h3>
-<p>当单个研究的样本量不足以检出小效应量位点时，多个 GWAS 研究的结果可以通过<strong>元分析（meta-analysis）</strong> 合并，以获得更大的有效样本量和更高的统计检验力。在固定效应加性线性模型下，元分析的非中心参数（NCP）等于各研究 NCP 之和：</p>
+<p>当单个研究的样本量不足以检出小效应量位点时，多个 GWAS 研究的结果可以通过<strong>元分析（meta-analysis）</strong> 合并，以获得更大的有效样本量和更高的统计检验力。在进入数学推导之前，先建立基本直觉：若两个研究都给出对同一真实效应量 <span class="math inline">\(\beta\)</span> 的无偏估计 <span class="math inline">\(\hat\beta_1, \hat\beta_2\)</span>，应如何合并？最朴素的做法是取算术平均，但这隐含假设两个研究的精度相同；当样本量差异较大时，精度更高的估计反而会被精度低的估计”稀释”。统计学上的最优策略是按方差的倒数加权——精度越高的研究权重越大。可以证明，当各估计独立且无偏时，这种加权使合并估计的方差达到理论最小值，这正是<strong>逆方差加权法</strong>的核心思想。</p>
+<p>将这一直觉推广到检验力分析，则有：在固定效应加性线性模型下，元分析的非中心参数（NCP）等于各研究 NCP 之和：</p>
 <p><span class="math display">\[\text{NCP}_\text{meta} = \sum_{k=1}^{K} \text{NCP}_k = \frac{\left(\sum_{k=1}^{K} n_k\right) \cdot \beta^2 \cdot 2p(1-p)}{\sigma^2}\]</span></p>
 <p>这意味着元分析的理论检验力等价于单个样本量为 <span class="math inline">\(\sum_k n_k\)</span> 的研究——只要各研究在表型定义、基因型数据质量和协变量校正上保持一致。正因如此，当代大型 GWAS 合作联盟（如用于研究精神疾病的 PGC、用于研究身高的 GIANT、用于研究血脂的 GLGC）往往通过汇总数十个独立队列的汇总统计量实现几十万乃至百万级别的有效样本量，而无需共享原始个体水平数据。</p>
 <p>然而，元分析的检验力增益并非总能达到理论上限。若各研究的效应量存在<strong>异质性（heterogeneity）</strong>，则应使用<strong>随机效应元分析（random-effects meta-analysis）</strong>。在随机效应模型下，研究间方差 <span class="math inline">\(\tau^2\)</span>（DerSimonian-Laird 估计）使合并权重向更保守方向收缩，导致实际检验力低于固定效应模型的理论值。<strong><span class="math inline">\(I^2\)</span> 统计量</strong>（异质性指数，取值 0–100%）量化了效应量变异中可归因于研究间真实差异（而非抽样误差）的比例：<span class="math inline">\(I^2 &lt; 25\%\)</span> 为低异质性，<span class="math inline">\(25\%–75\%\)</span> 为中度异质性，<span class="math inline">\(&gt; 75\%\)</span> 为高异质性。高异质性下的元分析结果需结合亚组分析和敏感性分析审慎解读，不宜仅看合并 p 值。</p>
@@ -1397,40 +1397,59 @@ E[\text{false positives}] = 0.05 \times M
 <p><strong>什么时候用元分析而不是合并原始数据？</strong></p>
 <p>原始数据合并（mega-analysis）在理论上统计效率更高，因为它可以在统一模型下估计协变量效应，避免研究间模型不一致导致的偏差。然而，mega-analysis 面临数据共享协议、受试者隐私保护和数据存储成本的现实限制。元分析使用汇总统计量（每个 SNP 仅需效应量和标准误两列数字），既能大幅扩展有效样本量，又规避了原始数据共享障碍，是现实中多中心 GWAS 合作的标准策略。GIANT 身高联盟和精神疾病基因组学联盟（PGC）均是元分析策略取得重大成功的典型案例。</p>
 </div>
-<p>以下 R 代码模拟两个独立 GWAS 研究的汇总统计量，并演示 IVW 元分析的手动实现逻辑：</p>
+<p>以下 R 代码模拟两个独立 GWAS 研究的汇总统计量，并演示 IVW 元分析的手动实现逻辑。代码以”先设定真值、再模拟观测、最后合并”的顺序组织，便于教学过程中分步演示：</p>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb14"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Simulated two-study GWAS meta-analysis (IVW method)</span></span>
-<span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">2024</span>)</span>
-<span id="cb14-3"><a href="#cb14-3" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb14-4"><a href="#cb14-4" aria-hidden="true" tabindex="-1"></a><span class="co"># Study 1: n = 5,000; Study 2: n = 8,000</span></span>
-<span id="cb14-5"><a href="#cb14-5" aria-hidden="true" tabindex="-1"></a><span class="co"># True effect: beta = 0.08, MAF = 0.25</span></span>
-<span id="cb14-6"><a href="#cb14-6" aria-hidden="true" tabindex="-1"></a>true_beta <span class="ot">&lt;-</span> <span class="fl">0.08</span></span>
-<span id="cb14-7"><a href="#cb14-7" aria-hidden="true" tabindex="-1"></a>maf       <span class="ot">&lt;-</span> <span class="fl">0.25</span></span>
-<span id="cb14-8"><a href="#cb14-8" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb14-9"><a href="#cb14-9" aria-hidden="true" tabindex="-1"></a><span class="co"># Approximate SE for each study: SE ~ 1 / sqrt(n * 2 * MAF * (1 - MAF))</span></span>
-<span id="cb14-10"><a href="#cb14-10" aria-hidden="true" tabindex="-1"></a>n1 <span class="ot">&lt;-</span> <span class="dv">5000</span>; n2 <span class="ot">&lt;-</span> <span class="dv">8000</span></span>
-<span id="cb14-11"><a href="#cb14-11" aria-hidden="true" tabindex="-1"></a>se1 <span class="ot">&lt;-</span> <span class="dv">1</span> <span class="sc">/</span> <span class="fu">sqrt</span>(n1 <span class="sc">*</span> <span class="dv">2</span> <span class="sc">*</span> maf <span class="sc">*</span> (<span class="dv">1</span> <span class="sc">-</span> maf))</span>
-<span id="cb14-12"><a href="#cb14-12" aria-hidden="true" tabindex="-1"></a>se2 <span class="ot">&lt;-</span> <span class="dv">1</span> <span class="sc">/</span> <span class="fu">sqrt</span>(n2 <span class="sc">*</span> <span class="dv">2</span> <span class="sc">*</span> maf <span class="sc">*</span> (<span class="dv">1</span> <span class="sc">-</span> maf))</span>
-<span id="cb14-13"><a href="#cb14-13" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb14-14"><a href="#cb14-14" aria-hidden="true" tabindex="-1"></a><span class="co"># Simulate observed effect estimates with sampling error</span></span>
-<span id="cb14-15"><a href="#cb14-15" aria-hidden="true" tabindex="-1"></a>beta1 <span class="ot">&lt;-</span> true_beta <span class="sc">+</span> <span class="fu">rnorm</span>(<span class="dv">1</span>, <span class="dv">0</span>, se1)</span>
-<span id="cb14-16"><a href="#cb14-16" aria-hidden="true" tabindex="-1"></a>beta2 <span class="ot">&lt;-</span> true_beta <span class="sc">+</span> <span class="fu">rnorm</span>(<span class="dv">1</span>, <span class="dv">0</span>, se2)</span>
-<span id="cb14-17"><a href="#cb14-17" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb14-18"><a href="#cb14-18" aria-hidden="true" tabindex="-1"></a><span class="co"># IVW meta-analysis</span></span>
-<span id="cb14-19"><a href="#cb14-19" aria-hidden="true" tabindex="-1"></a>w1 <span class="ot">&lt;-</span> <span class="dv">1</span> <span class="sc">/</span> se1<span class="sc">^</span><span class="dv">2</span></span>
-<span id="cb14-20"><a href="#cb14-20" aria-hidden="true" tabindex="-1"></a>w2 <span class="ot">&lt;-</span> <span class="dv">1</span> <span class="sc">/</span> se2<span class="sc">^</span><span class="dv">2</span></span>
-<span id="cb14-21"><a href="#cb14-21" aria-hidden="true" tabindex="-1"></a>beta_meta <span class="ot">&lt;-</span> (w1 <span class="sc">*</span> beta1 <span class="sc">+</span> w2 <span class="sc">*</span> beta2) <span class="sc">/</span> (w1 <span class="sc">+</span> w2)</span>
-<span id="cb14-22"><a href="#cb14-22" aria-hidden="true" tabindex="-1"></a>se_meta   <span class="ot">&lt;-</span> <span class="fu">sqrt</span>(<span class="dv">1</span> <span class="sc">/</span> (w1 <span class="sc">+</span> w2))</span>
-<span id="cb14-23"><a href="#cb14-23" aria-hidden="true" tabindex="-1"></a>z_meta    <span class="ot">&lt;-</span> beta_meta <span class="sc">/</span> se_meta</span>
-<span id="cb14-24"><a href="#cb14-24" aria-hidden="true" tabindex="-1"></a>p_meta    <span class="ot">&lt;-</span> <span class="dv">2</span> <span class="sc">*</span> <span class="fu">pnorm</span>(<span class="fu">abs</span>(z_meta), <span class="at">lower.tail =</span> <span class="cn">FALSE</span>)</span>
-<span id="cb14-25"><a href="#cb14-25" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb14-26"><a href="#cb14-26" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="fu">sprintf</span>(<span class="st">"Study 1: beta = %.4f, SE = %.4f, Z = %.2f</span><span class="sc">\n</span><span class="st">"</span>,</span>
-<span id="cb14-27"><a href="#cb14-27" aria-hidden="true" tabindex="-1"></a>            beta1, se1, beta1 <span class="sc">/</span> se1))</span>
-<span id="cb14-28"><a href="#cb14-28" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="fu">sprintf</span>(<span class="st">"Study 2: beta = %.4f, SE = %.4f, Z = %.2f</span><span class="sc">\n</span><span class="st">"</span>,</span>
-<span id="cb14-29"><a href="#cb14-29" aria-hidden="true" tabindex="-1"></a>            beta2, se2, beta2 <span class="sc">/</span> se2))</span>
-<span id="cb14-30"><a href="#cb14-30" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="fu">sprintf</span>(<span class="st">"Meta-analysis (IVW): beta = %.4f, SE = %.4f, Z = %.2f, p = %.2e</span><span class="sc">\n</span><span class="st">"</span>,</span>
-<span id="cb14-31"><a href="#cb14-31" aria-hidden="true" tabindex="-1"></a>            beta_meta, se_meta, z_meta, p_meta))</span>
-<span id="cb14-32"><a href="#cb14-32" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="fu">sprintf</span>(<span class="st">"Effective N (meta): %.0f vs actual N1+N2: %d</span><span class="sc">\n</span><span class="st">"</span>,</span>
-<span id="cb14-33"><a href="#cb14-33" aria-hidden="true" tabindex="-1"></a>            <span class="dv">1</span> <span class="sc">/</span> se_meta<span class="sc">^</span><span class="dv">2</span> <span class="sc">/</span> (<span class="dv">2</span> <span class="sc">*</span> maf <span class="sc">*</span> (<span class="dv">1</span> <span class="sc">-</span> maf)), n1 <span class="sc">+</span> n2))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a><span class="co"># Goal: combine two independent studies' summary statistics to recover</span></span>
+<span id="cb14-3"><a href="#cb14-3" aria-hidden="true" tabindex="-1"></a><span class="co">#       statistical power equivalent to a single n1 + n2 study.</span></span>
+<span id="cb14-4"><a href="#cb14-4" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">2024</span>)</span>
+<span id="cb14-5"><a href="#cb14-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb14-6"><a href="#cb14-6" aria-hidden="true" tabindex="-1"></a><span class="co"># --- Step 1: define the ground truth we want to detect ---</span></span>
+<span id="cb14-7"><a href="#cb14-7" aria-hidden="true" tabindex="-1"></a><span class="co"># In a real GWAS the true effect is unknown; here we fix it so that</span></span>
+<span id="cb14-8"><a href="#cb14-8" aria-hidden="true" tabindex="-1"></a><span class="co"># we can later check whether meta-analysis recovers it correctly.</span></span>
+<span id="cb14-9"><a href="#cb14-9" aria-hidden="true" tabindex="-1"></a>true_beta <span class="ot">&lt;-</span> <span class="fl">0.08</span>      <span class="co"># additive effect per risk allele (SD units)</span></span>
+<span id="cb14-10"><a href="#cb14-10" aria-hidden="true" tabindex="-1"></a>maf       <span class="ot">&lt;-</span> <span class="fl">0.25</span>      <span class="co"># minor allele frequency of the test SNP</span></span>
+<span id="cb14-11"><a href="#cb14-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb14-12"><a href="#cb14-12" aria-hidden="true" tabindex="-1"></a><span class="co"># --- Step 2: compute each study's expected standard error ---</span></span>
+<span id="cb14-13"><a href="#cb14-13" aria-hidden="true" tabindex="-1"></a><span class="co"># Under an additive linear model with standardized phenotype (sigma^2 = 1),</span></span>
+<span id="cb14-14"><a href="#cb14-14" aria-hidden="true" tabindex="-1"></a><span class="co"># Var(beta_hat) ~ 1 / (n * 2p(1-p)), so SE = 1 / sqrt(n * 2 * MAF * (1-MAF)).</span></span>
+<span id="cb14-15"><a href="#cb14-15" aria-hidden="true" tabindex="-1"></a><span class="co"># Larger n  -&gt; smaller SE -&gt; higher precision -&gt; larger meta-weight.</span></span>
+<span id="cb14-16"><a href="#cb14-16" aria-hidden="true" tabindex="-1"></a>n1 <span class="ot">&lt;-</span> <span class="dv">5000</span>; n2 <span class="ot">&lt;-</span> <span class="dv">8000</span></span>
+<span id="cb14-17"><a href="#cb14-17" aria-hidden="true" tabindex="-1"></a>se1 <span class="ot">&lt;-</span> <span class="dv">1</span> <span class="sc">/</span> <span class="fu">sqrt</span>(n1 <span class="sc">*</span> <span class="dv">2</span> <span class="sc">*</span> maf <span class="sc">*</span> (<span class="dv">1</span> <span class="sc">-</span> maf))   <span class="co"># smaller study, larger SE</span></span>
+<span id="cb14-18"><a href="#cb14-18" aria-hidden="true" tabindex="-1"></a>se2 <span class="ot">&lt;-</span> <span class="dv">1</span> <span class="sc">/</span> <span class="fu">sqrt</span>(n2 <span class="sc">*</span> <span class="dv">2</span> <span class="sc">*</span> maf <span class="sc">*</span> (<span class="dv">1</span> <span class="sc">-</span> maf))   <span class="co"># larger  study, smaller SE</span></span>
+<span id="cb14-19"><a href="#cb14-19" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb14-20"><a href="#cb14-20" aria-hidden="true" tabindex="-1"></a><span class="co"># --- Step 3: simulate one observed beta per study ---</span></span>
+<span id="cb14-21"><a href="#cb14-21" aria-hidden="true" tabindex="-1"></a><span class="co"># Each cohort's reported beta_hat equals the truth plus a Gaussian</span></span>
+<span id="cb14-22"><a href="#cb14-22" aria-hidden="true" tabindex="-1"></a><span class="co"># sampling error drawn from N(0, SE_k). This mimics what each study</span></span>
+<span id="cb14-23"><a href="#cb14-23" aria-hidden="true" tabindex="-1"></a><span class="co"># would write into its summary-statistics file.</span></span>
+<span id="cb14-24"><a href="#cb14-24" aria-hidden="true" tabindex="-1"></a>beta1 <span class="ot">&lt;-</span> true_beta <span class="sc">+</span> <span class="fu">rnorm</span>(<span class="dv">1</span>, <span class="dv">0</span>, se1)</span>
+<span id="cb14-25"><a href="#cb14-25" aria-hidden="true" tabindex="-1"></a>beta2 <span class="ot">&lt;-</span> true_beta <span class="sc">+</span> <span class="fu">rnorm</span>(<span class="dv">1</span>, <span class="dv">0</span>, se2)</span>
+<span id="cb14-26"><a href="#cb14-26" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb14-27"><a href="#cb14-27" aria-hidden="true" tabindex="-1"></a><span class="co"># --- Step 4: IVW meta-analysis ---</span></span>
+<span id="cb14-28"><a href="#cb14-28" aria-hidden="true" tabindex="-1"></a><span class="co"># Weight each study by 1 / SE^2 so that more precise studies dominate.</span></span>
+<span id="cb14-29"><a href="#cb14-29" aria-hidden="true" tabindex="-1"></a><span class="co"># Under the fixed-effect assumption (one shared true beta, no between-</span></span>
+<span id="cb14-30"><a href="#cb14-30" aria-hidden="true" tabindex="-1"></a><span class="co"># study heterogeneity), this weighting yields the minimum-variance</span></span>
+<span id="cb14-31"><a href="#cb14-31" aria-hidden="true" tabindex="-1"></a><span class="co"># unbiased combined estimator.</span></span>
+<span id="cb14-32"><a href="#cb14-32" aria-hidden="true" tabindex="-1"></a>w1 <span class="ot">&lt;-</span> <span class="dv">1</span> <span class="sc">/</span> se1<span class="sc">^</span><span class="dv">2</span></span>
+<span id="cb14-33"><a href="#cb14-33" aria-hidden="true" tabindex="-1"></a>w2 <span class="ot">&lt;-</span> <span class="dv">1</span> <span class="sc">/</span> se2<span class="sc">^</span><span class="dv">2</span></span>
+<span id="cb14-34"><a href="#cb14-34" aria-hidden="true" tabindex="-1"></a>beta_meta <span class="ot">&lt;-</span> (w1 <span class="sc">*</span> beta1 <span class="sc">+</span> w2 <span class="sc">*</span> beta2) <span class="sc">/</span> (w1 <span class="sc">+</span> w2)   <span class="co"># weighted average</span></span>
+<span id="cb14-35"><a href="#cb14-35" aria-hidden="true" tabindex="-1"></a>se_meta   <span class="ot">&lt;-</span> <span class="fu">sqrt</span>(<span class="dv">1</span> <span class="sc">/</span> (w1 <span class="sc">+</span> w2))                     <span class="co"># pooled SE</span></span>
+<span id="cb14-36"><a href="#cb14-36" aria-hidden="true" tabindex="-1"></a>z_meta    <span class="ot">&lt;-</span> beta_meta <span class="sc">/</span> se_meta                     <span class="co"># Wald Z statistic</span></span>
+<span id="cb14-37"><a href="#cb14-37" aria-hidden="true" tabindex="-1"></a>p_meta    <span class="ot">&lt;-</span> <span class="dv">2</span> <span class="sc">*</span> <span class="fu">pnorm</span>(<span class="fu">abs</span>(z_meta), <span class="at">lower.tail =</span> <span class="cn">FALSE</span>)   <span class="co"># two-sided p</span></span>
+<span id="cb14-38"><a href="#cb14-38" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb14-39"><a href="#cb14-39" aria-hidden="true" tabindex="-1"></a><span class="co"># --- Step 5: report per-study and pooled results ---</span></span>
+<span id="cb14-40"><a href="#cb14-40" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="fu">sprintf</span>(<span class="st">"Study 1: beta = %.4f, SE = %.4f, Z = %.2f</span><span class="sc">\n</span><span class="st">"</span>,</span>
+<span id="cb14-41"><a href="#cb14-41" aria-hidden="true" tabindex="-1"></a>            beta1, se1, beta1 <span class="sc">/</span> se1))</span>
+<span id="cb14-42"><a href="#cb14-42" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="fu">sprintf</span>(<span class="st">"Study 2: beta = %.4f, SE = %.4f, Z = %.2f</span><span class="sc">\n</span><span class="st">"</span>,</span>
+<span id="cb14-43"><a href="#cb14-43" aria-hidden="true" tabindex="-1"></a>            beta2, se2, beta2 <span class="sc">/</span> se2))</span>
+<span id="cb14-44"><a href="#cb14-44" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="fu">sprintf</span>(<span class="st">"Meta-analysis (IVW): beta = %.4f, SE = %.4f, Z = %.2f, p = %.2e</span><span class="sc">\n</span><span class="st">"</span>,</span>
+<span id="cb14-45"><a href="#cb14-45" aria-hidden="true" tabindex="-1"></a>            beta_meta, se_meta, z_meta, p_meta))</span>
+<span id="cb14-46"><a href="#cb14-46" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb14-47"><a href="#cb14-47" aria-hidden="true" tabindex="-1"></a><span class="co"># Effective sample size implied by the meta-analytic SE.</span></span>
+<span id="cb14-48"><a href="#cb14-48" aria-hidden="true" tabindex="-1"></a><span class="co"># Inverting SE^2 = 1 / (N_eff * 2p(1-p)) gives N_eff = 1 / (SE^2 * 2p(1-p)).</span></span>
+<span id="cb14-49"><a href="#cb14-49" aria-hidden="true" tabindex="-1"></a><span class="co"># A successful fixed-effect meta-analysis should produce N_eff ~ n1 + n2.</span></span>
+<span id="cb14-50"><a href="#cb14-50" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="fu">sprintf</span>(<span class="st">"Effective N (meta): %.0f vs actual N1+N2: %d</span><span class="sc">\n</span><span class="st">"</span>,</span>
+<span id="cb14-51"><a href="#cb14-51" aria-hidden="true" tabindex="-1"></a>            <span class="dv">1</span> <span class="sc">/</span> se_meta<span class="sc">^</span><span class="dv">2</span> <span class="sc">/</span> (<span class="dv">2</span> <span class="sc">*</span> maf <span class="sc">*</span> (<span class="dv">1</span> <span class="sc">-</span> maf)), n1 <span class="sc">+</span> n2))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>运行这段代码可观察到三个关键现象，对应元分析的三条核心结论：(1) 合并估计 <span class="math inline">\(\hat\beta_\text{meta}\)</span> 比任一单独研究的估计更接近真值 <span class="math inline">\(0.08\)</span>，因为大数定律使加权平均的随机误差缩小；(2) 合并 Z 统计量显著高于单研究 Z 值，对应统计检验力的提升；(3) 由 <span class="math inline">\(\text{SE}_\text{meta}\)</span> 反推的有效样本量近似等于 <span class="math inline">\(n_1 + n_2 = 13{,}000\)</span>，验证了”固定效应元分析等价于单个 13,000 样本研究”的理论结论。课堂演示时，可让学生改变 <code>n1</code>、<code>n2</code>、<code>true_beta</code> 或 <code>maf</code> 的取值，体会样本量、效应量与等位基因频率如何共同决定合并 p 值与有效样本量的关系。</p>
 <hr>
 </section>
 </section>
@@ -1594,8 +1613,8 @@ E[\text{false positives}] = 0.05 \times M
 <hr>
 </section>
 </section>
-<section id="独立信号的识别ld-裁剪与精细定位" class="level2" data-number="18.8">
-<h2 data-number="18.8" class="anchored" data-anchor-id="独立信号的识别ld-裁剪与精细定位"><span class="header-section-number">18.8</span> 独立信号的识别：LD 裁剪与精细定位</h2>
+<section id="独立信号的识别ld-裁剪与条件分析" class="level2" data-number="18.8">
+<h2 data-number="18.8" class="anchored" data-anchor-id="独立信号的识别ld-裁剪与条件分析"><span class="header-section-number">18.8</span> 独立信号的识别：LD 裁剪与条件分析</h2>
 <section id="ld-裁剪clumping" class="level3" data-number="18.8.1">
 <h3 data-number="18.8.1" class="anchored" data-anchor-id="ld-裁剪clumping"><span class="header-section-number">18.8.1</span> LD 裁剪（Clumping）</h3>
 <p>由于 LD 的存在，显著性峰往往包含多个互相连锁的 SNP，而非单一的独立信号。<strong>LD 裁剪</strong>以最显著的 SNP（index SNP）为核心，将其一定窗口内 <span class="math inline">\(r^2\)</span> 超过阈值的关联 SNP 合并为同一位点，输出每个独立信号的代表 SNP。</p>
@@ -1689,80 +1708,11 @@ E[\text{false positives}] = 0.05 \times M
 <p>判断是否存在第二个独立信号的准则：在条件模型中，若某 SNP 仍满足 <span class="math inline">\(p &lt; 5 \times 10^{-8}\)</span> 且与第一个 index SNP 的 <span class="math inline">\(r^2 &lt; 0.1\)</span>，则视为独立的第二信号，将其纳入下一轮条件模型，直至区域内无新显著位点。多数区域在 2–3 轮后收敛；若发现 5 个以上独立信号，则需核实该区域是否存在复杂的结构变异（如拷贝数变异或倒位多态性）。</p>
 <div class="tip">
 <p><strong>条件分析的替代方案：近似贝叶斯因子法</strong></p>
-<p>当样本量足够大（<span class="math inline">\(N &gt; 10{,}000\)</span>）时，基于 Bayes Factor 的方法（如 FINEMAP 的多因果变异模式）能在单次分析中同时推断区域内因果变异的数量和位置，无需逐步迭代。该方法将在精细定位小节中进一步介绍。</p>
-</div>
-</section>
-<section id="精细定位的概念与-susie-实现" class="level3" data-number="18.8.3">
-<h3 data-number="18.8.3" class="anchored" data-anchor-id="精细定位的概念与-susie-实现"><span class="header-section-number">18.8.3</span> 精细定位的概念与 SuSiE 实现</h3>
-<p><strong>精细定位（fine-mapping）</strong> 是在一个显著关联区域内，从众多 LD 连锁的 SNP 中，统计推断出最可能的因果变异的过程。与 LD 裁剪不同，精细定位不满足于选取最显著的 SNP，而是试图量化每个 SNP 作为因果变异的后验概率，并构建<strong>可信集（credible set）</strong>——即以 95% 概率包含真正因果变异的最小 SNP 集合。常用工具包括 FINEMAP、<strong>SuSiE</strong>（Sum of Single Effects）和 POLYFUN。各工具的共同输入是 GWAS 汇总统计量和参考 LD 矩阵，输出是每个 SNP 的<strong>后验纳入概率（Posterior Inclusion Probability，PIP）</strong>。PIP 接近 1 的 SNP 是高置信度的因果变异候选。</p>
-<p><strong>SuSiE</strong> 将区域内的关联信号分解为 <span class="math inline">\(L\)</span> 个单效应（single effect）的加性叠加，每个单效应对应一个独立信号，通过变分贝叶斯推断（Variational Bayes）同时估计 <span class="math inline">\(L\)</span> 个可信集。以下代码以模拟数据演示 SuSiE 的完整运行流程：</p>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb22"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb22-1"><a href="#cb22-1" aria-hidden="true" tabindex="-1"></a><span class="co"># install.packages("susieR")</span></span>
-<span id="cb22-2"><a href="#cb22-2" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(susieR)</span>
-<span id="cb22-3"><a href="#cb22-3" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb22-4"><a href="#cb22-4" aria-hidden="true" tabindex="-1"></a><span class="co"># ── Simulate a regional dataset with 2 independent causal SNPs ────────────────</span></span>
-<span id="cb22-5"><a href="#cb22-5" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">42</span>)</span>
-<span id="cb22-6"><a href="#cb22-6" aria-hidden="true" tabindex="-1"></a>n_ind <span class="ot">&lt;-</span> <span class="dv">3000</span>   <span class="co"># individuals</span></span>
-<span id="cb22-7"><a href="#cb22-7" aria-hidden="true" tabindex="-1"></a>n_snp <span class="ot">&lt;-</span> <span class="dv">200</span>    <span class="co"># SNPs in the candidate region</span></span>
-<span id="cb22-8"><a href="#cb22-8" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb22-9"><a href="#cb22-9" aria-hidden="true" tabindex="-1"></a><span class="co"># Correlated genotype matrix (simulate LD structure with AR(1) correlation)</span></span>
-<span id="cb22-10"><a href="#cb22-10" aria-hidden="true" tabindex="-1"></a>sigma_ld <span class="ot">&lt;-</span> <span class="fu">toeplitz</span>(<span class="fl">0.7</span><span class="sc">^</span>(<span class="dv">0</span><span class="sc">:</span>(n_snp <span class="sc">-</span> <span class="dv">1</span>)))</span>
-<span id="cb22-11"><a href="#cb22-11" aria-hidden="true" tabindex="-1"></a>L_chol   <span class="ot">&lt;-</span> <span class="fu">chol</span>(sigma_ld)</span>
-<span id="cb22-12"><a href="#cb22-12" aria-hidden="true" tabindex="-1"></a>G_raw    <span class="ot">&lt;-</span> <span class="fu">matrix</span>(<span class="fu">rnorm</span>(n_ind <span class="sc">*</span> n_snp), n_ind, n_snp) <span class="sc">%*%</span> L_chol</span>
-<span id="cb22-13"><a href="#cb22-13" aria-hidden="true" tabindex="-1"></a>G        <span class="ot">&lt;-</span> <span class="fu">round</span>(<span class="fu">pmin</span>(<span class="fu">pmax</span>(G_raw, <span class="sc">-</span><span class="dv">2</span>), <span class="dv">2</span>))   <span class="co"># crude 0/1/2 quantization</span></span>
-<span id="cb22-14"><a href="#cb22-14" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb22-15"><a href="#cb22-15" aria-hidden="true" tabindex="-1"></a><span class="co"># Two causal SNPs at positions 50 and 150</span></span>
-<span id="cb22-16"><a href="#cb22-16" aria-hidden="true" tabindex="-1"></a>causal_idx <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="dv">50</span>, <span class="dv">150</span>)</span>
-<span id="cb22-17"><a href="#cb22-17" aria-hidden="true" tabindex="-1"></a>beta_true  <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="fl">0.4</span>, <span class="sc">-</span><span class="fl">0.3</span>)</span>
-<span id="cb22-18"><a href="#cb22-18" aria-hidden="true" tabindex="-1"></a>pheno      <span class="ot">&lt;-</span> G[, causal_idx] <span class="sc">%*%</span> beta_true <span class="sc">+</span> <span class="fu">rnorm</span>(n_ind)</span>
-<span id="cb22-19"><a href="#cb22-19" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb22-20"><a href="#cb22-20" aria-hidden="true" tabindex="-1"></a><span class="co"># ── Run SuSiE with L = 5 (allow up to 5 independent signals) ─────────────────</span></span>
-<span id="cb22-21"><a href="#cb22-21" aria-hidden="true" tabindex="-1"></a>fit_susie <span class="ot">&lt;-</span> <span class="fu">susie</span>(G, pheno, <span class="at">L =</span> <span class="dv">5</span>, <span class="at">verbose =</span> <span class="cn">FALSE</span>)</span>
-<span id="cb22-22"><a href="#cb22-22" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb22-23"><a href="#cb22-23" aria-hidden="true" tabindex="-1"></a><span class="co"># Posterior Inclusion Probabilities</span></span>
-<span id="cb22-24"><a href="#cb22-24" aria-hidden="true" tabindex="-1"></a>pip <span class="ot">&lt;-</span> fit_susie<span class="sc">$</span>pip</span>
-<span id="cb22-25"><a href="#cb22-25" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="fu">sprintf</span>(<span class="st">"Top 5 SNPs by PIP:</span><span class="sc">\n</span><span class="st">"</span>))</span>
-<span id="cb22-26"><a href="#cb22-26" aria-hidden="true" tabindex="-1"></a>top5 <span class="ot">&lt;-</span> <span class="fu">order</span>(pip, <span class="at">decreasing =</span> <span class="cn">TRUE</span>)[<span class="dv">1</span><span class="sc">:</span><span class="dv">5</span>]</span>
-<span id="cb22-27"><a href="#cb22-27" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> (i <span class="cf">in</span> top5) {</span>
-<span id="cb22-28"><a href="#cb22-28" aria-hidden="true" tabindex="-1"></a>  <span class="fu">cat</span>(<span class="fu">sprintf</span>(<span class="st">"  SNP %3d: PIP = %.3f%s</span><span class="sc">\n</span><span class="st">"</span>, i, pip[i],</span>
-<span id="cb22-29"><a href="#cb22-29" aria-hidden="true" tabindex="-1"></a>              <span class="cf">if</span> (i <span class="sc">%in%</span> causal_idx) <span class="st">"  &lt;-- true causal"</span> <span class="cf">else</span> <span class="st">""</span>))</span>
-<span id="cb22-30"><a href="#cb22-30" aria-hidden="true" tabindex="-1"></a>}</span>
-<span id="cb22-31"><a href="#cb22-31" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb22-32"><a href="#cb22-32" aria-hidden="true" tabindex="-1"></a><span class="co"># 95% credible sets</span></span>
-<span id="cb22-33"><a href="#cb22-33" aria-hidden="true" tabindex="-1"></a>cs <span class="ot">&lt;-</span> <span class="fu">susie_get_cs</span>(fit_susie, <span class="at">coverage =</span> <span class="fl">0.95</span>)</span>
-<span id="cb22-34"><a href="#cb22-34" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="fu">sprintf</span>(<span class="st">"</span><span class="sc">\n</span><span class="st">Number of credible sets found: %d</span><span class="sc">\n</span><span class="st">"</span>, <span class="fu">length</span>(cs<span class="sc">$</span>cs)))</span>
-<span id="cb22-35"><a href="#cb22-35" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> (k <span class="cf">in</span> <span class="fu">seq_along</span>(cs<span class="sc">$</span>cs)) {</span>
-<span id="cb22-36"><a href="#cb22-36" aria-hidden="true" tabindex="-1"></a>  <span class="fu">cat</span>(<span class="fu">sprintf</span>(<span class="st">"  CS%d: %d SNPs, min r2 = %.3f</span><span class="sc">\n</span><span class="st">"</span>,</span>
-<span id="cb22-37"><a href="#cb22-37" aria-hidden="true" tabindex="-1"></a>              k, <span class="fu">length</span>(cs<span class="sc">$</span>cs[[k]]), cs<span class="sc">$</span>purity<span class="sc">$</span>min.abs.corr[k]<span class="sc">^</span><span class="dv">2</span>))</span>
-<span id="cb22-38"><a href="#cb22-38" aria-hidden="true" tabindex="-1"></a>}</span>
-<span id="cb22-39"><a href="#cb22-39" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb22-40"><a href="#cb22-40" aria-hidden="true" tabindex="-1"></a><span class="co"># ── Visualize PIP along the region ───────────────────────────────────────────</span></span>
-<span id="cb22-41"><a href="#cb22-41" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(ggplot2)</span>
-<span id="cb22-42"><a href="#cb22-42" aria-hidden="true" tabindex="-1"></a>df_pip <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(</span>
-<span id="cb22-43"><a href="#cb22-43" aria-hidden="true" tabindex="-1"></a>  <span class="at">pos     =</span> <span class="fu">seq_len</span>(n_snp),</span>
-<span id="cb22-44"><a href="#cb22-44" aria-hidden="true" tabindex="-1"></a>  <span class="at">pip     =</span> pip,</span>
-<span id="cb22-45"><a href="#cb22-45" aria-hidden="true" tabindex="-1"></a>  <span class="at">causal  =</span> <span class="fu">seq_len</span>(n_snp) <span class="sc">%in%</span> causal_idx</span>
-<span id="cb22-46"><a href="#cb22-46" aria-hidden="true" tabindex="-1"></a>)</span>
-<span id="cb22-47"><a href="#cb22-47" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb22-48"><a href="#cb22-48" aria-hidden="true" tabindex="-1"></a><span class="fu">ggplot</span>(df_pip, <span class="fu">aes</span>(<span class="at">x =</span> pos, <span class="at">y =</span> pip)) <span class="sc">+</span></span>
-<span id="cb22-49"><a href="#cb22-49" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_point</span>(<span class="fu">aes</span>(<span class="at">color =</span> causal), <span class="at">size =</span> <span class="fl">1.5</span>, <span class="at">alpha =</span> <span class="fl">0.8</span>) <span class="sc">+</span></span>
-<span id="cb22-50"><a href="#cb22-50" aria-hidden="true" tabindex="-1"></a>  <span class="fu">scale_color_manual</span>(<span class="at">values =</span> <span class="fu">c</span>(<span class="st">"FALSE"</span> <span class="ot">=</span> <span class="st">"grey60"</span>, <span class="st">"TRUE"</span> <span class="ot">=</span> <span class="st">"#D62728"</span>),</span>
-<span id="cb22-51"><a href="#cb22-51" aria-hidden="true" tabindex="-1"></a>                     <span class="at">labels =</span> <span class="fu">c</span>(<span class="st">"Non-causal"</span>, <span class="st">"True causal"</span>)) <span class="sc">+</span></span>
-<span id="cb22-52"><a href="#cb22-52" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_hline</span>(<span class="at">yintercept =</span> <span class="fl">0.9</span>, <span class="at">linetype =</span> <span class="st">"dashed"</span>, <span class="at">color =</span> <span class="st">"steelblue"</span>,</span>
-<span id="cb22-53"><a href="#cb22-53" aria-hidden="true" tabindex="-1"></a>             <span class="at">linewidth =</span> <span class="fl">0.7</span>) <span class="sc">+</span></span>
-<span id="cb22-54"><a href="#cb22-54" aria-hidden="true" tabindex="-1"></a>  <span class="fu">annotate</span>(<span class="st">"text"</span>, <span class="at">x =</span> n_snp <span class="sc">*</span> <span class="fl">0.05</span>, <span class="at">y =</span> <span class="fl">0.92</span>,</span>
-<span id="cb22-55"><a href="#cb22-55" aria-hidden="true" tabindex="-1"></a>           <span class="at">label =</span> <span class="st">"PIP = 0.9"</span>, <span class="at">color =</span> <span class="st">"steelblue"</span>, <span class="at">size =</span> <span class="fl">3.2</span>) <span class="sc">+</span></span>
-<span id="cb22-56"><a href="#cb22-56" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(<span class="at">x =</span> <span class="st">"SNP position in region"</span>, <span class="at">y =</span> <span class="st">"Posterior Inclusion Probability (PIP)"</span>,</span>
-<span id="cb22-57"><a href="#cb22-57" aria-hidden="true" tabindex="-1"></a>       <span class="at">title =</span> <span class="st">"SuSiE Fine-Mapping: PIP Profile"</span>,</span>
-<span id="cb22-58"><a href="#cb22-58" aria-hidden="true" tabindex="-1"></a>       <span class="at">color =</span> <span class="cn">NULL</span>) <span class="sc">+</span></span>
-<span id="cb22-59"><a href="#cb22-59" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme_classic</span>(<span class="at">base_size =</span> <span class="dv">12</span>) <span class="sc">+</span></span>
-<span id="cb22-60"><a href="#cb22-60" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme</span>(<span class="at">legend.position =</span> <span class="st">"top"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-<div class="note">
-<p><strong>精细定位的局限性</strong></p>
-<p>即使在样本量足够大的研究中，精细定位也往往无法将可信集缩小至单个 SNP，因为同一 LD 区块内的多个 SNP 具有极高的 <span class="math inline">\(r^2\)</span>，其统计证据几乎无法区分。突破这一瓶颈的方法包括：多群体精细定位（利用不同群体 LD 结构的差异缩小候选范围）和功能基因组注释（优先将高 PIP 的 SNP 与 H3K27ac 峰、ATAC-seq 开放染色质区域等功能元件相交，以生物学证据辅助统计推断）。</p>
+<p>当样本量足够大（<span class="math inline">\(N &gt; 10{,}000\)</span>）时，基于 Bayes Factor 的方法（如 FINEMAP 的多因果变异模式）能在单次分析中同时推断区域内因果变异的数量和位置，无需逐步迭代。具体原理与实现参见专题 3.6 精细定位章节。</p>
 </div>
 <div class="tip">
 <p><strong>后续分析深入：精细定位与功能解析</strong></p>
-<p>本节介绍了如何通过 LD 裁剪从 GWAS 结果中识别独立信号。对于如何在候选区域内进一步缩小因果变异范围（精细定位）、如何整合 eQTL 与表观基因组数据解析致因机制，以及如何开展孟德尔随机化因果推断和多群体比较分析，参见专题 3.6。</p>
+<p>本节介绍了如何通过 LD 裁剪和逐步条件分析识别独立关联信号。对于如何在候选区域内进一步缩小因果变异范围（精细定位，包括 SuSiE 与 FINEMAP）、如何整合 eQTL 与表观基因组数据解析致因机制，以及如何开展孟德尔随机化因果推断和多群体比较分析，参见专题 3.6。</p>
 </div>
 <hr>
 </section>
@@ -1775,44 +1725,44 @@ E[\text{false positives}] = 0.05 \times M
 <li>基因结构注释（编码区、非编码区、转录方向）；</li>
 <li>重组率估计（来自 HapMap 或 1000 Genomes）。</li>
 </ul>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb23"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb23-1"><a href="#cb23-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(tidyverse)</span>
-<span id="cb23-2"><a href="#cb23-2" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(ggrepel)</span>
-<span id="cb23-3"><a href="#cb23-3" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb23-4"><a href="#cb23-4" aria-hidden="true" tabindex="-1"></a><span class="co"># 假设已获取候选区域的关联结果和 LD 信息</span></span>
-<span id="cb23-5"><a href="#cb23-5" aria-hidden="true" tabindex="-1"></a>region <span class="ot">&lt;-</span> gwas <span class="sc">%&gt;%</span></span>
-<span id="cb23-6"><a href="#cb23-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(CHR <span class="sc">==</span> <span class="dv">6</span>, BP <span class="sc">&gt;=</span> <span class="fl">32.4e6</span>, BP <span class="sc">&lt;=</span> <span class="fl">33.4e6</span>) <span class="sc">%&gt;%</span></span>
-<span id="cb23-7"><a href="#cb23-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">left_join</span>(ld_with_lead, <span class="at">by =</span> <span class="st">"SNP"</span>) <span class="sc">%&gt;%</span></span>
-<span id="cb23-8"><a href="#cb23-8" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(</span>
-<span id="cb23-9"><a href="#cb23-9" aria-hidden="true" tabindex="-1"></a>    <span class="at">log10p =</span> <span class="sc">-</span><span class="fu">log10</span>(P),</span>
-<span id="cb23-10"><a href="#cb23-10" aria-hidden="true" tabindex="-1"></a>    <span class="at">ld_bin =</span> <span class="fu">cut</span>(r2_with_lead,</span>
-<span id="cb23-11"><a href="#cb23-11" aria-hidden="true" tabindex="-1"></a>                 <span class="at">breaks =</span> <span class="fu">c</span>(<span class="dv">0</span>, <span class="fl">0.2</span>, <span class="fl">0.4</span>, <span class="fl">0.6</span>, <span class="fl">0.8</span>, <span class="fl">1.0</span>),</span>
-<span id="cb23-12"><a href="#cb23-12" aria-hidden="true" tabindex="-1"></a>                 <span class="at">labels =</span> <span class="fu">c</span>(<span class="st">"0.0-0.2"</span>, <span class="st">"0.2-0.4"</span>,</span>
-<span id="cb23-13"><a href="#cb23-13" aria-hidden="true" tabindex="-1"></a>                            <span class="st">"0.4-0.6"</span>, <span class="st">"0.6-0.8"</span>, <span class="st">"0.8-1.0"</span>),</span>
-<span id="cb23-14"><a href="#cb23-14" aria-hidden="true" tabindex="-1"></a>                 <span class="at">include.lowest =</span> <span class="cn">TRUE</span>)</span>
-<span id="cb23-15"><a href="#cb23-15" aria-hidden="true" tabindex="-1"></a>  )</span>
-<span id="cb23-16"><a href="#cb23-16" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb23-17"><a href="#cb23-17" aria-hidden="true" tabindex="-1"></a>ld_colors <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="st">"0.0-0.2"</span> <span class="ot">=</span> <span class="st">"#2166AC"</span>,</span>
-<span id="cb23-18"><a href="#cb23-18" aria-hidden="true" tabindex="-1"></a>               <span class="st">"0.2-0.4"</span> <span class="ot">=</span> <span class="st">"#74ADD1"</span>,</span>
-<span id="cb23-19"><a href="#cb23-19" aria-hidden="true" tabindex="-1"></a>               <span class="st">"0.4-0.6"</span> <span class="ot">=</span> <span class="st">"#FDAE61"</span>,</span>
-<span id="cb23-20"><a href="#cb23-20" aria-hidden="true" tabindex="-1"></a>               <span class="st">"0.6-0.8"</span> <span class="ot">=</span> <span class="st">"#F46D43"</span>,</span>
-<span id="cb23-21"><a href="#cb23-21" aria-hidden="true" tabindex="-1"></a>               <span class="st">"0.8-1.0"</span> <span class="ot">=</span> <span class="st">"#D73027"</span>)</span>
-<span id="cb23-22"><a href="#cb23-22" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb23-23"><a href="#cb23-23" aria-hidden="true" tabindex="-1"></a>lead_snp <span class="ot">&lt;-</span> region <span class="sc">%&gt;%</span> <span class="fu">filter</span>(P <span class="sc">==</span> <span class="fu">min</span>(P))</span>
-<span id="cb23-24"><a href="#cb23-24" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb23-25"><a href="#cb23-25" aria-hidden="true" tabindex="-1"></a><span class="fu">ggplot</span>(region, <span class="fu">aes</span>(<span class="at">x =</span> BP <span class="sc">/</span> <span class="fl">1e6</span>, <span class="at">y =</span> log10p, <span class="at">color =</span> ld_bin)) <span class="sc">+</span></span>
-<span id="cb23-26"><a href="#cb23-26" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_point</span>(<span class="at">size =</span> <span class="fl">1.5</span>, <span class="at">alpha =</span> <span class="fl">0.8</span>) <span class="sc">+</span></span>
-<span id="cb23-27"><a href="#cb23-27" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_point</span>(<span class="at">data =</span> lead_snp, <span class="at">color =</span> <span class="st">"purple"</span>, <span class="at">size =</span> <span class="dv">3</span>, <span class="at">shape =</span> <span class="dv">18</span>) <span class="sc">+</span></span>
-<span id="cb23-28"><a href="#cb23-28" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_label_repel</span>(<span class="at">data =</span> lead_snp,</span>
-<span id="cb23-29"><a href="#cb23-29" aria-hidden="true" tabindex="-1"></a>                   <span class="fu">aes</span>(<span class="at">label =</span> SNP), <span class="at">color =</span> <span class="st">"purple"</span>,</span>
-<span id="cb23-30"><a href="#cb23-30" aria-hidden="true" tabindex="-1"></a>                   <span class="at">size =</span> <span class="dv">3</span>, <span class="at">nudge_y =</span> <span class="fl">0.5</span>, <span class="at">show.legend =</span> <span class="cn">FALSE</span>) <span class="sc">+</span></span>
-<span id="cb23-31"><a href="#cb23-31" aria-hidden="true" tabindex="-1"></a>  <span class="fu">scale_color_manual</span>(<span class="at">values =</span> ld_colors,</span>
-<span id="cb23-32"><a href="#cb23-32" aria-hidden="true" tabindex="-1"></a>                     <span class="at">name =</span> <span class="fu">expression</span>(r<span class="sc">^</span><span class="dv">2</span> <span class="sc">~</span> <span class="st">"with lead SNP"</span>)) <span class="sc">+</span></span>
-<span id="cb23-33"><a href="#cb23-33" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_hline</span>(<span class="at">yintercept =</span> <span class="sc">-</span><span class="fu">log10</span>(<span class="fl">5e-8</span>),</span>
-<span id="cb23-34"><a href="#cb23-34" aria-hidden="true" tabindex="-1"></a>             <span class="at">linetype =</span> <span class="st">"dashed"</span>, <span class="at">color =</span> <span class="st">"grey40"</span>) <span class="sc">+</span></span>
-<span id="cb23-35"><a href="#cb23-35" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(<span class="at">x =</span> <span class="st">"Position (Mb)"</span>,</span>
-<span id="cb23-36"><a href="#cb23-36" aria-hidden="true" tabindex="-1"></a>       <span class="at">y =</span> <span class="fu">expression</span>(<span class="sc">-</span>log[<span class="dv">10</span>](<span class="fu">italic</span>(p))),</span>
-<span id="cb23-37"><a href="#cb23-37" aria-hidden="true" tabindex="-1"></a>       <span class="at">title =</span> <span class="st">"Regional Association Plot"</span>) <span class="sc">+</span></span>
-<span id="cb23-38"><a href="#cb23-38" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme_classic</span>()</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb22"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb22-1"><a href="#cb22-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(tidyverse)</span>
+<span id="cb22-2"><a href="#cb22-2" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(ggrepel)</span>
+<span id="cb22-3"><a href="#cb22-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb22-4"><a href="#cb22-4" aria-hidden="true" tabindex="-1"></a><span class="co"># 假设已获取候选区域的关联结果和 LD 信息</span></span>
+<span id="cb22-5"><a href="#cb22-5" aria-hidden="true" tabindex="-1"></a>region <span class="ot">&lt;-</span> gwas <span class="sc">%&gt;%</span></span>
+<span id="cb22-6"><a href="#cb22-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(CHR <span class="sc">==</span> <span class="dv">6</span>, BP <span class="sc">&gt;=</span> <span class="fl">32.4e6</span>, BP <span class="sc">&lt;=</span> <span class="fl">33.4e6</span>) <span class="sc">%&gt;%</span></span>
+<span id="cb22-7"><a href="#cb22-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">left_join</span>(ld_with_lead, <span class="at">by =</span> <span class="st">"SNP"</span>) <span class="sc">%&gt;%</span></span>
+<span id="cb22-8"><a href="#cb22-8" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(</span>
+<span id="cb22-9"><a href="#cb22-9" aria-hidden="true" tabindex="-1"></a>    <span class="at">log10p =</span> <span class="sc">-</span><span class="fu">log10</span>(P),</span>
+<span id="cb22-10"><a href="#cb22-10" aria-hidden="true" tabindex="-1"></a>    <span class="at">ld_bin =</span> <span class="fu">cut</span>(r2_with_lead,</span>
+<span id="cb22-11"><a href="#cb22-11" aria-hidden="true" tabindex="-1"></a>                 <span class="at">breaks =</span> <span class="fu">c</span>(<span class="dv">0</span>, <span class="fl">0.2</span>, <span class="fl">0.4</span>, <span class="fl">0.6</span>, <span class="fl">0.8</span>, <span class="fl">1.0</span>),</span>
+<span id="cb22-12"><a href="#cb22-12" aria-hidden="true" tabindex="-1"></a>                 <span class="at">labels =</span> <span class="fu">c</span>(<span class="st">"0.0-0.2"</span>, <span class="st">"0.2-0.4"</span>,</span>
+<span id="cb22-13"><a href="#cb22-13" aria-hidden="true" tabindex="-1"></a>                            <span class="st">"0.4-0.6"</span>, <span class="st">"0.6-0.8"</span>, <span class="st">"0.8-1.0"</span>),</span>
+<span id="cb22-14"><a href="#cb22-14" aria-hidden="true" tabindex="-1"></a>                 <span class="at">include.lowest =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb22-15"><a href="#cb22-15" aria-hidden="true" tabindex="-1"></a>  )</span>
+<span id="cb22-16"><a href="#cb22-16" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb22-17"><a href="#cb22-17" aria-hidden="true" tabindex="-1"></a>ld_colors <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="st">"0.0-0.2"</span> <span class="ot">=</span> <span class="st">"#2166AC"</span>,</span>
+<span id="cb22-18"><a href="#cb22-18" aria-hidden="true" tabindex="-1"></a>               <span class="st">"0.2-0.4"</span> <span class="ot">=</span> <span class="st">"#74ADD1"</span>,</span>
+<span id="cb22-19"><a href="#cb22-19" aria-hidden="true" tabindex="-1"></a>               <span class="st">"0.4-0.6"</span> <span class="ot">=</span> <span class="st">"#FDAE61"</span>,</span>
+<span id="cb22-20"><a href="#cb22-20" aria-hidden="true" tabindex="-1"></a>               <span class="st">"0.6-0.8"</span> <span class="ot">=</span> <span class="st">"#F46D43"</span>,</span>
+<span id="cb22-21"><a href="#cb22-21" aria-hidden="true" tabindex="-1"></a>               <span class="st">"0.8-1.0"</span> <span class="ot">=</span> <span class="st">"#D73027"</span>)</span>
+<span id="cb22-22"><a href="#cb22-22" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb22-23"><a href="#cb22-23" aria-hidden="true" tabindex="-1"></a>lead_snp <span class="ot">&lt;-</span> region <span class="sc">%&gt;%</span> <span class="fu">filter</span>(P <span class="sc">==</span> <span class="fu">min</span>(P))</span>
+<span id="cb22-24"><a href="#cb22-24" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb22-25"><a href="#cb22-25" aria-hidden="true" tabindex="-1"></a><span class="fu">ggplot</span>(region, <span class="fu">aes</span>(<span class="at">x =</span> BP <span class="sc">/</span> <span class="fl">1e6</span>, <span class="at">y =</span> log10p, <span class="at">color =</span> ld_bin)) <span class="sc">+</span></span>
+<span id="cb22-26"><a href="#cb22-26" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_point</span>(<span class="at">size =</span> <span class="fl">1.5</span>, <span class="at">alpha =</span> <span class="fl">0.8</span>) <span class="sc">+</span></span>
+<span id="cb22-27"><a href="#cb22-27" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_point</span>(<span class="at">data =</span> lead_snp, <span class="at">color =</span> <span class="st">"purple"</span>, <span class="at">size =</span> <span class="dv">3</span>, <span class="at">shape =</span> <span class="dv">18</span>) <span class="sc">+</span></span>
+<span id="cb22-28"><a href="#cb22-28" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_label_repel</span>(<span class="at">data =</span> lead_snp,</span>
+<span id="cb22-29"><a href="#cb22-29" aria-hidden="true" tabindex="-1"></a>                   <span class="fu">aes</span>(<span class="at">label =</span> SNP), <span class="at">color =</span> <span class="st">"purple"</span>,</span>
+<span id="cb22-30"><a href="#cb22-30" aria-hidden="true" tabindex="-1"></a>                   <span class="at">size =</span> <span class="dv">3</span>, <span class="at">nudge_y =</span> <span class="fl">0.5</span>, <span class="at">show.legend =</span> <span class="cn">FALSE</span>) <span class="sc">+</span></span>
+<span id="cb22-31"><a href="#cb22-31" aria-hidden="true" tabindex="-1"></a>  <span class="fu">scale_color_manual</span>(<span class="at">values =</span> ld_colors,</span>
+<span id="cb22-32"><a href="#cb22-32" aria-hidden="true" tabindex="-1"></a>                     <span class="at">name =</span> <span class="fu">expression</span>(r<span class="sc">^</span><span class="dv">2</span> <span class="sc">~</span> <span class="st">"with lead SNP"</span>)) <span class="sc">+</span></span>
+<span id="cb22-33"><a href="#cb22-33" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_hline</span>(<span class="at">yintercept =</span> <span class="sc">-</span><span class="fu">log10</span>(<span class="fl">5e-8</span>),</span>
+<span id="cb22-34"><a href="#cb22-34" aria-hidden="true" tabindex="-1"></a>             <span class="at">linetype =</span> <span class="st">"dashed"</span>, <span class="at">color =</span> <span class="st">"grey40"</span>) <span class="sc">+</span></span>
+<span id="cb22-35"><a href="#cb22-35" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(<span class="at">x =</span> <span class="st">"Position (Mb)"</span>,</span>
+<span id="cb22-36"><a href="#cb22-36" aria-hidden="true" tabindex="-1"></a>       <span class="at">y =</span> <span class="fu">expression</span>(<span class="sc">-</span>log[<span class="dv">10</span>](<span class="fu">italic</span>(p))),</span>
+<span id="cb22-37"><a href="#cb22-37" aria-hidden="true" tabindex="-1"></a>       <span class="at">title =</span> <span class="st">"Regional Association Plot"</span>) <span class="sc">+</span></span>
+<span id="cb22-38"><a href="#cb22-38" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme_classic</span>()</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <section id="局部关联图的深度解读" class="level3" data-number="18.9.1">
 <h3 data-number="18.9.1" class="anchored" data-anchor-id="局部关联图的深度解读"><span class="header-section-number">18.9.1</span> 局部关联图的深度解读</h3>
 <p>局部关联图蕴含的信息远超单纯的 p 值展示，有经验的研究者会从中读取以下几类信息：</p>
@@ -1820,44 +1770,44 @@ E[\text{false positives}] = 0.05 \times M
 <p><strong>基因结构叠加</strong>是确认候选效应基因的第一步。显著信号的物理位置相对于周围基因的分布（exonic、intronic、intergenic）直接影响功能注释的优先策略：落在外显子上的编码变异可直接预测氨基酸变化；落在非编码区的变异需要结合表观基因组数据（H3K27ac、ATAC-seq）判断调控功能；完全位于基因间区的信号则需查询远端增强子或非编码 RNA 数据库。</p>
 <p><strong>重组率（recombination rate）</strong> 曲线（通常叠加在图底部，单位为 cM/Mb）标志着 LD 区块的边界。高重组率位点（峰值）通常对应 LD 断点（recombination hotspot），用于判断候选区域的精确边界——若 lead SNP 恰好位于 LD 断点附近，则信号边界清晰，精细定位候选集较小；若位于长 LD 区块中央，则候选集更大。</p>
 <div class="note">
-<p><strong>局部关联图 vs.&nbsp;精细定位图</strong></p>
-<p>局部关联图（regional association plot）以统计证据（<span class="math inline">\(-\log_{10} p\)</span>）和 LD 结构为核心展示，适合初步评估信号形态和候选基因范围；精细定位图（fine-mapping PIP plot）则以每个 SNP 的后验纳入概率（PIP）为 y 轴，直接展示因果变异候选的统计置信度。两类图形互补：前者提供直觉感知，后者提供量化的贝叶斯证据。发表于高影响力期刊的 GWAS 研究通常同时呈现两类图形。</p>
+<p><strong>局部关联图与精细定位图的互补关系</strong></p>
+<p>局部关联图以统计证据（<span class="math inline">\(-\log_{10} p\)</span>）和 LD 结构为核心，适合初步评估信号形态和候选基因范围，是 GWAS 发表的标准配图。精细定位图（如 SuSiE 输出的 PIP 图）则将 y 轴换为每个 SNP 的后验纳入概率，直接展示因果变异候选的贝叶斯置信度，是精细定位的输出图形。两者分别对应不同分析阶段：先通过局部关联图确认信号形态，再通过精细定位量化因果证据（参见专题 3.6）。</p>
 </div>
 </section>
 <section id="使用-gassocplot-生成专业级局部关联图" class="level3" data-number="18.9.2">
 <h3 data-number="18.9.2" class="anchored" data-anchor-id="使用-gassocplot-生成专业级局部关联图"><span class="header-section-number">18.9.2</span> 使用 gassocplot 生成专业级局部关联图</h3>
 <p><strong>gassocplot</strong> 是专为 GWAS 局部关联图设计的 R 包，可直接整合 GWAS 汇总统计量、LD 矩阵和基因注释，生成符合发表规范的多面板图形：</p>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb24"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb24-1"><a href="#cb24-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Professional regional association plot with gassocplot</span></span>
-<span id="cb24-2"><a href="#cb24-2" aria-hidden="true" tabindex="-1"></a><span class="co"># install.packages("gassocplot")  # or devtools::install_github(...)</span></span>
-<span id="cb24-3"><a href="#cb24-3" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(gassocplot)</span>
-<span id="cb24-4"><a href="#cb24-4" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(tidyverse)</span>
-<span id="cb24-5"><a href="#cb24-5" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb24-6"><a href="#cb24-6" aria-hidden="true" tabindex="-1"></a><span class="co"># Prepare marker data (columns: marker, chr, pos, p)</span></span>
-<span id="cb24-7"><a href="#cb24-7" aria-hidden="true" tabindex="-1"></a>marker_data <span class="ot">&lt;-</span> gwas <span class="sc">%&gt;%</span></span>
-<span id="cb24-8"><a href="#cb24-8" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(CHR <span class="sc">==</span> <span class="dv">6</span>, BP <span class="sc">&gt;=</span> <span class="dv">32400000</span>, BP <span class="sc">&lt;=</span> <span class="dv">33400000</span>) <span class="sc">%&gt;%</span></span>
-<span id="cb24-9"><a href="#cb24-9" aria-hidden="true" tabindex="-1"></a>  <span class="fu">select</span>(<span class="at">marker =</span> SNP, <span class="at">chr =</span> CHR, <span class="at">pos =</span> BP, <span class="at">p =</span> P)</span>
-<span id="cb24-10"><a href="#cb24-10" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb24-11"><a href="#cb24-11" aria-hidden="true" tabindex="-1"></a><span class="co"># Specify lead SNP (most significant in region)</span></span>
-<span id="cb24-12"><a href="#cb24-12" aria-hidden="true" tabindex="-1"></a>lead <span class="ot">&lt;-</span> marker_data <span class="sc">%&gt;%</span> <span class="fu">slice_min</span>(p, <span class="at">n =</span> <span class="dv">1</span>) <span class="sc">%&gt;%</span> <span class="fu">pull</span>(marker)</span>
-<span id="cb24-13"><a href="#cb24-13" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb24-14"><a href="#cb24-14" aria-hidden="true" tabindex="-1"></a><span class="co"># LD matrix must be pre-computed (e.g., from 1000G reference panel)</span></span>
-<span id="cb24-15"><a href="#cb24-15" aria-hidden="true" tabindex="-1"></a><span class="co"># Here we use a placeholder: in practice, compute with PLINK --r2 or LDlinkR</span></span>
-<span id="cb24-16"><a href="#cb24-16" aria-hidden="true" tabindex="-1"></a>ld_mat_region <span class="ot">&lt;-</span> <span class="fu">compute_ld_from_plink</span>(</span>
-<span id="cb24-17"><a href="#cb24-17" aria-hidden="true" tabindex="-1"></a>  <span class="at">bfile    =</span> <span class="st">"1kg_eur_chr6"</span>,</span>
-<span id="cb24-18"><a href="#cb24-18" aria-hidden="true" tabindex="-1"></a>  <span class="at">snp_list =</span> marker_data<span class="sc">$</span>marker,</span>
-<span id="cb24-19"><a href="#cb24-19" aria-hidden="true" tabindex="-1"></a>  <span class="at">lead_snp =</span> lead</span>
-<span id="cb24-20"><a href="#cb24-20" aria-hidden="true" tabindex="-1"></a>)</span>
-<span id="cb24-21"><a href="#cb24-21" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb24-22"><a href="#cb24-22" aria-hidden="true" tabindex="-1"></a><span class="co"># Stack plot: association + recombination rate + genes</span></span>
-<span id="cb24-23"><a href="#cb24-23" aria-hidden="true" tabindex="-1"></a><span class="fu">stack_assoc_plot</span>(</span>
-<span id="cb24-24"><a href="#cb24-24" aria-hidden="true" tabindex="-1"></a>  <span class="at">markers   =</span> marker_data,</span>
-<span id="cb24-25"><a href="#cb24-25" aria-hidden="true" tabindex="-1"></a>  <span class="at">corr      =</span> ld_mat_region,</span>
-<span id="cb24-26"><a href="#cb24-26" aria-hidden="true" tabindex="-1"></a>  <span class="at">lead      =</span> lead,</span>
-<span id="cb24-27"><a href="#cb24-27" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Optional: provide recombination rate track</span></span>
-<span id="cb24-28"><a href="#cb24-28" aria-hidden="true" tabindex="-1"></a>  <span class="co"># recomb   = recomb_rate_df,</span></span>
-<span id="cb24-29"><a href="#cb24-29" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Optional: provide gene track from GTF</span></span>
-<span id="cb24-30"><a href="#cb24-30" aria-hidden="true" tabindex="-1"></a>  <span class="co"># genes    = genes_in_region</span></span>
-<span id="cb24-31"><a href="#cb24-31" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb23"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb23-1"><a href="#cb23-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Professional regional association plot with gassocplot</span></span>
+<span id="cb23-2"><a href="#cb23-2" aria-hidden="true" tabindex="-1"></a><span class="co"># install.packages("gassocplot")  # or devtools::install_github(...)</span></span>
+<span id="cb23-3"><a href="#cb23-3" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(gassocplot)</span>
+<span id="cb23-4"><a href="#cb23-4" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(tidyverse)</span>
+<span id="cb23-5"><a href="#cb23-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb23-6"><a href="#cb23-6" aria-hidden="true" tabindex="-1"></a><span class="co"># Prepare marker data (columns: marker, chr, pos, p)</span></span>
+<span id="cb23-7"><a href="#cb23-7" aria-hidden="true" tabindex="-1"></a>marker_data <span class="ot">&lt;-</span> gwas <span class="sc">%&gt;%</span></span>
+<span id="cb23-8"><a href="#cb23-8" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(CHR <span class="sc">==</span> <span class="dv">6</span>, BP <span class="sc">&gt;=</span> <span class="dv">32400000</span>, BP <span class="sc">&lt;=</span> <span class="dv">33400000</span>) <span class="sc">%&gt;%</span></span>
+<span id="cb23-9"><a href="#cb23-9" aria-hidden="true" tabindex="-1"></a>  <span class="fu">select</span>(<span class="at">marker =</span> SNP, <span class="at">chr =</span> CHR, <span class="at">pos =</span> BP, <span class="at">p =</span> P)</span>
+<span id="cb23-10"><a href="#cb23-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb23-11"><a href="#cb23-11" aria-hidden="true" tabindex="-1"></a><span class="co"># Specify lead SNP (most significant in region)</span></span>
+<span id="cb23-12"><a href="#cb23-12" aria-hidden="true" tabindex="-1"></a>lead <span class="ot">&lt;-</span> marker_data <span class="sc">%&gt;%</span> <span class="fu">slice_min</span>(p, <span class="at">n =</span> <span class="dv">1</span>) <span class="sc">%&gt;%</span> <span class="fu">pull</span>(marker)</span>
+<span id="cb23-13"><a href="#cb23-13" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb23-14"><a href="#cb23-14" aria-hidden="true" tabindex="-1"></a><span class="co"># LD matrix must be pre-computed (e.g., from 1000G reference panel)</span></span>
+<span id="cb23-15"><a href="#cb23-15" aria-hidden="true" tabindex="-1"></a><span class="co"># Here we use a placeholder: in practice, compute with PLINK --r2 or LDlinkR</span></span>
+<span id="cb23-16"><a href="#cb23-16" aria-hidden="true" tabindex="-1"></a>ld_mat_region <span class="ot">&lt;-</span> <span class="fu">compute_ld_from_plink</span>(</span>
+<span id="cb23-17"><a href="#cb23-17" aria-hidden="true" tabindex="-1"></a>  <span class="at">bfile    =</span> <span class="st">"1kg_eur_chr6"</span>,</span>
+<span id="cb23-18"><a href="#cb23-18" aria-hidden="true" tabindex="-1"></a>  <span class="at">snp_list =</span> marker_data<span class="sc">$</span>marker,</span>
+<span id="cb23-19"><a href="#cb23-19" aria-hidden="true" tabindex="-1"></a>  <span class="at">lead_snp =</span> lead</span>
+<span id="cb23-20"><a href="#cb23-20" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb23-21"><a href="#cb23-21" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb23-22"><a href="#cb23-22" aria-hidden="true" tabindex="-1"></a><span class="co"># Stack plot: association + recombination rate + genes</span></span>
+<span id="cb23-23"><a href="#cb23-23" aria-hidden="true" tabindex="-1"></a><span class="fu">stack_assoc_plot</span>(</span>
+<span id="cb23-24"><a href="#cb23-24" aria-hidden="true" tabindex="-1"></a>  <span class="at">markers   =</span> marker_data,</span>
+<span id="cb23-25"><a href="#cb23-25" aria-hidden="true" tabindex="-1"></a>  <span class="at">corr      =</span> ld_mat_region,</span>
+<span id="cb23-26"><a href="#cb23-26" aria-hidden="true" tabindex="-1"></a>  <span class="at">lead      =</span> lead,</span>
+<span id="cb23-27"><a href="#cb23-27" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Optional: provide recombination rate track</span></span>
+<span id="cb23-28"><a href="#cb23-28" aria-hidden="true" tabindex="-1"></a>  <span class="co"># recomb   = recomb_rate_df,</span></span>
+<span id="cb23-29"><a href="#cb23-29" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Optional: provide gene track from GTF</span></span>
+<span id="cb23-30"><a href="#cb23-30" aria-hidden="true" tabindex="-1"></a>  <span class="co"># genes    = genes_in_region</span></span>
+<span id="cb23-31"><a href="#cb23-31" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <p>当 <code>gassocplot</code> 不可用时，也可通过在 ggplot2 框架中手动构建多面板布局（<code>patchwork</code> 包拼接上下面板）实现同等功能。完整的发表级局部关联图通常包括：顶部关联信号散点图、中部重组率曲线（来自 1000G Phase 3），以及底部基因轨道（来自 Ensembl GTF 注释的箭头图）。</p>
 <hr>
 <hr>
@@ -1874,7 +1824,6 @@ E[\text{false positives}] = 0.05 \times M
 <li><p>一项 GWAS 研究中，某 SNP 的 MAF = 0.15，加性效应量 <span class="math inline">\(\beta = 0.12\)</span>（以标准差为单位），表型残差方差 <span class="math inline">\(\sigma^2 = 1\)</span>。在 <span class="math inline">\(\alpha = 5 \times 10^{-8}\)</span> 的显著性阈值下，达到 80% 统计检验力需要多少样本？请编写 R 代码验证你的答案。</p></li>
 <li><p>在群体分层模拟实验中，即使 SNP 与表型没有真实的生物学因果关系，朴素（未校正）的关联检验仍然可能产生极小的 p 值。请解释这种现象的统计学机制，并说明 PCA 校正如何解决该问题。</p></li>
 <li><p>LD 裁剪（clumping）与 LD 修剪（pruning）的目的和参数体系有何本质区别？在 GWAS 分析流程中，两者分别在哪个步骤使用？</p></li>
-<li><p>SuSiE 精细定位输出的”可信集（credible set）“与直接选取 p 值最小 SNP 相比，有何统计学优势？若某区域有两个独立信号，SuSiE 应如何配置 <span class="math inline">\(L\)</span> 参数，输出会呈现什么形态？</p></li>
 <li><p>在一项病例（<span class="math inline">\(n_\text{case} = 5{,}000\)</span>）对照（<span class="math inline">\(n_\text{control} = 5{,}000\)</span>）研究中，某 SNP 的 MAF = 0.20，加性 <span class="math inline">\(\log\text{OR} = 0.15\)</span>，人群患病率 <span class="math inline">\(K = 0.05\)</span>。与同样总样本量（<span class="math inline">\(n = 10{,}000\)</span>）的连续表型研究（<span class="math inline">\(\beta = 0.15\)</span>，<span class="math inline">\(\sigma^2 = 1\)</span>）相比，哪个设计的统计检验力更高？请利用本节 NCP 公式进行定量比较。</p></li>
 </ol>
 <details>
@@ -1890,7 +1839,6 @@ E[\text{false positives}] = 0.05 \times M
 <li><p><em>利用 NCP 公式 <span class="math inline">\(\text{NCP} = n \cdot \beta^2 \cdot 2p(1-p) / \sigma^2\)</span>，代入 <span class="math inline">\(\beta = 0.12\)</span>、<span class="math inline">\(p = 0.15\)</span>、<span class="math inline">\(\sigma^2 = 1\)</span>，需要迭代求解使得检验力达到 80% 的 <span class="math inline">\(n\)</span>。R 代码验证：调用 <code>min_n_for_power(beta = 0.12, maf = 0.15)</code> 函数（见 3.5.5 节），预期结果约为 60,000–90,000 样本（具体取决于迭代精度）。</em></p></li>
 <li><p><em>群体分层混杂的统计机制：若两个亚群在某 SNP 的等位基因频率上存在差异，同时在表型均值上也存在差异，则该 SNP 的等位基因与表型在混合样本中表现出统计相关，即使在各亚群内部二者完全不相关。这是因为群体标签既是 SNP 频率的预测因子，也是表型的预测因子，形成了混杂路径。PCA 校正通过将基因组主成分作为固定效应协变量纳入回归模型，将群体标签引起的表型差异”吸收”为协变量效应，从而使 SNP 系数的估计只反映亚群内部的关联，消除跨群体的混杂。</em></p></li>
 <li><p><em>LD 修剪（pruning）以滑动窗口逐对去除超过 <span class="math inline">\(r^2\)</span> 阈值的 SNP，保留一组低 LD 的近似独立标记集，不考虑关联 p 值；用于 QC 阶段的 PCA 计算和亲缘关系矩阵构建。LD 裁剪（clumping）则以 p 值为权重，优先保留关联证据最强的 SNP 作为 index SNP，并将其窗口内高 LD 的伴随 SNP 归并至同一簇；用于关联分析结束后的独立信号计数。两者目的不同，参数体系也不同（pruning 使用 <code>--indep-pairwise</code>，clumping 使用 <code>--clump</code>），不可替换使用。</em></p></li>
-<li><p><em>可信集具有三方面统计优势：（1）它以 95% 覆盖概率明确量化了不确定性，而单选最小 p 值 SNP 的不确定性是隐性的；（2）在强 LD 区块中，多个 SNP 可能具有几乎等价的统计证据，可信集诚实地纳入所有候选，而非武断地选取其中一个；（3）可信集的大小本身反映了精细定位的分辨率——集合越小，对因果变异的定位越精确。若区域存在两个独立信号，应将 <span class="math inline">\(L\)</span> 设为 <span class="math inline">\(\geq 2\)</span>，此时 SuSiE 会输出两个可信集，每个可信集对应一个独立信号，且两个集合中的 SNP 通常位于不同的染色体区段（彼此 <span class="math inline">\(r^2\)</span> 较低）。</em></p></li>
 <li><p><em>连续表型 NCP = <span class="math inline">\(10000 \times 0.15^2 \times 2 \times 0.2 \times 0.8 / 1 = 72\)</span>。病例-对照 NCP = <span class="math inline">\(10000 \times 0.15^2 \times 2 \times 0.2 \times 0.8 \times 0.05 \times 0.95 / (0.5 \times 0.5) \approx 10.26\)</span>。连续表型 NCP 约为病例-对照的 7 倍，前者检验力远高于后者。其根本原因是在 <span class="math inline">\(K = 0.05\)</span> 的稀有疾病中，<span class="math inline">\(K(1-K) = 0.0475\)</span> 远小于 <span class="math inline">\(\pi(1-\pi) = 0.25\)</span>（1:1 设计），二值表型的信息量损失严重。这是为何大型生物银行（UK Biobank）对慢性病以连续表型代理指标（如血压、BMI）替代二值病例/对照标签进行 GWAS 时往往能发现更多位点的直接原因。</em></p></li>
 </ol>
 </details>
