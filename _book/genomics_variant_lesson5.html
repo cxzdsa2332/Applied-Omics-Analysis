@@ -1406,7 +1406,7 @@ window.Quarto = {
 <li>暴露 <span class="math inline">\(X = \gamma_j G + 0.4U + \varepsilon_X\)</span>（BMI）；</li>
 <li>结局 <span class="math inline">\(Y = \beta_{XY} X + \alpha_j G + 0.4U + \varepsilon_Y\)</span>（SBP）。</li>
 </ul>
-<p>注意 <span class="math inline">\(Y\)</span> 的方程中 <span class="math inline">\(\alpha_j G\)</span> 一项：对有效 IV，<span class="math inline">\(\alpha_j = 0\)</span>，SNP 只通过 BMI 影响 SBP；对多效性 SNP，<span class="math inline">\(\alpha_j \neq 0\)</span>，SNP 还有一条绕过 BMI 的直接通路。</p>
+<p>注意 <span class="math inline">\(Y\)</span> 的方程中 <span class="math inline">\(\alpha_j G\)</span> 一项：对有效 SNP，<span class="math inline">\(\alpha_j = 0\)</span>，该 SNP 只通过 BMI 影响 SBP；对多效性 SNP，<span class="math inline">\(\alpha_j \neq 0\)</span>，该 SNP 还存在一条绕过 BMI 的直接通路。</p>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb14"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a><span class="co"># ── Simulate individual data and extract summary statistics ──────────────────</span></span>
 <span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a><span class="co"># gamma_vec / alpha_vec: full vectors passed via MoreArgs; index by j inside.</span></span>
 <span id="cb14-3"><a href="#cb14-3" aria-hidden="true" tabindex="-1"></a><span class="co"># unname() strips the "G" attribute from coef(), keeping column names clean.</span></span>
@@ -1575,50 +1575,169 @@ window.Quarto = {
 </section>
 <section id="mr-分析流程与敏感性分析" class="level3" data-number="20.6.5">
 <h3 data-number="20.6.5" class="anchored" data-anchor-id="mr-分析流程与敏感性分析"><span class="header-section-number">20.6.5</span> MR 分析流程与敏感性分析</h3>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb19"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb19-1"><a href="#cb19-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(TwoSampleMR)</span>
-<span id="cb19-2"><a href="#cb19-2" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb19-3"><a href="#cb19-3" aria-hidden="true" tabindex="-1"></a><span class="co"># Step 1: 提取暴露 GWAS 中的工具变量（显著 SNP）</span></span>
-<span id="cb19-4"><a href="#cb19-4" aria-hidden="true" tabindex="-1"></a>exposure_dat <span class="ot">&lt;-</span> <span class="fu">extract_instruments</span>(</span>
-<span id="cb19-5"><a href="#cb19-5" aria-hidden="true" tabindex="-1"></a>  <span class="at">outcomes =</span> <span class="st">"ieu-b-4816"</span>,   <span class="co"># 以 BMI 为暴露（IEU Open GWAS ID）</span></span>
-<span id="cb19-6"><a href="#cb19-6" aria-hidden="true" tabindex="-1"></a>  <span class="at">p1       =</span> <span class="fl">5e-8</span>,</span>
-<span id="cb19-7"><a href="#cb19-7" aria-hidden="true" tabindex="-1"></a>  <span class="at">clump    =</span> <span class="cn">TRUE</span>,</span>
-<span id="cb19-8"><a href="#cb19-8" aria-hidden="true" tabindex="-1"></a>  <span class="at">r2       =</span> <span class="fl">0.001</span>,</span>
-<span id="cb19-9"><a href="#cb19-9" aria-hidden="true" tabindex="-1"></a>  <span class="at">kb       =</span> <span class="dv">10000</span></span>
-<span id="cb19-10"><a href="#cb19-10" aria-hidden="true" tabindex="-1"></a>)</span>
-<span id="cb19-11"><a href="#cb19-11" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb19-12"><a href="#cb19-12" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">"Number of IVs:"</span>, <span class="fu">nrow</span>(exposure_dat), <span class="st">"</span><span class="sc">\n</span><span class="st">"</span>)</span>
-<span id="cb19-13"><a href="#cb19-13" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb19-14"><a href="#cb19-14" aria-hidden="true" tabindex="-1"></a><span class="co"># Step 2: 在结局 GWAS 中提取对应 SNP 效应（以 T2D 为结局）</span></span>
-<span id="cb19-15"><a href="#cb19-15" aria-hidden="true" tabindex="-1"></a>outcome_dat <span class="ot">&lt;-</span> <span class="fu">extract_outcome_data</span>(</span>
-<span id="cb19-16"><a href="#cb19-16" aria-hidden="true" tabindex="-1"></a>  <span class="at">snps     =</span> exposure_dat<span class="sc">$</span>SNP,</span>
-<span id="cb19-17"><a href="#cb19-17" aria-hidden="true" tabindex="-1"></a>  <span class="at">outcomes =</span> <span class="st">"ieu-a-24"</span>    <span class="co"># Type 2 diabetes</span></span>
-<span id="cb19-18"><a href="#cb19-18" aria-hidden="true" tabindex="-1"></a>)</span>
-<span id="cb19-19"><a href="#cb19-19" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb19-20"><a href="#cb19-20" aria-hidden="true" tabindex="-1"></a><span class="co"># Step 3: 数据协调</span></span>
-<span id="cb19-21"><a href="#cb19-21" aria-hidden="true" tabindex="-1"></a>dat <span class="ot">&lt;-</span> <span class="fu">harmonise_data</span>(exposure_dat, outcome_dat)</span>
-<span id="cb19-22"><a href="#cb19-22" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb19-23"><a href="#cb19-23" aria-hidden="true" tabindex="-1"></a><span class="co"># Step 4: MR 分析（多种方法）</span></span>
-<span id="cb19-24"><a href="#cb19-24" aria-hidden="true" tabindex="-1"></a>res <span class="ot">&lt;-</span> <span class="fu">mr</span>(dat, <span class="at">method_list =</span> <span class="fu">c</span>(</span>
-<span id="cb19-25"><a href="#cb19-25" aria-hidden="true" tabindex="-1"></a>  <span class="st">"mr_ivw"</span>,                   <span class="co"># Inverse Variance Weighted (主方法)</span></span>
-<span id="cb19-26"><a href="#cb19-26" aria-hidden="true" tabindex="-1"></a>  <span class="st">"mr_weighted_median"</span>,       <span class="co"># 允许 &lt;50% IV 无效</span></span>
-<span id="cb19-27"><a href="#cb19-27" aria-hidden="true" tabindex="-1"></a>  <span class="st">"mr_egger_regression"</span>,      <span class="co"># 检测水平多效性</span></span>
-<span id="cb19-28"><a href="#cb19-28" aria-hidden="true" tabindex="-1"></a>  <span class="st">"mr_weighted_mode"</span></span>
-<span id="cb19-29"><a href="#cb19-29" aria-hidden="true" tabindex="-1"></a>))</span>
-<span id="cb19-30"><a href="#cb19-30" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb19-31"><a href="#cb19-31" aria-hidden="true" tabindex="-1"></a><span class="fu">mr_results</span>(res)</span>
-<span id="cb19-32"><a href="#cb19-32" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb19-33"><a href="#cb19-33" aria-hidden="true" tabindex="-1"></a><span class="co"># Step 5: 敏感性分析</span></span>
-<span id="cb19-34"><a href="#cb19-34" aria-hidden="true" tabindex="-1"></a><span class="co"># MR-Egger 截距检验多效性</span></span>
-<span id="cb19-35"><a href="#cb19-35" aria-hidden="true" tabindex="-1"></a><span class="fu">mr_pleiotropy_test</span>(dat)</span>
-<span id="cb19-36"><a href="#cb19-36" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb19-37"><a href="#cb19-37" aria-hidden="true" tabindex="-1"></a><span class="co"># Cochran Q 统计量检验异质性</span></span>
-<span id="cb19-38"><a href="#cb19-38" aria-hidden="true" tabindex="-1"></a><span class="fu">mr_heterogeneity</span>(dat)</span>
-<span id="cb19-39"><a href="#cb19-39" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb19-40"><a href="#cb19-40" aria-hidden="true" tabindex="-1"></a><span class="co"># 漏斗图</span></span>
-<span id="cb19-41"><a href="#cb19-41" aria-hidden="true" tabindex="-1"></a><span class="fu">mr_funnel_plot</span>(<span class="fu">mr_singlesnp</span>(dat))</span>
-<span id="cb19-42"><a href="#cb19-42" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb19-43"><a href="#cb19-43" aria-hidden="true" tabindex="-1"></a><span class="co"># 散点图</span></span>
-<span id="cb19-44"><a href="#cb19-44" aria-hidden="true" tabindex="-1"></a><span class="fu">mr_scatter_plot</span>(res, dat)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>以下代码延续上节的模拟框架（BMI → 收缩压，真实因果效应 <span class="math inline">\(\beta = 1.30\)</span>），在已有汇总统计量的基础上完整实现三种 MR 估计量和四类敏感性检验，全部基于 base R，无需外部 MR 包。</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb19"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb19-1"><a href="#cb19-1" aria-hidden="true" tabindex="-1"></a><span class="co"># ── Reproduce simulation from previous section ────────────────────────────────</span></span>
+<span id="cb19-2"><a href="#cb19-2" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">2025</span>)</span>
+<span id="cb19-3"><a href="#cb19-3" aria-hidden="true" tabindex="-1"></a>n_iv    <span class="ot">&lt;-</span> <span class="dv">30</span>      <span class="co"># total IVs</span></span>
+<span id="cb19-4"><a href="#cb19-4" aria-hidden="true" tabindex="-1"></a>n_pleio <span class="ot">&lt;-</span> <span class="dv">4</span>       <span class="co"># pleiotropic IVs (set to 0 for clean scenario)</span></span>
+<span id="cb19-5"><a href="#cb19-5" aria-hidden="true" tabindex="-1"></a>beta_xy <span class="ot">&lt;-</span> <span class="fl">1.30</span>    <span class="co"># true causal effect of BMI on SBP (mmHg per kg/m²)</span></span>
+<span id="cb19-6"><a href="#cb19-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb19-7"><a href="#cb19-7" aria-hidden="true" tabindex="-1"></a><span class="co"># Simulate IV strength (SNP → BMI)</span></span>
+<span id="cb19-8"><a href="#cb19-8" aria-hidden="true" tabindex="-1"></a>gamma_hat <span class="ot">&lt;-</span> <span class="fu">rnorm</span>(n_iv, <span class="at">mean =</span> <span class="fl">0.04</span>, <span class="at">sd =</span> <span class="fl">0.01</span>)</span>
+<span id="cb19-9"><a href="#cb19-9" aria-hidden="true" tabindex="-1"></a>se_X      <span class="ot">&lt;-</span> <span class="fu">runif</span>(n_iv, <span class="fl">0.005</span>, <span class="fl">0.012</span>)</span>
+<span id="cb19-10"><a href="#cb19-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb19-11"><a href="#cb19-11" aria-hidden="true" tabindex="-1"></a><span class="co"># Simulate SNP → SBP via BMI (causal path) + pleiotropy</span></span>
+<span id="cb19-12"><a href="#cb19-12" aria-hidden="true" tabindex="-1"></a>alpha <span class="ot">&lt;-</span> <span class="fu">rep</span>(<span class="dv">0</span>, n_iv)</span>
+<span id="cb19-13"><a href="#cb19-13" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> (n_pleio <span class="sc">&gt;</span> <span class="dv">0</span>) alpha[<span class="fu">sample</span>(n_iv, n_pleio)] <span class="ot">&lt;-</span> <span class="fu">rnorm</span>(n_pleio, <span class="dv">0</span>, <span class="fl">0.5</span>)</span>
+<span id="cb19-14"><a href="#cb19-14" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb19-15"><a href="#cb19-15" aria-hidden="true" tabindex="-1"></a>se_Y      <span class="ot">&lt;-</span> <span class="fu">runif</span>(n_iv, <span class="fl">0.03</span>, <span class="fl">0.08</span>)</span>
+<span id="cb19-16"><a href="#cb19-16" aria-hidden="true" tabindex="-1"></a>Gamma_hat <span class="ot">&lt;-</span> beta_xy <span class="sc">*</span> gamma_hat <span class="sc">+</span> alpha <span class="sc">+</span> <span class="fu">rnorm</span>(n_iv, <span class="dv">0</span>, se_Y)</span>
+<span id="cb19-17"><a href="#cb19-17" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb19-18"><a href="#cb19-18" aria-hidden="true" tabindex="-1"></a><span class="co"># ── Step 1: Instrument validity checks ────────────────────────────────────────</span></span>
+<span id="cb19-19"><a href="#cb19-19" aria-hidden="true" tabindex="-1"></a><span class="co"># F-statistic per IV: F = (gamma / se_X)^2; weak IV threshold: F &lt; 10</span></span>
+<span id="cb19-20"><a href="#cb19-20" aria-hidden="true" tabindex="-1"></a>f_stats <span class="ot">&lt;-</span> (gamma_hat <span class="sc">/</span> se_X)<span class="sc">^</span><span class="dv">2</span></span>
+<span id="cb19-21"><a href="#cb19-21" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="fu">sprintf</span>(<span class="st">"Weak IVs (F &lt; 10): %d / %d</span><span class="sc">\n</span><span class="st">"</span>, <span class="fu">sum</span>(f_stats <span class="sc">&lt;</span> <span class="dv">10</span>), n_iv))</span>
+<span id="cb19-22"><a href="#cb19-22" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="fu">sprintf</span>(<span class="st">"Mean F-stat: %.1f</span><span class="sc">\n</span><span class="st">"</span>, <span class="fu">mean</span>(f_stats)))</span>
+<span id="cb19-23"><a href="#cb19-23" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb19-24"><a href="#cb19-24" aria-hidden="true" tabindex="-1"></a><span class="co"># ── Step 2: IVW estimator ─────────────────────────────────────────────────────</span></span>
+<span id="cb19-25"><a href="#cb19-25" aria-hidden="true" tabindex="-1"></a><span class="co"># Weighted regression Gamma ~ gamma (no intercept), weights = 1/se_Y^2</span></span>
+<span id="cb19-26"><a href="#cb19-26" aria-hidden="true" tabindex="-1"></a>w       <span class="ot">&lt;-</span> <span class="dv">1</span> <span class="sc">/</span> se_Y<span class="sc">^</span><span class="dv">2</span></span>
+<span id="cb19-27"><a href="#cb19-27" aria-hidden="true" tabindex="-1"></a>beta_ivw <span class="ot">&lt;-</span> <span class="fu">sum</span>(w <span class="sc">*</span> Gamma_hat <span class="sc">*</span> gamma_hat) <span class="sc">/</span> <span class="fu">sum</span>(w <span class="sc">*</span> gamma_hat<span class="sc">^</span><span class="dv">2</span>)</span>
+<span id="cb19-28"><a href="#cb19-28" aria-hidden="true" tabindex="-1"></a>se_ivw   <span class="ot">&lt;-</span> <span class="fu">sqrt</span>(<span class="dv">1</span> <span class="sc">/</span> <span class="fu">sum</span>(w <span class="sc">*</span> gamma_hat<span class="sc">^</span><span class="dv">2</span>))</span>
+<span id="cb19-29"><a href="#cb19-29" aria-hidden="true" tabindex="-1"></a>z_ivw    <span class="ot">&lt;-</span> beta_ivw <span class="sc">/</span> se_ivw</span>
+<span id="cb19-30"><a href="#cb19-30" aria-hidden="true" tabindex="-1"></a>p_ivw    <span class="ot">&lt;-</span> <span class="dv">2</span> <span class="sc">*</span> <span class="fu">pnorm</span>(<span class="fu">abs</span>(z_ivw), <span class="at">lower.tail =</span> <span class="cn">FALSE</span>)</span>
+<span id="cb19-31"><a href="#cb19-31" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb19-32"><a href="#cb19-32" aria-hidden="true" tabindex="-1"></a><span class="co"># ── Step 3: MR-Egger estimator ────────────────────────────────────────────────</span></span>
+<span id="cb19-33"><a href="#cb19-33" aria-hidden="true" tabindex="-1"></a><span class="co"># Weighted regression Gamma ~ gamma WITH intercept; intercept tests pleiotropy</span></span>
+<span id="cb19-34"><a href="#cb19-34" aria-hidden="true" tabindex="-1"></a>fit_egger   <span class="ot">&lt;-</span> <span class="fu">lm</span>(Gamma_hat <span class="sc">~</span> gamma_hat, <span class="at">weights =</span> w)</span>
+<span id="cb19-35"><a href="#cb19-35" aria-hidden="true" tabindex="-1"></a>beta_egger  <span class="ot">&lt;-</span> <span class="fu">coef</span>(fit_egger)[<span class="st">"gamma_hat"</span>]</span>
+<span id="cb19-36"><a href="#cb19-36" aria-hidden="true" tabindex="-1"></a>intercept_e <span class="ot">&lt;-</span> <span class="fu">coef</span>(fit_egger)[<span class="st">"(Intercept)"</span>]</span>
+<span id="cb19-37"><a href="#cb19-37" aria-hidden="true" tabindex="-1"></a>se_egger    <span class="ot">&lt;-</span> <span class="fu">summary</span>(fit_egger)<span class="sc">$</span>coefficients[<span class="st">"gamma_hat"</span>, <span class="st">"Std. Error"</span>]</span>
+<span id="cb19-38"><a href="#cb19-38" aria-hidden="true" tabindex="-1"></a>se_int      <span class="ot">&lt;-</span> <span class="fu">summary</span>(fit_egger)<span class="sc">$</span>coefficients[<span class="st">"(Intercept)"</span>, <span class="st">"Std. Error"</span>]</span>
+<span id="cb19-39"><a href="#cb19-39" aria-hidden="true" tabindex="-1"></a>p_int       <span class="ot">&lt;-</span> <span class="fu">summary</span>(fit_egger)<span class="sc">$</span>coefficients[<span class="st">"(Intercept)"</span>, <span class="st">"Pr(&gt;|t|)"</span>]</span>
+<span id="cb19-40"><a href="#cb19-40" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb19-41"><a href="#cb19-41" aria-hidden="true" tabindex="-1"></a><span class="co"># ── Step 4: Weighted median estimator ─────────────────────────────────────────</span></span>
+<span id="cb19-42"><a href="#cb19-42" aria-hidden="true" tabindex="-1"></a><span class="co"># Consistent even if up to 50% of IVs are invalid</span></span>
+<span id="cb19-43"><a href="#cb19-43" aria-hidden="true" tabindex="-1"></a>ratio_j  <span class="ot">&lt;-</span> Gamma_hat <span class="sc">/</span> gamma_hat                 <span class="co"># per-IV ratio estimates</span></span>
+<span id="cb19-44"><a href="#cb19-44" aria-hidden="true" tabindex="-1"></a>w_norm   <span class="ot">&lt;-</span> w <span class="sc">/</span> <span class="fu">sum</span>(w)                            <span class="co"># normalised weights</span></span>
+<span id="cb19-45"><a href="#cb19-45" aria-hidden="true" tabindex="-1"></a>ord      <span class="ot">&lt;-</span> <span class="fu">order</span>(ratio_j)</span>
+<span id="cb19-46"><a href="#cb19-46" aria-hidden="true" tabindex="-1"></a>cum_w    <span class="ot">&lt;-</span> <span class="fu">cumsum</span>(w_norm[ord])</span>
+<span id="cb19-47"><a href="#cb19-47" aria-hidden="true" tabindex="-1"></a><span class="co"># Find weighted median by interpolation</span></span>
+<span id="cb19-48"><a href="#cb19-48" aria-hidden="true" tabindex="-1"></a>med_idx  <span class="ot">&lt;-</span> <span class="fu">which</span>(cum_w <span class="sc">&gt;=</span> <span class="fl">0.5</span>)[<span class="dv">1</span>]</span>
+<span id="cb19-49"><a href="#cb19-49" aria-hidden="true" tabindex="-1"></a>beta_wm  <span class="ot">&lt;-</span> ratio_j[ord][med_idx]</span>
+<span id="cb19-50"><a href="#cb19-50" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb19-51"><a href="#cb19-51" aria-hidden="true" tabindex="-1"></a><span class="co"># ── Step 5: Cochran Q heterogeneity test ──────────────────────────────────────</span></span>
+<span id="cb19-52"><a href="#cb19-52" aria-hidden="true" tabindex="-1"></a><span class="co"># Q = sum of w_j * (ratio_j - beta_ivw)^2; follows chi-sq(n_iv - 1) under H0</span></span>
+<span id="cb19-53"><a href="#cb19-53" aria-hidden="true" tabindex="-1"></a>Q_stat   <span class="ot">&lt;-</span> <span class="fu">sum</span>(w <span class="sc">*</span> (ratio_j <span class="sc">-</span> beta_ivw)<span class="sc">^</span><span class="dv">2</span>)</span>
+<span id="cb19-54"><a href="#cb19-54" aria-hidden="true" tabindex="-1"></a>p_Q      <span class="ot">&lt;-</span> <span class="fu">pchisq</span>(Q_stat, <span class="at">df =</span> n_iv <span class="sc">-</span> <span class="dv">1</span>, <span class="at">lower.tail =</span> <span class="cn">FALSE</span>)</span>
+<span id="cb19-55"><a href="#cb19-55" aria-hidden="true" tabindex="-1"></a>I2       <span class="ot">&lt;-</span> <span class="fu">max</span>(<span class="dv">0</span>, (Q_stat <span class="sc">-</span> (n_iv <span class="sc">-</span> <span class="dv">1</span>)) <span class="sc">/</span> Q_stat)   <span class="co"># I² heterogeneity index</span></span>
+<span id="cb19-56"><a href="#cb19-56" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb19-57"><a href="#cb19-57" aria-hidden="true" tabindex="-1"></a><span class="co"># ── Step 6: Leave-one-out (LOO) analysis ─────────────────────────────────────</span></span>
+<span id="cb19-58"><a href="#cb19-58" aria-hidden="true" tabindex="-1"></a><span class="co"># Detect influential IVs: re-estimate IVW dropping one IV at a time</span></span>
+<span id="cb19-59"><a href="#cb19-59" aria-hidden="true" tabindex="-1"></a>loo_beta <span class="ot">&lt;-</span> <span class="fu">vapply</span>(<span class="fu">seq_len</span>(n_iv), <span class="cf">function</span>(i) {</span>
+<span id="cb19-60"><a href="#cb19-60" aria-hidden="true" tabindex="-1"></a>  w_i <span class="ot">&lt;-</span> w[<span class="sc">-</span>i]; g_i <span class="ot">&lt;-</span> gamma_hat[<span class="sc">-</span>i]; G_i <span class="ot">&lt;-</span> Gamma_hat[<span class="sc">-</span>i]</span>
+<span id="cb19-61"><a href="#cb19-61" aria-hidden="true" tabindex="-1"></a>  <span class="fu">sum</span>(w_i <span class="sc">*</span> G_i <span class="sc">*</span> g_i) <span class="sc">/</span> <span class="fu">sum</span>(w_i <span class="sc">*</span> g_i<span class="sc">^</span><span class="dv">2</span>)</span>
+<span id="cb19-62"><a href="#cb19-62" aria-hidden="true" tabindex="-1"></a>}, <span class="fu">numeric</span>(<span class="dv">1</span>))</span>
+<span id="cb19-63"><a href="#cb19-63" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb19-64"><a href="#cb19-64" aria-hidden="true" tabindex="-1"></a><span class="co"># ── Step 7: Results summary ───────────────────────────────────────────────────</span></span>
+<span id="cb19-65"><a href="#cb19-65" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">"</span><span class="sc">\n</span><span class="st">=== MR Results: BMI → Systolic Blood Pressure ===</span><span class="sc">\n</span><span class="st">"</span>)</span>
+<span id="cb19-66"><a href="#cb19-66" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="fu">sprintf</span>(<span class="st">"True causal effect:       β = %.2f</span><span class="sc">\n</span><span class="st">"</span>, beta_xy))</span>
+<span id="cb19-67"><a href="#cb19-67" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="fu">sprintf</span>(<span class="st">"IVW:          β = %.3f  SE = %.3f  p = %.3e</span><span class="sc">\n</span><span class="st">"</span>,</span>
+<span id="cb19-68"><a href="#cb19-68" aria-hidden="true" tabindex="-1"></a>            beta_ivw, se_ivw, p_ivw))</span>
+<span id="cb19-69"><a href="#cb19-69" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="fu">sprintf</span>(<span class="st">"MR-Egger:     β = %.3f  SE = %.3f  intercept = %.3f (p = %.3f)</span><span class="sc">\n</span><span class="st">"</span>,</span>
+<span id="cb19-70"><a href="#cb19-70" aria-hidden="true" tabindex="-1"></a>            beta_egger, se_egger, intercept_e, p_int))</span>
+<span id="cb19-71"><a href="#cb19-71" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="fu">sprintf</span>(<span class="st">"Wtd Median:   β = %.3f</span><span class="sc">\n</span><span class="st">"</span>, beta_wm))</span>
+<span id="cb19-72"><a href="#cb19-72" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="fu">sprintf</span>(<span class="st">"Cochran Q = %.2f (df=%d, p = %.3f) | I² = %.1f%%</span><span class="sc">\n</span><span class="st">"</span>,</span>
+<span id="cb19-73"><a href="#cb19-73" aria-hidden="true" tabindex="-1"></a>            Q_stat, n_iv <span class="sc">-</span> <span class="dv">1</span>, p_Q, I2 <span class="sc">*</span> <span class="dv">100</span>))</span>
+<span id="cb19-74"><a href="#cb19-74" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb19-75"><a href="#cb19-75" aria-hidden="true" tabindex="-1"></a><span class="co"># ── Step 8: Visualisation (funnel + LOO) ─────────────────────────────────────</span></span>
+<span id="cb19-76"><a href="#cb19-76" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(ggplot2)</span>
+<span id="cb19-77"><a href="#cb19-77" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(patchwork)</span>
+<span id="cb19-78"><a href="#cb19-78" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb19-79"><a href="#cb19-79" aria-hidden="true" tabindex="-1"></a><span class="co"># Funnel plot: per-IV ratio vs. precision (1/se_Y)</span></span>
+<span id="cb19-80"><a href="#cb19-80" aria-hidden="true" tabindex="-1"></a>df_funnel <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(</span>
+<span id="cb19-81"><a href="#cb19-81" aria-hidden="true" tabindex="-1"></a>  <span class="at">ratio     =</span> ratio_j,</span>
+<span id="cb19-82"><a href="#cb19-82" aria-hidden="true" tabindex="-1"></a>  <span class="at">precision =</span> <span class="dv">1</span> <span class="sc">/</span> se_Y,</span>
+<span id="cb19-83"><a href="#cb19-83" aria-hidden="true" tabindex="-1"></a>  <span class="at">pleio     =</span> alpha <span class="sc">!=</span> <span class="dv">0</span></span>
+<span id="cb19-84"><a href="#cb19-84" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb19-85"><a href="#cb19-85" aria-hidden="true" tabindex="-1"></a>p_funnel <span class="ot">&lt;-</span> <span class="fu">ggplot</span>(df_funnel, <span class="fu">aes</span>(<span class="at">x =</span> ratio, <span class="at">y =</span> precision)) <span class="sc">+</span></span>
+<span id="cb19-86"><a href="#cb19-86" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_point</span>(<span class="fu">aes</span>(<span class="at">color =</span> pleio), <span class="at">size =</span> <span class="fl">2.5</span>, <span class="at">alpha =</span> <span class="fl">0.8</span>) <span class="sc">+</span></span>
+<span id="cb19-87"><a href="#cb19-87" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_vline</span>(<span class="at">xintercept =</span> beta_ivw, <span class="at">color =</span> <span class="st">"#1F77B4"</span>,</span>
+<span id="cb19-88"><a href="#cb19-88" aria-hidden="true" tabindex="-1"></a>             <span class="at">linetype =</span> <span class="st">"solid"</span>, <span class="at">linewidth =</span> <span class="fl">0.8</span>) <span class="sc">+</span></span>
+<span id="cb19-89"><a href="#cb19-89" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_vline</span>(<span class="at">xintercept =</span> beta_xy, <span class="at">color =</span> <span class="st">"grey40"</span>,</span>
+<span id="cb19-90"><a href="#cb19-90" aria-hidden="true" tabindex="-1"></a>             <span class="at">linetype =</span> <span class="st">"dashed"</span>, <span class="at">linewidth =</span> <span class="fl">0.6</span>) <span class="sc">+</span></span>
+<span id="cb19-91"><a href="#cb19-91" aria-hidden="true" tabindex="-1"></a>  <span class="fu">scale_color_manual</span>(<span class="at">values =</span> <span class="fu">c</span>(<span class="st">"FALSE"</span> <span class="ot">=</span> <span class="st">"steelblue"</span>, <span class="st">"TRUE"</span> <span class="ot">=</span> <span class="st">"#D62728"</span>),</span>
+<span id="cb19-92"><a href="#cb19-92" aria-hidden="true" tabindex="-1"></a>                     <span class="at">labels =</span> <span class="fu">c</span>(<span class="st">"Valid IV"</span>, <span class="st">"Pleiotropic IV"</span>)) <span class="sc">+</span></span>
+<span id="cb19-93"><a href="#cb19-93" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(<span class="at">x =</span> <span class="st">"Per-IV ratio estimate (Γ̂ / γ̂)"</span>,</span>
+<span id="cb19-94"><a href="#cb19-94" aria-hidden="true" tabindex="-1"></a>       <span class="at">y =</span> <span class="st">"Precision (1 / SE_Y)"</span>,</span>
+<span id="cb19-95"><a href="#cb19-95" aria-hidden="true" tabindex="-1"></a>       <span class="at">title =</span> <span class="st">"Funnel Plot"</span>, <span class="at">color =</span> <span class="cn">NULL</span>) <span class="sc">+</span></span>
+<span id="cb19-96"><a href="#cb19-96" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme_classic</span>(<span class="at">base_size =</span> <span class="dv">11</span>) <span class="sc">+</span></span>
+<span id="cb19-97"><a href="#cb19-97" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme</span>(<span class="at">legend.position =</span> <span class="st">"top"</span>)</span>
+<span id="cb19-98"><a href="#cb19-98" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb19-99"><a href="#cb19-99" aria-hidden="true" tabindex="-1"></a><span class="co"># LOO plot</span></span>
+<span id="cb19-100"><a href="#cb19-100" aria-hidden="true" tabindex="-1"></a>df_loo <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(</span>
+<span id="cb19-101"><a href="#cb19-101" aria-hidden="true" tabindex="-1"></a>  <span class="at">iv      =</span> <span class="fu">factor</span>(<span class="fu">seq_len</span>(n_iv)),</span>
+<span id="cb19-102"><a href="#cb19-102" aria-hidden="true" tabindex="-1"></a>  <span class="at">beta    =</span> loo_beta,</span>
+<span id="cb19-103"><a href="#cb19-103" aria-hidden="true" tabindex="-1"></a>  <span class="at">pleio   =</span> alpha <span class="sc">!=</span> <span class="dv">0</span></span>
+<span id="cb19-104"><a href="#cb19-104" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb19-105"><a href="#cb19-105" aria-hidden="true" tabindex="-1"></a>p_loo <span class="ot">&lt;-</span> <span class="fu">ggplot</span>(df_loo, <span class="fu">aes</span>(<span class="at">x =</span> iv, <span class="at">y =</span> beta, <span class="at">color =</span> pleio)) <span class="sc">+</span></span>
+<span id="cb19-106"><a href="#cb19-106" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_point</span>(<span class="at">size =</span> <span class="fl">2.5</span>) <span class="sc">+</span></span>
+<span id="cb19-107"><a href="#cb19-107" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_hline</span>(<span class="at">yintercept =</span> beta_ivw, <span class="at">color =</span> <span class="st">"#1F77B4"</span>,</span>
+<span id="cb19-108"><a href="#cb19-108" aria-hidden="true" tabindex="-1"></a>             <span class="at">linetype =</span> <span class="st">"solid"</span>, <span class="at">linewidth =</span> <span class="fl">0.7</span>) <span class="sc">+</span></span>
+<span id="cb19-109"><a href="#cb19-109" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_hline</span>(<span class="at">yintercept =</span> beta_xy, <span class="at">color =</span> <span class="st">"grey40"</span>,</span>
+<span id="cb19-110"><a href="#cb19-110" aria-hidden="true" tabindex="-1"></a>             <span class="at">linetype =</span> <span class="st">"dashed"</span>, <span class="at">linewidth =</span> <span class="fl">0.6</span>) <span class="sc">+</span></span>
+<span id="cb19-111"><a href="#cb19-111" aria-hidden="true" tabindex="-1"></a>  <span class="fu">scale_color_manual</span>(<span class="at">values =</span> <span class="fu">c</span>(<span class="st">"FALSE"</span> <span class="ot">=</span> <span class="st">"steelblue"</span>, <span class="st">"TRUE"</span> <span class="ot">=</span> <span class="st">"#D62728"</span>),</span>
+<span id="cb19-112"><a href="#cb19-112" aria-hidden="true" tabindex="-1"></a>                     <span class="at">labels =</span> <span class="fu">c</span>(<span class="st">"Valid IV"</span>, <span class="st">"Pleiotropic IV"</span>)) <span class="sc">+</span></span>
+<span id="cb19-113"><a href="#cb19-113" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(<span class="at">x =</span> <span class="st">"IV dropped"</span>, <span class="at">y =</span> <span class="st">"IVW β (leave-one-out)"</span>,</span>
+<span id="cb19-114"><a href="#cb19-114" aria-hidden="true" tabindex="-1"></a>       <span class="at">title =</span> <span class="st">"Leave-One-Out Sensitivity"</span>, <span class="at">color =</span> <span class="cn">NULL</span>) <span class="sc">+</span></span>
+<span id="cb19-115"><a href="#cb19-115" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme_classic</span>(<span class="at">base_size =</span> <span class="dv">11</span>) <span class="sc">+</span></span>
+<span id="cb19-116"><a href="#cb19-116" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme</span>(<span class="at">legend.position =</span> <span class="st">"top"</span>,</span>
+<span id="cb19-117"><a href="#cb19-117" aria-hidden="true" tabindex="-1"></a>        <span class="at">axis.text.x =</span> <span class="fu">element_text</span>(<span class="at">size =</span> <span class="dv">7</span>))</span>
+<span id="cb19-118"><a href="#cb19-118" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb19-119"><a href="#cb19-119" aria-hidden="true" tabindex="-1"></a>p_funnel <span class="sc">+</span> p_loo</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>四类敏感性检验的解读标准：</p>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 18%">
+<col style="width: 25%">
+<col style="width: 37%">
+<col style="width: 18%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>检验</th>
+<th>统计量</th>
+<th>显著时含义</th>
+<th>行动</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>MR-Egger 截距</td>
+<td><span class="math inline">\(p &lt; 0.05\)</span></td>
+<td>存在定向水平多效性</td>
+<td>以 MR-Egger <span class="math inline">\(\beta\)</span> 为主估计</td>
+</tr>
+<tr class="even">
+<td>Cochran Q</td>
+<td><span class="math inline">\(p &lt; 0.05\)</span></td>
+<td>IV 间效应异质，部分 IV 可能无效</td>
+<td>检查漏斗图，考虑删除异常 IV</td>
+</tr>
+<tr class="odd">
+<td><span class="math inline">\(I^2 &gt; 50\%\)</span></td>
+<td>—</td>
+<td>中-高度异质性</td>
+<td>同上，随机效应 IVW</td>
+</tr>
+<tr class="even">
+<td>LOO 大幅波动</td>
+<td>某单个 IV 影响大</td>
+<td>结论依赖该 IV</td>
+<td>剔除后重估，报告两个结果</td>
+</tr>
+</tbody>
+</table>
 <div class="warning">
 <p><strong>水平多效性是 MR 的主要威胁</strong></p>
 <p>若工具变量 SNP 除通过暴露路径外，还通过其他生物学路径影响结局（水平多效性），则 MR 估计有偏。MR-Egger 回归通过允许非零截距来检测和校正平均多效性，但其估计效率低，且假设多效性与 IV 强度不相关（InSIDE 假设）。加权中位数法和众数法在不同多效性模式下均提供稳健估计，与 IVW 结果一致性越高，因果推断越可信。</p>
@@ -2343,7 +2462,7 @@ Q_\rho = (1-\rho) \cdot Q_{\text{SKAT}} + \rho \cdot Q_{\text{burden}}, \quad \r
 <li><p><em>三个假设为：（1）相关性：IV（遗传变异）与暴露因素显著关联；（2）独立性：IV 与混杂因素无关（由孟德尔随机化遗传原理保证）；（3）排他性：IV 仅通过暴露影响结局，不存在其他路径。水平多效性违背的是排他性假设。常用敏感性分析方法包括：MR-Egger 回归（检测平均多效性，截距不为零提示多效性）、加权中位数法（在 50% 以下 IV 有效时仍稳健）、加权众数法和 MR-PRESSO（检测并校正异常 IV）。</em></p></li>
 <li><p><em>C+T 方法优点是简单透明、计算快速，缺点是阈值以下小效应 SNP 被完全丢弃，且对 LD 校正不充分。LDpred2 优点是通过贝叶斯收缩利用全基因组 SNP 信息，在高多基因性性状上预测准确性更高，缺点是计算复杂度高、依赖参考 LD 矩阵质量。PRS 预测性能通常用连续表型的 Nagelkerke R²（或 Pearson <span class="math inline">\(r^2\)</span>）以及二元表型的 AUC（曲线下面积）评估，均应在独立验证集中评估以避免过拟合。</em></p></li>
 <li><p><em>稀有变异（MAF &lt; 1%）在群体中携带者极少，单 SNP 关联检验在有限样本中的等位基因组数量太小，导致统计量方差极大，几乎无法在全基因组显著性阈值下达到显著。SKAT 将同一基因内所有稀有变异的基因型信息通过核矩阵聚合为单一统计量，相当于在基因水平上汇聚多个稀有变异的微小信号，从而实现检验力的提升，且允许各变异效应方向不同（与 burden test 的区别）。</em></p></li>
-<li><p><em>分析流程：（1）从 LDL 胆固醇 GWAS（如 CARDIoGRAMplusC4D 或 UK Biobank）提取显著 SNP 作为工具变量，进行 LD 裁剪保留独立 IV；（2）在心肌梗死 GWAS 中提取对应 SNP 的效应量；（3）使用 TwoSampleMR 运行 IVW（主估计）、加权中位数法和 MR-Egger（敏感性）；（4）通过 MR-Egger 截距检验和 Cochran Q 统计量评估多效性和异质性。主要局限性：PCSK9 区域 SNP 已知仅通过 LDL 水平影响心血管风险，但若纳入其他区域的 LDL 相关 SNP，需检查是否存在通过 HDL、甘油三酯等其他路径的水平多效性；GWAS 样本重叠（winner’s curse 效应）也可能导致 IV 效应高估。</em></p></li>
+<li><p><em>分析流程：（1）从 LDL 胆固醇 GWAS（如 CARDIoGRAMplusC4D 或 UK Biobank）提取显著 SNP 作为工具变量，进行 LD 裁剪保留独立 IV；（2）在心肌梗死 GWAS 中提取对应 SNP 的效应量；（3）手动实现或使用 MendelianRandomization 包运行 IVW（主估计）、加权中位数法和 MR-Egger（敏感性）；（4）通过 MR-Egger 截距检验和 Cochran Q 统计量评估多效性和异质性。主要局限性：PCSK9 区域 SNP 已知仅通过 LDL 水平影响心血管风险，但若纳入其他区域的 LDL 相关 SNP，需检查是否存在通过 HDL、甘油三酯等其他路径的水平多效性；GWAS 样本重叠（winner’s curse 效应）也可能导致 IV 效应高估。</em></p></li>
 <li><p><em>（1）在候选区域（lead SNP ± 500 kb）内运行 SuSiE-RSS，获得每个 SNP 的 PIP 值和 95% 可信集，将 PIP &gt; 0.1 的 SNP 列为优先候选。（2）在 GTEx 中查询可信集内 SNP 是否为候选基因（尤其是区域内或邻近基因）在相关组织中的 cis-eQTL；若存在 eQTL 重叠，运行 coloc 分析评估 PPH4 是否 &gt; 0.8。（3）利用 ENCODE 或 Roadmap 的 H3K27ac、ATAC-seq 峰数据，通过 bedtools intersect 检查可信集 SNP 是否位于相关细胞类型的活跃增强子或启动子区域；进一步通过 Hi-C 数据确认该调控元件与哪个基因启动子存在染色质互作环，建立”SNP→调控元件→靶基因”的调控假说。</em></p></li>
 <li><p><em>欧洲人群 lead SNP 通常不是因果变异本身，而是通过 LD 代理因果变异的标记物。当目标群体（非欧洲）的 LD 结构不同时，同一 lead SNP 与因果变异的 <span class="math inline">\(r^2\)</span> 降低，代理效率下降，导致效应量估计偏向零，PRS 预测性能随之下降。多群体精细定位的原理：设两群体的 LD 矩阵分别为 <span class="math inline">\(\mathbf{R}_1\)</span>（欧洲）和 <span class="math inline">\(\mathbf{R}_2\)</span>（东亚），多群体似然为各群体似然之积 <span class="math inline">\(P(\text{data}_1 | \mathcal{C}, \mathbf{R}_1) \times P(\text{data}_2 | \mathcal{C}, \mathbf{R}_2)\)</span>；若欧洲群体无法区分 SNP A 和 B（<span class="math inline">\(r^2 = 0.95\)</span>），但东亚群体中 A 与 B 的 <span class="math inline">\(r^2 = 0.10\)</span>，则东亚数据可有效区分二者，将 PIP 集中于真正的因果变异，实现可信集缩小。</em></p></li>
 <li><p><em>H3 代表该区域同时存在两个独立的遗传效应：一个驱动 GWAS 关联信号，另一个驱动 eQTL 信号，二者的因果变异不同。这意味着在同一 LD 区块内存在两个独立的调控元件，各自影响不同的生物学过程，生物学上同样有深度探索的意义。H4 则代表同一因果变异同时驱动疾病关联和基因表达变化，是”该基因通过表达量改变影响疾病”这一假说的最直接统计证据。当 PPH3 = 0.70 而 PPH4 = 0.25 时，数据更支持两个独立信号共存（H3）；此时不应宣称 eQTL 基因是疾病的致因基因，而应进一步检查该区域是否确实有两个独立关联信号（通过条件分析验证），并考虑（1）增大样本量以提升 coloc 分辨率；（2）整合精细定位结果（可信集是否重叠）辅助判断；（3）探索是否存在另一基因的 eQTL 与 GWAS 信号共定位（PPH4 更高）。</em></p></li>

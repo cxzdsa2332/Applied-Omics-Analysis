@@ -876,52 +876,138 @@ IVW 估计量等价于：以 $1/\hat{\sigma}_{Yj}^2$ 为权重，对过原点约
 
 ### MR 分析流程与敏感性分析
 
+以下代码延续上节的模拟框架（BMI → 收缩压，真实因果效应 $\beta = 1.30$），在已有汇总统计量的基础上完整实现三种 MR 估计量和四类敏感性检验，全部基于 base R，无需外部 MR 包。
+
 ```r
-library(TwoSampleMR)
+# ── Reproduce simulation from previous section ────────────────────────────────
+set.seed(2025)
+n_iv    <- 30      # total IVs
+n_pleio <- 4       # pleiotropic IVs (set to 0 for clean scenario)
+beta_xy <- 1.30    # true causal effect of BMI on SBP (mmHg per kg/m²)
 
-# Step 1: 提取暴露 GWAS 中的工具变量（显著 SNP）
-exposure_dat <- extract_instruments(
-  outcomes = "ieu-b-4816",   # 以 BMI 为暴露（IEU Open GWAS ID）
-  p1       = 5e-8,
-  clump    = TRUE,
-  r2       = 0.001,
-  kb       = 10000
+# Simulate IV strength (SNP → BMI)
+gamma_hat <- rnorm(n_iv, mean = 0.04, sd = 0.01)
+se_X      <- runif(n_iv, 0.005, 0.012)
+
+# Simulate SNP → SBP via BMI (causal path) + pleiotropy
+alpha <- rep(0, n_iv)
+if (n_pleio > 0) alpha[sample(n_iv, n_pleio)] <- rnorm(n_pleio, 0, 0.5)
+
+se_Y      <- runif(n_iv, 0.03, 0.08)
+Gamma_hat <- beta_xy * gamma_hat + alpha + rnorm(n_iv, 0, se_Y)
+
+# ── Step 1: Instrument validity checks ────────────────────────────────────────
+# F-statistic per IV: F = (gamma / se_X)^2; weak IV threshold: F < 10
+f_stats <- (gamma_hat / se_X)^2
+cat(sprintf("Weak IVs (F < 10): %d / %d\n", sum(f_stats < 10), n_iv))
+cat(sprintf("Mean F-stat: %.1f\n", mean(f_stats)))
+
+# ── Step 2: IVW estimator ─────────────────────────────────────────────────────
+# Weighted regression Gamma ~ gamma (no intercept), weights = 1/se_Y^2
+w       <- 1 / se_Y^2
+beta_ivw <- sum(w * Gamma_hat * gamma_hat) / sum(w * gamma_hat^2)
+se_ivw   <- sqrt(1 / sum(w * gamma_hat^2))
+z_ivw    <- beta_ivw / se_ivw
+p_ivw    <- 2 * pnorm(abs(z_ivw), lower.tail = FALSE)
+
+# ── Step 3: MR-Egger estimator ────────────────────────────────────────────────
+# Weighted regression Gamma ~ gamma WITH intercept; intercept tests pleiotropy
+fit_egger   <- lm(Gamma_hat ~ gamma_hat, weights = w)
+beta_egger  <- coef(fit_egger)["gamma_hat"]
+intercept_e <- coef(fit_egger)["(Intercept)"]
+se_egger    <- summary(fit_egger)$coefficients["gamma_hat", "Std. Error"]
+se_int      <- summary(fit_egger)$coefficients["(Intercept)", "Std. Error"]
+p_int       <- summary(fit_egger)$coefficients["(Intercept)", "Pr(>|t|)"]
+
+# ── Step 4: Weighted median estimator ─────────────────────────────────────────
+# Consistent even if up to 50% of IVs are invalid
+ratio_j  <- Gamma_hat / gamma_hat                 # per-IV ratio estimates
+w_norm   <- w / sum(w)                            # normalised weights
+ord      <- order(ratio_j)
+cum_w    <- cumsum(w_norm[ord])
+# Find weighted median by interpolation
+med_idx  <- which(cum_w >= 0.5)[1]
+beta_wm  <- ratio_j[ord][med_idx]
+
+# ── Step 5: Cochran Q heterogeneity test ──────────────────────────────────────
+# Q = sum of w_j * (ratio_j - beta_ivw)^2; follows chi-sq(n_iv - 1) under H0
+Q_stat   <- sum(w * (ratio_j - beta_ivw)^2)
+p_Q      <- pchisq(Q_stat, df = n_iv - 1, lower.tail = FALSE)
+I2       <- max(0, (Q_stat - (n_iv - 1)) / Q_stat)   # I² heterogeneity index
+
+# ── Step 6: Leave-one-out (LOO) analysis ─────────────────────────────────────
+# Detect influential IVs: re-estimate IVW dropping one IV at a time
+loo_beta <- vapply(seq_len(n_iv), function(i) {
+  w_i <- w[-i]; g_i <- gamma_hat[-i]; G_i <- Gamma_hat[-i]
+  sum(w_i * G_i * g_i) / sum(w_i * g_i^2)
+}, numeric(1))
+
+# ── Step 7: Results summary ───────────────────────────────────────────────────
+cat("\n=== MR Results: BMI → Systolic Blood Pressure ===\n")
+cat(sprintf("True causal effect:       β = %.2f\n", beta_xy))
+cat(sprintf("IVW:          β = %.3f  SE = %.3f  p = %.3e\n",
+            beta_ivw, se_ivw, p_ivw))
+cat(sprintf("MR-Egger:     β = %.3f  SE = %.3f  intercept = %.3f (p = %.3f)\n",
+            beta_egger, se_egger, intercept_e, p_int))
+cat(sprintf("Wtd Median:   β = %.3f\n", beta_wm))
+cat(sprintf("Cochran Q = %.2f (df=%d, p = %.3f) | I² = %.1f%%\n",
+            Q_stat, n_iv - 1, p_Q, I2 * 100))
+
+# ── Step 8: Visualisation (funnel + LOO) ─────────────────────────────────────
+library(ggplot2)
+library(patchwork)
+
+# Funnel plot: per-IV ratio vs. precision (1/se_Y)
+df_funnel <- data.frame(
+  ratio     = ratio_j,
+  precision = 1 / se_Y,
+  pleio     = alpha != 0
 )
+p_funnel <- ggplot(df_funnel, aes(x = ratio, y = precision)) +
+  geom_point(aes(color = pleio), size = 2.5, alpha = 0.8) +
+  geom_vline(xintercept = beta_ivw, color = "#1F77B4",
+             linetype = "solid", linewidth = 0.8) +
+  geom_vline(xintercept = beta_xy, color = "grey40",
+             linetype = "dashed", linewidth = 0.6) +
+  scale_color_manual(values = c("FALSE" = "steelblue", "TRUE" = "#D62728"),
+                     labels = c("Valid IV", "Pleiotropic IV")) +
+  labs(x = "Per-IV ratio estimate (Γ̂ / γ̂)",
+       y = "Precision (1 / SE_Y)",
+       title = "Funnel Plot", color = NULL) +
+  theme_classic(base_size = 11) +
+  theme(legend.position = "top")
 
-cat("Number of IVs:", nrow(exposure_dat), "\n")
-
-# Step 2: 在结局 GWAS 中提取对应 SNP 效应（以 T2D 为结局）
-outcome_dat <- extract_outcome_data(
-  snps     = exposure_dat$SNP,
-  outcomes = "ieu-a-24"    # Type 2 diabetes
+# LOO plot
+df_loo <- data.frame(
+  iv      = factor(seq_len(n_iv)),
+  beta    = loo_beta,
+  pleio   = alpha != 0
 )
+p_loo <- ggplot(df_loo, aes(x = iv, y = beta, color = pleio)) +
+  geom_point(size = 2.5) +
+  geom_hline(yintercept = beta_ivw, color = "#1F77B4",
+             linetype = "solid", linewidth = 0.7) +
+  geom_hline(yintercept = beta_xy, color = "grey40",
+             linetype = "dashed", linewidth = 0.6) +
+  scale_color_manual(values = c("FALSE" = "steelblue", "TRUE" = "#D62728"),
+                     labels = c("Valid IV", "Pleiotropic IV")) +
+  labs(x = "IV dropped", y = "IVW β (leave-one-out)",
+       title = "Leave-One-Out Sensitivity", color = NULL) +
+  theme_classic(base_size = 11) +
+  theme(legend.position = "top",
+        axis.text.x = element_text(size = 7))
 
-# Step 3: 数据协调
-dat <- harmonise_data(exposure_dat, outcome_dat)
-
-# Step 4: MR 分析（多种方法）
-res <- mr(dat, method_list = c(
-  "mr_ivw",                   # Inverse Variance Weighted (主方法)
-  "mr_weighted_median",       # 允许 <50% IV 无效
-  "mr_egger_regression",      # 检测水平多效性
-  "mr_weighted_mode"
-))
-
-mr_results(res)
-
-# Step 5: 敏感性分析
-# MR-Egger 截距检验多效性
-mr_pleiotropy_test(dat)
-
-# Cochran Q 统计量检验异质性
-mr_heterogeneity(dat)
-
-# 漏斗图
-mr_funnel_plot(mr_singlesnp(dat))
-
-# 散点图
-mr_scatter_plot(res, dat)
+p_funnel + p_loo
 ```
+
+四类敏感性检验的解读标准：
+
+| 检验 | 统计量 | 显著时含义 | 行动 |
+|------|--------|------------|------|
+| MR-Egger 截距 | $p < 0.05$ | 存在定向水平多效性 | 以 MR-Egger $\beta$ 为主估计 |
+| Cochran Q | $p < 0.05$ | IV 间效应异质，部分 IV 可能无效 | 检查漏斗图，考虑删除异常 IV |
+| $I^2 > 50\%$ | — | 中-高度异质性 | 同上，随机效应 IVW |
+| LOO 大幅波动 | 某单个 IV 影响大 | 结论依赖该 IV | 剔除后重估，报告两个结果 |
 
 :::warning
 **水平多效性是 MR 的主要威胁**
@@ -1669,7 +1755,7 @@ GWAS 显著信号
 
 5. *稀有变异（MAF < 1%）在群体中携带者极少，单 SNP 关联检验在有限样本中的等位基因组数量太小，导致统计量方差极大，几乎无法在全基因组显著性阈值下达到显著。SKAT 将同一基因内所有稀有变异的基因型信息通过核矩阵聚合为单一统计量，相当于在基因水平上汇聚多个稀有变异的微小信号，从而实现检验力的提升，且允许各变异效应方向不同（与 burden test 的区别）。*
 
-6. *分析流程：（1）从 LDL 胆固醇 GWAS（如 CARDIoGRAMplusC4D 或 UK Biobank）提取显著 SNP 作为工具变量，进行 LD 裁剪保留独立 IV；（2）在心肌梗死 GWAS 中提取对应 SNP 的效应量；（3）使用 TwoSampleMR 运行 IVW（主估计）、加权中位数法和 MR-Egger（敏感性）；（4）通过 MR-Egger 截距检验和 Cochran Q 统计量评估多效性和异质性。主要局限性：PCSK9 区域 SNP 已知仅通过 LDL 水平影响心血管风险，但若纳入其他区域的 LDL 相关 SNP，需检查是否存在通过 HDL、甘油三酯等其他路径的水平多效性；GWAS 样本重叠（winner's curse 效应）也可能导致 IV 效应高估。*
+6. *分析流程：（1）从 LDL 胆固醇 GWAS（如 CARDIoGRAMplusC4D 或 UK Biobank）提取显著 SNP 作为工具变量，进行 LD 裁剪保留独立 IV；（2）在心肌梗死 GWAS 中提取对应 SNP 的效应量；（3）手动实现或使用 MendelianRandomization 包运行 IVW（主估计）、加权中位数法和 MR-Egger（敏感性）；（4）通过 MR-Egger 截距检验和 Cochran Q 统计量评估多效性和异质性。主要局限性：PCSK9 区域 SNP 已知仅通过 LDL 水平影响心血管风险，但若纳入其他区域的 LDL 相关 SNP，需检查是否存在通过 HDL、甘油三酯等其他路径的水平多效性；GWAS 样本重叠（winner's curse 效应）也可能导致 IV 效应高估。*
 
 7. *（1）在候选区域（lead SNP ± 500 kb）内运行 SuSiE-RSS，获得每个 SNP 的 PIP 值和 95% 可信集，将 PIP > 0.1 的 SNP 列为优先候选。（2）在 GTEx 中查询可信集内 SNP 是否为候选基因（尤其是区域内或邻近基因）在相关组织中的 cis-eQTL；若存在 eQTL 重叠，运行 coloc 分析评估 PPH4 是否 > 0.8。（3）利用 ENCODE 或 Roadmap 的 H3K27ac、ATAC-seq 峰数据，通过 bedtools intersect 检查可信集 SNP 是否位于相关细胞类型的活跃增强子或启动子区域；进一步通过 Hi-C 数据确认该调控元件与哪个基因启动子存在染色质互作环，建立"SNP→调控元件→靶基因"的调控假说。*
 
