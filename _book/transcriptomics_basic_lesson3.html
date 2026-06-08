@@ -910,9 +910,74 @@ window.Quarto = {
 </section>
 <section id="第三步wald-检验" class="level3" data-number="5.3">
 <h3 data-number="5.3" class="anchored" data-anchor-id="第三步wald-检验"><span class="header-section-number">5.3</span> 第三步：Wald 检验</h3>
-<p>在模型 <span class="math inline">\(\log_2(\mu_{ij}) = \beta_{i0} + \beta_{i1} x_j + \log(s_j)\)</span> 中，<span class="math inline">\(\beta_{i1}\)</span> 即为基因 <span class="math inline">\(i\)</span> 的<strong>对数倍数变化（Log2 Fold Change, LFC）</strong>。Wald 检验统计量为：</p>
+<section id="从-tildealpha_i-到-hatbeta_i1两步之间的逻辑纽带" class="level4" data-number="5.3.1">
+<h4 data-number="5.3.1" class="anchored" data-anchor-id="从-tildealpha_i-到-hatbeta_i1两步之间的逻辑纽带"><span class="header-section-number">5.3.1</span> 从 <span class="math inline">\(\tilde{\alpha}_i\)</span> 到 <span class="math inline">\(\hat{\beta}_{i1}\)</span>：两步之间的逻辑纽带</h4>
+<p>在理解 Wald 检验之前，必须先厘清第二步（离散度估计）与第三步（系数估计与检验）之间的定量联系。这是 DESeq2 三步框架中最容易被忽略、也最关键的一环。</p>
+<p>第二步得到的 MAP 缩减离散度 <span class="math inline">\(\tilde{\alpha}_i\)</span>，在第三步中被视为<strong>已知常数</strong>，直接”插入”负二项（NB）广义线性模型的似然函数。具体模型为：</p>
+<p><span class="math display">\[\log(\mu_{ij}) = \beta_{i0} + \beta_{i1}\, x_j + \log(s_j)\]</span></p>
+<p>其中 <span class="math inline">\(x_j \in \{0, 1\}\)</span> 为处理/对照的指示变量，<span class="math inline">\(\log(s_j)\)</span> 为大小因子（第一步的产出）的偏移项（offset），以自然对数表示。<span class="math inline">\(\beta_{i1}\)</span> 是<strong>自然对数尺度</strong>上的效应量：<span class="math inline">\(\beta_{i1} = \ln(\mu_{\text{treated}} / \mu_{\text{untreated}})\)</span>，换算为常用的 log2 尺度即为 <span class="math inline">\(\text{LFC}_i = \beta_{i1} / \ln 2\)</span>。</p>
+<p>在 <span class="math inline">\(\tilde{\alpha}_i\)</span> 固定的条件下，以下 NB 似然函数关于 <span class="math inline">\(\boldsymbol{\beta}_i = (\beta_{i0}, \beta_{i1})\)</span> 最大化，得到估计值 <span class="math inline">\(\hat{\boldsymbol{\beta}}_i\)</span>：</p>
+<p><span class="math display">\[\ell(\boldsymbol{\beta}_i) = \sum_j \log \text{NB}\!\left(K_{ij};\; \mu_{ij}(\boldsymbol{\beta}_i),\; \tilde{\alpha}_i\right)\]</span></p>
+</section>
+<section id="tildealpha_i-如何影响-textsehatbeta_i1" class="level4" data-number="5.3.2">
+<h4 data-number="5.3.2" class="anchored" data-anchor-id="tildealpha_i-如何影响-textsehatbeta_i1"><span class="header-section-number">5.3.2</span> <span class="math inline">\(\tilde{\alpha}_i\)</span> 如何影响 <span class="math inline">\(\text{SE}(\hat{\beta}_{i1})\)</span></h4>
+<p>NB-GLM 的 Fisher 信息矩阵给出 <span class="math inline">\(\hat{\beta}_{i1}\)</span> 的渐近标准误差。对于简单两组设计，其近似形式揭示了 <span class="math inline">\(\tilde{\alpha}_i\)</span> 的核心作用：</p>
+<p><span class="math display">\[\text{SE}(\hat{\beta}_{i1}) \approx \sqrt{\frac{1}{n_1}\sum_{j \in \text{treated}} \frac{1 + \tilde{\alpha}_i\,\mu_{ij}}{\mu_{ij}} + \frac{1}{n_2}\sum_{j \in \text{control}} \frac{1 + \tilde{\alpha}_i\,\mu_{ij}}{\mu_{ij}}}\]</span></p>
+<p>从这个公式可以直接读出三个关键推论：</p>
+<ol type="1">
+<li><p><strong><span class="math inline">\(\tilde{\alpha}_i\)</span> 越大 → <span class="math inline">\(\text{SE}\)</span> 越大 → Wald 统计量越小 → 更难检测差异表达</strong>。这解释了为什么高度可变的基因（如细胞周期基因，<span class="math inline">\(\tilde{\alpha} \sim 0.5\)</span>）即使有较大的 LFC，也往往不显著——其离散度直接放大了系数估计的不确定性。</p></li>
+<li><p><strong><span class="math inline">\(\mu_{ij}\)</span> 越大 → <span class="math inline">\(\text{SE}\)</span> 越小</strong>。高表达基因即使在相同离散度下，系数估计也更精确，检验效力更高。这是 RNA-seq 统计检验中”高表达基因更容易显著”的数学根源。</p></li>
+<li><p><strong>两步之间的传递</strong>：若第二步将 <span class="math inline">\(\tilde{\alpha}_i\)</span> 过高估计（如对低计数基因未充分缩减），第三步的 SE 会被虚增，产生假阴性；若过低估计，SE 缩小，产生假阳性。这正是 Empirical Bayes 缩减不仅改善离散度估计本身、更保护下游 Wald 检验准确性的原因。</p></li>
+</ol>
+</section>
+<section id="wald-统计量与-p-值" class="level4" data-number="5.3.3">
+<h4 data-number="5.3.3" class="anchored" data-anchor-id="wald-统计量与-p-值"><span class="header-section-number">5.3.3</span> Wald 统计量与 p 值</h4>
+<p>在离散度固定的条件下，<span class="math inline">\(\hat{\beta}_{i1}\)</span> 的渐近分布近似正态，因此 Wald 检验统计量为：</p>
 <p><span class="math display">\[W_i = \frac{\hat{\beta}_{i1}}{\text{SE}(\hat{\beta}_{i1})}\]</span></p>
-<p>在零假设（<span class="math inline">\(\beta_{i1} = 0\)</span>，即无差异表达）下，<span class="math inline">\(W_i\)</span> 近似服从标准正态分布。对应 p 值经 Benjamini-Hochberg 方法校正为 adjusted p-value（padj）。</p>
+<p>在零假设 <span class="math inline">\(H_0: \beta_{i1} = 0\)</span>（即基因 <span class="math inline">\(i\)</span> 在两组间无差异表达）下，<span class="math inline">\(W_i \xrightarrow{d} \mathcal{N}(0, 1)\)</span>，双侧 p 值为：</p>
+<p><span class="math display">\[p_i = 2\,\Phi(-|W_i|)\]</span></p>
+<p>其中 <span class="math inline">\(\Phi\)</span> 为标准正态分布函数。对全体基因的 <span class="math inline">\(p_i\)</span> 施加 Benjamini-Hochberg 校正，得到 adjusted p-value（padj），控制假发现率（FDR）于指定水平（通常 5%）。</p>
+<div class="note">
+<p><strong>正态近似的条件：</strong> Wald 检验依赖渐近正态性，在样本量 <span class="math inline">\(n \geq 3\)</span> 且计数均值 <span class="math inline">\(\mu_{ij}\)</span> 较大时（一般 &gt; 5）近似良好。DESeq2 的独立过滤（independent filtering）步骤会在校正之前自动剔除平均表达量极低的基因，正是为了排除 Wald 近似失效的区域。对于极低计数或严重不均衡设计，可改用似然比检验（LRT，<code>test = "LRT"</code>），其不依赖正态近似。</p>
+</div>
+<p><strong>三步逻辑总结</strong></p>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 25%">
+<col style="width: 25%">
+<col style="width: 25%">
+<col style="width: 25%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>步骤</th>
+<th>输入</th>
+<th>输出</th>
+<th>传递给下步</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>1. 大小因子</td>
+<td>原始计数矩阵</td>
+<td><span class="math inline">\(s_j\)</span>（归一化因子）</td>
+<td>作为 offset 进入 NB-GLM</td>
+</tr>
+<tr class="even">
+<td>2. 离散度估计</td>
+<td>归一化计数、<span class="math inline">\(s_j\)</span></td>
+<td><span class="math inline">\(\tilde{\alpha}_i\)</span>（MAP 缩减）</td>
+<td>固定在 NB-GLM 似然中</td>
+</tr>
+<tr class="odd">
+<td>3. Wald 检验</td>
+<td><span class="math inline">\(\tilde{\alpha}_i\)</span>、<span class="math inline">\(s_j\)</span>、原始计数</td>
+<td><span class="math inline">\(\hat{\beta}_{i1}\)</span>、<span class="math inline">\(\text{SE}\)</span>、<span class="math inline">\(W_i\)</span>、padj</td>
+<td>最终差异表达结论</td>
+</tr>
+</tbody>
+</table>
+</section>
 </section>
 <section id="lfc-缩减apeglm" class="level3" data-number="5.4">
 <h3 data-number="5.4" class="anchored" data-anchor-id="lfc-缩减apeglm"><span class="header-section-number">5.4</span> LFC 缩减（apeglm）</h3>
@@ -1343,22 +1408,94 @@ window.Quarto = {
 </tbody>
 </table>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb7"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(edgeR)</span>
-<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a><span class="co"># `counts` and `sample_info` are the same objects created in the DESeq2 section above</span></span>
-<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a><span class="co"># Create DGEList object</span></span>
-<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a>dge <span class="ot">&lt;-</span> <span class="fu">DGEList</span>(<span class="at">counts =</span> counts, <span class="at">group =</span> sample_info<span class="sc">$</span>condition)</span>
-<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb7-7"><a href="#cb7-7" aria-hidden="true" tabindex="-1"></a><span class="co"># TMM normalization</span></span>
-<span id="cb7-8"><a href="#cb7-8" aria-hidden="true" tabindex="-1"></a>dge <span class="ot">&lt;-</span> <span class="fu">calcNormFactors</span>(dge, <span class="at">method =</span> <span class="st">"TMM"</span>)</span>
-<span id="cb7-9"><a href="#cb7-9" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb7-10"><a href="#cb7-10" aria-hidden="true" tabindex="-1"></a><span class="co"># Estimate dispersion</span></span>
-<span id="cb7-11"><a href="#cb7-11" aria-hidden="true" tabindex="-1"></a>dge <span class="ot">&lt;-</span> <span class="fu">estimateDisp</span>(dge)</span>
-<span id="cb7-12"><a href="#cb7-12" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb7-13"><a href="#cb7-13" aria-hidden="true" tabindex="-1"></a><span class="co"># Exact test (for simple two-group comparison)</span></span>
-<span id="cb7-14"><a href="#cb7-14" aria-hidden="true" tabindex="-1"></a>et <span class="ot">&lt;-</span> <span class="fu">exactTest</span>(dge, <span class="at">pair =</span> <span class="fu">c</span>(<span class="st">"untreated"</span>, <span class="st">"treated"</span>))</span>
-<span id="cb7-15"><a href="#cb7-15" aria-hidden="true" tabindex="-1"></a>res_edger <span class="ot">&lt;-</span> <span class="fu">topTags</span>(et, <span class="at">n =</span> <span class="cn">Inf</span>)<span class="sc">$</span>table</span>
-<span id="cb7-16"><a href="#cb7-16" aria-hidden="true" tabindex="-1"></a>sig_edger <span class="ot">&lt;-</span> <span class="fu">subset</span>(res_edger, FDR <span class="sc">&lt;</span> <span class="fl">0.05</span> <span class="sc">&amp;</span> <span class="fu">abs</span>(logFC) <span class="sc">&gt;</span> <span class="dv">1</span>)</span>
-<span id="cb7-17"><a href="#cb7-17" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">"edgeR significant DEGs:"</span>, <span class="fu">nrow</span>(sig_edger), <span class="st">"</span><span class="sc">\n</span><span class="st">"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(airway)</span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(ggplot2)</span>
+<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a><span class="co"># === Step 1: Load the airway built-in dataset ===</span></span>
+<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a><span class="co"># airway: 8 human airway smooth muscle (HASM) samples</span></span>
+<span id="cb7-7"><a href="#cb7-7" aria-hidden="true" tabindex="-1"></a><span class="co">#   - 4 cell lines (N61311, N052611, N080611, N061011), each measured</span></span>
+<span id="cb7-8"><a href="#cb7-8" aria-hidden="true" tabindex="-1"></a><span class="co">#     once untreated (untrt) and once dexamethasone-treated (trt)</span></span>
+<span id="cb7-9"><a href="#cb7-9" aria-hidden="true" tabindex="-1"></a><span class="co">#   - Balanced 2×4 paired design — cell line is the blocking factor</span></span>
+<span id="cb7-10"><a href="#cb7-10" aria-hidden="true" tabindex="-1"></a><span class="fu">data</span>(airway)</span>
+<span id="cb7-11"><a href="#cb7-11" aria-hidden="true" tabindex="-1"></a>counts_aw  <span class="ot">&lt;-</span> <span class="fu">assay</span>(airway, <span class="st">"counts"</span>)       <span class="co"># 63,677 genes × 8 samples</span></span>
+<span id="cb7-12"><a href="#cb7-12" aria-hidden="true" tabindex="-1"></a>coldata_aw <span class="ot">&lt;-</span> <span class="fu">as.data.frame</span>(<span class="fu">colData</span>(airway))</span>
+<span id="cb7-13"><a href="#cb7-13" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-14"><a href="#cb7-14" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">"Sample overview:</span><span class="sc">\n</span><span class="st">"</span>)</span>
+<span id="cb7-15"><a href="#cb7-15" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(coldata_aw[, <span class="fu">c</span>(<span class="st">"cell"</span>, <span class="st">"dex"</span>)])</span>
+<span id="cb7-16"><a href="#cb7-16" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-17"><a href="#cb7-17" aria-hidden="true" tabindex="-1"></a><span class="co"># === Step 2: Create DGEList and filter low-count genes ===</span></span>
+<span id="cb7-18"><a href="#cb7-18" aria-hidden="true" tabindex="-1"></a><span class="co"># relevel so "untrt" is the reference; treatment coefficient = "dextrt"</span></span>
+<span id="cb7-19"><a href="#cb7-19" aria-hidden="true" tabindex="-1"></a>coldata_aw<span class="sc">$</span>dex <span class="ot">&lt;-</span> <span class="fu">relevel</span>(coldata_aw<span class="sc">$</span>dex, <span class="at">ref =</span> <span class="st">"untrt"</span>)</span>
+<span id="cb7-20"><a href="#cb7-20" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-21"><a href="#cb7-21" aria-hidden="true" tabindex="-1"></a>dge  <span class="ot">&lt;-</span> <span class="fu">DGEList</span>(<span class="at">counts =</span> counts_aw, <span class="at">group =</span> coldata_aw<span class="sc">$</span>dex)</span>
+<span id="cb7-22"><a href="#cb7-22" aria-hidden="true" tabindex="-1"></a>keep <span class="ot">&lt;-</span> <span class="fu">filterByExpr</span>(dge)                   <span class="co"># keeps ~14,000 expressed genes</span></span>
+<span id="cb7-23"><a href="#cb7-23" aria-hidden="true" tabindex="-1"></a>dge  <span class="ot">&lt;-</span> dge[keep, , keep.lib.sizes <span class="ot">=</span> <span class="cn">FALSE</span>]</span>
+<span id="cb7-24"><a href="#cb7-24" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">"</span><span class="sc">\n</span><span class="st">Genes after filterByExpr:"</span>, <span class="fu">nrow</span>(dge), <span class="st">"</span><span class="sc">\n</span><span class="st">"</span>)</span>
+<span id="cb7-25"><a href="#cb7-25" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-26"><a href="#cb7-26" aria-hidden="true" tabindex="-1"></a><span class="co"># === Step 3: TMM normalization ===</span></span>
+<span id="cb7-27"><a href="#cb7-27" aria-hidden="true" tabindex="-1"></a>dge <span class="ot">&lt;-</span> <span class="fu">calcNormFactors</span>(dge, <span class="at">method =</span> <span class="st">"TMM"</span>)</span>
+<span id="cb7-28"><a href="#cb7-28" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">"</span><span class="sc">\n</span><span class="st">Library sizes and TMM normalization factors:</span><span class="sc">\n</span><span class="st">"</span>)</span>
+<span id="cb7-29"><a href="#cb7-29" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(<span class="fu">round</span>(dge<span class="sc">$</span>samples[, <span class="fu">c</span>(<span class="st">"lib.size"</span>, <span class="st">"norm.factors"</span>)], <span class="dv">3</span>))</span>
+<span id="cb7-30"><a href="#cb7-30" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-31"><a href="#cb7-31" aria-hidden="true" tabindex="-1"></a><span class="co"># === Step 4: Design matrix (cell line as blocking factor) ===</span></span>
+<span id="cb7-32"><a href="#cb7-32" aria-hidden="true" tabindex="-1"></a><span class="co"># ~ cell + dex: remove between-cell-line variation, test dex effect</span></span>
+<span id="cb7-33"><a href="#cb7-33" aria-hidden="true" tabindex="-1"></a>design_edger <span class="ot">&lt;-</span> <span class="fu">model.matrix</span>(<span class="sc">~</span> cell <span class="sc">+</span> dex, <span class="at">data =</span> coldata_aw)</span>
+<span id="cb7-34"><a href="#cb7-34" aria-hidden="true" tabindex="-1"></a><span class="fu">colnames</span>(design_edger)</span>
+<span id="cb7-35"><a href="#cb7-35" aria-hidden="true" tabindex="-1"></a><span class="co"># "(Intercept)" "cellN052611" "cellN080611" "cellN61311" "dextrt"</span></span>
+<span id="cb7-36"><a href="#cb7-36" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-37"><a href="#cb7-37" aria-hidden="true" tabindex="-1"></a><span class="co"># === Step 5: Dispersion estimation ===</span></span>
+<span id="cb7-38"><a href="#cb7-38" aria-hidden="true" tabindex="-1"></a>dge <span class="ot">&lt;-</span> <span class="fu">estimateDisp</span>(dge, design_edger, <span class="at">robust =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb7-39"><a href="#cb7-39" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">"</span><span class="sc">\n</span><span class="st">Common dispersion:"</span>, <span class="fu">round</span>(dge<span class="sc">$</span>common.dispersion, <span class="dv">4</span>))</span>
+<span id="cb7-40"><a href="#cb7-40" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">"</span><span class="sc">\n</span><span class="st">Common BCV (sqrt of dispersion):"</span>,</span>
+<span id="cb7-41"><a href="#cb7-41" aria-hidden="true" tabindex="-1"></a>    <span class="fu">round</span>(<span class="fu">sqrt</span>(dge<span class="sc">$</span>common.dispersion), <span class="dv">4</span>), <span class="st">"</span><span class="sc">\n</span><span class="st">"</span>)</span>
+<span id="cb7-42"><a href="#cb7-42" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-43"><a href="#cb7-43" aria-hidden="true" tabindex="-1"></a><span class="co"># BCV plot: shows per-gene dispersion vs expression level</span></span>
+<span id="cb7-44"><a href="#cb7-44" aria-hidden="true" tabindex="-1"></a><span class="fu">plotBCV</span>(dge)</span>
+<span id="cb7-45"><a href="#cb7-45" aria-hidden="true" tabindex="-1"></a><span class="fu">title</span>(<span class="st">"edgeR: BCV plot — airway dataset (Himes et al. 2014)"</span>)</span>
+<span id="cb7-46"><a href="#cb7-46" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-47"><a href="#cb7-47" aria-hidden="true" tabindex="-1"></a><span class="co"># === Step 6: Quasi-likelihood F-test (QLF) ===</span></span>
+<span id="cb7-48"><a href="#cb7-48" aria-hidden="true" tabindex="-1"></a><span class="co"># QLF applies an additional empirical-Bayes squeeze on quasi-dispersions,</span></span>
+<span id="cb7-49"><a href="#cb7-49" aria-hidden="true" tabindex="-1"></a><span class="co"># improving type-I error control over the classic likelihood ratio test</span></span>
+<span id="cb7-50"><a href="#cb7-50" aria-hidden="true" tabindex="-1"></a>fit_edger <span class="ot">&lt;-</span> <span class="fu">glmQLFit</span>(dge, design_edger, <span class="at">robust =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb7-51"><a href="#cb7-51" aria-hidden="true" tabindex="-1"></a>qlf       <span class="ot">&lt;-</span> <span class="fu">glmQLFTest</span>(fit_edger, <span class="at">coef =</span> <span class="st">"dextrt"</span>)</span>
+<span id="cb7-52"><a href="#cb7-52" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-53"><a href="#cb7-53" aria-hidden="true" tabindex="-1"></a>res_edger <span class="ot">&lt;-</span> <span class="fu">topTags</span>(qlf, <span class="at">n =</span> <span class="cn">Inf</span>, <span class="at">sort.by =</span> <span class="st">"PValue"</span>)<span class="sc">$</span>table</span>
+<span id="cb7-54"><a href="#cb7-54" aria-hidden="true" tabindex="-1"></a>sig_edger <span class="ot">&lt;-</span> <span class="fu">subset</span>(res_edger, FDR <span class="sc">&lt;</span> <span class="fl">0.05</span> <span class="sc">&amp;</span> <span class="fu">abs</span>(logFC) <span class="sc">&gt;</span> <span class="dv">1</span>)</span>
+<span id="cb7-55"><a href="#cb7-55" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">"</span><span class="sc">\n</span><span class="st">edgeR QLF — DEGs (|logFC| &gt; 1, FDR &lt; 0.05):"</span>, <span class="fu">nrow</span>(sig_edger), <span class="st">"</span><span class="sc">\n</span><span class="st">"</span>)</span>
+<span id="cb7-56"><a href="#cb7-56" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">"  Up-regulated  :"</span>, <span class="fu">sum</span>(sig_edger<span class="sc">$</span>logFC <span class="sc">&gt;</span> <span class="dv">0</span>), <span class="st">"</span><span class="sc">\n</span><span class="st">"</span>)</span>
+<span id="cb7-57"><a href="#cb7-57" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">"  Down-regulated:"</span>, <span class="fu">sum</span>(sig_edger<span class="sc">$</span>logFC <span class="sc">&lt;</span> <span class="dv">0</span>), <span class="st">"</span><span class="sc">\n</span><span class="st">"</span>)</span>
+<span id="cb7-58"><a href="#cb7-58" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-59"><a href="#cb7-59" aria-hidden="true" tabindex="-1"></a><span class="co"># Top 10 DEGs</span></span>
+<span id="cb7-60"><a href="#cb7-60" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">"</span><span class="sc">\n</span><span class="st">Top 10 DEGs by p-value:</span><span class="sc">\n</span><span class="st">"</span>)</span>
+<span id="cb7-61"><a href="#cb7-61" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(<span class="fu">head</span>(res_edger[, <span class="fu">c</span>(<span class="st">"logFC"</span>, <span class="st">"logCPM"</span>, <span class="st">"F"</span>, <span class="st">"PValue"</span>, <span class="st">"FDR"</span>)], <span class="dv">10</span>))</span>
+<span id="cb7-62"><a href="#cb7-62" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-63"><a href="#cb7-63" aria-hidden="true" tabindex="-1"></a><span class="co"># === Step 7: MD plot ===</span></span>
+<span id="cb7-64"><a href="#cb7-64" aria-hidden="true" tabindex="-1"></a><span class="fu">plotMD</span>(qlf, <span class="at">main =</span> <span class="st">"edgeR QLF: MD plot — dex vs untrt (airway)"</span>)</span>
+<span id="cb7-65"><a href="#cb7-65" aria-hidden="true" tabindex="-1"></a><span class="fu">abline</span>(<span class="at">h =</span> <span class="fu">c</span>(<span class="sc">-</span><span class="dv">1</span>, <span class="dv">1</span>), <span class="at">col =</span> <span class="st">"steelblue"</span>, <span class="at">lty =</span> <span class="dv">2</span>, <span class="at">lwd =</span> <span class="fl">1.2</span>)</span>
+<span id="cb7-66"><a href="#cb7-66" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-67"><a href="#cb7-67" aria-hidden="true" tabindex="-1"></a><span class="co"># === Step 8: Volcano plot ===</span></span>
+<span id="cb7-68"><a href="#cb7-68" aria-hidden="true" tabindex="-1"></a>res_edger<span class="sc">$</span>significance <span class="ot">&lt;-</span> <span class="st">"Not significant"</span></span>
+<span id="cb7-69"><a href="#cb7-69" aria-hidden="true" tabindex="-1"></a>res_edger<span class="sc">$</span>significance[res_edger<span class="sc">$</span>FDR <span class="sc">&lt;</span> <span class="fl">0.05</span> <span class="sc">&amp;</span> res_edger<span class="sc">$</span>logFC <span class="sc">&gt;</span>  <span class="dv">1</span>] <span class="ot">&lt;-</span> <span class="st">"Up"</span></span>
+<span id="cb7-70"><a href="#cb7-70" aria-hidden="true" tabindex="-1"></a>res_edger<span class="sc">$</span>significance[res_edger<span class="sc">$</span>FDR <span class="sc">&lt;</span> <span class="fl">0.05</span> <span class="sc">&amp;</span> res_edger<span class="sc">$</span>logFC <span class="sc">&lt;</span> <span class="sc">-</span><span class="dv">1</span>] <span class="ot">&lt;-</span> <span class="st">"Down"</span></span>
+<span id="cb7-71"><a href="#cb7-71" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-72"><a href="#cb7-72" aria-hidden="true" tabindex="-1"></a><span class="fu">ggplot</span>(res_edger, <span class="fu">aes</span>(<span class="at">x =</span> logFC, <span class="at">y =</span> <span class="sc">-</span><span class="fu">log10</span>(FDR), <span class="at">color =</span> significance)) <span class="sc">+</span></span>
+<span id="cb7-73"><a href="#cb7-73" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_point</span>(<span class="at">alpha =</span> <span class="fl">0.5</span>, <span class="at">size =</span> <span class="fl">0.8</span>) <span class="sc">+</span></span>
+<span id="cb7-74"><a href="#cb7-74" aria-hidden="true" tabindex="-1"></a>  <span class="fu">scale_color_manual</span>(<span class="at">values =</span> <span class="fu">c</span>(<span class="st">"Up"</span>              <span class="ot">=</span> <span class="st">"firebrick"</span>,</span>
+<span id="cb7-75"><a href="#cb7-75" aria-hidden="true" tabindex="-1"></a>                                <span class="st">"Down"</span>            <span class="ot">=</span> <span class="st">"steelblue"</span>,</span>
+<span id="cb7-76"><a href="#cb7-76" aria-hidden="true" tabindex="-1"></a>                                <span class="st">"Not significant"</span> <span class="ot">=</span> <span class="st">"grey70"</span>)) <span class="sc">+</span></span>
+<span id="cb7-77"><a href="#cb7-77" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_vline</span>(<span class="at">xintercept =</span> <span class="fu">c</span>(<span class="sc">-</span><span class="dv">1</span>, <span class="dv">1</span>), <span class="at">linetype =</span> <span class="st">"dashed"</span>, <span class="at">color =</span> <span class="st">"grey40"</span>) <span class="sc">+</span></span>
+<span id="cb7-78"><a href="#cb7-78" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_hline</span>(<span class="at">yintercept =</span> <span class="sc">-</span><span class="fu">log10</span>(<span class="fl">0.05</span>), <span class="at">linetype =</span> <span class="st">"dashed"</span>, <span class="at">color =</span> <span class="st">"grey40"</span>) <span class="sc">+</span></span>
+<span id="cb7-79"><a href="#cb7-79" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(</span>
+<span id="cb7-80"><a href="#cb7-80" aria-hidden="true" tabindex="-1"></a>    <span class="at">x        =</span> <span class="st">"logFC (dex / untrt)"</span>,</span>
+<span id="cb7-81"><a href="#cb7-81" aria-hidden="true" tabindex="-1"></a>    <span class="at">y        =</span> <span class="st">"-log10(FDR)"</span>,</span>
+<span id="cb7-82"><a href="#cb7-82" aria-hidden="true" tabindex="-1"></a>    <span class="at">title    =</span> <span class="st">"edgeR QLF: Volcano Plot — dexamethasone vs control"</span>,</span>
+<span id="cb7-83"><a href="#cb7-83" aria-hidden="true" tabindex="-1"></a>    <span class="at">subtitle =</span> <span class="fu">sprintf</span>(<span class="st">"airway dataset  |  Up: %d  |  Down: %d"</span>,</span>
+<span id="cb7-84"><a href="#cb7-84" aria-hidden="true" tabindex="-1"></a>                       <span class="fu">sum</span>(res_edger<span class="sc">$</span>significance <span class="sc">==</span> <span class="st">"Up"</span>),</span>
+<span id="cb7-85"><a href="#cb7-85" aria-hidden="true" tabindex="-1"></a>                       <span class="fu">sum</span>(res_edger<span class="sc">$</span>significance <span class="sc">==</span> <span class="st">"Down"</span>)),</span>
+<span id="cb7-86"><a href="#cb7-86" aria-hidden="true" tabindex="-1"></a>    <span class="at">color    =</span> <span class="st">"Direction"</span></span>
+<span id="cb7-87"><a href="#cb7-87" aria-hidden="true" tabindex="-1"></a>  ) <span class="sc">+</span></span>
+<span id="cb7-88"><a href="#cb7-88" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme_classic</span>() <span class="sc">+</span></span>
+<span id="cb7-89"><a href="#cb7-89" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme</span>(<span class="at">legend.position =</span> <span class="st">"top"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="tip">
 <p><strong>实践建议：</strong> 在条件许可时，同时运行 DESeq2 和 edgeR，取两者共同显著的差异基因（交集）作为高置信度结果。这种”共识 DEG”策略能有效降低方法选择带来的偏差。</p>
 </div>
@@ -1386,62 +1523,129 @@ window.Quarto = {
 <p>拥有权重的 log-CPM 数据便可以直接使用标准的线性模型进行差异检验，并通过 limma 的经验贝叶斯方差缩减提高统计效力。</p>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb8"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(limma)</span>
 <span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(edgeR)</span>
-<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a><span class="co"># === limma-voom workflow ===</span></span>
-<span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a><span class="co"># Reuses `counts` and `sample_info` defined in the DESeq2 section</span></span>
-<span id="cb8-6"><a href="#cb8-6" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb8-7"><a href="#cb8-7" aria-hidden="true" tabindex="-1"></a><span class="co"># Step 1: Create DGEList and normalize</span></span>
-<span id="cb8-8"><a href="#cb8-8" aria-hidden="true" tabindex="-1"></a>dge <span class="ot">&lt;-</span> <span class="fu">DGEList</span>(<span class="at">counts =</span> counts, <span class="at">group =</span> sample_info<span class="sc">$</span>condition)</span>
-<span id="cb8-9"><a href="#cb8-9" aria-hidden="true" tabindex="-1"></a>dge <span class="ot">&lt;-</span> <span class="fu">calcNormFactors</span>(dge, <span class="at">method =</span> <span class="st">"TMM"</span>)</span>
-<span id="cb8-10"><a href="#cb8-10" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb8-11"><a href="#cb8-11" aria-hidden="true" tabindex="-1"></a><span class="co"># Step 2: Design matrix</span></span>
-<span id="cb8-12"><a href="#cb8-12" aria-hidden="true" tabindex="-1"></a><span class="co"># Simple two-group comparison</span></span>
-<span id="cb8-13"><a href="#cb8-13" aria-hidden="true" tabindex="-1"></a>design <span class="ot">&lt;-</span> <span class="fu">model.matrix</span>(<span class="sc">~</span> condition, <span class="at">data =</span> sample_info)</span>
-<span id="cb8-14"><a href="#cb8-14" aria-hidden="true" tabindex="-1"></a><span class="fu">colnames</span>(design)  <span class="co"># "(Intercept)" and "conditiontreated"</span></span>
-<span id="cb8-15"><a href="#cb8-15" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb8-16"><a href="#cb8-16" aria-hidden="true" tabindex="-1"></a><span class="co"># Step 3: voom transformation</span></span>
-<span id="cb8-17"><a href="#cb8-17" aria-hidden="true" tabindex="-1"></a><span class="co"># Plot shows mean-variance trend and precision weights</span></span>
-<span id="cb8-18"><a href="#cb8-18" aria-hidden="true" tabindex="-1"></a>v <span class="ot">&lt;-</span> <span class="fu">voom</span>(dge, design, <span class="at">plot =</span> <span class="cn">TRUE</span>)</span>
-<span id="cb8-19"><a href="#cb8-19" aria-hidden="true" tabindex="-1"></a><span class="co"># voom() returns:</span></span>
-<span id="cb8-20"><a href="#cb8-20" aria-hidden="true" tabindex="-1"></a><span class="co">#   v$E       - log2 CPM matrix (normalized)</span></span>
-<span id="cb8-21"><a href="#cb8-21" aria-hidden="true" tabindex="-1"></a><span class="co">#   v$weights - precision weights per observation</span></span>
-<span id="cb8-22"><a href="#cb8-22" aria-hidden="true" tabindex="-1"></a><span class="co">#   v$design  - design matrix</span></span>
-<span id="cb8-23"><a href="#cb8-23" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb8-24"><a href="#cb8-24" aria-hidden="true" tabindex="-1"></a><span class="co"># Step 4: Fit linear model</span></span>
-<span id="cb8-25"><a href="#cb8-25" aria-hidden="true" tabindex="-1"></a>fit <span class="ot">&lt;-</span> <span class="fu">lmFit</span>(v, design)</span>
-<span id="cb8-26"><a href="#cb8-26" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb8-27"><a href="#cb8-27" aria-hidden="true" tabindex="-1"></a><span class="co"># Step 5: Empirical Bayes moderation of standard errors</span></span>
-<span id="cb8-28"><a href="#cb8-28" aria-hidden="true" tabindex="-1"></a>fit <span class="ot">&lt;-</span> <span class="fu">eBayes</span>(fit, <span class="at">trend =</span> <span class="cn">TRUE</span>, <span class="at">robust =</span> <span class="cn">TRUE</span>)</span>
-<span id="cb8-29"><a href="#cb8-29" aria-hidden="true" tabindex="-1"></a><span class="co"># trend = TRUE: allow prior variance to depend on average expression</span></span>
-<span id="cb8-30"><a href="#cb8-30" aria-hidden="true" tabindex="-1"></a><span class="co"># robust = TRUE: protect against outlier samples</span></span>
-<span id="cb8-31"><a href="#cb8-31" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb8-32"><a href="#cb8-32" aria-hidden="true" tabindex="-1"></a><span class="co"># Step 6: Extract results</span></span>
-<span id="cb8-33"><a href="#cb8-33" aria-hidden="true" tabindex="-1"></a>res_limma <span class="ot">&lt;-</span> <span class="fu">topTable</span>(</span>
-<span id="cb8-34"><a href="#cb8-34" aria-hidden="true" tabindex="-1"></a>  fit,</span>
-<span id="cb8-35"><a href="#cb8-35" aria-hidden="true" tabindex="-1"></a>  <span class="at">coef     =</span> <span class="st">"conditiontreated"</span>,  <span class="co"># coefficient to test</span></span>
-<span id="cb8-36"><a href="#cb8-36" aria-hidden="true" tabindex="-1"></a>  <span class="at">number   =</span> <span class="cn">Inf</span>,</span>
-<span id="cb8-37"><a href="#cb8-37" aria-hidden="true" tabindex="-1"></a>  <span class="at">adjust.method =</span> <span class="st">"BH"</span>,</span>
-<span id="cb8-38"><a href="#cb8-38" aria-hidden="true" tabindex="-1"></a>  <span class="at">sort.by  =</span> <span class="st">"P"</span></span>
-<span id="cb8-39"><a href="#cb8-39" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(airway)</span>
+<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(ggplot2)</span>
+<span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-6"><a href="#cb8-6" aria-hidden="true" tabindex="-1"></a><span class="co"># === Step 1: Load airway dataset (same as edgeR section) ===</span></span>
+<span id="cb8-7"><a href="#cb8-7" aria-hidden="true" tabindex="-1"></a><span class="fu">data</span>(airway)</span>
+<span id="cb8-8"><a href="#cb8-8" aria-hidden="true" tabindex="-1"></a>counts_aw  <span class="ot">&lt;-</span> <span class="fu">assay</span>(airway, <span class="st">"counts"</span>)</span>
+<span id="cb8-9"><a href="#cb8-9" aria-hidden="true" tabindex="-1"></a>coldata_aw <span class="ot">&lt;-</span> <span class="fu">as.data.frame</span>(<span class="fu">colData</span>(airway))</span>
+<span id="cb8-10"><a href="#cb8-10" aria-hidden="true" tabindex="-1"></a>coldata_aw<span class="sc">$</span>dex <span class="ot">&lt;-</span> <span class="fu">relevel</span>(coldata_aw<span class="sc">$</span>dex, <span class="at">ref =</span> <span class="st">"untrt"</span>)</span>
+<span id="cb8-11"><a href="#cb8-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-12"><a href="#cb8-12" aria-hidden="true" tabindex="-1"></a><span class="co"># === Step 2: DGEList + filter + TMM normalization ===</span></span>
+<span id="cb8-13"><a href="#cb8-13" aria-hidden="true" tabindex="-1"></a>dge  <span class="ot">&lt;-</span> <span class="fu">DGEList</span>(<span class="at">counts =</span> counts_aw, <span class="at">group =</span> coldata_aw<span class="sc">$</span>dex)</span>
+<span id="cb8-14"><a href="#cb8-14" aria-hidden="true" tabindex="-1"></a>keep <span class="ot">&lt;-</span> <span class="fu">filterByExpr</span>(dge)</span>
+<span id="cb8-15"><a href="#cb8-15" aria-hidden="true" tabindex="-1"></a>dge  <span class="ot">&lt;-</span> dge[keep, , keep.lib.sizes <span class="ot">=</span> <span class="cn">FALSE</span>]</span>
+<span id="cb8-16"><a href="#cb8-16" aria-hidden="true" tabindex="-1"></a>dge  <span class="ot">&lt;-</span> <span class="fu">calcNormFactors</span>(dge, <span class="at">method =</span> <span class="st">"TMM"</span>)</span>
+<span id="cb8-17"><a href="#cb8-17" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-18"><a href="#cb8-18" aria-hidden="true" tabindex="-1"></a><span class="co"># === Step 3: Design matrix ===</span></span>
+<span id="cb8-19"><a href="#cb8-19" aria-hidden="true" tabindex="-1"></a><span class="co"># Cell line as blocking factor (same design as edgeR section)</span></span>
+<span id="cb8-20"><a href="#cb8-20" aria-hidden="true" tabindex="-1"></a>design_voom <span class="ot">&lt;-</span> <span class="fu">model.matrix</span>(<span class="sc">~</span> cell <span class="sc">+</span> dex, <span class="at">data =</span> coldata_aw)</span>
+<span id="cb8-21"><a href="#cb8-21" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-22"><a href="#cb8-22" aria-hidden="true" tabindex="-1"></a><span class="co"># === Step 4: voom transformation ===</span></span>
+<span id="cb8-23"><a href="#cb8-23" aria-hidden="true" tabindex="-1"></a><span class="co"># voom() computes log2-CPM values and fits a LOWESS curve to estimate</span></span>
+<span id="cb8-24"><a href="#cb8-24" aria-hidden="true" tabindex="-1"></a><span class="co"># the mean–variance trend; precision weights are derived from the curve</span></span>
+<span id="cb8-25"><a href="#cb8-25" aria-hidden="true" tabindex="-1"></a><span class="fu">par</span>(<span class="at">mfrow =</span> <span class="fu">c</span>(<span class="dv">1</span>, <span class="dv">2</span>))</span>
+<span id="cb8-26"><a href="#cb8-26" aria-hidden="true" tabindex="-1"></a>v <span class="ot">&lt;-</span> <span class="fu">voom</span>(dge, design_voom, <span class="at">plot =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb8-27"><a href="#cb8-27" aria-hidden="true" tabindex="-1"></a><span class="co"># Left panel (auto-generated): mean log2-CPM vs sqrt(standard deviation) across samples,</span></span>
+<span id="cb8-28"><a href="#cb8-28" aria-hidden="true" tabindex="-1"></a><span class="co"># with the LOWESS trend line — the slope of this curve is what voom corrects for</span></span>
+<span id="cb8-29"><a href="#cb8-29" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-30"><a href="#cb8-30" aria-hidden="true" tabindex="-1"></a><span class="co"># Inspect weight structure to understand what voom produced</span></span>
+<span id="cb8-31"><a href="#cb8-31" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">"voom output:</span><span class="sc">\n</span><span class="st">"</span>)</span>
+<span id="cb8-32"><a href="#cb8-32" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">"  log2-CPM matrix (E):   "</span>, <span class="fu">nrow</span>(v<span class="sc">$</span>E), <span class="st">"genes ×"</span>, <span class="fu">ncol</span>(v<span class="sc">$</span>E), <span class="st">"samples</span><span class="sc">\n</span><span class="st">"</span>)</span>
+<span id="cb8-33"><a href="#cb8-33" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">"  precision weight matrix:"</span>, <span class="fu">nrow</span>(v<span class="sc">$</span>weights), <span class="st">"×"</span>, <span class="fu">ncol</span>(v<span class="sc">$</span>weights), <span class="st">"</span><span class="sc">\n</span><span class="st">"</span>)</span>
+<span id="cb8-34"><a href="#cb8-34" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">"  Weight range: ["</span>, <span class="fu">round</span>(<span class="fu">min</span>(v<span class="sc">$</span>weights), <span class="dv">2</span>), <span class="st">","</span>,</span>
+<span id="cb8-35"><a href="#cb8-35" aria-hidden="true" tabindex="-1"></a>    <span class="fu">round</span>(<span class="fu">max</span>(v<span class="sc">$</span>weights), <span class="dv">2</span>), <span class="st">"]</span><span class="sc">\n</span><span class="st">"</span>)</span>
+<span id="cb8-36"><a href="#cb8-36" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">"  Mean weight per sample:</span><span class="sc">\n</span><span class="st">"</span>)</span>
+<span id="cb8-37"><a href="#cb8-37" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(<span class="fu">round</span>(<span class="fu">colMeans</span>(v<span class="sc">$</span>weights), <span class="dv">2</span>))</span>
+<span id="cb8-38"><a href="#cb8-38" aria-hidden="true" tabindex="-1"></a><span class="co"># Low-count genes (small mean CPM) receive smaller weights because</span></span>
+<span id="cb8-39"><a href="#cb8-39" aria-hidden="true" tabindex="-1"></a><span class="co"># their log-CPM values are less reliable — voom down-weights them in the GLM fit</span></span>
 <span id="cb8-40"><a href="#cb8-40" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb8-41"><a href="#cb8-41" aria-hidden="true" tabindex="-1"></a><span class="co"># Results columns:</span></span>
-<span id="cb8-42"><a href="#cb8-42" aria-hidden="true" tabindex="-1"></a><span class="co"># logFC, AveExpr, t (moderated t-statistic), P.Value, adj.P.Val, B (log-odds)</span></span>
-<span id="cb8-43"><a href="#cb8-43" aria-hidden="true" tabindex="-1"></a>sig_limma <span class="ot">&lt;-</span> <span class="fu">subset</span>(res_limma, adj.P.Val <span class="sc">&lt;</span> <span class="fl">0.05</span> <span class="sc">&amp;</span> <span class="fu">abs</span>(logFC) <span class="sc">&gt;</span> <span class="dv">1</span>)</span>
-<span id="cb8-44"><a href="#cb8-44" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">"limma-voom significant DEGs:"</span>, <span class="fu">nrow</span>(sig_limma), <span class="st">"</span><span class="sc">\n</span><span class="st">"</span>)</span>
-<span id="cb8-45"><a href="#cb8-45" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb8-46"><a href="#cb8-46" aria-hidden="true" tabindex="-1"></a><span class="co"># === Three-method comparison ===</span></span>
-<span id="cb8-47"><a href="#cb8-47" aria-hidden="true" tabindex="-1"></a><span class="co"># Combine significant gene lists from DESeq2, edgeR, limma-voom</span></span>
-<span id="cb8-48"><a href="#cb8-48" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(ggVennDiagram)</span>
-<span id="cb8-49"><a href="#cb8-49" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb8-50"><a href="#cb8-50" aria-hidden="true" tabindex="-1"></a>gene_sets <span class="ot">&lt;-</span> <span class="fu">list</span>(</span>
-<span id="cb8-51"><a href="#cb8-51" aria-hidden="true" tabindex="-1"></a>  <span class="at">DESeq2    =</span> <span class="fu">rownames</span>(sig_genes),</span>
-<span id="cb8-52"><a href="#cb8-52" aria-hidden="true" tabindex="-1"></a>  <span class="at">edgeR     =</span> <span class="fu">rownames</span>(sig_edger),</span>
-<span id="cb8-53"><a href="#cb8-53" aria-hidden="true" tabindex="-1"></a>  <span class="at">limma_voom =</span> <span class="fu">rownames</span>(sig_limma)</span>
-<span id="cb8-54"><a href="#cb8-54" aria-hidden="true" tabindex="-1"></a>)</span>
-<span id="cb8-55"><a href="#cb8-55" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb8-56"><a href="#cb8-56" aria-hidden="true" tabindex="-1"></a><span class="fu">ggVennDiagram</span>(gene_sets, <span class="at">label =</span> <span class="st">"count"</span>) <span class="sc">+</span></span>
-<span id="cb8-57"><a href="#cb8-57" aria-hidden="true" tabindex="-1"></a>  <span class="fu">scale_fill_gradient</span>(<span class="at">low =</span> <span class="st">"white"</span>, <span class="at">high =</span> <span class="st">"steelblue"</span>) <span class="sc">+</span></span>
-<span id="cb8-58"><a href="#cb8-58" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(<span class="at">title =</span> <span class="st">"DEG overlap: DESeq2 vs edgeR vs limma-voom"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<span id="cb8-41"><a href="#cb8-41" aria-hidden="true" tabindex="-1"></a><span class="co"># === Step 5: Fit linear model ===</span></span>
+<span id="cb8-42"><a href="#cb8-42" aria-hidden="true" tabindex="-1"></a>fit_voom <span class="ot">&lt;-</span> <span class="fu">lmFit</span>(v, design_voom)</span>
+<span id="cb8-43"><a href="#cb8-43" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-44"><a href="#cb8-44" aria-hidden="true" tabindex="-1"></a><span class="co"># === Step 6: Empirical Bayes variance moderation ===</span></span>
+<span id="cb8-45"><a href="#cb8-45" aria-hidden="true" tabindex="-1"></a>fit_voom <span class="ot">&lt;-</span> <span class="fu">eBayes</span>(fit_voom, <span class="at">trend =</span> <span class="cn">TRUE</span>, <span class="at">robust =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb8-46"><a href="#cb8-46" aria-hidden="true" tabindex="-1"></a><span class="co"># trend = TRUE: allows prior variance to depend on average expression</span></span>
+<span id="cb8-47"><a href="#cb8-47" aria-hidden="true" tabindex="-1"></a><span class="co"># robust = TRUE: uses an outlier-robust prior that protects against</span></span>
+<span id="cb8-48"><a href="#cb8-48" aria-hidden="true" tabindex="-1"></a><span class="co">#   genes with extremely high/low variance that would otherwise</span></span>
+<span id="cb8-49"><a href="#cb8-49" aria-hidden="true" tabindex="-1"></a><span class="co">#   pull the global prior estimate</span></span>
+<span id="cb8-50"><a href="#cb8-50" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-51"><a href="#cb8-51" aria-hidden="true" tabindex="-1"></a><span class="co"># SA plot: shows moderated variance (posterior) vs average expression</span></span>
+<span id="cb8-52"><a href="#cb8-52" aria-hidden="true" tabindex="-1"></a><span class="fu">plotSA</span>(fit_voom, <span class="at">main =</span> <span class="st">"limma-voom: SA plot — posterior variance (eBayes)"</span>)</span>
+<span id="cb8-53"><a href="#cb8-53" aria-hidden="true" tabindex="-1"></a><span class="fu">par</span>(<span class="at">mfrow =</span> <span class="fu">c</span>(<span class="dv">1</span>, <span class="dv">1</span>))</span>
+<span id="cb8-54"><a href="#cb8-54" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-55"><a href="#cb8-55" aria-hidden="true" tabindex="-1"></a><span class="co"># === Step 7: Extract results ===</span></span>
+<span id="cb8-56"><a href="#cb8-56" aria-hidden="true" tabindex="-1"></a>res_limma <span class="ot">&lt;-</span> <span class="fu">topTable</span>(</span>
+<span id="cb8-57"><a href="#cb8-57" aria-hidden="true" tabindex="-1"></a>  fit_voom,</span>
+<span id="cb8-58"><a href="#cb8-58" aria-hidden="true" tabindex="-1"></a>  <span class="at">coef          =</span> <span class="st">"dextrt"</span>,</span>
+<span id="cb8-59"><a href="#cb8-59" aria-hidden="true" tabindex="-1"></a>  <span class="at">number        =</span> <span class="cn">Inf</span>,</span>
+<span id="cb8-60"><a href="#cb8-60" aria-hidden="true" tabindex="-1"></a>  <span class="at">adjust.method =</span> <span class="st">"BH"</span>,</span>
+<span id="cb8-61"><a href="#cb8-61" aria-hidden="true" tabindex="-1"></a>  <span class="at">sort.by       =</span> <span class="st">"P"</span></span>
+<span id="cb8-62"><a href="#cb8-62" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb8-63"><a href="#cb8-63" aria-hidden="true" tabindex="-1"></a><span class="co"># Columns: logFC, AveExpr, t (moderated t), P.Value, adj.P.Val, B (log-odds of DE)</span></span>
+<span id="cb8-64"><a href="#cb8-64" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-65"><a href="#cb8-65" aria-hidden="true" tabindex="-1"></a>sig_limma <span class="ot">&lt;-</span> <span class="fu">subset</span>(res_limma, adj.P.Val <span class="sc">&lt;</span> <span class="fl">0.05</span> <span class="sc">&amp;</span> <span class="fu">abs</span>(logFC) <span class="sc">&gt;</span> <span class="dv">1</span>)</span>
+<span id="cb8-66"><a href="#cb8-66" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">"</span><span class="sc">\n</span><span class="st">limma-voom — DEGs (|logFC| &gt; 1, adj.P &lt; 0.05):"</span>, <span class="fu">nrow</span>(sig_limma), <span class="st">"</span><span class="sc">\n</span><span class="st">"</span>)</span>
+<span id="cb8-67"><a href="#cb8-67" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">"  Up-regulated  :"</span>, <span class="fu">sum</span>(sig_limma<span class="sc">$</span>logFC <span class="sc">&gt;</span> <span class="dv">0</span>), <span class="st">"</span><span class="sc">\n</span><span class="st">"</span>)</span>
+<span id="cb8-68"><a href="#cb8-68" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">"  Down-regulated:"</span>, <span class="fu">sum</span>(sig_limma<span class="sc">$</span>logFC <span class="sc">&lt;</span> <span class="dv">0</span>), <span class="st">"</span><span class="sc">\n</span><span class="st">"</span>)</span>
+<span id="cb8-69"><a href="#cb8-69" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-70"><a href="#cb8-70" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">"</span><span class="sc">\n</span><span class="st">Top 10 DEGs:</span><span class="sc">\n</span><span class="st">"</span>)</span>
+<span id="cb8-71"><a href="#cb8-71" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(<span class="fu">head</span>(res_limma[, <span class="fu">c</span>(<span class="st">"logFC"</span>, <span class="st">"AveExpr"</span>, <span class="st">"t"</span>, <span class="st">"adj.P.Val"</span>, <span class="st">"B"</span>)], <span class="dv">10</span>))</span>
+<span id="cb8-72"><a href="#cb8-72" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-73"><a href="#cb8-73" aria-hidden="true" tabindex="-1"></a><span class="co"># === Step 8: Volcano plot ===</span></span>
+<span id="cb8-74"><a href="#cb8-74" aria-hidden="true" tabindex="-1"></a>res_limma<span class="sc">$</span>significance <span class="ot">&lt;-</span> <span class="st">"Not significant"</span></span>
+<span id="cb8-75"><a href="#cb8-75" aria-hidden="true" tabindex="-1"></a>res_limma<span class="sc">$</span>significance[res_limma<span class="sc">$</span>adj.P.Val <span class="sc">&lt;</span> <span class="fl">0.05</span> <span class="sc">&amp;</span> res_limma<span class="sc">$</span>logFC <span class="sc">&gt;</span>  <span class="dv">1</span>] <span class="ot">&lt;-</span> <span class="st">"Up"</span></span>
+<span id="cb8-76"><a href="#cb8-76" aria-hidden="true" tabindex="-1"></a>res_limma<span class="sc">$</span>significance[res_limma<span class="sc">$</span>adj.P.Val <span class="sc">&lt;</span> <span class="fl">0.05</span> <span class="sc">&amp;</span> res_limma<span class="sc">$</span>logFC <span class="sc">&lt;</span> <span class="sc">-</span><span class="dv">1</span>] <span class="ot">&lt;-</span> <span class="st">"Down"</span></span>
+<span id="cb8-77"><a href="#cb8-77" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-78"><a href="#cb8-78" aria-hidden="true" tabindex="-1"></a><span class="fu">ggplot</span>(res_limma, <span class="fu">aes</span>(<span class="at">x =</span> logFC, <span class="at">y =</span> <span class="sc">-</span><span class="fu">log10</span>(adj.P.Val), <span class="at">color =</span> significance)) <span class="sc">+</span></span>
+<span id="cb8-79"><a href="#cb8-79" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_point</span>(<span class="at">alpha =</span> <span class="fl">0.5</span>, <span class="at">size =</span> <span class="fl">0.8</span>) <span class="sc">+</span></span>
+<span id="cb8-80"><a href="#cb8-80" aria-hidden="true" tabindex="-1"></a>  <span class="fu">scale_color_manual</span>(<span class="at">values =</span> <span class="fu">c</span>(<span class="st">"Up"</span>              <span class="ot">=</span> <span class="st">"firebrick"</span>,</span>
+<span id="cb8-81"><a href="#cb8-81" aria-hidden="true" tabindex="-1"></a>                                <span class="st">"Down"</span>            <span class="ot">=</span> <span class="st">"steelblue"</span>,</span>
+<span id="cb8-82"><a href="#cb8-82" aria-hidden="true" tabindex="-1"></a>                                <span class="st">"Not significant"</span> <span class="ot">=</span> <span class="st">"grey70"</span>)) <span class="sc">+</span></span>
+<span id="cb8-83"><a href="#cb8-83" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_vline</span>(<span class="at">xintercept =</span> <span class="fu">c</span>(<span class="sc">-</span><span class="dv">1</span>, <span class="dv">1</span>), <span class="at">linetype =</span> <span class="st">"dashed"</span>, <span class="at">color =</span> <span class="st">"grey40"</span>) <span class="sc">+</span></span>
+<span id="cb8-84"><a href="#cb8-84" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_hline</span>(<span class="at">yintercept =</span> <span class="sc">-</span><span class="fu">log10</span>(<span class="fl">0.05</span>), <span class="at">linetype =</span> <span class="st">"dashed"</span>, <span class="at">color =</span> <span class="st">"grey40"</span>) <span class="sc">+</span></span>
+<span id="cb8-85"><a href="#cb8-85" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(</span>
+<span id="cb8-86"><a href="#cb8-86" aria-hidden="true" tabindex="-1"></a>    <span class="at">x        =</span> <span class="st">"logFC (dex / untrt)"</span>,</span>
+<span id="cb8-87"><a href="#cb8-87" aria-hidden="true" tabindex="-1"></a>    <span class="at">y        =</span> <span class="st">"-log10(adj.P.Val)"</span>,</span>
+<span id="cb8-88"><a href="#cb8-88" aria-hidden="true" tabindex="-1"></a>    <span class="at">title    =</span> <span class="st">"limma-voom: Volcano Plot — dexamethasone vs control"</span>,</span>
+<span id="cb8-89"><a href="#cb8-89" aria-hidden="true" tabindex="-1"></a>    <span class="at">subtitle =</span> <span class="fu">sprintf</span>(<span class="st">"airway dataset  |  Up: %d  |  Down: %d"</span>,</span>
+<span id="cb8-90"><a href="#cb8-90" aria-hidden="true" tabindex="-1"></a>                       <span class="fu">sum</span>(res_limma<span class="sc">$</span>significance <span class="sc">==</span> <span class="st">"Up"</span>),</span>
+<span id="cb8-91"><a href="#cb8-91" aria-hidden="true" tabindex="-1"></a>                       <span class="fu">sum</span>(res_limma<span class="sc">$</span>significance <span class="sc">==</span> <span class="st">"Down"</span>)),</span>
+<span id="cb8-92"><a href="#cb8-92" aria-hidden="true" tabindex="-1"></a>    <span class="at">color    =</span> <span class="st">"Direction"</span></span>
+<span id="cb8-93"><a href="#cb8-93" aria-hidden="true" tabindex="-1"></a>  ) <span class="sc">+</span></span>
+<span id="cb8-94"><a href="#cb8-94" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme_classic</span>() <span class="sc">+</span></span>
+<span id="cb8-95"><a href="#cb8-95" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme</span>(<span class="at">legend.position =</span> <span class="st">"top"</span>)</span>
+<span id="cb8-96"><a href="#cb8-96" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-97"><a href="#cb8-97" aria-hidden="true" tabindex="-1"></a><span class="co"># === Step 9: Three-method comparison (DESeq2 / edgeR / limma-voom) ===</span></span>
+<span id="cb8-98"><a href="#cb8-98" aria-hidden="true" tabindex="-1"></a><span class="co"># Run DESeq2 on the same airway data for a fair comparison</span></span>
+<span id="cb8-99"><a href="#cb8-99" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(DESeq2)</span>
+<span id="cb8-100"><a href="#cb8-100" aria-hidden="true" tabindex="-1"></a>dds_aw <span class="ot">&lt;-</span> <span class="fu">DESeqDataSet</span>(airway, <span class="at">design =</span> <span class="sc">~</span> cell <span class="sc">+</span> dex)</span>
+<span id="cb8-101"><a href="#cb8-101" aria-hidden="true" tabindex="-1"></a>dds_aw<span class="sc">$</span>dex <span class="ot">&lt;-</span> <span class="fu">relevel</span>(dds_aw<span class="sc">$</span>dex, <span class="at">ref =</span> <span class="st">"untrt"</span>)</span>
+<span id="cb8-102"><a href="#cb8-102" aria-hidden="true" tabindex="-1"></a>dds_aw <span class="ot">&lt;-</span> dds_aw[keep, ]               <span class="co"># same gene set as edgeR / voom</span></span>
+<span id="cb8-103"><a href="#cb8-103" aria-hidden="true" tabindex="-1"></a>dds_aw <span class="ot">&lt;-</span> <span class="fu">DESeq</span>(dds_aw)</span>
+<span id="cb8-104"><a href="#cb8-104" aria-hidden="true" tabindex="-1"></a>res_aw  <span class="ot">&lt;-</span> <span class="fu">results</span>(dds_aw, <span class="at">contrast =</span> <span class="fu">c</span>(<span class="st">"dex"</span>, <span class="st">"trt"</span>, <span class="st">"untrt"</span>), <span class="at">alpha =</span> <span class="fl">0.05</span>)</span>
+<span id="cb8-105"><a href="#cb8-105" aria-hidden="true" tabindex="-1"></a>res_aw  <span class="ot">&lt;-</span> <span class="fu">lfcShrink</span>(dds_aw, <span class="at">coef =</span> <span class="st">"dex_trt_vs_untrt"</span>, <span class="at">type =</span> <span class="st">"apeglm"</span>,</span>
+<span id="cb8-106"><a href="#cb8-106" aria-hidden="true" tabindex="-1"></a>                     <span class="at">res =</span> res_aw)</span>
+<span id="cb8-107"><a href="#cb8-107" aria-hidden="true" tabindex="-1"></a>sig_deseq2_aw <span class="ot">&lt;-</span> <span class="fu">subset</span>(res_aw, padj <span class="sc">&lt;</span> <span class="fl">0.05</span> <span class="sc">&amp;</span> <span class="fu">abs</span>(log2FoldChange) <span class="sc">&gt;</span> <span class="dv">1</span>)</span>
+<span id="cb8-108"><a href="#cb8-108" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-109"><a href="#cb8-109" aria-hidden="true" tabindex="-1"></a><span class="co"># Venn diagram of overlapping significant genes</span></span>
+<span id="cb8-110"><a href="#cb8-110" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(ggVennDiagram)</span>
+<span id="cb8-111"><a href="#cb8-111" aria-hidden="true" tabindex="-1"></a>gene_sets <span class="ot">&lt;-</span> <span class="fu">list</span>(</span>
+<span id="cb8-112"><a href="#cb8-112" aria-hidden="true" tabindex="-1"></a>  <span class="at">DESeq2     =</span> <span class="fu">rownames</span>(sig_deseq2_aw),</span>
+<span id="cb8-113"><a href="#cb8-113" aria-hidden="true" tabindex="-1"></a>  <span class="at">edgeR      =</span> <span class="fu">rownames</span>(sig_edger),</span>
+<span id="cb8-114"><a href="#cb8-114" aria-hidden="true" tabindex="-1"></a>  <span class="at">limma_voom =</span> <span class="fu">rownames</span>(sig_limma)</span>
+<span id="cb8-115"><a href="#cb8-115" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb8-116"><a href="#cb8-116" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">"</span><span class="sc">\n</span><span class="st">Method comparison (airway dataset, |LFC| &gt; 1, FDR/padj &lt; 0.05):</span><span class="sc">\n</span><span class="st">"</span>)</span>
+<span id="cb8-117"><a href="#cb8-117" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">"  DESeq2    :"</span>, <span class="fu">length</span>(gene_sets<span class="sc">$</span>DESeq2), <span class="st">"DEGs</span><span class="sc">\n</span><span class="st">"</span>)</span>
+<span id="cb8-118"><a href="#cb8-118" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">"  edgeR     :"</span>, <span class="fu">length</span>(gene_sets<span class="sc">$</span>edgeR), <span class="st">"DEGs</span><span class="sc">\n</span><span class="st">"</span>)</span>
+<span id="cb8-119"><a href="#cb8-119" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">"  limma-voom:"</span>, <span class="fu">length</span>(gene_sets<span class="sc">$</span>limma_voom), <span class="st">"DEGs</span><span class="sc">\n</span><span class="st">"</span>)</span>
+<span id="cb8-120"><a href="#cb8-120" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">"  All three :"</span>, <span class="fu">length</span>(<span class="fu">Reduce</span>(intersect, gene_sets)), <span class="st">"genes in common</span><span class="sc">\n</span><span class="st">"</span>)</span>
+<span id="cb8-121"><a href="#cb8-121" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-122"><a href="#cb8-122" aria-hidden="true" tabindex="-1"></a><span class="fu">ggVennDiagram</span>(gene_sets, <span class="at">label =</span> <span class="st">"count"</span>) <span class="sc">+</span></span>
+<span id="cb8-123"><a href="#cb8-123" aria-hidden="true" tabindex="-1"></a>  <span class="fu">scale_fill_gradient</span>(<span class="at">low =</span> <span class="st">"white"</span>, <span class="at">high =</span> <span class="st">"steelblue"</span>) <span class="sc">+</span></span>
+<span id="cb8-124"><a href="#cb8-124" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(<span class="at">title  =</span> <span class="st">"DEG overlap: DESeq2 vs edgeR vs limma-voom"</span>,</span>
+<span id="cb8-125"><a href="#cb8-125" aria-hidden="true" tabindex="-1"></a>       <span class="at">subtitle =</span> <span class="st">"airway dataset — dexamethasone vs untreated"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </section>
 <section id="复杂实验设计多因子模型" class="level3" data-number="9.3">
 <h3 data-number="9.3" class="anchored" data-anchor-id="复杂实验设计多因子模型"><span class="header-section-number">9.3</span> 复杂实验设计：多因子模型</h3>

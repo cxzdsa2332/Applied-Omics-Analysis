@@ -198,8 +198,8 @@ RESULTS_DIR="${BASE}/results/hisat2"
 PE_SAMPLES="SRR1039508 SRR1039512 SRR1039516"
 
 # === Step 1: Align paired-end reads ===
-# --dta       : optimise output for featureCounts / StringTie
-# --rna-strandness RF : RF-stranded library (TruSeq Stranded mRNA)
+# --dta : optimise output for featureCounts / StringTie
+# No --rna-strandness flag: airway dataset is unstranded (infer_experiment.py confirmed ~0.5/0.5)
 # Align stats are captured from stderr to *_align_stats.txt
 
 for SAMPLE in ${PE_SAMPLES}; do
@@ -207,7 +207,6 @@ for SAMPLE in ${PE_SAMPLES}; do
   hisat2 \
     -p 8 \
     --dta \
-    --rna-strandness RF \
     -x ${HISAT2_INDEX} \
     -1 ${BASE}/${SAMPLE}_1_1M.fastq.gz \
     -2 ${BASE}/${SAMPLE}_2_1M.fastq.gz \
@@ -223,11 +222,12 @@ for SAMPLE in ${PE_SAMPLES}; do
 done
 
 # === Step 3: Count reads with featureCounts ===
+# -s 0 : unstranded (airway dataset uses Illumina TruSeq non-stranded kit)
 featureCounts \
   -T 8 \
   -a ${GTF} \
   -o ${RESULTS_DIR}/hisat2_counts.txt \
-  -s 2 -p -B -C \
+  -s 0 -p -B -C \
   --countReadPairs \
   ${RESULTS_DIR}/SRR1039508/SRR1039508.sorted.bam \
   ${RESULTS_DIR}/SRR1039512/SRR1039512.sorted.bam \
@@ -239,12 +239,12 @@ featureCounts \
 
 ```bash
 cat ${BASE}/results/hisat2/SRR1039508/SRR1039508_align_stats.txt
-# 2000000 reads; of these:
-#   2000000 (100.00%) were paired; of these:
-#       98541 (4.93%) aligned concordantly 0 times
-#     1774631 (88.73%) aligned concordantly exactly 1 time
-#      126828 (6.34%) aligned concordantly >1 times
-# 94.73% overall alignment rate
+# 1000000 reads; of these:
+#   1000000 (100.00%) were paired; of these:
+#       51121 (5.11%) aligned concordantly 0 times
+#      909646 (90.96%) aligned concordantly exactly 1 time
+#       39233 (3.92%) aligned concordantly >1 times
+# 97.07% overall alignment rate
 ```
 
 生产环境（全量数据）只需将输入替换为 trim 后文件：
@@ -448,7 +448,7 @@ p <- ggplot() +
 
   # Step 3: Exon-level counting
   box(3, 5.07, 4.2, 0.62, col_fc_b,
-      "Count Reads per Exon\n(featureCounts, -s 2 -p -B -C)", 3.1) +
+      "Count Reads per Exon\n(featureCounts, -s 0 -p -B -C)", 3.1) +
   arrow_seg(3, 4.75, 4.23) +
 
   # Step 4: Gene-level aggregation
@@ -512,7 +512,7 @@ featureCounts 是 Subread 工具包的组成部分，逐个统计每个基因的
 
 ```bash
 # featureCounts: count reads per gene (using exon features)
-# -s 2 = RF-stranded (TruSeq Stranded mRNA)
+# -s 0 = unstranded (airway dataset, confirmed by infer_experiment.py)
 # -p   = paired-end mode
 # -B   = both mates must be mapped
 # -C   = exclude chimeric reads
@@ -520,8 +520,8 @@ featureCounts 是 Subread 工具包的组成部分，逐个统计每个基因的
 featureCounts \
   -T 16 \
   -a Homo_sapiens.GRCh38.109.gtf \
-  -o results/featureCounts/pasilla_counts.txt \
-  -s 2 \
+  -o results/featureCounts/airway_counts.txt \
+  -s 0 \
   -p -B -C \
   --countReadPairs \
   results/star/SRR1039508/Aligned.sortedByCoord.out.bam \
@@ -751,11 +751,12 @@ for SAMPLE in ${PE_SAMPLES}; do
 done
 
 # === Step 2: featureCounts on all BAM files (conda activate rnaseq-env) ===
+# -s 0 = unstranded (airway dataset)
 featureCounts \
   -T 8 \
   -a ${GTF} \
-  -o ${FC_OUT}/pasilla_counts.txt \
-  -s 2 -p -B -C --countReadPairs \
+  -o ${FC_OUT}/airway_counts.txt \
+  -s 0 -p -B -C --countReadPairs \
   ${STAR_OUT}/SRR1039508/Aligned.sortedByCoord.out.bam \
   ${STAR_OUT}/SRR1039512/Aligned.sortedByCoord.out.bam \
   ${STAR_OUT}/SRR1039516/Aligned.sortedByCoord.out.bam
@@ -769,7 +770,7 @@ library(ggplot2)
 
 # Load featureCounts output
 fc_data <- read.table(
-  "results/featureCounts/pasilla_counts.txt",
+  "results/featureCounts/airway_counts.txt",
   header = TRUE, skip = 1, row.names = 1
 )
 fc_counts <- fc_data[, 7:ncol(fc_data)]
@@ -889,7 +890,7 @@ library(ggplot2)
 
 # Load count matrix from featureCounts
 counts_raw <- read.table(
-  "results/featureCounts/pasilla_counts.txt",
+  "results/featureCounts/airway_counts.txt",
   header = TRUE, skip = 1, row.names = 1
 )
 counts <- counts_raw[, 7:ncol(counts_raw)]

@@ -658,161 +658,313 @@ par(mfrow = c(1, 1))
 
 ## DESeq2 完整实践
 
+本节使用 Bioconductor `airway` 包内置的完整数据集——8 个人类气道平滑肌细胞样本（Himes et al. 2014），涵盖 4 个细胞系、每个细胞系各 1 个 untreated 与 1 个 dexamethasone-treated 样本，构成标准的 2×4 配对区组设计。相比仅用 3 个样本的最小配置，完整 8 样本设计具有足够的统计效力，且细胞系差异可作为区组因子在模型中控制，是差异表达分析的教科书级范例。
+
 ```r
 library(DESeq2)
+library(apeglm)
+library(airway)
 library(ggplot2)
-library(ggrepel)
 
-# === Step 1: Load count data ===
-# featureCounts output: first 6 columns are metadata (GeneID, Chr, Start, End, Strand, Length)
-# Columns 7+ are per-sample counts, named by full BAM path
-BASE <- "/Users/angdong/Documents/bio_example/bulkRNA"
-count_matrix <- read.table(
-  file.path(BASE, "results/featureCounts/pasilla_counts.txt"),
-  header = TRUE, skip = 1, row.names = 1
-)
-counts <- count_matrix[, 7:ncol(count_matrix)]
-
-# Strip full paths; keep only SRR accession as column name
-# e.g. ".../results/star/SRR1039508/Aligned.sortedByCoord.out.bam" → "SRR1039508"
-colnames(counts) <- sub(".*/(SRR[0-9]+)/.*", "\\1", colnames(counts))
-
-# Sample metadata: airway dataset (Himes et al. 2014)
-# SRR1039508, SRR1039512 = untreated control
-# SRR1039516              = dexamethasone treated
-# Note: 3 samples is minimally powered; full analysis uses all 6 PE samples
-sample_info <- data.frame(
-  condition = factor(
-    c("untreated", "untreated", "treated"),
-    levels = c("untreated", "treated")
-  ),
-  row.names = c("SRR1039508", "SRR1039512", "SRR1039516")
-)
+# === Step 1: Load the complete airway dataset ===
+# 8 samples: 4 cell lines × 2 conditions (untrt / trt with dexamethasone)
+# Design is balanced: each cell line appears once in each condition
+data(airway)
+cat("Dataset dimensions:", nrow(airway), "genes ×", ncol(airway), "samples\n")
+print(colData(airway)[, c("cell", "dex")])
 
 # === Step 2: Create DESeqDataSet ===
-dds <- DESeqDataSetFromMatrix(
-  countData = counts,
-  colData   = sample_info,
-  design    = ~ condition
-)
+# Design ~ cell + dex: cell line as blocking factor, dex as factor of interest
+# This removes between-cell-line variation and focuses inference on dex effect
+dds <- DESeqDataSet(airway, design = ~ cell + dex)
 
-# Pre-filter: remove genes with very low counts (speeds up analysis)
-keep <- rowSums(counts(dds) >= 10) >= 2
+# Set reference levels explicitly
+dds$dex  <- relevel(dds$dex,  ref = "untrt")
+
+# Pre-filter: keep genes with at least 10 counts in at least 4 samples
+# (4 = smallest group size, i.e. number of untreated or treated samples)
+keep <- rowSums(counts(dds) >= 10) >= 4
 dds  <- dds[keep, ]
 cat("Genes after filtering:", nrow(dds), "\n")
 
-# Reference level already set via factor(levels = ...) above; relevel is redundant but harmless
-dds$condition <- relevel(dds$condition, ref = "untreated")
-
-# === Step 3: Run DESeq2 ===
+# === Step 3: Run DESeq2 (three sub-steps internally) ===
+# 1. estimateSizeFactors()  — geometric-mean normalization
+# 2. estimateDispersions()  — Empirical Bayes shrinkage of gene-wise dispersion
+# 3. nbinomWaldTest()       — fit NB-GLM and compute Wald statistics
 dds <- DESeq(dds)
-# Internally: estimateSizeFactors -> estimateDispersions -> nbinomWaldTest
 
-# Check size factors
-sizeFactors(dds)
+cat("\nSize factors:\n")
+print(round(sizeFactors(dds), 3))
 
-# === Step 4: Extract results ===
-res <- results(dds,
-               contrast = c("condition", "treated", "untreated"),
-               alpha    = 0.05)   # FDR threshold for independent filtering
-
+# === Step 4: Extract results for dex trt vs untrt ===
+res <- results(
+  dds,
+  contrast      = c("dex", "trt", "untrt"),
+  alpha         = 0.05      # used for independent filtering threshold
+)
 summary(res)
-# Output:
-# LFC > 0 (up)     : XXX, X%
-# LFC < 0 (down)   : XXX, X%
-# outliers [1]     : XXX, X%
-# low counts [2]   : XXX, X%
 
-# === Step 5: LFC shrinkage ===
-library(apeglm)
+# === Step 5: LFC shrinkage (apeglm) ===
+# Shrinks unreliable LFC estimates for low-count genes toward zero.
+# The coefficient name follows DESeq2's naming convention:
+# "<factor>_<numerator>_vs_<denominator>"
 res_shrunk <- lfcShrink(
   dds,
-  coef = "condition_treated_vs_untreated",
+  coef = "dex_trt_vs_untrt",
   type = "apeglm",
   res  = res
 )
 
 # === Step 6: Filter significant DEGs ===
-sig_genes <- subset(res_shrunk,
-                    padj < 0.05 & abs(log2FoldChange) > 1)
-cat("Significant DEGs (|LFC|>1, padj<0.05):", nrow(sig_genes), "\n")
-
-# Sort by padj
+sig_genes <- subset(res_shrunk, padj < 0.05 & abs(log2FoldChange) > 1)
 sig_genes <- sig_genes[order(sig_genes$padj), ]
-head(sig_genes, 10)
+cat("\nSignificant DEGs (|LFC| > 1, padj < 0.05):", nrow(sig_genes), "\n")
+cat("  Up-regulated  :", sum(sig_genes$log2FoldChange > 0), "\n")
+cat("  Down-regulated:", sum(sig_genes$log2FoldChange < 0), "\n\n")
+print(head(as.data.frame(sig_genes)[, c("log2FoldChange", "lfcSE", "padj")], 10))
 
-# === Step 7: Visualization ===
-
-# --- MA plot ---
+# === Step 7: MA plot ===
+# X-axis: mean normalized count; Y-axis: shrunken LFC
+# Blue dots = significant (padj < 0.05); grey = not significant
+# Shrinkage: low-count genes on the left no longer show extreme LFC values
 plotMA(res_shrunk,
        ylim = c(-5, 5),
-       main = "MA Plot: DESeq2 (apeglm shrinkage)",
+       main = "MA Plot: DESeq2 apeglm LFC shrinkage — dex vs untrt (airway)",
        alpha = 0.05)
-# Blue dots: significant (padj < 0.05)
-# Grey dots: not significant
-# Shrinkage reduces extreme LFC for low-count genes
-
-# --- Volcano plot ---
-res_df <- as.data.frame(res_shrunk)
-res_df$gene <- rownames(res_df)
-res_df$significance <- "Not significant"
-res_df$significance[res_df$padj < 0.05 & res_df$log2FoldChange >  1] <- "Up"
-res_df$significance[res_df$padj < 0.05 & res_df$log2FoldChange < -1] <- "Down"
-
-# Label top 20 genes by padj
-top_genes <- head(res_df[order(res_df$padj, na.last = TRUE), ], 20)
-
-ggplot(res_df, aes(x = log2FoldChange, y = -log10(padj),
-                   color = significance)) +
-  geom_point(alpha = 0.5, size = 0.8) +
-  geom_text_repel(data = top_genes,
-                  aes(label = gene),
-                  size = 2.5, max.overlaps = 20) +
-  scale_color_manual(
-    values = c("Up" = "firebrick", "Down" = "steelblue",
-               "Not significant" = "grey70")
-  ) +
-  geom_vline(xintercept = c(-1, 1), linetype = "dashed", color = "grey40") +
-  geom_hline(yintercept = -log10(0.05), linetype = "dashed", color = "grey40") +
-  labs(
-    x = "Log2 Fold Change (treated / untreated)",
-    y = "-log10(adjusted p-value)",
-    title = "Volcano Plot: Dexamethasone Treatment vs Control",
-    subtitle = sprintf("Significant DEGs: %d up, %d down",
-                       sum(res_df$significance == "Up", na.rm = TRUE),
-                       sum(res_df$significance == "Down", na.rm = TRUE)),
-    color = "Direction"
-  ) +
-  theme_classic() +
-  theme(legend.position = "top")
+abline(h = c(-1, 1), col = "firebrick", lty = 2, lwd = 1.0)
 ```
 
 ### 样本质量评估：PCA 与距离热图
 
-在运行 DEA 之前（或之后验证），应当可视化样本间的整体相似性，以发现潜在的批次效应或异常样本。
+在解读差异表达结果之前，需先确认样本间整体相似性符合实验预期——处理组与对照组应在低维空间中形成可分离的簇，细胞系效应应体现在次要主成分而非主成分上。
 
 ```r
-# Variance-stabilizing transformation for visualization
-vsd <- vst(dds, blind = TRUE)
+# Variance-stabilizing transformation: homogenizes variance across expression range,
+# suitable for PCA and distance calculations (blind = FALSE uses known design)
+vsd <- vst(dds, blind = FALSE)
 
-# --- PCA plot ---
-plotPCA(vsd, intgroup = "condition") +
+# --- PCA plot: colored by dex, shaped by cell line ---
+pca_data <- plotPCA(vsd, intgroup = c("dex", "cell"), returnData = TRUE)
+pct_var  <- round(100 * attr(pca_data, "percentVar"), 1)
+
+ggplot(pca_data, aes(x = PC1, y = PC2, color = dex, shape = cell)) +
   geom_point(size = 4) +
-  theme_classic() +
-  labs(title = "PCA: pasilla samples (VST-transformed counts)")
+  scale_color_manual(values = c("untrt" = "#2166ac", "trt" = "#d73027")) +
+  labs(
+    x        = paste0("PC1 (", pct_var[1], "% variance)"),
+    y        = paste0("PC2 (", pct_var[2], "% variance)"),
+    title    = "PCA: airway dataset (VST-normalized counts)",
+    subtitle = "Color = treatment; shape = cell line",
+    color    = "Treatment", shape = "Cell line"
+  ) +
+  theme_classic(base_size = 12)
+# Expected: PC1 separates trt from untrt; PC2 reflects cell-line variation
 
-# --- Sample distance heatmap ---
+# --- Sample-to-sample distance heatmap ---
 library(pheatmap)
-sample_dists <- dist(t(assay(vsd)))
-sample_dist_matrix <- as.matrix(sample_dists)
+sample_dists        <- dist(t(assay(vsd)))
+sample_dist_matrix  <- as.matrix(sample_dists)
+
+annotation_col <- data.frame(
+  Treatment = colData(dds)$dex,
+  CellLine  = colData(dds)$cell,
+  row.names = colnames(dds)
+)
 
 pheatmap(
   sample_dist_matrix,
   clustering_distance_rows = sample_dists,
   clustering_distance_cols = sample_dists,
-  col = colorRampPalette(c("steelblue", "white"))(50),
-  main = "Sample-to-sample distances (VST)"
+  annotation_col  = annotation_col,
+  col             = colorRampPalette(c("steelblue", "white"))(50),
+  main            = "Sample-to-sample Euclidean distances (VST)"
 )
+# Expected: within-cell-line pairs cluster together; trt/untrt pairs are neighbors
+```
+
+---
+
+## 火山图：差异表达结果的标准可视化
+
+火山图（Volcano plot）是差异表达分析中最常用的结果可视化形式，能在同一张图中同时呈现**效应量**（log2 fold change）与**统计显著性**（-log10 adjusted p-value）两个维度，直观区分生物学意义显著的差异基因。
+
+### 坐标轴设计原理
+
+{{Wiki:Volcano_plot_(statistics)}}
+
+火山图的两轴分别编码：
+
+- **X 轴：log2 fold change（LFC）**——衡量效应量大小与方向。正值表示上调，负值表示下调；对数变换使倍数关系对称（+1 = 2×，-1 = 0.5×）。通常设阈值 |LFC| > 1（即 2 倍差异）以过滤生物学上不显著的微小变化。
+- **Y 轴：-log10(adjusted p-value)**——衡量统计可靠性。取负对数后，越显著的基因（padj 越小）点位越高；阈值 padj < 0.05 对应 Y = 1.30，padj < 0.01 对应 Y = 2.0。
+
+两条参考线将图划分为四个区域：
+
+| 区域 | LFC | padj | 解读 |
+|---|---|---|---|
+| 右上角 | > 1 | < 0.05 | 显著上调：生物学与统计均显著 |
+| 左上角 | < -1 | < 0.05 | 显著下调：生物学与统计均显著 |
+| 中上方 | -1–1 | < 0.05 | 统计显著但效应量小，通常不作为候选基因 |
+| 下方区域 | 任意 | ≥ 0.05 | 不显著：统计证据不足 |
+
+:::warning
+**使用缩减后 LFC 绘图：** 应始终使用 `lfcShrink()` 的输出（apeglm 缩减后 LFC）而非 `results()` 的原始 LFC 来绘制火山图。原始 LFC 对低计数基因极不稳定，会在左右两侧产生大量极端值，掩盖真正显著的基因；缩减后 LFC 将不可靠的估计拉向零，视觉呈现更能反映生物学真实性。
+:::
+
+:::note
+**NA 值处理：** DESeq2 结果中存在两类 NA：① `pvalue = NA`：基因因计数过低被独立过滤（independent filtering）排除，这些点**不应**出现在火山图中；② `padj = NA`：同样来自过滤或离群值检测。绘图前需用 `!is.na(res_df$padj)` 明确过滤，避免 `ggplot2` 在转换时产生警告或错误的点位。
+:::
+
+### 基础火山图
+
+```r
+library(ggplot2)
+library(ggrepel)
+
+# Build a clean data frame from apeglm-shrunken results
+# Remove NA rows (independent filtering exclusions) before plotting
+res_df <- as.data.frame(res_shrunk)
+res_df <- res_df[!is.na(res_df$padj), ]
+res_df$gene <- rownames(res_df)
+
+# Classify each gene by significance and direction
+res_df$significance <- "Not significant"
+res_df$significance[res_df$padj < 0.05 & res_df$log2FoldChange >  1] <- "Up"
+res_df$significance[res_df$padj < 0.05 & res_df$log2FoldChange < -1] <- "Down"
+res_df$significance <- factor(res_df$significance,
+                               levels = c("Up", "Down", "Not significant"))
+
+n_up   <- sum(res_df$significance == "Up")
+n_down <- sum(res_df$significance == "Down")
+cat("Significant DEGs — Up:", n_up, "| Down:", n_down, "\n")
+
+# --- Basic volcano plot ---
+ggplot(res_df, aes(x = log2FoldChange, y = -log10(padj),
+                   color = significance)) +
+  geom_point(alpha = 0.5, size = 0.9) +
+  scale_color_manual(
+    values = c("Up" = "firebrick", "Down" = "steelblue",
+               "Not significant" = "grey70")
+  ) +
+  geom_vline(xintercept = c(-1, 1),
+             linetype = "dashed", color = "grey40", linewidth = 0.5) +
+  geom_hline(yintercept = -log10(0.05),
+             linetype = "dashed", color = "grey40", linewidth = 0.5) +
+  labs(
+    x        = "Log2 Fold Change (trt / untrt)",
+    y        = "-log10(adjusted p-value)",
+    title    = "Volcano Plot: dexamethasone vs untreated",
+    subtitle = sprintf("airway dataset (Himes et al. 2014)  |  Up: %d  |  Down: %d",
+                       n_up, n_down),
+    color    = "Direction"
+  ) +
+  theme_classic(base_size = 12) +
+  theme(legend.position = "top")
+```
+
+### 增强版火山图：标注显著基因
+
+基础火山图展示整体分布，增强版在此基础上标注统计排名前列的显著基因，帮助读者快速识别关键候选基因。`ggrepel` 包通过弹簧力算法自动避免标签重叠。
+
+```r
+# Select top genes for labeling: top 20 by padj, restricted to significant ones
+top_up   <- head(res_df[res_df$significance == "Up",   ][
+                   order(res_df[res_df$significance == "Up",   ]$padj), ], 10)
+top_down <- head(res_df[res_df$significance == "Down",  ][
+                   order(res_df[res_df$significance == "Down", ]$padj), ], 10)
+label_df <- rbind(top_up, top_down)
+
+ggplot(res_df, aes(x = log2FoldChange, y = -log10(padj),
+                   color = significance)) +
+  # Background grey points first, then colored points on top
+  geom_point(data = res_df[res_df$significance == "Not significant", ],
+             alpha = 0.3, size = 0.7, color = "grey70") +
+  geom_point(data = res_df[res_df$significance != "Not significant", ],
+             alpha = 0.7, size = 1.2) +
+  # Gene labels with repulsion
+  geom_text_repel(
+    data          = label_df,
+    aes(label     = gene),
+    size          = 2.8,
+    max.overlaps  = 30,
+    box.padding   = 0.4,
+    point.padding = 0.3,
+    segment.color = "grey50",
+    segment.size  = 0.3,
+    show.legend   = FALSE
+  ) +
+  scale_color_manual(
+    values = c("Up" = "firebrick", "Down" = "steelblue",
+               "Not significant" = "grey70")
+  ) +
+  # Threshold lines
+  geom_vline(xintercept = c(-1, 1),
+             linetype = "dashed", color = "grey30", linewidth = 0.5) +
+  geom_hline(yintercept = -log10(0.05),
+             linetype = "dashed", color = "grey30", linewidth = 0.5) +
+  # Threshold annotations
+  annotate("text", x = 4.5, y = -log10(0.05) + 0.15,
+           label = "padj = 0.05", size = 2.8, color = "grey30", hjust = 1) +
+  annotate("text", x =  1.05, y = max(-log10(res_df$padj), na.rm = TRUE) * 0.95,
+           label = "|LFC| = 1", size = 2.8, color = "grey30", hjust = 0) +
+  scale_x_continuous(limits = c(-6, 6), oob = scales::squish) +
+  labs(
+    x        = "Log2 Fold Change (apeglm shrunken, trt / untrt)",
+    y        = "-log10(adjusted p-value)",
+    title    = "Volcano Plot: dexamethasone treatment vs control",
+    subtitle = sprintf("airway dataset  |  Up: %d  |  Down: %d  |  Top 10 per direction labeled",
+                       n_up, n_down),
+    color    = "Direction"
+  ) +
+  theme_classic(base_size = 12) +
+  theme(
+    legend.position  = "top",
+    plot.subtitle    = element_text(color = "#555555", size = 9)
+  )
+```
+
+### 常见变体：自定义阈值与双色高亮
+
+实际分析中，阈值的选取应根据研究目的调整。以下代码展示如何同时显示多个严格程度的阈值，并对特定基因（如已知靶基因）进行单独高亮：
+
+```r
+# Highlight specific genes of interest (e.g., known glucocorticoid targets)
+genes_of_interest <- c("DUSP1", "KLF15", "CRISPLD2", "NNMT", "SPARCL1")
+
+res_df$highlight <- res_df$gene %in% genes_of_interest
+
+ggplot(res_df, aes(x = log2FoldChange, y = -log10(padj))) +
+  geom_point(aes(color = significance, alpha = significance), size = 0.9) +
+  # Highlighted genes as larger filled points
+  geom_point(data = res_df[res_df$highlight, ],
+             color = "#e6811a", size = 3, shape = 18) +
+  geom_text_repel(
+    data          = res_df[res_df$highlight, ],
+    aes(label     = gene),
+    color         = "#e6811a",
+    size          = 3.2,
+    fontface      = "bold",
+    box.padding   = 0.5,
+    show.legend   = FALSE
+  ) +
+  scale_color_manual(
+    values = c("Up" = "firebrick", "Down" = "steelblue",
+               "Not significant" = "grey80")
+  ) +
+  scale_alpha_manual(values = c("Up" = 0.7, "Down" = 0.7,
+                                "Not significant" = 0.25),
+                     guide = "none") +
+  geom_vline(xintercept = c(-1, 1),
+             linetype = "dashed", color = "grey40", linewidth = 0.4) +
+  geom_hline(yintercept = -log10(0.05),
+             linetype = "dashed", color = "grey40", linewidth = 0.4) +
+  labs(
+    x     = "Log2 Fold Change (apeglm shrunken)",
+    y     = "-log10(adjusted p-value)",
+    title = "Volcano Plot with highlighted glucocorticoid target genes",
+    color = "Direction"
+  ) +
+  theme_classic(base_size = 12) +
+  theme(legend.position = "top")
 ```
 
 ---

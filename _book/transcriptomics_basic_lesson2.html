@@ -806,8 +806,8 @@ window.Quarto = {
 <span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a><span class="va">PE_SAMPLES</span><span class="op">=</span><span class="st">"SRR1039508 SRR1039512 SRR1039516"</span></span>
 <span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a><span class="co"># === Step 1: Align paired-end reads ===</span></span>
-<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a><span class="co"># --dta       : optimise output for featureCounts / StringTie</span></span>
-<span id="cb1-12"><a href="#cb1-12" aria-hidden="true" tabindex="-1"></a><span class="co"># --rna-strandness RF : RF-stranded library (TruSeq Stranded mRNA)</span></span>
+<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a><span class="co"># --dta : optimise output for featureCounts / StringTie</span></span>
+<span id="cb1-12"><a href="#cb1-12" aria-hidden="true" tabindex="-1"></a><span class="co"># No --rna-strandness flag: airway dataset is unstranded (infer_experiment.py confirmed ~0.5/0.5)</span></span>
 <span id="cb1-13"><a href="#cb1-13" aria-hidden="true" tabindex="-1"></a><span class="co"># Align stats are captured from stderr to *_align_stats.txt</span></span>
 <span id="cb1-14"><a href="#cb1-14" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb1-15"><a href="#cb1-15" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> SAMPLE <span class="kw">in</span> <span class="va">${PE_SAMPLES}</span><span class="kw">;</span> <span class="cf">do</span></span>
@@ -815,27 +815,27 @@ window.Quarto = {
 <span id="cb1-17"><a href="#cb1-17" aria-hidden="true" tabindex="-1"></a>  <span class="ex">hisat2</span> <span class="dt">\</span></span>
 <span id="cb1-18"><a href="#cb1-18" aria-hidden="true" tabindex="-1"></a>    <span class="at">-p</span> 8 <span class="dt">\</span></span>
 <span id="cb1-19"><a href="#cb1-19" aria-hidden="true" tabindex="-1"></a>    <span class="at">--dta</span> <span class="dt">\</span></span>
-<span id="cb1-20"><a href="#cb1-20" aria-hidden="true" tabindex="-1"></a>    <span class="at">--rna-strandness</span> RF <span class="dt">\</span></span>
-<span id="cb1-21"><a href="#cb1-21" aria-hidden="true" tabindex="-1"></a>    <span class="at">-x</span> <span class="va">${HISAT2_INDEX}</span> <span class="dt">\</span></span>
-<span id="cb1-22"><a href="#cb1-22" aria-hidden="true" tabindex="-1"></a>    <span class="at">-1</span> <span class="va">${BASE}</span>/<span class="va">${SAMPLE}</span>_1_1M.fastq.gz <span class="dt">\</span></span>
-<span id="cb1-23"><a href="#cb1-23" aria-hidden="true" tabindex="-1"></a>    <span class="at">-2</span> <span class="va">${BASE}</span>/<span class="va">${SAMPLE}</span>_2_1M.fastq.gz <span class="dt">\</span></span>
-<span id="cb1-24"><a href="#cb1-24" aria-hidden="true" tabindex="-1"></a>    <span class="at">-S</span> <span class="va">${RESULTS_DIR}</span>/<span class="va">${SAMPLE}</span>/<span class="va">${SAMPLE}</span>.sam <span class="dt">\</span></span>
-<span id="cb1-25"><a href="#cb1-25" aria-hidden="true" tabindex="-1"></a>    <span class="dv">2</span><span class="op">&gt;</span> <span class="va">${RESULTS_DIR}</span>/<span class="va">${SAMPLE}</span>/<span class="va">${SAMPLE}</span>_align_stats.txt</span>
-<span id="cb1-26"><a href="#cb1-26" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-27"><a href="#cb1-27" aria-hidden="true" tabindex="-1"></a>  <span class="co"># === Step 2: SAM → sorted BAM → index (remove intermediate SAM) ===</span></span>
-<span id="cb1-28"><a href="#cb1-28" aria-hidden="true" tabindex="-1"></a>  <span class="ex">samtools</span> sort <span class="at">-@</span> 8 <span class="dt">\</span></span>
-<span id="cb1-29"><a href="#cb1-29" aria-hidden="true" tabindex="-1"></a>    <span class="at">-o</span> <span class="va">${RESULTS_DIR}</span>/<span class="va">${SAMPLE}</span>/<span class="va">${SAMPLE}</span>.sorted.bam <span class="dt">\</span></span>
-<span id="cb1-30"><a href="#cb1-30" aria-hidden="true" tabindex="-1"></a>    <span class="va">${RESULTS_DIR}</span>/<span class="va">${SAMPLE}</span>/<span class="va">${SAMPLE}</span>.sam</span>
-<span id="cb1-31"><a href="#cb1-31" aria-hidden="true" tabindex="-1"></a>  <span class="ex">samtools</span> index <span class="va">${RESULTS_DIR}</span>/<span class="va">${SAMPLE}</span>/<span class="va">${SAMPLE}</span>.sorted.bam</span>
-<span id="cb1-32"><a href="#cb1-32" aria-hidden="true" tabindex="-1"></a>  <span class="fu">rm</span> <span class="va">${RESULTS_DIR}</span>/<span class="va">${SAMPLE}</span>/<span class="va">${SAMPLE}</span>.sam</span>
-<span id="cb1-33"><a href="#cb1-33" aria-hidden="true" tabindex="-1"></a><span class="cf">done</span></span>
-<span id="cb1-34"><a href="#cb1-34" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-35"><a href="#cb1-35" aria-hidden="true" tabindex="-1"></a><span class="co"># === Step 3: Count reads with featureCounts ===</span></span>
+<span id="cb1-20"><a href="#cb1-20" aria-hidden="true" tabindex="-1"></a>    <span class="at">-x</span> <span class="va">${HISAT2_INDEX}</span> <span class="dt">\</span></span>
+<span id="cb1-21"><a href="#cb1-21" aria-hidden="true" tabindex="-1"></a>    <span class="at">-1</span> <span class="va">${BASE}</span>/<span class="va">${SAMPLE}</span>_1_1M.fastq.gz <span class="dt">\</span></span>
+<span id="cb1-22"><a href="#cb1-22" aria-hidden="true" tabindex="-1"></a>    <span class="at">-2</span> <span class="va">${BASE}</span>/<span class="va">${SAMPLE}</span>_2_1M.fastq.gz <span class="dt">\</span></span>
+<span id="cb1-23"><a href="#cb1-23" aria-hidden="true" tabindex="-1"></a>    <span class="at">-S</span> <span class="va">${RESULTS_DIR}</span>/<span class="va">${SAMPLE}</span>/<span class="va">${SAMPLE}</span>.sam <span class="dt">\</span></span>
+<span id="cb1-24"><a href="#cb1-24" aria-hidden="true" tabindex="-1"></a>    <span class="dv">2</span><span class="op">&gt;</span> <span class="va">${RESULTS_DIR}</span>/<span class="va">${SAMPLE}</span>/<span class="va">${SAMPLE}</span>_align_stats.txt</span>
+<span id="cb1-25"><a href="#cb1-25" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-26"><a href="#cb1-26" aria-hidden="true" tabindex="-1"></a>  <span class="co"># === Step 2: SAM → sorted BAM → index (remove intermediate SAM) ===</span></span>
+<span id="cb1-27"><a href="#cb1-27" aria-hidden="true" tabindex="-1"></a>  <span class="ex">samtools</span> sort <span class="at">-@</span> 8 <span class="dt">\</span></span>
+<span id="cb1-28"><a href="#cb1-28" aria-hidden="true" tabindex="-1"></a>    <span class="at">-o</span> <span class="va">${RESULTS_DIR}</span>/<span class="va">${SAMPLE}</span>/<span class="va">${SAMPLE}</span>.sorted.bam <span class="dt">\</span></span>
+<span id="cb1-29"><a href="#cb1-29" aria-hidden="true" tabindex="-1"></a>    <span class="va">${RESULTS_DIR}</span>/<span class="va">${SAMPLE}</span>/<span class="va">${SAMPLE}</span>.sam</span>
+<span id="cb1-30"><a href="#cb1-30" aria-hidden="true" tabindex="-1"></a>  <span class="ex">samtools</span> index <span class="va">${RESULTS_DIR}</span>/<span class="va">${SAMPLE}</span>/<span class="va">${SAMPLE}</span>.sorted.bam</span>
+<span id="cb1-31"><a href="#cb1-31" aria-hidden="true" tabindex="-1"></a>  <span class="fu">rm</span> <span class="va">${RESULTS_DIR}</span>/<span class="va">${SAMPLE}</span>/<span class="va">${SAMPLE}</span>.sam</span>
+<span id="cb1-32"><a href="#cb1-32" aria-hidden="true" tabindex="-1"></a><span class="cf">done</span></span>
+<span id="cb1-33"><a href="#cb1-33" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-34"><a href="#cb1-34" aria-hidden="true" tabindex="-1"></a><span class="co"># === Step 3: Count reads with featureCounts ===</span></span>
+<span id="cb1-35"><a href="#cb1-35" aria-hidden="true" tabindex="-1"></a><span class="co"># -s 0 : unstranded (airway dataset uses Illumina TruSeq non-stranded kit)</span></span>
 <span id="cb1-36"><a href="#cb1-36" aria-hidden="true" tabindex="-1"></a><span class="ex">featureCounts</span> <span class="dt">\</span></span>
 <span id="cb1-37"><a href="#cb1-37" aria-hidden="true" tabindex="-1"></a>  <span class="at">-T</span> 8 <span class="dt">\</span></span>
 <span id="cb1-38"><a href="#cb1-38" aria-hidden="true" tabindex="-1"></a>  <span class="at">-a</span> <span class="va">${GTF}</span> <span class="dt">\</span></span>
 <span id="cb1-39"><a href="#cb1-39" aria-hidden="true" tabindex="-1"></a>  <span class="at">-o</span> <span class="va">${RESULTS_DIR}</span>/hisat2_counts.txt <span class="dt">\</span></span>
-<span id="cb1-40"><a href="#cb1-40" aria-hidden="true" tabindex="-1"></a>  <span class="at">-s</span> 2 <span class="at">-p</span> <span class="at">-B</span> <span class="at">-C</span> <span class="dt">\</span></span>
+<span id="cb1-40"><a href="#cb1-40" aria-hidden="true" tabindex="-1"></a>  <span class="at">-s</span> 0 <span class="at">-p</span> <span class="at">-B</span> <span class="at">-C</span> <span class="dt">\</span></span>
 <span id="cb1-41"><a href="#cb1-41" aria-hidden="true" tabindex="-1"></a>  <span class="at">--countReadPairs</span> <span class="dt">\</span></span>
 <span id="cb1-42"><a href="#cb1-42" aria-hidden="true" tabindex="-1"></a>  <span class="va">${RESULTS_DIR}</span>/SRR1039508/SRR1039508.sorted.bam <span class="dt">\</span></span>
 <span id="cb1-43"><a href="#cb1-43" aria-hidden="true" tabindex="-1"></a>  <span class="va">${RESULTS_DIR}</span>/SRR1039512/SRR1039512.sorted.bam <span class="dt">\</span></span>
@@ -843,12 +843,12 @@ window.Quarto = {
 <div class="tip">
 <p><strong>查看 HISAT2 比对统计：</strong> 上方命令已将 stderr 重定向至 <code>*_align_stats.txt</code>，格式示例如下：</p>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb2"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span> <span class="va">${BASE}</span>/results/hisat2/SRR1039508/SRR1039508_align_stats.txt</span>
-<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a><span class="co"># 2000000 reads; of these:</span></span>
-<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a><span class="co">#   2000000 (100.00%) were paired; of these:</span></span>
-<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a><span class="co">#       98541 (4.93%) aligned concordantly 0 times</span></span>
-<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a><span class="co">#     1774631 (88.73%) aligned concordantly exactly 1 time</span></span>
-<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a><span class="co">#      126828 (6.34%) aligned concordantly &gt;1 times</span></span>
-<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a><span class="co"># 94.73% overall alignment rate</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a><span class="co"># 1000000 reads; of these:</span></span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a><span class="co">#   1000000 (100.00%) were paired; of these:</span></span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a><span class="co">#       51121 (5.11%) aligned concordantly 0 times</span></span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a><span class="co">#      909646 (90.96%) aligned concordantly exactly 1 time</span></span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a><span class="co">#       39233 (3.92%) aligned concordantly &gt;1 times</span></span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a><span class="co"># 97.07% overall alignment rate</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <p>生产环境（全量数据）只需将输入替换为 trim 后文件：</p>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb3"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="ex">-1</span> <span class="va">${BASE}</span>/data/trimmed/<span class="va">${SAMPLE}</span>_1.fastq.gz <span class="dt">\</span></span>
 <span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a>-2 <span class="va">${BASE}</span>/data/trimmed/<span class="va">${SAMPLE}</span>_2.fastq.gz <span class="dt">\</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
@@ -963,7 +963,7 @@ Uniquely mapped reads %       |  80-95%   (&lt; 75% may indicate quality issues)
 <h3 data-number="5.1" class="anchored" data-anchor-id="策略一比对后计数featurecounts"><span class="header-section-number">5.1</span> 策略一：比对后计数（featureCounts）</h3>
 <p>featureCounts 是 Subread 工具包的组成部分，逐个统计每个基因的外显子区域内的比对 reads 数量。其优点是流程直观、结果可解释性强；缺点是对多比对 reads 的处理较为简单，且不估计转录本层面的不确定性。</p>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb7"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="co"># featureCounts: count reads per gene (using exon features)</span></span>
-<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a><span class="co"># -s 2 = RF-stranded (TruSeq Stranded mRNA)</span></span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a><span class="co"># -s 0 = unstranded (airway dataset, confirmed by infer_experiment.py)</span></span>
 <span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a><span class="co"># -p   = paired-end mode</span></span>
 <span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a><span class="co"># -B   = both mates must be mapped</span></span>
 <span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a><span class="co"># -C   = exclude chimeric reads</span></span>
@@ -971,8 +971,8 @@ Uniquely mapped reads %       |  80-95%   (&lt; 75% may indicate quality issues)
 <span id="cb7-7"><a href="#cb7-7" aria-hidden="true" tabindex="-1"></a><span class="ex">featureCounts</span> <span class="dt">\</span></span>
 <span id="cb7-8"><a href="#cb7-8" aria-hidden="true" tabindex="-1"></a>  <span class="at">-T</span> 16 <span class="dt">\</span></span>
 <span id="cb7-9"><a href="#cb7-9" aria-hidden="true" tabindex="-1"></a>  <span class="at">-a</span> Homo_sapiens.GRCh38.109.gtf <span class="dt">\</span></span>
-<span id="cb7-10"><a href="#cb7-10" aria-hidden="true" tabindex="-1"></a>  <span class="at">-o</span> results/featureCounts/pasilla_counts.txt <span class="dt">\</span></span>
-<span id="cb7-11"><a href="#cb7-11" aria-hidden="true" tabindex="-1"></a>  <span class="at">-s</span> 2 <span class="dt">\</span></span>
+<span id="cb7-10"><a href="#cb7-10" aria-hidden="true" tabindex="-1"></a>  <span class="at">-o</span> results/featureCounts/airway_counts.txt <span class="dt">\</span></span>
+<span id="cb7-11"><a href="#cb7-11" aria-hidden="true" tabindex="-1"></a>  <span class="at">-s</span> 0 <span class="dt">\</span></span>
 <span id="cb7-12"><a href="#cb7-12" aria-hidden="true" tabindex="-1"></a>  <span class="at">-p</span> <span class="at">-B</span> <span class="at">-C</span> <span class="dt">\</span></span>
 <span id="cb7-13"><a href="#cb7-13" aria-hidden="true" tabindex="-1"></a>  <span class="at">--countReadPairs</span> <span class="dt">\</span></span>
 <span id="cb7-14"><a href="#cb7-14" aria-hidden="true" tabindex="-1"></a>  results/star/SRR1039508/Aligned.sortedByCoord.out.bam <span class="dt">\</span></span>
@@ -1247,14 +1247,15 @@ Uniquely mapped reads %       |  80-95%   (&lt; 75% may indicate quality issues)
 <span id="cb11-34"><a href="#cb11-34" aria-hidden="true" tabindex="-1"></a><span class="cf">done</span></span>
 <span id="cb11-35"><a href="#cb11-35" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb11-36"><a href="#cb11-36" aria-hidden="true" tabindex="-1"></a><span class="co"># === Step 2: featureCounts on all BAM files (conda activate rnaseq-env) ===</span></span>
-<span id="cb11-37"><a href="#cb11-37" aria-hidden="true" tabindex="-1"></a><span class="ex">featureCounts</span> <span class="dt">\</span></span>
-<span id="cb11-38"><a href="#cb11-38" aria-hidden="true" tabindex="-1"></a>  <span class="at">-T</span> 8 <span class="dt">\</span></span>
-<span id="cb11-39"><a href="#cb11-39" aria-hidden="true" tabindex="-1"></a>  <span class="at">-a</span> <span class="va">${GTF}</span> <span class="dt">\</span></span>
-<span id="cb11-40"><a href="#cb11-40" aria-hidden="true" tabindex="-1"></a>  <span class="at">-o</span> <span class="va">${FC_OUT}</span>/pasilla_counts.txt <span class="dt">\</span></span>
-<span id="cb11-41"><a href="#cb11-41" aria-hidden="true" tabindex="-1"></a>  <span class="at">-s</span> 2 <span class="at">-p</span> <span class="at">-B</span> <span class="at">-C</span> <span class="at">--countReadPairs</span> <span class="dt">\</span></span>
-<span id="cb11-42"><a href="#cb11-42" aria-hidden="true" tabindex="-1"></a>  <span class="va">${STAR_OUT}</span>/SRR1039508/Aligned.sortedByCoord.out.bam <span class="dt">\</span></span>
-<span id="cb11-43"><a href="#cb11-43" aria-hidden="true" tabindex="-1"></a>  <span class="va">${STAR_OUT}</span>/SRR1039512/Aligned.sortedByCoord.out.bam <span class="dt">\</span></span>
-<span id="cb11-44"><a href="#cb11-44" aria-hidden="true" tabindex="-1"></a>  <span class="va">${STAR_OUT}</span>/SRR1039516/Aligned.sortedByCoord.out.bam</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<span id="cb11-37"><a href="#cb11-37" aria-hidden="true" tabindex="-1"></a><span class="co"># -s 0 = unstranded (airway dataset)</span></span>
+<span id="cb11-38"><a href="#cb11-38" aria-hidden="true" tabindex="-1"></a><span class="ex">featureCounts</span> <span class="dt">\</span></span>
+<span id="cb11-39"><a href="#cb11-39" aria-hidden="true" tabindex="-1"></a>  <span class="at">-T</span> 8 <span class="dt">\</span></span>
+<span id="cb11-40"><a href="#cb11-40" aria-hidden="true" tabindex="-1"></a>  <span class="at">-a</span> <span class="va">${GTF}</span> <span class="dt">\</span></span>
+<span id="cb11-41"><a href="#cb11-41" aria-hidden="true" tabindex="-1"></a>  <span class="at">-o</span> <span class="va">${FC_OUT}</span>/airway_counts.txt <span class="dt">\</span></span>
+<span id="cb11-42"><a href="#cb11-42" aria-hidden="true" tabindex="-1"></a>  <span class="at">-s</span> 0 <span class="at">-p</span> <span class="at">-B</span> <span class="at">-C</span> <span class="at">--countReadPairs</span> <span class="dt">\</span></span>
+<span id="cb11-43"><a href="#cb11-43" aria-hidden="true" tabindex="-1"></a>  <span class="va">${STAR_OUT}</span>/SRR1039508/Aligned.sortedByCoord.out.bam <span class="dt">\</span></span>
+<span id="cb11-44"><a href="#cb11-44" aria-hidden="true" tabindex="-1"></a>  <span class="va">${STAR_OUT}</span>/SRR1039512/Aligned.sortedByCoord.out.bam <span class="dt">\</span></span>
+<span id="cb11-45"><a href="#cb11-45" aria-hidden="true" tabindex="-1"></a>  <span class="va">${STAR_OUT}</span>/SRR1039516/Aligned.sortedByCoord.out.bam</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb12"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="co"># === R: Compare featureCounts vs Salmon quantification ===</span></span>
 <span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(tximport)</span>
 <span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(readr)</span>
@@ -1262,7 +1263,7 @@ Uniquely mapped reads %       |  80-95%   (&lt; 75% may indicate quality issues)
 <span id="cb12-5"><a href="#cb12-5" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb12-6"><a href="#cb12-6" aria-hidden="true" tabindex="-1"></a><span class="co"># Load featureCounts output</span></span>
 <span id="cb12-7"><a href="#cb12-7" aria-hidden="true" tabindex="-1"></a>fc_data <span class="ot">&lt;-</span> <span class="fu">read.table</span>(</span>
-<span id="cb12-8"><a href="#cb12-8" aria-hidden="true" tabindex="-1"></a>  <span class="st">"results/featureCounts/pasilla_counts.txt"</span>,</span>
+<span id="cb12-8"><a href="#cb12-8" aria-hidden="true" tabindex="-1"></a>  <span class="st">"results/featureCounts/airway_counts.txt"</span>,</span>
 <span id="cb12-9"><a href="#cb12-9" aria-hidden="true" tabindex="-1"></a>  <span class="at">header =</span> <span class="cn">TRUE</span>, <span class="at">skip =</span> <span class="dv">1</span>, <span class="at">row.names =</span> <span class="dv">1</span></span>
 <span id="cb12-10"><a href="#cb12-10" aria-hidden="true" tabindex="-1"></a>)</span>
 <span id="cb12-11"><a href="#cb12-11" aria-hidden="true" tabindex="-1"></a>fc_counts <span class="ot">&lt;-</span> fc_data[, <span class="dv">7</span><span class="sc">:</span><span class="fu">ncol</span>(fc_data)]</span>
@@ -1410,7 +1411,7 @@ Uniquely mapped reads %       |  80-95%   (&lt; 75% may indicate quality issues)
 <span id="cb15-3"><a href="#cb15-3" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb15-4"><a href="#cb15-4" aria-hidden="true" tabindex="-1"></a><span class="co"># Load count matrix from featureCounts</span></span>
 <span id="cb15-5"><a href="#cb15-5" aria-hidden="true" tabindex="-1"></a>counts_raw <span class="ot">&lt;-</span> <span class="fu">read.table</span>(</span>
-<span id="cb15-6"><a href="#cb15-6" aria-hidden="true" tabindex="-1"></a>  <span class="st">"results/featureCounts/pasilla_counts.txt"</span>,</span>
+<span id="cb15-6"><a href="#cb15-6" aria-hidden="true" tabindex="-1"></a>  <span class="st">"results/featureCounts/airway_counts.txt"</span>,</span>
 <span id="cb15-7"><a href="#cb15-7" aria-hidden="true" tabindex="-1"></a>  <span class="at">header =</span> <span class="cn">TRUE</span>, <span class="at">skip =</span> <span class="dv">1</span>, <span class="at">row.names =</span> <span class="dv">1</span></span>
 <span id="cb15-8"><a href="#cb15-8" aria-hidden="true" tabindex="-1"></a>)</span>
 <span id="cb15-9"><a href="#cb15-9" aria-hidden="true" tabindex="-1"></a>counts <span class="ot">&lt;-</span> counts_raw[, <span class="dv">7</span><span class="sc">:</span><span class="fu">ncol</span>(counts_raw)]</span>
