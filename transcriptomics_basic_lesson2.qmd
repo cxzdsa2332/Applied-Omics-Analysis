@@ -8,6 +8,12 @@ format:
     toc-depth: 3
     number-sections: true
     theme: cosmo
+crossref:
+  fig-title: 图
+  fig-prefix: 图
+  tbl-title: 表
+  tbl-prefix: 表
+  chapters: false
 ---
 
 ## 学习目标
@@ -35,15 +41,218 @@ format:
 - 新型剪接位点无法被发现；
 - 外显子边界附近的覆盖度出现人为缺口。
 
-{{Wiki:RNA_splicing}}
+![RNA 剪接过程示意图。pre-mRNA 中的内含子经剪接体切除，外显子拼接为成熟 mRNA。来源：Wikipedia, RNA splicing。](https://upload.wikimedia.org/wikipedia/commons/2/24/RNA_splicing_reaction.svg){#fig-rna-splicing width=85%}
 
 ### Splice-Aware 比对的解决思路
+
+普通 DNA 比对工具与 splice-aware 工具在处理跨剪接位点读段时的行为差异，可通过 @fig-splice-aware 直观说明：
+
+```{r}
+#| label: fig-splice-aware
+#| fig-cap: "普通比对工具 vs Splice-Aware 比对工具对 Junction Read 的处理差异。上方为基因组结构（外显子-内含子-外显子），中间为来自 mRNA 的 junction read（横跨剪接位点），下方对比两种比对结果。"
+#| fig-width: 10
+#| fig-height: 5.5
+#| echo: false
+
+library(ggplot2)
+library(grid)
+
+# ── coordinate system ──────────────────────────────────────────
+# genome x: 0–100 (exon1: 0–25, intron: 25–75, exon2: 75–100)
+# three horizontal lanes (y): genome=3, non-splice=1.8, splice=0.6
+
+lane_y   <- c(genome = 3.0, non = 1.8, splice = 0.6)
+bar_h    <- 0.32   # rectangle half-height
+
+# colour palette
+col_exon   <- "#4575b4"
+col_intron <- "#d9d9d9"
+col_read   <- "#e08214"
+col_fail   <- "#d73027"
+col_ok     <- "#1a9850"
+col_skip   <- "#b2b2b2"   # intron-skip arc colour
+
+df_rect <- data.frame(
+  xmin  = c(0,  25, 75,          # genome: exon1, intron, exon2
+             5,                   # non-splice: continuous read (wrong)
+             5,  75),             # splice: left seed, right seed
+  xmax  = c(25, 75, 100,
+             95,
+             25, 95),
+  ymin  = c(lane_y["genome"] - bar_h, lane_y["genome"] - bar_h*0.6, lane_y["genome"] - bar_h,
+             lane_y["non"]    - bar_h,
+             lane_y["splice"] - bar_h, lane_y["splice"] - bar_h),
+  ymax  = c(lane_y["genome"] + bar_h, lane_y["genome"] + bar_h*0.6, lane_y["genome"] + bar_h,
+             lane_y["non"]    + bar_h,
+             lane_y["splice"] + bar_h, lane_y["splice"] + bar_h),
+  fill  = c(col_exon, col_intron, col_exon,
+             col_fail,
+             col_ok, col_ok),
+  alpha = c(1, 1, 1,  0.55,  0.9, 0.9)
+)
+
+# arc for splice skip (intron omission indicator)
+arc_x <- seq(25, 75, length.out = 80)
+arc_y <- lane_y["splice"] + bar_h + 0.28 * sin(pi * (arc_x - 25) / 50)
+
+p <- ggplot() +
+  # ── rectangles ──
+  geom_rect(data = df_rect,
+            aes(xmin = xmin, xmax = xmax, ymin = ymin, ymax = ymax,
+                fill = fill, alpha = alpha),
+            color = "white", linewidth = 0.4, show.legend = FALSE) +
+  scale_fill_identity() +
+  scale_alpha_identity() +
+
+  # ── intron chevron line ──
+  annotate("segment", x = 25, xend = 50, y = lane_y["genome"],
+           yend = lane_y["genome"] + 0.22, color = "#666666", linewidth = 0.8) +
+  annotate("segment", x = 50, xend = 75, y = lane_y["genome"] + 0.22,
+           yend = lane_y["genome"], color = "#666666", linewidth = 0.8) +
+
+  # ── splice arc ──
+  geom_line(data = data.frame(x = arc_x, y = arc_y),
+            aes(x, y), color = col_skip, linewidth = 1.1, linetype = "dashed") +
+
+  # ── cross mark on non-splice read ──
+  annotate("text", x = 50, y = lane_y["non"] + bar_h + 0.22,
+           label = "✗  Failed / Misaligned", color = col_fail,
+           size = 3.8, fontface = "bold", hjust = 0.5) +
+
+  # ── check mark on splice read ──
+  annotate("text", x = 50, y = lane_y["splice"] + bar_h + 0.48,
+           label = "✓  Correctly split-aligned (splice junction retained)", color = col_ok,
+           size = 3.8, fontface = "bold", hjust = 0.5) +
+
+  # ── genome labels ──
+  annotate("text", x = 12.5, y = lane_y["genome"], label = "Exon 1",
+           size = 3.2, color = "white", fontface = "bold") +
+  annotate("text", x = 50,   y = lane_y["genome"] - 0.06, label = "Intron (thousands to tens of thousands bp)",
+           size = 3.0, color = "#555555") +
+  annotate("text", x = 87.5, y = lane_y["genome"], label = "Exon 2",
+           size = 3.2, color = "white", fontface = "bold") +
+
+  # ── read label ──
+  annotate("text", x = 50, y = lane_y["non"], label = "Junction Read (from mRNA)",
+           size = 3.2, color = "white", fontface = "bold") +
+
+  # ── lane titles ──
+  annotate("text", x = -1, y = lane_y["genome"], label = "Genome",
+           hjust = 1, size = 3.5, fontface = "bold", color = "#333333") +
+  annotate("text", x = -1, y = lane_y["non"],    label = "Bowtie2\n(standard aligner)",
+           hjust = 1, size = 3.5, fontface = "bold", color = col_fail) +
+  annotate("text", x = -1, y = lane_y["splice"], label = "STAR / HISAT2\n(splice-aware)",
+           hjust = 1, size = 3.5, fontface = "bold", color = col_ok) +
+
+  # ── layout ──
+  coord_cartesian(xlim = c(-22, 102), ylim = c(0.15, 3.6), clip = "off") +
+  theme_void() +
+  theme(plot.margin = margin(10, 10, 10, 90))
+
+print(p)
+```
+
+@fig-splice-aware 展示了三个层次：**基因组结构**（外显子-内含子-外显子）、**普通比对（Bowtie2）** 的失败结果，以及 **Splice-Aware 比对（STAR/HISAT2）** 的正确分段比对。Junction read 来自 mRNA，其两端分别对应基因组上两个不连续的外显子；普通工具无法在基因组上找到完整的连续匹配而失败，splice-aware 工具则识别出剪接信号，将 read 正确拆分比对并以弧线标记跳过的内含子区间。
 
 Splice-aware 比对工具通过两类策略处理跨剪接位点的 reads：
 
 **策略一：外显子图谱索引（HISAT2）**：在构建基因组索引时，将已知的剪接位点信息编码进图结构索引，比对时直接在图上搜索最优路径，既能利用先验知识，又支持发现新剪接位点。
 
 **策略二：种子-延伸（STAR）**：先将 read 的各段子序列分别映射到基因组，识别出可能的剪接位点，再将片段在剪接位点处拼合。
+
+---
+
+## STAR 与 HISAT2：两大主流 Splice-Aware 比对工具
+
+STAR 和 HISAT2 是目前 bulk RNA-seq 流程中最常用的两款 splice-aware 比对工具，均能处理跨剪接位点的 reads，但在算法设计、资源消耗与适用场景上存在显著差异。
+
+### 核心差异对比
+
+| 维度 | STAR | HISAT2 |
+|---|---|---|
+| **算法** | 后缀数组（Suffix Array）+ 种子拼接 | 图基因组（Graph Genome）+ BWT-FM 索引 |
+| **索引内存** | ~30 GB（人类基因组） | ~4 GB（人类基因组） |
+| **比对速度** | 极快（~50M reads/分钟） | 较快（~30M reads/分钟） |
+| **剪接位点发现** | 2-pass 模式，新位点发现能力强 | 依赖预建图索引，已知位点准确率高 |
+| **SNP/单倍型感知** | 不支持 | 支持（`grch38_snp_tran` 索引） |
+| **输出** | BAM + SJ.out.tab（剪接位点表） | BAM（无内建剪接位点表） |
+| **主要下游用途** | featureCounts、DESeq2、新转录本发现 | featureCounts、DESeq2、变异感知比对 |
+| **推荐场景** | 服务器环境；需发现新剪接位点；大队列分析 | 内存受限环境（≤8 GB）；SNP感知比对 |
+
+:::note
+**如何选择：** 若服务器内存充足（≥32 GB），优先选用 STAR，因其 2-pass 模式在新剪接位点检测上具有明显优势，且是 ENCODE 流程的官方标准。若在笔记本或内存受限（<16 GB）的环境下教学演示，HISAT2 是更实用的替代方案——本课程提供了预建的 `grch38_snp_tran` 索引，可直接使用。
+:::
+
+### HISAT2 完整 Workflow
+
+本地已有预建 HISAT2 索引（`grch38_snp_tran`，含 SNP 和已知转录本信息），可直接跳过索引构建步骤。教学演示使用根目录下的 1M 子集文件；实际分析请改用 `data/trimmed/` 下的 trim 后全量文件。
+
+```bash
+# ── Environment: rnaseq-env (conda activate rnaseq-env) ──────────────────────
+BASE="/Users/angdong/Documents/bio_example/bulkRNA"
+HISAT2_INDEX="${BASE}/ref/grch38_snp_tran/genome_snp_tran"
+GTF="${BASE}/ref/GRCh38.109.gtf"
+RESULTS_DIR="${BASE}/results/hisat2"
+
+# PE samples with 1M teaching subsets available at ${BASE}/
+PE_SAMPLES="SRR1039508 SRR1039512 SRR1039516"
+
+# === Step 1: Align paired-end reads ===
+# --dta       : optimise output for featureCounts / StringTie
+# --rna-strandness RF : RF-stranded library (TruSeq Stranded mRNA)
+# Align stats are captured from stderr to *_align_stats.txt
+
+for SAMPLE in ${PE_SAMPLES}; do
+  mkdir -p ${RESULTS_DIR}/${SAMPLE}
+  hisat2 \
+    -p 8 \
+    --dta \
+    --rna-strandness RF \
+    -x ${HISAT2_INDEX} \
+    -1 ${BASE}/${SAMPLE}_1_1M.fastq.gz \
+    -2 ${BASE}/${SAMPLE}_2_1M.fastq.gz \
+    -S ${RESULTS_DIR}/${SAMPLE}/${SAMPLE}.sam \
+    2> ${RESULTS_DIR}/${SAMPLE}/${SAMPLE}_align_stats.txt
+
+  # === Step 2: SAM → sorted BAM → index (remove intermediate SAM) ===
+  samtools sort -@ 8 \
+    -o ${RESULTS_DIR}/${SAMPLE}/${SAMPLE}.sorted.bam \
+    ${RESULTS_DIR}/${SAMPLE}/${SAMPLE}.sam
+  samtools index ${RESULTS_DIR}/${SAMPLE}/${SAMPLE}.sorted.bam
+  rm ${RESULTS_DIR}/${SAMPLE}/${SAMPLE}.sam
+done
+
+# === Step 3: Count reads with featureCounts ===
+featureCounts \
+  -T 8 \
+  -a ${GTF} \
+  -o ${RESULTS_DIR}/hisat2_counts.txt \
+  -s 2 -p -B -C \
+  --countReadPairs \
+  ${RESULTS_DIR}/SRR1039508/SRR1039508.sorted.bam \
+  ${RESULTS_DIR}/SRR1039512/SRR1039512.sorted.bam \
+  ${RESULTS_DIR}/SRR1039516/SRR1039516.sorted.bam
+```
+
+:::tip
+**查看 HISAT2 比对统计：** 上方命令已将 stderr 重定向至 `*_align_stats.txt`，格式示例如下：
+
+```bash
+cat ${BASE}/results/hisat2/SRR1039508/SRR1039508_align_stats.txt
+# 2000000 reads; of these:
+#   2000000 (100.00%) were paired; of these:
+#       98541 (4.93%) aligned concordantly 0 times
+#     1774631 (88.73%) aligned concordantly exactly 1 time
+#      126828 (6.34%) aligned concordantly >1 times
+# 94.73% overall alignment rate
+```
+
+生产环境（全量数据）只需将输入替换为 trim 后文件：
+```bash
+-1 ${BASE}/data/trimmed/${SAMPLE}_1.fastq.gz \
+-2 ${BASE}/data/trimmed/${SAMPLE}_2.fastq.gz \
+```
+:::
 
 ---
 
@@ -84,50 +293,59 @@ chr1  ENSEMBL  exon     65520     65573  .  +  .  gene_id "ENSG00000186092"; tra
 
 ### STAR 索引构建与比对
 
-```bash
-# === Step 1: Build STAR genome index ===
-# Requires ~30 GB RAM for human genome (GRCh38)
-# --sjdbOverhang: read length - 1 (for 150 bp reads: 149)
-mkdir -p index/STAR_GRCh38
+基因组 FASTA 文件已存在于本地，可直接进行索引构建，无需下载。
 
+```bash
+# ── Environment: star-env (conda activate star-env) ──────────────────────────
+BASE="/Users/angdong/Documents/bio_example/bulkRNA"
+GENOME_DIR="${BASE}/ref"
+STAR_INDEX="${GENOME_DIR}/star_index"   # dir exists; index not yet built
+
+# === Step 1: Build STAR genome index ===
+# Requires ~30 GB RAM; --sjdbOverhang = read length - 1 (150 bp reads → 149)
+# genome FASTA already at: ${GENOME_DIR}/Homo_sapiens.GRCh38.dna.primary_assembly.fa
 STAR \
   --runMode genomeGenerate \
-  --genomeDir index/STAR_GRCh38 \
-  --genomeFastaFiles Homo_sapiens.GRCh38.dna.primary_assembly.fa \
-  --sjdbGtfFile Homo_sapiens.GRCh38.109.gtf \
+  --genomeDir ${STAR_INDEX} \
+  --genomeFastaFiles ${GENOME_DIR}/Homo_sapiens.GRCh38.dna.primary_assembly.fa \
+  --sjdbGTFfile ${GENOME_DIR}/GRCh38.109.gtf \
   --sjdbOverhang 149 \
-  --runThreadN 16
+  --runThreadN 8
 
-# === Step 2: Align paired-end reads (with 2-pass mode) ===
-mkdir -p results/star/SRR1039508
+# === Step 2: Align all PE samples (with 2-pass mode) ===
+# Teaching demo uses 1M-read subsets at ${BASE}/
+# For production: replace with ${BASE}/data/trimmed/${SAMPLE}_[12].fastq.gz
+RESULTS_DIR="${BASE}/results/star"
+PE_SAMPLES="SRR1039508 SRR1039512 SRR1039516"
 
-STAR \
-  --runThreadN 16 \
-  --genomeDir index/STAR_GRCh38 \
-  --readFilesIn \
-    data/trimmed/SRR1039508_1.fastq.gz \
-    data/trimmed/SRR1039508_2.fastq.gz \
-  --readFilesCommand zcat \
-  --outSAMtype BAM SortedByCoordinate \
-  --outSAMattributes NH HI AS NM MD \
-  --outFileNamePrefix results/star/SRR1039508/ \
-  --outFilterType BySJout \
-  --alignSJoverhangMin 8 \
-  --alignSJDBoverhangMin 1 \
-  --outFilterMismatchNmax 999 \
-  --outFilterMismatchNoverReadLmax 0.04 \
-  --alignIntronMin 20 \
-  --alignIntronMax 1000000 \
-  --alignMatesGapMax 1000000 \
-  --twopassMode Basic
+for SAMPLE in ${PE_SAMPLES}; do
+  mkdir -p ${RESULTS_DIR}/${SAMPLE}
+  STAR \
+    --runThreadN 8 \
+    --genomeDir ${STAR_INDEX} \
+    --readFilesIn \
+      ${BASE}/${SAMPLE}_1_1M.fastq.gz \
+      ${BASE}/${SAMPLE}_2_1M.fastq.gz \
+    --readFilesCommand zcat \
+    --outSAMtype BAM SortedByCoordinate \
+    --outSAMattributes NH HI AS NM MD \
+    --outFileNamePrefix ${RESULTS_DIR}/${SAMPLE}/ \
+    --outFilterType BySJout \
+    --alignSJoverhangMin 8 \
+    --alignSJDBoverhangMin 1 \
+    --outFilterMismatchNmax 999 \
+    --outFilterMismatchNoverReadLmax 0.04 \
+    --alignIntronMin 20 \
+    --alignIntronMax 1000000 \
+    --alignMatesGapMax 1000000 \
+    --twopassMode Basic
+  samtools index ${RESULTS_DIR}/${SAMPLE}/Aligned.sortedByCoord.out.bam
+done
 
-# === Step 3: Index BAM file ===
-samtools index results/star/SRR1039508/Aligned.sortedByCoord.out.bam
-
-# Key STAR output files:
+# Key STAR output files per sample:
 # Aligned.sortedByCoord.out.bam  -- sorted, indexed BAM
 # Log.final.out                  -- alignment summary statistics
-# SJ.out.tab                     -- splice junction table
+# SJ.out.tab                     -- discovered splice junction table
 ```
 
 **STAR Log.final.out 关键指标解读**：
@@ -142,6 +360,151 @@ Uniquely mapped reads %       |  80-95%   (< 75% may indicate quality issues)
 ---
 
 ## 表达量定量：两种主流策略
+
+@fig-quant-strategies 对比了两种策略的核心流程差异：**比对后计数**（Alignment-based counting）先将 reads 全基因组比对再逐外显子计数，**伪比对定量**（Pseudo-alignment）跳过全基因组比对、直接通过 k-mer 索引将 reads 映射到转录本并估计丰度。
+
+```{r}
+#| label: fig-quant-strategies
+#| fig-cap: "两种主流表达量定量策略流程对比。左侧为比对后计数策略（featureCounts），右侧为伪比对定量策略（Salmon）。箭头代表数据流向，色块代表关键处理步骤。"
+#| fig-width: 11
+#| fig-height: 6
+#| echo: false
+
+library(ggplot2)
+library(grid)
+
+# ── colour palette ──────────────────────────────────────────────
+col_input   <- "#5b8db8"   # input reads
+col_fc_a    <- "#3a7abf"   # alignment step (featureCounts path)
+col_fc_b    <- "#2166ac"   # counting step
+col_fc_c    <- "#08519c"   # output matrix
+col_sal_a   <- "#31a354"   # k-mer index
+col_sal_b   <- "#006d2c"   # quasi-mapping
+col_sal_c   <- "#00441b"   # TPM / counts output
+col_arrow   <- "#555555"
+col_divider <- "#cccccc"
+col_bg_l    <- "#f0f5fb"   # left panel background
+col_bg_r    <- "#f0faf3"   # right panel background
+col_label   <- "#333333"
+
+box <- function(x, y, w, h, fill, label, label_size = 3.4, text_color = "white") {
+  list(
+    annotate("rect", xmin = x - w/2, xmax = x + w/2,
+             ymin = y - h/2, ymax = y + h/2,
+             fill = fill, color = "white", linewidth = 0.5, alpha = 0.92),
+    annotate("text", x = x, y = y, label = label,
+             size = label_size, color = text_color,
+             fontface = "bold", hjust = 0.5, vjust = 0.5)
+  )
+}
+
+arrow_seg <- function(x, y1, y2, col = col_arrow) {
+  annotate("segment", x = x, xend = x, y = y1, yend = y2,
+           color = col, linewidth = 0.7,
+           arrow = arrow(length = unit(0.18, "cm"), type = "closed"))
+}
+
+p <- ggplot() +
+  # ── panel backgrounds ──────────────────────────────────────────
+  annotate("rect", xmin = 0.5, xmax = 5.5, ymin = 0.3, ymax = 9.7,
+           fill = col_bg_l, color = col_divider, linewidth = 0.6) +
+  annotate("rect", xmin = 6.5, xmax = 11.5, ymin = 0.3, ymax = 9.7,
+           fill = col_bg_r, color = col_divider, linewidth = 0.6) +
+
+  # ── panel titles ───────────────────────────────────────────────
+  annotate("text", x = 3, y = 9.3, label = "Strategy 1: Alignment-based Counting",
+           size = 4.0, fontface = "bold", color = col_fc_a, hjust = 0.5) +
+  annotate("text", x = 9, y = 9.3, label = "Strategy 2: Pseudo-alignment Quantification",
+           size = 4.0, fontface = "bold", color = col_sal_a, hjust = 0.5) +
+  annotate("text", x = 3, y = 8.95, label = "featureCounts",
+           size = 3.2, color = "#666666", hjust = 0.5) +
+  annotate("text", x = 9, y = 8.95, label = "Salmon",
+           size = 3.2, color = "#666666", hjust = 0.5) +
+
+  # ── shared input box ───────────────────────────────────────────
+  annotate("rect", xmin = 4.3, xmax = 7.7, ymin = 8.1, ymax = 8.65,
+           fill = col_input, color = "white", linewidth = 0.5, alpha = 0.92) +
+  annotate("text", x = 6, y = 8.38, label = "RNA-seq Reads (FASTQ)",
+           size = 3.5, color = "white", fontface = "bold", hjust = 0.5) +
+
+  # arrows from shared input to each lane
+  annotate("segment", x = 4.8, xend = 3, y = 8.1, yend = 7.75,
+           color = col_arrow, linewidth = 0.7,
+           arrow = arrow(length = unit(0.18, "cm"), type = "closed")) +
+  annotate("segment", x = 7.2, xend = 9, y = 8.1, yend = 7.75,
+           color = col_arrow, linewidth = 0.7,
+           arrow = arrow(length = unit(0.18, "cm"), type = "closed")) +
+
+  # ── LEFT LANE: featureCounts ────────────────────────────────────
+  # Step 1: Genome Alignment (STAR)
+  box(3, 7.4, 4.2, 0.62, col_fc_a,
+      "Genome Alignment (STAR)\nMap reads to entire genome → BAM", 3.1) +
+  arrow_seg(3, 7.08, 6.6) +
+
+  # Step 2: BAM Indexing
+  box(3, 6.25, 4.2, 0.6, col_fc_a,
+      "Sort & Index BAM\n(samtools sort / index)", 3.1) +
+  arrow_seg(3, 5.94, 5.42) +
+
+  # Step 3: Exon-level counting
+  box(3, 5.07, 4.2, 0.62, col_fc_b,
+      "Count Reads per Exon\n(featureCounts, -s 2 -p -B -C)", 3.1) +
+  arrow_seg(3, 4.75, 4.23) +
+
+  # Step 4: Gene-level aggregation
+  box(3, 3.88, 4.2, 0.6, col_fc_b,
+      "Aggregate to Gene Level\n(sum exon counts → gene count)", 3.1) +
+  arrow_seg(3, 3.57, 3.05) +
+
+  # Output
+  box(3, 2.7, 4.2, 0.6, col_fc_c,
+      "Integer Count Matrix\n(genes × samples)", 3.1) +
+
+  # Note below
+  annotate("text", x = 3, y = 2.1,
+           label = "✔ Intuitive  ✔ DESeq2-ready\n✘ ~20–60 min per sample  ✘ Genome FASTA required",
+           size = 2.85, color = "#444444", hjust = 0.5, lineheight = 1.35) +
+
+  # ── RIGHT LANE: Salmon ──────────────────────────────────────────
+  # Step 1: Build k-mer transcript index
+  box(9, 7.4, 4.2, 0.62, col_sal_a,
+      "Build Transcript k-mer Index\n(salmon index, with decoy genome)", 3.1) +
+  arrow_seg(9, 7.08, 6.6) +
+
+  # Step 2: Quasi-mapping
+  box(9, 6.25, 4.2, 0.6, col_sal_a,
+      "Quasi-mapping to Transcriptome\n(k-mer hash; no full alignment)", 3.1) +
+  arrow_seg(9, 5.94, 5.42) +
+
+  # Step 3: EM estimation
+  box(9, 5.07, 4.2, 0.62, col_sal_b,
+      "EM Estimation of Abundance\n(bias correction: --gcBias --seqBias)", 3.1) +
+  arrow_seg(9, 4.75, 4.23) +
+
+  # Step 4: tximport aggregation
+  box(9, 3.88, 4.2, 0.6, col_sal_b,
+      "Aggregate to Gene Level\n(tximport: transcript → gene)", 3.1) +
+  arrow_seg(9, 3.57, 3.05) +
+
+  # Output
+  box(9, 2.7, 4.2, 0.6, col_sal_c,
+      "TPM + Scaled Count Matrix\n(genes × samples)", 3.1) +
+
+  # Note below
+  annotate("text", x = 9, y = 2.1,
+           label = "✔ 10–50× faster  ✔ Bias-corrected  ✔ Transcript-level\n✘ No splice junction table  ✘ Needs tximport for DESeq2",
+           size = 2.85, color = "#444444", hjust = 0.5, lineheight = 1.35) +
+
+  # ── central divider label ──────────────────────────────────────
+  annotate("text", x = 6, y = 5.5, label = "vs", size = 5,
+           fontface = "bold", color = "#aaaaaa", hjust = 0.5) +
+
+  coord_cartesian(xlim = c(0.5, 11.5), ylim = c(0.8, 10)) +
+  theme_void() +
+  theme(plot.margin = margin(5, 5, 5, 5))
+
+print(p)
+```
 
 ### 策略一：比对后计数（featureCounts）
 
@@ -303,63 +666,99 @@ DESeq2 的负二项分布统计模型要求输入**未归一化的整数计数**
 | 比对方式 | 基于全基因组 BAM 比对 | 伪比对/选择性比对 |
 | 速度 | 较慢（依赖 STAR 输出） | 极快（直接从 FASTQ） |
 | 偏差校正 | 无 | GC bias、序列偏差 |
-| 多比对处理 | 简单（丢弃或分数分配） | EM 算法最优分配 |
+| 多比对处理 | 默认丢弃；`-M --fraction` 分数分配 | EM 算法优化分配 |
 | 不确定性估计 | 无 | Bootstrap 区间 |
 | 输出层级 | 基因级别 | 转录本级别（需 tximport） |
 | DESeq2 兼容性 | 直接兼容 | 需通过 tximport |
 | 推荐场景 | 快速分析、已有 BAM 文件 | 新项目、需要偏差校正 |
 
+### 多比对 reads 的处理策略
+
+当一条 read 能比对到基因组多个位置时，称为**多比对 read（multimapper）**。多比对现象在上表中是两种策略最核心的行为差异之一，理解其来源和处理逻辑有助于正确解读定量结果。
+
+多比对的主要来源：
+
+- **重复元件**：LINE、SINE、转座子家族中高度相似的拷贝；
+- **同源基因家族**：如组蛋白基因簇、嗅觉受体基因家族；
+- **假基因**：与功能基因高度相似但无功能的序列拷贝。
+
+不同工具的处理策略及适用场景：
+
+| 工具与参数 | 策略 | 适用场景 |
+|---|---|---|
+| STAR（默认输出） | 保留所有比对位置，`NH:i:N` 标记总数 | 保留原始信息，由下游工具决策 |
+| featureCounts（默认） | 丢弃全部多比对 reads | 保守计数；DESeq2 首选 |
+| featureCounts `-M --fraction` | 按位置数均等分配（产生小数计数） | 估计总体趋势；**不适用于 DESeq2** |
+| Salmon | EM 算法迭代优化，按转录本丰度加权分配 | 转录本级别定量的最优策略 |
+
+:::warning
+**`--fraction` 产生的小数计数不可用于 DESeq2：** DESeq2 的负二项分布模型要求严格整数输入。若使用 `-M --fraction`，须在导入前先取整（`round()`），但这会引入额外误差，不推荐用于差异表达分析。
+:::
+
+```bash
+# 查看 STAR 输出的多比对率
+BASE="/Users/angdong/Documents/bio_example/bulkRNA"
+grep "% of reads mapped to multiple loci" \
+  ${BASE}/results/star/SRR1039508/Log.final.out
+
+# 统计唯一比对 vs 全部比对 reads（STAR 中 MAPQ=255 表示唯一比对）
+samtools view -c -q 255 \
+  ${BASE}/results/hisat2/SRR1039508/SRR1039508.sorted.bam   # uniquely mapped
+samtools view -c -F 4 \
+  ${BASE}/results/hisat2/SRR1039508/SRR1039508.sorted.bam   # all mapped
+```
+
 ---
 
 ## 实践：完整比对与定量流程
 
+以下脚本将前述各步骤串联为完整流程，以本地教学数据集中三个配对末端样本（1M 子集）为例。
+
 ```bash
-# === Complete pipeline for all 6 paired-end pasilla samples ===
-# Assumes STAR index is already built
+# ── Environment: star-env for alignment; rnaseq-env for featureCounts ────────
+BASE="/Users/angdong/Documents/bio_example/bulkRNA"
+STAR_INDEX="${BASE}/ref/star_index"
+GTF="${BASE}/ref/GRCh38.109.gtf"
+STAR_OUT="${BASE}/results/star"
+FC_OUT="${BASE}/results/featureCounts"
+PE_SAMPLES="SRR1039508 SRR1039512 SRR1039516"
 
-SAMPLES=("SRR1039508" "SRR1039512" "SRR1039516"
-         "SRR1039509" "SRR1039513" "SRR1039517")
+mkdir -p ${FC_OUT}
 
-for SAMPLE in "${SAMPLES[@]}"; do
-  echo "Processing: ${SAMPLE}"
-
-  # STAR alignment
-  mkdir -p results/star/${SAMPLE}
+# === Step 1: STAR alignment (conda activate star-env) ===
+for SAMPLE in ${PE_SAMPLES}; do
+  mkdir -p ${STAR_OUT}/${SAMPLE}
   STAR \
-    --runThreadN 16 \
-    --genomeDir index/STAR_GRCh38 \
+    --runThreadN 8 \
+    --genomeDir ${STAR_INDEX} \
     --readFilesIn \
-      data/trimmed/${SAMPLE}_1.fastq.gz \
-      data/trimmed/${SAMPLE}_2.fastq.gz \
+      ${BASE}/${SAMPLE}_1_1M.fastq.gz \
+      ${BASE}/${SAMPLE}_2_1M.fastq.gz \
     --readFilesCommand zcat \
     --outSAMtype BAM SortedByCoordinate \
     --outSAMattributes NH HI AS NM MD \
-    --outFileNamePrefix results/star/${SAMPLE}/ \
-    --twopassMode Basic \
-    --runThreadN 16
-
-  samtools index results/star/${SAMPLE}/Aligned.sortedByCoord.out.bam
-
-  # Salmon quantification
-  salmon quant \
-    --index index/salmon_GRCh38 \
-    --libType A \
-    --mates1 data/trimmed/${SAMPLE}_1.fastq.gz \
-    --mates2 data/trimmed/${SAMPLE}_2.fastq.gz \
-    --output results/salmon/${SAMPLE} \
-    --gcBias --seqBias --validateMappings \
-    --threads 16
+    --outFileNamePrefix ${STAR_OUT}/${SAMPLE}/ \
+    --outFilterType BySJout \
+    --alignSJoverhangMin 8 \
+    --alignSJDBoverhangMin 1 \
+    --outFilterMismatchNmax 999 \
+    --outFilterMismatchNoverReadLmax 0.04 \
+    --alignIntronMin 20 \
+    --alignIntronMax 1000000 \
+    --alignMatesGapMax 1000000 \
+    --twopassMode Basic
+  samtools index ${STAR_OUT}/${SAMPLE}/Aligned.sortedByCoord.out.bam
 done
 
-# === featureCounts on all BAM files simultaneously ===
+# === Step 2: featureCounts on all BAM files (conda activate rnaseq-env) ===
 featureCounts \
-  -T 16 \
-  -a Homo_sapiens.GRCh38.109.gtf \
-  -o results/featureCounts/pasilla_counts.txt \
+  -T 8 \
+  -a ${GTF} \
+  -o ${FC_OUT}/pasilla_counts.txt \
   -s 2 -p -B -C --countReadPairs \
-  results/star/SRR1039508/Aligned.sortedByCoord.out.bam \
-  results/star/SRR1039512/Aligned.sortedByCoord.out.bam \
-  results/star/SRR1039516/Aligned.sortedByCoord.out.bam
+  ${STAR_OUT}/SRR1039508/Aligned.sortedByCoord.out.bam \
+  ${STAR_OUT}/SRR1039512/Aligned.sortedByCoord.out.bam \
+  ${STAR_OUT}/SRR1039516/Aligned.sortedByCoord.out.bam
 ```
 
 ```r
@@ -476,33 +875,6 @@ samtools view -q 255 sample.bam | head -5
 # Check insert size distribution (for paired-end data)
 samtools stats sample.bam | grep "^IS" | \
   awk '{print $2, $3}' > insert_sizes.txt
-```
-
-### 多比对 reads 的处理策略
-
-当一条 read 能比对到基因组多个位置时，称为**多比对 read（multimapper）**。多比对的主要来源：
-
-- **重复元件**：LINE、SINE、转座子家族中高度相似的拷贝；
-- **同源基因家族**：如组蛋白基因簇、嗅觉受体基因家族；
-- **假基因**：与功能基因高度相似但无功能的序列拷贝。
-
-不同工具对多比对的处理策略：
-
-| 工具 | 策略 | 适用场景 |
-|---|---|---|
-| STAR（默认） | 保留所有位置，`NH:i:N` 标记总数 | 保留信息，下游工具决策 |
-| featureCounts | 丢弃（`-M` 保留） | 保守计数 |
-| featureCounts + `--fraction` | 按位置数均等分配（产生小数） | 估计总体趋势，不适合 DEA |
-| Salmon | EM 算法优化分配 | 转录本级别定量首选 |
-
-```bash
-# Check multimapping rate from STAR log
-grep "% of reads mapped to multiple loci" \
-  results/star/SRR1039508/Log.final.out
-
-# Count uniquely vs multi-mapped reads
-samtools view -c -q 255 sample.bam   # uniquely mapped (MAPQ=255 in STAR)
-samtools view -c -F 4 sample.bam     # all mapped
 ```
 
 ---

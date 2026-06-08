@@ -6,7 +6,7 @@
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
-<meta name="dcterms.date" content="2026-06-07">
+<meta name="dcterms.date" content="2026-06-08">
 
 <title>23&nbsp; 差异表达分析 – Introduction to Applied High-throughput Biological Data Analysis</title>
 <style>
@@ -599,37 +599,46 @@ window.Quarto = {
     <h2 id="toc-title">Table of contents</h2>
    
   <ul>
-  <li><a href="#学习目标" id="toc-学习目标" class="nav-link active" data-scroll-target="#学习目标"><span class="header-section-number">23.1</span> 学习目标</a></li>
-  <li><a href="#为什么需要统计检验" id="toc-为什么需要统计检验" class="nav-link" data-scroll-target="#为什么需要统计检验"><span class="header-section-number">23.2</span> 为什么需要统计检验？</a></li>
-  <li><a href="#泊松模型为何不够用" id="toc-泊松模型为何不够用" class="nav-link" data-scroll-target="#泊松模型为何不够用"><span class="header-section-number">23.3</span> 泊松模型为何不够用？</a></li>
-  <li><a href="#deseq2-统计框架" id="toc-deseq2-统计框架" class="nav-link" data-scroll-target="#deseq2-统计框架"><span class="header-section-number">23.4</span> DESeq2 统计框架</a>
+  <li><a href="#学习目标" id="toc-学习目标" class="nav-link active" data-scroll-target="#学习目标"><span class="header-section-number">1</span> 学习目标</a></li>
+  <li><a href="#为什么需要统计检验" id="toc-为什么需要统计检验" class="nav-link" data-scroll-target="#为什么需要统计检验"><span class="header-section-number">2</span> 为什么需要统计检验？</a></li>
+  <li><a href="#泊松分布回顾" id="toc-泊松分布回顾" class="nav-link" data-scroll-target="#泊松分布回顾"><span class="header-section-number">3</span> 泊松分布回顾</a>
   <ul class="collapse">
-  <li><a href="#第一步大小因子估计size-factor-estimation" id="toc-第一步大小因子估计size-factor-estimation" class="nav-link" data-scroll-target="#第一步大小因子估计size-factor-estimation"><span class="header-section-number">23.4.1</span> 第一步：大小因子估计（Size Factor Estimation）</a></li>
-  <li><a href="#第二步离散度估计" id="toc-第二步离散度估计" class="nav-link" data-scroll-target="#第二步离散度估计"><span class="header-section-number">23.4.2</span> 第二步：离散度估计</a></li>
-  <li><a href="#第三步wald-检验" id="toc-第三步wald-检验" class="nav-link" data-scroll-target="#第三步wald-检验"><span class="header-section-number">23.4.3</span> 第三步：Wald 检验</a></li>
-  <li><a href="#lfc-缩减apeglm" id="toc-lfc-缩减apeglm" class="nav-link" data-scroll-target="#lfc-缩减apeglm"><span class="header-section-number">23.4.4</span> LFC 缩减（apeglm）</a></li>
+  <li><a href="#直观案例公共汽车站的候车人数" id="toc-直观案例公共汽车站的候车人数" class="nav-link" data-scroll-target="#直观案例公共汽车站的候车人数"><span class="header-section-number">3.1</span> 直观案例：公共汽车站的候车人数</a></li>
   </ul></li>
-  <li><a href="#deseq2-完整实践" id="toc-deseq2-完整实践" class="nav-link" data-scroll-target="#deseq2-完整实践"><span class="header-section-number">23.5</span> DESeq2 完整实践</a>
+  <li><a href="#泊松模型为何不够用" id="toc-泊松模型为何不够用" class="nav-link" data-scroll-target="#泊松模型为何不够用"><span class="header-section-number">4</span> 泊松模型为何不够用？</a>
   <ul class="collapse">
-  <li><a href="#样本质量评估pca-与距离热图" id="toc-样本质量评估pca-与距离热图" class="nav-link" data-scroll-target="#样本质量评估pca-与距离热图"><span class="header-section-number">23.5.1</span> 样本质量评估：PCA 与距离热图</a></li>
+  <li><a href="#过离散的三类来源" id="toc-过离散的三类来源" class="nav-link" data-scroll-target="#过离散的三类来源"><span class="header-section-number">4.1</span> 过离散的三类来源</a></li>
+  <li><a href="#数值证据真实数据中的方差均值比" id="toc-数值证据真实数据中的方差均值比" class="nav-link" data-scroll-target="#数值证据真实数据中的方差均值比"><span class="header-section-number">4.2</span> 数值证据：真实数据中的方差–均值比</a></li>
+  <li><a href="#负二项分布对过离散的数学描述" id="toc-负二项分布对过离散的数学描述" class="nav-link" data-scroll-target="#负二项分布对过离散的数学描述"><span class="header-section-number">4.3</span> 负二项分布：对过离散的数学描述</a></li>
   </ul></li>
-  <li><a href="#edger另一种主流框架" id="toc-edger另一种主流框架" class="nav-link" data-scroll-target="#edger另一种主流框架"><span class="header-section-number">23.6</span> edgeR：另一种主流框架</a></li>
-  <li><a href="#limma-voom基于线性模型的差异表达分析" id="toc-limma-voom基于线性模型的差异表达分析" class="nav-link" data-scroll-target="#limma-voom基于线性模型的差异表达分析"><span class="header-section-number">23.7</span> limma-voom：基于线性模型的差异表达分析</a>
+  <li><a href="#deseq2-统计框架" id="toc-deseq2-统计框架" class="nav-link" data-scroll-target="#deseq2-统计框架"><span class="header-section-number">5</span> DESeq2 统计框架</a>
   <ul class="collapse">
-  <li><a href="#limma-voom-的优势场景" id="toc-limma-voom-的优势场景" class="nav-link" data-scroll-target="#limma-voom-的优势场景"><span class="header-section-number">23.7.1</span> limma-voom 的优势场景</a></li>
-  <li><a href="#voom-原理" id="toc-voom-原理" class="nav-link" data-scroll-target="#voom-原理"><span class="header-section-number">23.7.2</span> voom 原理</a></li>
-  <li><a href="#复杂实验设计多因子模型" id="toc-复杂实验设计多因子模型" class="nav-link" data-scroll-target="#复杂实验设计多因子模型"><span class="header-section-number">23.7.3</span> 复杂实验设计：多因子模型</a></li>
+  <li><a href="#第一步大小因子估计size-factor-estimation" id="toc-第一步大小因子估计size-factor-estimation" class="nav-link" data-scroll-target="#第一步大小因子估计size-factor-estimation"><span class="header-section-number">5.1</span> 第一步：大小因子估计（Size Factor Estimation）</a></li>
+  <li><a href="#第二步离散度估计" id="toc-第二步离散度估计" class="nav-link" data-scroll-target="#第二步离散度估计"><span class="header-section-number">5.2</span> 第二步：离散度估计</a></li>
+  <li><a href="#第三步wald-检验" id="toc-第三步wald-检验" class="nav-link" data-scroll-target="#第三步wald-检验"><span class="header-section-number">5.3</span> 第三步：Wald 检验</a></li>
+  <li><a href="#lfc-缩减apeglm" id="toc-lfc-缩减apeglm" class="nav-link" data-scroll-target="#lfc-缩减apeglm"><span class="header-section-number">5.4</span> LFC 缩减（apeglm）</a></li>
   </ul></li>
-  <li><a href="#deseq2-核心步骤的手动-r-实现" id="toc-deseq2-核心步骤的手动-r-实现" class="nav-link" data-scroll-target="#deseq2-核心步骤的手动-r-实现"><span class="header-section-number">23.8</span> DESeq2 核心步骤的手动 R 实现</a></li>
-  <li><a href="#批次效应检测评估与校正" id="toc-批次效应检测评估与校正" class="nav-link" data-scroll-target="#批次效应检测评估与校正"><span class="header-section-number">23.9</span> 批次效应：检测、评估与校正</a>
+  <li><a href="#deseq2-核心步骤的手动-r-实现" id="toc-deseq2-核心步骤的手动-r-实现" class="nav-link" data-scroll-target="#deseq2-核心步骤的手动-r-实现"><span class="header-section-number">6</span> DESeq2 核心步骤的手动 R 实现</a></li>
+  <li><a href="#deseq2-完整实践" id="toc-deseq2-完整实践" class="nav-link" data-scroll-target="#deseq2-完整实践"><span class="header-section-number">7</span> DESeq2 完整实践</a>
   <ul class="collapse">
-  <li><a href="#批次效应与生物学变异的解耦" id="toc-批次效应与生物学变异的解耦" class="nav-link" data-scroll-target="#批次效应与生物学变异的解耦"><span class="header-section-number">23.9.1</span> 批次效应与生物学变异的解耦</a></li>
-  <li><a href="#方法一在设计矩阵中包含批次变量推荐" id="toc-方法一在设计矩阵中包含批次变量推荐" class="nav-link" data-scroll-target="#方法一在设计矩阵中包含批次变量推荐"><span class="header-section-number">23.9.2</span> 方法一：在设计矩阵中包含批次变量（推荐）</a></li>
-  <li><a href="#方法二combat-limmaremovebatcheffect仅用于可视化" id="toc-方法二combat-limmaremovebatcheffect仅用于可视化" class="nav-link" data-scroll-target="#方法二combat-limmaremovebatcheffect仅用于可视化"><span class="header-section-number">23.9.3</span> 方法二：ComBat / limma::removeBatchEffect（仅用于可视化）</a></li>
-  <li><a href="#评估批次效应是否成功去除" id="toc-评估批次效应是否成功去除" class="nav-link" data-scroll-target="#评估批次效应是否成功去除"><span class="header-section-number">23.9.4</span> 评估批次效应是否成功去除</a></li>
+  <li><a href="#样本质量评估pca-与距离热图" id="toc-样本质量评估pca-与距离热图" class="nav-link" data-scroll-target="#样本质量评估pca-与距离热图"><span class="header-section-number">7.1</span> 样本质量评估：PCA 与距离热图</a></li>
   </ul></li>
-  <li><a href="#多重检验校正benjamini-hochberg-方法" id="toc-多重检验校正benjamini-hochberg-方法" class="nav-link" data-scroll-target="#多重检验校正benjamini-hochberg-方法"><span class="header-section-number">23.10</span> 多重检验校正：Benjamini-Hochberg 方法</a></li>
-  <li><a href="#课后自测-post-lesson-quiz" id="toc-课后自测-post-lesson-quiz" class="nav-link" data-scroll-target="#课后自测-post-lesson-quiz"><span class="header-section-number">23.11</span> 课后自测 (Post-Lesson Quiz)</a></li>
+  <li><a href="#edger另一种主流框架" id="toc-edger另一种主流框架" class="nav-link" data-scroll-target="#edger另一种主流框架"><span class="header-section-number">8</span> edgeR：另一种主流框架</a></li>
+  <li><a href="#limma-voom基于线性模型的差异表达分析" id="toc-limma-voom基于线性模型的差异表达分析" class="nav-link" data-scroll-target="#limma-voom基于线性模型的差异表达分析"><span class="header-section-number">9</span> limma-voom：基于线性模型的差异表达分析</a>
+  <ul class="collapse">
+  <li><a href="#limma-voom-的优势场景" id="toc-limma-voom-的优势场景" class="nav-link" data-scroll-target="#limma-voom-的优势场景"><span class="header-section-number">9.1</span> limma-voom 的优势场景</a></li>
+  <li><a href="#voom-原理" id="toc-voom-原理" class="nav-link" data-scroll-target="#voom-原理"><span class="header-section-number">9.2</span> voom 原理</a></li>
+  <li><a href="#复杂实验设计多因子模型" id="toc-复杂实验设计多因子模型" class="nav-link" data-scroll-target="#复杂实验设计多因子模型"><span class="header-section-number">9.3</span> 复杂实验设计：多因子模型</a></li>
+  </ul></li>
+  <li><a href="#批次效应检测评估与校正" id="toc-批次效应检测评估与校正" class="nav-link" data-scroll-target="#批次效应检测评估与校正"><span class="header-section-number">10</span> 批次效应：检测、评估与校正</a>
+  <ul class="collapse">
+  <li><a href="#批次效应与生物学变异的解耦" id="toc-批次效应与生物学变异的解耦" class="nav-link" data-scroll-target="#批次效应与生物学变异的解耦"><span class="header-section-number">10.1</span> 批次效应与生物学变异的解耦</a></li>
+  <li><a href="#方法一在设计矩阵中包含批次变量推荐" id="toc-方法一在设计矩阵中包含批次变量推荐" class="nav-link" data-scroll-target="#方法一在设计矩阵中包含批次变量推荐"><span class="header-section-number">10.2</span> 方法一：在设计矩阵中包含批次变量（推荐）</a></li>
+  <li><a href="#方法二combat-limmaremovebatcheffect仅用于可视化" id="toc-方法二combat-limmaremovebatcheffect仅用于可视化" class="nav-link" data-scroll-target="#方法二combat-limmaremovebatcheffect仅用于可视化"><span class="header-section-number">10.3</span> 方法二：ComBat / limma::removeBatchEffect（仅用于可视化）</a></li>
+  <li><a href="#评估批次效应是否成功去除" id="toc-评估批次效应是否成功去除" class="nav-link" data-scroll-target="#评估批次效应是否成功去除"><span class="header-section-number">10.4</span> 评估批次效应是否成功去除</a></li>
+  </ul></li>
+  <li><a href="#多重检验校正benjamini-hochberg-方法" id="toc-多重检验校正benjamini-hochberg-方法" class="nav-link" data-scroll-target="#多重检验校正benjamini-hochberg-方法"><span class="header-section-number">11</span> 多重检验校正：Benjamini-Hochberg 方法</a></li>
+  <li><a href="#课后自测-post-lesson-quiz" id="toc-课后自测-post-lesson-quiz" class="nav-link" data-scroll-target="#课后自测-post-lesson-quiz"><span class="header-section-number">12</span> 课后自测 (Post-Lesson Quiz)</a></li>
   </ul>
 <div class="toc-actions"><ul><li><a href="https://github.com/cxzdsa2332/Applied-Omics-Analysis/edit/main/transcriptomics_basic_lesson3.qmd" class="toc-action"><i class="bi bi-github"></i>Edit this page</a></li><li><a href="https://github.com/cxzdsa2332/Applied-Omics-Analysis/issues/new" class="toc-action"><i class="bi empty"></i>Report an issue</a></li><li><a href="https://github.com/cxzdsa2332/Applied-Omics-Analysis/blob/main/transcriptomics_basic_lesson3.qmd" class="toc-action"><i class="bi empty"></i>View source</a></li></ul></div></nav>
     </div>
@@ -649,7 +658,7 @@ window.Quarto = {
     <div>
     <div class="quarto-title-meta-heading">Published</div>
     <div class="quarto-title-meta-contents">
-      <p class="date">June 7, 2026</p>
+      <p class="date">June 8, 2026</p>
     </div>
   </div>
   
@@ -661,8 +670,8 @@ window.Quarto = {
 </header>
 
 
-<section id="学习目标" class="level2" data-number="23.1">
-<h2 data-number="23.1" class="anchored" data-anchor-id="学习目标"><span class="header-section-number">23.1</span> 学习目标</h2>
+<section id="学习目标" class="level2" data-number="1">
+<h2 data-number="1" class="anchored" data-anchor-id="学习目标"><span class="header-section-number">1</span> 学习目标</h2>
 <p>完成本专题后，学生应能够：</p>
 <ol type="1">
 <li>解释 RNA-seq 计数数据的过离散（Overdispersion）现象及其统计意义；</li>
@@ -674,8 +683,8 @@ window.Quarto = {
 </ol>
 <hr>
 </section>
-<section id="为什么需要统计检验" class="level2" data-number="23.2">
-<h2 data-number="23.2" class="anchored" data-anchor-id="为什么需要统计检验"><span class="header-section-number">23.2</span> 为什么需要统计检验？</h2>
+<section id="为什么需要统计检验" class="level2" data-number="2">
+<h2 data-number="2" class="anchored" data-anchor-id="为什么需要统计检验"><span class="header-section-number">2</span> 为什么需要统计检验？</h2>
 <p>直觉上，比较两组间某个基因的平均表达量似乎是简单的问题。然而 RNA-seq 实验通常只有 3–5 个生物学重复，这在统计上是非常小的样本量。考虑到以下挑战：</p>
 <ul>
 <li><strong>生物学变异</strong>：同一处理条件下不同生物重复间的天然表达差异；</li>
@@ -685,29 +694,96 @@ window.Quarto = {
 <p>专门针对 RNA-seq 计数数据设计的统计模型因此不可或缺。</p>
 <hr>
 </section>
-<section id="泊松模型为何不够用" class="level2" data-number="23.3">
-<h2 data-number="23.3" class="anchored" data-anchor-id="泊松模型为何不够用"><span class="header-section-number">23.3</span> 泊松模型为何不够用？</h2>
-<p>最直观的计数模型是<strong>泊松分布</strong>（Poisson distribution）：给定基因 <span class="math inline">\(i\)</span> 在样本 <span class="math inline">\(j\)</span> 中的期望计数 <span class="math inline">\(\mu_{ij}\)</span>，实际观测计数 <span class="math inline">\(K_{ij}\)</span> 服从 <span class="math inline">\(\text{Pois}(\mu_{ij})\)</span>。泊松分布有一个严格的约束：<strong>方差等于均值</strong>（<span class="math inline">\(\text{Var}(K) = \mu\)</span>）。</p>
-<p>然而，RNA-seq 数据的实测情况是：<strong>方差往往远大于均值</strong>，尤其对高表达基因而言。这一现象称为<strong>过离散（Overdispersion）</strong>，其来源包括：</p>
-<ul>
-<li><strong>生物学变异</strong>：即使在相同实验条件下，不同个体（或细胞系传代）间基因表达存在真实差异；</li>
-<li><strong>批次效应</strong>：文库制备时间或操作人员的差异引入系统性偏差；</li>
-<li><strong>细胞异质性</strong>：在组织样本中，不同细胞类型的比例在个体间存在差异。</li>
-</ul>
-<p>{{Wiki:Negative_binomial_distribution}}</p>
-<p><strong>负二项分布（Negative Binomial Distribution）</strong> 通过引入额外的离散参数 <span class="math inline">\(\alpha_i\)</span> 来描述过离散：</p>
-<p><span class="math display">\[K_{ij} \sim \text{NB}(\mu_{ij},\ \alpha_i)\]</span></p>
-<p>方差结构为：<span class="math inline">\(\text{Var}(K_{ij}) = \mu_{ij} + \alpha_i \mu_{ij}^2\)</span></p>
-<p>其中 <span class="math inline">\(\alpha_i\)</span> 称为<strong>基因特异性离散参数（gene-wise dispersion）</strong>，<span class="math inline">\(\alpha_i = 0\)</span> 时退化为泊松分布。</p>
+<section id="泊松分布回顾" class="level2" data-number="3">
+<h2 data-number="3" class="anchored" data-anchor-id="泊松分布回顾"><span class="header-section-number">3</span> 泊松分布回顾</h2>
+<p>在进入 RNA-seq 专用统计模型之前，有必要先回顾<strong>泊松分布（Poisson distribution）</strong>的核心特性，因为它是理解计数数据建模的出发点。</p>
+<p>泊松分布描述的是：<strong>在固定时间或空间范围内，独立随机事件发生次数</strong>的概率分布。若随机变量 <span class="math inline">\(X\)</span> 服从参数为 <span class="math inline">\(\lambda\)</span> 的泊松分布，记作 <span class="math inline">\(X \sim \text{Pois}(\lambda)\)</span>，则：</p>
+<p><span class="math display">\[P(X = k) = \frac{\lambda^k e^{-\lambda}}{k!}, \quad k = 0, 1, 2, \ldots\]</span></p>
+<p>泊松分布有一个核心性质：<strong>均值与方差相等</strong>，即 <span class="math inline">\(E(X) = \text{Var}(X) = \lambda\)</span>。</p>
+<p>{{Wiki:Poisson_distribution}}</p>
+<section id="直观案例公共汽车站的候车人数" class="level3" data-number="3.1">
+<h3 data-number="3.1" class="anchored" data-anchor-id="直观案例公共汽车站的候车人数"><span class="header-section-number">3.1</span> 直观案例：公共汽车站的候车人数</h3>
+<p>设某公交站平均每分钟到达 3 名乘客（<span class="math inline">\(\lambda = 3\)</span>），则某一分钟内到达人数 <span class="math inline">\(X \sim \text{Pois}(3)\)</span>：</p>
+<div class="cell">
+<div class="cell-output-display">
+<div id="fig-poisson-demo" class="quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-poisson-demo-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<img src="transcriptomics_basic_lesson3_files/figure-html/fig-poisson-demo-1.png" class="img-fluid figure-img" width="960">
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-poisson-demo-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+图&nbsp;1: 泊松分布示例（λ = 3）。左图为概率质量函数，右图展示了 1000 次模拟观测中均值与方差几乎相等的特性。
+</figcaption>
+</figure>
+</div>
+</div>
+</div>
+<p>在 RNA-seq 的语境中，可以将”某基因在一次测序中被捕获的 reads 数”类比为上述计数过程。若总测序深度为 <span class="math inline">\(N\)</span>，基因 <span class="math inline">\(i\)</span> 的真实表达比例为 <span class="math inline">\(p_i\)</span>，则理论期望计数为 <span class="math inline">\(\lambda_i = N \cdot p_i\)</span>，计数过程近似服从 <span class="math inline">\(\text{Pois}(\lambda_i)\)</span>。这一假设在<strong>技术重复</strong>（同一 RNA 文库测序两次）中基本成立；然而一旦引入<strong>生物学重复</strong>，它便迅速失效。</p>
 <div class="note">
-<p><strong>直觉理解：</strong> 离散参数 <span class="math inline">\(\alpha_i\)</span> 量化了”超出泊松预测的额外变异”。对于细胞周期调控基因，不同细胞处于不同周期阶段导致 <span class="math inline">\(\alpha_i\)</span> 较大；对于管家基因（housekeeping genes），<span class="math inline">\(\alpha_i\)</span> 通常较小。DESeq2 需要精确估计 <span class="math inline">\(\alpha_i\)</span> 才能进行可靠的差异检验。</p>
+<p><strong>泊松分布的适用边界：</strong> 泊松模型在同一个体的技术重复（如同一文库的两次测序）中表现良好，因为此时变异主要来自随机抽样。但在<strong>生物学重复</strong>（不同个体或细胞系）之间，基因调控网络的个体差异会引入额外的、与抽样无关的变异，导致方差系统性地高于均值——这正是下一节要回答的核心问题。</p>
 </div>
 <hr>
 </section>
-<section id="deseq2-统计框架" class="level2" data-number="23.4">
-<h2 data-number="23.4" class="anchored" data-anchor-id="deseq2-统计框架"><span class="header-section-number">23.4</span> DESeq2 统计框架</h2>
-<section id="第一步大小因子估计size-factor-estimation" class="level3" data-number="23.4.1">
-<h3 data-number="23.4.1" class="anchored" data-anchor-id="第一步大小因子估计size-factor-estimation"><span class="header-section-number">23.4.1</span> 第一步：大小因子估计（Size Factor Estimation）</h3>
+</section>
+<section id="泊松模型为何不够用" class="level2" data-number="4">
+<h2 data-number="4" class="anchored" data-anchor-id="泊松模型为何不够用"><span class="header-section-number">4</span> 泊松模型为何不够用？</h2>
+<p>上一节已说明：泊松分布要求方差等于均值（<span class="math inline">\(\text{Var}(K) = \mu\)</span>）。在生物学重复间，这一约束被系统性地违反——<strong>方差往往远大于均值</strong>。这一现象称为<strong>过离散（Overdispersion）</strong>。</p>
+<section id="过离散的三类来源" class="level3" data-number="4.1">
+<h3 data-number="4.1" class="anchored" data-anchor-id="过离散的三类来源"><span class="header-section-number">4.1</span> 过离散的三类来源</h3>
+<p>过离散并非测序误差，而是真实生物学信号的体现：</p>
+<ul>
+<li><strong>个体间基因调控差异</strong>：即使在相同处理条件下，不同个体的转录因子活性、表观遗传状态存在差异，导致同一基因的表达量在个体间存在真实波动；</li>
+<li><strong>细胞类型比例变化</strong>：在组织样本（bulk RNA-seq）中，样本间各细胞类型的比例不同，对于细胞类型特异性表达的基因，这会引入大量”假性”变异；</li>
+<li><strong>批次与技术偏差</strong>：文库制备时间或操作人员的差异在个体变异之上叠加系统性偏差。</li>
+</ul>
+</section>
+<section id="数值证据真实数据中的方差均值比" class="level3" data-number="4.2">
+<h3 data-number="4.2" class="anchored" data-anchor-id="数值证据真实数据中的方差均值比"><span class="header-section-number">4.2</span> 数值证据：真实数据中的方差–均值比</h3>
+<p>以下代码用模拟数据对比泊松分布（方差≈均值）与过离散数据（方差 &gt;&gt; 均值）的差异，直观说明为何泊松假设在生物学重复中失效：</p>
+<div class="cell">
+<div class="cell-output-display">
+<div id="fig-overdispersion" class="quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-overdispersion-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<img src="transcriptomics_basic_lesson3_files/figure-html/fig-overdispersion-1.png" class="img-fluid figure-img" width="672">
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-overdispersion-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+图&nbsp;2: airway 数据集（8 个人类气道上皮细胞样本，Himes et al.&nbsp;2014）中各基因的方差–均值关系。每个点代表一个基因；橙色虚线为泊松分布的理论预测（Var = Mean）。几乎所有基因的方差都显著高于均值，且偏离程度随均值增大而加剧，体现了典型的过离散特征。
+</figcaption>
+</figure>
+</div>
+</div>
+</div>
+<p><a href="#fig-overdispersion" class="quarto-xref">图&nbsp;<span>2</span></a> 以本课程使用的 airway 数据集为例，清楚地展示了真实 RNA-seq 数据中的过离散现象：几乎所有基因的方差都远高于泊松预测（Var = Mean），中位方差–均值比（Var/Mean）通常在 10–100 倍之间，且随均值增大而增大。这一特征直接驱动了负二项分布模型的引入。</p>
+</section>
+<section id="负二项分布对过离散的数学描述" class="level3" data-number="4.3">
+<h3 data-number="4.3" class="anchored" data-anchor-id="负二项分布对过离散的数学描述"><span class="header-section-number">4.3</span> 负二项分布：对过离散的数学描述</h3>
+<p>{{Wiki:Negative_binomial_distribution}}</p>
+<p><strong>负二项分布（Negative Binomial Distribution）</strong> 通过在泊松分布的基础上引入一个额外的离散参数 <span class="math inline">\(\alpha_i\)</span>，将个体间的生物学变异纳入模型：</p>
+<p><span class="math display">\[K_{ij} \sim \text{NB}(\mu_{ij},\ \alpha_i)\]</span></p>
+<p>其概率质量函数为：</p>
+<p><span class="math display">\[P(K_{ij} = k) = \binom{k + r - 1}{k} \left(\frac{r}{\mu_{ij}+r}\right)^r \left(\frac{\mu_{ij}}{\mu_{ij}+r}\right)^k, \quad r = \frac{1}{\alpha_i}\]</span></p>
+<p>与泊松分布相比，负二项分布的方差结构多出一项：</p>
+<p><span class="math display">\[\underbrace{\text{Var}_{\text{Poisson}}(K) = \mu_{ij}}_{\text{抽样噪声（1个参数）}} \quad \longrightarrow \quad \underbrace{\text{Var}_{\text{NB}}(K_{ij}) = \mu_{ij} + \alpha_i \mu_{ij}^2}_{\text{抽样噪声 + 生物学变异（2个参数）}}\]</span></p>
+<ul>
+<li><strong>第一项</strong> <span class="math inline">\(\mu_{ij}\)</span>：与泊松分布完全相同，来源于随机抽样的固有随机性，方差与均值等比；</li>
+<li><strong>第二项</strong> <span class="math inline">\(\alpha_i \mu_{ij}^2\)</span>：仅负二项分布具备，刻画了个体间真实的生物学差异，随均值<strong>平方</strong>增长。这正是 <a href="#fig-overdispersion" class="quarto-xref">图&nbsp;<span>2</span></a> 中方差偏离对角线的速率随均值增大而加快的数学根源。</li>
+</ul>
+<p><span class="math inline">\(\alpha_i\)</span> 称为<strong>基因特异性离散参数（gene-wise dispersion）</strong>。从两个极端情形可以直观理解其含义：</p>
+<ul>
+<li><span class="math inline">\(\alpha_i \to 0\)</span>：第二项消失，<span class="math inline">\(\text{Var} \to \mu\)</span>，负二项分布<strong>退化为泊松分布</strong>；纯技术重复中近似成立；</li>
+<li><span class="math inline">\(\alpha_i\)</span> 较大（如 <span class="math inline">\(\alpha_i = 0.5\)</span>）：方差约为 <span class="math inline">\(\mu + 0.5\mu^2\)</span>，对均值为 100 的基因，方差高达 <span class="math inline">\(100 + 5000 = 5100\)</span>，是泊松预测的 51 倍。</li>
+</ul>
+<div class="note">
+<p><strong>直觉理解：</strong> <span class="math inline">\(\alpha_i\)</span> 量化了”超出抽样噪声的生物学噪声”。对于细胞周期调控基因，不同细胞处于不同周期阶段导致 <span class="math inline">\(\alpha_i\)</span> 较大（<span class="math inline">\(\sim 0.3\)</span>–<span class="math inline">\(1.0\)</span>）；对于高度稳定的管家基因（如核糖体蛋白基因），<span class="math inline">\(\alpha_i\)</span> 通常较小（<span class="math inline">\(\sim 0.01\)</span>–<span class="math inline">\(0.05\)</span>）。DESeq2 在差异检验前需要精确估计每个基因的 <span class="math inline">\(\alpha_i\)</span>，这也是其统计框架中最关键的步骤之一（参见下节离散度估计）。</p>
+</div>
+<hr>
+</section>
+</section>
+<section id="deseq2-统计框架" class="level2" data-number="5">
+<h2 data-number="5" class="anchored" data-anchor-id="deseq2-统计框架"><span class="header-section-number">5</span> DESeq2 统计框架</h2>
+<section id="第一步大小因子估计size-factor-estimation" class="level3" data-number="5.1">
+<h3 data-number="5.1" class="anchored" data-anchor-id="第一步大小因子估计size-factor-estimation"><span class="header-section-number">5.1</span> 第一步：大小因子估计（Size Factor Estimation）</h3>
 <p>不同样本的测序深度（总 reads 数）不同，直接比较原始计数会引入假性差异。DESeq2 通过以下方法估计每个样本的大小因子（Size Factor）<span class="math inline">\(s_j\)</span>：</p>
 <ol type="1">
 <li><strong>计算参考值</strong>：对每个基因，计算其在所有样本中计数值的几何均值 <span class="math inline">\(\bar{K}_i = \left(\prod_{j=1}^{n} K_{ij}\right)^{1/n}\)</span>；</li>
@@ -718,8 +794,8 @@ window.Quarto = {
 <p>归一化后的计数为 <span class="math inline">\(\tilde{K}_{ij} = K_{ij} / s_j\)</span>。</p>
 <p>这种方法的优雅之处在于：若少数基因（如管家基因）在所有条件下表达稳定，则这些基因的比值在不同样本间一致，中位数准确反映测序深度差异，而不受少数差异表达基因的影响。</p>
 </section>
-<section id="第二步离散度估计" class="level3" data-number="23.4.2">
-<h3 data-number="23.4.2" class="anchored" data-anchor-id="第二步离散度估计"><span class="header-section-number">23.4.2</span> 第二步：离散度估计</h3>
+<section id="第二步离散度估计" class="level3" data-number="5.2">
+<h3 data-number="5.2" class="anchored" data-anchor-id="第二步离散度估计"><span class="header-section-number">5.2</span> 第二步：离散度估计</h3>
 <p>由于每个基因通常只有 3–6 个重复，基因特异性离散度的估计极不稳定（方差估计本身有很大的方差）。DESeq2 采用<strong>Empirical Bayes 离散度缩减</strong>策略：</p>
 <ol type="1">
 <li><strong>初始估计</strong>：对每个基因分别用最大似然估计 <span class="math inline">\(\hat{\alpha}_i\)</span>（不共享信息，噪声大）；</li>
@@ -730,179 +806,505 @@ window.Quarto = {
 <div class="info">
 <p><strong>黄金法则：</strong> 离散度缩减（shrinkage）是小样本 RNA-seq 分析的核心思想。若不借鉴其他基因的信息，3 个重复的数据根本无法可靠估计每个基因的方差。DESeq2 通过假设”同等表达量的基因应具有相似的离散度”来共享统计强度，这是其在少重复条件下仍表现良好的关键原因。</p>
 </div>
+<p><strong>模拟演示：离散度缩减的三步流程</strong></p>
+<p>以下代码用 500 个模拟基因直观重现 DESeq2 离散度估计的三个步骤，并与 DESeq2 内置结果比对，以验证逻辑一致性。</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb1"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(DESeq2)</span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(ggplot2)</span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a><span class="co"># ── Step 0: Simulate data ────────────────────────────────────────────────────</span></span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a><span class="co"># 500 genes × 6 samples (3 untreated + 3 treated), no true DE</span></span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a><span class="co"># True dispersion follows a negative power-law: alpha_true = 4 / mu^0.5</span></span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">123</span>)</span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a>n_genes   <span class="ot">&lt;-</span> <span class="dv">500</span></span>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a>n_samples <span class="ot">&lt;-</span> <span class="dv">6</span></span>
+<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a>condition <span class="ot">&lt;-</span> <span class="fu">factor</span>(<span class="fu">rep</span>(<span class="fu">c</span>(<span class="st">"untreated"</span>, <span class="st">"treated"</span>), <span class="at">each =</span> <span class="dv">3</span>))</span>
+<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-12"><a href="#cb1-12" aria-hidden="true" tabindex="-1"></a><span class="co"># Gene-specific true mean expression (log-uniform from 10 to 5000)</span></span>
+<span id="cb1-13"><a href="#cb1-13" aria-hidden="true" tabindex="-1"></a>mu_true    <span class="ot">&lt;-</span> <span class="fu">exp</span>(<span class="fu">runif</span>(n_genes, <span class="fu">log</span>(<span class="dv">10</span>), <span class="fu">log</span>(<span class="dv">5000</span>)))</span>
+<span id="cb1-14"><a href="#cb1-14" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-15"><a href="#cb1-15" aria-hidden="true" tabindex="-1"></a><span class="co"># True dispersion follows DESeq2's typical trend: alpha ≈ A / mu^B</span></span>
+<span id="cb1-16"><a href="#cb1-16" aria-hidden="true" tabindex="-1"></a>alpha_true <span class="ot">&lt;-</span> <span class="fl">3.5</span> <span class="sc">/</span> <span class="fu">sqrt</span>(mu_true)</span>
+<span id="cb1-17"><a href="#cb1-17" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-18"><a href="#cb1-18" aria-hidden="true" tabindex="-1"></a><span class="co"># Simulate counts from NB(mu, alpha)</span></span>
+<span id="cb1-19"><a href="#cb1-19" aria-hidden="true" tabindex="-1"></a>counts_sim <span class="ot">&lt;-</span> <span class="fu">matrix</span>(</span>
+<span id="cb1-20"><a href="#cb1-20" aria-hidden="true" tabindex="-1"></a>  <span class="fu">rnbinom</span>(n_genes <span class="sc">*</span> n_samples,</span>
+<span id="cb1-21"><a href="#cb1-21" aria-hidden="true" tabindex="-1"></a>          <span class="at">mu   =</span> <span class="fu">rep</span>(mu_true, n_samples),</span>
+<span id="cb1-22"><a href="#cb1-22" aria-hidden="true" tabindex="-1"></a>          <span class="at">size =</span> <span class="fu">rep</span>(<span class="dv">1</span> <span class="sc">/</span> alpha_true, n_samples)),</span>
+<span id="cb1-23"><a href="#cb1-23" aria-hidden="true" tabindex="-1"></a>  <span class="at">nrow     =</span> n_genes,</span>
+<span id="cb1-24"><a href="#cb1-24" aria-hidden="true" tabindex="-1"></a>  <span class="at">dimnames =</span> <span class="fu">list</span>(<span class="fu">paste0</span>(<span class="st">"gene"</span>, <span class="fu">seq_len</span>(n_genes)),</span>
+<span id="cb1-25"><a href="#cb1-25" aria-hidden="true" tabindex="-1"></a>                  <span class="fu">paste0</span>(<span class="st">"s"</span>, <span class="fu">seq_len</span>(n_samples)))</span>
+<span id="cb1-26"><a href="#cb1-26" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb1-27"><a href="#cb1-27" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-28"><a href="#cb1-28" aria-hidden="true" tabindex="-1"></a><span class="co"># ── Step 1: Build DESeqDataSet and run dispersion estimation ─────────────────</span></span>
+<span id="cb1-29"><a href="#cb1-29" aria-hidden="true" tabindex="-1"></a>coldata <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(<span class="at">condition =</span> condition,</span>
+<span id="cb1-30"><a href="#cb1-30" aria-hidden="true" tabindex="-1"></a>                      <span class="at">row.names =</span> <span class="fu">colnames</span>(counts_sim))</span>
+<span id="cb1-31"><a href="#cb1-31" aria-hidden="true" tabindex="-1"></a>dds_disp <span class="ot">&lt;-</span> <span class="fu">DESeqDataSetFromMatrix</span>(counts_sim, coldata, <span class="sc">~</span> condition)</span>
+<span id="cb1-32"><a href="#cb1-32" aria-hidden="true" tabindex="-1"></a>dds_disp <span class="ot">&lt;-</span> <span class="fu">estimateSizeFactors</span>(dds_disp)</span>
+<span id="cb1-33"><a href="#cb1-33" aria-hidden="true" tabindex="-1"></a>dds_disp <span class="ot">&lt;-</span> <span class="fu">estimateDispersions</span>(dds_disp)   <span class="co"># runs all three substeps internally</span></span>
+<span id="cb1-34"><a href="#cb1-34" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-35"><a href="#cb1-35" aria-hidden="true" tabindex="-1"></a><span class="co"># ── Step 2: Extract the three layers of dispersion estimates ─────────────────</span></span>
+<span id="cb1-36"><a href="#cb1-36" aria-hidden="true" tabindex="-1"></a><span class="co"># genewise: per-gene MLE (noisy, blue dots in plotDispEsts)</span></span>
+<span id="cb1-37"><a href="#cb1-37" aria-hidden="true" tabindex="-1"></a><span class="co"># trended : fitted trend curve value for each gene</span></span>
+<span id="cb1-38"><a href="#cb1-38" aria-hidden="true" tabindex="-1"></a><span class="co"># MAP     : final shrunken estimate (black dots in plotDispEsts)</span></span>
+<span id="cb1-39"><a href="#cb1-39" aria-hidden="true" tabindex="-1"></a>disp_df <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(</span>
+<span id="cb1-40"><a href="#cb1-40" aria-hidden="true" tabindex="-1"></a>  <span class="at">mu       =</span> <span class="fu">rowMeans</span>(<span class="fu">counts</span>(dds_disp, <span class="at">normalized =</span> <span class="cn">TRUE</span>)),</span>
+<span id="cb1-41"><a href="#cb1-41" aria-hidden="true" tabindex="-1"></a>  <span class="at">genewise =</span> <span class="fu">dispersions</span>(dds_disp),                               <span class="co"># MAP (final)</span></span>
+<span id="cb1-42"><a href="#cb1-42" aria-hidden="true" tabindex="-1"></a>  <span class="at">mle      =</span> <span class="fu">mcols</span>(dds_disp)<span class="sc">$</span>dispGeneEst,                        <span class="co"># per-gene MLE</span></span>
+<span id="cb1-43"><a href="#cb1-43" aria-hidden="true" tabindex="-1"></a>  <span class="at">trended  =</span> <span class="fu">mcols</span>(dds_disp)<span class="sc">$</span>dispFit                             <span class="co"># fitted trend</span></span>
+<span id="cb1-44"><a href="#cb1-44" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb1-45"><a href="#cb1-45" aria-hidden="true" tabindex="-1"></a>disp_df <span class="ot">&lt;-</span> disp_df[<span class="sc">!</span><span class="fu">is.na</span>(disp_df<span class="sc">$</span>mle) <span class="sc">&amp;</span> disp_df<span class="sc">$</span>mu <span class="sc">&gt;</span> <span class="dv">0</span>, ]</span>
+<span id="cb1-46"><a href="#cb1-46" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-47"><a href="#cb1-47" aria-hidden="true" tabindex="-1"></a><span class="co"># ── Step 3: Visualise ─────────────────────────────────────────────────────────</span></span>
+<span id="cb1-48"><a href="#cb1-48" aria-hidden="true" tabindex="-1"></a><span class="fu">ggplot</span>(disp_df, <span class="fu">aes</span>(<span class="at">x =</span> mu)) <span class="sc">+</span></span>
+<span id="cb1-49"><a href="#cb1-49" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_point</span>(<span class="fu">aes</span>(<span class="at">y =</span> mle, <span class="at">color =</span> <span class="st">"Per-gene MLE (noisy)"</span>),</span>
+<span id="cb1-50"><a href="#cb1-50" aria-hidden="true" tabindex="-1"></a>             <span class="at">alpha =</span> <span class="fl">0.35</span>, <span class="at">size =</span> <span class="fl">1.0</span>) <span class="sc">+</span></span>
+<span id="cb1-51"><a href="#cb1-51" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_line</span>(<span class="fu">aes</span>(<span class="at">y =</span> trended, <span class="at">color =</span> <span class="st">"Fitted trend"</span>),</span>
+<span id="cb1-52"><a href="#cb1-52" aria-hidden="true" tabindex="-1"></a>            <span class="at">linewidth =</span> <span class="fl">1.3</span>,</span>
+<span id="cb1-53"><a href="#cb1-53" aria-hidden="true" tabindex="-1"></a>            <span class="at">data =</span> disp_df[<span class="fu">order</span>(disp_df<span class="sc">$</span>mu), ]) <span class="sc">+</span></span>
+<span id="cb1-54"><a href="#cb1-54" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_point</span>(<span class="fu">aes</span>(<span class="at">y =</span> genewise, <span class="at">color =</span> <span class="st">"MAP shrunken (final)"</span>),</span>
+<span id="cb1-55"><a href="#cb1-55" aria-hidden="true" tabindex="-1"></a>             <span class="at">alpha =</span> <span class="fl">0.55</span>, <span class="at">size =</span> <span class="fl">0.9</span>, <span class="at">shape =</span> <span class="dv">16</span>) <span class="sc">+</span></span>
+<span id="cb1-56"><a href="#cb1-56" aria-hidden="true" tabindex="-1"></a>  <span class="fu">scale_x_log10</span>(<span class="at">name =</span> <span class="st">"Mean normalized count (log scale)"</span>,</span>
+<span id="cb1-57"><a href="#cb1-57" aria-hidden="true" tabindex="-1"></a>                <span class="at">labels =</span> scales<span class="sc">::</span><span class="fu">label_comma</span>()) <span class="sc">+</span></span>
+<span id="cb1-58"><a href="#cb1-58" aria-hidden="true" tabindex="-1"></a>  <span class="fu">scale_y_log10</span>(<span class="at">name =</span> <span class="st">"Dispersion estimate (log scale)"</span>) <span class="sc">+</span></span>
+<span id="cb1-59"><a href="#cb1-59" aria-hidden="true" tabindex="-1"></a>  <span class="fu">scale_color_manual</span>(</span>
+<span id="cb1-60"><a href="#cb1-60" aria-hidden="true" tabindex="-1"></a>    <span class="at">name   =</span> <span class="st">"Estimate type"</span>,</span>
+<span id="cb1-61"><a href="#cb1-61" aria-hidden="true" tabindex="-1"></a>    <span class="at">values =</span> <span class="fu">c</span>(<span class="st">"Per-gene MLE (noisy)"</span>   <span class="ot">=</span> <span class="st">"#4575b4"</span>,</span>
+<span id="cb1-62"><a href="#cb1-62" aria-hidden="true" tabindex="-1"></a>               <span class="st">"Fitted trend"</span>           <span class="ot">=</span> <span class="st">"#d73027"</span>,</span>
+<span id="cb1-63"><a href="#cb1-63" aria-hidden="true" tabindex="-1"></a>               <span class="st">"MAP shrunken (final)"</span>   <span class="ot">=</span> <span class="st">"black"</span>),</span>
+<span id="cb1-64"><a href="#cb1-64" aria-hidden="true" tabindex="-1"></a>    <span class="at">guide  =</span> <span class="fu">guide_legend</span>(<span class="at">override.aes =</span> <span class="fu">list</span>(</span>
+<span id="cb1-65"><a href="#cb1-65" aria-hidden="true" tabindex="-1"></a>      <span class="at">linetype =</span> <span class="fu">c</span>(<span class="st">"blank"</span>, <span class="st">"solid"</span>, <span class="st">"blank"</span>),</span>
+<span id="cb1-66"><a href="#cb1-66" aria-hidden="true" tabindex="-1"></a>      <span class="at">shape    =</span> <span class="fu">c</span>(<span class="dv">16</span>, <span class="cn">NA</span>, <span class="dv">16</span>),</span>
+<span id="cb1-67"><a href="#cb1-67" aria-hidden="true" tabindex="-1"></a>      <span class="at">size     =</span> <span class="fu">c</span>(<span class="fl">2.5</span>,  <span class="fl">1.5</span>, <span class="fl">2.5</span>)))</span>
+<span id="cb1-68"><a href="#cb1-68" aria-hidden="true" tabindex="-1"></a>  ) <span class="sc">+</span></span>
+<span id="cb1-69"><a href="#cb1-69" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(</span>
+<span id="cb1-70"><a href="#cb1-70" aria-hidden="true" tabindex="-1"></a>    <span class="at">title    =</span> <span class="st">"Dispersion estimation: three-step Empirical Bayes shrinkage"</span>,</span>
+<span id="cb1-71"><a href="#cb1-71" aria-hidden="true" tabindex="-1"></a>    <span class="at">subtitle =</span> <span class="fu">sprintf</span>(<span class="st">"n = %d simulated genes, n = 3 replicates per group"</span>,</span>
+<span id="cb1-72"><a href="#cb1-72" aria-hidden="true" tabindex="-1"></a>                       <span class="fu">nrow</span>(disp_df))</span>
+<span id="cb1-73"><a href="#cb1-73" aria-hidden="true" tabindex="-1"></a>  ) <span class="sc">+</span></span>
+<span id="cb1-74"><a href="#cb1-74" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme_classic</span>(<span class="at">base_size =</span> <span class="dv">11</span>) <span class="sc">+</span></span>
+<span id="cb1-75"><a href="#cb1-75" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme</span>(<span class="at">legend.position =</span> <span class="st">"right"</span>,</span>
+<span id="cb1-76"><a href="#cb1-76" aria-hidden="true" tabindex="-1"></a>        <span class="at">plot.subtitle =</span> <span class="fu">element_text</span>(<span class="at">color =</span> <span class="st">"#555555"</span>, <span class="at">size =</span> <span class="dv">9</span>))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output-display">
+<div id="fig-dispersion-shrinkage" class="quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-dispersion-shrinkage-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<img src="transcriptomics_basic_lesson3_files/figure-html/fig-dispersion-shrinkage-1.png" class="img-fluid figure-img" width="768">
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-dispersion-shrinkage-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+图&nbsp;3: 离散度估计的三步流程模拟。蓝点：每个基因的 MLE 初始估计（样本量 n=3，噪声大）；橙色曲线：对全体基因拟合的趋势线（负幂律）；黑点：MAP 缩减后的最终估计（向趋势线收拢）。DESeq2 的 plotDispEsts() 产生同样的图形结构。
+</figcaption>
+</figure>
+</div>
+</div>
+</div>
+<p>从 <a href="#fig-dispersion-shrinkage" class="quarto-xref">图&nbsp;<span>3</span></a> 可以直观观察到三步流程的效果：蓝色点（MLE 初始估计）围绕真实趋势大幅散布，尤其在低均值区域，由于样本量仅 3 个，MLE 的估计误差极大；橙红色曲线（拟合趋势）通过汇总全体基因信息，准确捕捉到离散度随均值降低的规律；黑色点（MAP 缩减后）相比蓝色点更紧密地聚拢在趋势曲线周围——这正是 Empirical Bayes 缩减在起作用：以少量偏差换取方差的大幅降低，是小样本条件下可靠统计推断的关键。</p>
 <p><strong>离散度估计诊断图</strong>：</p>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb1"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="co"># After running DESeq2, plot dispersion estimates</span></span>
-<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="fu">plotDispEsts</span>(dds)</span>
-<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="co"># Expected pattern:</span></span>
-<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a><span class="co"># - Blue dots: gene-wise MLE estimates (noisy)</span></span>
-<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a><span class="co"># - Red curve: fitted trend</span></span>
-<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a><span class="co"># - Black dots: MAP-shrunken final estimates</span></span>
-<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a><span class="co"># - Circled dots: outlier genes (not shrunken, kept at MLE)</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb2"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="co"># After running DESeq2, plot dispersion estimates</span></span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a><span class="fu">plotDispEsts</span>(dds)</span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a><span class="co"># Expected pattern:</span></span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a><span class="co"># - Blue dots: gene-wise MLE estimates (noisy)</span></span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a><span class="co"># - Red curve: fitted trend</span></span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a><span class="co"># - Black dots: MAP-shrunken final estimates</span></span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a><span class="co"># - Circled dots: outlier genes (not shrunken, kept at MLE)</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </section>
-<section id="第三步wald-检验" class="level3" data-number="23.4.3">
-<h3 data-number="23.4.3" class="anchored" data-anchor-id="第三步wald-检验"><span class="header-section-number">23.4.3</span> 第三步：Wald 检验</h3>
+<section id="第三步wald-检验" class="level3" data-number="5.3">
+<h3 data-number="5.3" class="anchored" data-anchor-id="第三步wald-检验"><span class="header-section-number">5.3</span> 第三步：Wald 检验</h3>
 <p>在模型 <span class="math inline">\(\log_2(\mu_{ij}) = \beta_{i0} + \beta_{i1} x_j + \log(s_j)\)</span> 中，<span class="math inline">\(\beta_{i1}\)</span> 即为基因 <span class="math inline">\(i\)</span> 的<strong>对数倍数变化（Log2 Fold Change, LFC）</strong>。Wald 检验统计量为：</p>
 <p><span class="math display">\[W_i = \frac{\hat{\beta}_{i1}}{\text{SE}(\hat{\beta}_{i1})}\]</span></p>
 <p>在零假设（<span class="math inline">\(\beta_{i1} = 0\)</span>，即无差异表达）下，<span class="math inline">\(W_i\)</span> 近似服从标准正态分布。对应 p 值经 Benjamini-Hochberg 方法校正为 adjusted p-value（padj）。</p>
 </section>
-<section id="lfc-缩减apeglm" class="level3" data-number="23.4.4">
-<h3 data-number="23.4.4" class="anchored" data-anchor-id="lfc-缩减apeglm"><span class="header-section-number">23.4.4</span> LFC 缩减（apeglm）</h3>
+<section id="lfc-缩减apeglm" class="level3" data-number="5.4">
+<h3 data-number="5.4" class="anchored" data-anchor-id="lfc-缩减apeglm"><span class="header-section-number">5.4</span> LFC 缩减（apeglm）</h3>
 <p>对于计数极少的基因，即使 <span class="math inline">\(\hat{\beta}_{i1}\)</span> 的数值很大（看似差异表达），其置信区间极宽，这种估计不可靠。<code>apeglm</code> 包提供了一种针对 LFC 的适应性 Laplace 先验缩减，将低置信度的 LFC 估计向 0 收缩：</p>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb2"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(apeglm)</span>
-<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>res_shrunk <span class="ot">&lt;-</span> <span class="fu">lfcShrink</span>(dds, <span class="at">coef =</span> <span class="st">"condition_treated_vs_untreated"</span>,</span>
-<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a>                        <span class="at">type =</span> <span class="st">"apeglm"</span>)</span>
-<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a><span class="co"># Genes with low counts get LFC shrunk toward 0</span></span>
-<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a><span class="co"># Genes with high counts retain their original LFC estimates</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb3"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(apeglm)</span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a>res_shrunk <span class="ot">&lt;-</span> <span class="fu">lfcShrink</span>(dds, <span class="at">coef =</span> <span class="st">"condition_treated_vs_untreated"</span>,</span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a>                        <span class="at">type =</span> <span class="st">"apeglm"</span>)</span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a><span class="co"># Genes with low counts get LFC shrunk toward 0</span></span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a><span class="co"># Genes with high counts retain their original LFC estimates</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <p>这一步骤对<strong>火山图和热图的可视化</strong>尤为重要：未经缩减的 LFC 中，低表达基因的极端值会主导视觉呈现；缩减后的 LFC 更准确反映生物学上有意义的变化。</p>
 <hr>
 </section>
 </section>
-<section id="deseq2-完整实践" class="level2" data-number="23.5">
-<h2 data-number="23.5" class="anchored" data-anchor-id="deseq2-完整实践"><span class="header-section-number">23.5</span> DESeq2 完整实践</h2>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb3"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(DESeq2)</span>
-<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(ggplot2)</span>
-<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(ggrepel)</span>
-<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a><span class="co"># === Step 1: Load count data ===</span></span>
-<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a><span class="co"># Using featureCounts output</span></span>
-<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a>count_matrix <span class="ot">&lt;-</span> <span class="fu">read.table</span>(</span>
-<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a>  <span class="st">"results/featureCounts/pasilla_counts.txt"</span>,</span>
-<span id="cb3-9"><a href="#cb3-9" aria-hidden="true" tabindex="-1"></a>  <span class="at">header =</span> <span class="cn">TRUE</span>, <span class="at">skip =</span> <span class="dv">1</span>, <span class="at">row.names =</span> <span class="dv">1</span></span>
-<span id="cb3-10"><a href="#cb3-10" aria-hidden="true" tabindex="-1"></a>)</span>
-<span id="cb3-11"><a href="#cb3-11" aria-hidden="true" tabindex="-1"></a>counts <span class="ot">&lt;-</span> count_matrix[, <span class="dv">7</span><span class="sc">:</span><span class="fu">ncol</span>(count_matrix)]</span>
-<span id="cb3-12"><a href="#cb3-12" aria-hidden="true" tabindex="-1"></a><span class="fu">colnames</span>(counts) <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="st">"untreated1"</span>, <span class="st">"untreated2"</span>, <span class="st">"treated1"</span>)</span>
-<span id="cb3-13"><a href="#cb3-13" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb3-14"><a href="#cb3-14" aria-hidden="true" tabindex="-1"></a><span class="co"># Sample metadata</span></span>
-<span id="cb3-15"><a href="#cb3-15" aria-hidden="true" tabindex="-1"></a>sample_info <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(</span>
-<span id="cb3-16"><a href="#cb3-16" aria-hidden="true" tabindex="-1"></a>  <span class="at">condition =</span> <span class="fu">factor</span>(<span class="fu">c</span>(<span class="st">"untreated"</span>, <span class="st">"untreated"</span>, <span class="st">"treated"</span>)),</span>
-<span id="cb3-17"><a href="#cb3-17" aria-hidden="true" tabindex="-1"></a>  <span class="at">row.names =</span> <span class="fu">colnames</span>(counts)</span>
-<span id="cb3-18"><a href="#cb3-18" aria-hidden="true" tabindex="-1"></a>)</span>
-<span id="cb3-19"><a href="#cb3-19" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb3-20"><a href="#cb3-20" aria-hidden="true" tabindex="-1"></a><span class="co"># === Step 2: Create DESeqDataSet ===</span></span>
-<span id="cb3-21"><a href="#cb3-21" aria-hidden="true" tabindex="-1"></a>dds <span class="ot">&lt;-</span> <span class="fu">DESeqDataSetFromMatrix</span>(</span>
-<span id="cb3-22"><a href="#cb3-22" aria-hidden="true" tabindex="-1"></a>  <span class="at">countData =</span> counts,</span>
-<span id="cb3-23"><a href="#cb3-23" aria-hidden="true" tabindex="-1"></a>  <span class="at">colData   =</span> sample_info,</span>
-<span id="cb3-24"><a href="#cb3-24" aria-hidden="true" tabindex="-1"></a>  <span class="at">design    =</span> <span class="sc">~</span> condition</span>
-<span id="cb3-25"><a href="#cb3-25" aria-hidden="true" tabindex="-1"></a>)</span>
-<span id="cb3-26"><a href="#cb3-26" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb3-27"><a href="#cb3-27" aria-hidden="true" tabindex="-1"></a><span class="co"># Pre-filter: remove genes with very low counts (speeds up analysis)</span></span>
-<span id="cb3-28"><a href="#cb3-28" aria-hidden="true" tabindex="-1"></a>keep <span class="ot">&lt;-</span> <span class="fu">rowSums</span>(<span class="fu">counts</span>(dds) <span class="sc">&gt;=</span> <span class="dv">10</span>) <span class="sc">&gt;=</span> <span class="dv">2</span></span>
-<span id="cb3-29"><a href="#cb3-29" aria-hidden="true" tabindex="-1"></a>dds  <span class="ot">&lt;-</span> dds[keep, ]</span>
-<span id="cb3-30"><a href="#cb3-30" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">"Genes after filtering:"</span>, <span class="fu">nrow</span>(dds), <span class="st">"</span><span class="sc">\n</span><span class="st">"</span>)</span>
-<span id="cb3-31"><a href="#cb3-31" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb3-32"><a href="#cb3-32" aria-hidden="true" tabindex="-1"></a><span class="co"># Set reference level</span></span>
-<span id="cb3-33"><a href="#cb3-33" aria-hidden="true" tabindex="-1"></a>dds<span class="sc">$</span>condition <span class="ot">&lt;-</span> <span class="fu">relevel</span>(dds<span class="sc">$</span>condition, <span class="at">ref =</span> <span class="st">"untreated"</span>)</span>
-<span id="cb3-34"><a href="#cb3-34" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb3-35"><a href="#cb3-35" aria-hidden="true" tabindex="-1"></a><span class="co"># === Step 3: Run DESeq2 ===</span></span>
-<span id="cb3-36"><a href="#cb3-36" aria-hidden="true" tabindex="-1"></a>dds <span class="ot">&lt;-</span> <span class="fu">DESeq</span>(dds)</span>
-<span id="cb3-37"><a href="#cb3-37" aria-hidden="true" tabindex="-1"></a><span class="co"># Internally: estimateSizeFactors -&gt; estimateDispersions -&gt; nbinomWaldTest</span></span>
-<span id="cb3-38"><a href="#cb3-38" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb3-39"><a href="#cb3-39" aria-hidden="true" tabindex="-1"></a><span class="co"># Check size factors</span></span>
-<span id="cb3-40"><a href="#cb3-40" aria-hidden="true" tabindex="-1"></a><span class="fu">sizeFactors</span>(dds)</span>
-<span id="cb3-41"><a href="#cb3-41" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb3-42"><a href="#cb3-42" aria-hidden="true" tabindex="-1"></a><span class="co"># === Step 4: Extract results ===</span></span>
-<span id="cb3-43"><a href="#cb3-43" aria-hidden="true" tabindex="-1"></a>res <span class="ot">&lt;-</span> <span class="fu">results</span>(dds,</span>
-<span id="cb3-44"><a href="#cb3-44" aria-hidden="true" tabindex="-1"></a>               <span class="at">contrast =</span> <span class="fu">c</span>(<span class="st">"condition"</span>, <span class="st">"treated"</span>, <span class="st">"untreated"</span>),</span>
-<span id="cb3-45"><a href="#cb3-45" aria-hidden="true" tabindex="-1"></a>               <span class="at">alpha    =</span> <span class="fl">0.05</span>)   <span class="co"># FDR threshold for independent filtering</span></span>
-<span id="cb3-46"><a href="#cb3-46" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb3-47"><a href="#cb3-47" aria-hidden="true" tabindex="-1"></a><span class="fu">summary</span>(res)</span>
-<span id="cb3-48"><a href="#cb3-48" aria-hidden="true" tabindex="-1"></a><span class="co"># Output:</span></span>
-<span id="cb3-49"><a href="#cb3-49" aria-hidden="true" tabindex="-1"></a><span class="co"># LFC &gt; 0 (up)     : XXX, X%</span></span>
-<span id="cb3-50"><a href="#cb3-50" aria-hidden="true" tabindex="-1"></a><span class="co"># LFC &lt; 0 (down)   : XXX, X%</span></span>
-<span id="cb3-51"><a href="#cb3-51" aria-hidden="true" tabindex="-1"></a><span class="co"># outliers [1]     : XXX, X%</span></span>
-<span id="cb3-52"><a href="#cb3-52" aria-hidden="true" tabindex="-1"></a><span class="co"># low counts [2]   : XXX, X%</span></span>
-<span id="cb3-53"><a href="#cb3-53" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb3-54"><a href="#cb3-54" aria-hidden="true" tabindex="-1"></a><span class="co"># === Step 5: LFC shrinkage ===</span></span>
-<span id="cb3-55"><a href="#cb3-55" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(apeglm)</span>
-<span id="cb3-56"><a href="#cb3-56" aria-hidden="true" tabindex="-1"></a>res_shrunk <span class="ot">&lt;-</span> <span class="fu">lfcShrink</span>(</span>
-<span id="cb3-57"><a href="#cb3-57" aria-hidden="true" tabindex="-1"></a>  dds,</span>
-<span id="cb3-58"><a href="#cb3-58" aria-hidden="true" tabindex="-1"></a>  <span class="at">coef =</span> <span class="st">"condition_treated_vs_untreated"</span>,</span>
-<span id="cb3-59"><a href="#cb3-59" aria-hidden="true" tabindex="-1"></a>  <span class="at">type =</span> <span class="st">"apeglm"</span>,</span>
-<span id="cb3-60"><a href="#cb3-60" aria-hidden="true" tabindex="-1"></a>  <span class="at">res  =</span> res</span>
-<span id="cb3-61"><a href="#cb3-61" aria-hidden="true" tabindex="-1"></a>)</span>
-<span id="cb3-62"><a href="#cb3-62" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb3-63"><a href="#cb3-63" aria-hidden="true" tabindex="-1"></a><span class="co"># === Step 6: Filter significant DEGs ===</span></span>
-<span id="cb3-64"><a href="#cb3-64" aria-hidden="true" tabindex="-1"></a>sig_genes <span class="ot">&lt;-</span> <span class="fu">subset</span>(res_shrunk,</span>
-<span id="cb3-65"><a href="#cb3-65" aria-hidden="true" tabindex="-1"></a>                    padj <span class="sc">&lt;</span> <span class="fl">0.05</span> <span class="sc">&amp;</span> <span class="fu">abs</span>(log2FoldChange) <span class="sc">&gt;</span> <span class="dv">1</span>)</span>
-<span id="cb3-66"><a href="#cb3-66" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">"Significant DEGs (|LFC|&gt;1, padj&lt;0.05):"</span>, <span class="fu">nrow</span>(sig_genes), <span class="st">"</span><span class="sc">\n</span><span class="st">"</span>)</span>
-<span id="cb3-67"><a href="#cb3-67" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb3-68"><a href="#cb3-68" aria-hidden="true" tabindex="-1"></a><span class="co"># Sort by padj</span></span>
-<span id="cb3-69"><a href="#cb3-69" aria-hidden="true" tabindex="-1"></a>sig_genes <span class="ot">&lt;-</span> sig_genes[<span class="fu">order</span>(sig_genes<span class="sc">$</span>padj), ]</span>
-<span id="cb3-70"><a href="#cb3-70" aria-hidden="true" tabindex="-1"></a><span class="fu">head</span>(sig_genes, <span class="dv">10</span>)</span>
-<span id="cb3-71"><a href="#cb3-71" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb3-72"><a href="#cb3-72" aria-hidden="true" tabindex="-1"></a><span class="co"># === Step 7: Visualization ===</span></span>
-<span id="cb3-73"><a href="#cb3-73" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb3-74"><a href="#cb3-74" aria-hidden="true" tabindex="-1"></a><span class="co"># --- MA plot ---</span></span>
-<span id="cb3-75"><a href="#cb3-75" aria-hidden="true" tabindex="-1"></a><span class="fu">plotMA</span>(res_shrunk,</span>
-<span id="cb3-76"><a href="#cb3-76" aria-hidden="true" tabindex="-1"></a>       <span class="at">ylim =</span> <span class="fu">c</span>(<span class="sc">-</span><span class="dv">5</span>, <span class="dv">5</span>),</span>
-<span id="cb3-77"><a href="#cb3-77" aria-hidden="true" tabindex="-1"></a>       <span class="at">main =</span> <span class="st">"MA Plot: DESeq2 (apeglm shrinkage)"</span>,</span>
-<span id="cb3-78"><a href="#cb3-78" aria-hidden="true" tabindex="-1"></a>       <span class="at">alpha =</span> <span class="fl">0.05</span>)</span>
-<span id="cb3-79"><a href="#cb3-79" aria-hidden="true" tabindex="-1"></a><span class="co"># Blue dots: significant (padj &lt; 0.05)</span></span>
-<span id="cb3-80"><a href="#cb3-80" aria-hidden="true" tabindex="-1"></a><span class="co"># Grey dots: not significant</span></span>
-<span id="cb3-81"><a href="#cb3-81" aria-hidden="true" tabindex="-1"></a><span class="co"># Shrinkage reduces extreme LFC for low-count genes</span></span>
-<span id="cb3-82"><a href="#cb3-82" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb3-83"><a href="#cb3-83" aria-hidden="true" tabindex="-1"></a><span class="co"># --- Volcano plot ---</span></span>
-<span id="cb3-84"><a href="#cb3-84" aria-hidden="true" tabindex="-1"></a>res_df <span class="ot">&lt;-</span> <span class="fu">as.data.frame</span>(res_shrunk)</span>
-<span id="cb3-85"><a href="#cb3-85" aria-hidden="true" tabindex="-1"></a>res_df<span class="sc">$</span>gene <span class="ot">&lt;-</span> <span class="fu">rownames</span>(res_df)</span>
-<span id="cb3-86"><a href="#cb3-86" aria-hidden="true" tabindex="-1"></a>res_df<span class="sc">$</span>significance <span class="ot">&lt;-</span> <span class="st">"Not significant"</span></span>
-<span id="cb3-87"><a href="#cb3-87" aria-hidden="true" tabindex="-1"></a>res_df<span class="sc">$</span>significance[res_df<span class="sc">$</span>padj <span class="sc">&lt;</span> <span class="fl">0.05</span> <span class="sc">&amp;</span> res_df<span class="sc">$</span>log2FoldChange <span class="sc">&gt;</span>  <span class="dv">1</span>] <span class="ot">&lt;-</span> <span class="st">"Up"</span></span>
-<span id="cb3-88"><a href="#cb3-88" aria-hidden="true" tabindex="-1"></a>res_df<span class="sc">$</span>significance[res_df<span class="sc">$</span>padj <span class="sc">&lt;</span> <span class="fl">0.05</span> <span class="sc">&amp;</span> res_df<span class="sc">$</span>log2FoldChange <span class="sc">&lt;</span> <span class="sc">-</span><span class="dv">1</span>] <span class="ot">&lt;-</span> <span class="st">"Down"</span></span>
-<span id="cb3-89"><a href="#cb3-89" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb3-90"><a href="#cb3-90" aria-hidden="true" tabindex="-1"></a><span class="co"># Label top 20 genes by padj</span></span>
-<span id="cb3-91"><a href="#cb3-91" aria-hidden="true" tabindex="-1"></a>top_genes <span class="ot">&lt;-</span> <span class="fu">head</span>(res_df[<span class="fu">order</span>(res_df<span class="sc">$</span>padj, <span class="at">na.last =</span> <span class="cn">TRUE</span>), ], <span class="dv">20</span>)</span>
-<span id="cb3-92"><a href="#cb3-92" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb3-93"><a href="#cb3-93" aria-hidden="true" tabindex="-1"></a><span class="fu">ggplot</span>(res_df, <span class="fu">aes</span>(<span class="at">x =</span> log2FoldChange, <span class="at">y =</span> <span class="sc">-</span><span class="fu">log10</span>(padj),</span>
-<span id="cb3-94"><a href="#cb3-94" aria-hidden="true" tabindex="-1"></a>                   <span class="at">color =</span> significance)) <span class="sc">+</span></span>
-<span id="cb3-95"><a href="#cb3-95" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_point</span>(<span class="at">alpha =</span> <span class="fl">0.5</span>, <span class="at">size =</span> <span class="fl">0.8</span>) <span class="sc">+</span></span>
-<span id="cb3-96"><a href="#cb3-96" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_text_repel</span>(<span class="at">data =</span> top_genes,</span>
-<span id="cb3-97"><a href="#cb3-97" aria-hidden="true" tabindex="-1"></a>                  <span class="fu">aes</span>(<span class="at">label =</span> gene),</span>
-<span id="cb3-98"><a href="#cb3-98" aria-hidden="true" tabindex="-1"></a>                  <span class="at">size =</span> <span class="fl">2.5</span>, <span class="at">max.overlaps =</span> <span class="dv">20</span>) <span class="sc">+</span></span>
-<span id="cb3-99"><a href="#cb3-99" aria-hidden="true" tabindex="-1"></a>  <span class="fu">scale_color_manual</span>(</span>
-<span id="cb3-100"><a href="#cb3-100" aria-hidden="true" tabindex="-1"></a>    <span class="at">values =</span> <span class="fu">c</span>(<span class="st">"Up"</span> <span class="ot">=</span> <span class="st">"firebrick"</span>, <span class="st">"Down"</span> <span class="ot">=</span> <span class="st">"steelblue"</span>,</span>
-<span id="cb3-101"><a href="#cb3-101" aria-hidden="true" tabindex="-1"></a>               <span class="st">"Not significant"</span> <span class="ot">=</span> <span class="st">"grey70"</span>)</span>
-<span id="cb3-102"><a href="#cb3-102" aria-hidden="true" tabindex="-1"></a>  ) <span class="sc">+</span></span>
-<span id="cb3-103"><a href="#cb3-103" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_vline</span>(<span class="at">xintercept =</span> <span class="fu">c</span>(<span class="sc">-</span><span class="dv">1</span>, <span class="dv">1</span>), <span class="at">linetype =</span> <span class="st">"dashed"</span>, <span class="at">color =</span> <span class="st">"grey40"</span>) <span class="sc">+</span></span>
-<span id="cb3-104"><a href="#cb3-104" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_hline</span>(<span class="at">yintercept =</span> <span class="sc">-</span><span class="fu">log10</span>(<span class="fl">0.05</span>), <span class="at">linetype =</span> <span class="st">"dashed"</span>, <span class="at">color =</span> <span class="st">"grey40"</span>) <span class="sc">+</span></span>
-<span id="cb3-105"><a href="#cb3-105" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(</span>
-<span id="cb3-106"><a href="#cb3-106" aria-hidden="true" tabindex="-1"></a>    <span class="at">x =</span> <span class="st">"Log2 Fold Change (treated / untreated)"</span>,</span>
-<span id="cb3-107"><a href="#cb3-107" aria-hidden="true" tabindex="-1"></a>    <span class="at">y =</span> <span class="st">"-log10(adjusted p-value)"</span>,</span>
-<span id="cb3-108"><a href="#cb3-108" aria-hidden="true" tabindex="-1"></a>    <span class="at">title =</span> <span class="st">"Volcano Plot: Dexamethasone Treatment vs Control"</span>,</span>
-<span id="cb3-109"><a href="#cb3-109" aria-hidden="true" tabindex="-1"></a>    <span class="at">subtitle =</span> <span class="fu">sprintf</span>(<span class="st">"Significant DEGs: %d up, %d down"</span>,</span>
-<span id="cb3-110"><a href="#cb3-110" aria-hidden="true" tabindex="-1"></a>                       <span class="fu">sum</span>(res_df<span class="sc">$</span>significance <span class="sc">==</span> <span class="st">"Up"</span>, <span class="at">na.rm =</span> <span class="cn">TRUE</span>),</span>
-<span id="cb3-111"><a href="#cb3-111" aria-hidden="true" tabindex="-1"></a>                       <span class="fu">sum</span>(res_df<span class="sc">$</span>significance <span class="sc">==</span> <span class="st">"Down"</span>, <span class="at">na.rm =</span> <span class="cn">TRUE</span>)),</span>
-<span id="cb3-112"><a href="#cb3-112" aria-hidden="true" tabindex="-1"></a>    <span class="at">color =</span> <span class="st">"Direction"</span></span>
-<span id="cb3-113"><a href="#cb3-113" aria-hidden="true" tabindex="-1"></a>  ) <span class="sc">+</span></span>
-<span id="cb3-114"><a href="#cb3-114" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme_classic</span>() <span class="sc">+</span></span>
-<span id="cb3-115"><a href="#cb3-115" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme</span>(<span class="at">legend.position =</span> <span class="st">"top"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-<section id="样本质量评估pca-与距离热图" class="level3" data-number="23.5.1">
-<h3 data-number="23.5.1" class="anchored" data-anchor-id="样本质量评估pca-与距离热图"><span class="header-section-number">23.5.1</span> 样本质量评估：PCA 与距离热图</h3>
+<section id="deseq2-核心步骤的手动-r-实现" class="level2" data-number="6">
+<h2 data-number="6" class="anchored" data-anchor-id="deseq2-核心步骤的手动-r-实现"><span class="header-section-number">6</span> DESeq2 核心步骤的手动 R 实现</h2>
+<p>理解统计方法的最佳途径是动手重现其核心计算。以下代码以同一份模拟数据为线索，完整走通 DESeq2 的三个关键环节——大小因子估计、Wald 检验 p 值生成、BH 校正——并在每一步与 DESeq2 内置结果进行数值比对，验证一致性。</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb4"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(DESeq2)</span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(MASS)   <span class="co"># glm.nb()</span></span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a><span class="co"># ── Shared simulated dataset ──────────────────────────────────────────────────</span></span>
+<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a><span class="co"># 1000 genes × 6 samples (3 untreated + 3 treated)</span></span>
+<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a><span class="co"># Samples 4–6 have 2× library size to test normalization</span></span>
+<span id="cb4-8"><a href="#cb4-8" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">2024</span>)</span>
+<span id="cb4-9"><a href="#cb4-9" aria-hidden="true" tabindex="-1"></a>n_genes   <span class="ot">&lt;-</span> <span class="dv">1000</span></span>
+<span id="cb4-10"><a href="#cb4-10" aria-hidden="true" tabindex="-1"></a>n_samples <span class="ot">&lt;-</span> <span class="dv">6</span></span>
+<span id="cb4-11"><a href="#cb4-11" aria-hidden="true" tabindex="-1"></a>counts_sim <span class="ot">&lt;-</span> <span class="fu">matrix</span>(</span>
+<span id="cb4-12"><a href="#cb4-12" aria-hidden="true" tabindex="-1"></a>  <span class="fu">rnbinom</span>(n_genes <span class="sc">*</span> n_samples, <span class="at">mu =</span> <span class="dv">100</span>, <span class="at">size =</span> <span class="dv">5</span>),</span>
+<span id="cb4-13"><a href="#cb4-13" aria-hidden="true" tabindex="-1"></a>  <span class="at">nrow =</span> n_genes,</span>
+<span id="cb4-14"><a href="#cb4-14" aria-hidden="true" tabindex="-1"></a>  <span class="at">dimnames =</span> <span class="fu">list</span>(</span>
+<span id="cb4-15"><a href="#cb4-15" aria-hidden="true" tabindex="-1"></a>    <span class="fu">paste0</span>(<span class="st">"gene"</span>, <span class="fu">seq_len</span>(n_genes)),</span>
+<span id="cb4-16"><a href="#cb4-16" aria-hidden="true" tabindex="-1"></a>    <span class="fu">paste0</span>(<span class="st">"sample"</span>, <span class="fu">seq_len</span>(n_samples))</span>
+<span id="cb4-17"><a href="#cb4-17" aria-hidden="true" tabindex="-1"></a>  )</span>
+<span id="cb4-18"><a href="#cb4-18" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb4-19"><a href="#cb4-19" aria-hidden="true" tabindex="-1"></a>counts_sim[, <span class="dv">4</span><span class="sc">:</span><span class="dv">6</span>] <span class="ot">&lt;-</span> <span class="fu">round</span>(counts_sim[, <span class="dv">4</span><span class="sc">:</span><span class="dv">6</span>] <span class="sc">*</span> <span class="dv">2</span>)</span>
+<span id="cb4-20"><a href="#cb4-20" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-21"><a href="#cb4-21" aria-hidden="true" tabindex="-1"></a><span class="co"># levels= sets reference to "untreated"; coefficient will be named "conditiontreated"</span></span>
+<span id="cb4-22"><a href="#cb4-22" aria-hidden="true" tabindex="-1"></a>condition <span class="ot">&lt;-</span> <span class="fu">factor</span>(<span class="fu">rep</span>(<span class="fu">c</span>(<span class="st">"untreated"</span>, <span class="st">"treated"</span>), <span class="at">each =</span> <span class="dv">3</span>),</span>
+<span id="cb4-23"><a href="#cb4-23" aria-hidden="true" tabindex="-1"></a>                    <span class="at">levels =</span> <span class="fu">c</span>(<span class="st">"untreated"</span>, <span class="st">"treated"</span>))</span>
+<span id="cb4-24"><a href="#cb4-24" aria-hidden="true" tabindex="-1"></a>coldata_sim <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(<span class="at">condition =</span> condition,</span>
+<span id="cb4-25"><a href="#cb4-25" aria-hidden="true" tabindex="-1"></a>                          <span class="at">row.names =</span> <span class="fu">colnames</span>(counts_sim))</span>
+<span id="cb4-26"><a href="#cb4-26" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-27"><a href="#cb4-27" aria-hidden="true" tabindex="-1"></a><span class="co"># ── Part 1: Manual size factor estimation ────────────────────────────────────</span></span>
+<span id="cb4-28"><a href="#cb4-28" aria-hidden="true" tabindex="-1"></a>log_counts  <span class="ot">&lt;-</span> <span class="fu">log</span>(counts_sim)</span>
+<span id="cb4-29"><a href="#cb4-29" aria-hidden="true" tabindex="-1"></a>log_counts[<span class="fu">is.infinite</span>(log_counts)] <span class="ot">&lt;-</span> <span class="cn">NA</span></span>
+<span id="cb4-30"><a href="#cb4-30" aria-hidden="true" tabindex="-1"></a>geom_means  <span class="ot">&lt;-</span> <span class="fu">exp</span>(<span class="fu">rowMeans</span>(log_counts, <span class="at">na.rm =</span> <span class="cn">TRUE</span>))</span>
+<span id="cb4-31"><a href="#cb4-31" aria-hidden="true" tabindex="-1"></a>valid_genes <span class="ot">&lt;-</span> <span class="sc">!</span><span class="fu">is.na</span>(geom_means) <span class="sc">&amp;</span> geom_means <span class="sc">&gt;</span> <span class="dv">0</span></span>
+<span id="cb4-32"><a href="#cb4-32" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-33"><a href="#cb4-33" aria-hidden="true" tabindex="-1"></a>ratios    <span class="ot">&lt;-</span> <span class="fu">sweep</span>(counts_sim[valid_genes, ], <span class="dv">1</span>, geom_means[valid_genes], <span class="st">"/"</span>)</span>
+<span id="cb4-34"><a href="#cb4-34" aria-hidden="true" tabindex="-1"></a>sf_manual <span class="ot">&lt;-</span> <span class="fu">apply</span>(ratios, <span class="dv">2</span>, median)</span>
+<span id="cb4-35"><a href="#cb4-35" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-36"><a href="#cb4-36" aria-hidden="true" tabindex="-1"></a><span class="co"># Verify against DESeq2</span></span>
+<span id="cb4-37"><a href="#cb4-37" aria-hidden="true" tabindex="-1"></a>dds_sim   <span class="ot">&lt;-</span> <span class="fu">DESeqDataSetFromMatrix</span>(counts_sim, coldata_sim, <span class="sc">~</span> condition)</span>
+<span id="cb4-38"><a href="#cb4-38" aria-hidden="true" tabindex="-1"></a>dds_sim   <span class="ot">&lt;-</span> <span class="fu">estimateSizeFactors</span>(dds_sim)</span>
+<span id="cb4-39"><a href="#cb4-39" aria-hidden="true" tabindex="-1"></a>sf_deseq2 <span class="ot">&lt;-</span> <span class="fu">sizeFactors</span>(dds_sim)</span>
+<span id="cb4-40"><a href="#cb4-40" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-41"><a href="#cb4-41" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">"=== Part 1: Size factor comparison ===</span><span class="sc">\n</span><span class="st">"</span>)</span>
+<span id="cb4-42"><a href="#cb4-42" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(<span class="fu">rbind</span>(<span class="at">manual =</span> <span class="fu">round</span>(sf_manual, <span class="dv">4</span>), <span class="at">DESeq2 =</span> <span class="fu">round</span>(sf_deseq2, <span class="dv">4</span>)))</span>
+<span id="cb4-43"><a href="#cb4-43" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">"Max absolute difference:"</span>, <span class="fu">max</span>(<span class="fu">abs</span>(sf_manual <span class="sc">-</span> sf_deseq2)), <span class="st">"</span><span class="sc">\n\n</span><span class="st">"</span>)</span>
+<span id="cb4-44"><a href="#cb4-44" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-45"><a href="#cb4-45" aria-hidden="true" tabindex="-1"></a><span class="co"># Visualize normalization effect</span></span>
+<span id="cb4-46"><a href="#cb4-46" aria-hidden="true" tabindex="-1"></a>norm_counts <span class="ot">&lt;-</span> <span class="fu">sweep</span>(counts_sim, <span class="dv">2</span>, sf_manual, <span class="st">"/"</span>)</span>
+<span id="cb4-47"><a href="#cb4-47" aria-hidden="true" tabindex="-1"></a><span class="fu">par</span>(<span class="at">mfrow =</span> <span class="fu">c</span>(<span class="dv">1</span>, <span class="dv">2</span>))</span>
+<span id="cb4-48"><a href="#cb4-48" aria-hidden="true" tabindex="-1"></a><span class="fu">boxplot</span>(<span class="fu">log1p</span>(counts_sim),  <span class="at">main =</span> <span class="st">"Raw counts (log1p)"</span>,</span>
+<span id="cb4-49"><a href="#cb4-49" aria-hidden="true" tabindex="-1"></a>        <span class="at">las =</span> <span class="dv">2</span>, <span class="at">col =</span> <span class="st">"lightblue"</span>,  <span class="at">ylab =</span> <span class="st">"log1p(count)"</span>)</span>
+<span id="cb4-50"><a href="#cb4-50" aria-hidden="true" tabindex="-1"></a><span class="fu">boxplot</span>(<span class="fu">log1p</span>(norm_counts), <span class="at">main =</span> <span class="st">"Size-factor normalized (log1p)"</span>,</span>
+<span id="cb4-51"><a href="#cb4-51" aria-hidden="true" tabindex="-1"></a>        <span class="at">las =</span> <span class="dv">2</span>, <span class="at">col =</span> <span class="st">"lightgreen"</span>, <span class="at">ylab =</span> <span class="st">"log1p(count)"</span>)</span>
+<span id="cb4-52"><a href="#cb4-52" aria-hidden="true" tabindex="-1"></a><span class="fu">par</span>(<span class="at">mfrow =</span> <span class="fu">c</span>(<span class="dv">1</span>, <span class="dv">1</span>))</span>
+<span id="cb4-53"><a href="#cb4-53" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-54"><a href="#cb4-54" aria-hidden="true" tabindex="-1"></a><span class="co"># ── Part 2: DE comparison dataset ────────────────────────────────────────────</span></span>
+<span id="cb4-55"><a href="#cb4-55" aria-hidden="true" tabindex="-1"></a><span class="co"># A fresh simulation with known true DE genes for method comparison.</span></span>
+<span id="cb4-56"><a href="#cb4-56" aria-hidden="true" tabindex="-1"></a><span class="co"># Using the same count matrix as Part 1 would conflate library-size effects</span></span>
+<span id="cb4-57"><a href="#cb4-57" aria-hidden="true" tabindex="-1"></a><span class="co"># with biological DE, making the comparison uninterpretable.</span></span>
+<span id="cb4-58"><a href="#cb4-58" aria-hidden="true" tabindex="-1"></a><span class="co">#</span></span>
+<span id="cb4-59"><a href="#cb4-59" aria-hidden="true" tabindex="-1"></a><span class="co"># Design: 500 genes × 6 samples (3 untreated + 3 treated)</span></span>
+<span id="cb4-60"><a href="#cb4-60" aria-hidden="true" tabindex="-1"></a><span class="co">#   - 40 genes upregulated   (FC = 4×, treated/untreated)</span></span>
+<span id="cb4-61"><a href="#cb4-61" aria-hidden="true" tabindex="-1"></a><span class="co">#   - 40 genes downregulated (FC = 1/4×)</span></span>
+<span id="cb4-62"><a href="#cb4-62" aria-hidden="true" tabindex="-1"></a><span class="co">#   - 420 null genes         (FC = 1×)</span></span>
+<span id="cb4-63"><a href="#cb4-63" aria-hidden="true" tabindex="-1"></a><span class="co">#   - Overdispersion: alpha = 0.10 (size = 10), mu_base ~ Gamma(2, 0.02) ~ 100</span></span>
+<span id="cb4-64"><a href="#cb4-64" aria-hidden="true" tabindex="-1"></a><span class="co">#   - Equal library sizes (no confounding size effect)</span></span>
+<span id="cb4-65"><a href="#cb4-65" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">42</span>)</span>
+<span id="cb4-66"><a href="#cb4-66" aria-hidden="true" tabindex="-1"></a>n_de    <span class="ot">&lt;-</span> <span class="dv">500</span></span>
+<span id="cb4-67"><a href="#cb4-67" aria-hidden="true" tabindex="-1"></a>n_up    <span class="ot">&lt;-</span> <span class="dv">40</span>; n_dn <span class="ot">&lt;-</span> <span class="dv">40</span>; n_null <span class="ot">&lt;-</span> n_de <span class="sc">-</span> n_up <span class="sc">-</span> n_dn</span>
+<span id="cb4-68"><a href="#cb4-68" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-69"><a href="#cb4-69" aria-hidden="true" tabindex="-1"></a>base_mu <span class="ot">&lt;-</span> <span class="fu">rgamma</span>(n_de, <span class="at">shape =</span> <span class="dv">2</span>, <span class="at">rate =</span> <span class="fl">0.02</span>)   <span class="co"># gene-specific mean ~100</span></span>
+<span id="cb4-70"><a href="#cb4-70" aria-hidden="true" tabindex="-1"></a>true_fc <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="fu">rep</span>(<span class="dv">4</span>, n_up), <span class="fu">rep</span>(<span class="dv">1</span><span class="sc">/</span><span class="dv">4</span>, n_dn), <span class="fu">rep</span>(<span class="dv">1</span>, n_null))</span>
+<span id="cb4-71"><a href="#cb4-71" aria-hidden="true" tabindex="-1"></a>is_de   <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="fu">rep</span>(<span class="cn">TRUE</span>, n_up <span class="sc">+</span> n_dn), <span class="fu">rep</span>(<span class="cn">FALSE</span>, n_null))</span>
+<span id="cb4-72"><a href="#cb4-72" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-73"><a href="#cb4-73" aria-hidden="true" tabindex="-1"></a>cond_de <span class="ot">&lt;-</span> <span class="fu">factor</span>(<span class="fu">rep</span>(<span class="fu">c</span>(<span class="st">"untreated"</span>, <span class="st">"treated"</span>), <span class="at">each =</span> <span class="dv">3</span>),</span>
+<span id="cb4-74"><a href="#cb4-74" aria-hidden="true" tabindex="-1"></a>                  <span class="at">levels =</span> <span class="fu">c</span>(<span class="st">"untreated"</span>, <span class="st">"treated"</span>))</span>
+<span id="cb4-75"><a href="#cb4-75" aria-hidden="true" tabindex="-1"></a><span class="co"># mu matrix: rows = genes, cols = samples</span></span>
+<span id="cb4-76"><a href="#cb4-76" aria-hidden="true" tabindex="-1"></a><span class="co"># </span><span class="al">NOTE</span><span class="co">: use cbind, NOT outer() — outer() would recycle true_fc (length 500)</span></span>
+<span id="cb4-77"><a href="#cb4-77" aria-hidden="true" tabindex="-1"></a><span class="co"># against cond_de (length 6), producing a 500×500 matrix instead of 500×6.</span></span>
+<span id="cb4-78"><a href="#cb4-78" aria-hidden="true" tabindex="-1"></a>mu_mat <span class="ot">&lt;-</span> <span class="fu">cbind</span>(</span>
+<span id="cb4-79"><a href="#cb4-79" aria-hidden="true" tabindex="-1"></a>  <span class="fu">matrix</span>(base_mu,           <span class="at">nrow =</span> n_de, <span class="at">ncol =</span> <span class="dv">3</span>),  <span class="co"># untreated</span></span>
+<span id="cb4-80"><a href="#cb4-80" aria-hidden="true" tabindex="-1"></a>  <span class="fu">matrix</span>(base_mu <span class="sc">*</span> true_fc, <span class="at">nrow =</span> n_de, <span class="at">ncol =</span> <span class="dv">3</span>)   <span class="co"># treated</span></span>
+<span id="cb4-81"><a href="#cb4-81" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb4-82"><a href="#cb4-82" aria-hidden="true" tabindex="-1"></a>counts_de <span class="ot">&lt;-</span> <span class="fu">matrix</span>(</span>
+<span id="cb4-83"><a href="#cb4-83" aria-hidden="true" tabindex="-1"></a>  <span class="fu">rnbinom</span>(n_de <span class="sc">*</span> <span class="dv">6</span>, <span class="at">mu =</span> mu_mat, <span class="at">size =</span> <span class="dv">10</span>),</span>
+<span id="cb4-84"><a href="#cb4-84" aria-hidden="true" tabindex="-1"></a>  <span class="at">nrow     =</span> n_de,</span>
+<span id="cb4-85"><a href="#cb4-85" aria-hidden="true" tabindex="-1"></a>  <span class="at">dimnames =</span> <span class="fu">list</span>(<span class="fu">paste0</span>(<span class="st">"gene"</span>, <span class="fu">seq_len</span>(n_de)),</span>
+<span id="cb4-86"><a href="#cb4-86" aria-hidden="true" tabindex="-1"></a>                  <span class="fu">paste0</span>(<span class="st">"sample"</span>, <span class="fu">seq_len</span>(<span class="dv">6</span>)))</span>
+<span id="cb4-87"><a href="#cb4-87" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb4-88"><a href="#cb4-88" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-89"><a href="#cb4-89" aria-hidden="true" tabindex="-1"></a>coldata_de <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(<span class="at">condition =</span> cond_de,</span>
+<span id="cb4-90"><a href="#cb4-90" aria-hidden="true" tabindex="-1"></a>                         <span class="at">row.names =</span> <span class="fu">colnames</span>(counts_de))</span>
+<span id="cb4-91"><a href="#cb4-91" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-92"><a href="#cb4-92" aria-hidden="true" tabindex="-1"></a><span class="co"># Size factors for the DE dataset</span></span>
+<span id="cb4-93"><a href="#cb4-93" aria-hidden="true" tabindex="-1"></a>geo_mean_de <span class="ot">&lt;-</span> <span class="cf">function</span>(x) <span class="fu">exp</span>(<span class="fu">mean</span>(<span class="fu">log</span>(x <span class="sc">+</span> <span class="fl">0.5</span>)))</span>
+<span id="cb4-94"><a href="#cb4-94" aria-hidden="true" tabindex="-1"></a>sf_de_man   <span class="ot">&lt;-</span> <span class="fu">apply</span>(counts_de, <span class="dv">2</span>, <span class="cf">function</span>(col) {</span>
+<span id="cb4-95"><a href="#cb4-95" aria-hidden="true" tabindex="-1"></a>  <span class="fu">median</span>(col <span class="sc">/</span> <span class="fu">apply</span>(counts_de, <span class="dv">1</span>, geo_mean_de))</span>
+<span id="cb4-96"><a href="#cb4-96" aria-hidden="true" tabindex="-1"></a>})</span>
+<span id="cb4-97"><a href="#cb4-97" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-98"><a href="#cb4-98" aria-hidden="true" tabindex="-1"></a><span class="co"># ── Part 2: Manual NB-GLM Wald test ──────────────────────────────────────────</span></span>
+<span id="cb4-99"><a href="#cb4-99" aria-hidden="true" tabindex="-1"></a><span class="co"># Model: count_ij ~ NB(mu_ij, theta_i)</span></span>
+<span id="cb4-100"><a href="#cb4-100" aria-hidden="true" tabindex="-1"></a><span class="co">#   log(mu_ij) = intercept + beta_i * condition_j + offset(log(sf_j))</span></span>
+<span id="cb4-101"><a href="#cb4-101" aria-hidden="true" tabindex="-1"></a><span class="co"># Wald statistic: W_i = beta_hat_i / SE(beta_hat_i) ~ N(0,1) under H0</span></span>
+<span id="cb4-102"><a href="#cb4-102" aria-hidden="true" tabindex="-1"></a><span class="co"># p-value: 2 * Phi(-|W_i|)</span></span>
+<span id="cb4-103"><a href="#cb4-103" aria-hidden="true" tabindex="-1"></a><span class="co">#</span></span>
+<span id="cb4-104"><a href="#cb4-104" aria-hidden="true" tabindex="-1"></a><span class="co"># glm.nb() estimates theta per-gene via MLE (no shrinkage).</span></span>
+<span id="cb4-105"><a href="#cb4-105" aria-hidden="true" tabindex="-1"></a><span class="co"># DESeq2 uses Empirical Bayes shrinkage — this intentional difference</span></span>
+<span id="cb4-106"><a href="#cb4-106" aria-hidden="true" tabindex="-1"></a><span class="co"># is what we compare below.</span></span>
+<span id="cb4-107"><a href="#cb4-107" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-108"><a href="#cb4-108" aria-hidden="true" tabindex="-1"></a>df_de <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(</span>
+<span id="cb4-109"><a href="#cb4-109" aria-hidden="true" tabindex="-1"></a>  <span class="at">count     =</span> <span class="cn">NA_integer_</span>,</span>
+<span id="cb4-110"><a href="#cb4-110" aria-hidden="true" tabindex="-1"></a>  <span class="at">condition =</span> cond_de,</span>
+<span id="cb4-111"><a href="#cb4-111" aria-hidden="true" tabindex="-1"></a>  <span class="at">log_sf    =</span> <span class="fu">log</span>(sf_de_man)</span>
+<span id="cb4-112"><a href="#cb4-112" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb4-113"><a href="#cb4-113" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-114"><a href="#cb4-114" aria-hidden="true" tabindex="-1"></a>fit_one_gene <span class="ot">&lt;-</span> <span class="cf">function</span>(y) {</span>
+<span id="cb4-115"><a href="#cb4-115" aria-hidden="true" tabindex="-1"></a>  <span class="fu">tryCatch</span>({</span>
+<span id="cb4-116"><a href="#cb4-116" aria-hidden="true" tabindex="-1"></a>    df_de<span class="sc">$</span>count <span class="ot">&lt;-</span> <span class="fu">as.integer</span>(<span class="fu">round</span>(y))</span>
+<span id="cb4-117"><a href="#cb4-117" aria-hidden="true" tabindex="-1"></a>    fit  <span class="ot">&lt;-</span> <span class="fu">glm.nb</span>(count <span class="sc">~</span> condition <span class="sc">+</span> <span class="fu">offset</span>(log_sf), <span class="at">data =</span> df_de)</span>
+<span id="cb4-118"><a href="#cb4-118" aria-hidden="true" tabindex="-1"></a>    beta <span class="ot">&lt;-</span> <span class="fu">coef</span>(fit)[<span class="st">"conditiontreated"</span>]</span>
+<span id="cb4-119"><a href="#cb4-119" aria-hidden="true" tabindex="-1"></a>    se   <span class="ot">&lt;-</span> <span class="fu">sqrt</span>(<span class="fu">diag</span>(<span class="fu">vcov</span>(fit)))[<span class="st">"conditiontreated"</span>]</span>
+<span id="cb4-120"><a href="#cb4-120" aria-hidden="true" tabindex="-1"></a>    <span class="fu">c</span>(<span class="at">beta =</span> <span class="fu">unname</span>(beta), <span class="at">se =</span> <span class="fu">unname</span>(se))</span>
+<span id="cb4-121"><a href="#cb4-121" aria-hidden="true" tabindex="-1"></a>  }, <span class="at">error =</span> <span class="cf">function</span>(e) <span class="fu">c</span>(<span class="at">beta =</span> <span class="cn">NA_real_</span>, <span class="at">se =</span> <span class="cn">NA_real_</span>))</span>
+<span id="cb4-122"><a href="#cb4-122" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb4-123"><a href="#cb4-123" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-124"><a href="#cb4-124" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">"=== Part 2: Fitting NB-GLM for each gene (may take ~30 s) ===</span><span class="sc">\n</span><span class="st">"</span>)</span>
+<span id="cb4-125"><a href="#cb4-125" aria-hidden="true" tabindex="-1"></a>results_list   <span class="ot">&lt;-</span> <span class="fu">lapply</span>(<span class="fu">seq_len</span>(<span class="fu">nrow</span>(counts_de)),</span>
+<span id="cb4-126"><a href="#cb4-126" aria-hidden="true" tabindex="-1"></a>                         <span class="cf">function</span>(i) <span class="fu">fit_one_gene</span>(counts_de[i, ]))</span>
+<span id="cb4-127"><a href="#cb4-127" aria-hidden="true" tabindex="-1"></a>results_manual <span class="ot">&lt;-</span> <span class="fu">do.call</span>(rbind, results_list)</span>
+<span id="cb4-128"><a href="#cb4-128" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-129"><a href="#cb4-129" aria-hidden="true" tabindex="-1"></a>beta_manual <span class="ot">&lt;-</span> results_manual[, <span class="st">"beta"</span>]</span>
+<span id="cb4-130"><a href="#cb4-130" aria-hidden="true" tabindex="-1"></a>se_manual   <span class="ot">&lt;-</span> results_manual[, <span class="st">"se"</span>]</span>
+<span id="cb4-131"><a href="#cb4-131" aria-hidden="true" tabindex="-1"></a>W_manual    <span class="ot">&lt;-</span> beta_manual <span class="sc">/</span> se_manual</span>
+<span id="cb4-132"><a href="#cb4-132" aria-hidden="true" tabindex="-1"></a>pval_manual <span class="ot">&lt;-</span> <span class="dv">2</span> <span class="sc">*</span> <span class="fu">pnorm</span>(<span class="sc">-</span><span class="fu">abs</span>(W_manual))</span>
+<span id="cb4-133"><a href="#cb4-133" aria-hidden="true" tabindex="-1"></a><span class="fu">names</span>(pval_manual) <span class="ot">&lt;-</span> <span class="fu">rownames</span>(counts_de)</span>
+<span id="cb4-134"><a href="#cb4-134" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-135"><a href="#cb4-135" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">"Genes with successful fit:"</span>, <span class="fu">sum</span>(<span class="sc">!</span><span class="fu">is.na</span>(pval_manual)), <span class="st">"/"</span>, n_de, <span class="st">"</span><span class="sc">\n\n</span><span class="st">"</span>)</span>
+<span id="cb4-136"><a href="#cb4-136" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-137"><a href="#cb4-137" aria-hidden="true" tabindex="-1"></a><span class="co"># ── Part 3: Run DESeq2 on the same DE dataset ─────────────────────────────────</span></span>
+<span id="cb4-138"><a href="#cb4-138" aria-hidden="true" tabindex="-1"></a>dds_de <span class="ot">&lt;-</span> <span class="fu">DESeqDataSetFromMatrix</span>(counts_de, coldata_de, <span class="sc">~</span> condition)</span>
+<span id="cb4-139"><a href="#cb4-139" aria-hidden="true" tabindex="-1"></a>dds_de <span class="ot">&lt;-</span> <span class="fu">DESeq</span>(dds_de)</span>
+<span id="cb4-140"><a href="#cb4-140" aria-hidden="true" tabindex="-1"></a>res_de  <span class="ot">&lt;-</span> <span class="fu">results</span>(dds_de,</span>
+<span id="cb4-141"><a href="#cb4-141" aria-hidden="true" tabindex="-1"></a>                   <span class="at">contrast      =</span> <span class="fu">c</span>(<span class="st">"condition"</span>, <span class="st">"treated"</span>, <span class="st">"untreated"</span>),</span>
+<span id="cb4-142"><a href="#cb4-142" aria-hidden="true" tabindex="-1"></a>                   <span class="at">pAdjustMethod =</span> <span class="st">"BH"</span>)</span>
+<span id="cb4-143"><a href="#cb4-143" aria-hidden="true" tabindex="-1"></a>pval_deseq2 <span class="ot">&lt;-</span> <span class="fu">setNames</span>(res_de<span class="sc">$</span>pvalue, <span class="fu">rownames</span>(res_de))</span>
+<span id="cb4-144"><a href="#cb4-144" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-145"><a href="#cb4-145" aria-hidden="true" tabindex="-1"></a>keep   <span class="ot">&lt;-</span> <span class="sc">!</span><span class="fu">is.na</span>(pval_manual) <span class="sc">&amp;</span> <span class="sc">!</span><span class="fu">is.na</span>(pval_deseq2[<span class="fu">names</span>(pval_manual)])</span>
+<span id="cb4-146"><a href="#cb4-146" aria-hidden="true" tabindex="-1"></a>pv_man <span class="ot">&lt;-</span> pval_manual[keep]</span>
+<span id="cb4-147"><a href="#cb4-147" aria-hidden="true" tabindex="-1"></a>pv_d2  <span class="ot">&lt;-</span> pval_deseq2[<span class="fu">names</span>(pv_man)]</span>
+<span id="cb4-148"><a href="#cb4-148" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-149"><a href="#cb4-149" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">"=== Part 3: Raw p-value comparison ===</span><span class="sc">\n</span><span class="st">"</span>)</span>
+<span id="cb4-150"><a href="#cb4-150" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">"Genes compared:"</span>, <span class="fu">sum</span>(keep), <span class="st">"</span><span class="sc">\n</span><span class="st">"</span>)</span>
+<span id="cb4-151"><a href="#cb4-151" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">"Pearson correlation (manual vs DESeq2 p-value):"</span>,</span>
+<span id="cb4-152"><a href="#cb4-152" aria-hidden="true" tabindex="-1"></a>    <span class="fu">round</span>(<span class="fu">cor</span>(pv_man, pv_d2, <span class="at">use =</span> <span class="st">"complete.obs"</span>), <span class="dv">4</span>), <span class="st">"</span><span class="sc">\n\n</span><span class="st">"</span>)</span>
+<span id="cb4-153"><a href="#cb4-153" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-154"><a href="#cb4-154" aria-hidden="true" tabindex="-1"></a><span class="co"># ── Part 4: Manual BH correction ─────────────────────────────────────────────</span></span>
+<span id="cb4-155"><a href="#cb4-155" aria-hidden="true" tabindex="-1"></a>bh_correct <span class="ot">&lt;-</span> <span class="cf">function</span>(pv) {</span>
+<span id="cb4-156"><a href="#cb4-156" aria-hidden="true" tabindex="-1"></a>  m   <span class="ot">&lt;-</span> <span class="fu">length</span>(pv)</span>
+<span id="cb4-157"><a href="#cb4-157" aria-hidden="true" tabindex="-1"></a>  ord <span class="ot">&lt;-</span> <span class="fu">order</span>(pv)</span>
+<span id="cb4-158"><a href="#cb4-158" aria-hidden="true" tabindex="-1"></a>  adj <span class="ot">&lt;-</span> <span class="fu">numeric</span>(m)</span>
+<span id="cb4-159"><a href="#cb4-159" aria-hidden="true" tabindex="-1"></a>  adj[m] <span class="ot">&lt;-</span> pv[ord[m]]</span>
+<span id="cb4-160"><a href="#cb4-160" aria-hidden="true" tabindex="-1"></a>  <span class="cf">for</span> (i <span class="cf">in</span> <span class="fu">seq</span>(m <span class="sc">-</span> <span class="dv">1</span>, <span class="dv">1</span>)) {</span>
+<span id="cb4-161"><a href="#cb4-161" aria-hidden="true" tabindex="-1"></a>    adj[i] <span class="ot">&lt;-</span> <span class="fu">min</span>(pv[ord[i]] <span class="sc">*</span> m <span class="sc">/</span> i, adj[i <span class="sc">+</span> <span class="dv">1</span>])</span>
+<span id="cb4-162"><a href="#cb4-162" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb4-163"><a href="#cb4-163" aria-hidden="true" tabindex="-1"></a>  out      <span class="ot">&lt;-</span> <span class="fu">numeric</span>(m)</span>
+<span id="cb4-164"><a href="#cb4-164" aria-hidden="true" tabindex="-1"></a>  out[ord] <span class="ot">&lt;-</span> adj</span>
+<span id="cb4-165"><a href="#cb4-165" aria-hidden="true" tabindex="-1"></a>  out</span>
+<span id="cb4-166"><a href="#cb4-166" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb4-167"><a href="#cb4-167" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-168"><a href="#cb4-168" aria-hidden="true" tabindex="-1"></a>padj_man_bh <span class="ot">&lt;-</span> <span class="fu">bh_correct</span>(pv_man)</span>
+<span id="cb4-169"><a href="#cb4-169" aria-hidden="true" tabindex="-1"></a>padj_d2     <span class="ot">&lt;-</span> res_de<span class="sc">$</span>padj[<span class="fu">match</span>(<span class="fu">names</span>(pv_man), <span class="fu">rownames</span>(res_de))]</span>
+<span id="cb4-170"><a href="#cb4-170" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-171"><a href="#cb4-171" aria-hidden="true" tabindex="-1"></a><span class="co"># Ground-truth labels aligned to the filtered gene set</span></span>
+<span id="cb4-172"><a href="#cb4-172" aria-hidden="true" tabindex="-1"></a>is_de_keep <span class="ot">&lt;-</span> is_de[<span class="fu">match</span>(<span class="fu">names</span>(pv_man), <span class="fu">rownames</span>(counts_de))]</span>
+<span id="cb4-173"><a href="#cb4-173" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-174"><a href="#cb4-174" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">"=== Part 4: BH-adjusted comparison ===</span><span class="sc">\n</span><span class="st">"</span>)</span>
+<span id="cb4-175"><a href="#cb4-175" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">"True DE genes in comparison set:"</span>, <span class="fu">sum</span>(is_de_keep), <span class="st">"</span><span class="sc">\n</span><span class="st">"</span>)</span>
+<span id="cb4-176"><a href="#cb4-176" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">"Significant (padj &lt; 0.05) — manual NB-GLM + BH:"</span>,</span>
+<span id="cb4-177"><a href="#cb4-177" aria-hidden="true" tabindex="-1"></a>    <span class="fu">sum</span>(padj_man_bh <span class="sc">&lt;</span> <span class="fl">0.05</span>), <span class="st">"</span><span class="sc">\n</span><span class="st">"</span>)</span>
+<span id="cb4-178"><a href="#cb4-178" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">"Significant (padj &lt; 0.05) — DESeq2            :"</span>,</span>
+<span id="cb4-179"><a href="#cb4-179" aria-hidden="true" tabindex="-1"></a>    <span class="fu">sum</span>(padj_d2 <span class="sc">&lt;</span> <span class="fl">0.05</span>, <span class="at">na.rm =</span> <span class="cn">TRUE</span>), <span class="st">"</span><span class="sc">\n\n</span><span class="st">"</span>)</span>
+<span id="cb4-180"><a href="#cb4-180" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-181"><a href="#cb4-181" aria-hidden="true" tabindex="-1"></a><span class="co"># ── Part 5: Visualisation ─────────────────────────────────────────────────────</span></span>
+<span id="cb4-182"><a href="#cb4-182" aria-hidden="true" tabindex="-1"></a>point_col <span class="ot">&lt;-</span> <span class="fu">ifelse</span>(is_de_keep, <span class="st">"#d73027"</span>, <span class="st">"#2166ac"</span>)   <span class="co"># red = true DE, blue = null</span></span>
+<span id="cb4-183"><a href="#cb4-183" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-184"><a href="#cb4-184" aria-hidden="true" tabindex="-1"></a><span class="fu">par</span>(<span class="at">mfrow =</span> <span class="fu">c</span>(<span class="dv">1</span>, <span class="dv">3</span>))</span>
+<span id="cb4-185"><a href="#cb4-185" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-186"><a href="#cb4-186" aria-hidden="true" tabindex="-1"></a><span class="co"># (a) Raw p-value: manual vs DESeq2 (coloured by ground truth)</span></span>
+<span id="cb4-187"><a href="#cb4-187" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(pv_d2, pv_man,</span>
+<span id="cb4-188"><a href="#cb4-188" aria-hidden="true" tabindex="-1"></a>     <span class="at">pch =</span> <span class="dv">16</span>, <span class="at">cex =</span> <span class="fl">0.55</span>,</span>
+<span id="cb4-189"><a href="#cb4-189" aria-hidden="true" tabindex="-1"></a>     <span class="at">col =</span> <span class="fu">adjustcolor</span>(point_col, <span class="fl">0.5</span>),</span>
+<span id="cb4-190"><a href="#cb4-190" aria-hidden="true" tabindex="-1"></a>     <span class="at">xlab =</span> <span class="st">"DESeq2 p-value"</span>,</span>
+<span id="cb4-191"><a href="#cb4-191" aria-hidden="true" tabindex="-1"></a>     <span class="at">ylab =</span> <span class="st">"Manual NB-GLM p-value"</span>,</span>
+<span id="cb4-192"><a href="#cb4-192" aria-hidden="true" tabindex="-1"></a>     <span class="at">main =</span> <span class="st">"(a) Raw p-value: manual vs DESeq2"</span>)</span>
+<span id="cb4-193"><a href="#cb4-193" aria-hidden="true" tabindex="-1"></a><span class="fu">abline</span>(<span class="dv">0</span>, <span class="dv">1</span>, <span class="at">col =</span> <span class="st">"black"</span>, <span class="at">lwd =</span> <span class="fl">1.5</span>, <span class="at">lty =</span> <span class="dv">2</span>)</span>
+<span id="cb4-194"><a href="#cb4-194" aria-hidden="true" tabindex="-1"></a><span class="fu">legend</span>(<span class="st">"topleft"</span>, <span class="at">legend =</span> <span class="fu">c</span>(<span class="st">"True DE"</span>, <span class="st">"Null"</span>),</span>
+<span id="cb4-195"><a href="#cb4-195" aria-hidden="true" tabindex="-1"></a>       <span class="at">col =</span> <span class="fu">c</span>(<span class="st">"#d73027"</span>, <span class="st">"#2166ac"</span>), <span class="at">pch =</span> <span class="dv">16</span>, <span class="at">cex =</span> <span class="fl">0.8</span>, <span class="at">bty =</span> <span class="st">"n"</span>)</span>
+<span id="cb4-196"><a href="#cb4-196" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-197"><a href="#cb4-197" aria-hidden="true" tabindex="-1"></a><span class="co"># (b) Adjusted p-value: manual BH vs DESeq2 (coloured by ground truth)</span></span>
+<span id="cb4-198"><a href="#cb4-198" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(padj_d2, padj_man_bh,</span>
+<span id="cb4-199"><a href="#cb4-199" aria-hidden="true" tabindex="-1"></a>     <span class="at">pch =</span> <span class="dv">16</span>, <span class="at">cex =</span> <span class="fl">0.55</span>,</span>
+<span id="cb4-200"><a href="#cb4-200" aria-hidden="true" tabindex="-1"></a>     <span class="at">col =</span> <span class="fu">adjustcolor</span>(point_col, <span class="fl">0.5</span>),</span>
+<span id="cb4-201"><a href="#cb4-201" aria-hidden="true" tabindex="-1"></a>     <span class="at">xlab =</span> <span class="st">"DESeq2 padj"</span>,</span>
+<span id="cb4-202"><a href="#cb4-202" aria-hidden="true" tabindex="-1"></a>     <span class="at">ylab =</span> <span class="st">"Manual BH padj"</span>,</span>
+<span id="cb4-203"><a href="#cb4-203" aria-hidden="true" tabindex="-1"></a>     <span class="at">main =</span> <span class="st">"(b) Adjusted p-value: manual vs DESeq2"</span>)</span>
+<span id="cb4-204"><a href="#cb4-204" aria-hidden="true" tabindex="-1"></a><span class="fu">abline</span>(<span class="dv">0</span>, <span class="dv">1</span>, <span class="at">col =</span> <span class="st">"black"</span>, <span class="at">lwd =</span> <span class="fl">1.5</span>, <span class="at">lty =</span> <span class="dv">2</span>)</span>
+<span id="cb4-205"><a href="#cb4-205" aria-hidden="true" tabindex="-1"></a><span class="fu">abline</span>(<span class="at">h =</span> <span class="fl">0.05</span>, <span class="at">v =</span> <span class="fl">0.05</span>, <span class="at">col =</span> <span class="st">"grey60"</span>, <span class="at">lty =</span> <span class="dv">3</span>)</span>
+<span id="cb4-206"><a href="#cb4-206" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-207"><a href="#cb4-207" aria-hidden="true" tabindex="-1"></a><span class="co"># (c) p-value histogram (manual)</span></span>
+<span id="cb4-208"><a href="#cb4-208" aria-hidden="true" tabindex="-1"></a><span class="fu">hist</span>(pv_man,</span>
+<span id="cb4-209"><a href="#cb4-209" aria-hidden="true" tabindex="-1"></a>     <span class="at">breaks =</span> <span class="dv">50</span>, <span class="at">col =</span> <span class="st">"steelblue"</span>, <span class="at">border =</span> <span class="st">"white"</span>,</span>
+<span id="cb4-210"><a href="#cb4-210" aria-hidden="true" tabindex="-1"></a>     <span class="at">main =</span> <span class="st">"(c) Manual p-value distribution"</span>,</span>
+<span id="cb4-211"><a href="#cb4-211" aria-hidden="true" tabindex="-1"></a>     <span class="at">xlab =</span> <span class="st">"p-value"</span>, <span class="at">ylab =</span> <span class="st">"Frequency"</span>)</span>
+<span id="cb4-212"><a href="#cb4-212" aria-hidden="true" tabindex="-1"></a><span class="fu">abline</span>(<span class="at">h =</span> <span class="fu">sum</span>(keep) <span class="sc">/</span> <span class="dv">50</span>, <span class="at">col =</span> <span class="st">"firebrick"</span>, <span class="at">lty =</span> <span class="dv">2</span>, <span class="at">lwd =</span> <span class="fl">1.5</span>)</span>
+<span id="cb4-213"><a href="#cb4-213" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-214"><a href="#cb4-214" aria-hidden="true" tabindex="-1"></a><span class="fu">par</span>(<span class="at">mfrow =</span> <span class="fu">c</span>(<span class="dv">1</span>, <span class="dv">1</span>))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="note">
+<p><strong>结果解读：</strong> 本比较使用含已知真实 DE 基因（红点，80 个；FC = 4×，<span class="math inline">\(\alpha = 0.1\)</span>，每组 <span class="math inline">\(n = 3\)</span>）的模拟数据，使评估具有可量化的参照。图 (a) 显示两套 p 值高度线性相关（Pearson <span class="math inline">\(r \approx 0.96\)</span>）——真实 DE 基因（红色）集中在左下角，零假设基因（蓝色）均匀分散，两种方法对信号的排序几乎一致。图 (b) 中的关键差异体现在假阳性数量：手动 NB-GLM 在 <span class="math inline">\(\text{padj} &lt; 0.05\)</span> 时报告约 111 个显著基因，而其中仅 75 个为真 DE 基因（精准度约 68%）；DESeq2 报告约 77 个，其中 75 个为真 DE 基因（精准度约 97%）。两种方法的<strong>召回率</strong>（真 DE 基因的检出率）相近，差异主要在于<strong>精准度</strong>。造成这一差异的核心原因：<code>glm.nb()</code> 对每个基因独立以 MLE 估计离散参数 <span class="math inline">\(\theta_i\)</span>，在小样本（<span class="math inline">\(n = 3\)</span>）条件下，<span class="math inline">\(\hat{\theta}_i\)</span> 的估计误差极大，导致检验统计量膨胀；DESeq2 采用 Empirical Bayes 方法对全体基因的 <span class="math inline">\(\theta\)</span> 进行全局缩减（shrinkage），以牺牲少量偏差换取方差的显著降低，从而压制了假阳性。图 (c) 中 p 值在 0 附近的明显堆积正是真实 DE 信号的体现；零假设基因的 p 值呈均匀分布——这是统计检验校准良好的标志。</p>
+</div>
+<hr>
+</section>
+<section id="deseq2-完整实践" class="level2" data-number="7">
+<h2 data-number="7" class="anchored" data-anchor-id="deseq2-完整实践"><span class="header-section-number">7</span> DESeq2 完整实践</h2>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb5"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(DESeq2)</span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(ggplot2)</span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(ggrepel)</span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a><span class="co"># === Step 1: Load count data ===</span></span>
+<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a><span class="co"># featureCounts output: first 6 columns are metadata (GeneID, Chr, Start, End, Strand, Length)</span></span>
+<span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a><span class="co"># Columns 7+ are per-sample counts, named by full BAM path</span></span>
+<span id="cb5-8"><a href="#cb5-8" aria-hidden="true" tabindex="-1"></a>BASE <span class="ot">&lt;-</span> <span class="st">"/Users/angdong/Documents/bio_example/bulkRNA"</span></span>
+<span id="cb5-9"><a href="#cb5-9" aria-hidden="true" tabindex="-1"></a>count_matrix <span class="ot">&lt;-</span> <span class="fu">read.table</span>(</span>
+<span id="cb5-10"><a href="#cb5-10" aria-hidden="true" tabindex="-1"></a>  <span class="fu">file.path</span>(BASE, <span class="st">"results/featureCounts/pasilla_counts.txt"</span>),</span>
+<span id="cb5-11"><a href="#cb5-11" aria-hidden="true" tabindex="-1"></a>  <span class="at">header =</span> <span class="cn">TRUE</span>, <span class="at">skip =</span> <span class="dv">1</span>, <span class="at">row.names =</span> <span class="dv">1</span></span>
+<span id="cb5-12"><a href="#cb5-12" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb5-13"><a href="#cb5-13" aria-hidden="true" tabindex="-1"></a>counts <span class="ot">&lt;-</span> count_matrix[, <span class="dv">7</span><span class="sc">:</span><span class="fu">ncol</span>(count_matrix)]</span>
+<span id="cb5-14"><a href="#cb5-14" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-15"><a href="#cb5-15" aria-hidden="true" tabindex="-1"></a><span class="co"># Strip full paths; keep only SRR accession as column name</span></span>
+<span id="cb5-16"><a href="#cb5-16" aria-hidden="true" tabindex="-1"></a><span class="co"># e.g. ".../results/star/SRR1039508/Aligned.sortedByCoord.out.bam" → "SRR1039508"</span></span>
+<span id="cb5-17"><a href="#cb5-17" aria-hidden="true" tabindex="-1"></a><span class="fu">colnames</span>(counts) <span class="ot">&lt;-</span> <span class="fu">sub</span>(<span class="st">".*/(SRR[0-9]+)/.*"</span>, <span class="st">"</span><span class="sc">\\</span><span class="st">1"</span>, <span class="fu">colnames</span>(counts))</span>
+<span id="cb5-18"><a href="#cb5-18" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-19"><a href="#cb5-19" aria-hidden="true" tabindex="-1"></a><span class="co"># Sample metadata: airway dataset (Himes et al. 2014)</span></span>
+<span id="cb5-20"><a href="#cb5-20" aria-hidden="true" tabindex="-1"></a><span class="co"># SRR1039508, SRR1039512 = untreated control</span></span>
+<span id="cb5-21"><a href="#cb5-21" aria-hidden="true" tabindex="-1"></a><span class="co"># SRR1039516              = dexamethasone treated</span></span>
+<span id="cb5-22"><a href="#cb5-22" aria-hidden="true" tabindex="-1"></a><span class="co"># Note: 3 samples is minimally powered; full analysis uses all 6 PE samples</span></span>
+<span id="cb5-23"><a href="#cb5-23" aria-hidden="true" tabindex="-1"></a>sample_info <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(</span>
+<span id="cb5-24"><a href="#cb5-24" aria-hidden="true" tabindex="-1"></a>  <span class="at">condition =</span> <span class="fu">factor</span>(</span>
+<span id="cb5-25"><a href="#cb5-25" aria-hidden="true" tabindex="-1"></a>    <span class="fu">c</span>(<span class="st">"untreated"</span>, <span class="st">"untreated"</span>, <span class="st">"treated"</span>),</span>
+<span id="cb5-26"><a href="#cb5-26" aria-hidden="true" tabindex="-1"></a>    <span class="at">levels =</span> <span class="fu">c</span>(<span class="st">"untreated"</span>, <span class="st">"treated"</span>)</span>
+<span id="cb5-27"><a href="#cb5-27" aria-hidden="true" tabindex="-1"></a>  ),</span>
+<span id="cb5-28"><a href="#cb5-28" aria-hidden="true" tabindex="-1"></a>  <span class="at">row.names =</span> <span class="fu">c</span>(<span class="st">"SRR1039508"</span>, <span class="st">"SRR1039512"</span>, <span class="st">"SRR1039516"</span>)</span>
+<span id="cb5-29"><a href="#cb5-29" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb5-30"><a href="#cb5-30" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-31"><a href="#cb5-31" aria-hidden="true" tabindex="-1"></a><span class="co"># === Step 2: Create DESeqDataSet ===</span></span>
+<span id="cb5-32"><a href="#cb5-32" aria-hidden="true" tabindex="-1"></a>dds <span class="ot">&lt;-</span> <span class="fu">DESeqDataSetFromMatrix</span>(</span>
+<span id="cb5-33"><a href="#cb5-33" aria-hidden="true" tabindex="-1"></a>  <span class="at">countData =</span> counts,</span>
+<span id="cb5-34"><a href="#cb5-34" aria-hidden="true" tabindex="-1"></a>  <span class="at">colData   =</span> sample_info,</span>
+<span id="cb5-35"><a href="#cb5-35" aria-hidden="true" tabindex="-1"></a>  <span class="at">design    =</span> <span class="sc">~</span> condition</span>
+<span id="cb5-36"><a href="#cb5-36" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb5-37"><a href="#cb5-37" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-38"><a href="#cb5-38" aria-hidden="true" tabindex="-1"></a><span class="co"># Pre-filter: remove genes with very low counts (speeds up analysis)</span></span>
+<span id="cb5-39"><a href="#cb5-39" aria-hidden="true" tabindex="-1"></a>keep <span class="ot">&lt;-</span> <span class="fu">rowSums</span>(<span class="fu">counts</span>(dds) <span class="sc">&gt;=</span> <span class="dv">10</span>) <span class="sc">&gt;=</span> <span class="dv">2</span></span>
+<span id="cb5-40"><a href="#cb5-40" aria-hidden="true" tabindex="-1"></a>dds  <span class="ot">&lt;-</span> dds[keep, ]</span>
+<span id="cb5-41"><a href="#cb5-41" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">"Genes after filtering:"</span>, <span class="fu">nrow</span>(dds), <span class="st">"</span><span class="sc">\n</span><span class="st">"</span>)</span>
+<span id="cb5-42"><a href="#cb5-42" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-43"><a href="#cb5-43" aria-hidden="true" tabindex="-1"></a><span class="co"># Reference level already set via factor(levels = ...) above; relevel is redundant but harmless</span></span>
+<span id="cb5-44"><a href="#cb5-44" aria-hidden="true" tabindex="-1"></a>dds<span class="sc">$</span>condition <span class="ot">&lt;-</span> <span class="fu">relevel</span>(dds<span class="sc">$</span>condition, <span class="at">ref =</span> <span class="st">"untreated"</span>)</span>
+<span id="cb5-45"><a href="#cb5-45" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-46"><a href="#cb5-46" aria-hidden="true" tabindex="-1"></a><span class="co"># === Step 3: Run DESeq2 ===</span></span>
+<span id="cb5-47"><a href="#cb5-47" aria-hidden="true" tabindex="-1"></a>dds <span class="ot">&lt;-</span> <span class="fu">DESeq</span>(dds)</span>
+<span id="cb5-48"><a href="#cb5-48" aria-hidden="true" tabindex="-1"></a><span class="co"># Internally: estimateSizeFactors -&gt; estimateDispersions -&gt; nbinomWaldTest</span></span>
+<span id="cb5-49"><a href="#cb5-49" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-50"><a href="#cb5-50" aria-hidden="true" tabindex="-1"></a><span class="co"># Check size factors</span></span>
+<span id="cb5-51"><a href="#cb5-51" aria-hidden="true" tabindex="-1"></a><span class="fu">sizeFactors</span>(dds)</span>
+<span id="cb5-52"><a href="#cb5-52" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-53"><a href="#cb5-53" aria-hidden="true" tabindex="-1"></a><span class="co"># === Step 4: Extract results ===</span></span>
+<span id="cb5-54"><a href="#cb5-54" aria-hidden="true" tabindex="-1"></a>res <span class="ot">&lt;-</span> <span class="fu">results</span>(dds,</span>
+<span id="cb5-55"><a href="#cb5-55" aria-hidden="true" tabindex="-1"></a>               <span class="at">contrast =</span> <span class="fu">c</span>(<span class="st">"condition"</span>, <span class="st">"treated"</span>, <span class="st">"untreated"</span>),</span>
+<span id="cb5-56"><a href="#cb5-56" aria-hidden="true" tabindex="-1"></a>               <span class="at">alpha    =</span> <span class="fl">0.05</span>)   <span class="co"># FDR threshold for independent filtering</span></span>
+<span id="cb5-57"><a href="#cb5-57" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-58"><a href="#cb5-58" aria-hidden="true" tabindex="-1"></a><span class="fu">summary</span>(res)</span>
+<span id="cb5-59"><a href="#cb5-59" aria-hidden="true" tabindex="-1"></a><span class="co"># Output:</span></span>
+<span id="cb5-60"><a href="#cb5-60" aria-hidden="true" tabindex="-1"></a><span class="co"># LFC &gt; 0 (up)     : XXX, X%</span></span>
+<span id="cb5-61"><a href="#cb5-61" aria-hidden="true" tabindex="-1"></a><span class="co"># LFC &lt; 0 (down)   : XXX, X%</span></span>
+<span id="cb5-62"><a href="#cb5-62" aria-hidden="true" tabindex="-1"></a><span class="co"># outliers [1]     : XXX, X%</span></span>
+<span id="cb5-63"><a href="#cb5-63" aria-hidden="true" tabindex="-1"></a><span class="co"># low counts [2]   : XXX, X%</span></span>
+<span id="cb5-64"><a href="#cb5-64" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-65"><a href="#cb5-65" aria-hidden="true" tabindex="-1"></a><span class="co"># === Step 5: LFC shrinkage ===</span></span>
+<span id="cb5-66"><a href="#cb5-66" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(apeglm)</span>
+<span id="cb5-67"><a href="#cb5-67" aria-hidden="true" tabindex="-1"></a>res_shrunk <span class="ot">&lt;-</span> <span class="fu">lfcShrink</span>(</span>
+<span id="cb5-68"><a href="#cb5-68" aria-hidden="true" tabindex="-1"></a>  dds,</span>
+<span id="cb5-69"><a href="#cb5-69" aria-hidden="true" tabindex="-1"></a>  <span class="at">coef =</span> <span class="st">"condition_treated_vs_untreated"</span>,</span>
+<span id="cb5-70"><a href="#cb5-70" aria-hidden="true" tabindex="-1"></a>  <span class="at">type =</span> <span class="st">"apeglm"</span>,</span>
+<span id="cb5-71"><a href="#cb5-71" aria-hidden="true" tabindex="-1"></a>  <span class="at">res  =</span> res</span>
+<span id="cb5-72"><a href="#cb5-72" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb5-73"><a href="#cb5-73" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-74"><a href="#cb5-74" aria-hidden="true" tabindex="-1"></a><span class="co"># === Step 6: Filter significant DEGs ===</span></span>
+<span id="cb5-75"><a href="#cb5-75" aria-hidden="true" tabindex="-1"></a>sig_genes <span class="ot">&lt;-</span> <span class="fu">subset</span>(res_shrunk,</span>
+<span id="cb5-76"><a href="#cb5-76" aria-hidden="true" tabindex="-1"></a>                    padj <span class="sc">&lt;</span> <span class="fl">0.05</span> <span class="sc">&amp;</span> <span class="fu">abs</span>(log2FoldChange) <span class="sc">&gt;</span> <span class="dv">1</span>)</span>
+<span id="cb5-77"><a href="#cb5-77" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">"Significant DEGs (|LFC|&gt;1, padj&lt;0.05):"</span>, <span class="fu">nrow</span>(sig_genes), <span class="st">"</span><span class="sc">\n</span><span class="st">"</span>)</span>
+<span id="cb5-78"><a href="#cb5-78" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-79"><a href="#cb5-79" aria-hidden="true" tabindex="-1"></a><span class="co"># Sort by padj</span></span>
+<span id="cb5-80"><a href="#cb5-80" aria-hidden="true" tabindex="-1"></a>sig_genes <span class="ot">&lt;-</span> sig_genes[<span class="fu">order</span>(sig_genes<span class="sc">$</span>padj), ]</span>
+<span id="cb5-81"><a href="#cb5-81" aria-hidden="true" tabindex="-1"></a><span class="fu">head</span>(sig_genes, <span class="dv">10</span>)</span>
+<span id="cb5-82"><a href="#cb5-82" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-83"><a href="#cb5-83" aria-hidden="true" tabindex="-1"></a><span class="co"># === Step 7: Visualization ===</span></span>
+<span id="cb5-84"><a href="#cb5-84" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-85"><a href="#cb5-85" aria-hidden="true" tabindex="-1"></a><span class="co"># --- MA plot ---</span></span>
+<span id="cb5-86"><a href="#cb5-86" aria-hidden="true" tabindex="-1"></a><span class="fu">plotMA</span>(res_shrunk,</span>
+<span id="cb5-87"><a href="#cb5-87" aria-hidden="true" tabindex="-1"></a>       <span class="at">ylim =</span> <span class="fu">c</span>(<span class="sc">-</span><span class="dv">5</span>, <span class="dv">5</span>),</span>
+<span id="cb5-88"><a href="#cb5-88" aria-hidden="true" tabindex="-1"></a>       <span class="at">main =</span> <span class="st">"MA Plot: DESeq2 (apeglm shrinkage)"</span>,</span>
+<span id="cb5-89"><a href="#cb5-89" aria-hidden="true" tabindex="-1"></a>       <span class="at">alpha =</span> <span class="fl">0.05</span>)</span>
+<span id="cb5-90"><a href="#cb5-90" aria-hidden="true" tabindex="-1"></a><span class="co"># Blue dots: significant (padj &lt; 0.05)</span></span>
+<span id="cb5-91"><a href="#cb5-91" aria-hidden="true" tabindex="-1"></a><span class="co"># Grey dots: not significant</span></span>
+<span id="cb5-92"><a href="#cb5-92" aria-hidden="true" tabindex="-1"></a><span class="co"># Shrinkage reduces extreme LFC for low-count genes</span></span>
+<span id="cb5-93"><a href="#cb5-93" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-94"><a href="#cb5-94" aria-hidden="true" tabindex="-1"></a><span class="co"># --- Volcano plot ---</span></span>
+<span id="cb5-95"><a href="#cb5-95" aria-hidden="true" tabindex="-1"></a>res_df <span class="ot">&lt;-</span> <span class="fu">as.data.frame</span>(res_shrunk)</span>
+<span id="cb5-96"><a href="#cb5-96" aria-hidden="true" tabindex="-1"></a>res_df<span class="sc">$</span>gene <span class="ot">&lt;-</span> <span class="fu">rownames</span>(res_df)</span>
+<span id="cb5-97"><a href="#cb5-97" aria-hidden="true" tabindex="-1"></a>res_df<span class="sc">$</span>significance <span class="ot">&lt;-</span> <span class="st">"Not significant"</span></span>
+<span id="cb5-98"><a href="#cb5-98" aria-hidden="true" tabindex="-1"></a>res_df<span class="sc">$</span>significance[res_df<span class="sc">$</span>padj <span class="sc">&lt;</span> <span class="fl">0.05</span> <span class="sc">&amp;</span> res_df<span class="sc">$</span>log2FoldChange <span class="sc">&gt;</span>  <span class="dv">1</span>] <span class="ot">&lt;-</span> <span class="st">"Up"</span></span>
+<span id="cb5-99"><a href="#cb5-99" aria-hidden="true" tabindex="-1"></a>res_df<span class="sc">$</span>significance[res_df<span class="sc">$</span>padj <span class="sc">&lt;</span> <span class="fl">0.05</span> <span class="sc">&amp;</span> res_df<span class="sc">$</span>log2FoldChange <span class="sc">&lt;</span> <span class="sc">-</span><span class="dv">1</span>] <span class="ot">&lt;-</span> <span class="st">"Down"</span></span>
+<span id="cb5-100"><a href="#cb5-100" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-101"><a href="#cb5-101" aria-hidden="true" tabindex="-1"></a><span class="co"># Label top 20 genes by padj</span></span>
+<span id="cb5-102"><a href="#cb5-102" aria-hidden="true" tabindex="-1"></a>top_genes <span class="ot">&lt;-</span> <span class="fu">head</span>(res_df[<span class="fu">order</span>(res_df<span class="sc">$</span>padj, <span class="at">na.last =</span> <span class="cn">TRUE</span>), ], <span class="dv">20</span>)</span>
+<span id="cb5-103"><a href="#cb5-103" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-104"><a href="#cb5-104" aria-hidden="true" tabindex="-1"></a><span class="fu">ggplot</span>(res_df, <span class="fu">aes</span>(<span class="at">x =</span> log2FoldChange, <span class="at">y =</span> <span class="sc">-</span><span class="fu">log10</span>(padj),</span>
+<span id="cb5-105"><a href="#cb5-105" aria-hidden="true" tabindex="-1"></a>                   <span class="at">color =</span> significance)) <span class="sc">+</span></span>
+<span id="cb5-106"><a href="#cb5-106" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_point</span>(<span class="at">alpha =</span> <span class="fl">0.5</span>, <span class="at">size =</span> <span class="fl">0.8</span>) <span class="sc">+</span></span>
+<span id="cb5-107"><a href="#cb5-107" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_text_repel</span>(<span class="at">data =</span> top_genes,</span>
+<span id="cb5-108"><a href="#cb5-108" aria-hidden="true" tabindex="-1"></a>                  <span class="fu">aes</span>(<span class="at">label =</span> gene),</span>
+<span id="cb5-109"><a href="#cb5-109" aria-hidden="true" tabindex="-1"></a>                  <span class="at">size =</span> <span class="fl">2.5</span>, <span class="at">max.overlaps =</span> <span class="dv">20</span>) <span class="sc">+</span></span>
+<span id="cb5-110"><a href="#cb5-110" aria-hidden="true" tabindex="-1"></a>  <span class="fu">scale_color_manual</span>(</span>
+<span id="cb5-111"><a href="#cb5-111" aria-hidden="true" tabindex="-1"></a>    <span class="at">values =</span> <span class="fu">c</span>(<span class="st">"Up"</span> <span class="ot">=</span> <span class="st">"firebrick"</span>, <span class="st">"Down"</span> <span class="ot">=</span> <span class="st">"steelblue"</span>,</span>
+<span id="cb5-112"><a href="#cb5-112" aria-hidden="true" tabindex="-1"></a>               <span class="st">"Not significant"</span> <span class="ot">=</span> <span class="st">"grey70"</span>)</span>
+<span id="cb5-113"><a href="#cb5-113" aria-hidden="true" tabindex="-1"></a>  ) <span class="sc">+</span></span>
+<span id="cb5-114"><a href="#cb5-114" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_vline</span>(<span class="at">xintercept =</span> <span class="fu">c</span>(<span class="sc">-</span><span class="dv">1</span>, <span class="dv">1</span>), <span class="at">linetype =</span> <span class="st">"dashed"</span>, <span class="at">color =</span> <span class="st">"grey40"</span>) <span class="sc">+</span></span>
+<span id="cb5-115"><a href="#cb5-115" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_hline</span>(<span class="at">yintercept =</span> <span class="sc">-</span><span class="fu">log10</span>(<span class="fl">0.05</span>), <span class="at">linetype =</span> <span class="st">"dashed"</span>, <span class="at">color =</span> <span class="st">"grey40"</span>) <span class="sc">+</span></span>
+<span id="cb5-116"><a href="#cb5-116" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(</span>
+<span id="cb5-117"><a href="#cb5-117" aria-hidden="true" tabindex="-1"></a>    <span class="at">x =</span> <span class="st">"Log2 Fold Change (treated / untreated)"</span>,</span>
+<span id="cb5-118"><a href="#cb5-118" aria-hidden="true" tabindex="-1"></a>    <span class="at">y =</span> <span class="st">"-log10(adjusted p-value)"</span>,</span>
+<span id="cb5-119"><a href="#cb5-119" aria-hidden="true" tabindex="-1"></a>    <span class="at">title =</span> <span class="st">"Volcano Plot: Dexamethasone Treatment vs Control"</span>,</span>
+<span id="cb5-120"><a href="#cb5-120" aria-hidden="true" tabindex="-1"></a>    <span class="at">subtitle =</span> <span class="fu">sprintf</span>(<span class="st">"Significant DEGs: %d up, %d down"</span>,</span>
+<span id="cb5-121"><a href="#cb5-121" aria-hidden="true" tabindex="-1"></a>                       <span class="fu">sum</span>(res_df<span class="sc">$</span>significance <span class="sc">==</span> <span class="st">"Up"</span>, <span class="at">na.rm =</span> <span class="cn">TRUE</span>),</span>
+<span id="cb5-122"><a href="#cb5-122" aria-hidden="true" tabindex="-1"></a>                       <span class="fu">sum</span>(res_df<span class="sc">$</span>significance <span class="sc">==</span> <span class="st">"Down"</span>, <span class="at">na.rm =</span> <span class="cn">TRUE</span>)),</span>
+<span id="cb5-123"><a href="#cb5-123" aria-hidden="true" tabindex="-1"></a>    <span class="at">color =</span> <span class="st">"Direction"</span></span>
+<span id="cb5-124"><a href="#cb5-124" aria-hidden="true" tabindex="-1"></a>  ) <span class="sc">+</span></span>
+<span id="cb5-125"><a href="#cb5-125" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme_classic</span>() <span class="sc">+</span></span>
+<span id="cb5-126"><a href="#cb5-126" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme</span>(<span class="at">legend.position =</span> <span class="st">"top"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<section id="样本质量评估pca-与距离热图" class="level3" data-number="7.1">
+<h3 data-number="7.1" class="anchored" data-anchor-id="样本质量评估pca-与距离热图"><span class="header-section-number">7.1</span> 样本质量评估：PCA 与距离热图</h3>
 <p>在运行 DEA 之前（或之后验证），应当可视化样本间的整体相似性，以发现潜在的批次效应或异常样本。</p>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb4"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Variance-stabilizing transformation for visualization</span></span>
-<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a>vsd <span class="ot">&lt;-</span> <span class="fu">vst</span>(dds, <span class="at">blind =</span> <span class="cn">TRUE</span>)</span>
-<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a><span class="co"># --- PCA plot ---</span></span>
-<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a><span class="fu">plotPCA</span>(vsd, <span class="at">intgroup =</span> <span class="st">"condition"</span>) <span class="sc">+</span></span>
-<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_point</span>(<span class="at">size =</span> <span class="dv">4</span>) <span class="sc">+</span></span>
-<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme_classic</span>() <span class="sc">+</span></span>
-<span id="cb4-8"><a href="#cb4-8" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(<span class="at">title =</span> <span class="st">"PCA: pasilla samples (VST-transformed counts)"</span>)</span>
-<span id="cb4-9"><a href="#cb4-9" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb4-10"><a href="#cb4-10" aria-hidden="true" tabindex="-1"></a><span class="co"># --- Sample distance heatmap ---</span></span>
-<span id="cb4-11"><a href="#cb4-11" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(pheatmap)</span>
-<span id="cb4-12"><a href="#cb4-12" aria-hidden="true" tabindex="-1"></a>sample_dists <span class="ot">&lt;-</span> <span class="fu">dist</span>(<span class="fu">t</span>(<span class="fu">assay</span>(vsd)))</span>
-<span id="cb4-13"><a href="#cb4-13" aria-hidden="true" tabindex="-1"></a>sample_dist_matrix <span class="ot">&lt;-</span> <span class="fu">as.matrix</span>(sample_dists)</span>
-<span id="cb4-14"><a href="#cb4-14" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb4-15"><a href="#cb4-15" aria-hidden="true" tabindex="-1"></a><span class="fu">pheatmap</span>(</span>
-<span id="cb4-16"><a href="#cb4-16" aria-hidden="true" tabindex="-1"></a>  sample_dist_matrix,</span>
-<span id="cb4-17"><a href="#cb4-17" aria-hidden="true" tabindex="-1"></a>  <span class="at">clustering_distance_rows =</span> sample_dists,</span>
-<span id="cb4-18"><a href="#cb4-18" aria-hidden="true" tabindex="-1"></a>  <span class="at">clustering_distance_cols =</span> sample_dists,</span>
-<span id="cb4-19"><a href="#cb4-19" aria-hidden="true" tabindex="-1"></a>  <span class="at">col =</span> <span class="fu">colorRampPalette</span>(<span class="fu">c</span>(<span class="st">"steelblue"</span>, <span class="st">"white"</span>))(<span class="dv">50</span>),</span>
-<span id="cb4-20"><a href="#cb4-20" aria-hidden="true" tabindex="-1"></a>  <span class="at">main =</span> <span class="st">"Sample-to-sample distances (VST)"</span></span>
-<span id="cb4-21"><a href="#cb4-21" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb6"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Variance-stabilizing transformation for visualization</span></span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a>vsd <span class="ot">&lt;-</span> <span class="fu">vst</span>(dds, <span class="at">blind =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a><span class="co"># --- PCA plot ---</span></span>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a><span class="fu">plotPCA</span>(vsd, <span class="at">intgroup =</span> <span class="st">"condition"</span>) <span class="sc">+</span></span>
+<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_point</span>(<span class="at">size =</span> <span class="dv">4</span>) <span class="sc">+</span></span>
+<span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme_classic</span>() <span class="sc">+</span></span>
+<span id="cb6-8"><a href="#cb6-8" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(<span class="at">title =</span> <span class="st">"PCA: pasilla samples (VST-transformed counts)"</span>)</span>
+<span id="cb6-9"><a href="#cb6-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-10"><a href="#cb6-10" aria-hidden="true" tabindex="-1"></a><span class="co"># --- Sample distance heatmap ---</span></span>
+<span id="cb6-11"><a href="#cb6-11" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(pheatmap)</span>
+<span id="cb6-12"><a href="#cb6-12" aria-hidden="true" tabindex="-1"></a>sample_dists <span class="ot">&lt;-</span> <span class="fu">dist</span>(<span class="fu">t</span>(<span class="fu">assay</span>(vsd)))</span>
+<span id="cb6-13"><a href="#cb6-13" aria-hidden="true" tabindex="-1"></a>sample_dist_matrix <span class="ot">&lt;-</span> <span class="fu">as.matrix</span>(sample_dists)</span>
+<span id="cb6-14"><a href="#cb6-14" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-15"><a href="#cb6-15" aria-hidden="true" tabindex="-1"></a><span class="fu">pheatmap</span>(</span>
+<span id="cb6-16"><a href="#cb6-16" aria-hidden="true" tabindex="-1"></a>  sample_dist_matrix,</span>
+<span id="cb6-17"><a href="#cb6-17" aria-hidden="true" tabindex="-1"></a>  <span class="at">clustering_distance_rows =</span> sample_dists,</span>
+<span id="cb6-18"><a href="#cb6-18" aria-hidden="true" tabindex="-1"></a>  <span class="at">clustering_distance_cols =</span> sample_dists,</span>
+<span id="cb6-19"><a href="#cb6-19" aria-hidden="true" tabindex="-1"></a>  <span class="at">col =</span> <span class="fu">colorRampPalette</span>(<span class="fu">c</span>(<span class="st">"steelblue"</span>, <span class="st">"white"</span>))(<span class="dv">50</span>),</span>
+<span id="cb6-20"><a href="#cb6-20" aria-hidden="true" tabindex="-1"></a>  <span class="at">main =</span> <span class="st">"Sample-to-sample distances (VST)"</span></span>
+<span id="cb6-21"><a href="#cb6-21" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <hr>
 </section>
 </section>
-<section id="edger另一种主流框架" class="level2" data-number="23.6">
-<h2 data-number="23.6" class="anchored" data-anchor-id="edger另一种主流框架"><span class="header-section-number">23.6</span> edgeR：另一种主流框架</h2>
+<section id="edger另一种主流框架" class="level2" data-number="8">
+<h2 data-number="8" class="anchored" data-anchor-id="edger另一种主流框架"><span class="header-section-number">8</span> edgeR：另一种主流框架</h2>
 <p>edgeR 与 DESeq2 共享负二项分布的统计框架，但在离散度估计和检验统计量上有所不同。</p>
 <table class="caption-top table">
 <thead>
@@ -940,32 +1342,33 @@ window.Quarto = {
 </tr>
 </tbody>
 </table>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb5"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(edgeR)</span>
-<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a><span class="co"># Create DGEList object</span></span>
-<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a>dge <span class="ot">&lt;-</span> <span class="fu">DGEList</span>(<span class="at">counts =</span> counts, <span class="at">group =</span> sample_info<span class="sc">$</span>condition)</span>
-<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a><span class="co"># TMM normalization</span></span>
-<span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a>dge <span class="ot">&lt;-</span> <span class="fu">calcNormFactors</span>(dge, <span class="at">method =</span> <span class="st">"TMM"</span>)</span>
-<span id="cb5-8"><a href="#cb5-8" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb5-9"><a href="#cb5-9" aria-hidden="true" tabindex="-1"></a><span class="co"># Estimate dispersion</span></span>
-<span id="cb5-10"><a href="#cb5-10" aria-hidden="true" tabindex="-1"></a>dge <span class="ot">&lt;-</span> <span class="fu">estimateDisp</span>(dge)</span>
-<span id="cb5-11"><a href="#cb5-11" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb5-12"><a href="#cb5-12" aria-hidden="true" tabindex="-1"></a><span class="co"># Exact test (for simple two-group comparison)</span></span>
-<span id="cb5-13"><a href="#cb5-13" aria-hidden="true" tabindex="-1"></a>et <span class="ot">&lt;-</span> <span class="fu">exactTest</span>(dge, <span class="at">pair =</span> <span class="fu">c</span>(<span class="st">"untreated"</span>, <span class="st">"treated"</span>))</span>
-<span id="cb5-14"><a href="#cb5-14" aria-hidden="true" tabindex="-1"></a>res_edger <span class="ot">&lt;-</span> <span class="fu">topTags</span>(et, <span class="at">n =</span> <span class="cn">Inf</span>)<span class="sc">$</span>table</span>
-<span id="cb5-15"><a href="#cb5-15" aria-hidden="true" tabindex="-1"></a>sig_edger <span class="ot">&lt;-</span> <span class="fu">subset</span>(res_edger, FDR <span class="sc">&lt;</span> <span class="fl">0.05</span> <span class="sc">&amp;</span> <span class="fu">abs</span>(logFC) <span class="sc">&gt;</span> <span class="dv">1</span>)</span>
-<span id="cb5-16"><a href="#cb5-16" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">"edgeR significant DEGs:"</span>, <span class="fu">nrow</span>(sig_edger), <span class="st">"</span><span class="sc">\n</span><span class="st">"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb7"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(edgeR)</span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a><span class="co"># `counts` and `sample_info` are the same objects created in the DESeq2 section above</span></span>
+<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a><span class="co"># Create DGEList object</span></span>
+<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a>dge <span class="ot">&lt;-</span> <span class="fu">DGEList</span>(<span class="at">counts =</span> counts, <span class="at">group =</span> sample_info<span class="sc">$</span>condition)</span>
+<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-7"><a href="#cb7-7" aria-hidden="true" tabindex="-1"></a><span class="co"># TMM normalization</span></span>
+<span id="cb7-8"><a href="#cb7-8" aria-hidden="true" tabindex="-1"></a>dge <span class="ot">&lt;-</span> <span class="fu">calcNormFactors</span>(dge, <span class="at">method =</span> <span class="st">"TMM"</span>)</span>
+<span id="cb7-9"><a href="#cb7-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-10"><a href="#cb7-10" aria-hidden="true" tabindex="-1"></a><span class="co"># Estimate dispersion</span></span>
+<span id="cb7-11"><a href="#cb7-11" aria-hidden="true" tabindex="-1"></a>dge <span class="ot">&lt;-</span> <span class="fu">estimateDisp</span>(dge)</span>
+<span id="cb7-12"><a href="#cb7-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-13"><a href="#cb7-13" aria-hidden="true" tabindex="-1"></a><span class="co"># Exact test (for simple two-group comparison)</span></span>
+<span id="cb7-14"><a href="#cb7-14" aria-hidden="true" tabindex="-1"></a>et <span class="ot">&lt;-</span> <span class="fu">exactTest</span>(dge, <span class="at">pair =</span> <span class="fu">c</span>(<span class="st">"untreated"</span>, <span class="st">"treated"</span>))</span>
+<span id="cb7-15"><a href="#cb7-15" aria-hidden="true" tabindex="-1"></a>res_edger <span class="ot">&lt;-</span> <span class="fu">topTags</span>(et, <span class="at">n =</span> <span class="cn">Inf</span>)<span class="sc">$</span>table</span>
+<span id="cb7-16"><a href="#cb7-16" aria-hidden="true" tabindex="-1"></a>sig_edger <span class="ot">&lt;-</span> <span class="fu">subset</span>(res_edger, FDR <span class="sc">&lt;</span> <span class="fl">0.05</span> <span class="sc">&amp;</span> <span class="fu">abs</span>(logFC) <span class="sc">&gt;</span> <span class="dv">1</span>)</span>
+<span id="cb7-17"><a href="#cb7-17" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">"edgeR significant DEGs:"</span>, <span class="fu">nrow</span>(sig_edger), <span class="st">"</span><span class="sc">\n</span><span class="st">"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="tip">
 <p><strong>实践建议：</strong> 在条件许可时，同时运行 DESeq2 和 edgeR，取两者共同显著的差异基因（交集）作为高置信度结果。这种”共识 DEG”策略能有效降低方法选择带来的偏差。</p>
 </div>
 <hr>
 </section>
-<section id="limma-voom基于线性模型的差异表达分析" class="level2" data-number="23.7">
-<h2 data-number="23.7" class="anchored" data-anchor-id="limma-voom基于线性模型的差异表达分析"><span class="header-section-number">23.7</span> limma-voom：基于线性模型的差异表达分析</h2>
+<section id="limma-voom基于线性模型的差异表达分析" class="level2" data-number="9">
+<h2 data-number="9" class="anchored" data-anchor-id="limma-voom基于线性模型的差异表达分析"><span class="header-section-number">9</span> limma-voom：基于线性模型的差异表达分析</h2>
 <p>limma（Linear Models for Microarray and RNA-seq data）最初为微阵列数据设计，其核心是一套基于经验贝叶斯的线性模型框架。voom（Mean-Variance Modelling at the Observational Level）是 limma 为 RNA-seq 计数数据设计的适配器：通过对 log-CPM 值建立均值-方差关系模型，将计数数据的异方差性转化为线性模型可处理的加权数据。</p>
-<section id="limma-voom-的优势场景" class="level3" data-number="23.7.1">
-<h3 data-number="23.7.1" class="anchored" data-anchor-id="limma-voom-的优势场景"><span class="header-section-number">23.7.1</span> limma-voom 的优势场景</h3>
+<section id="limma-voom-的优势场景" class="level3" data-number="9.1">
+<h3 data-number="9.1" class="anchored" data-anchor-id="limma-voom-的优势场景"><span class="header-section-number">9.1</span> limma-voom 的优势场景</h3>
 <p>limma-voom 在以下场景中有独特优势：</p>
 <ul>
 <li><strong>大样本量</strong>（n &gt; 20/组）：此时负二项模型的渐近假设较好，但 limma 的线性模型框架更灵活；</li>
@@ -974,229 +1377,110 @@ window.Quarto = {
 <li><strong>与微阵列数据整合分析</strong>：当需要同时分析两种数据类型时，统一框架更便于比较。</li>
 </ul>
 </section>
-<section id="voom-原理" class="level3" data-number="23.7.2">
-<h3 data-number="23.7.2" class="anchored" data-anchor-id="voom-原理"><span class="header-section-number">23.7.2</span> voom 原理</h3>
+<section id="voom-原理" class="level3" data-number="9.2">
+<h3 data-number="9.2" class="anchored" data-anchor-id="voom-原理"><span class="header-section-number">9.2</span> voom 原理</h3>
 <p>voom 首先将原始计数转化为 log-CPM（Count Per Million）：</p>
 <p><span class="math display">\[y_{ij} = \log_2\left(\frac{K_{ij} + 0.5}{N_j + 1} \times 10^6\right)\]</span></p>
 <p>然后通过 LOWESS 拟合估计每个基因的均值-方差趋势，为每条观测值（每个样本-基因对）分配权重 <span class="math inline">\(w_{ij}\)</span>，使得方差在加权后趋于均匀（满足普通线性模型的等方差假设）。</p>
 <p><span class="math display">\[w_{ij} \propto \frac{1}{\hat{\sigma}^2(y_{ij})}\]</span></p>
 <p>拥有权重的 log-CPM 数据便可以直接使用标准的线性模型进行差异检验，并通过 limma 的经验贝叶斯方差缩减提高统计效力。</p>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb6"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(limma)</span>
-<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(edgeR)</span>
-<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a><span class="co"># === limma-voom workflow ===</span></span>
-<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a><span class="co"># Step 1: Create DGEList and normalize</span></span>
-<span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a>dge <span class="ot">&lt;-</span> <span class="fu">DGEList</span>(<span class="at">counts =</span> counts, <span class="at">group =</span> sample_info<span class="sc">$</span>condition)</span>
-<span id="cb6-8"><a href="#cb6-8" aria-hidden="true" tabindex="-1"></a>dge <span class="ot">&lt;-</span> <span class="fu">calcNormFactors</span>(dge, <span class="at">method =</span> <span class="st">"TMM"</span>)</span>
-<span id="cb6-9"><a href="#cb6-9" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb6-10"><a href="#cb6-10" aria-hidden="true" tabindex="-1"></a><span class="co"># Step 2: Design matrix</span></span>
-<span id="cb6-11"><a href="#cb6-11" aria-hidden="true" tabindex="-1"></a><span class="co"># Simple two-group comparison</span></span>
-<span id="cb6-12"><a href="#cb6-12" aria-hidden="true" tabindex="-1"></a>design <span class="ot">&lt;-</span> <span class="fu">model.matrix</span>(<span class="sc">~</span> condition, <span class="at">data =</span> sample_info)</span>
-<span id="cb6-13"><a href="#cb6-13" aria-hidden="true" tabindex="-1"></a><span class="fu">colnames</span>(design)  <span class="co"># "(Intercept)" and "conditiontreated"</span></span>
-<span id="cb6-14"><a href="#cb6-14" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb6-15"><a href="#cb6-15" aria-hidden="true" tabindex="-1"></a><span class="co"># Step 3: voom transformation</span></span>
-<span id="cb6-16"><a href="#cb6-16" aria-hidden="true" tabindex="-1"></a><span class="co"># Plot shows mean-variance trend and precision weights</span></span>
-<span id="cb6-17"><a href="#cb6-17" aria-hidden="true" tabindex="-1"></a>v <span class="ot">&lt;-</span> <span class="fu">voom</span>(dge, design, <span class="at">plot =</span> <span class="cn">TRUE</span>)</span>
-<span id="cb6-18"><a href="#cb6-18" aria-hidden="true" tabindex="-1"></a><span class="co"># voom() returns:</span></span>
-<span id="cb6-19"><a href="#cb6-19" aria-hidden="true" tabindex="-1"></a><span class="co">#   v$E       - log2 CPM matrix (normalized)</span></span>
-<span id="cb6-20"><a href="#cb6-20" aria-hidden="true" tabindex="-1"></a><span class="co">#   v$weights - precision weights per observation</span></span>
-<span id="cb6-21"><a href="#cb6-21" aria-hidden="true" tabindex="-1"></a><span class="co">#   v$design  - design matrix</span></span>
-<span id="cb6-22"><a href="#cb6-22" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb6-23"><a href="#cb6-23" aria-hidden="true" tabindex="-1"></a><span class="co"># Step 4: Fit linear model</span></span>
-<span id="cb6-24"><a href="#cb6-24" aria-hidden="true" tabindex="-1"></a>fit <span class="ot">&lt;-</span> <span class="fu">lmFit</span>(v, design)</span>
-<span id="cb6-25"><a href="#cb6-25" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb6-26"><a href="#cb6-26" aria-hidden="true" tabindex="-1"></a><span class="co"># Step 5: Empirical Bayes moderation of standard errors</span></span>
-<span id="cb6-27"><a href="#cb6-27" aria-hidden="true" tabindex="-1"></a>fit <span class="ot">&lt;-</span> <span class="fu">eBayes</span>(fit, <span class="at">trend =</span> <span class="cn">TRUE</span>, <span class="at">robust =</span> <span class="cn">TRUE</span>)</span>
-<span id="cb6-28"><a href="#cb6-28" aria-hidden="true" tabindex="-1"></a><span class="co"># trend = TRUE: allow prior variance to depend on average expression</span></span>
-<span id="cb6-29"><a href="#cb6-29" aria-hidden="true" tabindex="-1"></a><span class="co"># robust = TRUE: protect against outlier samples</span></span>
-<span id="cb6-30"><a href="#cb6-30" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb6-31"><a href="#cb6-31" aria-hidden="true" tabindex="-1"></a><span class="co"># Step 6: Extract results</span></span>
-<span id="cb6-32"><a href="#cb6-32" aria-hidden="true" tabindex="-1"></a>res_limma <span class="ot">&lt;-</span> <span class="fu">topTable</span>(</span>
-<span id="cb6-33"><a href="#cb6-33" aria-hidden="true" tabindex="-1"></a>  fit,</span>
-<span id="cb6-34"><a href="#cb6-34" aria-hidden="true" tabindex="-1"></a>  <span class="at">coef     =</span> <span class="st">"conditiontreated"</span>,  <span class="co"># coefficient to test</span></span>
-<span id="cb6-35"><a href="#cb6-35" aria-hidden="true" tabindex="-1"></a>  <span class="at">number   =</span> <span class="cn">Inf</span>,</span>
-<span id="cb6-36"><a href="#cb6-36" aria-hidden="true" tabindex="-1"></a>  <span class="at">adjust.method =</span> <span class="st">"BH"</span>,</span>
-<span id="cb6-37"><a href="#cb6-37" aria-hidden="true" tabindex="-1"></a>  <span class="at">sort.by  =</span> <span class="st">"P"</span></span>
-<span id="cb6-38"><a href="#cb6-38" aria-hidden="true" tabindex="-1"></a>)</span>
-<span id="cb6-39"><a href="#cb6-39" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb6-40"><a href="#cb6-40" aria-hidden="true" tabindex="-1"></a><span class="co"># Results columns:</span></span>
-<span id="cb6-41"><a href="#cb6-41" aria-hidden="true" tabindex="-1"></a><span class="co"># logFC, AveExpr, t (moderated t-statistic), P.Value, adj.P.Val, B (log-odds)</span></span>
-<span id="cb6-42"><a href="#cb6-42" aria-hidden="true" tabindex="-1"></a>sig_limma <span class="ot">&lt;-</span> <span class="fu">subset</span>(res_limma, adj.P.Val <span class="sc">&lt;</span> <span class="fl">0.05</span> <span class="sc">&amp;</span> <span class="fu">abs</span>(logFC) <span class="sc">&gt;</span> <span class="dv">1</span>)</span>
-<span id="cb6-43"><a href="#cb6-43" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">"limma-voom significant DEGs:"</span>, <span class="fu">nrow</span>(sig_limma), <span class="st">"</span><span class="sc">\n</span><span class="st">"</span>)</span>
-<span id="cb6-44"><a href="#cb6-44" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb6-45"><a href="#cb6-45" aria-hidden="true" tabindex="-1"></a><span class="co"># === Three-method comparison ===</span></span>
-<span id="cb6-46"><a href="#cb6-46" aria-hidden="true" tabindex="-1"></a><span class="co"># Combine significant gene lists from DESeq2, edgeR, limma-voom</span></span>
-<span id="cb6-47"><a href="#cb6-47" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(ggVennDiagram)</span>
-<span id="cb6-48"><a href="#cb6-48" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb6-49"><a href="#cb6-49" aria-hidden="true" tabindex="-1"></a>gene_sets <span class="ot">&lt;-</span> <span class="fu">list</span>(</span>
-<span id="cb6-50"><a href="#cb6-50" aria-hidden="true" tabindex="-1"></a>  <span class="at">DESeq2    =</span> <span class="fu">rownames</span>(sig_genes),</span>
-<span id="cb6-51"><a href="#cb6-51" aria-hidden="true" tabindex="-1"></a>  <span class="at">edgeR     =</span> <span class="fu">rownames</span>(sig_edger),</span>
-<span id="cb6-52"><a href="#cb6-52" aria-hidden="true" tabindex="-1"></a>  <span class="at">limma_voom =</span> <span class="fu">rownames</span>(sig_limma)</span>
-<span id="cb6-53"><a href="#cb6-53" aria-hidden="true" tabindex="-1"></a>)</span>
-<span id="cb6-54"><a href="#cb6-54" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb6-55"><a href="#cb6-55" aria-hidden="true" tabindex="-1"></a><span class="fu">ggVennDiagram</span>(gene_sets, <span class="at">label =</span> <span class="st">"count"</span>) <span class="sc">+</span></span>
-<span id="cb6-56"><a href="#cb6-56" aria-hidden="true" tabindex="-1"></a>  <span class="fu">scale_fill_gradient</span>(<span class="at">low =</span> <span class="st">"white"</span>, <span class="at">high =</span> <span class="st">"steelblue"</span>) <span class="sc">+</span></span>
-<span id="cb6-57"><a href="#cb6-57" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(<span class="at">title =</span> <span class="st">"DEG overlap: DESeq2 vs edgeR vs limma-voom"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-</section>
-<section id="复杂实验设计多因子模型" class="level3" data-number="23.7.3">
-<h3 data-number="23.7.3" class="anchored" data-anchor-id="复杂实验设计多因子模型"><span class="header-section-number">23.7.3</span> 复杂实验设计：多因子模型</h3>
-<p>limma-voom 的线性模型框架在处理复杂实验设计时尤为直观。以下演示含批次协变量的双因子设计：</p>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb7"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Example: treatment + batch as covariates</span></span>
-<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a>sample_meta <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(</span>
-<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a>  <span class="at">condition =</span> <span class="fu">factor</span>(<span class="fu">c</span>(<span class="st">"untreated"</span>, <span class="st">"untreated"</span>, <span class="st">"treated"</span>,</span>
-<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a>                       <span class="st">"untreated"</span>, <span class="st">"treated"</span>,  <span class="st">"treated"</span>)),</span>
-<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a>  <span class="at">batch     =</span> <span class="fu">factor</span>(<span class="fu">c</span>(<span class="st">"A"</span>, <span class="st">"A"</span>, <span class="st">"A"</span>, <span class="st">"B"</span>, <span class="st">"B"</span>, <span class="st">"B"</span>)),</span>
-<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a>  <span class="at">row.names =</span> <span class="fu">colnames</span>(counts)</span>
-<span id="cb7-7"><a href="#cb7-7" aria-hidden="true" tabindex="-1"></a>)</span>
-<span id="cb7-8"><a href="#cb7-8" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb7-9"><a href="#cb7-9" aria-hidden="true" tabindex="-1"></a><span class="co"># Design matrix with batch as blocking factor</span></span>
-<span id="cb7-10"><a href="#cb7-10" aria-hidden="true" tabindex="-1"></a>design_batch <span class="ot">&lt;-</span> <span class="fu">model.matrix</span>(<span class="sc">~</span> batch <span class="sc">+</span> condition, <span class="at">data =</span> sample_meta)</span>
-<span id="cb7-11"><a href="#cb7-11" aria-hidden="true" tabindex="-1"></a><span class="co"># This is the recommended approach: model batch explicitly</span></span>
-<span id="cb7-12"><a href="#cb7-12" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb7-13"><a href="#cb7-13" aria-hidden="true" tabindex="-1"></a>v_batch <span class="ot">&lt;-</span> <span class="fu">voom</span>(dge, design_batch, <span class="at">plot =</span> <span class="cn">FALSE</span>)</span>
-<span id="cb7-14"><a href="#cb7-14" aria-hidden="true" tabindex="-1"></a>fit_batch <span class="ot">&lt;-</span> <span class="fu">lmFit</span>(v_batch, design_batch)</span>
-<span id="cb7-15"><a href="#cb7-15" aria-hidden="true" tabindex="-1"></a>fit_batch <span class="ot">&lt;-</span> <span class="fu">eBayes</span>(fit_batch, <span class="at">trend =</span> <span class="cn">TRUE</span>, <span class="at">robust =</span> <span class="cn">TRUE</span>)</span>
-<span id="cb7-16"><a href="#cb7-16" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb7-17"><a href="#cb7-17" aria-hidden="true" tabindex="-1"></a><span class="co"># Extract treatment effect AFTER accounting for batch</span></span>
-<span id="cb7-18"><a href="#cb7-18" aria-hidden="true" tabindex="-1"></a>res_batch_corrected <span class="ot">&lt;-</span> <span class="fu">topTable</span>(</span>
-<span id="cb7-19"><a href="#cb7-19" aria-hidden="true" tabindex="-1"></a>  fit_batch,</span>
-<span id="cb7-20"><a href="#cb7-20" aria-hidden="true" tabindex="-1"></a>  <span class="at">coef   =</span> <span class="st">"conditiontreated"</span>,</span>
-<span id="cb7-21"><a href="#cb7-21" aria-hidden="true" tabindex="-1"></a>  <span class="at">number =</span> <span class="cn">Inf</span>,</span>
-<span id="cb7-22"><a href="#cb7-22" aria-hidden="true" tabindex="-1"></a>  <span class="at">adjust.method =</span> <span class="st">"BH"</span></span>
-<span id="cb7-23"><a href="#cb7-23" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-<hr>
-</section>
-</section>
-<section id="deseq2-核心步骤的手动-r-实现" class="level2" data-number="23.8">
-<h2 data-number="23.8" class="anchored" data-anchor-id="deseq2-核心步骤的手动-r-实现"><span class="header-section-number">23.8</span> DESeq2 核心步骤的手动 R 实现</h2>
-<p>理解统计方法的最佳途径是动手重现其核心计算。以下代码从零开始实现 DESeq2 大小因子估计和归一化步骤，以加深对算法的理解。</p>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb8"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="co"># === Manual implementation of DESeq2 core steps ===</span></span>
-<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a><span class="co"># Simulated count matrix (3 untreated + 3 treated)</span></span>
-<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">2024</span>)</span>
-<span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a>n_genes   <span class="ot">&lt;-</span> <span class="dv">1000</span></span>
-<span id="cb8-6"><a href="#cb8-6" aria-hidden="true" tabindex="-1"></a>n_samples <span class="ot">&lt;-</span> <span class="dv">6</span></span>
-<span id="cb8-7"><a href="#cb8-7" aria-hidden="true" tabindex="-1"></a>counts_sim <span class="ot">&lt;-</span> <span class="fu">matrix</span>(</span>
-<span id="cb8-8"><a href="#cb8-8" aria-hidden="true" tabindex="-1"></a>  <span class="fu">rnbinom</span>(n_genes <span class="sc">*</span> n_samples, <span class="at">mu =</span> <span class="dv">100</span>, <span class="at">size =</span> <span class="dv">5</span>),</span>
-<span id="cb8-9"><a href="#cb8-9" aria-hidden="true" tabindex="-1"></a>  <span class="at">nrow =</span> n_genes,</span>
-<span id="cb8-10"><a href="#cb8-10" aria-hidden="true" tabindex="-1"></a>  <span class="at">dimnames =</span> <span class="fu">list</span>(</span>
-<span id="cb8-11"><a href="#cb8-11" aria-hidden="true" tabindex="-1"></a>    <span class="fu">paste0</span>(<span class="st">"gene"</span>, <span class="dv">1</span><span class="sc">:</span>n_genes),</span>
-<span id="cb8-12"><a href="#cb8-12" aria-hidden="true" tabindex="-1"></a>    <span class="fu">paste0</span>(<span class="st">"sample"</span>, <span class="dv">1</span><span class="sc">:</span>n_samples)</span>
-<span id="cb8-13"><a href="#cb8-13" aria-hidden="true" tabindex="-1"></a>  )</span>
-<span id="cb8-14"><a href="#cb8-14" aria-hidden="true" tabindex="-1"></a>)</span>
-<span id="cb8-15"><a href="#cb8-15" aria-hidden="true" tabindex="-1"></a><span class="co"># Introduce artificial library size differences</span></span>
-<span id="cb8-16"><a href="#cb8-16" aria-hidden="true" tabindex="-1"></a>counts_sim[, <span class="dv">4</span><span class="sc">:</span><span class="dv">6</span>] <span class="ot">&lt;-</span> <span class="fu">round</span>(counts_sim[, <span class="dv">4</span><span class="sc">:</span><span class="dv">6</span>] <span class="sc">*</span> <span class="dv">2</span>)</span>
-<span id="cb8-17"><a href="#cb8-17" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb8-18"><a href="#cb8-18" aria-hidden="true" tabindex="-1"></a><span class="co"># --- Step 1: Compute geometric mean per gene ---</span></span>
-<span id="cb8-19"><a href="#cb8-19" aria-hidden="true" tabindex="-1"></a><span class="co"># Genes with zero counts in any sample are excluded (log(0) = -Inf)</span></span>
-<span id="cb8-20"><a href="#cb8-20" aria-hidden="true" tabindex="-1"></a>log_counts  <span class="ot">&lt;-</span> <span class="fu">log</span>(counts_sim)</span>
-<span id="cb8-21"><a href="#cb8-21" aria-hidden="true" tabindex="-1"></a>log_counts[<span class="fu">is.infinite</span>(log_counts)] <span class="ot">&lt;-</span> <span class="cn">NA</span></span>
-<span id="cb8-22"><a href="#cb8-22" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb8-23"><a href="#cb8-23" aria-hidden="true" tabindex="-1"></a>geom_means  <span class="ot">&lt;-</span> <span class="fu">exp</span>(<span class="fu">rowMeans</span>(log_counts, <span class="at">na.rm =</span> <span class="cn">TRUE</span>))</span>
-<span id="cb8-24"><a href="#cb8-24" aria-hidden="true" tabindex="-1"></a>valid_genes <span class="ot">&lt;-</span> <span class="sc">!</span><span class="fu">is.na</span>(geom_means) <span class="sc">&amp;</span> geom_means <span class="sc">&gt;</span> <span class="dv">0</span></span>
-<span id="cb8-25"><a href="#cb8-25" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">"Genes used for size factor estimation:"</span>, <span class="fu">sum</span>(valid_genes), <span class="st">"</span><span class="sc">\n</span><span class="st">"</span>)</span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb8"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(limma)</span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(edgeR)</span>
+<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a><span class="co"># === limma-voom workflow ===</span></span>
+<span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a><span class="co"># Reuses `counts` and `sample_info` defined in the DESeq2 section</span></span>
+<span id="cb8-6"><a href="#cb8-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-7"><a href="#cb8-7" aria-hidden="true" tabindex="-1"></a><span class="co"># Step 1: Create DGEList and normalize</span></span>
+<span id="cb8-8"><a href="#cb8-8" aria-hidden="true" tabindex="-1"></a>dge <span class="ot">&lt;-</span> <span class="fu">DGEList</span>(<span class="at">counts =</span> counts, <span class="at">group =</span> sample_info<span class="sc">$</span>condition)</span>
+<span id="cb8-9"><a href="#cb8-9" aria-hidden="true" tabindex="-1"></a>dge <span class="ot">&lt;-</span> <span class="fu">calcNormFactors</span>(dge, <span class="at">method =</span> <span class="st">"TMM"</span>)</span>
+<span id="cb8-10"><a href="#cb8-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-11"><a href="#cb8-11" aria-hidden="true" tabindex="-1"></a><span class="co"># Step 2: Design matrix</span></span>
+<span id="cb8-12"><a href="#cb8-12" aria-hidden="true" tabindex="-1"></a><span class="co"># Simple two-group comparison</span></span>
+<span id="cb8-13"><a href="#cb8-13" aria-hidden="true" tabindex="-1"></a>design <span class="ot">&lt;-</span> <span class="fu">model.matrix</span>(<span class="sc">~</span> condition, <span class="at">data =</span> sample_info)</span>
+<span id="cb8-14"><a href="#cb8-14" aria-hidden="true" tabindex="-1"></a><span class="fu">colnames</span>(design)  <span class="co"># "(Intercept)" and "conditiontreated"</span></span>
+<span id="cb8-15"><a href="#cb8-15" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-16"><a href="#cb8-16" aria-hidden="true" tabindex="-1"></a><span class="co"># Step 3: voom transformation</span></span>
+<span id="cb8-17"><a href="#cb8-17" aria-hidden="true" tabindex="-1"></a><span class="co"># Plot shows mean-variance trend and precision weights</span></span>
+<span id="cb8-18"><a href="#cb8-18" aria-hidden="true" tabindex="-1"></a>v <span class="ot">&lt;-</span> <span class="fu">voom</span>(dge, design, <span class="at">plot =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb8-19"><a href="#cb8-19" aria-hidden="true" tabindex="-1"></a><span class="co"># voom() returns:</span></span>
+<span id="cb8-20"><a href="#cb8-20" aria-hidden="true" tabindex="-1"></a><span class="co">#   v$E       - log2 CPM matrix (normalized)</span></span>
+<span id="cb8-21"><a href="#cb8-21" aria-hidden="true" tabindex="-1"></a><span class="co">#   v$weights - precision weights per observation</span></span>
+<span id="cb8-22"><a href="#cb8-22" aria-hidden="true" tabindex="-1"></a><span class="co">#   v$design  - design matrix</span></span>
+<span id="cb8-23"><a href="#cb8-23" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-24"><a href="#cb8-24" aria-hidden="true" tabindex="-1"></a><span class="co"># Step 4: Fit linear model</span></span>
+<span id="cb8-25"><a href="#cb8-25" aria-hidden="true" tabindex="-1"></a>fit <span class="ot">&lt;-</span> <span class="fu">lmFit</span>(v, design)</span>
 <span id="cb8-26"><a href="#cb8-26" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb8-27"><a href="#cb8-27" aria-hidden="true" tabindex="-1"></a><span class="co"># --- Step 2: Compute ratio of each sample to geometric mean ---</span></span>
-<span id="cb8-28"><a href="#cb8-28" aria-hidden="true" tabindex="-1"></a>ratios <span class="ot">&lt;-</span> <span class="fu">sweep</span>(counts_sim[valid_genes, ], <span class="dv">1</span>,</span>
-<span id="cb8-29"><a href="#cb8-29" aria-hidden="true" tabindex="-1"></a>                geom_means[valid_genes], <span class="st">"/"</span>)</span>
-<span id="cb8-30"><a href="#cb8-30" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb8-31"><a href="#cb8-31" aria-hidden="true" tabindex="-1"></a><span class="co"># --- Step 3: Size factor = median of ratios per sample ---</span></span>
-<span id="cb8-32"><a href="#cb8-32" aria-hidden="true" tabindex="-1"></a>size_factors_manual <span class="ot">&lt;-</span> <span class="fu">apply</span>(ratios, <span class="dv">2</span>, median)</span>
-<span id="cb8-33"><a href="#cb8-33" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">"</span><span class="sc">\n</span><span class="st">Manual size factors:</span><span class="sc">\n</span><span class="st">"</span>)</span>
-<span id="cb8-34"><a href="#cb8-34" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(<span class="fu">round</span>(size_factors_manual, <span class="dv">4</span>))</span>
-<span id="cb8-35"><a href="#cb8-35" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb8-36"><a href="#cb8-36" aria-hidden="true" tabindex="-1"></a><span class="co"># Compare with DESeq2 built-in</span></span>
-<span id="cb8-37"><a href="#cb8-37" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(DESeq2)</span>
-<span id="cb8-38"><a href="#cb8-38" aria-hidden="true" tabindex="-1"></a>dds_sim <span class="ot">&lt;-</span> <span class="fu">DESeqDataSetFromMatrix</span>(</span>
-<span id="cb8-39"><a href="#cb8-39" aria-hidden="true" tabindex="-1"></a>  <span class="at">countData =</span> counts_sim,</span>
-<span id="cb8-40"><a href="#cb8-40" aria-hidden="true" tabindex="-1"></a>  <span class="at">colData   =</span> <span class="fu">data.frame</span>(</span>
-<span id="cb8-41"><a href="#cb8-41" aria-hidden="true" tabindex="-1"></a>    <span class="at">condition =</span> <span class="fu">rep</span>(<span class="fu">c</span>(<span class="st">"untreated"</span>, <span class="st">"treated"</span>), <span class="at">each =</span> <span class="dv">3</span>)</span>
-<span id="cb8-42"><a href="#cb8-42" aria-hidden="true" tabindex="-1"></a>  ),</span>
-<span id="cb8-43"><a href="#cb8-43" aria-hidden="true" tabindex="-1"></a>  <span class="at">design =</span> <span class="sc">~</span> condition</span>
-<span id="cb8-44"><a href="#cb8-44" aria-hidden="true" tabindex="-1"></a>)</span>
-<span id="cb8-45"><a href="#cb8-45" aria-hidden="true" tabindex="-1"></a>dds_sim <span class="ot">&lt;-</span> <span class="fu">estimateSizeFactors</span>(dds_sim)</span>
-<span id="cb8-46"><a href="#cb8-46" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">"</span><span class="sc">\n</span><span class="st">DESeq2 size factors:</span><span class="sc">\n</span><span class="st">"</span>)</span>
-<span id="cb8-47"><a href="#cb8-47" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(<span class="fu">round</span>(<span class="fu">sizeFactors</span>(dds_sim), <span class="dv">4</span>))</span>
-<span id="cb8-48"><a href="#cb8-48" aria-hidden="true" tabindex="-1"></a><span class="co"># Should match manual calculation</span></span>
+<span id="cb8-27"><a href="#cb8-27" aria-hidden="true" tabindex="-1"></a><span class="co"># Step 5: Empirical Bayes moderation of standard errors</span></span>
+<span id="cb8-28"><a href="#cb8-28" aria-hidden="true" tabindex="-1"></a>fit <span class="ot">&lt;-</span> <span class="fu">eBayes</span>(fit, <span class="at">trend =</span> <span class="cn">TRUE</span>, <span class="at">robust =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb8-29"><a href="#cb8-29" aria-hidden="true" tabindex="-1"></a><span class="co"># trend = TRUE: allow prior variance to depend on average expression</span></span>
+<span id="cb8-30"><a href="#cb8-30" aria-hidden="true" tabindex="-1"></a><span class="co"># robust = TRUE: protect against outlier samples</span></span>
+<span id="cb8-31"><a href="#cb8-31" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-32"><a href="#cb8-32" aria-hidden="true" tabindex="-1"></a><span class="co"># Step 6: Extract results</span></span>
+<span id="cb8-33"><a href="#cb8-33" aria-hidden="true" tabindex="-1"></a>res_limma <span class="ot">&lt;-</span> <span class="fu">topTable</span>(</span>
+<span id="cb8-34"><a href="#cb8-34" aria-hidden="true" tabindex="-1"></a>  fit,</span>
+<span id="cb8-35"><a href="#cb8-35" aria-hidden="true" tabindex="-1"></a>  <span class="at">coef     =</span> <span class="st">"conditiontreated"</span>,  <span class="co"># coefficient to test</span></span>
+<span id="cb8-36"><a href="#cb8-36" aria-hidden="true" tabindex="-1"></a>  <span class="at">number   =</span> <span class="cn">Inf</span>,</span>
+<span id="cb8-37"><a href="#cb8-37" aria-hidden="true" tabindex="-1"></a>  <span class="at">adjust.method =</span> <span class="st">"BH"</span>,</span>
+<span id="cb8-38"><a href="#cb8-38" aria-hidden="true" tabindex="-1"></a>  <span class="at">sort.by  =</span> <span class="st">"P"</span></span>
+<span id="cb8-39"><a href="#cb8-39" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb8-40"><a href="#cb8-40" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-41"><a href="#cb8-41" aria-hidden="true" tabindex="-1"></a><span class="co"># Results columns:</span></span>
+<span id="cb8-42"><a href="#cb8-42" aria-hidden="true" tabindex="-1"></a><span class="co"># logFC, AveExpr, t (moderated t-statistic), P.Value, adj.P.Val, B (log-odds)</span></span>
+<span id="cb8-43"><a href="#cb8-43" aria-hidden="true" tabindex="-1"></a>sig_limma <span class="ot">&lt;-</span> <span class="fu">subset</span>(res_limma, adj.P.Val <span class="sc">&lt;</span> <span class="fl">0.05</span> <span class="sc">&amp;</span> <span class="fu">abs</span>(logFC) <span class="sc">&gt;</span> <span class="dv">1</span>)</span>
+<span id="cb8-44"><a href="#cb8-44" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">"limma-voom significant DEGs:"</span>, <span class="fu">nrow</span>(sig_limma), <span class="st">"</span><span class="sc">\n</span><span class="st">"</span>)</span>
+<span id="cb8-45"><a href="#cb8-45" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-46"><a href="#cb8-46" aria-hidden="true" tabindex="-1"></a><span class="co"># === Three-method comparison ===</span></span>
+<span id="cb8-47"><a href="#cb8-47" aria-hidden="true" tabindex="-1"></a><span class="co"># Combine significant gene lists from DESeq2, edgeR, limma-voom</span></span>
+<span id="cb8-48"><a href="#cb8-48" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(ggVennDiagram)</span>
 <span id="cb8-49"><a href="#cb8-49" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb8-50"><a href="#cb8-50" aria-hidden="true" tabindex="-1"></a><span class="co"># --- Step 4: Normalize counts ---</span></span>
-<span id="cb8-51"><a href="#cb8-51" aria-hidden="true" tabindex="-1"></a>norm_counts_manual <span class="ot">&lt;-</span> <span class="fu">sweep</span>(counts_sim, <span class="dv">2</span>,</span>
-<span id="cb8-52"><a href="#cb8-52" aria-hidden="true" tabindex="-1"></a>                             size_factors_manual, <span class="st">"/"</span>)</span>
-<span id="cb8-53"><a href="#cb8-53" aria-hidden="true" tabindex="-1"></a>norm_counts_deseq2 <span class="ot">&lt;-</span> <span class="fu">counts</span>(dds_sim, <span class="at">normalized =</span> <span class="cn">TRUE</span>)</span>
-<span id="cb8-54"><a href="#cb8-54" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb8-55"><a href="#cb8-55" aria-hidden="true" tabindex="-1"></a><span class="co"># Verify normalization: library sizes after normalization</span></span>
-<span id="cb8-56"><a href="#cb8-56" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">"</span><span class="sc">\n</span><span class="st">Normalized library sizes (should be similar):</span><span class="sc">\n</span><span class="st">"</span>)</span>
-<span id="cb8-57"><a href="#cb8-57" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(<span class="fu">round</span>(<span class="fu">colSums</span>(norm_counts_manual) <span class="sc">/</span> <span class="fl">1e3</span>, <span class="dv">1</span>), <span class="st">"K reads"</span>)</span>
-<span id="cb8-58"><a href="#cb8-58" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb8-59"><a href="#cb8-59" aria-hidden="true" tabindex="-1"></a><span class="co"># --- Visualize size factor effect ---</span></span>
-<span id="cb8-60"><a href="#cb8-60" aria-hidden="true" tabindex="-1"></a><span class="fu">par</span>(<span class="at">mfrow =</span> <span class="fu">c</span>(<span class="dv">1</span>, <span class="dv">2</span>))</span>
-<span id="cb8-61"><a href="#cb8-61" aria-hidden="true" tabindex="-1"></a><span class="fu">boxplot</span>(<span class="fu">log1p</span>(counts_sim),</span>
-<span id="cb8-62"><a href="#cb8-62" aria-hidden="true" tabindex="-1"></a>        <span class="at">main =</span> <span class="st">"Raw counts (log1p)"</span>,</span>
-<span id="cb8-63"><a href="#cb8-63" aria-hidden="true" tabindex="-1"></a>        <span class="at">las =</span> <span class="dv">2</span>, <span class="at">col =</span> <span class="st">"lightblue"</span>)</span>
-<span id="cb8-64"><a href="#cb8-64" aria-hidden="true" tabindex="-1"></a><span class="fu">boxplot</span>(<span class="fu">log1p</span>(norm_counts_manual),</span>
-<span id="cb8-65"><a href="#cb8-65" aria-hidden="true" tabindex="-1"></a>        <span class="at">main =</span> <span class="st">"Normalized counts (log1p)"</span>,</span>
-<span id="cb8-66"><a href="#cb8-66" aria-hidden="true" tabindex="-1"></a>        <span class="at">las =</span> <span class="dv">2</span>, <span class="at">col =</span> <span class="st">"lightgreen"</span>)</span>
-<span id="cb8-67"><a href="#cb8-67" aria-hidden="true" tabindex="-1"></a><span class="fu">par</span>(<span class="at">mfrow =</span> <span class="fu">c</span>(<span class="dv">1</span>, <span class="dv">1</span>))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb9"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="co"># === Manual BH correction to understand the algorithm ===</span></span>
-<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a><span class="co"># Generate p-values from a simulated experiment</span></span>
-<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">42</span>)</span>
-<span id="cb9-5"><a href="#cb9-5" aria-hidden="true" tabindex="-1"></a>m <span class="ot">&lt;-</span> <span class="dv">10000</span>   <span class="co"># total genes tested</span></span>
-<span id="cb9-6"><a href="#cb9-6" aria-hidden="true" tabindex="-1"></a>n_true_de <span class="ot">&lt;-</span> <span class="dv">500</span>  <span class="co"># truly DE genes (with small p-values)</span></span>
-<span id="cb9-7"><a href="#cb9-7" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb9-8"><a href="#cb9-8" aria-hidden="true" tabindex="-1"></a><span class="co"># Simulate p-values: mixture of uniform (null) and beta (alternative)</span></span>
-<span id="cb9-9"><a href="#cb9-9" aria-hidden="true" tabindex="-1"></a>p_null <span class="ot">&lt;-</span> <span class="fu">runif</span>(m <span class="sc">-</span> n_true_de)</span>
-<span id="cb9-10"><a href="#cb9-10" aria-hidden="true" tabindex="-1"></a>p_alt  <span class="ot">&lt;-</span> <span class="fu">rbeta</span>(n_true_de, <span class="at">shape1 =</span> <span class="fl">0.5</span>, <span class="at">shape2 =</span> <span class="dv">10</span>)</span>
-<span id="cb9-11"><a href="#cb9-11" aria-hidden="true" tabindex="-1"></a>p_values <span class="ot">&lt;-</span> <span class="fu">c</span>(p_null, p_alt)</span>
+<span id="cb8-50"><a href="#cb8-50" aria-hidden="true" tabindex="-1"></a>gene_sets <span class="ot">&lt;-</span> <span class="fu">list</span>(</span>
+<span id="cb8-51"><a href="#cb8-51" aria-hidden="true" tabindex="-1"></a>  <span class="at">DESeq2    =</span> <span class="fu">rownames</span>(sig_genes),</span>
+<span id="cb8-52"><a href="#cb8-52" aria-hidden="true" tabindex="-1"></a>  <span class="at">edgeR     =</span> <span class="fu">rownames</span>(sig_edger),</span>
+<span id="cb8-53"><a href="#cb8-53" aria-hidden="true" tabindex="-1"></a>  <span class="at">limma_voom =</span> <span class="fu">rownames</span>(sig_limma)</span>
+<span id="cb8-54"><a href="#cb8-54" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb8-55"><a href="#cb8-55" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-56"><a href="#cb8-56" aria-hidden="true" tabindex="-1"></a><span class="fu">ggVennDiagram</span>(gene_sets, <span class="at">label =</span> <span class="st">"count"</span>) <span class="sc">+</span></span>
+<span id="cb8-57"><a href="#cb8-57" aria-hidden="true" tabindex="-1"></a>  <span class="fu">scale_fill_gradient</span>(<span class="at">low =</span> <span class="st">"white"</span>, <span class="at">high =</span> <span class="st">"steelblue"</span>) <span class="sc">+</span></span>
+<span id="cb8-58"><a href="#cb8-58" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(<span class="at">title =</span> <span class="st">"DEG overlap: DESeq2 vs edgeR vs limma-voom"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</section>
+<section id="复杂实验设计多因子模型" class="level3" data-number="9.3">
+<h3 data-number="9.3" class="anchored" data-anchor-id="复杂实验设计多因子模型"><span class="header-section-number">9.3</span> 复杂实验设计：多因子模型</h3>
+<p>limma-voom 的线性模型框架在处理复杂实验设计时尤为直观。以下演示含批次协变量的双因子设计：</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb9"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Example: treatment + batch as covariates</span></span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a>sample_meta <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(</span>
+<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a>  <span class="at">condition =</span> <span class="fu">factor</span>(<span class="fu">c</span>(<span class="st">"untreated"</span>, <span class="st">"untreated"</span>, <span class="st">"treated"</span>,</span>
+<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a>                       <span class="st">"untreated"</span>, <span class="st">"treated"</span>,  <span class="st">"treated"</span>)),</span>
+<span id="cb9-5"><a href="#cb9-5" aria-hidden="true" tabindex="-1"></a>  <span class="at">batch     =</span> <span class="fu">factor</span>(<span class="fu">c</span>(<span class="st">"A"</span>, <span class="st">"A"</span>, <span class="st">"A"</span>, <span class="st">"B"</span>, <span class="st">"B"</span>, <span class="st">"B"</span>)),</span>
+<span id="cb9-6"><a href="#cb9-6" aria-hidden="true" tabindex="-1"></a>  <span class="at">row.names =</span> <span class="fu">colnames</span>(counts)</span>
+<span id="cb9-7"><a href="#cb9-7" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb9-8"><a href="#cb9-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-9"><a href="#cb9-9" aria-hidden="true" tabindex="-1"></a><span class="co"># Design matrix with batch as blocking factor</span></span>
+<span id="cb9-10"><a href="#cb9-10" aria-hidden="true" tabindex="-1"></a>design_batch <span class="ot">&lt;-</span> <span class="fu">model.matrix</span>(<span class="sc">~</span> batch <span class="sc">+</span> condition, <span class="at">data =</span> sample_meta)</span>
+<span id="cb9-11"><a href="#cb9-11" aria-hidden="true" tabindex="-1"></a><span class="co"># This is the recommended approach: model batch explicitly</span></span>
 <span id="cb9-12"><a href="#cb9-12" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb9-13"><a href="#cb9-13" aria-hidden="true" tabindex="-1"></a><span class="co"># --- Manual BH procedure ---</span></span>
-<span id="cb9-14"><a href="#cb9-14" aria-hidden="true" tabindex="-1"></a>m_total <span class="ot">&lt;-</span> <span class="fu">length</span>(p_values)</span>
-<span id="cb9-15"><a href="#cb9-15" aria-hidden="true" tabindex="-1"></a>sorted_idx <span class="ot">&lt;-</span> <span class="fu">order</span>(p_values)</span>
-<span id="cb9-16"><a href="#cb9-16" aria-hidden="true" tabindex="-1"></a>sorted_p   <span class="ot">&lt;-</span> p_values[sorted_idx]</span>
-<span id="cb9-17"><a href="#cb9-17" aria-hidden="true" tabindex="-1"></a>ranks      <span class="ot">&lt;-</span> <span class="fu">seq_len</span>(m_total)</span>
-<span id="cb9-18"><a href="#cb9-18" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb9-19"><a href="#cb9-19" aria-hidden="true" tabindex="-1"></a><span class="co"># BH adjusted p-values</span></span>
-<span id="cb9-20"><a href="#cb9-20" aria-hidden="true" tabindex="-1"></a>bh_adjusted <span class="ot">&lt;-</span> <span class="fu">numeric</span>(m_total)</span>
-<span id="cb9-21"><a href="#cb9-21" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> (i <span class="cf">in</span> <span class="fu">seq</span>(m_total, <span class="dv">1</span>)) {</span>
-<span id="cb9-22"><a href="#cb9-22" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span> (i <span class="sc">==</span> m_total) {</span>
-<span id="cb9-23"><a href="#cb9-23" aria-hidden="true" tabindex="-1"></a>    bh_adjusted[i] <span class="ot">&lt;-</span> sorted_p[i]</span>
-<span id="cb9-24"><a href="#cb9-24" aria-hidden="true" tabindex="-1"></a>  } <span class="cf">else</span> {</span>
-<span id="cb9-25"><a href="#cb9-25" aria-hidden="true" tabindex="-1"></a>    bh_adjusted[i] <span class="ot">&lt;-</span> <span class="fu">min</span>(sorted_p[i] <span class="sc">*</span> m_total <span class="sc">/</span> i,</span>
-<span id="cb9-26"><a href="#cb9-26" aria-hidden="true" tabindex="-1"></a>                          bh_adjusted[i <span class="sc">+</span> <span class="dv">1</span>])</span>
-<span id="cb9-27"><a href="#cb9-27" aria-hidden="true" tabindex="-1"></a>  }</span>
-<span id="cb9-28"><a href="#cb9-28" aria-hidden="true" tabindex="-1"></a>}</span>
-<span id="cb9-29"><a href="#cb9-29" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb9-30"><a href="#cb9-30" aria-hidden="true" tabindex="-1"></a><span class="co"># Map back to original gene order</span></span>
-<span id="cb9-31"><a href="#cb9-31" aria-hidden="true" tabindex="-1"></a>padj_manual <span class="ot">&lt;-</span> <span class="fu">numeric</span>(m_total)</span>
-<span id="cb9-32"><a href="#cb9-32" aria-hidden="true" tabindex="-1"></a>padj_manual[sorted_idx] <span class="ot">&lt;-</span> bh_adjusted</span>
-<span id="cb9-33"><a href="#cb9-33" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb9-34"><a href="#cb9-34" aria-hidden="true" tabindex="-1"></a><span class="co"># Compare with R built-in</span></span>
-<span id="cb9-35"><a href="#cb9-35" aria-hidden="true" tabindex="-1"></a>padj_r <span class="ot">&lt;-</span> <span class="fu">p.adjust</span>(p_values, <span class="at">method =</span> <span class="st">"BH"</span>)</span>
-<span id="cb9-36"><a href="#cb9-36" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">"Max difference between manual and R BH:"</span>,</span>
-<span id="cb9-37"><a href="#cb9-37" aria-hidden="true" tabindex="-1"></a>    <span class="fu">max</span>(<span class="fu">abs</span>(padj_manual <span class="sc">-</span> padj_r)), <span class="st">"</span><span class="sc">\n</span><span class="st">"</span>)  <span class="co"># Should be ~0</span></span>
-<span id="cb9-38"><a href="#cb9-38" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb9-39"><a href="#cb9-39" aria-hidden="true" tabindex="-1"></a><span class="co"># Visualize: p-value histogram (good sanity check!)</span></span>
-<span id="cb9-40"><a href="#cb9-40" aria-hidden="true" tabindex="-1"></a><span class="fu">hist</span>(p_values,</span>
-<span id="cb9-41"><a href="#cb9-41" aria-hidden="true" tabindex="-1"></a>     <span class="at">breaks =</span> <span class="dv">50</span>, <span class="at">col =</span> <span class="st">"steelblue"</span>,</span>
-<span id="cb9-42"><a href="#cb9-42" aria-hidden="true" tabindex="-1"></a>     <span class="at">main =</span> <span class="st">"P-value distribution (uniform null + signal)"</span>,</span>
-<span id="cb9-43"><a href="#cb9-43" aria-hidden="true" tabindex="-1"></a>     <span class="at">xlab =</span> <span class="st">"p-value"</span>)</span>
-<span id="cb9-44"><a href="#cb9-44" aria-hidden="true" tabindex="-1"></a><span class="fu">abline</span>(<span class="at">h =</span> (m <span class="sc">-</span> n_true_de) <span class="sc">/</span> <span class="dv">50</span>, <span class="at">col =</span> <span class="st">"firebrick"</span>,</span>
-<span id="cb9-45"><a href="#cb9-45" aria-hidden="true" tabindex="-1"></a>       <span class="at">lty =</span> <span class="dv">2</span>, <span class="at">lwd =</span> <span class="dv">2</span>)  <span class="co"># expected uniform component</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-<div class="note">
-<p><strong>p 值直方图的诊断价值：</strong> 良好的 RNA-seq 差异分析结果，其 p 值直方图应呈现：在靠近 0 的区间有一个峰（真实 DE 基因的信号），其余区间呈均匀分布（零假设下的均匀分布）。若整体呈右偏或 p = 1 处有尖峰，提示数据中存在未处理的批次效应或离群样本。</p>
-</div>
+<span id="cb9-13"><a href="#cb9-13" aria-hidden="true" tabindex="-1"></a>v_batch <span class="ot">&lt;-</span> <span class="fu">voom</span>(dge, design_batch, <span class="at">plot =</span> <span class="cn">FALSE</span>)</span>
+<span id="cb9-14"><a href="#cb9-14" aria-hidden="true" tabindex="-1"></a>fit_batch <span class="ot">&lt;-</span> <span class="fu">lmFit</span>(v_batch, design_batch)</span>
+<span id="cb9-15"><a href="#cb9-15" aria-hidden="true" tabindex="-1"></a>fit_batch <span class="ot">&lt;-</span> <span class="fu">eBayes</span>(fit_batch, <span class="at">trend =</span> <span class="cn">TRUE</span>, <span class="at">robust =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb9-16"><a href="#cb9-16" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-17"><a href="#cb9-17" aria-hidden="true" tabindex="-1"></a><span class="co"># Extract treatment effect AFTER accounting for batch</span></span>
+<span id="cb9-18"><a href="#cb9-18" aria-hidden="true" tabindex="-1"></a>res_batch_corrected <span class="ot">&lt;-</span> <span class="fu">topTable</span>(</span>
+<span id="cb9-19"><a href="#cb9-19" aria-hidden="true" tabindex="-1"></a>  fit_batch,</span>
+<span id="cb9-20"><a href="#cb9-20" aria-hidden="true" tabindex="-1"></a>  <span class="at">coef   =</span> <span class="st">"conditiontreated"</span>,</span>
+<span id="cb9-21"><a href="#cb9-21" aria-hidden="true" tabindex="-1"></a>  <span class="at">number =</span> <span class="cn">Inf</span>,</span>
+<span id="cb9-22"><a href="#cb9-22" aria-hidden="true" tabindex="-1"></a>  <span class="at">adjust.method =</span> <span class="st">"BH"</span></span>
+<span id="cb9-23"><a href="#cb9-23" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <hr>
 </section>
-<section id="批次效应检测评估与校正" class="level2" data-number="23.9">
-<h2 data-number="23.9" class="anchored" data-anchor-id="批次效应检测评估与校正"><span class="header-section-number">23.9</span> 批次效应：检测、评估与校正</h2>
+</section>
+<section id="批次效应检测评估与校正" class="level2" data-number="10">
+<h2 data-number="10" class="anchored" data-anchor-id="批次效应检测评估与校正"><span class="header-section-number">10</span> 批次效应：检测、评估与校正</h2>
 <p>批次效应在 RNA-seq 数据中几乎普遍存在。在第1专题中已介绍其早期检测（PCA、RLE 图），本节深入讨论如何在差异表达分析框架中正确处理批次效应。</p>
-<section id="批次效应与生物学变异的解耦" class="level3" data-number="23.9.1">
-<h3 data-number="23.9.1" class="anchored" data-anchor-id="批次效应与生物学变异的解耦"><span class="header-section-number">23.9.1</span> 批次效应与生物学变异的解耦</h3>
+<section id="批次效应与生物学变异的解耦" class="level3" data-number="10.1">
+<h3 data-number="10.1" class="anchored" data-anchor-id="批次效应与生物学变异的解耦"><span class="header-section-number">10.1</span> 批次效应与生物学变异的解耦</h3>
 <p>批次效应处理的核心原则是：<strong>将批次效应从统计模型中”解释”出去，而非简单地从数据中删除</strong>。前者（在设计矩阵中加入批次协变量）是统计上正确的方法；后者（先校正再进行 DEA）会导致 p 值过于乐观，因为校正后的数据减少了方差，而检验时仍然使用校正后的自由度。</p>
 </section>
-<section id="方法一在设计矩阵中包含批次变量推荐" class="level3" data-number="23.9.2">
-<h3 data-number="23.9.2" class="anchored" data-anchor-id="方法一在设计矩阵中包含批次变量推荐"><span class="header-section-number">23.9.2</span> 方法一：在设计矩阵中包含批次变量（推荐）</h3>
+<section id="方法一在设计矩阵中包含批次变量推荐" class="level3" data-number="10.2">
+<h3 data-number="10.2" class="anchored" data-anchor-id="方法一在设计矩阵中包含批次变量推荐"><span class="header-section-number">10.2</span> 方法一：在设计矩阵中包含批次变量（推荐）</h3>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb10"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="co"># === Approach 1: Include batch in design matrix (RECOMMENDED) ===</span></span>
 <span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a><span class="co"># This is statistically correct: batch effects are modeled out</span></span>
 <span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a><span class="co"># while preserving within-batch variation for DEA</span></span>
@@ -1245,8 +1529,8 @@ window.Quarto = {
 <span id="cb10-46"><a href="#cb10-46" aria-hidden="true" tabindex="-1"></a>                 <span class="at">contrast =</span> <span class="fu">c</span>(<span class="st">"condition"</span>, <span class="st">"treated"</span>, <span class="st">"untreated"</span>))</span>
 <span id="cb10-47"><a href="#cb10-47" aria-hidden="true" tabindex="-1"></a><span class="fu">summary</span>(res_b)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </section>
-<section id="方法二combat-limmaremovebatcheffect仅用于可视化" class="level3" data-number="23.9.3">
-<h3 data-number="23.9.3" class="anchored" data-anchor-id="方法二combat-limmaremovebatcheffect仅用于可视化"><span class="header-section-number">23.9.3</span> 方法二：ComBat / limma::removeBatchEffect（仅用于可视化）</h3>
+<section id="方法二combat-limmaremovebatcheffect仅用于可视化" class="level3" data-number="10.3">
+<h3 data-number="10.3" class="anchored" data-anchor-id="方法二combat-limmaremovebatcheffect仅用于可视化"><span class="header-section-number">10.3</span> 方法二：ComBat / limma::removeBatchEffect（仅用于可视化）</h3>
 <p>有时需要生成去除批次效应的表达矩阵用于可视化（如热图、PCA），而非用于 DEA。此时可使用 ComBat（基于经验贝叶斯，sva 包）或 limma::removeBatchEffect。</p>
 <div class="warning">
 <p><strong>严格限制：</strong> 通过 <code>removeBatchEffect()</code> 或 <code>ComBat()</code> 校正后的矩阵<strong>仅适用于可视化</strong>，不应作为 DEA 工具（DESeq2/edgeR）的输入。原因：批次校正会人为降低样本间方差，使随后的统计检验的 p 值过于乐观（假阳性率升高）。</p>
@@ -1300,8 +1584,8 @@ window.Quarto = {
 <span id="cb11-47"><a href="#cb11-47" aria-hidden="true" tabindex="-1"></a><span class="fu">pca_plot</span>(pca_before, <span class="st">"Before batch correction"</span>) <span class="sc">+</span></span>
 <span id="cb11-48"><a href="#cb11-48" aria-hidden="true" tabindex="-1"></a><span class="fu">pca_plot</span>(pca_after,  <span class="st">"After batch correction (limma)"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </section>
-<section id="评估批次效应是否成功去除" class="level3" data-number="23.9.4">
-<h3 data-number="23.9.4" class="anchored" data-anchor-id="评估批次效应是否成功去除"><span class="header-section-number">23.9.4</span> 评估批次效应是否成功去除</h3>
+<section id="评估批次效应是否成功去除" class="level3" data-number="10.4">
+<h3 data-number="10.4" class="anchored" data-anchor-id="评估批次效应是否成功去除"><span class="header-section-number">10.4</span> 评估批次效应是否成功去除</h3>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb12"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="co"># kBET: k-nearest neighbor batch effect test</span></span>
 <span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a><span class="co"># Tests whether batch labels are uniformly distributed in KNN neighborhoods</span></span>
 <span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a><span class="co"># install.packages("remotes")</span></span>
@@ -1322,8 +1606,8 @@ window.Quarto = {
 <hr>
 </section>
 </section>
-<section id="多重检验校正benjamini-hochberg-方法" class="level2" data-number="23.10">
-<h2 data-number="23.10" class="anchored" data-anchor-id="多重检验校正benjamini-hochberg-方法"><span class="header-section-number">23.10</span> 多重检验校正：Benjamini-Hochberg 方法</h2>
+<section id="多重检验校正benjamini-hochberg-方法" class="level2" data-number="11">
+<h2 data-number="11" class="anchored" data-anchor-id="多重检验校正benjamini-hochberg-方法"><span class="header-section-number">11</span> 多重检验校正：Benjamini-Hochberg 方法</h2>
 <p>当对 20,000 个基因同时进行假设检验时，若使用单个 p-value &lt; 0.05 的阈值，仅由随机波动就可能产生约 1,000 个假阳性（20,000 × 0.05）。</p>
 <p>Benjamini-Hochberg（BH）方法控制的是<strong>假发现率（False Discovery Rate, FDR）</strong>，即显著结果中假阳性的比例：</p>
 <p><span class="math display">\[\text{FDR} = E\left[\frac{V}{R}\right]\]</span></p>
@@ -1333,8 +1617,8 @@ window.Quarto = {
 <p>当 <code>padj &lt; 0.05</code> 时，意味着在所有报告的显著基因中，平均有不超过 5% 是假阳性。这比未校正的 p-value &lt; 0.05 宽松得多，但比 Bonferroni 校正（<span class="math inline">\(\alpha / m\)</span>）宽松，在保持统计功效的同时控制了假阳性率。</p>
 <hr>
 </section>
-<section id="课后自测-post-lesson-quiz" class="level2" data-number="23.11">
-<h2 data-number="23.11" class="anchored" data-anchor-id="课后自测-post-lesson-quiz"><span class="header-section-number">23.11</span> 课后自测 (Post-Lesson Quiz)</h2>
+<section id="课后自测-post-lesson-quiz" class="level2" data-number="12">
+<h2 data-number="12" class="anchored" data-anchor-id="课后自测-post-lesson-quiz"><span class="header-section-number">12</span> 课后自测 (Post-Lesson Quiz)</h2>
 <ol type="1">
 <li><p>某基因在 3 个处理组样本中的计数分别为 [5, 3, 7]，在 3 个对照组中为 [4, 6, 2]。为什么对这类低计数基因的差异检验结果不可靠？DESeq2 如何通过离散度缩减改善这一问题？</p></li>
 <li><p>DESeq2 的大小因子估计使用中位数而非均值，这一设计选择的统计依据是什么？请举例说明在什么情况下使用均值会产生错误结果。</p></li>

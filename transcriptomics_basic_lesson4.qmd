@@ -8,6 +8,12 @@ format:
     toc-depth: 3
     number-sections: true
     theme: cosmo
+crossref:
+  fig-title: 图
+  fig-prefix: 图
+  tbl-title: 表
+  tbl-prefix: 表
+  chapters: false
 ---
 
 ## 学习目标
@@ -35,17 +41,17 @@ format:
 
 ### Gene Ontology（GO）
 
-Gene Ontology 是一个层级化的受控词汇（controlled vocabulary）系统，将基因的功能划分为三个独立的本体（Ontology）：
+Gene Ontology 是一个层级化的受控词汇（controlled vocabulary）系统，将基因的功能划分为三个独立的本体（Ontology），如 @fig-go-logo 所示。
 
-{{Wiki:Gene_ontology}}
+![Gene Ontology 项目标志](https://upload.wikimedia.org/wikipedia/commons/thumb/6/6d/Go-logo.small.png/250px-Go-logo.small.png){#fig-go-logo width=15%}
 
-**生物学过程（Biological Process, BP）**：描述基因参与的生物学事件，从宏观（"免疫应答"）到微观（"受体酪氨酸激酶信号传导"）形成层级结构。这是 RNA-seq 分析中最常用的 GO 本体。
+**生物学过程（Biological Process, BP）**：描述基因参与的生物学事件，从宏观（"免疫应答"）到微观（"受体酪氨酸激酶信号传导"）形成层级结构。这是 RNA-seq 分析中最常用的 GO 本体，也是 clusterProfiler 默认分析的本体类型。
 
-**分子功能（Molecular Function, MF）**：描述基因产物在分子层面的活性（如"ATP 结合"、"DNA 结合转录因子活性"）。注意：MF 描述的是功能，而非执行该功能的生物学背景。
+**分子功能（Molecular Function, MF）**：描述基因产物在分子层面的活性（如"ATP 结合"、"DNA 结合转录因子活性"）。注意：MF 描述的是功能，而非执行该功能的生物学背景。同一基因产物可以同时具有多个 MF 注释（如"激酶活性"与"支架蛋白活性"）。
 
-**细胞组分（Cellular Component, CC）**：描述基因产物定位的细胞结构（如"线粒体内膜"、"核糖体大亚基"）。
+**细胞组分（Cellular Component, CC）**：描述基因产物定位的细胞结构（如"线粒体内膜"、"核糖体大亚基"）。CC 注释依赖实验性定位证据，因此注释覆盖度通常低于 BP 和 MF。
 
-GO 采用有向无环图（Directed Acyclic Graph, DAG）结构：每个 GO term 可以有多个亲本节点。一个基因被注释到某个 term 时，也隐含地注释到该 term 的所有祖先节点。这种层级传播（ancestral propagation）在富集分析中需要特别处理，否则会产生大量冗余的显著结果（父 term 因包含子 term 的基因而自动显著）。
+GO 采用有向无环图（Directed Acyclic Graph, DAG）结构：每个 GO term 可以有多个亲本节点（parent），而非简单的树形层级。以"线粒体 ATP 合成"这一 GO term 为例，它同时是"ATP 生物合成过程"和"线粒体电子传递"两个亲本的子节点。这种多重继承结构使 GO 能够更准确地表达复杂的生物学关系，但也带来了一个重要的计算问题：**祖先传播（ancestral propagation）**——当一个基因被注释到某个 GO term 时，它也隐含地注释到该 term 的所有祖先节点。在富集分析中，若不加处理，这会导致父 term 因自动继承子 term 的基因而呈现冗余显著性，产生数百个高度重叠的显著 GO terms，掩盖真正独立的生物学信号。`clusterProfiler` 的 `simplify()` 函数通过计算 GO terms 间的语义相似度来解决这一问题（参见本专题后续部分）。
 
 ### KEGG 通路数据库
 
@@ -132,6 +138,19 @@ $$p = \sum_{i=k}^{\min(n,K)} \frac{\binom{K}{i}\binom{N-K}{n-i}}{\binom{N}{n}}$$
 2. **丢失趋势信息**：将所有 DEGs 视为等效，忽视了上调和下调的方向性，以及表达变化幅度；
 3. **忽略非显著基因的信息**：接近但未达到阈值的基因被完全排除在外。
 
+### 解读 ORA 输出指标
+
+`clusterProfiler` 的 ORA 结果表中有几个容易混淆的列需要注意：
+
+- **GeneRatio**：以分数形式表示，分子为该 GO term 中属于 DEG 的基因数（$k$），分母为 DEG 总数（$n$）。点图（dotplot）的 x 轴即为 GeneRatio 的小数值。GeneRatio 越大，表示 DEG 中命中该 term 的比例越高。
+- **BgRatio**：同样以分数表示，分子为该 GO term 在背景集中的基因总数（$K$），分母为背景集总大小（$N$）。
+- **富集倍数（Fold Enrichment）**：GeneRatio 除以 BgRatio，是衡量富集强度的效应量指标，但 `enrichGO()` 默认不输出此列——可手动计算：`result$FoldEnrichment <- (result$Count / n) / (result$BgRatio_K / N)`。
+- **p.adjust 与 qvalue**：p.adjust 为 BH 校正后的 FDR，qvalue 为 Storey 方法的 q 值（假阳性发现率的贝叶斯估计）。两者均控制多重检验，通常以 p.adjust < 0.05 作为主要报告标准。
+
+:::tip
+**实用建议：** 对于大型 DEG 列表（> 2,000 个基因），p.adjust 极小的 GO terms 往往是细胞分裂、代谢等大而泛化的生物学过程，GeneRatio 未必高。应同时报告富集倍数和 leading edge 基因，而非单纯按 p.adjust 排序呈现结果。
+:::
+
 ---
 
 ## 基因集富集分析（GSEA）
@@ -152,7 +171,18 @@ ES 越大，表示基因集 $S$ 在排序列表的顶端（高度上调基因中
 
 **标准化富集得分（NES）**：由于不同基因集大小不同，需要将 ES 标准化。方法是将真实 ES 除以同大小随机基因集排列置换的平均 |ES|，得到 NES。NES > 1.5 通常视为有意义的正向富集。
 
-{{Wiki:Gene_set_enrichment_analysis}}
+**置换检验与 p 值计算**：GSEA 通过置换（permutation）建立零分布来评估 ES 的显著性。置换策略有两种，选择哪种对结果影响重大：
+
+- **基因标签置换（gene permutation）**：在保持基因排序不变的前提下，随机打乱基因集成员标签，计算各次置换的 ES，以此构建零分布。此方法不依赖样本重复数，适用于样本量少于 7 个的情况，是 `fgsea`（`clusterProfiler` 的后端）的默认策略。
+- **样本置换（sample permutation）**：随机打乱样本的表型标签，对每次置换重新排序基因、重新计算 ES。此方法保留了基因间相关结构，统计更严格，但要求至少 7 个样本。
+
+:::warning
+**置换次数的影响：** `fgsea` 的 `eps` 参数控制最小可报告 p 值的精度下界。默认 `eps = 1e-10` 使函数在极小 p 值时切换到精确近似算法，而非单纯增加置换次数。对 padj 极低（如 < 1e-5）的结果应谨慎——它们在统计上可靠，但生物学上仍需独立实验验证。
+:::
+
+GSEA 算法流程概览如 @fig-gsea-meta 所示。
+
+![GSEA 算法模块化流程示意图（来自 Wikipedia）](https://upload.wikimedia.org/wikipedia/commons/thumb/2/24/Gsea_meta.png/500px-Gsea_meta.png){#fig-gsea-meta width=85%}
 
 ### Leading Edge 分析
 
