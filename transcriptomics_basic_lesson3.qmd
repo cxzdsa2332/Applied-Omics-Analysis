@@ -134,7 +134,7 @@ p1 + p2
 
 ### 数值证据：真实数据中的方差–均值比
 
-以下代码用模拟数据对比泊松分布（方差≈均值）与过离散数据（方差 >> 均值）的差异，直观说明为何泊松假设在生物学重复中失效：
+以下代码基于真实的 airway 数据集（8 个人类气道平滑肌细胞样本，Himes et al. 2014），计算每个基因在样本间的方差与均值，直观展示泊松假设在生物学重复中的系统性失效：
 
 ```{r}
 #| label: fig-overdispersion
@@ -370,9 +370,23 @@ $$\log(\mu_{ij}) = \beta_{i0} + \beta_{i1}\, x_j + \log(s_j)$$
 
 其中 $x_j \in \{0, 1\}$ 为处理/对照的指示变量，$\log(s_j)$ 为大小因子（第一步的产出）的偏移项（offset），以自然对数表示。$\beta_{i1}$ 是**自然对数尺度**上的效应量：$\beta_{i1} = \ln(\mu_{\text{treated}} / \mu_{\text{untreated}})$，换算为常用的 log2 尺度即为 $\text{LFC}_i = \beta_{i1} / \ln 2$。
 
-在 $\tilde{\alpha}_i$ 固定的条件下，以下 NB 似然函数关于 $\boldsymbol{\beta}_i = (\beta_{i0}, \beta_{i1})$ 最大化，得到估计值 $\hat{\boldsymbol{\beta}}_i$：
+在 $\tilde{\alpha}_i$ 固定的条件下，NB 对数似然函数关于 $\boldsymbol{\beta}_i = (\beta_{i0}, \beta_{i1})$ 最大化，得到估计值 $\hat{\boldsymbol{\beta}}_i$。令 $r_i = 1/\tilde{\alpha}_i$，对全部样本求和，完整展开形式为：
 
-$$\ell(\boldsymbol{\beta}_i) = \sum_j \log \text{NB}\!\left(K_{ij};\; \mu_{ij}(\boldsymbol{\beta}_i),\; \tilde{\alpha}_i\right)$$
+$$\ell(\boldsymbol{\beta}_i) = \sum_j \left[
+  \log\Gamma\!\left(K_{ij} + r_i\right)
+  - \log\Gamma(r_i)
+  - \log(K_{ij}!)
+  + r_i \log\frac{r_i}{\mu_{ij} + r_i}
+  + K_{ij} \log\frac{\mu_{ij}}{\mu_{ij} + r_i}
+\right]$$
+
+各项的含义如下：
+
+- $\log\Gamma(K_{ij} + r_i) - \log\Gamma(r_i) - \log(K_{ij}!)$：组合数项，仅依赖观测值 $K_{ij}$ 与固定的 $r_i$，对 $\boldsymbol{\beta}_i$ 的优化无贡献，可视为常数；
+- $r_i \log\dfrac{r_i}{\mu_{ij} + r_i}$：与 $\mu_{ij}(\boldsymbol{\beta}_i)$ 有关，惩罚均值偏离 $r_i$ 的程度；
+- $K_{ij} \log\dfrac{\mu_{ij}}{\mu_{ij} + r_i}$：将观测计数 $K_{ij}$ 与模型预测均值 $\mu_{ij}$ 相联系的核心项，当 $\mu_{ij} \to K_{ij}$ 时该项最大。
+
+实际优化时只需对含 $\mu_{ij}(\boldsymbol{\beta}_i)$ 的后两项关于 $(\beta_{i0}, \beta_{i1})$ 求偏导并令其为零，通过迭代加权最小二乘（IWLS）数值求解。
 
 #### $\tilde{\alpha}_i$ 如何影响 $\text{SE}(\hat{\beta}_{i1})$
 
@@ -723,15 +737,32 @@ cat("  Up-regulated  :", sum(sig_genes$log2FoldChange > 0), "\n")
 cat("  Down-regulated:", sum(sig_genes$log2FoldChange < 0), "\n\n")
 print(head(as.data.frame(sig_genes)[, c("log2FoldChange", "lfcSE", "padj")], 10))
 
-# === Step 7: MA plot ===
-# X-axis: mean normalized count; Y-axis: shrunken LFC
-# Blue dots = significant (padj < 0.05); grey = not significant
-# Shrinkage: low-count genes on the left no longer show extreme LFC values
-plotMA(res_shrunk,
-       ylim = c(-5, 5),
-       main = "MA Plot: DESeq2 apeglm LFC shrinkage — dex vs untrt (airway)",
-       alpha = 0.05)
-abline(h = c(-1, 1), col = "firebrick", lty = 2, lwd = 1.0)
+# === Step 7: MA plot (ggplot2) ===
+# lfcShrink(type="apeglm") stores significance in 'svalue', not 'padj'.
+# plotMA() reads 'padj' by default, so all points appear black.
+# Solution: build the MA plot manually from the results data frame.
+
+ma_df <- as.data.frame(res_shrunk)
+ma_df$significant <- !is.na(ma_df$padj) & ma_df$padj < 0.05
+
+ggplot(ma_df, aes(x = log10(baseMean + 1),
+                  y = log2FoldChange,
+                  color = significant)) +
+  geom_point(size = 0.6, alpha = 0.5) +
+  scale_color_manual(values = c("FALSE" = "grey60", "TRUE" = "#2166ac"),
+                     labels = c("Not significant", "padj < 0.05")) +
+  geom_hline(yintercept = c(-1, 1), color = "firebrick",
+             linetype = "dashed", linewidth = 0.8) +
+  geom_hline(yintercept = 0, color = "black", linewidth = 0.4) +
+  coord_cartesian(ylim = c(-5, 5)) +
+  labs(
+    x     = "log10 (mean normalized count + 1)",
+    y     = "log2 Fold Change (apeglm shrunken)",
+    title = "MA Plot: DESeq2 apeglm LFC shrinkage — dex vs untrt (airway)",
+    color = NULL
+  ) +
+  theme_classic(base_size = 12) +
+  theme(legend.position = "top")
 ```
 
 ### 样本质量评估：PCA 与距离热图
@@ -824,7 +855,22 @@ library(ggrepel)
 # Remove NA rows (independent filtering exclusions) before plotting
 res_df <- as.data.frame(res_shrunk)
 res_df <- res_df[!is.na(res_df$padj), ]
-res_df$gene <- rownames(res_df)
+res_df$ensembl_id <- rownames(res_df)
+
+# Map Ensembl IDs to HGNC gene symbols
+# airway row names are Ensembl IDs (e.g. ENSG00000000003)
+library(org.Hs.eg.db)
+symbol_map <- mapIds(
+  org.Hs.eg.db,
+  keys      = res_df$ensembl_id,
+  column    = "SYMBOL",
+  keytype   = "ENSEMBL",
+  multiVals = "first"         # take the first symbol when 1:many mapping
+)
+# Fall back to Ensembl ID when no symbol is available
+res_df$gene <- ifelse(is.na(symbol_map[res_df$ensembl_id]),
+                      res_df$ensembl_id,
+                      symbol_map[res_df$ensembl_id])
 
 # Classify each gene by significance and direction
 res_df$significance <- "Not significant"
@@ -865,8 +911,24 @@ ggplot(res_df, aes(x = log2FoldChange, y = -log10(padj),
 
 基础火山图展示整体分布，增强版在此基础上标注统计排名前列的显著基因，帮助读者快速识别关键候选基因。`ggrepel` 包通过弹簧力算法自动避免标签重叠。
 
+:::note
+**前置依赖：** 本代码块直接使用上方"基础火山图"代码块中构建的 `res_df` 对象。`res_df` 包含以下关键列：
+
+- `log2FoldChange`、`padj`：来自 `res_shrunk`（DESeq2 完整实践 Step 5 的 apeglm 收缩结果）
+- `significance`：基础火山图代码块中按 `padj < 0.05 & |LFC| > 1` 分类所得
+- `gene`：由 Ensembl ID 经 `org.Hs.eg.db` 映射所得的 HGNC symbol（找不到对应 symbol 时保留原始 Ensembl ID）
+
+请确保已依次运行：DESeq2 完整实践 → 基础火山图 代码块，再执行本段代码。
+:::
+
 ```r
-# Select top genes for labeling: top 20 by padj, restricted to significant ones
+# Prerequisite objects (produced by earlier code blocks):
+#   res_shrunk  — lfcShrink() output (DESeq2 complete pipeline, Step 5)
+#   res_df      — annotated results data frame with columns:
+#                   log2FoldChange, padj, significance, gene (HGNC symbol)
+#   n_up, n_down — significant DEG counts computed in the basic volcano block
+
+# Select top genes for labeling: top 10 per direction, ranked by padj
 top_up   <- head(res_df[res_df$significance == "Up",   ][
                    order(res_df[res_df$significance == "Up",   ]$padj), ], 10)
 top_down <- head(res_df[res_df$significance == "Down",  ][
@@ -927,6 +989,10 @@ ggplot(res_df, aes(x = log2FoldChange, y = -log10(padj),
 实际分析中，阈值的选取应根据研究目的调整。以下代码展示如何同时显示多个严格程度的阈值，并对特定基因（如已知靶基因）进行单独高亮：
 
 ```r
+# Prerequisite: res_df from the basic volcano plot block (with gene symbol column).
+# genes_of_interest are matched against res_df$gene (HGNC symbols),
+# which is available after the Ensembl → symbol mapping in that block.
+
 # Highlight specific genes of interest (e.g., known glucocorticoid targets)
 genes_of_interest <- c("DUSP1", "KLF15", "CRISPLD2", "NNMT", "SPARCL1")
 

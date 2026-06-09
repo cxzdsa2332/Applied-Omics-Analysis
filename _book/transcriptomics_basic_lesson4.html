@@ -6,7 +6,7 @@
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
-<meta name="dcterms.date" content="2026-06-08">
+<meta name="dcterms.date" content="2026-06-09">
 
 <title>24&nbsp; 功能富集分析 – Introduction to Applied High-throughput Biological Data Analysis</title>
 <style>
@@ -611,13 +611,15 @@ window.Quarto = {
   <li><a href="#过表示富集分析over-representation-analysisora" id="toc-过表示富集分析over-representation-analysisora" class="nav-link" data-scroll-target="#过表示富集分析over-representation-analysisora"><span class="header-section-number">4</span> 过表示富集分析（Over-Representation Analysis，ORA）</a>
   <ul class="collapse">
   <li><a href="#超几何检验原理" id="toc-超几何检验原理" class="nav-link" data-scroll-target="#超几何检验原理"><span class="header-section-number">4.1</span> 超几何检验原理</a></li>
-  <li><a href="#ora-的适用场景与局限性" id="toc-ora-的适用场景与局限性" class="nav-link" data-scroll-target="#ora-的适用场景与局限性"><span class="header-section-number">4.2</span> ORA 的适用场景与局限性</a></li>
-  <li><a href="#解读-ora-输出指标" id="toc-解读-ora-输出指标" class="nav-link" data-scroll-target="#解读-ora-输出指标"><span class="header-section-number">4.3</span> 解读 ORA 输出指标</a></li>
+  <li><a href="#手动实现超几何检验" id="toc-手动实现超几何检验" class="nav-link" data-scroll-target="#手动实现超几何检验"><span class="header-section-number">4.2</span> 手动实现超几何检验</a></li>
+  <li><a href="#ora-的适用场景与局限性" id="toc-ora-的适用场景与局限性" class="nav-link" data-scroll-target="#ora-的适用场景与局限性"><span class="header-section-number">4.3</span> ORA 的适用场景与局限性</a></li>
+  <li><a href="#解读-ora-输出指标" id="toc-解读-ora-输出指标" class="nav-link" data-scroll-target="#解读-ora-输出指标"><span class="header-section-number">4.4</span> 解读 ORA 输出指标</a></li>
   </ul></li>
   <li><a href="#基因集富集分析gsea" id="toc-基因集富集分析gsea" class="nav-link" data-scroll-target="#基因集富集分析gsea"><span class="header-section-number">5</span> 基因集富集分析（GSEA）</a>
   <ul class="collapse">
   <li><a href="#算法原理" id="toc-算法原理" class="nav-link" data-scroll-target="#算法原理"><span class="header-section-number">5.1</span> 算法原理</a></li>
   <li><a href="#leading-edge-分析" id="toc-leading-edge-分析" class="nav-link" data-scroll-target="#leading-edge-分析"><span class="header-section-number">5.2</span> Leading Edge 分析</a></li>
+  <li><a href="#手动实现-gseaes-计算与基因标签置换检验" id="toc-手动实现-gseaes-计算与基因标签置换检验" class="nav-link" data-scroll-target="#手动实现-gseaes-计算与基因标签置换检验"><span class="header-section-number">5.3</span> 手动实现 GSEA：ES 计算与基因标签置换检验</a></li>
   </ul></li>
   <li><a href="#clusterprofiler-实践" id="toc-clusterprofiler-实践" class="nav-link" data-scroll-target="#clusterprofiler-实践"><span class="header-section-number">6</span> clusterProfiler 实践</a>
   <ul class="collapse">
@@ -631,7 +633,7 @@ window.Quarto = {
   <li><a href="#kegg-通路可视化pathview" id="toc-kegg-通路可视化pathview" class="nav-link" data-scroll-target="#kegg-通路可视化pathview"><span class="header-section-number">8.3</span> KEGG 通路可视化：pathview</a></li>
   </ul></li>
   <li><a href="#结果解读的批判性原则" id="toc-结果解读的批判性原则" class="nav-link" data-scroll-target="#结果解读的批判性原则"><span class="header-section-number">9</span> 结果解读的批判性原则</a></li>
-  <li><a href="#实践完整富集分析报告" id="toc-实践完整富集分析报告" class="nav-link" data-scroll-target="#实践完整富集分析报告"><span class="header-section-number">10</span> 实践：完整富集分析报告</a></li>
+  <li><a href="#结果汇总与文件输出" id="toc-结果汇总与文件输出" class="nav-link" data-scroll-target="#结果汇总与文件输出"><span class="header-section-number">10</span> 结果汇总与文件输出</a></li>
   <li><a href="#课后自测-post-lesson-quiz" id="toc-课后自测-post-lesson-quiz" class="nav-link" data-scroll-target="#课后自测-post-lesson-quiz"><span class="header-section-number">11</span> 课后自测 (Post-Lesson Quiz)</a></li>
   </ul>
 <div class="toc-actions"><ul><li><a href="https://github.com/cxzdsa2332/Applied-Omics-Analysis/edit/main/transcriptomics_basic_lesson4.qmd" class="toc-action"><i class="bi bi-github"></i>Edit this page</a></li><li><a href="https://github.com/cxzdsa2332/Applied-Omics-Analysis/issues/new" class="toc-action"><i class="bi empty"></i>Report an issue</a></li><li><a href="https://github.com/cxzdsa2332/Applied-Omics-Analysis/blob/main/transcriptomics_basic_lesson4.qmd" class="toc-action"><i class="bi empty"></i>View source</a></li></ul></div></nav>
@@ -652,7 +654,7 @@ window.Quarto = {
     <div>
     <div class="quarto-title-meta-heading">Published</div>
     <div class="quarto-title-meta-contents">
-      <p class="date">June 8, 2026</p>
+      <p class="date">June 9, 2026</p>
     </div>
   </div>
   
@@ -712,7 +714,7 @@ window.Quarto = {
 </section>
 <section id="msigdb-基因集合库" class="level3" data-number="3.3">
 <h3 data-number="3.3" class="anchored" data-anchor-id="msigdb-基因集合库"><span class="header-section-number">3.3</span> MSigDB 基因集合库</h3>
-<p>Molecular Signatures Database（MSigDB）提供了广泛的人工策划基因集，常用于 GSEA：</p>
+<p>Molecular Signatures Database（MSigDB）提供了广泛的人工策划基因集，常用于基因集富集分析（Gene Set Enrichment Analysis，GSEA）：</p>
 <ul>
 <li><strong>H（Hallmark gene sets）</strong>：50 个代表性生物学过程的基因集，去冗余、高置信度，适合入门分析；</li>
 <li><strong>C2（Curated gene sets）</strong>：来自已发表文献和通路数据库的实验验证基因集；</li>
@@ -727,30 +729,7 @@ window.Quarto = {
 <li><strong>开放获取</strong>：完全免费，且提供 Bioconductor 接口（<code>ReactomePA</code> 包）；</li>
 <li><strong>与 KEGG 互补</strong>：两个数据库在通路覆盖上存在差异，联合使用可提高召回率。</li>
 </ul>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb1"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(ReactomePA)</span>
-<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="co"># Reactome ORA</span></span>
-<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a>reactome_ora <span class="ot">&lt;-</span> <span class="fu">enrichPathway</span>(</span>
-<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a>  <span class="at">gene          =</span> sig_entrez,</span>
-<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a>  <span class="at">organism      =</span> <span class="st">"human"</span>,</span>
-<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a>  <span class="at">pvalueCutoff  =</span> <span class="fl">0.05</span>,</span>
-<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a>  <span class="at">pAdjustMethod =</span> <span class="st">"BH"</span>,</span>
-<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a>  <span class="at">universe      =</span> universe_entrez,</span>
-<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a>  <span class="at">readable      =</span> <span class="cn">TRUE</span></span>
-<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a>)</span>
-<span id="cb1-12"><a href="#cb1-12" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-13"><a href="#cb1-13" aria-hidden="true" tabindex="-1"></a><span class="fu">dotplot</span>(reactome_ora, <span class="at">showCategory =</span> <span class="dv">15</span>) <span class="sc">+</span></span>
-<span id="cb1-14"><a href="#cb1-14" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(<span class="at">title =</span> <span class="st">"Reactome ORA: dex treatment vs control"</span>)</span>
-<span id="cb1-15"><a href="#cb1-15" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-16"><a href="#cb1-16" aria-hidden="true" tabindex="-1"></a><span class="co"># Reactome GSEA</span></span>
-<span id="cb1-17"><a href="#cb1-17" aria-hidden="true" tabindex="-1"></a>reactome_gsea <span class="ot">&lt;-</span> <span class="fu">gsePathway</span>(</span>
-<span id="cb1-18"><a href="#cb1-18" aria-hidden="true" tabindex="-1"></a>  <span class="at">geneList      =</span> ranked_genes,</span>
-<span id="cb1-19"><a href="#cb1-19" aria-hidden="true" tabindex="-1"></a>  <span class="at">organism      =</span> <span class="st">"human"</span>,</span>
-<span id="cb1-20"><a href="#cb1-20" aria-hidden="true" tabindex="-1"></a>  <span class="at">minGSSize     =</span> <span class="dv">15</span>,</span>
-<span id="cb1-21"><a href="#cb1-21" aria-hidden="true" tabindex="-1"></a>  <span class="at">pvalueCutoff  =</span> <span class="fl">0.05</span>,</span>
-<span id="cb1-22"><a href="#cb1-22" aria-hidden="true" tabindex="-1"></a>  <span class="at">pAdjustMethod =</span> <span class="st">"BH"</span>,</span>
-<span id="cb1-23"><a href="#cb1-23" aria-hidden="true" tabindex="-1"></a>  <span class="at">seed          =</span> <span class="dv">42</span></span>
-<span id="cb1-24"><a href="#cb1-24" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>Reactome ORA 与 GSEA 的完整代码示例见本专题「多数据库结果整合与高级可视化」一节。</p>
 <hr>
 </section>
 </section>
@@ -758,17 +737,107 @@ window.Quarto = {
 <h2 data-number="4" class="anchored" data-anchor-id="过表示富集分析over-representation-analysisora"><span class="header-section-number">4</span> 过表示富集分析（Over-Representation Analysis，ORA）</h2>
 <section id="超几何检验原理" class="level3" data-number="4.1">
 <h3 data-number="4.1" class="anchored" data-anchor-id="超几何检验原理"><span class="header-section-number">4.1</span> 超几何检验原理</h3>
-<p>ORA 将差异表达基因（DEGs）与某个功能基因集进行重叠分析，通过超几何检验（hypergeometric test）评估重叠程度是否超出随机预期。</p>
+<p>ORA 将差异表达基因（DEGs）与某个功能基因集进行重叠分析，通过超几何检验（hypergeometric test）评估重叠程度是否超出随机预期。简而言之，我们真正想问的是：“我找到的这批差异基因中，属于某个特定功能的基因是不是多得有些反常？”</p>
 <p>假设： - <span class="math inline">\(N\)</span>：背景基因集总数（通常为检测到有表达的所有基因）； - <span class="math inline">\(K\)</span>：某 GO term 中基因总数； - <span class="math inline">\(n\)</span>：显著 DEGs 总数； - <span class="math inline">\(k\)</span>：DEGs 中属于该 GO term 的基因数。</p>
 <p>p 值为从 <span class="math inline">\(N\)</span> 个基因中随机抽取 <span class="math inline">\(n\)</span> 个，至少有 <span class="math inline">\(k\)</span> 个属于该 GO term 的概率：</p>
 <p><span class="math display">\[p = \sum_{i=k}^{\min(n,K)} \frac{\binom{K}{i}\binom{N-K}{n-i}}{\binom{N}{n}}\]</span></p>
-<p>这等同于从一个含 <span class="math inline">\(K\)</span> 个”红球”和 <span class="math inline">\(N-K\)</span> 个”黑球”的瓮中不放回地抽取 <span class="math inline">\(n\)</span> 个球，至少抽到 <span class="math inline">\(k\)</span> 个红球的概率。</p>
+<p>这等同于从一个含 <span class="math inline">\(K\)</span> 个”红球”和 <span class="math inline">\(N-K\)</span> 个”黑球”的瓮中不放回地抽取 <span class="math inline">\(n\)</span> 个球，至少抽到 <span class="math inline">\(k\)</span> 个红球的概率。即我们想知道，闭着眼睛抓 <span class="math inline">\(n\)</span> 个球，居然抓到了 <span class="math inline">\(k\)</span> 个红球，这是纯粹凭运气（随机发生的），还是因为某种必然的原因（即这个功能确实被激活了）。</p>
 <div class="warning">
 <p><strong>背景基因集的选择至关重要。</strong> 若将背景集设为”全基因组所有基因”（而非”在该实验中检测到有表达的基因”），则分母 <span class="math inline">\(N\)</span> 偏大，导致 <span class="math inline">\(\frac{k}{n}\)</span> 相对 <span class="math inline">\(\frac{K}{N}\)</span> 的比值（富集倍数）被低估，p 值偏保守。更严重的是，若使用”全基因组”作为背景，但实际实验只能检测到一部分基因，则对每个 GO term 中有多少基因”在实验中可被检测”的假设是错误的。<strong>始终使用实验检测到的基因作为背景集。</strong></p>
 </div>
 </section>
-<section id="ora-的适用场景与局限性" class="level3" data-number="4.2">
-<h3 data-number="4.2" class="anchored" data-anchor-id="ora-的适用场景与局限性"><span class="header-section-number">4.2</span> ORA 的适用场景与局限性</h3>
+<section id="手动实现超几何检验" class="level3" data-number="4.2">
+<h3 data-number="4.2" class="anchored" data-anchor-id="手动实现超几何检验"><span class="header-section-number">4.2</span> 手动实现超几何检验</h3>
+<p>以下代码以模拟数据从头复现超几何检验的完整计算过程，并通过逐步改变参数（背景集大小 <span class="math inline">\(N\)</span>）直观展示「背景集选择」对 p 值的影响，最后与 R 内置函数 <code>phyper()</code> 进行数值验证。</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb1"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(ggplot2)</span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="co"># ── 参数设置（对应一个典型 GO term）──────────────────────────────────────────</span></span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a>N <span class="ot">&lt;-</span> <span class="dv">15000</span>   <span class="co"># 背景基因总数（实验检测到的基因）</span></span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a>K <span class="ot">&lt;-</span>   <span class="dv">200</span>   <span class="co"># 该 GO term 在背景中的基因数</span></span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a>n <span class="ot">&lt;-</span>   <span class="dv">500</span>   <span class="co"># 显著 DEGs 总数</span></span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a>k <span class="ot">&lt;-</span>    <span class="dv">30</span>   <span class="co"># DEGs 中命中该 GO term 的基因数</span></span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a><span class="co"># ── 手动计算超几何检验 p 值 ─────────────────────────────────────────────────</span></span>
+<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a><span class="co"># P(X &gt;= k)，X ~ Hypergeometric(N, K, n)</span></span>
+<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a><span class="co"># R 的 phyper(q, m, n, k) 计算 P(X &lt;= q)，其中 m=K, n=N-K, k=n</span></span>
+<span id="cb1-12"><a href="#cb1-12" aria-hidden="true" tabindex="-1"></a><span class="co"># 因此 P(X &gt;= k) = 1 - P(X &lt;= k-1) = phyper(k-1, K, N-K, n, lower.tail=FALSE)</span></span>
+<span id="cb1-13"><a href="#cb1-13" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-14"><a href="#cb1-14" aria-hidden="true" tabindex="-1"></a>p_manual <span class="ot">&lt;-</span> <span class="fu">sum</span>(</span>
+<span id="cb1-15"><a href="#cb1-15" aria-hidden="true" tabindex="-1"></a>  <span class="fu">dhyper</span>(k<span class="sc">:</span><span class="fu">min</span>(n, K), <span class="at">m =</span> K, <span class="at">n =</span> N <span class="sc">-</span> K, <span class="at">k =</span> n)</span>
+<span id="cb1-16"><a href="#cb1-16" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb1-17"><a href="#cb1-17" aria-hidden="true" tabindex="-1"></a>p_phyper <span class="ot">&lt;-</span> <span class="fu">phyper</span>(k <span class="sc">-</span> <span class="dv">1</span>, <span class="at">m =</span> K, <span class="at">n =</span> N <span class="sc">-</span> K, <span class="at">k =</span> n, <span class="at">lower.tail =</span> <span class="cn">FALSE</span>)</span>
+<span id="cb1-18"><a href="#cb1-18" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-19"><a href="#cb1-19" aria-hidden="true" tabindex="-1"></a>expected_overlap <span class="ot">&lt;-</span> n <span class="sc">*</span> K <span class="sc">/</span> N          <span class="co"># 期望重叠数 = n × K/N</span></span>
+<span id="cb1-20"><a href="#cb1-20" aria-hidden="true" tabindex="-1"></a>fold_enrichment  <span class="ot">&lt;-</span> (k <span class="sc">/</span> n) <span class="sc">/</span> (K <span class="sc">/</span> N) <span class="co"># 富集倍数 = GeneRatio / BgRatio</span></span>
+<span id="cb1-21"><a href="#cb1-21" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-22"><a href="#cb1-22" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">"=== Hypergeometric test (manual) ===</span><span class="sc">\n</span><span class="st">"</span>)</span>
+<span id="cb1-23"><a href="#cb1-23" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="fu">sprintf</span>(<span class="st">"  Background N = %d, GO term K = %d, DEGs n = %d, overlap k = %d</span><span class="sc">\n</span><span class="st">"</span>,</span>
+<span id="cb1-24"><a href="#cb1-24" aria-hidden="true" tabindex="-1"></a>            N, K, n, k))</span>
+<span id="cb1-25"><a href="#cb1-25" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="fu">sprintf</span>(<span class="st">"  Expected overlap under H0 : %.2f</span><span class="sc">\n</span><span class="st">"</span>, expected_overlap))</span>
+<span id="cb1-26"><a href="#cb1-26" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="fu">sprintf</span>(<span class="st">"  Observed overlap          : %d</span><span class="sc">\n</span><span class="st">"</span>, k))</span>
+<span id="cb1-27"><a href="#cb1-27" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="fu">sprintf</span>(<span class="st">"  Fold enrichment           : %.2f×</span><span class="sc">\n</span><span class="st">"</span>, fold_enrichment))</span>
+<span id="cb1-28"><a href="#cb1-28" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="fu">sprintf</span>(<span class="st">"  p-value (manual dhyper)   : %.2e</span><span class="sc">\n</span><span class="st">"</span>, p_manual))</span>
+<span id="cb1-29"><a href="#cb1-29" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="fu">sprintf</span>(<span class="st">"  p-value (phyper verify)   : %.2e</span><span class="sc">\n</span><span class="st">"</span>, p_phyper))</span>
+<span id="cb1-30"><a href="#cb1-30" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="fu">sprintf</span>(<span class="st">"  Difference (should be ~0) : %.2e</span><span class="sc">\n</span><span class="st">"</span>, <span class="fu">abs</span>(p_manual <span class="sc">-</span> p_phyper)))</span>
+<span id="cb1-31"><a href="#cb1-31" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-32"><a href="#cb1-32" aria-hidden="true" tabindex="-1"></a><span class="co"># ── 展示概率质量函数并标记观测值 ─────────────────────────────────────────────</span></span>
+<span id="cb1-33"><a href="#cb1-33" aria-hidden="true" tabindex="-1"></a>x_range <span class="ot">&lt;-</span> <span class="dv">0</span><span class="sc">:</span><span class="dv">60</span></span>
+<span id="cb1-34"><a href="#cb1-34" aria-hidden="true" tabindex="-1"></a>pmf_df  <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(</span>
+<span id="cb1-35"><a href="#cb1-35" aria-hidden="true" tabindex="-1"></a>  <span class="at">x    =</span> x_range,</span>
+<span id="cb1-36"><a href="#cb1-36" aria-hidden="true" tabindex="-1"></a>  <span class="at">prob =</span> <span class="fu">dhyper</span>(x_range, <span class="at">m =</span> K, <span class="at">n =</span> N <span class="sc">-</span> K, <span class="at">k =</span> n)</span>
+<span id="cb1-37"><a href="#cb1-37" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb1-38"><a href="#cb1-38" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-39"><a href="#cb1-39" aria-hidden="true" tabindex="-1"></a><span class="fu">ggplot</span>(pmf_df, <span class="fu">aes</span>(<span class="at">x =</span> x, <span class="at">y =</span> prob)) <span class="sc">+</span></span>
+<span id="cb1-40"><a href="#cb1-40" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_col</span>(<span class="at">fill =</span> <span class="st">"#4575b4"</span>, <span class="at">alpha =</span> <span class="fl">0.7</span>, <span class="at">width =</span> <span class="fl">0.8</span>) <span class="sc">+</span></span>
+<span id="cb1-41"><a href="#cb1-41" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_vline</span>(<span class="at">xintercept =</span> k, <span class="at">color =</span> <span class="st">"#d73027"</span>,</span>
+<span id="cb1-42"><a href="#cb1-42" aria-hidden="true" tabindex="-1"></a>             <span class="at">linewidth =</span> <span class="fl">1.2</span>, <span class="at">linetype =</span> <span class="st">"dashed"</span>) <span class="sc">+</span></span>
+<span id="cb1-43"><a href="#cb1-43" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_vline</span>(<span class="at">xintercept =</span> expected_overlap, <span class="at">color =</span> <span class="st">"#e08214"</span>,</span>
+<span id="cb1-44"><a href="#cb1-44" aria-hidden="true" tabindex="-1"></a>             <span class="at">linewidth =</span> <span class="fl">1.0</span>, <span class="at">linetype =</span> <span class="st">"dotted"</span>) <span class="sc">+</span></span>
+<span id="cb1-45"><a href="#cb1-45" aria-hidden="true" tabindex="-1"></a>  <span class="fu">annotate</span>(<span class="st">"text"</span>, <span class="at">x =</span> k <span class="sc">+</span> <span class="dv">1</span>, <span class="at">y =</span> <span class="fu">max</span>(pmf_df<span class="sc">$</span>prob) <span class="sc">*</span> <span class="fl">0.9</span>,</span>
+<span id="cb1-46"><a href="#cb1-46" aria-hidden="true" tabindex="-1"></a>           <span class="at">label =</span> <span class="fu">sprintf</span>(<span class="st">"Observed k = %d</span><span class="sc">\n</span><span class="st">p = %.2e"</span>, k, p_manual),</span>
+<span id="cb1-47"><a href="#cb1-47" aria-hidden="true" tabindex="-1"></a>           <span class="at">color =</span> <span class="st">"#d73027"</span>, <span class="at">hjust =</span> <span class="dv">0</span>, <span class="at">size =</span> <span class="fl">3.2</span>) <span class="sc">+</span></span>
+<span id="cb1-48"><a href="#cb1-48" aria-hidden="true" tabindex="-1"></a>  <span class="fu">annotate</span>(<span class="st">"text"</span>, <span class="at">x =</span> expected_overlap <span class="sc">-</span> <span class="dv">1</span>, <span class="at">y =</span> <span class="fu">max</span>(pmf_df<span class="sc">$</span>prob) <span class="sc">*</span> <span class="fl">0.75</span>,</span>
+<span id="cb1-49"><a href="#cb1-49" aria-hidden="true" tabindex="-1"></a>           <span class="at">label =</span> <span class="fu">sprintf</span>(<span class="st">"Expected</span><span class="sc">\n</span><span class="st">= %.1f"</span>, expected_overlap),</span>
+<span id="cb1-50"><a href="#cb1-50" aria-hidden="true" tabindex="-1"></a>           <span class="at">color =</span> <span class="st">"#e08214"</span>, <span class="at">hjust =</span> <span class="dv">1</span>, <span class="at">size =</span> <span class="fl">3.0</span>) <span class="sc">+</span></span>
+<span id="cb1-51"><a href="#cb1-51" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(</span>
+<span id="cb1-52"><a href="#cb1-52" aria-hidden="true" tabindex="-1"></a>    <span class="at">x     =</span> <span class="st">"Number of DEGs overlapping with GO term (k)"</span>,</span>
+<span id="cb1-53"><a href="#cb1-53" aria-hidden="true" tabindex="-1"></a>    <span class="at">y     =</span> <span class="st">"Probability mass"</span>,</span>
+<span id="cb1-54"><a href="#cb1-54" aria-hidden="true" tabindex="-1"></a>    <span class="at">title =</span> <span class="fu">sprintf</span>(<span class="st">"Hypergeometric PMF  (N=%d, K=%d, n=%d)"</span>, N, K, n),</span>
+<span id="cb1-55"><a href="#cb1-55" aria-hidden="true" tabindex="-1"></a>    <span class="at">subtitle =</span> <span class="fu">sprintf</span>(<span class="st">"Shaded area to the right of red line = p-value = %.2e"</span>, p_manual)</span>
+<span id="cb1-56"><a href="#cb1-56" aria-hidden="true" tabindex="-1"></a>  ) <span class="sc">+</span></span>
+<span id="cb1-57"><a href="#cb1-57" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme_classic</span>(<span class="at">base_size =</span> <span class="dv">11</span>)</span>
+<span id="cb1-58"><a href="#cb1-58" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-59"><a href="#cb1-59" aria-hidden="true" tabindex="-1"></a><span class="co"># ── 敏感性分析：背景集大小对 p 值的影响 ──────────────────────────────────────</span></span>
+<span id="cb1-60"><a href="#cb1-60" aria-hidden="true" tabindex="-1"></a><span class="co"># 固定 k=30, n=500, K=200，改变 N（模拟"用不同背景集"的场景）</span></span>
+<span id="cb1-61"><a href="#cb1-61" aria-hidden="true" tabindex="-1"></a>N_vals <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="dv">5000</span>, <span class="dv">8000</span>, <span class="dv">10000</span>, <span class="dv">15000</span>, <span class="dv">20000</span>, <span class="dv">25000</span>)</span>
+<span id="cb1-62"><a href="#cb1-62" aria-hidden="true" tabindex="-1"></a>sens_df <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(</span>
+<span id="cb1-63"><a href="#cb1-63" aria-hidden="true" tabindex="-1"></a>  <span class="at">N      =</span> N_vals,</span>
+<span id="cb1-64"><a href="#cb1-64" aria-hidden="true" tabindex="-1"></a>  <span class="at">p      =</span> <span class="fu">sapply</span>(N_vals, <span class="cf">function</span>(Ni)</span>
+<span id="cb1-65"><a href="#cb1-65" aria-hidden="true" tabindex="-1"></a>    <span class="fu">phyper</span>(k <span class="sc">-</span> <span class="dv">1</span>, <span class="at">m =</span> K, <span class="at">n =</span> Ni <span class="sc">-</span> K, <span class="at">k =</span> n, <span class="at">lower.tail =</span> <span class="cn">FALSE</span>)),</span>
+<span id="cb1-66"><a href="#cb1-66" aria-hidden="true" tabindex="-1"></a>  <span class="at">fe     =</span> <span class="fu">sapply</span>(N_vals, <span class="cf">function</span>(Ni) (k <span class="sc">/</span> n) <span class="sc">/</span> (K <span class="sc">/</span> Ni)),</span>
+<span id="cb1-67"><a href="#cb1-67" aria-hidden="true" tabindex="-1"></a>  <span class="at">label  =</span> <span class="fu">ifelse</span>(N_vals <span class="sc">==</span> <span class="dv">15000</span>, <span class="st">"Correct</span><span class="sc">\n</span><span class="st">(detected genes)"</span>, <span class="st">""</span>)</span>
+<span id="cb1-68"><a href="#cb1-68" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb1-69"><a href="#cb1-69" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-70"><a href="#cb1-70" aria-hidden="true" tabindex="-1"></a><span class="fu">ggplot</span>(sens_df, <span class="fu">aes</span>(<span class="at">x =</span> N, <span class="at">y =</span> <span class="sc">-</span><span class="fu">log10</span>(p))) <span class="sc">+</span></span>
+<span id="cb1-71"><a href="#cb1-71" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_line</span>(<span class="at">color =</span> <span class="st">"#2166ac"</span>, <span class="at">linewidth =</span> <span class="fl">1.2</span>) <span class="sc">+</span></span>
+<span id="cb1-72"><a href="#cb1-72" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_point</span>(<span class="at">size =</span> <span class="dv">3</span>, <span class="at">color =</span> <span class="st">"#2166ac"</span>) <span class="sc">+</span></span>
+<span id="cb1-73"><a href="#cb1-73" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_point</span>(<span class="at">data =</span> sens_df[sens_df<span class="sc">$</span>N <span class="sc">==</span> <span class="dv">15000</span>, ],</span>
+<span id="cb1-74"><a href="#cb1-74" aria-hidden="true" tabindex="-1"></a>             <span class="at">size =</span> <span class="dv">5</span>, <span class="at">color =</span> <span class="st">"#d73027"</span>) <span class="sc">+</span></span>
+<span id="cb1-75"><a href="#cb1-75" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_text</span>(<span class="fu">aes</span>(<span class="at">label =</span> label), <span class="at">vjust =</span> <span class="sc">-</span><span class="fl">1.2</span>, <span class="at">size =</span> <span class="fl">3.0</span>, <span class="at">color =</span> <span class="st">"#d73027"</span>) <span class="sc">+</span></span>
+<span id="cb1-76"><a href="#cb1-76" aria-hidden="true" tabindex="-1"></a>  <span class="fu">scale_x_continuous</span>(<span class="at">labels =</span> scales<span class="sc">::</span>comma) <span class="sc">+</span></span>
+<span id="cb1-77"><a href="#cb1-77" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(</span>
+<span id="cb1-78"><a href="#cb1-78" aria-hidden="true" tabindex="-1"></a>    <span class="at">x     =</span> <span class="st">"Background set size N"</span>,</span>
+<span id="cb1-79"><a href="#cb1-79" aria-hidden="true" tabindex="-1"></a>    <span class="at">y     =</span> <span class="st">"-log10(p-value)"</span>,</span>
+<span id="cb1-80"><a href="#cb1-80" aria-hidden="true" tabindex="-1"></a>    <span class="at">title =</span> <span class="st">"Sensitivity of ORA p-value to background set size"</span>,</span>
+<span id="cb1-81"><a href="#cb1-81" aria-hidden="true" tabindex="-1"></a>    <span class="at">subtitle =</span> <span class="fu">sprintf</span>(<span class="st">"Fixed: K=%d, n=%d, k=%d. Red dot = correct background."</span>, K, n, k)</span>
+<span id="cb1-82"><a href="#cb1-82" aria-hidden="true" tabindex="-1"></a>  ) <span class="sc">+</span></span>
+<span id="cb1-83"><a href="#cb1-83" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme_classic</span>(<span class="at">base_size =</span> <span class="dv">11</span>)</span>
+<span id="cb1-84"><a href="#cb1-84" aria-hidden="true" tabindex="-1"></a><span class="co"># Key takeaway: using N=20000 (full genome) instead of N=15000 (detected genes)</span></span>
+<span id="cb1-85"><a href="#cb1-85" aria-hidden="true" tabindex="-1"></a><span class="co"># inflates the denominator, reduces the fold enrichment, and gives a more</span></span>
+<span id="cb1-86"><a href="#cb1-86" aria-hidden="true" tabindex="-1"></a><span class="co"># conservative (larger) p-value — but the assumption is statistically wrong.</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</section>
+<section id="ora-的适用场景与局限性" class="level3" data-number="4.3">
+<h3 data-number="4.3" class="anchored" data-anchor-id="ora-的适用场景与局限性"><span class="header-section-number">4.3</span> ORA 的适用场景与局限性</h3>
 <p><strong>适用场景</strong>：有明确的差异基因列表（如 |LFC| &gt; 1，padj &lt; 0.05）；需要快速识别最显著富集的功能类别。</p>
 <p><strong>局限性</strong>：</p>
 <ol type="1">
@@ -777,8 +846,8 @@ window.Quarto = {
 <li><strong>忽略非显著基因的信息</strong>：接近但未达到阈值的基因被完全排除在外。</li>
 </ol>
 </section>
-<section id="解读-ora-输出指标" class="level3" data-number="4.3">
-<h3 data-number="4.3" class="anchored" data-anchor-id="解读-ora-输出指标"><span class="header-section-number">4.3</span> 解读 ORA 输出指标</h3>
+<section id="解读-ora-输出指标" class="level3" data-number="4.4">
+<h3 data-number="4.4" class="anchored" data-anchor-id="解读-ora-输出指标"><span class="header-section-number">4.4</span> 解读 ORA 输出指标</h3>
 <p><code>clusterProfiler</code> 的 ORA 结果表中有几个容易混淆的列需要注意：</p>
 <ul>
 <li><strong>GeneRatio</strong>：以分数形式表示，分子为该 GO term 中属于 DEG 的基因数（<span class="math inline">\(k\)</span>），分母为 DEG 总数（<span class="math inline">\(n\)</span>）。点图（dotplot）的 x 轴即为 GeneRatio 的小数值。GeneRatio 越大，表示 DEG 中命中该 term 的比例越高。</li>
@@ -828,192 +897,376 @@ window.Quarto = {
 <div class="info">
 <p><strong>黄金法则：</strong> GSEA 的 leading edge 基因是实验结果与已知通路知识的交汇点。对 leading edge 基因的深入文献检索，往往是从计算分析迈向生物学发现的最关键一步。</p>
 </div>
+</section>
+<section id="手动实现-gseaes-计算与基因标签置换检验" class="level3" data-number="5.3">
+<h3 data-number="5.3" class="anchored" data-anchor-id="手动实现-gseaes-计算与基因标签置换检验"><span class="header-section-number">5.3</span> 手动实现 GSEA：ES 计算与基因标签置换检验</h3>
+<p>以下代码以模拟数据从头复现 GSEA 的核心计算：先手动计算加权富集得分（weighted ES），再通过基因标签置换（gene permutation）构建零分布，最终得到经验 p 值和 NES。与 <code>fgsea</code> 的结果进行数值对比，验证实现的正确性。</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb2"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(ggplot2)</span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(fgsea)</span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(patchwork)</span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">2024</span>)</span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a><span class="co"># ── Step 0: 构造模拟排序基因列表 ──────────────────────────────────────────────</span></span>
+<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a><span class="co"># 200 个基因，排序指标模拟 DESeq2 Wald stat（正态分布，轻微偏正）</span></span>
+<span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a>n_genes  <span class="ot">&lt;-</span> <span class="dv">200</span></span>
+<span id="cb2-10"><a href="#cb2-10" aria-hidden="true" tabindex="-1"></a>gene_ids <span class="ot">&lt;-</span> <span class="fu">paste0</span>(<span class="st">"G"</span>, <span class="fu">seq_len</span>(n_genes))</span>
+<span id="cb2-11"><a href="#cb2-11" aria-hidden="true" tabindex="-1"></a>stats    <span class="ot">&lt;-</span> <span class="fu">sort</span>(<span class="fu">rnorm</span>(n_genes, <span class="at">mean =</span> <span class="fl">0.3</span>, <span class="at">sd =</span> <span class="fl">1.5</span>), <span class="at">decreasing =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb2-12"><a href="#cb2-12" aria-hidden="true" tabindex="-1"></a><span class="fu">names</span>(stats) <span class="ot">&lt;-</span> gene_ids</span>
+<span id="cb2-13"><a href="#cb2-13" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-14"><a href="#cb2-14" aria-hidden="true" tabindex="-1"></a><span class="co"># ── Step 1: 定义基因集 S（刻意让前 30% 的基因集中在排序列表前端）──────────────</span></span>
+<span id="cb2-15"><a href="#cb2-15" aria-hidden="true" tabindex="-1"></a><span class="co"># 真实场景：基因集成员聚集在顶端 → ES 应为正且显著</span></span>
+<span id="cb2-16"><a href="#cb2-16" aria-hidden="true" tabindex="-1"></a>set_size   <span class="ot">&lt;-</span> <span class="dv">25</span></span>
+<span id="cb2-17"><a href="#cb2-17" aria-hidden="true" tabindex="-1"></a>set_top    <span class="ot">&lt;-</span> <span class="fu">round</span>(set_size <span class="sc">*</span> <span class="fl">0.75</span>)   <span class="co"># 75% 成员放在前 60 名（上调区）</span></span>
+<span id="cb2-18"><a href="#cb2-18" aria-hidden="true" tabindex="-1"></a>set_bottom <span class="ot">&lt;-</span> set_size <span class="sc">-</span> set_top       <span class="co"># 25% 成员随机分布</span></span>
+<span id="cb2-19"><a href="#cb2-19" aria-hidden="true" tabindex="-1"></a>gene_set   <span class="ot">&lt;-</span> <span class="fu">c</span>(</span>
+<span id="cb2-20"><a href="#cb2-20" aria-hidden="true" tabindex="-1"></a>  <span class="fu">sample</span>(gene_ids[<span class="dv">1</span><span class="sc">:</span><span class="dv">60</span>],   set_top,    <span class="at">replace =</span> <span class="cn">FALSE</span>),</span>
+<span id="cb2-21"><a href="#cb2-21" aria-hidden="true" tabindex="-1"></a>  <span class="fu">sample</span>(gene_ids[<span class="dv">61</span><span class="sc">:</span><span class="dv">200</span>], set_bottom, <span class="at">replace =</span> <span class="cn">FALSE</span>)</span>
+<span id="cb2-22"><a href="#cb2-22" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb2-23"><a href="#cb2-23" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">"Gene set size:"</span>, <span class="fu">length</span>(gene_set), <span class="st">"</span><span class="sc">\n</span><span class="st">"</span>)</span>
+<span id="cb2-24"><a href="#cb2-24" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">"Members in top-60:"</span>, <span class="fu">sum</span>(gene_set <span class="sc">%in%</span> gene_ids[<span class="dv">1</span><span class="sc">:</span><span class="dv">60</span>]), <span class="st">"</span><span class="sc">\n\n</span><span class="st">"</span>)</span>
+<span id="cb2-25"><a href="#cb2-25" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-26"><a href="#cb2-26" aria-hidden="true" tabindex="-1"></a><span class="co"># ── Step 2: 手动计算加权 ES ──────────────────────────────────────────────────</span></span>
+<span id="cb2-27"><a href="#cb2-27" aria-hidden="true" tabindex="-1"></a><span class="co"># 算法（Subramanian et al. 2005 加权版本，p=1）：</span></span>
+<span id="cb2-28"><a href="#cb2-28" aria-hidden="true" tabindex="-1"></a><span class="co">#   命中基因（在 S 中）：running sum += |stat_i|^p / sum_hit_weights</span></span>
+<span id="cb2-29"><a href="#cb2-29" aria-hidden="true" tabindex="-1"></a><span class="co">#   非命中基因（不在 S）：running sum -= 1 / (N - |S|)</span></span>
+<span id="cb2-30"><a href="#cb2-30" aria-hidden="true" tabindex="-1"></a>compute_es <span class="ot">&lt;-</span> <span class="cf">function</span>(ordered_stats, gene_set) {</span>
+<span id="cb2-31"><a href="#cb2-31" aria-hidden="true" tabindex="-1"></a>  n        <span class="ot">&lt;-</span> <span class="fu">length</span>(ordered_stats)</span>
+<span id="cb2-32"><a href="#cb2-32" aria-hidden="true" tabindex="-1"></a>  in_set   <span class="ot">&lt;-</span> <span class="fu">names</span>(ordered_stats) <span class="sc">%in%</span> gene_set</span>
+<span id="cb2-33"><a href="#cb2-33" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Hit increment: weighted by |stat|</span></span>
+<span id="cb2-34"><a href="#cb2-34" aria-hidden="true" tabindex="-1"></a>  hit_w    <span class="ot">&lt;-</span> <span class="fu">abs</span>(ordered_stats[in_set])</span>
+<span id="cb2-35"><a href="#cb2-35" aria-hidden="true" tabindex="-1"></a>  hit_norm <span class="ot">&lt;-</span> <span class="fu">sum</span>(hit_w)                         <span class="co"># normalizer for hit steps</span></span>
+<span id="cb2-36"><a href="#cb2-36" aria-hidden="true" tabindex="-1"></a>  miss_norm <span class="ot">&lt;-</span> n <span class="sc">-</span> <span class="fu">length</span>(gene_set)              <span class="co"># normalizer for miss steps</span></span>
+<span id="cb2-37"><a href="#cb2-37" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-38"><a href="#cb2-38" aria-hidden="true" tabindex="-1"></a>  running_sum <span class="ot">&lt;-</span> <span class="fu">numeric</span>(n)</span>
+<span id="cb2-39"><a href="#cb2-39" aria-hidden="true" tabindex="-1"></a>  rs          <span class="ot">&lt;-</span> <span class="dv">0</span></span>
+<span id="cb2-40"><a href="#cb2-40" aria-hidden="true" tabindex="-1"></a>  <span class="cf">for</span> (i <span class="cf">in</span> <span class="fu">seq_len</span>(n)) {</span>
+<span id="cb2-41"><a href="#cb2-41" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> (in_set[i]) {</span>
+<span id="cb2-42"><a href="#cb2-42" aria-hidden="true" tabindex="-1"></a>      rs <span class="ot">&lt;-</span> rs <span class="sc">+</span> <span class="fu">abs</span>(ordered_stats[i]) <span class="sc">/</span> hit_norm</span>
+<span id="cb2-43"><a href="#cb2-43" aria-hidden="true" tabindex="-1"></a>    } <span class="cf">else</span> {</span>
+<span id="cb2-44"><a href="#cb2-44" aria-hidden="true" tabindex="-1"></a>      rs <span class="ot">&lt;-</span> rs <span class="sc">-</span> <span class="dv">1</span> <span class="sc">/</span> miss_norm</span>
+<span id="cb2-45"><a href="#cb2-45" aria-hidden="true" tabindex="-1"></a>    }</span>
+<span id="cb2-46"><a href="#cb2-46" aria-hidden="true" tabindex="-1"></a>    running_sum[i] <span class="ot">&lt;-</span> rs</span>
+<span id="cb2-47"><a href="#cb2-47" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb2-48"><a href="#cb2-48" aria-hidden="true" tabindex="-1"></a>  es <span class="ot">&lt;-</span> running_sum[<span class="fu">which.max</span>(<span class="fu">abs</span>(running_sum))]</span>
+<span id="cb2-49"><a href="#cb2-49" aria-hidden="true" tabindex="-1"></a>  <span class="fu">list</span>(<span class="at">es =</span> es, <span class="at">running_sum =</span> running_sum, <span class="at">in_set =</span> in_set)</span>
+<span id="cb2-50"><a href="#cb2-50" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb2-51"><a href="#cb2-51" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-52"><a href="#cb2-52" aria-hidden="true" tabindex="-1"></a>result   <span class="ot">&lt;-</span> <span class="fu">compute_es</span>(stats, gene_set)</span>
+<span id="cb2-53"><a href="#cb2-53" aria-hidden="true" tabindex="-1"></a>ES_obs   <span class="ot">&lt;-</span> result<span class="sc">$</span>es</span>
+<span id="cb2-54"><a href="#cb2-54" aria-hidden="true" tabindex="-1"></a>rs_df    <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(</span>
+<span id="cb2-55"><a href="#cb2-55" aria-hidden="true" tabindex="-1"></a>  <span class="at">position     =</span> <span class="fu">seq_along</span>(stats),</span>
+<span id="cb2-56"><a href="#cb2-56" aria-hidden="true" tabindex="-1"></a>  <span class="at">running_sum  =</span> result<span class="sc">$</span>running_sum,</span>
+<span id="cb2-57"><a href="#cb2-57" aria-hidden="true" tabindex="-1"></a>  <span class="at">in_set       =</span> result<span class="sc">$</span>in_set,</span>
+<span id="cb2-58"><a href="#cb2-58" aria-hidden="true" tabindex="-1"></a>  <span class="at">stat         =</span> stats</span>
+<span id="cb2-59"><a href="#cb2-59" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb2-60"><a href="#cb2-60" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="fu">sprintf</span>(<span class="st">"Observed ES = %.4f</span><span class="sc">\n</span><span class="st">"</span>, ES_obs))</span>
+<span id="cb2-61"><a href="#cb2-61" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-62"><a href="#cb2-62" aria-hidden="true" tabindex="-1"></a><span class="co"># ── Step 3: 基因标签置换（gene permutation）构建零分布 ────────────────────────</span></span>
+<span id="cb2-63"><a href="#cb2-63" aria-hidden="true" tabindex="-1"></a><span class="co"># 保持排序指标 stats 不变，随机重新分配基因集成员标签</span></span>
+<span id="cb2-64"><a href="#cb2-64" aria-hidden="true" tabindex="-1"></a><span class="co"># 每次置换：从同等大小的随机基因集计算 ES，累积得到零分布</span></span>
+<span id="cb2-65"><a href="#cb2-65" aria-hidden="true" tabindex="-1"></a>n_perm      <span class="ot">&lt;-</span> <span class="dv">2000</span></span>
+<span id="cb2-66"><a href="#cb2-66" aria-hidden="true" tabindex="-1"></a>ES_perm     <span class="ot">&lt;-</span> <span class="fu">numeric</span>(n_perm)</span>
+<span id="cb2-67"><a href="#cb2-67" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> (i <span class="cf">in</span> <span class="fu">seq_len</span>(n_perm)) {</span>
+<span id="cb2-68"><a href="#cb2-68" aria-hidden="true" tabindex="-1"></a>  perm_set    <span class="ot">&lt;-</span> <span class="fu">sample</span>(gene_ids, set_size, <span class="at">replace =</span> <span class="cn">FALSE</span>)</span>
+<span id="cb2-69"><a href="#cb2-69" aria-hidden="true" tabindex="-1"></a>  ES_perm[i]  <span class="ot">&lt;-</span> <span class="fu">compute_es</span>(stats, perm_set)<span class="sc">$</span>es</span>
+<span id="cb2-70"><a href="#cb2-70" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb2-71"><a href="#cb2-71" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-72"><a href="#cb2-72" aria-hidden="true" tabindex="-1"></a><span class="co"># Empirical p-value: fraction of permutations with |ES| &gt;= |ES_obs|</span></span>
+<span id="cb2-73"><a href="#cb2-73" aria-hidden="true" tabindex="-1"></a>p_empirical <span class="ot">&lt;-</span> <span class="fu">mean</span>(<span class="fu">abs</span>(ES_perm) <span class="sc">&gt;=</span> <span class="fu">abs</span>(ES_obs))</span>
+<span id="cb2-74"><a href="#cb2-74" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-75"><a href="#cb2-75" aria-hidden="true" tabindex="-1"></a><span class="co"># NES: normalize by mean |ES| of same-sign permutations</span></span>
+<span id="cb2-76"><a href="#cb2-76" aria-hidden="true" tabindex="-1"></a>pos_perm <span class="ot">&lt;-</span> ES_perm[ES_perm <span class="sc">&gt;=</span> <span class="dv">0</span>]</span>
+<span id="cb2-77"><a href="#cb2-77" aria-hidden="true" tabindex="-1"></a>NES      <span class="ot">&lt;-</span> ES_obs <span class="sc">/</span> <span class="fu">mean</span>(pos_perm)</span>
+<span id="cb2-78"><a href="#cb2-78" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-79"><a href="#cb2-79" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="fu">sprintf</span>(<span class="st">"Permutation p-value (n=%d) : %.4f</span><span class="sc">\n</span><span class="st">"</span>, n_perm, p_empirical))</span>
+<span id="cb2-80"><a href="#cb2-80" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="fu">sprintf</span>(<span class="st">"NES                        : %.4f</span><span class="sc">\n\n</span><span class="st">"</span>, NES))</span>
+<span id="cb2-81"><a href="#cb2-81" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-82"><a href="#cb2-82" aria-hidden="true" tabindex="-1"></a><span class="co"># ── Step 4: 与 fgsea 结果对比 ────────────────────────────────────────────────</span></span>
+<span id="cb2-83"><a href="#cb2-83" aria-hidden="true" tabindex="-1"></a>gene_sets_list <span class="ot">&lt;-</span> <span class="fu">list</span>(<span class="at">SimulatedSet =</span> gene_set)</span>
+<span id="cb2-84"><a href="#cb2-84" aria-hidden="true" tabindex="-1"></a>fgsea_res <span class="ot">&lt;-</span> <span class="fu">fgsea</span>(</span>
+<span id="cb2-85"><a href="#cb2-85" aria-hidden="true" tabindex="-1"></a>  <span class="at">pathways  =</span> gene_sets_list,</span>
+<span id="cb2-86"><a href="#cb2-86" aria-hidden="true" tabindex="-1"></a>  <span class="at">stats     =</span> stats,</span>
+<span id="cb2-87"><a href="#cb2-87" aria-hidden="true" tabindex="-1"></a>  <span class="at">minSize   =</span> <span class="dv">5</span>,</span>
+<span id="cb2-88"><a href="#cb2-88" aria-hidden="true" tabindex="-1"></a>  <span class="at">maxSize   =</span> <span class="dv">500</span>,</span>
+<span id="cb2-89"><a href="#cb2-89" aria-hidden="true" tabindex="-1"></a>  <span class="at">eps       =</span> <span class="dv">0</span></span>
+<span id="cb2-90"><a href="#cb2-90" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb2-91"><a href="#cb2-91" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">"=== fgsea result (reference) ===</span><span class="sc">\n</span><span class="st">"</span>)</span>
+<span id="cb2-92"><a href="#cb2-92" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(fgsea_res[, <span class="fu">c</span>(<span class="st">"pathway"</span>, <span class="st">"ES"</span>, <span class="st">"NES"</span>, <span class="st">"pval"</span>, <span class="st">"size"</span>)])</span>
+<span id="cb2-93"><a href="#cb2-93" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="fu">sprintf</span>(<span class="st">"</span><span class="sc">\n</span><span class="st">=== Manual result ===</span><span class="sc">\n</span><span class="st">"</span>))</span>
+<span id="cb2-94"><a href="#cb2-94" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="fu">sprintf</span>(<span class="st">"  ES  = %.4f  (fgsea: %.4f)</span><span class="sc">\n</span><span class="st">"</span>, ES_obs, fgsea_res<span class="sc">$</span>ES))</span>
+<span id="cb2-95"><a href="#cb2-95" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="fu">sprintf</span>(<span class="st">"  NES = %.4f  (fgsea: %.4f)</span><span class="sc">\n</span><span class="st">"</span>, NES,    fgsea_res<span class="sc">$</span>NES))</span>
+<span id="cb2-96"><a href="#cb2-96" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="fu">sprintf</span>(<span class="st">"  p   = %.4f  (fgsea: %.4f)</span><span class="sc">\n</span><span class="st">"</span>, p_empirical, fgsea_res<span class="sc">$</span>pval))</span>
+<span id="cb2-97"><a href="#cb2-97" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-98"><a href="#cb2-98" aria-hidden="true" tabindex="-1"></a><span class="co"># ── Step 5: 可视化 ────────────────────────────────────────────────────────────</span></span>
+<span id="cb2-99"><a href="#cb2-99" aria-hidden="true" tabindex="-1"></a><span class="co"># Panel A: Running enrichment score curve</span></span>
+<span id="cb2-100"><a href="#cb2-100" aria-hidden="true" tabindex="-1"></a>p_rs <span class="ot">&lt;-</span> <span class="fu">ggplot</span>(rs_df, <span class="fu">aes</span>(<span class="at">x =</span> position, <span class="at">y =</span> running_sum)) <span class="sc">+</span></span>
+<span id="cb2-101"><a href="#cb2-101" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_line</span>(<span class="at">color =</span> <span class="st">"#2166ac"</span>, <span class="at">linewidth =</span> <span class="fl">1.0</span>) <span class="sc">+</span></span>
+<span id="cb2-102"><a href="#cb2-102" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_hline</span>(<span class="at">yintercept =</span> <span class="dv">0</span>, <span class="at">color =</span> <span class="st">"grey50"</span>, <span class="at">linetype =</span> <span class="st">"dashed"</span>) <span class="sc">+</span></span>
+<span id="cb2-103"><a href="#cb2-103" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_hline</span>(<span class="at">yintercept =</span> ES_obs, <span class="at">color =</span> <span class="st">"#d73027"</span>,</span>
+<span id="cb2-104"><a href="#cb2-104" aria-hidden="true" tabindex="-1"></a>             <span class="at">linetype =</span> <span class="st">"dotted"</span>, <span class="at">linewidth =</span> <span class="fl">0.8</span>) <span class="sc">+</span></span>
+<span id="cb2-105"><a href="#cb2-105" aria-hidden="true" tabindex="-1"></a>  <span class="fu">annotate</span>(<span class="st">"text"</span>, <span class="at">x =</span> <span class="fu">which.max</span>(<span class="fu">abs</span>(rs_df<span class="sc">$</span>running_sum)),</span>
+<span id="cb2-106"><a href="#cb2-106" aria-hidden="true" tabindex="-1"></a>           <span class="at">y =</span> ES_obs <span class="sc">*</span> <span class="fl">1.08</span>,</span>
+<span id="cb2-107"><a href="#cb2-107" aria-hidden="true" tabindex="-1"></a>           <span class="at">label =</span> <span class="fu">sprintf</span>(<span class="st">"ES = %.3f"</span>, ES_obs),</span>
+<span id="cb2-108"><a href="#cb2-108" aria-hidden="true" tabindex="-1"></a>           <span class="at">color =</span> <span class="st">"#d73027"</span>, <span class="at">size =</span> <span class="fl">3.2</span>) <span class="sc">+</span></span>
+<span id="cb2-109"><a href="#cb2-109" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(<span class="at">x =</span> <span class="st">"Gene rank (high stat → low stat)"</span>,</span>
+<span id="cb2-110"><a href="#cb2-110" aria-hidden="true" tabindex="-1"></a>       <span class="at">y =</span> <span class="st">"Running enrichment score"</span>,</span>
+<span id="cb2-111"><a href="#cb2-111" aria-hidden="true" tabindex="-1"></a>       <span class="at">title =</span> <span class="st">"Running ES curve"</span>) <span class="sc">+</span></span>
+<span id="cb2-112"><a href="#cb2-112" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme_classic</span>(<span class="at">base_size =</span> <span class="dv">11</span>)</span>
+<span id="cb2-113"><a href="#cb2-113" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-114"><a href="#cb2-114" aria-hidden="true" tabindex="-1"></a><span class="co"># Panel B: Gene set member rug plot</span></span>
+<span id="cb2-115"><a href="#cb2-115" aria-hidden="true" tabindex="-1"></a>p_rug <span class="ot">&lt;-</span> <span class="fu">ggplot</span>(rs_df[rs_df<span class="sc">$</span>in_set, ], <span class="fu">aes</span>(<span class="at">x =</span> position)) <span class="sc">+</span></span>
+<span id="cb2-116"><a href="#cb2-116" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_rug</span>(<span class="at">sides =</span> <span class="st">"b"</span>, <span class="at">color =</span> <span class="st">"#2166ac"</span>, <span class="at">linewidth =</span> <span class="fl">0.6</span>, <span class="at">alpha =</span> <span class="fl">0.9</span>) <span class="sc">+</span></span>
+<span id="cb2-117"><a href="#cb2-117" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_rug</span>(<span class="at">data =</span> rs_df[<span class="sc">!</span>rs_df<span class="sc">$</span>in_set, ],</span>
+<span id="cb2-118"><a href="#cb2-118" aria-hidden="true" tabindex="-1"></a>           <span class="at">sides =</span> <span class="st">"b"</span>, <span class="at">color =</span> <span class="st">"grey80"</span>, <span class="at">linewidth =</span> <span class="fl">0.3</span>, <span class="at">alpha =</span> <span class="fl">0.4</span>) <span class="sc">+</span></span>
+<span id="cb2-119"><a href="#cb2-119" aria-hidden="true" tabindex="-1"></a>  <span class="fu">scale_x_continuous</span>(<span class="at">limits =</span> <span class="fu">c</span>(<span class="dv">1</span>, n_genes)) <span class="sc">+</span></span>
+<span id="cb2-120"><a href="#cb2-120" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(<span class="at">x =</span> <span class="st">"Gene rank"</span>, <span class="at">y =</span> <span class="cn">NULL</span>,</span>
+<span id="cb2-121"><a href="#cb2-121" aria-hidden="true" tabindex="-1"></a>       <span class="at">title =</span> <span class="st">"Gene set member positions"</span>) <span class="sc">+</span></span>
+<span id="cb2-122"><a href="#cb2-122" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme_classic</span>(<span class="at">base_size =</span> <span class="dv">11</span>) <span class="sc">+</span></span>
+<span id="cb2-123"><a href="#cb2-123" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme</span>(<span class="at">axis.text.y =</span> <span class="fu">element_blank</span>(), <span class="at">axis.ticks.y =</span> <span class="fu">element_blank</span>())</span>
+<span id="cb2-124"><a href="#cb2-124" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-125"><a href="#cb2-125" aria-hidden="true" tabindex="-1"></a><span class="co"># Panel C: Null distribution from permutation</span></span>
+<span id="cb2-126"><a href="#cb2-126" aria-hidden="true" tabindex="-1"></a>perm_df <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(<span class="at">es_perm =</span> ES_perm)</span>
+<span id="cb2-127"><a href="#cb2-127" aria-hidden="true" tabindex="-1"></a>p_perm <span class="ot">&lt;-</span> <span class="fu">ggplot</span>(perm_df, <span class="fu">aes</span>(<span class="at">x =</span> es_perm)) <span class="sc">+</span></span>
+<span id="cb2-128"><a href="#cb2-128" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_histogram</span>(<span class="at">bins =</span> <span class="dv">60</span>, <span class="at">fill =</span> <span class="st">"grey70"</span>, <span class="at">color =</span> <span class="st">"white"</span>) <span class="sc">+</span></span>
+<span id="cb2-129"><a href="#cb2-129" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_vline</span>(<span class="at">xintercept =</span> ES_obs, <span class="at">color =</span> <span class="st">"#d73027"</span>,</span>
+<span id="cb2-130"><a href="#cb2-130" aria-hidden="true" tabindex="-1"></a>             <span class="at">linewidth =</span> <span class="fl">1.2</span>, <span class="at">linetype =</span> <span class="st">"dashed"</span>) <span class="sc">+</span></span>
+<span id="cb2-131"><a href="#cb2-131" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_vline</span>(<span class="at">xintercept =</span> <span class="sc">-</span><span class="fu">abs</span>(ES_obs), <span class="at">color =</span> <span class="st">"#d73027"</span>,</span>
+<span id="cb2-132"><a href="#cb2-132" aria-hidden="true" tabindex="-1"></a>             <span class="at">linewidth =</span> <span class="fl">0.8</span>, <span class="at">linetype =</span> <span class="st">"dotted"</span>) <span class="sc">+</span></span>
+<span id="cb2-133"><a href="#cb2-133" aria-hidden="true" tabindex="-1"></a>  <span class="fu">annotate</span>(<span class="st">"text"</span>, <span class="at">x =</span> ES_obs <span class="sc">*</span> <span class="fl">1.05</span>,</span>
+<span id="cb2-134"><a href="#cb2-134" aria-hidden="true" tabindex="-1"></a>           <span class="at">y =</span> n_perm <span class="sc">/</span> <span class="dv">15</span>,</span>
+<span id="cb2-135"><a href="#cb2-135" aria-hidden="true" tabindex="-1"></a>           <span class="at">label =</span> <span class="fu">sprintf</span>(<span class="st">"Observed ES</span><span class="sc">\n</span><span class="st">p = %.3f"</span>, p_empirical),</span>
+<span id="cb2-136"><a href="#cb2-136" aria-hidden="true" tabindex="-1"></a>           <span class="at">color =</span> <span class="st">"#d73027"</span>, <span class="at">hjust =</span> <span class="dv">0</span>, <span class="at">size =</span> <span class="fl">3.0</span>) <span class="sc">+</span></span>
+<span id="cb2-137"><a href="#cb2-137" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(<span class="at">x =</span> <span class="st">"ES under gene-label permutation"</span>,</span>
+<span id="cb2-138"><a href="#cb2-138" aria-hidden="true" tabindex="-1"></a>       <span class="at">y =</span> <span class="st">"Count"</span>,</span>
+<span id="cb2-139"><a href="#cb2-139" aria-hidden="true" tabindex="-1"></a>       <span class="at">title =</span> <span class="fu">sprintf</span>(<span class="st">"Null distribution  (n = %d permutations)"</span>, n_perm)) <span class="sc">+</span></span>
+<span id="cb2-140"><a href="#cb2-140" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme_classic</span>(<span class="at">base_size =</span> <span class="dv">11</span>)</span>
+<span id="cb2-141"><a href="#cb2-141" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-142"><a href="#cb2-142" aria-hidden="true" tabindex="-1"></a>(p_rs <span class="sc">/</span> p_rug <span class="sc">/</span> p_perm) <span class="sc">+</span></span>
+<span id="cb2-143"><a href="#cb2-143" aria-hidden="true" tabindex="-1"></a>  <span class="fu">plot_annotation</span>(</span>
+<span id="cb2-144"><a href="#cb2-144" aria-hidden="true" tabindex="-1"></a>    <span class="at">title    =</span> <span class="st">"Manual GSEA: ES calculation + gene-label permutation test"</span>,</span>
+<span id="cb2-145"><a href="#cb2-145" aria-hidden="true" tabindex="-1"></a>    <span class="at">subtitle =</span> <span class="fu">sprintf</span>(<span class="st">"Gene set size = %d, 75%% members in top-60 genes"</span>, set_size)</span>
+<span id="cb2-146"><a href="#cb2-146" aria-hidden="true" tabindex="-1"></a>  )</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>上图三个面板对应 GSEA 输出的三个核心层次：</p>
+<ul>
+<li><strong>上图（Running ES）</strong>：曲线在前半段快速上升（基因集成员集中于排序列表顶端），到达峰值后缓慢下降。ES 即为曲线的最大值，红色虚线标出其位置。</li>
+<li><strong>中图（成员位置）</strong>：蓝色竖线为基因集成员在排序列表中的位置，灰色为非成员。成员明显聚集于左侧（高 stat 区），与曲线形态吻合。</li>
+<li><strong>下图（零分布）</strong>：2000 次基因标签置换的 ES 分布。真实 ES（红色虚线）位于分布右尾，经验 p 值为超出该值的比例。NES 即真实 ES 除以同号置换均值，对不同基因集大小进行了归一化。</li>
+</ul>
 <hr>
 </section>
 </section>
 <section id="clusterprofiler-实践" class="level2" data-number="6">
 <h2 data-number="6" class="anchored" data-anchor-id="clusterprofiler-实践"><span class="header-section-number">6</span> clusterProfiler 实践</h2>
 <p>本节直接使用 <code>airway</code> Bioconductor 包内置数据集运行完整富集分析流程，确保所有步骤可独立重现。DESeq2 分析结果延续第3专题的配置（<code>~ cell + dex</code> 设计，apeglm LFC 缩减）。</p>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb2"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(DESeq2)</span>
-<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(apeglm)</span>
-<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(airway)</span>
-<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(clusterProfiler)</span>
-<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(org.Hs.eg.db)</span>
-<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(enrichplot)</span>
-<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(ggplot2)</span>
-<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a><span class="co"># === Step 0: Run DESeq2 on airway (继承第3专题配置) ===</span></span>
-<span id="cb2-10"><a href="#cb2-10" aria-hidden="true" tabindex="-1"></a><span class="fu">data</span>(airway)</span>
-<span id="cb2-11"><a href="#cb2-11" aria-hidden="true" tabindex="-1"></a>dds <span class="ot">&lt;-</span> <span class="fu">DESeqDataSet</span>(airway, <span class="at">design =</span> <span class="sc">~</span> cell <span class="sc">+</span> dex)</span>
-<span id="cb2-12"><a href="#cb2-12" aria-hidden="true" tabindex="-1"></a>dds<span class="sc">$</span>dex <span class="ot">&lt;-</span> <span class="fu">relevel</span>(dds<span class="sc">$</span>dex, <span class="at">ref =</span> <span class="st">"untrt"</span>)</span>
-<span id="cb2-13"><a href="#cb2-13" aria-hidden="true" tabindex="-1"></a>keep <span class="ot">&lt;-</span> <span class="fu">rowSums</span>(<span class="fu">counts</span>(dds) <span class="sc">&gt;=</span> <span class="dv">10</span>) <span class="sc">&gt;=</span> <span class="dv">4</span></span>
-<span id="cb2-14"><a href="#cb2-14" aria-hidden="true" tabindex="-1"></a>dds  <span class="ot">&lt;-</span> dds[keep, ]</span>
-<span id="cb2-15"><a href="#cb2-15" aria-hidden="true" tabindex="-1"></a>dds  <span class="ot">&lt;-</span> <span class="fu">DESeq</span>(dds, <span class="at">quiet =</span> <span class="cn">TRUE</span>)</span>
-<span id="cb2-16"><a href="#cb2-16" aria-hidden="true" tabindex="-1"></a>res        <span class="ot">&lt;-</span> <span class="fu">results</span>(dds, <span class="at">contrast =</span> <span class="fu">c</span>(<span class="st">"dex"</span>, <span class="st">"trt"</span>, <span class="st">"untrt"</span>), <span class="at">alpha =</span> <span class="fl">0.05</span>)</span>
-<span id="cb2-17"><a href="#cb2-17" aria-hidden="true" tabindex="-1"></a>res_shrunk <span class="ot">&lt;-</span> <span class="fu">lfcShrink</span>(dds, <span class="at">coef =</span> <span class="st">"dex_trt_vs_untrt"</span>, <span class="at">type =</span> <span class="st">"apeglm"</span>,</span>
-<span id="cb2-18"><a href="#cb2-18" aria-hidden="true" tabindex="-1"></a>                        <span class="at">res =</span> res, <span class="at">quiet =</span> <span class="cn">TRUE</span>)</span>
-<span id="cb2-19"><a href="#cb2-19" aria-hidden="true" tabindex="-1"></a><span class="co"># Genes after filter: 16139</span></span>
-<span id="cb2-20"><a href="#cb2-20" aria-hidden="true" tabindex="-1"></a><span class="co"># Significant (|LFC| &gt; 1, padj &lt; 0.05): 760  (Up: 412, Down: 348)</span></span>
-<span id="cb2-21"><a href="#cb2-21" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb2-22"><a href="#cb2-22" aria-hidden="true" tabindex="-1"></a><span class="co"># === Step 1: ID conversion ===</span></span>
-<span id="cb2-23"><a href="#cb2-23" aria-hidden="true" tabindex="-1"></a><span class="co"># Ensembl IDs in airway carry version suffixes (e.g. ENSG00000152583.9)</span></span>
-<span id="cb2-24"><a href="#cb2-24" aria-hidden="true" tabindex="-1"></a><span class="co"># bitr() requires clean IDs without the version number</span></span>
-<span id="cb2-25"><a href="#cb2-25" aria-hidden="true" tabindex="-1"></a>res_df <span class="ot">&lt;-</span> <span class="fu">as.data.frame</span>(res_shrunk)</span>
-<span id="cb2-26"><a href="#cb2-26" aria-hidden="true" tabindex="-1"></a>res_df<span class="sc">$</span>gene_id      <span class="ot">&lt;-</span> <span class="fu">rownames</span>(res_df)</span>
-<span id="cb2-27"><a href="#cb2-27" aria-hidden="true" tabindex="-1"></a>res_df<span class="sc">$</span>ensembl_clean <span class="ot">&lt;-</span> <span class="fu">sub</span>(<span class="st">"</span><span class="sc">\\</span><span class="st">..*"</span>, <span class="st">""</span>, res_df<span class="sc">$</span>gene_id)   <span class="co"># strip version suffix</span></span>
-<span id="cb2-28"><a href="#cb2-28" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb2-29"><a href="#cb2-29" aria-hidden="true" tabindex="-1"></a>gene_map <span class="ot">&lt;-</span> <span class="fu">bitr</span>(</span>
-<span id="cb2-30"><a href="#cb2-30" aria-hidden="true" tabindex="-1"></a>  res_df<span class="sc">$</span>ensembl_clean,</span>
-<span id="cb2-31"><a href="#cb2-31" aria-hidden="true" tabindex="-1"></a>  <span class="at">fromType =</span> <span class="st">"ENSEMBL"</span>,</span>
-<span id="cb2-32"><a href="#cb2-32" aria-hidden="true" tabindex="-1"></a>  <span class="at">toType   =</span> <span class="fu">c</span>(<span class="st">"ENTREZID"</span>, <span class="st">"SYMBOL"</span>),</span>
-<span id="cb2-33"><a href="#cb2-33" aria-hidden="true" tabindex="-1"></a>  <span class="at">OrgDb    =</span> org.Hs.eg.db</span>
-<span id="cb2-34"><a href="#cb2-34" aria-hidden="true" tabindex="-1"></a>)</span>
-<span id="cb2-35"><a href="#cb2-35" aria-hidden="true" tabindex="-1"></a><span class="co"># Mapped genes: 14144 out of 16139</span></span>
-<span id="cb2-36"><a href="#cb2-36" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb2-37"><a href="#cb2-37" aria-hidden="true" tabindex="-1"></a>res_df <span class="ot">&lt;-</span> <span class="fu">merge</span>(res_df, gene_map, <span class="at">by.x =</span> <span class="st">"ensembl_clean"</span>, <span class="at">by.y =</span> <span class="st">"ENSEMBL"</span>,</span>
-<span id="cb2-38"><a href="#cb2-38" aria-hidden="true" tabindex="-1"></a>                <span class="at">all.x =</span> <span class="cn">FALSE</span>)</span>
-<span id="cb2-39"><a href="#cb2-39" aria-hidden="true" tabindex="-1"></a>res_df <span class="ot">&lt;-</span> res_df[<span class="sc">!</span><span class="fu">duplicated</span>(res_df<span class="sc">$</span>ENTREZID), ]</span>
-<span id="cb2-40"><a href="#cb2-40" aria-hidden="true" tabindex="-1"></a><span class="co"># After dedup: 14105 genes with Entrez ID</span></span>
-<span id="cb2-41"><a href="#cb2-41" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb2-42"><a href="#cb2-42" aria-hidden="true" tabindex="-1"></a><span class="co"># === Step 2: Define ORA inputs ===</span></span>
-<span id="cb2-43"><a href="#cb2-43" aria-hidden="true" tabindex="-1"></a>sig_df      <span class="ot">&lt;-</span> res_df[<span class="sc">!</span><span class="fu">is.na</span>(res_df<span class="sc">$</span>padj) <span class="sc">&amp;</span></span>
-<span id="cb2-44"><a href="#cb2-44" aria-hidden="true" tabindex="-1"></a>                        res_df<span class="sc">$</span>padj <span class="sc">&lt;</span> <span class="fl">0.05</span> <span class="sc">&amp;</span></span>
-<span id="cb2-45"><a href="#cb2-45" aria-hidden="true" tabindex="-1"></a>                        <span class="fu">abs</span>(res_df<span class="sc">$</span>log2FoldChange) <span class="sc">&gt;</span> <span class="dv">1</span>, ]</span>
-<span id="cb2-46"><a href="#cb2-46" aria-hidden="true" tabindex="-1"></a>sig_entrez      <span class="ot">&lt;-</span> sig_df<span class="sc">$</span>ENTREZID      <span class="co"># 729 DEGs with Entrez mapping</span></span>
-<span id="cb2-47"><a href="#cb2-47" aria-hidden="true" tabindex="-1"></a>universe_entrez <span class="ot">&lt;-</span> res_df<span class="sc">$</span>ENTREZID      <span class="co"># 14105 expressed genes as universe</span></span>
-<span id="cb2-48"><a href="#cb2-48" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb2-49"><a href="#cb2-49" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">"DEGs for ORA:"</span>, <span class="fu">length</span>(sig_entrez), <span class="st">"</span><span class="sc">\n</span><span class="st">"</span>)</span>
-<span id="cb2-50"><a href="#cb2-50" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">"Universe size:"</span>, <span class="fu">length</span>(universe_entrez), <span class="st">"</span><span class="sc">\n</span><span class="st">"</span>)</span>
-<span id="cb2-51"><a href="#cb2-51" aria-hidden="true" tabindex="-1"></a><span class="co"># DEGs for ORA: 729</span></span>
-<span id="cb2-52"><a href="#cb2-52" aria-hidden="true" tabindex="-1"></a><span class="co"># Universe size: 14105</span></span>
-<span id="cb2-53"><a href="#cb2-53" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb2-54"><a href="#cb2-54" aria-hidden="true" tabindex="-1"></a><span class="co"># === Part 1: GO Biological Process ORA ===</span></span>
-<span id="cb2-55"><a href="#cb2-55" aria-hidden="true" tabindex="-1"></a>go_bp <span class="ot">&lt;-</span> <span class="fu">enrichGO</span>(</span>
-<span id="cb2-56"><a href="#cb2-56" aria-hidden="true" tabindex="-1"></a>  <span class="at">gene          =</span> sig_entrez,</span>
-<span id="cb2-57"><a href="#cb2-57" aria-hidden="true" tabindex="-1"></a>  <span class="at">OrgDb         =</span> org.Hs.eg.db,</span>
-<span id="cb2-58"><a href="#cb2-58" aria-hidden="true" tabindex="-1"></a>  <span class="at">keyType       =</span> <span class="st">"ENTREZID"</span>,</span>
-<span id="cb2-59"><a href="#cb2-59" aria-hidden="true" tabindex="-1"></a>  <span class="at">ont           =</span> <span class="st">"BP"</span>,</span>
-<span id="cb2-60"><a href="#cb2-60" aria-hidden="true" tabindex="-1"></a>  <span class="at">pAdjustMethod =</span> <span class="st">"BH"</span>,</span>
-<span id="cb2-61"><a href="#cb2-61" aria-hidden="true" tabindex="-1"></a>  <span class="at">pvalueCutoff  =</span> <span class="fl">0.05</span>,</span>
-<span id="cb2-62"><a href="#cb2-62" aria-hidden="true" tabindex="-1"></a>  <span class="at">qvalueCutoff  =</span> <span class="fl">0.2</span>,</span>
-<span id="cb2-63"><a href="#cb2-63" aria-hidden="true" tabindex="-1"></a>  <span class="at">universe      =</span> universe_entrez,</span>
-<span id="cb2-64"><a href="#cb2-64" aria-hidden="true" tabindex="-1"></a>  <span class="at">readable      =</span> <span class="cn">TRUE</span>        <span class="co"># replace ENTREZID with gene SYMBOL in output</span></span>
-<span id="cb2-65"><a href="#cb2-65" aria-hidden="true" tabindex="-1"></a>)</span>
-<span id="cb2-66"><a href="#cb2-66" aria-hidden="true" tabindex="-1"></a><span class="co"># GO BP significant terms (before simplify): 538</span></span>
-<span id="cb2-67"><a href="#cb2-67" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb2-68"><a href="#cb2-68" aria-hidden="true" tabindex="-1"></a><span class="co"># Remove redundant GO terms via semantic similarity</span></span>
-<span id="cb2-69"><a href="#cb2-69" aria-hidden="true" tabindex="-1"></a>go_bp_simplified <span class="ot">&lt;-</span> <span class="fu">simplify</span>(go_bp, <span class="at">cutoff =</span> <span class="fl">0.7</span>, <span class="at">by =</span> <span class="st">"p.adjust"</span>,</span>
-<span id="cb2-70"><a href="#cb2-70" aria-hidden="true" tabindex="-1"></a>                              <span class="at">select_fun =</span> min)</span>
-<span id="cb2-71"><a href="#cb2-71" aria-hidden="true" tabindex="-1"></a><span class="co"># GO BP significant terms (after simplify): 212</span></span>
-<span id="cb2-72"><a href="#cb2-72" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb2-73"><a href="#cb2-73" aria-hidden="true" tabindex="-1"></a><span class="co"># Top 10 GO BP terms (real output):</span></span>
-<span id="cb2-74"><a href="#cb2-74" aria-hidden="true" tabindex="-1"></a><span class="co"># circulatory system process       GeneRatio=58/646  padj=5.3e-08</span></span>
-<span id="cb2-75"><a href="#cb2-75" aria-hidden="true" tabindex="-1"></a><span class="co"># regulation of system process     GeneRatio=52/646  padj=1.1e-07</span></span>
-<span id="cb2-76"><a href="#cb2-76" aria-hidden="true" tabindex="-1"></a><span class="co"># axon guidance                    GeneRatio=32/646  padj=1.2e-07</span></span>
-<span id="cb2-77"><a href="#cb2-77" aria-hidden="true" tabindex="-1"></a><span class="co"># angiogenesis                     GeneRatio=54/646  padj=1.8e-06</span></span>
-<span id="cb2-78"><a href="#cb2-78" aria-hidden="true" tabindex="-1"></a><span class="co"># cell surface receptor protein tyrosine kinase signaling pathway  padj=6.2e-06</span></span>
-<span id="cb2-79"><a href="#cb2-79" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb2-80"><a href="#cb2-80" aria-hidden="true" tabindex="-1"></a><span class="co"># Dotplot: top 20 GO BP terms ranked by GeneRatio</span></span>
-<span id="cb2-81"><a href="#cb2-81" aria-hidden="true" tabindex="-1"></a><span class="fu">dotplot</span>(go_bp_simplified, <span class="at">showCategory =</span> <span class="dv">20</span>) <span class="sc">+</span></span>
-<span id="cb2-82"><a href="#cb2-82" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(<span class="at">title =</span> <span class="st">"GO Biological Process ORA: dex treatment vs control"</span>,</span>
-<span id="cb2-83"><a href="#cb2-83" aria-hidden="true" tabindex="-1"></a>       <span class="at">x =</span> <span class="st">"Gene Ratio"</span>) <span class="sc">+</span></span>
-<span id="cb2-84"><a href="#cb2-84" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme</span>(<span class="at">axis.text.y =</span> <span class="fu">element_text</span>(<span class="at">size =</span> <span class="dv">8</span>))</span>
-<span id="cb2-85"><a href="#cb2-85" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb2-86"><a href="#cb2-86" aria-hidden="true" tabindex="-1"></a><span class="co"># Enrichment map: GO term similarity network (edges = shared genes)</span></span>
-<span id="cb2-87"><a href="#cb2-87" aria-hidden="true" tabindex="-1"></a>go_bp_sim <span class="ot">&lt;-</span> <span class="fu">pairwise_termsim</span>(go_bp_simplified)</span>
-<span id="cb2-88"><a href="#cb2-88" aria-hidden="true" tabindex="-1"></a><span class="fu">emapplot</span>(go_bp_sim, <span class="at">showCategory =</span> <span class="dv">30</span>, <span class="at">cex_label_category =</span> <span class="fl">0.7</span>) <span class="sc">+</span></span>
-<span id="cb2-89"><a href="#cb2-89" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(<span class="at">title =</span> <span class="st">"GO BP Enrichment Map — dex vs untrt (airway)"</span>)</span>
-<span id="cb2-90"><a href="#cb2-90" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb2-91"><a href="#cb2-91" aria-hidden="true" tabindex="-1"></a><span class="co"># Gene-concept network: links DEGs to top GO terms</span></span>
-<span id="cb2-92"><a href="#cb2-92" aria-hidden="true" tabindex="-1"></a><span class="fu">cnetplot</span>(go_bp_simplified,</span>
-<span id="cb2-93"><a href="#cb2-93" aria-hidden="true" tabindex="-1"></a>         <span class="at">showCategory =</span> <span class="dv">5</span>,</span>
-<span id="cb2-94"><a href="#cb2-94" aria-hidden="true" tabindex="-1"></a>         <span class="at">foldChange   =</span> <span class="fu">setNames</span>(res_df<span class="sc">$</span>log2FoldChange, res_df<span class="sc">$</span>SYMBOL),</span>
-<span id="cb2-95"><a href="#cb2-95" aria-hidden="true" tabindex="-1"></a>         <span class="at">colorEdge    =</span> <span class="cn">TRUE</span>) <span class="sc">+</span></span>
-<span id="cb2-96"><a href="#cb2-96" aria-hidden="true" tabindex="-1"></a>  <span class="fu">scale_color_gradient2</span>(<span class="at">low =</span> <span class="st">"steelblue"</span>, <span class="at">mid =</span> <span class="st">"white"</span>, <span class="at">high =</span> <span class="st">"firebrick"</span>,</span>
-<span id="cb2-97"><a href="#cb2-97" aria-hidden="true" tabindex="-1"></a>                        <span class="at">midpoint =</span> <span class="dv">0</span>, <span class="at">name =</span> <span class="st">"LFC"</span>) <span class="sc">+</span></span>
-<span id="cb2-98"><a href="#cb2-98" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(<span class="at">title =</span> <span class="st">"Gene-Concept Network: top 5 GO BP terms"</span>)</span>
-<span id="cb2-99"><a href="#cb2-99" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb2-100"><a href="#cb2-100" aria-hidden="true" tabindex="-1"></a><span class="co"># === Part 2: KEGG Pathway ORA ===</span></span>
-<span id="cb2-101"><a href="#cb2-101" aria-hidden="true" tabindex="-1"></a>kegg_res <span class="ot">&lt;-</span> <span class="fu">enrichKEGG</span>(</span>
-<span id="cb2-102"><a href="#cb2-102" aria-hidden="true" tabindex="-1"></a>  <span class="at">gene          =</span> sig_entrez,</span>
-<span id="cb2-103"><a href="#cb2-103" aria-hidden="true" tabindex="-1"></a>  <span class="at">organism      =</span> <span class="st">"hsa"</span>,</span>
-<span id="cb2-104"><a href="#cb2-104" aria-hidden="true" tabindex="-1"></a>  <span class="at">pAdjustMethod =</span> <span class="st">"BH"</span>,</span>
-<span id="cb2-105"><a href="#cb2-105" aria-hidden="true" tabindex="-1"></a>  <span class="at">pvalueCutoff  =</span> <span class="fl">0.05</span>,</span>
-<span id="cb2-106"><a href="#cb2-106" aria-hidden="true" tabindex="-1"></a>  <span class="at">universe      =</span> universe_entrez</span>
-<span id="cb2-107"><a href="#cb2-107" aria-hidden="true" tabindex="-1"></a>)</span>
-<span id="cb2-108"><a href="#cb2-108" aria-hidden="true" tabindex="-1"></a><span class="co"># KEGG significant pathways: 19</span></span>
-<span id="cb2-109"><a href="#cb2-109" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb2-110"><a href="#cb2-110" aria-hidden="true" tabindex="-1"></a><span class="co"># Top significant KEGG pathways (real output):</span></span>
-<span id="cb2-111"><a href="#cb2-111" aria-hidden="true" tabindex="-1"></a><span class="co"># Cytokine-cytokine receptor interaction  24/365  padj=1.7e-04</span></span>
-<span id="cb2-112"><a href="#cb2-112" aria-hidden="true" tabindex="-1"></a><span class="co"># Regulation of lipolysis in adipocytes   12/365  padj=6.1e-04</span></span>
-<span id="cb2-113"><a href="#cb2-113" aria-hidden="true" tabindex="-1"></a><span class="co"># Neuroactive ligand-receptor interaction 17/365  padj=0.012</span></span>
-<span id="cb2-114"><a href="#cb2-114" aria-hidden="true" tabindex="-1"></a><span class="co"># Inflammatory mediator regulation of TRP channels  padj=0.017</span></span>
-<span id="cb2-115"><a href="#cb2-115" aria-hidden="true" tabindex="-1"></a><span class="co"># Cytoskeleton in muscle cells            23/365  padj=0.019</span></span>
-<span id="cb2-116"><a href="#cb2-116" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb2-117"><a href="#cb2-117" aria-hidden="true" tabindex="-1"></a><span class="fu">dotplot</span>(kegg_res, <span class="at">showCategory =</span> <span class="dv">15</span>) <span class="sc">+</span></span>
-<span id="cb2-118"><a href="#cb2-118" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(<span class="at">title =</span> <span class="st">"KEGG Pathway ORA: dex treatment vs control"</span>)</span>
-<span id="cb2-119"><a href="#cb2-119" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb2-120"><a href="#cb2-120" aria-hidden="true" tabindex="-1"></a><span class="co"># Interactive KEGG map (requires internet access)</span></span>
-<span id="cb2-121"><a href="#cb2-121" aria-hidden="true" tabindex="-1"></a><span class="co"># browseKEGG(kegg_res, "hsa04060")  # Cytokine-cytokine receptor interaction</span></span>
-<span id="cb2-122"><a href="#cb2-122" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb2-123"><a href="#cb2-123" aria-hidden="true" tabindex="-1"></a><span class="co"># === Part 3: GSEA ===</span></span>
-<span id="cb2-124"><a href="#cb2-124" aria-hidden="true" tabindex="-1"></a><span class="co"># IMPORTANT: Use Wald stat from the ORIGINAL results() object (not lfcShrink output)</span></span>
-<span id="cb2-125"><a href="#cb2-125" aria-hidden="true" tabindex="-1"></a><span class="co"># lfcShrink() modifies LFC but preserves pvalue; the stat column is lost after shrinkage.</span></span>
-<span id="cb2-126"><a href="#cb2-126" aria-hidden="true" tabindex="-1"></a><span class="co"># Wald stat = LFC / SE encodes both effect size and statistical reliability.</span></span>
-<span id="cb2-127"><a href="#cb2-127" aria-hidden="true" tabindex="-1"></a>res_for_stat <span class="ot">&lt;-</span> <span class="fu">as.data.frame</span>(res)</span>
-<span id="cb2-128"><a href="#cb2-128" aria-hidden="true" tabindex="-1"></a>res_for_stat<span class="sc">$</span>ensembl_clean <span class="ot">&lt;-</span> <span class="fu">sub</span>(<span class="st">"</span><span class="sc">\\</span><span class="st">..*"</span>, <span class="st">""</span>, <span class="fu">rownames</span>(res_for_stat))</span>
-<span id="cb2-129"><a href="#cb2-129" aria-hidden="true" tabindex="-1"></a>res_for_stat <span class="ot">&lt;-</span> <span class="fu">merge</span>(res_for_stat, gene_map,</span>
-<span id="cb2-130"><a href="#cb2-130" aria-hidden="true" tabindex="-1"></a>                      <span class="at">by.x =</span> <span class="st">"ensembl_clean"</span>, <span class="at">by.y =</span> <span class="st">"ENSEMBL"</span>, <span class="at">all.x =</span> <span class="cn">FALSE</span>)</span>
-<span id="cb2-131"><a href="#cb2-131" aria-hidden="true" tabindex="-1"></a>res_for_stat <span class="ot">&lt;-</span> res_for_stat[<span class="sc">!</span><span class="fu">duplicated</span>(res_for_stat<span class="sc">$</span>ENTREZID), ]</span>
-<span id="cb2-132"><a href="#cb2-132" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb2-133"><a href="#cb2-133" aria-hidden="true" tabindex="-1"></a>ranked_genes <span class="ot">&lt;-</span> <span class="fu">setNames</span>(res_for_stat<span class="sc">$</span>stat, res_for_stat<span class="sc">$</span>ENTREZID)</span>
-<span id="cb2-134"><a href="#cb2-134" aria-hidden="true" tabindex="-1"></a>ranked_genes <span class="ot">&lt;-</span> <span class="fu">sort</span>(ranked_genes[<span class="sc">!</span><span class="fu">is.na</span>(ranked_genes)], <span class="at">decreasing =</span> <span class="cn">TRUE</span>)</span>
-<span id="cb2-135"><a href="#cb2-135" aria-hidden="true" tabindex="-1"></a><span class="co"># Ranked gene list length: 14105</span></span>
-<span id="cb2-136"><a href="#cb2-136" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb2-137"><a href="#cb2-137" aria-hidden="true" tabindex="-1"></a><span class="co"># KEGG GSEA</span></span>
-<span id="cb2-138"><a href="#cb2-138" aria-hidden="true" tabindex="-1"></a>gsea_kegg <span class="ot">&lt;-</span> <span class="fu">gseKEGG</span>(</span>
-<span id="cb2-139"><a href="#cb2-139" aria-hidden="true" tabindex="-1"></a>  <span class="at">geneList      =</span> ranked_genes,</span>
-<span id="cb2-140"><a href="#cb2-140" aria-hidden="true" tabindex="-1"></a>  <span class="at">organism      =</span> <span class="st">"hsa"</span>,</span>
-<span id="cb2-141"><a href="#cb2-141" aria-hidden="true" tabindex="-1"></a>  <span class="at">minGSSize     =</span> <span class="dv">15</span>,</span>
-<span id="cb2-142"><a href="#cb2-142" aria-hidden="true" tabindex="-1"></a>  <span class="at">maxGSSize     =</span> <span class="dv">500</span>,</span>
-<span id="cb2-143"><a href="#cb2-143" aria-hidden="true" tabindex="-1"></a>  <span class="at">pvalueCutoff  =</span> <span class="fl">0.05</span>,</span>
-<span id="cb2-144"><a href="#cb2-144" aria-hidden="true" tabindex="-1"></a>  <span class="at">pAdjustMethod =</span> <span class="st">"BH"</span>,</span>
-<span id="cb2-145"><a href="#cb2-145" aria-hidden="true" tabindex="-1"></a>  <span class="at">seed          =</span> <span class="dv">42</span>,</span>
-<span id="cb2-146"><a href="#cb2-146" aria-hidden="true" tabindex="-1"></a>  <span class="at">verbose       =</span> <span class="cn">FALSE</span></span>
-<span id="cb2-147"><a href="#cb2-147" aria-hidden="true" tabindex="-1"></a>)</span>
-<span id="cb2-148"><a href="#cb2-148" aria-hidden="true" tabindex="-1"></a><span class="co"># GSEA KEGG significant pathways: 29</span></span>
-<span id="cb2-149"><a href="#cb2-149" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb2-150"><a href="#cb2-150" aria-hidden="true" tabindex="-1"></a><span class="co"># Top pathways by |NES| (real output):</span></span>
-<span id="cb2-151"><a href="#cb2-151" aria-hidden="true" tabindex="-1"></a><span class="co"># ADIPOGENESIS (hsa04920)           NES=+1.97  padj=0.003  setSize=53</span></span>
-<span id="cb2-152"><a href="#cb2-152" aria-hidden="true" tabindex="-1"></a><span class="co"># AUTOPHAGY (hsa04140)              NES=+1.96  padj=0.0002 setSize=154</span></span>
-<span id="cb2-153"><a href="#cb2-153" aria-hidden="true" tabindex="-1"></a><span class="co"># ADHERENS JUNCTION (hsa04520)      NES=+1.88  padj=0.003  setSize=82</span></span>
-<span id="cb2-154"><a href="#cb2-154" aria-hidden="true" tabindex="-1"></a><span class="co"># AMINOACYL-tRNA BIOSYN (hsa00970)  NES=-1.86  padj=0.013  setSize=43</span></span>
-<span id="cb2-155"><a href="#cb2-155" aria-hidden="true" tabindex="-1"></a><span class="co"># INSULIN SIGNALING (hsa04910)      NES=+1.85  padj=0.002  setSize=116</span></span>
-<span id="cb2-156"><a href="#cb2-156" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb2-157"><a href="#cb2-157" aria-hidden="true" tabindex="-1"></a><span class="co"># GO GSEA (takes longer due to larger gene set database)</span></span>
-<span id="cb2-158"><a href="#cb2-158" aria-hidden="true" tabindex="-1"></a>gsea_go <span class="ot">&lt;-</span> <span class="fu">gseGO</span>(</span>
-<span id="cb2-159"><a href="#cb2-159" aria-hidden="true" tabindex="-1"></a>  <span class="at">geneList      =</span> ranked_genes,</span>
-<span id="cb2-160"><a href="#cb2-160" aria-hidden="true" tabindex="-1"></a>  <span class="at">OrgDb         =</span> org.Hs.eg.db,</span>
-<span id="cb2-161"><a href="#cb2-161" aria-hidden="true" tabindex="-1"></a>  <span class="at">keyType       =</span> <span class="st">"ENTREZID"</span>,</span>
-<span id="cb2-162"><a href="#cb2-162" aria-hidden="true" tabindex="-1"></a>  <span class="at">ont           =</span> <span class="st">"BP"</span>,</span>
-<span id="cb2-163"><a href="#cb2-163" aria-hidden="true" tabindex="-1"></a>  <span class="at">minGSSize     =</span> <span class="dv">15</span>,</span>
-<span id="cb2-164"><a href="#cb2-164" aria-hidden="true" tabindex="-1"></a>  <span class="at">maxGSSize     =</span> <span class="dv">500</span>,</span>
-<span id="cb2-165"><a href="#cb2-165" aria-hidden="true" tabindex="-1"></a>  <span class="at">pvalueCutoff  =</span> <span class="fl">0.05</span>,</span>
-<span id="cb2-166"><a href="#cb2-166" aria-hidden="true" tabindex="-1"></a>  <span class="at">pAdjustMethod =</span> <span class="st">"BH"</span>,</span>
-<span id="cb2-167"><a href="#cb2-167" aria-hidden="true" tabindex="-1"></a>  <span class="at">eps           =</span> <span class="fl">1e-10</span>,</span>
-<span id="cb2-168"><a href="#cb2-168" aria-hidden="true" tabindex="-1"></a>  <span class="at">seed          =</span> <span class="dv">42</span>,</span>
-<span id="cb2-169"><a href="#cb2-169" aria-hidden="true" tabindex="-1"></a>  <span class="at">verbose       =</span> <span class="cn">FALSE</span></span>
-<span id="cb2-170"><a href="#cb2-170" aria-hidden="true" tabindex="-1"></a>)</span>
-<span id="cb2-171"><a href="#cb2-171" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb2-172"><a href="#cb2-172" aria-hidden="true" tabindex="-1"></a><span class="co"># Ridgeplot: distribution of ranked genes per significant pathway</span></span>
-<span id="cb2-173"><a href="#cb2-173" aria-hidden="true" tabindex="-1"></a><span class="fu">ridgeplot</span>(gsea_kegg, <span class="at">showCategory =</span> <span class="dv">15</span>, <span class="at">fill =</span> <span class="st">"p.adjust"</span>) <span class="sc">+</span></span>
-<span id="cb2-174"><a href="#cb2-174" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(<span class="at">title =</span> <span class="st">"GSEA KEGG: ranked gene distribution per pathway"</span>,</span>
-<span id="cb2-175"><a href="#cb2-175" aria-hidden="true" tabindex="-1"></a>       <span class="at">x =</span> <span class="st">"Wald statistic (trt vs untrt)"</span>)</span>
-<span id="cb2-176"><a href="#cb2-176" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb2-177"><a href="#cb2-177" aria-hidden="true" tabindex="-1"></a><span class="co"># GSEA running enrichment plot for top pathway (Autophagy, hsa04140)</span></span>
-<span id="cb2-178"><a href="#cb2-178" aria-hidden="true" tabindex="-1"></a><span class="fu">gseaplot2</span>(gsea_kegg,</span>
-<span id="cb2-179"><a href="#cb2-179" aria-hidden="true" tabindex="-1"></a>          <span class="at">geneSetID =</span> <span class="fu">which</span>(gsea_kegg<span class="sc">$</span>ID <span class="sc">==</span> <span class="st">"hsa04140"</span>),</span>
-<span id="cb2-180"><a href="#cb2-180" aria-hidden="true" tabindex="-1"></a>          <span class="at">title     =</span> <span class="st">"GSEA: Autophagy — dex vs untrt (NES = +1.96)"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb3"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(DESeq2)</span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(apeglm)</span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(airway)</span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(clusterProfiler)</span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(org.Hs.eg.db)</span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(enrichplot)</span>
+<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(ggplot2)</span>
+<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-9"><a href="#cb3-9" aria-hidden="true" tabindex="-1"></a><span class="co"># === Step 0: Run DESeq2 on airway (继承第3专题配置) ===</span></span>
+<span id="cb3-10"><a href="#cb3-10" aria-hidden="true" tabindex="-1"></a><span class="fu">data</span>(airway)</span>
+<span id="cb3-11"><a href="#cb3-11" aria-hidden="true" tabindex="-1"></a>dds <span class="ot">&lt;-</span> <span class="fu">DESeqDataSet</span>(airway, <span class="at">design =</span> <span class="sc">~</span> cell <span class="sc">+</span> dex)</span>
+<span id="cb3-12"><a href="#cb3-12" aria-hidden="true" tabindex="-1"></a>dds<span class="sc">$</span>dex <span class="ot">&lt;-</span> <span class="fu">relevel</span>(dds<span class="sc">$</span>dex, <span class="at">ref =</span> <span class="st">"untrt"</span>)</span>
+<span id="cb3-13"><a href="#cb3-13" aria-hidden="true" tabindex="-1"></a>keep <span class="ot">&lt;-</span> <span class="fu">rowSums</span>(<span class="fu">counts</span>(dds) <span class="sc">&gt;=</span> <span class="dv">10</span>) <span class="sc">&gt;=</span> <span class="dv">4</span></span>
+<span id="cb3-14"><a href="#cb3-14" aria-hidden="true" tabindex="-1"></a>dds  <span class="ot">&lt;-</span> dds[keep, ]</span>
+<span id="cb3-15"><a href="#cb3-15" aria-hidden="true" tabindex="-1"></a>dds  <span class="ot">&lt;-</span> <span class="fu">DESeq</span>(dds, <span class="at">quiet =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb3-16"><a href="#cb3-16" aria-hidden="true" tabindex="-1"></a>res        <span class="ot">&lt;-</span> <span class="fu">results</span>(dds, <span class="at">contrast =</span> <span class="fu">c</span>(<span class="st">"dex"</span>, <span class="st">"trt"</span>, <span class="st">"untrt"</span>), <span class="at">alpha =</span> <span class="fl">0.05</span>)</span>
+<span id="cb3-17"><a href="#cb3-17" aria-hidden="true" tabindex="-1"></a>res_shrunk <span class="ot">&lt;-</span> <span class="fu">lfcShrink</span>(dds, <span class="at">coef =</span> <span class="st">"dex_trt_vs_untrt"</span>, <span class="at">type =</span> <span class="st">"apeglm"</span>,</span>
+<span id="cb3-18"><a href="#cb3-18" aria-hidden="true" tabindex="-1"></a>                        <span class="at">res =</span> res, <span class="at">quiet =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb3-19"><a href="#cb3-19" aria-hidden="true" tabindex="-1"></a><span class="co"># Genes after filter: 16139</span></span>
+<span id="cb3-20"><a href="#cb3-20" aria-hidden="true" tabindex="-1"></a><span class="co"># Significant (|LFC| &gt; 1, padj &lt; 0.05): 760  (Up: 412, Down: 348)</span></span>
+<span id="cb3-21"><a href="#cb3-21" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-22"><a href="#cb3-22" aria-hidden="true" tabindex="-1"></a><span class="co"># === Step 1: ID conversion ===</span></span>
+<span id="cb3-23"><a href="#cb3-23" aria-hidden="true" tabindex="-1"></a><span class="co"># Ensembl IDs in airway carry version suffixes (e.g. ENSG00000152583.9)</span></span>
+<span id="cb3-24"><a href="#cb3-24" aria-hidden="true" tabindex="-1"></a><span class="co"># bitr() requires clean IDs without the version number</span></span>
+<span id="cb3-25"><a href="#cb3-25" aria-hidden="true" tabindex="-1"></a>res_df <span class="ot">&lt;-</span> <span class="fu">as.data.frame</span>(res_shrunk)</span>
+<span id="cb3-26"><a href="#cb3-26" aria-hidden="true" tabindex="-1"></a>res_df<span class="sc">$</span>gene_id      <span class="ot">&lt;-</span> <span class="fu">rownames</span>(res_df)</span>
+<span id="cb3-27"><a href="#cb3-27" aria-hidden="true" tabindex="-1"></a>res_df<span class="sc">$</span>ensembl_clean <span class="ot">&lt;-</span> <span class="fu">sub</span>(<span class="st">"</span><span class="sc">\\</span><span class="st">..*"</span>, <span class="st">""</span>, res_df<span class="sc">$</span>gene_id)   <span class="co"># strip version suffix</span></span>
+<span id="cb3-28"><a href="#cb3-28" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-29"><a href="#cb3-29" aria-hidden="true" tabindex="-1"></a>gene_map <span class="ot">&lt;-</span> <span class="fu">bitr</span>(</span>
+<span id="cb3-30"><a href="#cb3-30" aria-hidden="true" tabindex="-1"></a>  res_df<span class="sc">$</span>ensembl_clean,</span>
+<span id="cb3-31"><a href="#cb3-31" aria-hidden="true" tabindex="-1"></a>  <span class="at">fromType =</span> <span class="st">"ENSEMBL"</span>,</span>
+<span id="cb3-32"><a href="#cb3-32" aria-hidden="true" tabindex="-1"></a>  <span class="at">toType   =</span> <span class="fu">c</span>(<span class="st">"ENTREZID"</span>, <span class="st">"SYMBOL"</span>),</span>
+<span id="cb3-33"><a href="#cb3-33" aria-hidden="true" tabindex="-1"></a>  <span class="at">OrgDb    =</span> org.Hs.eg.db</span>
+<span id="cb3-34"><a href="#cb3-34" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb3-35"><a href="#cb3-35" aria-hidden="true" tabindex="-1"></a><span class="co"># Mapped genes: 14144 out of 16139</span></span>
+<span id="cb3-36"><a href="#cb3-36" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-37"><a href="#cb3-37" aria-hidden="true" tabindex="-1"></a>res_df <span class="ot">&lt;-</span> <span class="fu">merge</span>(res_df, gene_map, <span class="at">by.x =</span> <span class="st">"ensembl_clean"</span>, <span class="at">by.y =</span> <span class="st">"ENSEMBL"</span>,</span>
+<span id="cb3-38"><a href="#cb3-38" aria-hidden="true" tabindex="-1"></a>                <span class="at">all.x =</span> <span class="cn">FALSE</span>)</span>
+<span id="cb3-39"><a href="#cb3-39" aria-hidden="true" tabindex="-1"></a>res_df <span class="ot">&lt;-</span> res_df[<span class="sc">!</span><span class="fu">duplicated</span>(res_df<span class="sc">$</span>ENTREZID), ]</span>
+<span id="cb3-40"><a href="#cb3-40" aria-hidden="true" tabindex="-1"></a><span class="co"># After dedup: 14105 genes with Entrez ID</span></span>
+<span id="cb3-41"><a href="#cb3-41" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-42"><a href="#cb3-42" aria-hidden="true" tabindex="-1"></a><span class="co"># === Step 2: Define ORA inputs ===</span></span>
+<span id="cb3-43"><a href="#cb3-43" aria-hidden="true" tabindex="-1"></a>sig_df      <span class="ot">&lt;-</span> res_df[<span class="sc">!</span><span class="fu">is.na</span>(res_df<span class="sc">$</span>padj) <span class="sc">&amp;</span></span>
+<span id="cb3-44"><a href="#cb3-44" aria-hidden="true" tabindex="-1"></a>                        res_df<span class="sc">$</span>padj <span class="sc">&lt;</span> <span class="fl">0.05</span> <span class="sc">&amp;</span></span>
+<span id="cb3-45"><a href="#cb3-45" aria-hidden="true" tabindex="-1"></a>                        <span class="fu">abs</span>(res_df<span class="sc">$</span>log2FoldChange) <span class="sc">&gt;</span> <span class="dv">1</span>, ]</span>
+<span id="cb3-46"><a href="#cb3-46" aria-hidden="true" tabindex="-1"></a>sig_entrez      <span class="ot">&lt;-</span> sig_df<span class="sc">$</span>ENTREZID      <span class="co"># 729 DEGs with Entrez mapping</span></span>
+<span id="cb3-47"><a href="#cb3-47" aria-hidden="true" tabindex="-1"></a>universe_entrez <span class="ot">&lt;-</span> res_df<span class="sc">$</span>ENTREZID      <span class="co"># 14105 expressed genes as universe</span></span>
+<span id="cb3-48"><a href="#cb3-48" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-49"><a href="#cb3-49" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">"DEGs for ORA:"</span>, <span class="fu">length</span>(sig_entrez), <span class="st">"</span><span class="sc">\n</span><span class="st">"</span>)</span>
+<span id="cb3-50"><a href="#cb3-50" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">"Universe size:"</span>, <span class="fu">length</span>(universe_entrez), <span class="st">"</span><span class="sc">\n</span><span class="st">"</span>)</span>
+<span id="cb3-51"><a href="#cb3-51" aria-hidden="true" tabindex="-1"></a><span class="co"># DEGs for ORA: 729</span></span>
+<span id="cb3-52"><a href="#cb3-52" aria-hidden="true" tabindex="-1"></a><span class="co"># Universe size: 14105</span></span>
+<span id="cb3-53"><a href="#cb3-53" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-54"><a href="#cb3-54" aria-hidden="true" tabindex="-1"></a><span class="co"># === Part 1: GO Biological Process ORA ===</span></span>
+<span id="cb3-55"><a href="#cb3-55" aria-hidden="true" tabindex="-1"></a>go_bp <span class="ot">&lt;-</span> <span class="fu">enrichGO</span>(</span>
+<span id="cb3-56"><a href="#cb3-56" aria-hidden="true" tabindex="-1"></a>  <span class="at">gene          =</span> sig_entrez,</span>
+<span id="cb3-57"><a href="#cb3-57" aria-hidden="true" tabindex="-1"></a>  <span class="at">OrgDb         =</span> org.Hs.eg.db,</span>
+<span id="cb3-58"><a href="#cb3-58" aria-hidden="true" tabindex="-1"></a>  <span class="at">keyType       =</span> <span class="st">"ENTREZID"</span>,</span>
+<span id="cb3-59"><a href="#cb3-59" aria-hidden="true" tabindex="-1"></a>  <span class="at">ont           =</span> <span class="st">"BP"</span>,</span>
+<span id="cb3-60"><a href="#cb3-60" aria-hidden="true" tabindex="-1"></a>  <span class="at">pAdjustMethod =</span> <span class="st">"BH"</span>,</span>
+<span id="cb3-61"><a href="#cb3-61" aria-hidden="true" tabindex="-1"></a>  <span class="at">pvalueCutoff  =</span> <span class="fl">0.05</span>,</span>
+<span id="cb3-62"><a href="#cb3-62" aria-hidden="true" tabindex="-1"></a>  <span class="at">qvalueCutoff  =</span> <span class="fl">0.2</span>,</span>
+<span id="cb3-63"><a href="#cb3-63" aria-hidden="true" tabindex="-1"></a>  <span class="at">universe      =</span> universe_entrez,</span>
+<span id="cb3-64"><a href="#cb3-64" aria-hidden="true" tabindex="-1"></a>  <span class="at">readable      =</span> <span class="cn">TRUE</span>        <span class="co"># replace ENTREZID with gene SYMBOL in output</span></span>
+<span id="cb3-65"><a href="#cb3-65" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb3-66"><a href="#cb3-66" aria-hidden="true" tabindex="-1"></a><span class="co"># GO BP significant terms (before simplify): 538</span></span>
+<span id="cb3-67"><a href="#cb3-67" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-68"><a href="#cb3-68" aria-hidden="true" tabindex="-1"></a><span class="co"># Remove redundant GO terms via semantic similarity</span></span>
+<span id="cb3-69"><a href="#cb3-69" aria-hidden="true" tabindex="-1"></a>go_bp_simplified <span class="ot">&lt;-</span> <span class="fu">simplify</span>(go_bp, <span class="at">cutoff =</span> <span class="fl">0.7</span>, <span class="at">by =</span> <span class="st">"p.adjust"</span>,</span>
+<span id="cb3-70"><a href="#cb3-70" aria-hidden="true" tabindex="-1"></a>                              <span class="at">select_fun =</span> min)</span>
+<span id="cb3-71"><a href="#cb3-71" aria-hidden="true" tabindex="-1"></a><span class="co"># GO BP significant terms (after simplify): 212</span></span>
+<span id="cb3-72"><a href="#cb3-72" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-73"><a href="#cb3-73" aria-hidden="true" tabindex="-1"></a><span class="co"># Top 10 GO BP terms (real output):</span></span>
+<span id="cb3-74"><a href="#cb3-74" aria-hidden="true" tabindex="-1"></a><span class="co"># circulatory system process       GeneRatio=58/646  padj=5.3e-08</span></span>
+<span id="cb3-75"><a href="#cb3-75" aria-hidden="true" tabindex="-1"></a><span class="co"># regulation of system process     GeneRatio=52/646  padj=1.1e-07</span></span>
+<span id="cb3-76"><a href="#cb3-76" aria-hidden="true" tabindex="-1"></a><span class="co"># axon guidance                    GeneRatio=32/646  padj=1.2e-07</span></span>
+<span id="cb3-77"><a href="#cb3-77" aria-hidden="true" tabindex="-1"></a><span class="co"># angiogenesis                     GeneRatio=54/646  padj=1.8e-06</span></span>
+<span id="cb3-78"><a href="#cb3-78" aria-hidden="true" tabindex="-1"></a><span class="co"># cell surface receptor protein tyrosine kinase signaling pathway  padj=6.2e-06</span></span>
+<span id="cb3-79"><a href="#cb3-79" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-80"><a href="#cb3-80" aria-hidden="true" tabindex="-1"></a><span class="co"># Dotplot: top 20 GO BP terms ranked by GeneRatio</span></span>
+<span id="cb3-81"><a href="#cb3-81" aria-hidden="true" tabindex="-1"></a><span class="fu">dotplot</span>(go_bp_simplified, <span class="at">showCategory =</span> <span class="dv">20</span>) <span class="sc">+</span></span>
+<span id="cb3-82"><a href="#cb3-82" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(<span class="at">title =</span> <span class="st">"GO Biological Process ORA: dex treatment vs control"</span>,</span>
+<span id="cb3-83"><a href="#cb3-83" aria-hidden="true" tabindex="-1"></a>       <span class="at">x =</span> <span class="st">"Gene Ratio"</span>) <span class="sc">+</span></span>
+<span id="cb3-84"><a href="#cb3-84" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme</span>(<span class="at">axis.text.y =</span> <span class="fu">element_text</span>(<span class="at">size =</span> <span class="dv">8</span>))</span>
+<span id="cb3-85"><a href="#cb3-85" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-86"><a href="#cb3-86" aria-hidden="true" tabindex="-1"></a><span class="co"># Enrichment map: GO term similarity network (edges = shared genes)</span></span>
+<span id="cb3-87"><a href="#cb3-87" aria-hidden="true" tabindex="-1"></a><span class="co"># node_label_size controls label font size (replaces deprecated cex_label_category)</span></span>
+<span id="cb3-88"><a href="#cb3-88" aria-hidden="true" tabindex="-1"></a>go_bp_sim <span class="ot">&lt;-</span> <span class="fu">pairwise_termsim</span>(go_bp_simplified)</span>
+<span id="cb3-89"><a href="#cb3-89" aria-hidden="true" tabindex="-1"></a><span class="fu">emapplot</span>(go_bp_sim, <span class="at">showCategory =</span> <span class="dv">30</span>, <span class="at">node_label_size =</span> <span class="dv">3</span>) <span class="sc">+</span></span>
+<span id="cb3-90"><a href="#cb3-90" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(<span class="at">title =</span> <span class="st">"GO BP Enrichment Map — dex vs untrt (airway)"</span>)</span>
+<span id="cb3-91"><a href="#cb3-91" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-92"><a href="#cb3-92" aria-hidden="true" tabindex="-1"></a><span class="co"># Gene-concept network: links DEGs to top GO terms</span></span>
+<span id="cb3-93"><a href="#cb3-93" aria-hidden="true" tabindex="-1"></a><span class="co"># color_edge replaces deprecated colorEdge in enrichplot &gt;= 1.20</span></span>
+<span id="cb3-94"><a href="#cb3-94" aria-hidden="true" tabindex="-1"></a><span class="fu">cnetplot</span>(go_bp_simplified,</span>
+<span id="cb3-95"><a href="#cb3-95" aria-hidden="true" tabindex="-1"></a>         <span class="at">showCategory =</span> <span class="dv">5</span>,</span>
+<span id="cb3-96"><a href="#cb3-96" aria-hidden="true" tabindex="-1"></a>         <span class="at">foldChange   =</span> <span class="fu">setNames</span>(res_df<span class="sc">$</span>log2FoldChange, res_df<span class="sc">$</span>SYMBOL),</span>
+<span id="cb3-97"><a href="#cb3-97" aria-hidden="true" tabindex="-1"></a>         <span class="at">color_edge   =</span> <span class="cn">TRUE</span>) <span class="sc">+</span></span>
+<span id="cb3-98"><a href="#cb3-98" aria-hidden="true" tabindex="-1"></a>  <span class="fu">scale_color_gradient2</span>(<span class="at">low =</span> <span class="st">"steelblue"</span>, <span class="at">mid =</span> <span class="st">"white"</span>, <span class="at">high =</span> <span class="st">"firebrick"</span>,</span>
+<span id="cb3-99"><a href="#cb3-99" aria-hidden="true" tabindex="-1"></a>                        <span class="at">midpoint =</span> <span class="dv">0</span>, <span class="at">name =</span> <span class="st">"LFC"</span>) <span class="sc">+</span></span>
+<span id="cb3-100"><a href="#cb3-100" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(<span class="at">title =</span> <span class="st">"Gene-Concept Network: top 5 GO BP terms"</span>)</span>
+<span id="cb3-101"><a href="#cb3-101" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-102"><a href="#cb3-102" aria-hidden="true" tabindex="-1"></a><span class="co"># === Part 1b: GO Molecular Function ORA ===</span></span>
+<span id="cb3-103"><a href="#cb3-103" aria-hidden="true" tabindex="-1"></a>go_mf <span class="ot">&lt;-</span> <span class="fu">enrichGO</span>(</span>
+<span id="cb3-104"><a href="#cb3-104" aria-hidden="true" tabindex="-1"></a>  <span class="at">gene          =</span> sig_entrez,</span>
+<span id="cb3-105"><a href="#cb3-105" aria-hidden="true" tabindex="-1"></a>  <span class="at">OrgDb         =</span> org.Hs.eg.db,</span>
+<span id="cb3-106"><a href="#cb3-106" aria-hidden="true" tabindex="-1"></a>  <span class="at">keyType       =</span> <span class="st">"ENTREZID"</span>,</span>
+<span id="cb3-107"><a href="#cb3-107" aria-hidden="true" tabindex="-1"></a>  <span class="at">ont           =</span> <span class="st">"MF"</span>,</span>
+<span id="cb3-108"><a href="#cb3-108" aria-hidden="true" tabindex="-1"></a>  <span class="at">pAdjustMethod =</span> <span class="st">"BH"</span>,</span>
+<span id="cb3-109"><a href="#cb3-109" aria-hidden="true" tabindex="-1"></a>  <span class="at">pvalueCutoff  =</span> <span class="fl">0.05</span>,</span>
+<span id="cb3-110"><a href="#cb3-110" aria-hidden="true" tabindex="-1"></a>  <span class="at">universe      =</span> universe_entrez,</span>
+<span id="cb3-111"><a href="#cb3-111" aria-hidden="true" tabindex="-1"></a>  <span class="at">readable      =</span> <span class="cn">TRUE</span></span>
+<span id="cb3-112"><a href="#cb3-112" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb3-113"><a href="#cb3-113" aria-hidden="true" tabindex="-1"></a><span class="co"># GO MF significant terms: 52</span></span>
+<span id="cb3-114"><a href="#cb3-114" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-115"><a href="#cb3-115" aria-hidden="true" tabindex="-1"></a><span class="fu">dotplot</span>(go_mf, <span class="at">showCategory =</span> <span class="dv">15</span>) <span class="sc">+</span></span>
+<span id="cb3-116"><a href="#cb3-116" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(<span class="at">title =</span> <span class="st">"GO Molecular Function ORA: dex treatment vs control"</span>,</span>
+<span id="cb3-117"><a href="#cb3-117" aria-hidden="true" tabindex="-1"></a>       <span class="at">x =</span> <span class="st">"Gene Ratio"</span>) <span class="sc">+</span></span>
+<span id="cb3-118"><a href="#cb3-118" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme</span>(<span class="at">axis.text.y =</span> <span class="fu">element_text</span>(<span class="at">size =</span> <span class="dv">9</span>))</span>
+<span id="cb3-119"><a href="#cb3-119" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-120"><a href="#cb3-120" aria-hidden="true" tabindex="-1"></a><span class="co"># === Part 2: KEGG Pathway ORA ===</span></span>
+<span id="cb3-121"><a href="#cb3-121" aria-hidden="true" tabindex="-1"></a>kegg_res <span class="ot">&lt;-</span> <span class="fu">enrichKEGG</span>(</span>
+<span id="cb3-122"><a href="#cb3-122" aria-hidden="true" tabindex="-1"></a>  <span class="at">gene          =</span> sig_entrez,</span>
+<span id="cb3-123"><a href="#cb3-123" aria-hidden="true" tabindex="-1"></a>  <span class="at">organism      =</span> <span class="st">"hsa"</span>,</span>
+<span id="cb3-124"><a href="#cb3-124" aria-hidden="true" tabindex="-1"></a>  <span class="at">pAdjustMethod =</span> <span class="st">"BH"</span>,</span>
+<span id="cb3-125"><a href="#cb3-125" aria-hidden="true" tabindex="-1"></a>  <span class="at">pvalueCutoff  =</span> <span class="fl">0.05</span>,</span>
+<span id="cb3-126"><a href="#cb3-126" aria-hidden="true" tabindex="-1"></a>  <span class="at">universe      =</span> universe_entrez</span>
+<span id="cb3-127"><a href="#cb3-127" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb3-128"><a href="#cb3-128" aria-hidden="true" tabindex="-1"></a><span class="co"># KEGG significant pathways: 19</span></span>
+<span id="cb3-129"><a href="#cb3-129" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-130"><a href="#cb3-130" aria-hidden="true" tabindex="-1"></a><span class="co"># Top significant KEGG pathways (real output):</span></span>
+<span id="cb3-131"><a href="#cb3-131" aria-hidden="true" tabindex="-1"></a><span class="co"># Cytokine-cytokine receptor interaction  24/365  padj=1.7e-04</span></span>
+<span id="cb3-132"><a href="#cb3-132" aria-hidden="true" tabindex="-1"></a><span class="co"># Regulation of lipolysis in adipocytes   12/365  padj=6.1e-04</span></span>
+<span id="cb3-133"><a href="#cb3-133" aria-hidden="true" tabindex="-1"></a><span class="co"># Neuroactive ligand-receptor interaction 17/365  padj=0.012</span></span>
+<span id="cb3-134"><a href="#cb3-134" aria-hidden="true" tabindex="-1"></a><span class="co"># Inflammatory mediator regulation of TRP channels  padj=0.017</span></span>
+<span id="cb3-135"><a href="#cb3-135" aria-hidden="true" tabindex="-1"></a><span class="co"># Cytoskeleton in muscle cells            23/365  padj=0.019</span></span>
+<span id="cb3-136"><a href="#cb3-136" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-137"><a href="#cb3-137" aria-hidden="true" tabindex="-1"></a><span class="fu">dotplot</span>(kegg_res, <span class="at">showCategory =</span> <span class="dv">15</span>) <span class="sc">+</span></span>
+<span id="cb3-138"><a href="#cb3-138" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(<span class="at">title =</span> <span class="st">"KEGG Pathway ORA: dex treatment vs control"</span>)</span>
+<span id="cb3-139"><a href="#cb3-139" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-140"><a href="#cb3-140" aria-hidden="true" tabindex="-1"></a><span class="co"># Interactive KEGG map (requires internet access)</span></span>
+<span id="cb3-141"><a href="#cb3-141" aria-hidden="true" tabindex="-1"></a><span class="co"># browseKEGG(kegg_res, "hsa04060")  # Cytokine-cytokine receptor interaction</span></span>
+<span id="cb3-142"><a href="#cb3-142" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-143"><a href="#cb3-143" aria-hidden="true" tabindex="-1"></a><span class="co"># === Part 3: GSEA ===</span></span>
+<span id="cb3-144"><a href="#cb3-144" aria-hidden="true" tabindex="-1"></a><span class="co"># IMPORTANT: Use Wald stat from the ORIGINAL results() object (not lfcShrink output)</span></span>
+<span id="cb3-145"><a href="#cb3-145" aria-hidden="true" tabindex="-1"></a><span class="co"># lfcShrink() modifies LFC but preserves pvalue; the stat column is lost after shrinkage.</span></span>
+<span id="cb3-146"><a href="#cb3-146" aria-hidden="true" tabindex="-1"></a><span class="co"># Wald stat = LFC / SE encodes both effect size and statistical reliability.</span></span>
+<span id="cb3-147"><a href="#cb3-147" aria-hidden="true" tabindex="-1"></a>res_for_stat <span class="ot">&lt;-</span> <span class="fu">as.data.frame</span>(res)</span>
+<span id="cb3-148"><a href="#cb3-148" aria-hidden="true" tabindex="-1"></a>res_for_stat<span class="sc">$</span>ensembl_clean <span class="ot">&lt;-</span> <span class="fu">sub</span>(<span class="st">"</span><span class="sc">\\</span><span class="st">..*"</span>, <span class="st">""</span>, <span class="fu">rownames</span>(res_for_stat))</span>
+<span id="cb3-149"><a href="#cb3-149" aria-hidden="true" tabindex="-1"></a>res_for_stat <span class="ot">&lt;-</span> <span class="fu">merge</span>(res_for_stat, gene_map,</span>
+<span id="cb3-150"><a href="#cb3-150" aria-hidden="true" tabindex="-1"></a>                      <span class="at">by.x =</span> <span class="st">"ensembl_clean"</span>, <span class="at">by.y =</span> <span class="st">"ENSEMBL"</span>, <span class="at">all.x =</span> <span class="cn">FALSE</span>)</span>
+<span id="cb3-151"><a href="#cb3-151" aria-hidden="true" tabindex="-1"></a>res_for_stat <span class="ot">&lt;-</span> res_for_stat[<span class="sc">!</span><span class="fu">duplicated</span>(res_for_stat<span class="sc">$</span>ENTREZID), ]</span>
+<span id="cb3-152"><a href="#cb3-152" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-153"><a href="#cb3-153" aria-hidden="true" tabindex="-1"></a>ranked_genes <span class="ot">&lt;-</span> <span class="fu">setNames</span>(res_for_stat<span class="sc">$</span>stat, res_for_stat<span class="sc">$</span>ENTREZID)</span>
+<span id="cb3-154"><a href="#cb3-154" aria-hidden="true" tabindex="-1"></a>ranked_genes <span class="ot">&lt;-</span> <span class="fu">sort</span>(ranked_genes[<span class="sc">!</span><span class="fu">is.na</span>(ranked_genes)], <span class="at">decreasing =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb3-155"><a href="#cb3-155" aria-hidden="true" tabindex="-1"></a><span class="co"># Ranked gene list length: 14105</span></span>
+<span id="cb3-156"><a href="#cb3-156" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-157"><a href="#cb3-157" aria-hidden="true" tabindex="-1"></a><span class="co"># KEGG GSEA</span></span>
+<span id="cb3-158"><a href="#cb3-158" aria-hidden="true" tabindex="-1"></a>gsea_kegg <span class="ot">&lt;-</span> <span class="fu">gseKEGG</span>(</span>
+<span id="cb3-159"><a href="#cb3-159" aria-hidden="true" tabindex="-1"></a>  <span class="at">geneList      =</span> ranked_genes,</span>
+<span id="cb3-160"><a href="#cb3-160" aria-hidden="true" tabindex="-1"></a>  <span class="at">organism      =</span> <span class="st">"hsa"</span>,</span>
+<span id="cb3-161"><a href="#cb3-161" aria-hidden="true" tabindex="-1"></a>  <span class="at">minGSSize     =</span> <span class="dv">15</span>,</span>
+<span id="cb3-162"><a href="#cb3-162" aria-hidden="true" tabindex="-1"></a>  <span class="at">maxGSSize     =</span> <span class="dv">500</span>,</span>
+<span id="cb3-163"><a href="#cb3-163" aria-hidden="true" tabindex="-1"></a>  <span class="at">pvalueCutoff  =</span> <span class="fl">0.05</span>,</span>
+<span id="cb3-164"><a href="#cb3-164" aria-hidden="true" tabindex="-1"></a>  <span class="at">pAdjustMethod =</span> <span class="st">"BH"</span>,</span>
+<span id="cb3-165"><a href="#cb3-165" aria-hidden="true" tabindex="-1"></a>  <span class="at">seed          =</span> <span class="dv">42</span>,</span>
+<span id="cb3-166"><a href="#cb3-166" aria-hidden="true" tabindex="-1"></a>  <span class="at">verbose       =</span> <span class="cn">FALSE</span></span>
+<span id="cb3-167"><a href="#cb3-167" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb3-168"><a href="#cb3-168" aria-hidden="true" tabindex="-1"></a><span class="co"># GSEA KEGG significant pathways: 29</span></span>
+<span id="cb3-169"><a href="#cb3-169" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-170"><a href="#cb3-170" aria-hidden="true" tabindex="-1"></a><span class="co"># Top pathways by |NES| (real output, airway dataset):</span></span>
+<span id="cb3-171"><a href="#cb3-171" aria-hidden="true" tabindex="-1"></a><span class="co"># Adipocytokine signaling (hsa04920)  NES=+1.97  padj=0.003  setSize=53</span></span>
+<span id="cb3-172"><a href="#cb3-172" aria-hidden="true" tabindex="-1"></a><span class="co"># Autophagy (hsa04140)                NES=+1.96  padj=0.0002 setSize=154</span></span>
+<span id="cb3-173"><a href="#cb3-173" aria-hidden="true" tabindex="-1"></a><span class="co"># Adherens junction (hsa04520)        NES=+1.88  padj=0.003  setSize=82</span></span>
+<span id="cb3-174"><a href="#cb3-174" aria-hidden="true" tabindex="-1"></a><span class="co"># Aminoacyl-tRNA biosyn (hsa00970)    NES=-1.86  padj=0.013  setSize=43</span></span>
+<span id="cb3-175"><a href="#cb3-175" aria-hidden="true" tabindex="-1"></a><span class="co"># Insulin signaling (hsa04910)        NES=+1.85  padj=0.002  setSize=116</span></span>
+<span id="cb3-176"><a href="#cb3-176" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-177"><a href="#cb3-177" aria-hidden="true" tabindex="-1"></a><span class="co"># GO BP GSEA (takes longer due to larger gene set database)</span></span>
+<span id="cb3-178"><a href="#cb3-178" aria-hidden="true" tabindex="-1"></a><span class="co"># Significant GO BP terms: 234</span></span>
+<span id="cb3-179"><a href="#cb3-179" aria-hidden="true" tabindex="-1"></a>gsea_go <span class="ot">&lt;-</span> <span class="fu">gseGO</span>(</span>
+<span id="cb3-180"><a href="#cb3-180" aria-hidden="true" tabindex="-1"></a>  <span class="at">geneList      =</span> ranked_genes,</span>
+<span id="cb3-181"><a href="#cb3-181" aria-hidden="true" tabindex="-1"></a>  <span class="at">OrgDb         =</span> org.Hs.eg.db,</span>
+<span id="cb3-182"><a href="#cb3-182" aria-hidden="true" tabindex="-1"></a>  <span class="at">keyType       =</span> <span class="st">"ENTREZID"</span>,</span>
+<span id="cb3-183"><a href="#cb3-183" aria-hidden="true" tabindex="-1"></a>  <span class="at">ont           =</span> <span class="st">"BP"</span>,</span>
+<span id="cb3-184"><a href="#cb3-184" aria-hidden="true" tabindex="-1"></a>  <span class="at">minGSSize     =</span> <span class="dv">15</span>,</span>
+<span id="cb3-185"><a href="#cb3-185" aria-hidden="true" tabindex="-1"></a>  <span class="at">maxGSSize     =</span> <span class="dv">500</span>,</span>
+<span id="cb3-186"><a href="#cb3-186" aria-hidden="true" tabindex="-1"></a>  <span class="at">pvalueCutoff  =</span> <span class="fl">0.05</span>,</span>
+<span id="cb3-187"><a href="#cb3-187" aria-hidden="true" tabindex="-1"></a>  <span class="at">pAdjustMethod =</span> <span class="st">"BH"</span>,</span>
+<span id="cb3-188"><a href="#cb3-188" aria-hidden="true" tabindex="-1"></a>  <span class="at">eps           =</span> <span class="fl">1e-10</span>,</span>
+<span id="cb3-189"><a href="#cb3-189" aria-hidden="true" tabindex="-1"></a>  <span class="at">seed          =</span> <span class="dv">42</span>,</span>
+<span id="cb3-190"><a href="#cb3-190" aria-hidden="true" tabindex="-1"></a>  <span class="at">verbose       =</span> <span class="cn">FALSE</span></span>
+<span id="cb3-191"><a href="#cb3-191" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb3-192"><a href="#cb3-192" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-193"><a href="#cb3-193" aria-hidden="true" tabindex="-1"></a><span class="co"># Ridgeplot: distribution of ranked genes per significant pathway</span></span>
+<span id="cb3-194"><a href="#cb3-194" aria-hidden="true" tabindex="-1"></a><span class="fu">ridgeplot</span>(gsea_kegg, <span class="at">showCategory =</span> <span class="dv">15</span>, <span class="at">fill =</span> <span class="st">"p.adjust"</span>) <span class="sc">+</span></span>
+<span id="cb3-195"><a href="#cb3-195" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(<span class="at">title =</span> <span class="st">"GSEA KEGG: ranked gene distribution per pathway"</span>,</span>
+<span id="cb3-196"><a href="#cb3-196" aria-hidden="true" tabindex="-1"></a>       <span class="at">x =</span> <span class="st">"Wald statistic (trt vs untrt)"</span>)</span>
+<span id="cb3-197"><a href="#cb3-197" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-198"><a href="#cb3-198" aria-hidden="true" tabindex="-1"></a><span class="co"># GSEA running enrichment plot for top-|NES| pathway</span></span>
+<span id="cb3-199"><a href="#cb3-199" aria-hidden="true" tabindex="-1"></a><span class="co"># Top pathway: Adipocytokine signaling (hsa04920, NES = +1.97)</span></span>
+<span id="cb3-200"><a href="#cb3-200" aria-hidden="true" tabindex="-1"></a><span class="co"># Use ID-based lookup to ensure robustness across result orderings</span></span>
+<span id="cb3-201"><a href="#cb3-201" aria-hidden="true" tabindex="-1"></a>top_gsea_id <span class="ot">&lt;-</span> gsea_kegg<span class="sc">@</span>result<span class="sc">$</span>ID[<span class="fu">which.max</span>(<span class="fu">abs</span>(gsea_kegg<span class="sc">@</span>result<span class="sc">$</span>NES))]</span>
+<span id="cb3-202"><a href="#cb3-202" aria-hidden="true" tabindex="-1"></a><span class="fu">gseaplot2</span>(gsea_kegg,</span>
+<span id="cb3-203"><a href="#cb3-203" aria-hidden="true" tabindex="-1"></a>          <span class="at">geneSetID =</span> top_gsea_id,</span>
+<span id="cb3-204"><a href="#cb3-204" aria-hidden="true" tabindex="-1"></a>          <span class="at">title     =</span> <span class="fu">paste0</span>(<span class="st">"GSEA: "</span>,</span>
+<span id="cb3-205"><a href="#cb3-205" aria-hidden="true" tabindex="-1"></a>                             gsea_kegg<span class="sc">@</span>result<span class="sc">$</span>Description[gsea_kegg<span class="sc">@</span>result<span class="sc">$</span>ID <span class="sc">==</span> top_gsea_id],</span>
+<span id="cb3-206"><a href="#cb3-206" aria-hidden="true" tabindex="-1"></a>                             <span class="st">" (NES = "</span>,</span>
+<span id="cb3-207"><a href="#cb3-207" aria-hidden="true" tabindex="-1"></a>                             <span class="fu">round</span>(gsea_kegg<span class="sc">@</span>result<span class="sc">$</span>NES[gsea_kegg<span class="sc">@</span>result<span class="sc">$</span>ID <span class="sc">==</span> top_gsea_id], <span class="dv">2</span>),</span>
+<span id="cb3-208"><a href="#cb3-208" aria-hidden="true" tabindex="-1"></a>                             <span class="st">")"</span>))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <section id="理解-gsea-富集图" class="level3" data-number="6.1">
 <h3 data-number="6.1" class="anchored" data-anchor-id="理解-gsea-富集图"><span class="header-section-number">6.1</span> 理解 GSEA 富集图</h3>
 <p><code>gseaplot2()</code> 生成的经典 GSEA 图包含三个面板：</p>
@@ -1027,35 +1280,41 @@ window.Quarto = {
 </section>
 <section id="ora-与-gsea-的结果比较" class="level2" data-number="7">
 <h2 data-number="7" class="anchored" data-anchor-id="ora-与-gsea-的结果比较"><span class="header-section-number">7</span> ORA 与 GSEA 的结果比较</h2>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb3"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(dplyr)</span>
-<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a><span class="co"># KEGG ORA vs KEGG GSEA overlap (real output from airway dataset)</span></span>
-<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a>ora_descs  <span class="ot">&lt;-</span> kegg_res<span class="sc">@</span>result<span class="sc">$</span>Description[kegg_res<span class="sc">@</span>result<span class="sc">$</span>p.adjust <span class="sc">&lt;</span> <span class="fl">0.05</span>]</span>
-<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a>gsea_descs <span class="ot">&lt;-</span> gsea_kegg<span class="sc">@</span>result<span class="sc">$</span>Description[gsea_kegg<span class="sc">@</span>result<span class="sc">$</span>p.adjust <span class="sc">&lt;</span> <span class="fl">0.05</span>]</span>
-<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">"KEGG ORA significant :"</span>, <span class="fu">length</span>(ora_descs), <span class="st">"</span><span class="sc">\n</span><span class="st">"</span>)   <span class="co"># 19</span></span>
-<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">"KEGG GSEA significant:"</span>, <span class="fu">length</span>(gsea_descs), <span class="st">"</span><span class="sc">\n</span><span class="st">"</span>)  <span class="co"># 29</span></span>
-<span id="cb3-9"><a href="#cb3-9" aria-hidden="true" tabindex="-1"></a>overlap <span class="ot">&lt;-</span> <span class="fu">intersect</span>(ora_descs, gsea_descs)</span>
-<span id="cb3-10"><a href="#cb3-10" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">"Overlapping pathways :"</span>, <span class="fu">length</span>(overlap), <span class="st">"</span><span class="sc">\n</span><span class="st">"</span>)     <span class="co"># 5</span></span>
-<span id="cb3-11"><a href="#cb3-11" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(overlap)</span>
-<span id="cb3-12"><a href="#cb3-12" aria-hidden="true" tabindex="-1"></a><span class="co"># [1] "Cytokine-cytokine receptor interaction"</span></span>
-<span id="cb3-13"><a href="#cb3-13" aria-hidden="true" tabindex="-1"></a><span class="co"># [2] "Neuroactive ligand-receptor interaction"</span></span>
-<span id="cb3-14"><a href="#cb3-14" aria-hidden="true" tabindex="-1"></a><span class="co"># [3] "Cytoskeleton in muscle cells"</span></span>
-<span id="cb3-15"><a href="#cb3-15" aria-hidden="true" tabindex="-1"></a><span class="co"># [4] "Calcium signaling pathway"</span></span>
-<span id="cb3-16"><a href="#cb3-16" aria-hidden="true" tabindex="-1"></a><span class="co"># [5] "Mineral absorption"</span></span>
-<span id="cb3-17"><a href="#cb3-17" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb3-18"><a href="#cb3-18" aria-hidden="true" tabindex="-1"></a><span class="co"># GO BP: ORA vs GSEA overlap</span></span>
-<span id="cb3-19"><a href="#cb3-19" aria-hidden="true" tabindex="-1"></a>ora_go_descs  <span class="ot">&lt;-</span> go_bp_simplified<span class="sc">@</span>result<span class="sc">$</span>Description[</span>
-<span id="cb3-20"><a href="#cb3-20" aria-hidden="true" tabindex="-1"></a>                   go_bp_simplified<span class="sc">@</span>result<span class="sc">$</span>p.adjust <span class="sc">&lt;</span> <span class="fl">0.05</span>]</span>
-<span id="cb3-21"><a href="#cb3-21" aria-hidden="true" tabindex="-1"></a>gsea_go_descs <span class="ot">&lt;-</span> gsea_go<span class="sc">@</span>result<span class="sc">$</span>Description[gsea_go<span class="sc">@</span>result<span class="sc">$</span>p.adjust <span class="sc">&lt;</span> <span class="fl">0.05</span>]</span>
-<span id="cb3-22"><a href="#cb3-22" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">"</span><span class="sc">\n</span><span class="st">GO BP ORA significant :"</span>, <span class="fu">length</span>(ora_go_descs), <span class="st">"</span><span class="sc">\n</span><span class="st">"</span>)</span>
-<span id="cb3-23"><a href="#cb3-23" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">"GO BP GSEA significant:"</span>, <span class="fu">length</span>(gsea_go_descs), <span class="st">"</span><span class="sc">\n</span><span class="st">"</span>)</span>
-<span id="cb3-24"><a href="#cb3-24" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">"GO BP overlap         :"</span>, <span class="fu">length</span>(<span class="fu">intersect</span>(ora_go_descs, gsea_go_descs)), <span class="st">"</span><span class="sc">\n</span><span class="st">"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb4"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Prerequisite objects (all produced by "clusterProfiler 实践" main block):</span></span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a><span class="co">#   kegg_res        — KEGG ORA result (enrichKEGG, Step Part 2)</span></span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a><span class="co">#   gsea_kegg       — KEGG GSEA result (gseKEGG, Step Part 3)</span></span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a><span class="co">#   go_bp_simplified — GO BP ORA result after simplify() (Step Part 1)</span></span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a><span class="co">#   gsea_go         — GO BP GSEA result (gseGO, Step Part 3)</span></span>
+<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(dplyr)</span>
+<span id="cb4-8"><a href="#cb4-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-9"><a href="#cb4-9" aria-hidden="true" tabindex="-1"></a><span class="co"># KEGG ORA vs KEGG GSEA overlap (real output from airway dataset)</span></span>
+<span id="cb4-10"><a href="#cb4-10" aria-hidden="true" tabindex="-1"></a>ora_descs  <span class="ot">&lt;-</span> kegg_res<span class="sc">@</span>result<span class="sc">$</span>Description[kegg_res<span class="sc">@</span>result<span class="sc">$</span>p.adjust <span class="sc">&lt;</span> <span class="fl">0.05</span>]</span>
+<span id="cb4-11"><a href="#cb4-11" aria-hidden="true" tabindex="-1"></a>gsea_descs <span class="ot">&lt;-</span> gsea_kegg<span class="sc">@</span>result<span class="sc">$</span>Description[gsea_kegg<span class="sc">@</span>result<span class="sc">$</span>p.adjust <span class="sc">&lt;</span> <span class="fl">0.05</span>]</span>
+<span id="cb4-12"><a href="#cb4-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-13"><a href="#cb4-13" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">"KEGG ORA significant :"</span>, <span class="fu">length</span>(ora_descs), <span class="st">"</span><span class="sc">\n</span><span class="st">"</span>)   <span class="co"># 19</span></span>
+<span id="cb4-14"><a href="#cb4-14" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">"KEGG GSEA significant:"</span>, <span class="fu">length</span>(gsea_descs), <span class="st">"</span><span class="sc">\n</span><span class="st">"</span>)  <span class="co"># 29</span></span>
+<span id="cb4-15"><a href="#cb4-15" aria-hidden="true" tabindex="-1"></a>overlap <span class="ot">&lt;-</span> <span class="fu">intersect</span>(ora_descs, gsea_descs)</span>
+<span id="cb4-16"><a href="#cb4-16" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">"Overlapping pathways :"</span>, <span class="fu">length</span>(overlap), <span class="st">"</span><span class="sc">\n</span><span class="st">"</span>)     <span class="co"># 5</span></span>
+<span id="cb4-17"><a href="#cb4-17" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(overlap)</span>
+<span id="cb4-18"><a href="#cb4-18" aria-hidden="true" tabindex="-1"></a><span class="co"># [1] "Cytokine-cytokine receptor interaction"</span></span>
+<span id="cb4-19"><a href="#cb4-19" aria-hidden="true" tabindex="-1"></a><span class="co"># [2] "Neuroactive ligand-receptor interaction"</span></span>
+<span id="cb4-20"><a href="#cb4-20" aria-hidden="true" tabindex="-1"></a><span class="co"># [3] "Cytoskeleton in muscle cells"</span></span>
+<span id="cb4-21"><a href="#cb4-21" aria-hidden="true" tabindex="-1"></a><span class="co"># [4] "Calcium signaling pathway"</span></span>
+<span id="cb4-22"><a href="#cb4-22" aria-hidden="true" tabindex="-1"></a><span class="co"># [5] "Mineral absorption"</span></span>
+<span id="cb4-23"><a href="#cb4-23" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-24"><a href="#cb4-24" aria-hidden="true" tabindex="-1"></a><span class="co"># GO BP: ORA vs GSEA overlap (real output)</span></span>
+<span id="cb4-25"><a href="#cb4-25" aria-hidden="true" tabindex="-1"></a>ora_go_descs  <span class="ot">&lt;-</span> go_bp_simplified<span class="sc">@</span>result<span class="sc">$</span>Description[go_bp_simplified<span class="sc">@</span>result<span class="sc">$</span>p.adjust <span class="sc">&lt;</span> <span class="fl">0.05</span>]</span>
+<span id="cb4-26"><a href="#cb4-26" aria-hidden="true" tabindex="-1"></a>gsea_go_descs <span class="ot">&lt;-</span> gsea_go<span class="sc">@</span>result<span class="sc">$</span>Description[gsea_go<span class="sc">@</span>result<span class="sc">$</span>p.adjust <span class="sc">&lt;</span> <span class="fl">0.05</span>]</span>
+<span id="cb4-27"><a href="#cb4-27" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">"</span><span class="sc">\n</span><span class="st">GO BP ORA significant :"</span>, <span class="fu">length</span>(ora_go_descs), <span class="st">"</span><span class="sc">\n</span><span class="st">"</span>)   <span class="co"># 212</span></span>
+<span id="cb4-28"><a href="#cb4-28" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">"GO BP GSEA significant:"</span>, <span class="fu">length</span>(gsea_go_descs), <span class="st">"</span><span class="sc">\n</span><span class="st">"</span>)   <span class="co"># 234</span></span>
+<span id="cb4-29"><a href="#cb4-29" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">"GO BP overlap         :"</span>, <span class="fu">length</span>(<span class="fu">intersect</span>(ora_go_descs, gsea_go_descs)), <span class="st">"</span><span class="sc">\n</span><span class="st">"</span>)  <span class="co"># 45</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <p><strong>真实数据差异解读（airway 数据集）</strong>：</p>
 <ul>
-<li><strong>KEGG ORA（19 条）vs GSEA（29 条）</strong>：两者共享 5 条通路，占 ORA 结果的 26%。这 5 条即为高置信度通路——既有充足的显著 DEG 命中（ORA 条件），又有全基因组尺度的整体趋势（GSEA 条件）。</li>
-<li><strong>GSEA 独占的 24 条通路</strong>（如 Autophagy、Adherens Junction、Insulin Signaling）：这些通路中的基因整体向同一方向移动，但多数基因未单独超过 |LFC| &gt; 1 的阈值，因此 ORA 无法检出。它们代表 dexamethasone 处理引发的系统性代谢/细胞结构重塑信号。</li>
-<li><strong>ORA 独占的 14 条通路</strong>：命中基因数量达到阈值，但在全基因组排序中无一致方向性，可能反映阈值选择对部分通路的过度影响。</li>
+<li><strong>KEGG ORA（19 条）vs GSEA（29 条）</strong>：共享 5 条通路（26%）。这 5 条即为高置信度通路——既有充足的显著 DEG 命中，又有全基因组尺度的整体趋势一致性。</li>
+<li><strong>KEGG GSEA 独占的 24 条通路</strong>（如 Adipocytokine signaling、Adherens Junction、Insulin Signaling）：通路内基因整体向同一方向移动，但多数基因 LFC 未超过 1，ORA 无法检出。代表 dexamethasone 引发的系统性代谢与细胞结构重塑信号。</li>
+<li><strong>GO BP 的情况</strong>：ORA 212 条 vs GSEA 234 条，重叠 45 条（重叠率约 21%）。GO 数据库更大、冗余更多，GSEA 额外捕捉了大量小幅度协调变化的生物学过程。</li>
+<li><strong>实践建议</strong>：将 ORA 与 GSEA 共同显著的通路作为主要报告对象；GSEA 独有的高 |NES| 通路（如 Autophagy，NES = +1.96）作为次要发现，需独立实验验证。</li>
 </ul>
 <hr>
 </section>
@@ -1065,129 +1324,146 @@ window.Quarto = {
 <section id="upset-图跨方法数据库重叠分析" class="level3" data-number="8.1">
 <h3 data-number="8.1" class="anchored" data-anchor-id="upset-图跨方法数据库重叠分析"><span class="header-section-number">8.1</span> UpSet 图：跨方法/数据库重叠分析</h3>
 <p>UpSet 图是韦恩图的扩展，适合比较超过 3 个集合的重叠情况，能清晰展示哪些基因被多个数据库/方法共同检出。</p>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb4"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(UpSetR)</span>
-<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(ReactomePA)</span>
-<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a><span class="co"># Run Reactome ORA (prerequisite for UpSet plot)</span></span>
-<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a>reactome_ora <span class="ot">&lt;-</span> <span class="fu">enrichPathway</span>(</span>
-<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a>  <span class="at">gene          =</span> sig_entrez,</span>
-<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a>  <span class="at">organism      =</span> <span class="st">"human"</span>,</span>
-<span id="cb4-8"><a href="#cb4-8" aria-hidden="true" tabindex="-1"></a>  <span class="at">pvalueCutoff  =</span> <span class="fl">0.05</span>,</span>
-<span id="cb4-9"><a href="#cb4-9" aria-hidden="true" tabindex="-1"></a>  <span class="at">pAdjustMethod =</span> <span class="st">"BH"</span>,</span>
-<span id="cb4-10"><a href="#cb4-10" aria-hidden="true" tabindex="-1"></a>  <span class="at">universe      =</span> universe_entrez,</span>
-<span id="cb4-11"><a href="#cb4-11" aria-hidden="true" tabindex="-1"></a>  <span class="at">readable      =</span> <span class="cn">TRUE</span></span>
-<span id="cb4-12"><a href="#cb4-12" aria-hidden="true" tabindex="-1"></a>)</span>
-<span id="cb4-13"><a href="#cb4-13" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb4-14"><a href="#cb4-14" aria-hidden="true" tabindex="-1"></a><span class="co"># Helper: extract unique SYMBOL / ENTREZID from all significant terms</span></span>
-<span id="cb4-15"><a href="#cb4-15" aria-hidden="true" tabindex="-1"></a>extract_genes <span class="ot">&lt;-</span> <span class="cf">function</span>(enrich_obj, <span class="at">padj_cut =</span> <span class="fl">0.05</span>) {</span>
-<span id="cb4-16"><a href="#cb4-16" aria-hidden="true" tabindex="-1"></a>  sig <span class="ot">&lt;-</span> enrich_obj<span class="sc">@</span>result[enrich_obj<span class="sc">@</span>result<span class="sc">$</span>p.adjust <span class="sc">&lt;</span> padj_cut, ]</span>
-<span id="cb4-17"><a href="#cb4-17" aria-hidden="true" tabindex="-1"></a>  <span class="fu">unique</span>(<span class="fu">unlist</span>(<span class="fu">strsplit</span>(sig<span class="sc">$</span>geneID, <span class="st">"/"</span>)))</span>
-<span id="cb4-18"><a href="#cb4-18" aria-hidden="true" tabindex="-1"></a>}</span>
-<span id="cb4-19"><a href="#cb4-19" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb4-20"><a href="#cb4-20" aria-hidden="true" tabindex="-1"></a>gene_sets_db <span class="ot">&lt;-</span> <span class="fu">list</span>(</span>
-<span id="cb4-21"><a href="#cb4-21" aria-hidden="true" tabindex="-1"></a>  <span class="at">GO_BP_ORA    =</span> <span class="fu">extract_genes</span>(go_bp_simplified),</span>
-<span id="cb4-22"><a href="#cb4-22" aria-hidden="true" tabindex="-1"></a>  <span class="at">KEGG_ORA     =</span> <span class="fu">extract_genes</span>(kegg_res),</span>
-<span id="cb4-23"><a href="#cb4-23" aria-hidden="true" tabindex="-1"></a>  <span class="at">Reactome_ORA =</span> <span class="fu">extract_genes</span>(reactome_ora),</span>
-<span id="cb4-24"><a href="#cb4-24" aria-hidden="true" tabindex="-1"></a>  <span class="at">GSEA_KEGG    =</span> <span class="fu">extract_genes</span>(gsea_kegg)</span>
-<span id="cb4-25"><a href="#cb4-25" aria-hidden="true" tabindex="-1"></a>)</span>
-<span id="cb4-26"><a href="#cb4-26" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb4-27"><a href="#cb4-27" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">"Genes in each set:</span><span class="sc">\n</span><span class="st">"</span>)</span>
-<span id="cb4-28"><a href="#cb4-28" aria-hidden="true" tabindex="-1"></a><span class="fu">sapply</span>(gene_sets_db, length)</span>
-<span id="cb4-29"><a href="#cb4-29" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb4-30"><a href="#cb4-30" aria-hidden="true" tabindex="-1"></a><span class="co"># Convert to binary (gene × method) matrix for UpSetR</span></span>
-<span id="cb4-31"><a href="#cb4-31" aria-hidden="true" tabindex="-1"></a>all_genes <span class="ot">&lt;-</span> <span class="fu">unique</span>(<span class="fu">unlist</span>(gene_sets_db))</span>
-<span id="cb4-32"><a href="#cb4-32" aria-hidden="true" tabindex="-1"></a>upset_mat  <span class="ot">&lt;-</span> <span class="fu">lapply</span>(gene_sets_db, <span class="cf">function</span>(g) <span class="fu">as.integer</span>(all_genes <span class="sc">%in%</span> g))</span>
-<span id="cb4-33"><a href="#cb4-33" aria-hidden="true" tabindex="-1"></a>upset_df   <span class="ot">&lt;-</span> <span class="fu">as.data.frame</span>(<span class="fu">do.call</span>(cbind, upset_mat))</span>
-<span id="cb4-34"><a href="#cb4-34" aria-hidden="true" tabindex="-1"></a><span class="fu">rownames</span>(upset_df) <span class="ot">&lt;-</span> all_genes</span>
-<span id="cb4-35"><a href="#cb4-35" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb4-36"><a href="#cb4-36" aria-hidden="true" tabindex="-1"></a><span class="fu">upset</span>(upset_df,</span>
-<span id="cb4-37"><a href="#cb4-37" aria-hidden="true" tabindex="-1"></a>      <span class="at">sets.bar.color =</span> <span class="st">"steelblue"</span>,</span>
-<span id="cb4-38"><a href="#cb4-38" aria-hidden="true" tabindex="-1"></a>      <span class="at">order.by       =</span> <span class="st">"freq"</span>,</span>
-<span id="cb4-39"><a href="#cb4-39" aria-hidden="true" tabindex="-1"></a>      <span class="at">main.bar.color =</span> <span class="st">"firebrick"</span>,</span>
-<span id="cb4-40"><a href="#cb4-40" aria-hidden="true" tabindex="-1"></a>      <span class="at">text.scale     =</span> <span class="fl">1.2</span>,</span>
-<span id="cb4-41"><a href="#cb4-41" aria-hidden="true" tabindex="-1"></a>      <span class="at">mainbar.y.label =</span> <span class="st">"Gene intersection size"</span>,</span>
-<span id="cb4-42"><a href="#cb4-42" aria-hidden="true" tabindex="-1"></a>      <span class="at">sets.x.label    =</span> <span class="st">"Genes per method"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb5"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Prerequisite objects (from "clusterProfiler 实践" main block):</span></span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a><span class="co">#   sig_entrez      — DEG Entrez IDs (Step 2)</span></span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a><span class="co">#   universe_entrez — background Entrez IDs (Step 2)</span></span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a><span class="co">#   go_bp_simplified — GO BP ORA result after simplify() (Part 1)</span></span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a><span class="co">#   kegg_res        — KEGG ORA result (Part 2)</span></span>
+<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a><span class="co">#   gsea_kegg       — KEGG GSEA result (Part 3)</span></span>
+<span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-8"><a href="#cb5-8" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(UpSetR)</span>
+<span id="cb5-9"><a href="#cb5-9" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(ReactomePA)</span>
+<span id="cb5-10"><a href="#cb5-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-11"><a href="#cb5-11" aria-hidden="true" tabindex="-1"></a><span class="co"># Run Reactome ORA (prerequisite for UpSet plot)</span></span>
+<span id="cb5-12"><a href="#cb5-12" aria-hidden="true" tabindex="-1"></a>reactome_ora <span class="ot">&lt;-</span> <span class="fu">enrichPathway</span>(</span>
+<span id="cb5-13"><a href="#cb5-13" aria-hidden="true" tabindex="-1"></a>  <span class="at">gene          =</span> sig_entrez,</span>
+<span id="cb5-14"><a href="#cb5-14" aria-hidden="true" tabindex="-1"></a>  <span class="at">organism      =</span> <span class="st">"human"</span>,</span>
+<span id="cb5-15"><a href="#cb5-15" aria-hidden="true" tabindex="-1"></a>  <span class="at">pvalueCutoff  =</span> <span class="fl">0.05</span>,</span>
+<span id="cb5-16"><a href="#cb5-16" aria-hidden="true" tabindex="-1"></a>  <span class="at">pAdjustMethod =</span> <span class="st">"BH"</span>,</span>
+<span id="cb5-17"><a href="#cb5-17" aria-hidden="true" tabindex="-1"></a>  <span class="at">universe      =</span> universe_entrez,</span>
+<span id="cb5-18"><a href="#cb5-18" aria-hidden="true" tabindex="-1"></a>  <span class="at">readable      =</span> <span class="cn">TRUE</span></span>
+<span id="cb5-19"><a href="#cb5-19" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb5-20"><a href="#cb5-20" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-21"><a href="#cb5-21" aria-hidden="true" tabindex="-1"></a><span class="co"># Helper: extract unique SYMBOL / ENTREZID from all significant terms</span></span>
+<span id="cb5-22"><a href="#cb5-22" aria-hidden="true" tabindex="-1"></a>extract_genes <span class="ot">&lt;-</span> <span class="cf">function</span>(enrich_obj, <span class="at">padj_cut =</span> <span class="fl">0.05</span>) {</span>
+<span id="cb5-23"><a href="#cb5-23" aria-hidden="true" tabindex="-1"></a>  sig <span class="ot">&lt;-</span> enrich_obj<span class="sc">@</span>result[enrich_obj<span class="sc">@</span>result<span class="sc">$</span>p.adjust <span class="sc">&lt;</span> padj_cut, ]</span>
+<span id="cb5-24"><a href="#cb5-24" aria-hidden="true" tabindex="-1"></a>  <span class="fu">unique</span>(<span class="fu">unlist</span>(<span class="fu">strsplit</span>(sig<span class="sc">$</span>geneID, <span class="st">"/"</span>)))</span>
+<span id="cb5-25"><a href="#cb5-25" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb5-26"><a href="#cb5-26" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-27"><a href="#cb5-27" aria-hidden="true" tabindex="-1"></a>gene_sets_db <span class="ot">&lt;-</span> <span class="fu">list</span>(</span>
+<span id="cb5-28"><a href="#cb5-28" aria-hidden="true" tabindex="-1"></a>  <span class="at">GO_BP_ORA    =</span> <span class="fu">extract_genes</span>(go_bp_simplified),</span>
+<span id="cb5-29"><a href="#cb5-29" aria-hidden="true" tabindex="-1"></a>  <span class="at">KEGG_ORA     =</span> <span class="fu">extract_genes</span>(kegg_res),</span>
+<span id="cb5-30"><a href="#cb5-30" aria-hidden="true" tabindex="-1"></a>  <span class="at">Reactome_ORA =</span> <span class="fu">extract_genes</span>(reactome_ora),</span>
+<span id="cb5-31"><a href="#cb5-31" aria-hidden="true" tabindex="-1"></a>  <span class="at">GSEA_KEGG    =</span> <span class="fu">extract_genes</span>(gsea_kegg)</span>
+<span id="cb5-32"><a href="#cb5-32" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb5-33"><a href="#cb5-33" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-34"><a href="#cb5-34" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">"Genes in each set:</span><span class="sc">\n</span><span class="st">"</span>)</span>
+<span id="cb5-35"><a href="#cb5-35" aria-hidden="true" tabindex="-1"></a><span class="fu">sapply</span>(gene_sets_db, length)</span>
+<span id="cb5-36"><a href="#cb5-36" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-37"><a href="#cb5-37" aria-hidden="true" tabindex="-1"></a><span class="co"># Convert to binary (gene × method) matrix for UpSetR</span></span>
+<span id="cb5-38"><a href="#cb5-38" aria-hidden="true" tabindex="-1"></a>all_genes <span class="ot">&lt;-</span> <span class="fu">unique</span>(<span class="fu">unlist</span>(gene_sets_db))</span>
+<span id="cb5-39"><a href="#cb5-39" aria-hidden="true" tabindex="-1"></a>upset_mat  <span class="ot">&lt;-</span> <span class="fu">lapply</span>(gene_sets_db, <span class="cf">function</span>(g) <span class="fu">as.integer</span>(all_genes <span class="sc">%in%</span> g))</span>
+<span id="cb5-40"><a href="#cb5-40" aria-hidden="true" tabindex="-1"></a>upset_df   <span class="ot">&lt;-</span> <span class="fu">as.data.frame</span>(<span class="fu">do.call</span>(cbind, upset_mat))</span>
+<span id="cb5-41"><a href="#cb5-41" aria-hidden="true" tabindex="-1"></a><span class="fu">rownames</span>(upset_df) <span class="ot">&lt;-</span> all_genes</span>
+<span id="cb5-42"><a href="#cb5-42" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-43"><a href="#cb5-43" aria-hidden="true" tabindex="-1"></a><span class="fu">upset</span>(upset_df,</span>
+<span id="cb5-44"><a href="#cb5-44" aria-hidden="true" tabindex="-1"></a>      <span class="at">sets.bar.color =</span> <span class="st">"steelblue"</span>,</span>
+<span id="cb5-45"><a href="#cb5-45" aria-hidden="true" tabindex="-1"></a>      <span class="at">order.by       =</span> <span class="st">"freq"</span>,</span>
+<span id="cb5-46"><a href="#cb5-46" aria-hidden="true" tabindex="-1"></a>      <span class="at">main.bar.color =</span> <span class="st">"firebrick"</span>,</span>
+<span id="cb5-47"><a href="#cb5-47" aria-hidden="true" tabindex="-1"></a>      <span class="at">text.scale     =</span> <span class="fl">1.2</span>,</span>
+<span id="cb5-48"><a href="#cb5-48" aria-hidden="true" tabindex="-1"></a>      <span class="at">mainbar.y.label =</span> <span class="st">"Gene intersection size"</span>,</span>
+<span id="cb5-49"><a href="#cb5-49" aria-hidden="true" tabindex="-1"></a>      <span class="at">sets.x.label    =</span> <span class="st">"Genes per method"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </section>
 <section id="差异基因热图top-deg-的表达谱可视化" class="level3" data-number="8.2">
 <h3 data-number="8.2" class="anchored" data-anchor-id="差异基因热图top-deg-的表达谱可视化"><span class="header-section-number">8.2</span> 差异基因热图：Top DEG 的表达谱可视化</h3>
 <p>展示差异最显著基因在各样本间的表达模式，是论文图表的标配。</p>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb5"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(pheatmap)</span>
-<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(RColorBrewer)</span>
-<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a><span class="co"># Select top 50 DEGs: 25 most up-regulated + 25 most down-regulated by LFC</span></span>
-<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a>sig_ensembl <span class="ot">&lt;-</span> sig_df<span class="sc">$</span>gene_id    <span class="co"># Ensembl IDs with version suffix (match rownames of dds)</span></span>
-<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a>top_up   <span class="ot">&lt;-</span> <span class="fu">head</span>(sig_ensembl[<span class="fu">order</span>(sig_df<span class="sc">$</span>log2FoldChange, <span class="at">decreasing =</span> <span class="cn">TRUE</span>)], <span class="dv">25</span>)</span>
-<span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a>top_down <span class="ot">&lt;-</span> <span class="fu">head</span>(sig_ensembl[<span class="fu">order</span>(sig_df<span class="sc">$</span>log2FoldChange)], <span class="dv">25</span>)</span>
-<span id="cb5-8"><a href="#cb5-8" aria-hidden="true" tabindex="-1"></a>top_degs  <span class="ot">&lt;-</span> <span class="fu">c</span>(top_up, top_down)</span>
-<span id="cb5-9"><a href="#cb5-9" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb5-10"><a href="#cb5-10" aria-hidden="true" tabindex="-1"></a><span class="co"># VST-normalized expression matrix (blind = FALSE uses known design for better normalization)</span></span>
-<span id="cb5-11"><a href="#cb5-11" aria-hidden="true" tabindex="-1"></a>vsd_mat     <span class="ot">&lt;-</span> <span class="fu">assay</span>(<span class="fu">vst</span>(dds, <span class="at">blind =</span> <span class="cn">FALSE</span>))</span>
-<span id="cb5-12"><a href="#cb5-12" aria-hidden="true" tabindex="-1"></a>heatmap_mat <span class="ot">&lt;-</span> vsd_mat[top_degs, ]</span>
-<span id="cb5-13"><a href="#cb5-13" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb5-14"><a href="#cb5-14" aria-hidden="true" tabindex="-1"></a><span class="co"># Use SYMBOL as row labels (more readable than Ensembl IDs)</span></span>
-<span id="cb5-15"><a href="#cb5-15" aria-hidden="true" tabindex="-1"></a>sym_map <span class="ot">&lt;-</span> <span class="fu">setNames</span>(sig_df<span class="sc">$</span>SYMBOL, sig_df<span class="sc">$</span>gene_id)</span>
-<span id="cb5-16"><a href="#cb5-16" aria-hidden="true" tabindex="-1"></a><span class="fu">rownames</span>(heatmap_mat) <span class="ot">&lt;-</span> <span class="fu">ifelse</span>(<span class="fu">is.na</span>(sym_map[top_degs]),</span>
-<span id="cb5-17"><a href="#cb5-17" aria-hidden="true" tabindex="-1"></a>                                top_degs, sym_map[top_degs])</span>
-<span id="cb5-18"><a href="#cb5-18" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb5-19"><a href="#cb5-19" aria-hidden="true" tabindex="-1"></a><span class="co"># Row-scale (Z-score per gene across samples)</span></span>
-<span id="cb5-20"><a href="#cb5-20" aria-hidden="true" tabindex="-1"></a>heatmap_scaled <span class="ot">&lt;-</span> <span class="fu">t</span>(<span class="fu">scale</span>(<span class="fu">t</span>(heatmap_mat)))</span>
-<span id="cb5-21"><a href="#cb5-21" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb5-22"><a href="#cb5-22" aria-hidden="true" tabindex="-1"></a><span class="co"># Column annotation: treatment and cell line (from airway colData)</span></span>
-<span id="cb5-23"><a href="#cb5-23" aria-hidden="true" tabindex="-1"></a>col_anno <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(</span>
-<span id="cb5-24"><a href="#cb5-24" aria-hidden="true" tabindex="-1"></a>  <span class="at">Treatment =</span> <span class="fu">colData</span>(dds)<span class="sc">$</span>dex,</span>
-<span id="cb5-25"><a href="#cb5-25" aria-hidden="true" tabindex="-1"></a>  <span class="at">CellLine  =</span> <span class="fu">colData</span>(dds)<span class="sc">$</span>cell,</span>
-<span id="cb5-26"><a href="#cb5-26" aria-hidden="true" tabindex="-1"></a>  <span class="at">row.names =</span> <span class="fu">colnames</span>(dds)</span>
-<span id="cb5-27"><a href="#cb5-27" aria-hidden="true" tabindex="-1"></a>)</span>
-<span id="cb5-28"><a href="#cb5-28" aria-hidden="true" tabindex="-1"></a>anno_colors <span class="ot">&lt;-</span> <span class="fu">list</span>(</span>
-<span id="cb5-29"><a href="#cb5-29" aria-hidden="true" tabindex="-1"></a>  <span class="at">Treatment =</span> <span class="fu">c</span>(<span class="at">untrt =</span> <span class="st">"#2166ac"</span>, <span class="at">trt =</span> <span class="st">"#d73027"</span>)</span>
-<span id="cb5-30"><a href="#cb5-30" aria-hidden="true" tabindex="-1"></a>)</span>
-<span id="cb5-31"><a href="#cb5-31" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb5-32"><a href="#cb5-32" aria-hidden="true" tabindex="-1"></a><span class="fu">pheatmap</span>(</span>
-<span id="cb5-33"><a href="#cb5-33" aria-hidden="true" tabindex="-1"></a>  heatmap_scaled,</span>
-<span id="cb5-34"><a href="#cb5-34" aria-hidden="true" tabindex="-1"></a>  <span class="at">annotation_col    =</span> col_anno,</span>
-<span id="cb5-35"><a href="#cb5-35" aria-hidden="true" tabindex="-1"></a>  <span class="at">annotation_colors =</span> anno_colors,</span>
-<span id="cb5-36"><a href="#cb5-36" aria-hidden="true" tabindex="-1"></a>  <span class="at">cluster_rows      =</span> <span class="cn">TRUE</span>,</span>
-<span id="cb5-37"><a href="#cb5-37" aria-hidden="true" tabindex="-1"></a>  <span class="at">cluster_cols      =</span> <span class="cn">TRUE</span>,</span>
-<span id="cb5-38"><a href="#cb5-38" aria-hidden="true" tabindex="-1"></a>  <span class="at">show_rownames     =</span> <span class="cn">TRUE</span>,</span>
-<span id="cb5-39"><a href="#cb5-39" aria-hidden="true" tabindex="-1"></a>  <span class="at">show_colnames     =</span> <span class="cn">TRUE</span>,</span>
-<span id="cb5-40"><a href="#cb5-40" aria-hidden="true" tabindex="-1"></a>  <span class="at">color             =</span> <span class="fu">colorRampPalette</span>(<span class="fu">rev</span>(<span class="fu">brewer.pal</span>(<span class="dv">11</span>, <span class="st">"RdBu"</span>)))(<span class="dv">100</span>),</span>
-<span id="cb5-41"><a href="#cb5-41" aria-hidden="true" tabindex="-1"></a>  <span class="at">breaks            =</span> <span class="fu">seq</span>(<span class="sc">-</span><span class="dv">3</span>, <span class="dv">3</span>, <span class="at">length.out =</span> <span class="dv">101</span>),</span>
-<span id="cb5-42"><a href="#cb5-42" aria-hidden="true" tabindex="-1"></a>  <span class="at">fontsize_row      =</span> <span class="dv">7</span>,</span>
-<span id="cb5-43"><a href="#cb5-43" aria-hidden="true" tabindex="-1"></a>  <span class="at">main              =</span> <span class="st">"Top 50 DEGs — Z-score normalized VST expression (airway)"</span></span>
-<span id="cb5-44"><a href="#cb5-44" aria-hidden="true" tabindex="-1"></a>)</span>
-<span id="cb5-45"><a href="#cb5-45" aria-hidden="true" tabindex="-1"></a><span class="co"># Expected pattern: upper block (top_up genes) shows high expression in trt columns;</span></span>
-<span id="cb5-46"><a href="#cb5-46" aria-hidden="true" tabindex="-1"></a><span class="co"># lower block (top_down genes) shows high expression in untrt columns.</span></span>
-<span id="cb5-47"><a href="#cb5-47" aria-hidden="true" tabindex="-1"></a><span class="co"># Cell-line clustering in columns reflects the paired design structure.</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb6"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Prerequisite objects (from "clusterProfiler 实践" main block):</span></span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a><span class="co">#   dds     — DESeqDataSet after DESeq() (Step 0); provides size factors and design</span></span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a><span class="co">#   sig_df  — data frame of significant DEGs with columns: gene_id (Ensembl+version),</span></span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a><span class="co">#             log2FoldChange, SYMBOL (Step 2 output, merged with gene_map)</span></span>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(pheatmap)</span>
+<span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(RColorBrewer)</span>
+<span id="cb6-8"><a href="#cb6-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-9"><a href="#cb6-9" aria-hidden="true" tabindex="-1"></a><span class="co"># Select top 50 DEGs: 25 most up-regulated + 25 most down-regulated by LFC</span></span>
+<span id="cb6-10"><a href="#cb6-10" aria-hidden="true" tabindex="-1"></a>sig_ensembl <span class="ot">&lt;-</span> sig_df<span class="sc">$</span>gene_id    <span class="co"># Ensembl IDs with version suffix (match rownames of dds)</span></span>
+<span id="cb6-11"><a href="#cb6-11" aria-hidden="true" tabindex="-1"></a>top_up   <span class="ot">&lt;-</span> <span class="fu">head</span>(sig_ensembl[<span class="fu">order</span>(sig_df<span class="sc">$</span>log2FoldChange, <span class="at">decreasing =</span> <span class="cn">TRUE</span>)], <span class="dv">25</span>)</span>
+<span id="cb6-12"><a href="#cb6-12" aria-hidden="true" tabindex="-1"></a>top_down <span class="ot">&lt;-</span> <span class="fu">head</span>(sig_ensembl[<span class="fu">order</span>(sig_df<span class="sc">$</span>log2FoldChange)], <span class="dv">25</span>)</span>
+<span id="cb6-13"><a href="#cb6-13" aria-hidden="true" tabindex="-1"></a>top_degs  <span class="ot">&lt;-</span> <span class="fu">c</span>(top_up, top_down)</span>
+<span id="cb6-14"><a href="#cb6-14" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-15"><a href="#cb6-15" aria-hidden="true" tabindex="-1"></a><span class="co"># VST-normalized expression matrix (blind = FALSE uses known design for better normalization)</span></span>
+<span id="cb6-16"><a href="#cb6-16" aria-hidden="true" tabindex="-1"></a>vsd_mat     <span class="ot">&lt;-</span> <span class="fu">assay</span>(<span class="fu">vst</span>(dds, <span class="at">blind =</span> <span class="cn">FALSE</span>))</span>
+<span id="cb6-17"><a href="#cb6-17" aria-hidden="true" tabindex="-1"></a>heatmap_mat <span class="ot">&lt;-</span> vsd_mat[top_degs, ]</span>
+<span id="cb6-18"><a href="#cb6-18" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-19"><a href="#cb6-19" aria-hidden="true" tabindex="-1"></a><span class="co"># Use SYMBOL as row labels (more readable than Ensembl IDs)</span></span>
+<span id="cb6-20"><a href="#cb6-20" aria-hidden="true" tabindex="-1"></a>sym_map <span class="ot">&lt;-</span> <span class="fu">setNames</span>(sig_df<span class="sc">$</span>SYMBOL, sig_df<span class="sc">$</span>gene_id)</span>
+<span id="cb6-21"><a href="#cb6-21" aria-hidden="true" tabindex="-1"></a><span class="fu">rownames</span>(heatmap_mat) <span class="ot">&lt;-</span> <span class="fu">ifelse</span>(<span class="fu">is.na</span>(sym_map[top_degs]),</span>
+<span id="cb6-22"><a href="#cb6-22" aria-hidden="true" tabindex="-1"></a>                                top_degs, sym_map[top_degs])</span>
+<span id="cb6-23"><a href="#cb6-23" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-24"><a href="#cb6-24" aria-hidden="true" tabindex="-1"></a><span class="co"># Row-scale (Z-score per gene across samples)</span></span>
+<span id="cb6-25"><a href="#cb6-25" aria-hidden="true" tabindex="-1"></a>heatmap_scaled <span class="ot">&lt;-</span> <span class="fu">t</span>(<span class="fu">scale</span>(<span class="fu">t</span>(heatmap_mat)))</span>
+<span id="cb6-26"><a href="#cb6-26" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-27"><a href="#cb6-27" aria-hidden="true" tabindex="-1"></a><span class="co"># Column annotation: treatment and cell line (from airway colData)</span></span>
+<span id="cb6-28"><a href="#cb6-28" aria-hidden="true" tabindex="-1"></a>col_anno <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(</span>
+<span id="cb6-29"><a href="#cb6-29" aria-hidden="true" tabindex="-1"></a>  <span class="at">Treatment =</span> <span class="fu">colData</span>(dds)<span class="sc">$</span>dex,</span>
+<span id="cb6-30"><a href="#cb6-30" aria-hidden="true" tabindex="-1"></a>  <span class="at">CellLine  =</span> <span class="fu">colData</span>(dds)<span class="sc">$</span>cell,</span>
+<span id="cb6-31"><a href="#cb6-31" aria-hidden="true" tabindex="-1"></a>  <span class="at">row.names =</span> <span class="fu">colnames</span>(dds)</span>
+<span id="cb6-32"><a href="#cb6-32" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb6-33"><a href="#cb6-33" aria-hidden="true" tabindex="-1"></a>anno_colors <span class="ot">&lt;-</span> <span class="fu">list</span>(</span>
+<span id="cb6-34"><a href="#cb6-34" aria-hidden="true" tabindex="-1"></a>  <span class="at">Treatment =</span> <span class="fu">c</span>(<span class="at">untrt =</span> <span class="st">"#2166ac"</span>, <span class="at">trt =</span> <span class="st">"#d73027"</span>)</span>
+<span id="cb6-35"><a href="#cb6-35" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb6-36"><a href="#cb6-36" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-37"><a href="#cb6-37" aria-hidden="true" tabindex="-1"></a><span class="fu">pheatmap</span>(</span>
+<span id="cb6-38"><a href="#cb6-38" aria-hidden="true" tabindex="-1"></a>  heatmap_scaled,</span>
+<span id="cb6-39"><a href="#cb6-39" aria-hidden="true" tabindex="-1"></a>  <span class="at">annotation_col    =</span> col_anno,</span>
+<span id="cb6-40"><a href="#cb6-40" aria-hidden="true" tabindex="-1"></a>  <span class="at">annotation_colors =</span> anno_colors,</span>
+<span id="cb6-41"><a href="#cb6-41" aria-hidden="true" tabindex="-1"></a>  <span class="at">cluster_rows      =</span> <span class="cn">TRUE</span>,</span>
+<span id="cb6-42"><a href="#cb6-42" aria-hidden="true" tabindex="-1"></a>  <span class="at">cluster_cols      =</span> <span class="cn">TRUE</span>,</span>
+<span id="cb6-43"><a href="#cb6-43" aria-hidden="true" tabindex="-1"></a>  <span class="at">show_rownames     =</span> <span class="cn">TRUE</span>,</span>
+<span id="cb6-44"><a href="#cb6-44" aria-hidden="true" tabindex="-1"></a>  <span class="at">show_colnames     =</span> <span class="cn">TRUE</span>,</span>
+<span id="cb6-45"><a href="#cb6-45" aria-hidden="true" tabindex="-1"></a>  <span class="at">color             =</span> <span class="fu">colorRampPalette</span>(<span class="fu">rev</span>(<span class="fu">brewer.pal</span>(<span class="dv">11</span>, <span class="st">"RdBu"</span>)))(<span class="dv">100</span>),</span>
+<span id="cb6-46"><a href="#cb6-46" aria-hidden="true" tabindex="-1"></a>  <span class="at">breaks            =</span> <span class="fu">seq</span>(<span class="sc">-</span><span class="dv">3</span>, <span class="dv">3</span>, <span class="at">length.out =</span> <span class="dv">101</span>),</span>
+<span id="cb6-47"><a href="#cb6-47" aria-hidden="true" tabindex="-1"></a>  <span class="at">fontsize_row      =</span> <span class="dv">7</span>,</span>
+<span id="cb6-48"><a href="#cb6-48" aria-hidden="true" tabindex="-1"></a>  <span class="at">main              =</span> <span class="st">"Top 50 DEGs — Z-score normalized VST expression (airway)"</span></span>
+<span id="cb6-49"><a href="#cb6-49" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb6-50"><a href="#cb6-50" aria-hidden="true" tabindex="-1"></a><span class="co"># Expected pattern: upper block (top_up genes) shows high expression in trt columns;</span></span>
+<span id="cb6-51"><a href="#cb6-51" aria-hidden="true" tabindex="-1"></a><span class="co"># lower block (top_down genes) shows high expression in untrt columns.</span></span>
+<span id="cb6-52"><a href="#cb6-52" aria-hidden="true" tabindex="-1"></a><span class="co"># Cell-line clustering in columns reflects the paired design structure.</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </section>
 <section id="kegg-通路可视化pathview" class="level3" data-number="8.3">
 <h3 data-number="8.3" class="anchored" data-anchor-id="kegg-通路可视化pathview"><span class="header-section-number">8.3</span> KEGG 通路可视化：pathview</h3>
 <p>pathview 将差异表达数据直接叠加到 KEGG 通路图上，用颜色编码基因的上调/下调状态，是展示具体通路机制的有效方式。</p>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb6"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(pathview)</span>
-<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a><span class="co"># Prepare named vector: shrunken LFC values, names = Entrez IDs</span></span>
-<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a>lfc_vector <span class="ot">&lt;-</span> <span class="fu">setNames</span>(res_df<span class="sc">$</span>log2FoldChange, res_df<span class="sc">$</span>ENTREZID)</span>
-<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a>lfc_vector <span class="ot">&lt;-</span> lfc_vector[<span class="sc">!</span><span class="fu">is.na</span>(lfc_vector)]</span>
-<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a><span class="co"># Top KEGG ORA pathway: "Cytokine-cytokine receptor interaction" (hsa04060)</span></span>
-<span id="cb6-8"><a href="#cb6-8" aria-hidden="true" tabindex="-1"></a>top_kegg_id <span class="ot">&lt;-</span> kegg_res<span class="sc">@</span>result<span class="sc">$</span>ID[kegg_res<span class="sc">@</span>result<span class="sc">$</span>p.adjust <span class="sc">==</span></span>
-<span id="cb6-9"><a href="#cb6-9" aria-hidden="true" tabindex="-1"></a>                                    <span class="fu">min</span>(kegg_res<span class="sc">@</span>result<span class="sc">$</span>p.adjust)]</span>
-<span id="cb6-10"><a href="#cb6-10" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">"Visualizing pathway:"</span>, kegg_res<span class="sc">@</span>result<span class="sc">$</span>Description[</span>
-<span id="cb6-11"><a href="#cb6-11" aria-hidden="true" tabindex="-1"></a>      kegg_res<span class="sc">@</span>result<span class="sc">$</span>ID <span class="sc">==</span> top_kegg_id], <span class="st">"</span><span class="sc">\n</span><span class="st">"</span>)</span>
-<span id="cb6-12"><a href="#cb6-12" aria-hidden="true" tabindex="-1"></a><span class="co"># Visualizing pathway: Cytokine-cytokine receptor interaction</span></span>
-<span id="cb6-13"><a href="#cb6-13" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb6-14"><a href="#cb6-14" aria-hidden="true" tabindex="-1"></a><span class="co"># Generate KEGG pathway map with LFC color overlay (requires internet)</span></span>
-<span id="cb6-15"><a href="#cb6-15" aria-hidden="true" tabindex="-1"></a><span class="fu">pathview</span>(</span>
-<span id="cb6-16"><a href="#cb6-16" aria-hidden="true" tabindex="-1"></a>  <span class="at">gene.data   =</span> lfc_vector,</span>
-<span id="cb6-17"><a href="#cb6-17" aria-hidden="true" tabindex="-1"></a>  <span class="at">pathway.id  =</span> top_kegg_id,   <span class="co"># "hsa04060"</span></span>
-<span id="cb6-18"><a href="#cb6-18" aria-hidden="true" tabindex="-1"></a>  <span class="at">species     =</span> <span class="st">"hsa"</span>,</span>
-<span id="cb6-19"><a href="#cb6-19" aria-hidden="true" tabindex="-1"></a>  <span class="at">gene.idtype =</span> <span class="st">"ENTREZ"</span>,</span>
-<span id="cb6-20"><a href="#cb6-20" aria-hidden="true" tabindex="-1"></a>  <span class="at">low         =</span> <span class="fu">list</span>(<span class="at">gene =</span> <span class="st">"steelblue"</span>),   <span class="co"># down-regulated</span></span>
-<span id="cb6-21"><a href="#cb6-21" aria-hidden="true" tabindex="-1"></a>  <span class="at">high        =</span> <span class="fu">list</span>(<span class="at">gene =</span> <span class="st">"firebrick"</span>),   <span class="co"># up-regulated</span></span>
-<span id="cb6-22"><a href="#cb6-22" aria-hidden="true" tabindex="-1"></a>  <span class="at">mid         =</span> <span class="fu">list</span>(<span class="at">gene =</span> <span class="st">"white"</span>),       <span class="co"># no change</span></span>
-<span id="cb6-23"><a href="#cb6-23" aria-hidden="true" tabindex="-1"></a>  <span class="at">out.suffix  =</span> <span class="st">"dex_treatment"</span></span>
-<span id="cb6-24"><a href="#cb6-24" aria-hidden="true" tabindex="-1"></a>)</span>
-<span id="cb6-25"><a href="#cb6-25" aria-hidden="true" tabindex="-1"></a><span class="co"># Output: hsa04060.dex_treatment.png in working directory</span></span>
-<span id="cb6-26"><a href="#cb6-26" aria-hidden="true" tabindex="-1"></a><span class="co"># Blue nodes: down-regulated under dex; Red nodes: up-regulated under dex</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb7"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Prerequisite objects (from "clusterProfiler 实践" main block):</span></span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a><span class="co">#   res_df   — annotated results data frame with columns: log2FoldChange, ENTREZID</span></span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a><span class="co">#              (produced by merging res_shrunk with gene_map in Step 1)</span></span>
+<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a><span class="co">#   kegg_res — KEGG ORA result; used here to extract the top pathway ID (Part 2)</span></span>
+<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(pathview)</span>
+<span id="cb7-7"><a href="#cb7-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-8"><a href="#cb7-8" aria-hidden="true" tabindex="-1"></a><span class="co"># Prepare named vector: shrunken LFC values, names = Entrez IDs</span></span>
+<span id="cb7-9"><a href="#cb7-9" aria-hidden="true" tabindex="-1"></a>lfc_vector <span class="ot">&lt;-</span> <span class="fu">setNames</span>(res_df<span class="sc">$</span>log2FoldChange, res_df<span class="sc">$</span>ENTREZID)</span>
+<span id="cb7-10"><a href="#cb7-10" aria-hidden="true" tabindex="-1"></a>lfc_vector <span class="ot">&lt;-</span> lfc_vector[<span class="sc">!</span><span class="fu">is.na</span>(lfc_vector)]</span>
+<span id="cb7-11"><a href="#cb7-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-12"><a href="#cb7-12" aria-hidden="true" tabindex="-1"></a><span class="co"># Top KEGG ORA pathway: "Cytokine-cytokine receptor interaction" (hsa04060)</span></span>
+<span id="cb7-13"><a href="#cb7-13" aria-hidden="true" tabindex="-1"></a>top_kegg_id <span class="ot">&lt;-</span> kegg_res<span class="sc">@</span>result<span class="sc">$</span>ID[kegg_res<span class="sc">@</span>result<span class="sc">$</span>p.adjust <span class="sc">==</span></span>
+<span id="cb7-14"><a href="#cb7-14" aria-hidden="true" tabindex="-1"></a>                                    <span class="fu">min</span>(kegg_res<span class="sc">@</span>result<span class="sc">$</span>p.adjust)]</span>
+<span id="cb7-15"><a href="#cb7-15" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">"Visualizing pathway:"</span>, kegg_res<span class="sc">@</span>result<span class="sc">$</span>Description[</span>
+<span id="cb7-16"><a href="#cb7-16" aria-hidden="true" tabindex="-1"></a>      kegg_res<span class="sc">@</span>result<span class="sc">$</span>ID <span class="sc">==</span> top_kegg_id], <span class="st">"</span><span class="sc">\n</span><span class="st">"</span>)</span>
+<span id="cb7-17"><a href="#cb7-17" aria-hidden="true" tabindex="-1"></a><span class="co"># Visualizing pathway: Cytokine-cytokine receptor interaction</span></span>
+<span id="cb7-18"><a href="#cb7-18" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-19"><a href="#cb7-19" aria-hidden="true" tabindex="-1"></a><span class="co"># Generate KEGG pathway map with LFC color overlay (requires internet)</span></span>
+<span id="cb7-20"><a href="#cb7-20" aria-hidden="true" tabindex="-1"></a><span class="fu">pathview</span>(</span>
+<span id="cb7-21"><a href="#cb7-21" aria-hidden="true" tabindex="-1"></a>  <span class="at">gene.data   =</span> lfc_vector,</span>
+<span id="cb7-22"><a href="#cb7-22" aria-hidden="true" tabindex="-1"></a>  <span class="at">pathway.id  =</span> top_kegg_id,   <span class="co"># "hsa04060"</span></span>
+<span id="cb7-23"><a href="#cb7-23" aria-hidden="true" tabindex="-1"></a>  <span class="at">species     =</span> <span class="st">"hsa"</span>,</span>
+<span id="cb7-24"><a href="#cb7-24" aria-hidden="true" tabindex="-1"></a>  <span class="at">gene.idtype =</span> <span class="st">"ENTREZ"</span>,</span>
+<span id="cb7-25"><a href="#cb7-25" aria-hidden="true" tabindex="-1"></a>  <span class="at">low         =</span> <span class="fu">list</span>(<span class="at">gene =</span> <span class="st">"steelblue"</span>),   <span class="co"># down-regulated</span></span>
+<span id="cb7-26"><a href="#cb7-26" aria-hidden="true" tabindex="-1"></a>  <span class="at">high        =</span> <span class="fu">list</span>(<span class="at">gene =</span> <span class="st">"firebrick"</span>),   <span class="co"># up-regulated</span></span>
+<span id="cb7-27"><a href="#cb7-27" aria-hidden="true" tabindex="-1"></a>  <span class="at">mid         =</span> <span class="fu">list</span>(<span class="at">gene =</span> <span class="st">"white"</span>),       <span class="co"># no change</span></span>
+<span id="cb7-28"><a href="#cb7-28" aria-hidden="true" tabindex="-1"></a>  <span class="at">out.suffix  =</span> <span class="st">"dex_treatment"</span></span>
+<span id="cb7-29"><a href="#cb7-29" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb7-30"><a href="#cb7-30" aria-hidden="true" tabindex="-1"></a><span class="co"># Output: hsa04060.dex_treatment.png in working directory</span></span>
+<span id="cb7-31"><a href="#cb7-31" aria-hidden="true" tabindex="-1"></a><span class="co"># Blue nodes: down-regulated under dex; Red nodes: up-regulated under dex</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <hr>
 </section>
 </section>
@@ -1205,52 +1481,51 @@ window.Quarto = {
 </div>
 <hr>
 </section>
-<section id="实践完整富集分析报告" class="level2" data-number="10">
-<h2 data-number="10" class="anchored" data-anchor-id="实践完整富集分析报告"><span class="header-section-number">10</span> 实践：完整富集分析报告</h2>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb7"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="co"># === Comprehensive enrichment analysis summary ===</span></span>
-<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a><span class="co"># Combine GO BP, KEGG ORA, GO GSEA, KEGG GSEA into a summary table</span></span>
-<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a>ora_summary <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(</span>
-<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a>  <span class="at">Method      =</span> <span class="st">"ORA"</span>,</span>
-<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a>  <span class="at">Database    =</span> <span class="st">"GO BP"</span>,</span>
-<span id="cb7-7"><a href="#cb7-7" aria-hidden="true" tabindex="-1"></a>  <span class="at">Significant =</span> <span class="fu">nrow</span>(go_bp_simplified<span class="sc">@</span>result[go_bp_simplified<span class="sc">@</span>result<span class="sc">$</span>p.adjust <span class="sc">&lt;</span> <span class="fl">0.05</span>, ]),</span>
-<span id="cb7-8"><a href="#cb7-8" aria-hidden="true" tabindex="-1"></a>  <span class="at">Top5        =</span> <span class="fu">paste</span>(<span class="fu">head</span>(go_bp_simplified<span class="sc">@</span>result<span class="sc">$</span>Description, <span class="dv">5</span>), <span class="at">collapse =</span> <span class="st">"; "</span>)</span>
-<span id="cb7-9"><a href="#cb7-9" aria-hidden="true" tabindex="-1"></a>)</span>
-<span id="cb7-10"><a href="#cb7-10" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb7-11"><a href="#cb7-11" aria-hidden="true" tabindex="-1"></a>gsea_summary <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(</span>
-<span id="cb7-12"><a href="#cb7-12" aria-hidden="true" tabindex="-1"></a>  <span class="at">Method      =</span> <span class="st">"GSEA"</span>,</span>
-<span id="cb7-13"><a href="#cb7-13" aria-hidden="true" tabindex="-1"></a>  <span class="at">Database    =</span> <span class="st">"KEGG"</span>,</span>
-<span id="cb7-14"><a href="#cb7-14" aria-hidden="true" tabindex="-1"></a>  <span class="at">Significant =</span> <span class="fu">nrow</span>(gsea_kegg<span class="sc">@</span>result[gsea_kegg<span class="sc">@</span>result<span class="sc">$</span>p.adjust <span class="sc">&lt;</span> <span class="fl">0.05</span>, ]),</span>
-<span id="cb7-15"><a href="#cb7-15" aria-hidden="true" tabindex="-1"></a>  <span class="at">Top5        =</span> <span class="fu">paste</span>(<span class="fu">head</span>(gsea_kegg<span class="sc">@</span>result<span class="sc">$</span>Description, <span class="dv">5</span>), <span class="at">collapse =</span> <span class="st">"; "</span>)</span>
-<span id="cb7-16"><a href="#cb7-16" aria-hidden="true" tabindex="-1"></a>)</span>
-<span id="cb7-17"><a href="#cb7-17" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb7-18"><a href="#cb7-18" aria-hidden="true" tabindex="-1"></a>summary_table <span class="ot">&lt;-</span> <span class="fu">rbind</span>(ora_summary, gsea_summary)</span>
-<span id="cb7-19"><a href="#cb7-19" aria-hidden="true" tabindex="-1"></a>knitr<span class="sc">::</span><span class="fu">kable</span>(summary_table,</span>
-<span id="cb7-20"><a href="#cb7-20" aria-hidden="true" tabindex="-1"></a>             <span class="at">caption =</span> <span class="st">"Summary of enrichment analysis results"</span>)</span>
-<span id="cb7-21"><a href="#cb7-21" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb7-22"><a href="#cb7-22" aria-hidden="true" tabindex="-1"></a><span class="co"># === Save significant results to CSV ===</span></span>
-<span id="cb7-23"><a href="#cb7-23" aria-hidden="true" tabindex="-1"></a><span class="fu">write.csv</span>(</span>
-<span id="cb7-24"><a href="#cb7-24" aria-hidden="true" tabindex="-1"></a>  go_bp_simplified<span class="sc">@</span>result[go_bp_simplified<span class="sc">@</span>result<span class="sc">$</span>p.adjust <span class="sc">&lt;</span> <span class="fl">0.05</span>, ],</span>
-<span id="cb7-25"><a href="#cb7-25" aria-hidden="true" tabindex="-1"></a>  <span class="st">"results/enrichment/GO_BP_ORA_significant.csv"</span>,</span>
-<span id="cb7-26"><a href="#cb7-26" aria-hidden="true" tabindex="-1"></a>  <span class="at">row.names =</span> <span class="cn">FALSE</span></span>
-<span id="cb7-27"><a href="#cb7-27" aria-hidden="true" tabindex="-1"></a>)</span>
-<span id="cb7-28"><a href="#cb7-28" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb7-29"><a href="#cb7-29" aria-hidden="true" tabindex="-1"></a><span class="fu">write.csv</span>(</span>
-<span id="cb7-30"><a href="#cb7-30" aria-hidden="true" tabindex="-1"></a>  gsea_kegg<span class="sc">@</span>result[gsea_kegg<span class="sc">@</span>result<span class="sc">$</span>p.adjust <span class="sc">&lt;</span> <span class="fl">0.05</span>, ],</span>
-<span id="cb7-31"><a href="#cb7-31" aria-hidden="true" tabindex="-1"></a>  <span class="st">"results/enrichment/KEGG_GSEA_significant.csv"</span>,</span>
-<span id="cb7-32"><a href="#cb7-32" aria-hidden="true" tabindex="-1"></a>  <span class="at">row.names =</span> <span class="cn">FALSE</span></span>
-<span id="cb7-33"><a href="#cb7-33" aria-hidden="true" tabindex="-1"></a>)</span>
-<span id="cb7-34"><a href="#cb7-34" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb7-35"><a href="#cb7-35" aria-hidden="true" tabindex="-1"></a><span class="co"># === Network plot: connection between DEGs and top GO terms ===</span></span>
-<span id="cb7-36"><a href="#cb7-36" aria-hidden="true" tabindex="-1"></a><span class="fu">cnetplot</span>(go_bp_simplified,</span>
-<span id="cb7-37"><a href="#cb7-37" aria-hidden="true" tabindex="-1"></a>         <span class="at">showCategory =</span> <span class="dv">5</span>,</span>
-<span id="cb7-38"><a href="#cb7-38" aria-hidden="true" tabindex="-1"></a>         <span class="at">foldChange   =</span> <span class="fu">setNames</span>(res_df<span class="sc">$</span>log2FoldChange, res_df<span class="sc">$</span>SYMBOL),</span>
-<span id="cb7-39"><a href="#cb7-39" aria-hidden="true" tabindex="-1"></a>         <span class="at">colorEdge    =</span> <span class="cn">TRUE</span>) <span class="sc">+</span></span>
-<span id="cb7-40"><a href="#cb7-40" aria-hidden="true" tabindex="-1"></a>  <span class="fu">scale_color_gradient2</span>(</span>
-<span id="cb7-41"><a href="#cb7-41" aria-hidden="true" tabindex="-1"></a>    <span class="at">low =</span> <span class="st">"steelblue"</span>, <span class="at">mid =</span> <span class="st">"white"</span>, <span class="at">high =</span> <span class="st">"firebrick"</span>,</span>
-<span id="cb7-42"><a href="#cb7-42" aria-hidden="true" tabindex="-1"></a>    <span class="at">midpoint =</span> <span class="dv">0</span>, <span class="at">name =</span> <span class="st">"LFC"</span></span>
-<span id="cb7-43"><a href="#cb7-43" aria-hidden="true" tabindex="-1"></a>  ) <span class="sc">+</span></span>
-<span id="cb7-44"><a href="#cb7-44" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(<span class="at">title =</span> <span class="st">"Gene-Concept Network: top 5 GO BP terms"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<section id="结果汇总与文件输出" class="level2" data-number="10">
+<h2 data-number="10" class="anchored" data-anchor-id="结果汇总与文件输出"><span class="header-section-number">10</span> 结果汇总与文件输出</h2>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb8"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Prerequisite objects — all produced by "clusterProfiler 实践" main block:</span></span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a><span class="co">#   go_bp_simplified — GO BP ORA after simplify() (Part 1)</span></span>
+<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a><span class="co">#   go_mf            — GO MF ORA result (Part 1b)</span></span>
+<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a><span class="co">#   kegg_res         — KEGG ORA result (Part 2)</span></span>
+<span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a><span class="co">#   gsea_go          — GO BP GSEA result (Part 3)</span></span>
+<span id="cb8-6"><a href="#cb8-6" aria-hidden="true" tabindex="-1"></a><span class="co">#   gsea_kegg        — KEGG GSEA result (Part 3)</span></span>
+<span id="cb8-7"><a href="#cb8-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-8"><a href="#cb8-8" aria-hidden="true" tabindex="-1"></a><span class="co"># === Comprehensive enrichment analysis summary (real output, airway dataset) ===</span></span>
+<span id="cb8-9"><a href="#cb8-9" aria-hidden="true" tabindex="-1"></a><span class="co"># Method          Database          Significant</span></span>
+<span id="cb8-10"><a href="#cb8-10" aria-hidden="true" tabindex="-1"></a><span class="co"># ORA             GO BP (simplified)     212</span></span>
+<span id="cb8-11"><a href="#cb8-11" aria-hidden="true" tabindex="-1"></a><span class="co"># ORA             GO MF                   52</span></span>
+<span id="cb8-12"><a href="#cb8-12" aria-hidden="true" tabindex="-1"></a><span class="co"># ORA             KEGG                    19</span></span>
+<span id="cb8-13"><a href="#cb8-13" aria-hidden="true" tabindex="-1"></a><span class="co"># GSEA            GO BP                  234</span></span>
+<span id="cb8-14"><a href="#cb8-14" aria-hidden="true" tabindex="-1"></a><span class="co"># GSEA            KEGG                    29</span></span>
+<span id="cb8-15"><a href="#cb8-15" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-16"><a href="#cb8-16" aria-hidden="true" tabindex="-1"></a>summary_table <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(</span>
+<span id="cb8-17"><a href="#cb8-17" aria-hidden="true" tabindex="-1"></a>  <span class="at">Method      =</span> <span class="fu">c</span>(<span class="st">"ORA"</span>, <span class="st">"ORA"</span>, <span class="st">"ORA"</span>, <span class="st">"GSEA"</span>, <span class="st">"GSEA"</span>),</span>
+<span id="cb8-18"><a href="#cb8-18" aria-hidden="true" tabindex="-1"></a>  <span class="at">Database    =</span> <span class="fu">c</span>(<span class="st">"GO BP (simplified)"</span>, <span class="st">"GO MF"</span>, <span class="st">"KEGG"</span>, <span class="st">"GO BP"</span>, <span class="st">"KEGG"</span>),</span>
+<span id="cb8-19"><a href="#cb8-19" aria-hidden="true" tabindex="-1"></a>  <span class="at">Significant =</span> <span class="fu">c</span>(</span>
+<span id="cb8-20"><a href="#cb8-20" aria-hidden="true" tabindex="-1"></a>    <span class="fu">sum</span>(go_bp_simplified<span class="sc">@</span>result<span class="sc">$</span>p.adjust <span class="sc">&lt;</span> <span class="fl">0.05</span>),</span>
+<span id="cb8-21"><a href="#cb8-21" aria-hidden="true" tabindex="-1"></a>    <span class="fu">sum</span>(go_mf<span class="sc">@</span>result<span class="sc">$</span>p.adjust <span class="sc">&lt;</span> <span class="fl">0.05</span>),</span>
+<span id="cb8-22"><a href="#cb8-22" aria-hidden="true" tabindex="-1"></a>    <span class="fu">sum</span>(kegg_res<span class="sc">@</span>result<span class="sc">$</span>p.adjust <span class="sc">&lt;</span> <span class="fl">0.05</span>),</span>
+<span id="cb8-23"><a href="#cb8-23" aria-hidden="true" tabindex="-1"></a>    <span class="fu">sum</span>(gsea_go<span class="sc">@</span>result<span class="sc">$</span>p.adjust <span class="sc">&lt;</span> <span class="fl">0.05</span>),</span>
+<span id="cb8-24"><a href="#cb8-24" aria-hidden="true" tabindex="-1"></a>    <span class="fu">sum</span>(gsea_kegg<span class="sc">@</span>result<span class="sc">$</span>p.adjust <span class="sc">&lt;</span> <span class="fl">0.05</span>)</span>
+<span id="cb8-25"><a href="#cb8-25" aria-hidden="true" tabindex="-1"></a>  ),</span>
+<span id="cb8-26"><a href="#cb8-26" aria-hidden="true" tabindex="-1"></a>  <span class="at">Top3 =</span> <span class="fu">c</span>(</span>
+<span id="cb8-27"><a href="#cb8-27" aria-hidden="true" tabindex="-1"></a>    <span class="fu">paste</span>(<span class="fu">head</span>(go_bp_simplified<span class="sc">@</span>result<span class="sc">$</span>Description[go_bp_simplified<span class="sc">@</span>result<span class="sc">$</span>p.adjust <span class="sc">&lt;</span> <span class="fl">0.05</span>], <span class="dv">3</span>), <span class="at">collapse =</span> <span class="st">"; "</span>),</span>
+<span id="cb8-28"><a href="#cb8-28" aria-hidden="true" tabindex="-1"></a>    <span class="fu">paste</span>(<span class="fu">head</span>(go_mf<span class="sc">@</span>result<span class="sc">$</span>Description[go_mf<span class="sc">@</span>result<span class="sc">$</span>p.adjust <span class="sc">&lt;</span> <span class="fl">0.05</span>], <span class="dv">3</span>), <span class="at">collapse =</span> <span class="st">"; "</span>),</span>
+<span id="cb8-29"><a href="#cb8-29" aria-hidden="true" tabindex="-1"></a>    <span class="fu">paste</span>(<span class="fu">head</span>(kegg_res<span class="sc">@</span>result<span class="sc">$</span>Description[kegg_res<span class="sc">@</span>result<span class="sc">$</span>p.adjust <span class="sc">&lt;</span> <span class="fl">0.05</span>], <span class="dv">3</span>), <span class="at">collapse =</span> <span class="st">"; "</span>),</span>
+<span id="cb8-30"><a href="#cb8-30" aria-hidden="true" tabindex="-1"></a>    <span class="fu">paste</span>(<span class="fu">head</span>(gsea_go<span class="sc">@</span>result<span class="sc">$</span>Description[gsea_go<span class="sc">@</span>result<span class="sc">$</span>p.adjust <span class="sc">&lt;</span> <span class="fl">0.05</span>], <span class="dv">3</span>), <span class="at">collapse =</span> <span class="st">"; "</span>),</span>
+<span id="cb8-31"><a href="#cb8-31" aria-hidden="true" tabindex="-1"></a>    <span class="fu">paste</span>(<span class="fu">head</span>(gsea_kegg<span class="sc">@</span>result<span class="sc">$</span>Description[gsea_kegg<span class="sc">@</span>result<span class="sc">$</span>p.adjust <span class="sc">&lt;</span> <span class="fl">0.05</span>], <span class="dv">3</span>), <span class="at">collapse =</span> <span class="st">"; "</span>)</span>
+<span id="cb8-32"><a href="#cb8-32" aria-hidden="true" tabindex="-1"></a>  )</span>
+<span id="cb8-33"><a href="#cb8-33" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb8-34"><a href="#cb8-34" aria-hidden="true" tabindex="-1"></a>knitr<span class="sc">::</span><span class="fu">kable</span>(summary_table, <span class="at">caption =</span> <span class="st">"Enrichment analysis summary — airway dataset (dex vs untrt)"</span>)</span>
+<span id="cb8-35"><a href="#cb8-35" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-36"><a href="#cb8-36" aria-hidden="true" tabindex="-1"></a><span class="co"># === Save significant results to CSV ===</span></span>
+<span id="cb8-37"><a href="#cb8-37" aria-hidden="true" tabindex="-1"></a><span class="fu">dir.create</span>(<span class="st">"results/enrichment"</span>, <span class="at">recursive =</span> <span class="cn">TRUE</span>, <span class="at">showWarnings =</span> <span class="cn">FALSE</span>)</span>
+<span id="cb8-38"><a href="#cb8-38" aria-hidden="true" tabindex="-1"></a><span class="fu">write.csv</span>(go_bp_simplified<span class="sc">@</span>result[go_bp_simplified<span class="sc">@</span>result<span class="sc">$</span>p.adjust <span class="sc">&lt;</span> <span class="fl">0.05</span>, ],</span>
+<span id="cb8-39"><a href="#cb8-39" aria-hidden="true" tabindex="-1"></a>          <span class="st">"results/enrichment/GO_BP_ORA_significant.csv"</span>, <span class="at">row.names =</span> <span class="cn">FALSE</span>)</span>
+<span id="cb8-40"><a href="#cb8-40" aria-hidden="true" tabindex="-1"></a><span class="fu">write.csv</span>(kegg_res<span class="sc">@</span>result[kegg_res<span class="sc">@</span>result<span class="sc">$</span>p.adjust <span class="sc">&lt;</span> <span class="fl">0.05</span>, ],</span>
+<span id="cb8-41"><a href="#cb8-41" aria-hidden="true" tabindex="-1"></a>          <span class="st">"results/enrichment/KEGG_ORA_significant.csv"</span>, <span class="at">row.names =</span> <span class="cn">FALSE</span>)</span>
+<span id="cb8-42"><a href="#cb8-42" aria-hidden="true" tabindex="-1"></a><span class="fu">write.csv</span>(gsea_kegg<span class="sc">@</span>result[gsea_kegg<span class="sc">@</span>result<span class="sc">$</span>p.adjust <span class="sc">&lt;</span> <span class="fl">0.05</span>, ],</span>
+<span id="cb8-43"><a href="#cb8-43" aria-hidden="true" tabindex="-1"></a>          <span class="st">"results/enrichment/KEGG_GSEA_significant.csv"</span>, <span class="at">row.names =</span> <span class="cn">FALSE</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <hr>
 </section>
 <section id="课后自测-post-lesson-quiz" class="level2" data-number="11">
