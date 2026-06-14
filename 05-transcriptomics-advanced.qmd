@@ -1,5 +1,5 @@
 ---
-title: "Bulk 转录组高级分析：结构变异、长读长与共表达网络"
+title: "Bulk 转录组高级分析：结构变异、成分解析与调控网络"
 date: today
 format:
   html:
@@ -8,49 +8,61 @@ format:
     toc-depth: 3
     number-sections: true
     theme: cosmo
+crossref:
+  fig-title: 图
+  fig-prefix: 图
+  tbl-title: 表
+  tbl-prefix: 表
+  chapters: false
 ---
 
 # 整体概述
 
-标准 Bulk RNA-seq 分析（第4章）聚焦于基因表达量的变化，但转录组所携带的信息远不止于此。同一基因可以通过可变剪接（Alternative Splicing）产生具有不同功能的蛋白质异构体；染色体重排或转录通读可以产生融合转录本（Fusion Transcript），在肿瘤研究中具有重要的诊断意义；多个基因在转录层面的协同调控形成共表达模块（Co-expression Module），揭示了潜在的调控因子与生物学通路。短读长测序虽然能够检出这些结构变异的信号，但在全长异构体的精确重建方面存在固有局限。长读长测序技术（PacBio IsoSeq、Oxford Nanopore direct RNA-seq）能够直接读取全长 cDNA 或 RNA 分子，从根本上解决短读长拼接带来的歧义问题。本章在第4章基础上，系统讲解上述三个高级分析方向，并介绍在无参考基因组情形下进行 de novo 转录组组装的方法。
+标准 Bulk RNA-seq 分析（第4章）聚焦于基因表达量的变化，但转录组所携带的信息远不止于此。同一基因可以通过可变剪接（Alternative Splicing）产生功能各异的蛋白质异构体，也可以通过选择不同多腺苷酸化位点（Alternative Polyadenylation, APA）调节转录本 3' 端结构，进而影响 mRNA 稳定性与翻译效率；染色体重排可产生融合转录本（Fusion Transcript），在肿瘤诊断中具有重要价值；RNA 编辑（RNA Editing）则在转录后层面进一步扩展了转录组的信息容量。另一方面，来自组织样本的 Bulk RNA-seq 信号是多种细胞类型的混合，计算去卷积（Deconvolution）能够从中估计各细胞类型的比例，在肿瘤微环境与免疫学研究中已成为标准分析步骤。在理解个体基因变化与组织成分之后，共表达网络与基因调控网络分析能够进一步揭示基因之间的协同调控关系与调控方向。本章在第4章基础上，系统讲解上述四个高级分析方向。
 
-**学习目标**：掌握可变剪接五种事件类型及 rMATS 的 PSI 差异检验框架；理解长读长转录组学的工作流程与 SQANTI3 的结构分类体系；能运用 WGCNA 识别与表型相关的共表达基因模块；了解 Trinity de novo 转录组组装的适用场景与评估方法。
+**学习目标**：掌握可变剪接五种事件类型及 rMATS 的 PSI 差异检验框架；理解可变多腺苷酸化的生物学意义与 DaPars2 的检测原理；掌握细胞类型去卷积的统计框架与主流工具；了解 RNA 编辑检测的原理与常见假阳性来源；能运用 WGCNA 识别与表型相关的共表达基因模块；理解 GENIE3 基于随机森林的有向调控边推断策略。
 
 ---
 
 # 结构导览
 
-本章分为三个模块，共五个专题，围绕"超越表达量"的高级分析主题组织：
+本章分为四个模块，共八个专题，围绕"超越表达量"的高级分析主题组织：
 
 ```
 输入：来自第4章的清洁 reads（BAM）+ 原始 FASTQ + 计数矩阵
   │
-  ├── 模块 A：转录组结构分析（专题 5.1–5.2）
+  ├── 模块 A：转录组结构分析（专题 5.1–5.3）
   │     ↓ rMATS → 可变剪接差异事件（PSI 检验）
   │     ↓ STAR-Fusion / Arriba → 基因融合鉴定
+  │     ↓ DaPars2 / QAPA → 可变多腺苷酸化（ΔPDUI 检验）
+  │     [长读长技术展望：全长异构体与 RNA 修饰直接检测]
   │
-  ├── 模块 B：长读长转录组学（专题 5.3–5.4）
-  │     ↓ IsoSeq3 / Nanopore dRNA-seq → minimap2 比对
-  │     ↓ SQANTI3 结构分类与质量过滤
-  │     ↓ Trinity（无参场景）→ de novo 转录组 + BUSCO 评估
+  ├── 模块 B：转录组成分解析（专题 5.4–5.5）
+  │     ↓ CIBERSORT-X / MuSiC → 细胞类型比例去卷积
+  │     ↓ JACUSA2 / REDItools → A-to-I RNA 编辑位点检测
   │
-  └── 模块 C：共表达网络分析（专题 5.5）
-        ↓ WGCNA 软阈值选择 → 模块构建 → 模块-表型关联 → 枢纽基因
+  ├── 模块 C：共表达网络分析（专题 5.6）
+  │     ↓ WGCNA 软阈值选择 → 模块构建 → 模块-表型关联 → 枢纽基因
+  │                            （无向共表达网络）
+  │
+  └── 模块 D：基因调控网络推断（专题 5.7–5.8）
+        ↓ GENIE3 / DYNENIE3（随机森林重要性 → 有向调控边）
+        ↓ ODE 参数化建模 / SINDy 稀疏辨识 → 动态调控方程
 ```
 
-模块 A 和模块 C 以第4章产出的比对结果和计数矩阵为输入；模块 B 是独立的长读长分析路径，与短读长结果互为验证。
+模块 A 与模块 B 均以第4章产出的 BAM 文件为直接输入；模块 C 与模块 D 以计数矩阵为输入，形成层进关系：前者揭示基因间的协同表达模式，后者推断调控方向并建立动态机制模型。
 
 ---
 
 # 模块 A：转录组结构分析
 
 :::note
-**模块目标：** 理解可变剪接与基因融合的生物学机制，掌握基于短读长数据的结构变异检测方法，能解读 rMATS 的 PSI 差异检验结果与 STAR-Fusion 的输出报告。
+**模块目标：** 理解可变剪接、基因融合与可变多腺苷酸化的生物学机制，掌握基于短读长 BAM 文件的转录组结构变异检测方法，能解读 rMATS、STAR-Fusion 与 DaPars2 的核心输出指标。
 :::
 
 ## 专题 5.1：可变剪接差异分析
 
-可变剪接（Alternative Splicing）是真核生物转录组多样性的主要来源之一。人类基因组中超过 90% 的多外显子基因发生可变剪接，同一基因的不同异构体可编码具有不同结构域组成、亚细胞定位甚至拮抗功能的蛋白质。从测序数据中检测可变剪接需要在外显子-外显子连接处（junction reads）与外显子内部读段（skipping reads）之间进行统计比较，核心指标是外显子纳入百分比（Percent Spliced-In, PSI）。rMATS 是目前最广泛使用的可变剪接差异分析工具，支持五种基本剪接事件类型的系统检测，并使用基于重复样本的贝叶斯统计模型控制假阳性。
+可变剪接（Alternative Splicing）是真核生物转录组多样性的主要来源之一。人类基因组中超过 90% 的多外显子基因发生可变剪接，同一基因的不同异构体可编码具有不同结构域组成、亚细胞定位甚至拮抗功能的蛋白质。从测序数据中检测可变剪接需要在外显子-外显子连接处（junction reads）与外显子跳跃读段（skipping reads）之间进行统计比较，核心指标是外显子纳入百分比（Percent Spliced-In, PSI）。rMATS 是目前最广泛使用的可变剪接差异分析工具，支持五种基本剪接事件类型的系统检测，并使用基于重复样本的贝叶斯统计模型控制假阳性。
 
 {{Wiki:Alternative_splicing}}
 
@@ -63,7 +75,7 @@ format:
 - Sashimi 图可视化：rmats2sashimiplot；连接弧线的粗细代表 junction reads 数量
 - 下游功能分析：差异剪接基因的 GO 富集；蛋白质域结构影响预测
 
-**实践内容**：对 pasilla 数据集（dex 处理 vs 对照）运行 rMATS；识别显著差异的 SE 事件（|ΔPSI| > 0.1，FDR < 0.05）；生成代表性事件的 Sashimi 图；分析差异剪接基因的 GO 功能类别分布。
+**实践内容**：对 airway 数据集（dex 处理 vs 对照，使用 `bulkRNA/bam/` 下的 HISAT2 BAM 文件）运行 rMATS；识别显著差异的 SE 事件（|ΔPSI| > 0.1，FDR < 0.05）；生成代表性事件的 Sashimi 图；分析差异剪接基因的 GO 功能类别分布。
 
 ---
 
@@ -84,45 +96,79 @@ format:
 
 ---
 
-# 模块 B：长读长转录组学
+## 专题 5.3：可变多腺苷酸化分析
 
-:::note
-**模块目标：** 理解长读长测序在全长异构体分析中的技术优势与误差特征，掌握 IsoSeq3 与 Nanopore 的分析流程，能使用 SQANTI3 对转录本进行结构分类与质量评估，了解 Trinity de novo 组装的适用场景。
-:::
+转录本的 3' 末端并非固定不变。大多数真核基因拥有多个潜在的多腺苷酸化位点（Polyadenylation Site, PAS），细胞在不同生理状态或环境条件下会优先选择不同位点，从而产生具有不同 3' 非翻译区（3' UTR）长度的转录本变体。这一过程称为可变多腺苷酸化（Alternative Polyadenylation, APA）。较长的 3' UTR 通常含有更多的 miRNA 结合位点与 RNA 结合蛋白（RBP）识别元件，影响 mRNA 的稳定性、定位与翻译效率；而增殖活跃的细胞（如肿瘤细胞）普遍表现出 3' UTR 缩短（proximal PAS 偏好），被认为是逃避 miRNA 介导的翻译抑制的机制之一。
 
-## 专题 5.3：PacBio IsoSeq 与 Oxford Nanopore 全长转录组
+{{Wiki:Polyadenylation}}
 
-短读长测序（150 bp）在重建全长转录本时面临本质性困难：当一个基因有多个相似的异构体时，短读段无法可靠地归属到特定转录本，尤其是在内含子较多或异构体共享大量外显子的情况下。PacBio IsoSeq 技术通过环形一致性测序（CCS）生成平均长度 2–15 kb、准确率高于 99% 的长读段，能够直接覆盖整条转录本从 5' 帽到 poly-A 尾。Oxford Nanopore direct RNA-seq 则省去逆转录步骤，直接对 RNA 分子测序，保留天然的碱基修饰信息，但原始读段错误率较高（约 5–10%）。两种技术的分析流程既有共性，也有各自的特殊处理步骤。
-
-{{Wiki:Pacific_Biosciences}}
+APA 与可变剪接共同构成转录后调控的两大主轴：前者决定转录本的 3' 边界，后者决定外显子的拼接模式，两者均可由标准 Bulk RNA-seq 的 BAM 文件检测，无需额外的实验方案。
 
 **核心概念**：
 
-- PacBio CCS（Circular Consensus Sequencing）：SMRTbell 文库结构；多轮测序取均值的准确率提升机制；HiFi reads 的定义（≥ 3 次亚读段，准确率 ≥ Q20）
-- IsoSeq3 工作流：CCS → `lima`（primer/barcode 去除）→ `isoseq3 refine`（poly-A 修剪，FLNC 过滤）→ `isoseq3 cluster`（聚类去冗余）→ `pbmm2` 比对 → `isoseq3 collapse`（同一基因座转录本合并）
-- Oxford Nanopore direct RNA-seq：纳米孔电流信号直接读取 RNA；`dorado` 碱基识别（替代旧版 `guppy`）；`minimap2 -ax splice -uf` 比对参数（`-uf` 指定正链偏向）
-- 长读长比对的挑战：高错误率导致的剪接位点模糊；`--junc-bed` 利用已知剪接位点锚定比对
-- StringTie2 长读长模式：`-L` 参数启用长读长优化；转录本组装与表达量估计
-- 短读长辅助（Hybrid approach）：利用 Illumina 高精度数据校正长读长剪接位点
+- APA 的生物学机制：PAS 的核心序列元件（AATAAA 及其变体）；cleavage and polyadenylation specificity factor（CPSF）复合物的识别；近端 PAS（proximal PAS）与远端 PAS（distal PAS）的竞争
+- 核心检测指标：PDUI（Percent Distal site Usage Index）；$\Delta\text{PDUI} = \text{PDUI}_{\text{case}} - \text{PDUI}_{\text{control}}$，正值表示 3' UTR 延长，负值表示缩短
+- DaPars2 算法框架：基于读段覆盖密度变化点（changepoint）推断 PAS 位置；无需预先定义 PAS 坐标；Wald 检验计算 ΔPDUI 的显著性
+- QAPA 替代工具：依赖已注释的 3' UTR 区域（PolyA_DB 数据库）进行定量；与 DaPars2 的互补关系（有注释 vs 无注释场景）
+- 3' UTR APA 与内含子 APA（Intronic APA）的区别：内含子 APA 导致截短蛋白，不含 3' UTR 调控序列
+- 建库链特异性的重要性：APA 分析对读段方向敏感，必须正确指定链特异性参数（RF/FR/unstranded）
+- APA 与 mRNA 稳定性：3' UTR 长度与 mRNA 半衰期的相关性；靶向 APA 的治疗策略
 
-**实践内容**：演示 IsoSeq3 完整工作流（从 CCS BAM 到 collapsed GFF）；演示 Nanopore dRNA-seq minimap2 比对与 StringTie2 组装；生成两种技术检测到的转录本数量与长度分布对比图。
+**实践内容**：对 airway 数据集的 HISAT2 BAM 文件运行 DaPars2；以 ΔPDUI 绝对值 > 0.2 且 FDR < 0.05 为阈值筛选显著 APA 基因；绘制 ΔPDUI 分布直方图，分析 dex 处理条件下 3' UTR 整体缩短或延长的趋势；对差异 APA 基因进行 GO 富集，与专题 5.1 的差异剪接基因集进行比较，考察两类转录后调控机制的功能重叠程度。
 
 ---
 
-## 专题 5.4：SQANTI3 质量评估与 Trinity de novo 组装
+:::note
+**长读长转录组学展望**
 
-长读长组装产生的转录本需要系统的质量评估：哪些是已知的注释转录本（FSM/ISM），哪些是新型连接（NNC），哪些可能是文库构建产生的伪影（Intrapriming、RT-switching）。SQANTI3 是专为长读长转录本设计的综合评估工具，提供详细的结构分类、质量指标计算与 ML 过滤。在无参考基因组的场景下，Trinity 提供了基于短读长的 de novo 转录组组装路线，通过 de Bruijn 图算法重建转录本序列（de Bruijn 图原理参见第2章基因组组装）。
+短读长测序在重建全长转录本异构体时面临固有局限：150 bp 的读段无法跨越多个外显子，导致复杂剪接模式存在比对歧义。PacBio IsoSeq（HiFi 读段，平均 2–15 kb，准确率 > 99%）与 Oxford Nanopore direct RNA-seq（直接读取 RNA 分子，无逆转录步骤）能够在单分子层面直接解析全长转录本结构，具备三项短读长无法替代的能力：（1）精确量化含有高度相似外显子的复杂异构体；（2）检测天然 RNA 碱基修饰（m⁶A、假尿苷等），无需抗体富集；（3）直接测量每条转录本的 poly-A 尾长度。长读长分析的标准工具链包括：IsoSeq3（PacBio 官方流程）、minimap2（`-ax splice`，长读长比对）、SQANTI3（转录本结构分类：FSM/ISM/NIC/NNC）。长读长转录组学的完整分析流程将在第7章（多组学整合）中结合短读长数据进行系统讲解。
+:::
+
+---
+
+# 模块 B：转录组成分解析
+
+:::note
+**模块目标：** 理解 Bulk RNA-seq 信号的细胞混合性质，掌握细胞类型去卷积的统计框架与主流工具的适用条件；理解 RNA A-to-I 编辑的生物学机制，掌握 JACUSA2 的检测原理与假阳性控制策略。
+:::
+
+## 专题 5.4：细胞类型去卷积
+
+来自组织样本的 Bulk RNA-seq 测量值是样本中所有细胞类型基因表达的加权平均。当样本间细胞组成存在差异时（如肿瘤微环境中免疫细胞浸润程度不同），观测到的基因表达差异可能部分或全部源于细胞比例变化，而非单个细胞类型内部的转录状态改变。细胞类型去卷积（Cell Type Deconvolution）通过参考各细胞类型的特征基因表达谱，从混合信号中反推每个样本中各细胞类型的相对比例，是区分"细胞状态变化"与"细胞比例变化"的关键分析步骤，也是将 Bulk 结论与单细胞结论相互验证的重要桥梁。
+
+{{Wiki:Cell_type}}
 
 **核心概念**：
 
-- SQANTI3 结构分类：FSM（Full Splice Match）、ISM（Incomplete Splice Match）、NIC（Novel in Catalog）、NNC（Novel Not in Catalog）、Antisense、Intergenic、Genic Genomic、Fusion
-- SQANTI3 质量指标：CAGE peak 支持（5' 端真实性）、poly-A signal 支持（3' 端真实性）、覆盖深度、RT-switching 评分
-- SQANTI3 filter：随机森林分类器识别 Intrapriming 与 RT-switching 伪异构体；`rules` 模式 vs `ML` 模式
-- Trinity de novo 组装：基于 k-mer de Bruijn 图；Trinity 特有的 Butterfly 模块处理可变剪接
-- Trinity 输出质量评估：BUSCO（转录组完整性，参见第2章）；TransRate（读段支持度）；N50 指标的局限性
-- de novo 转录组的适用场景：非模式生物研究、宏转录组分析
+- 去卷积的数学框架：混合模型 $\mathbf{Y} = \mathbf{S} \cdot \mathbf{F} + \epsilon$，其中 $\mathbf{Y}$ 为观测混合表达矩阵，$\mathbf{S}$ 为细胞类型特征矩阵（signature matrix），$\mathbf{F}$ 为待估计的细胞比例矩阵
+- 参考矩阵的来源：LM22（CIBERSORT 内置 22 种免疫细胞特征矩阵）；从 scRNA-seq 数据中自动构建自定义参考矩阵（MuSiC、CIBERSORT-X 的 scMode）
+- CIBERSORT / CIBERSORT-X：支持绝对定量（Absolute Mode）与相对定量（Relative Mode）；置换检验评估去卷积显著性（p < 0.05 为可接受结果）；CIBERSORT-X 的跨平台批次校正
+- MuSiC：专为匹配 scRNA-seq 参考设计；使用加权最小二乘（Weighted Least Squares）降低高变异基因的影响；适合样本量较少的场景
+- 去卷积结果的验证：IHC/流式细胞术独立验证；与 TIMER2.0 等数据库结果比较；多个工具结果的一致性检验
+- 常见陷阱：参考矩阵细胞类型与样本实际细胞类型不匹配时比例估计偏差；高度相关的细胞亚型（如 CD4+ Naive vs CM）难以区分；低丰度细胞类型（< 5%）的估计不稳定
 
-**实践内容**：SQANTI3 对 IsoSeq3 输出转录本进行结构分类，生成分类统计图与质量分布可视化；演示 SQANTI3 filter 去除低质伪异构体前后的转录本数量变化；展示 Trinity de novo 组装小型转录组并用 BUSCO 评估完整性。
+**实践内容**：以 airway 数据集的 DESeq2 归一化计数矩阵为输入，使用 CIBERSORT-X（在线服务）或 MuSiC（R 包）估计各样本中免疫细胞及气道上皮细胞的相对比例；绘制样本间细胞比例堆叠条形图；检验 dex 处理组与对照组之间特定细胞类型比例是否存在系统性差异（Wilcoxon 秩和检验），评估 dex 处理对细胞组成的潜在影响。
+
+---
+
+## 专题 5.5：RNA 编辑检测
+
+RNA 编辑（RNA Editing）是一类发生在转录后的碱基修饰事件，通过酶促反应改变 RNA 序列，使其与基因组 DNA 编码序列不一致。哺乳动物中最普遍的 RNA 编辑类型是腺苷到肌苷的转变（Adenosine-to-Inosine, A-to-I），由 ADAR（Adenosine Deaminase Acting on RNA）酶家族催化。由于肌苷在测序时被读取为鸟苷（G），A-to-I 编辑在 RNA-seq 数据中表现为 A→G 的不一致变体。RNA 编辑广泛参与神经系统功能调节、先天免疫抑制与肿瘤免疫逃逸等过程，其全局水平的变化已被用作免疫治疗响应的预测指标之一。
+
+{{Wiki:RNA_editing}}
+
+从 Bulk RNA-seq 数据中检测 RNA 编辑位点面临一个核心挑战：真正的编辑信号（RNA 与 DNA 的差异）必须与测序错误、比对错误、DNA 单核苷酸多态性（SNP）以及基因组重复区域造成的错误比对严格区分。因此，RNA 编辑检测流程需要配套的变体过滤策略，且通常需要匹配的 DNA 测序数据或高质量 SNP 数据库辅助。
+
+**核心概念**：
+
+- A-to-I 编辑的分子机制：ADAR1（p110 与 p150 同工酶）与 ADAR2；双链 RNA（dsRNA）底物识别；Alu 元件中密集的 A-to-I 编辑簇（Alu editing cluster）
+- 编辑水平量化：编辑比例（Editing Index, EI）= $\frac{\text{G reads}}{\text{A reads} + \text{G reads}}$ in A-to-I context；样本间编辑水平的差异检验
+- JACUSA2 检测框架：基于 RNA-seq BAM 文件的碱基不一致性统计；Fisher 精确检验比较两组样本；专为检测 RNA 编辑设计的 call-1 模式（单样本）与 call-2 模式（双样本差异）
+- REDItools2：大规模 RNA 编辑位点全组扫描；与 REDIportal 数据库（已知 A-to-I 位点）联合使用进行注释
+- 假阳性控制策略：过滤已知 SNP 位点（dbSNP、gnomAD）；过滤比对质量低的读段（MAPQ < 30）；过滤重复区域（ENCODE Blacklist）；要求编辑位点在正反链均有支持（对链特异性数据）；限定 A-to-G（正链）或 T-to-C（负链）类型变体
+- C-to-U 编辑：由 APOBEC 家族酶催化；在肠道上皮与免疫细胞中有特定功能；检测逻辑与 A-to-I 类似
+
+**实践内容**：以 airway 数据集的 HISAT2 BAM 文件为输入，使用 JACUSA2 call-2 模式对 dex 处理组与对照组进行 A-to-I 编辑位点的差异检测；经 dbSNP 过滤与碱基质量过滤后，识别显著差异编辑位点（FDR < 0.05，|ΔREI| > 0.1）；统计差异编辑位点的基因组分布（编码区、3' UTR、Alu 元件）；分析差异编辑基因的功能类别，考察 dex 处理对 ADAR 活性的潜在影响。
 
 ---
 
@@ -132,7 +178,7 @@ format:
 **模块目标：** 理解 WGCNA 的理论框架，能正确选择软阈值、构建共表达模块并进行模块-表型关联分析，从显著模块中识别枢纽基因。
 :::
 
-## 专题 5.5：加权基因共表达网络分析
+## 专题 5.6：加权基因共表达网络分析
 
 差异表达分析聚焦于单个基因层面的变化，而基因的功能往往通过协同调控网络来实现。加权基因共表达网络分析（Weighted Gene Co-expression Network Analysis, WGCNA）将多样本的基因表达矩阵转化为基因-基因相关性网络，并通过层次聚类将相关基因划分为模块（Module）。每个模块可通过模块特征基因（Module Eigengene, ME）——该模块中基因表达的第一主成分——与样本表型信息建立关联，从而识别与特定生物学状态相关的功能基因集，进而发现模块内连接度最高的枢纽基因（Hub gene）作为候选调控因子。
 
@@ -148,4 +194,79 @@ format:
 - 枢纽基因识别：模块内连接度（Intramodular Connectivity）；`kME > 0.8` 且 `GS > 0.5` 的交集作为枢纽基因候选
 - WGCNA 与 DEA 的整合：差异基因在各模块中的富集检验
 
-**实践内容**：使用 pasilla 数据集（DESeq2 vst 归一化表达矩阵）运行 WGCNA；选择软阈值并构建共表达网络；识别与 dex 处理状态相关的核心模块；绘制模块-表型关联热图；从显著模块中筛选枢纽基因并进行 GO 富集验证。
+**实践内容**：使用 airway 数据集（DESeq2 vst 归一化表达矩阵）运行 WGCNA；选择软阈值并构建共表达网络；识别与 dex 处理状态相关的核心模块；绘制模块-表型关联热图；从显著模块中筛选枢纽基因并进行 GO 富集验证。
+
+---
+
+# 模块 D：基因调控网络推断
+
+:::note
+**模块目标：** 理解基因调控网络推断的统计框架与动态建模原理；掌握 GENIE3/DYNENIE3 基于随机森林的有向调控边推断方法；了解 ODE 参数化建模与 SINDy 稀疏辨识方法在转录调控动态学中的应用场景与局限性；能对 WGCNA 共表达模块的结果进行调控方向解析。
+:::
+
+WGCNA 等共表达网络方法所建立的边是无向的相关关系，无法区分"A 调控 B"与"B 调控 A"，也无法识别间接关联。基因调控网络（Gene Regulatory Network, GRN）推断方法的目标是从表达数据中重建有向调控图：节点为基因（通常以转录因子为调控子），边表示调控关系的方向与强度。这一问题在统计上属于高维变量选择问题（特征数 $p \gg$ 样本数 $n$），需要正则化策略或非参数方法来避免过拟合。在时间序列数据可用的情形下，动态建模方法（ODE、SINDy）可进一步恢复调控关系的动力学参数，将描述性推断提升至机制性建模的层次。
+
+## 专题 5.7：GENIE3 与 DYNENIE3——基于随机森林的调控网络推断
+
+GENIE3（GEne Network Inference with Ensemble of trees）将 GRN 推断问题分解为 $p$ 个独立的特征选择子问题：对每一个目标基因 $j$，以所有其他基因（或候选转录因子集合）的表达量作为预测特征，训练随机森林回归模型，利用特征重要性（Feature Importance）分数衡量每个候选调控子对目标基因表达变异的贡献。汇总所有目标基因的重要性得分后，即可构建一个加权有向图，代表调控强度的先验排序。GENIE3 的优势在于对非线性调控关系天然鲁棒，且不假设网络拓扑结构（无需无标度假设）；其局限在于对样本量敏感，且仅给出调控强度排名，无法区分直接与间接调控。
+
+{{Wiki:Random_forest}}
+
+DYNENIE3 是 GENIE3 在时间序列数据上的扩展，将稳态假设替换为动态回归框架：目标基因在时间点 $t+1$ 的表达量由时间点 $t$ 的调控子表达量预测，从而利用时序先后关系为调控方向提供额外约束，显著减少假阳性调控边。
+
+**核心概念**：
+
+- GENIE3 问题形式化：对目标基因 $j$，拟合 $x_j = f(\mathbf{x}_{\setminus j}) + \epsilon$；随机森林节点分裂时的重要性累计（MDI，Mean Decrease in Impurity）
+- 候选调控子限定策略：仅使用已知转录因子集合（如 ENCODE TF 列表、AnimalTFDB）作为预测变量，降低计算量并提高精度
+- 重要性矩阵到网络的转换：阈值化（Top-k 边保留，或基于 AUROC/AUPR 评估选取截止值）；对称性打破策略（取 $\max(w_{ij}, w_{ji})$ vs $w_{ij} - w_{ji}$）
+- DYNENIE3 时序回归框架：$x_j(t+1) = f(\mathbf{x}_{\setminus j}(t))$；等时间间隔要求；多时间序列实验的数据拼接策略
+- 网络评估基准：BEELINE、DREAM5 挑战赛评估框架；AUROC 与 AUPR 的适用场景（AUPR 对稀疏网络更敏感）
+- GRN 推断的固有挑战：$n \ll p$ 导致的多重共线性；间接调控的高假阳性率；细胞群体异质性对稳态假设的违背（单细胞 GRN 推断的动机）
+- GENIE3 的 R/Python 实现：`GENIE3` Bioconductor 包；`arboreto` Python 包（支持 GENIE3 和 GRN-Boost2）；与 pySCENIC 流程的集成关系
+
+**实践内容**：在 airway 数据集的 vst 归一化表达矩阵上运行 GENIE3，以模块外已知 TF（ENCODE 人类转录因子集合）为候选调控子、专题 5.6 显著模块内基因为靶基因；提取 Top-500 调控边并可视化为有向网络图；将推断的调控子与 WGCNA 枢纽基因对比，评估调控边是否与模块内共表达结构一致；如有时间序列数据，演示 DYNENIE3 的增量优势。
+
+---
+
+## 专题 5.8：ODE 参数化建模与 SINDy——转录调控的动态方程辨识
+
+当实验提供了多个时间点的转录组数据（时间序列 RNA-seq 或 scRNA-seq 中的 RNA 速率信息），有可能从数据中辨识驱动基因表达动态的微分方程，将 GRN 推断从"有向图"提升至"动力系统"层次。常微分方程（ODE）建模将每个基因的转录速率表示为调控子浓度的函数，通过参数拟合得到动力学常数；稀疏辨识非线性动力学（Sparse Identification of Nonlinear Dynamics, SINDy）则通过构建候选函数库（多项式、三角函数、Hill 函数等），利用 LASSO 稀疏回归自动筛选最简方程形式，从数据中直接发现调控律。
+
+{{Wiki:Ordinary_differential_equation}}
+
+:::note
+**历史背景：** SINDy 由 Brunton、Proctor 与 Kutz 于 2016 年在 *PNAS* 发表，最初用于流体力学中混沌吸引子方程的辨识（如 Lorenz 系统）。将其迁移至基因调控系统是近年计算生物学的前沿探索，挑战在于生物系统的噪声水平远高于物理系统，且大多数基因的动力学并不稀疏。这一历史背景提醒读者：SINDy 是一个强大的通用工具，但在基因组尺度的调控问题上仍处于方法论探索阶段。
+:::
+
+**ODE 框架**
+
+最简单的基因调控 ODE 模型将每个基因 $i$ 的 mRNA 浓度 $x_i(t)$ 建模为：
+
+$$\frac{dx_i}{dt} = \alpha_i + \sum_{j \in \text{Reg}(i)} w_{ij} \cdot g(x_j) - \gamma_i x_i$$
+
+其中 $\alpha_i$ 为基础转录速率，$w_{ij}$ 为调控强度（正值为激活，负值为抑制），$g(\cdot)$ 为非线性响应函数（常用 Hill 函数 $g(x) = x^n/(K^n + x^n)$），$\gamma_i$ 为 mRNA 降解速率。参数辨识通过最小化模型预测轨迹与实测时序数据之间的残差完成，通常结合梯度下降或贝叶斯推断实现。
+
+**SINDy 框架**
+
+SINDy 的核心思想是将 ODE 右端项的函数形式视为待辨识对象。给定时间序列数据矩阵 $\mathbf{X} \in \mathbb{R}^{T \times p}$（$T$ 个时间点，$p$ 个基因），构造候选函数库矩阵 $\boldsymbol{\Theta}(\mathbf{X})$（包含常数项、一次项、交叉项、多项式、Hill 函数等），则：
+
+$$\dot{\mathbf{X}} \approx \boldsymbol{\Theta}(\mathbf{X}) \cdot \boldsymbol{\Xi}$$
+
+通过对系数矩阵 $\boldsymbol{\Xi}$ 施加 $\ell_1$ 正则化（LASSO）或序贯阈值最小二乘（STLSQ），强制稀疏解，即得到每个基因动力学方程中实际起作用的少数调控项。PySINDy 是目前最成熟的 SINDy 实现库，提供了针对生物系统噪声的弱 SINDy（Weak SINDy）变体，通过对微分方程在时间上进行积分弱化形式以降低数值微分的噪声敏感性。
+
+{{Wiki:Lasso_(statistics)}}
+
+**核心概念**：
+
+- ODE 参数辨识方法：数值微分（有限差分）的误差放大问题；样条插值平滑后微分；梯度匹配（Gradient Matching）策略
+- Hill 函数的生物学解释：$n$（Hill 系数）反映协同性；$K$（半饱和常数）反映调控灵敏度；Hill 函数与 S 形激活函数的等价关系
+- SINDy 候选库设计原则：针对基因调控系统，推荐包含常数项、一阶项、二阶交互项、Hill 函数项；避免多项式阶数过高（灾难性多重共线性）
+- 弱 SINDy（Weak SINDy）：将 $\dot{x}_i \approx f(\mathbf{x})$ 两边乘以测试函数并在时间区间上积分，转化为无需数值微分的积分方程形式；对噪声的鲁棒性显著优于经典 SINDy
+- 稀疏性先验的生物学含义：转录调控网络的稀疏假设与已知调控网络的一致性；节点平均入度约为 2–5（模式生物调控数据库 RegulonDB、YEASTRACT 的统计）
+- 模型可识别性：时间点数量与参数数量之比；实验设计建议（扰动实验、多初始条件）
+- ODE/SINDy 与 GENIE3 的互补关系：GENIE3 适用于稳态大规模数据；ODE/SINDy 适用于小规模精细时序数据；两者在稀疏性假设上一致，但对数据类型的要求不同
+- 现有工具生态：`PySINDy`（Python，通用 SINDy 框架）；`pysindy.feature_library.CustomLibrary`（自定义 Hill 函数库）；`CARDAMOM`（专为 RNA-seq 时序数据设计的贝叶斯 ODE 推断工具）；`BoolODE`（将 Boolean 网络转化为随机 ODE，用于生成模拟数据）
+
+**实践内容**：以一个小型基因网络（3–5 个转录因子，时间序列 RNA-seq 数据）演示 SINDy 稀疏方程辨识流程：（1）数据标准化与候选函数库构建；（2）STLSQ 稀疏回归求解；（3）推断方程的生物学解读；（4）与 GENIE3 推断网络的一致性对比。如时间序列数据不可用，演示基于模拟数据（BoolODE 生成）的方法验证。
+
+---

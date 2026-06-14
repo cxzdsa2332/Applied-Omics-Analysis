@@ -1,2 +1,662 @@
-# 第五章 课时3
+---
+title: "加权基因共表达网络分析（WGCNA）"
+date: today
+format:
+  html:
+    code-fold: false
+    toc: true
+    toc-depth: 3
+    number-sections: true
+    theme: cosmo
+crossref:
+  fig-title: 图
+  fig-prefix: 图
+  tbl-title: 表
+  tbl-prefix: 表
+  chapters: false
+---
 
+# 专题概述
+
+差异表达分析（DEA，参见第4章）从单个基因的层面评估表达量变化，但基因在生物系统中从不孤立运作——它们通过复杂的调控关系形成功能模块，协同响应细胞内外的信号。加权基因共表达网络分析（Weighted Gene Co-expression Network Analysis, WGCNA）是一种系统生物学框架，旨在从多样本基因表达矩阵中识别具有高度相关表达模式的基因模块，并将这些模块与样本的表型信息（如疾病状态、药物处理、临床指标）建立关联，从而发现驱动特定生物学表型的基因集合及其潜在的核心调控因子。本专题系统讲解 WGCNA 的理论框架、关键参数选择逻辑，以及从原始计数矩阵到枢纽基因识别的完整分析流程。
+
+**学习目标**：理解无标度网络假设与软阈值选择的统计逻辑；掌握 WGCNA 模块构建的层次聚类框架；能够进行模块-表型关联分析并解读热图结果；能从显著模块中识别枢纽基因并进行下游功能验证。
+
+---
+
+# WGCNA 的理论框架
+
+## 从相关矩阵到加权网络
+
+WGCNA 的起点是一个基因表达矩阵 $\mathbf{X} \in \mathbb{R}^{n \times p}$，其中 $n$ 为样本数，$p$ 为基因数。分析的第一步是计算所有基因对之间的皮尔逊相关系数矩阵 $\mathbf{S}$，其中 $s_{ij} = |\text{cor}(x_i, x_j)|$（取绝对值以捕捉正相关和负相关关系）。
+
+直接使用相关矩阵构建网络（硬阈值化）存在一个问题：阈值的选择是任意的，且会导致大量信息损失（低于阈值的边被完全丢弃）。WGCNA 的创新之处在于使用**软阈值化（Soft Thresholding）**——将相关系数取 $\beta$ 次幂来产生网络邻接矩阵：
+
+$$a_{ij} = s_{ij}^{\beta}$$
+
+其中 $\beta$（软阈值，又称幂次参数）是需要从数据中确定的关键参数。软阈值化的优势在于：（1）保留了所有基因对之间的连接，只是以连续方式调整权重；（2）通过选择合适的 $\beta$，可以使网络满足无标度拓扑（Scale-free Topology）假设。
+
+![胃癌患者样本的基因共表达网络示例（7,221 个基因，18 名患者）。节点代表基因，边代表显著的共表达关系，不同颜色表示不同的功能模块。](https://upload.wikimedia.org/wikipedia/commons/7/75/Gene_co-expression_network_with_7221_genes_for_18_gastric_cancer_patients.png){#fig-gene-coexpression-network width=85%}
+
+图片引用自维基百科：[Gene co-expression network](https://en.wikipedia.org/wiki/Gene_co-expression_network)
+
+## 无标度网络假设与软阈值选择
+
+无标度网络的核心特征是其节点度（connectivity）分布服从幂律分布 $P(k) \sim k^{-\gamma}$，即大多数基因只有少数连接，少数"枢纽基因"（Hub genes）连接到大量其他基因。已有研究表明，生物调控网络（包括蛋白质互作网络、转录调控网络）普遍具有无标度拓扑特征，因此 WGCNA 将无标度拓扑拟合度（Scale-free Topology Fit Index, $R^2$）作为选择软阈值的标准：
+
+**选择原则**：取满足 $R^2 \geq 0.85$ 的最小 $\beta$ 值，同时要求网络的平均连接度（Mean Connectivity）足够高（通常 > 100）以保证足够的信息量。
+
+```r
+# Run pickSoftThreshold (requires WGCNA package)
+library(WGCNA)
+library(DESeq2)
+library(airway)
+
+data(airway)
+dds <- DESeqDataSet(airway, design = ~ cell + dex)
+dds <- dds[rowSums(counts(dds)) > 10, ]
+vsd <- vst(dds, blind = FALSE)
+expr_mat <- t(assay(vsd))
+
+powers <- c(1:10, seq(12, 20, 2))
+sft <- pickSoftThreshold(expr_mat, powerVector = powers,
+                          networkType = "signed", verbose = 0)
+```
+
+```r
+#| label: fig-soft-threshold
+#| fig-cap: "软阈值选择诊断图（模拟示意）。左图：不同 β 值对应的无标度拓扑拟合度（$R^2$），红色虚线标注 0.85 阈值，β = 12 时首次超过该阈值；右图：对应的平均连接度，随 β 升高单调下降。实际分析中曲线形态因数据集而异。"
+library(ggplot2)
+library(patchwork)
+
+# Simulated soft-threshold diagnostic (representative of typical signed network)
+set.seed(1)
+powers <- c(1:10, seq(12, 20, 2))
+r2_vals <- pmin(0.3 + 0.065 * powers + rnorm(length(powers), 0, 0.02), 0.99)
+r2_vals[powers >= 12] <- pmin(r2_vals[powers >= 12], 0.97)
+mean_conn <- 500 * exp(-0.28 * powers) + rnorm(length(powers), 0, 5)
+
+sft_df <- data.frame(power = powers, r2 = r2_vals, mean_conn = pmax(mean_conn, 0))
+
+p1 <- ggplot(sft_df, aes(x = power, y = r2)) +
+    geom_line(color = "#4472C4") + geom_point(color = "#4472C4") +
+    geom_hline(yintercept = 0.85, linetype = "dashed", color = "#d62728") +
+    annotate("text", x = 12.2, y = 0.87, label = "β = 12 (selected)",
+             hjust = 0, size = 3, color = "#d62728") +
+    labs(x = expression(beta ~ "(Soft Threshold Power)"),
+         y = expression(R^2 ~ "(Scale-free Fit)")) +
+    theme_bw(base_size = 11)
+
+p2 <- ggplot(sft_df, aes(x = power, y = mean_conn)) +
+    geom_line(color = "#ED7D31") + geom_point(color = "#ED7D31") +
+    labs(x = expression(beta), y = "Mean Connectivity") +
+    theme_bw(base_size = 11)
+
+p1 + p2
+```
+
+## 拓扑重叠矩阵（TOM）
+
+直接使用邻接矩阵进行聚类会对噪声敏感，因为两个基因之间的直接相关可能是偶然的。WGCNA 在聚类之前将邻接矩阵转化为**拓扑重叠矩阵（Topological Overlap Matrix, TOM）**，其计算方式为：
+
+$$\text{TOM}_{ij} = \frac{\sum_u a_{iu} a_{ju} + a_{ij}}{\min(k_i, k_j) + 1 - a_{ij}}$$
+
+其中 $k_i = \sum_u a_{iu}$ 为基因 $i$ 的加权连接度。TOM 的含义是：如果两个基因不仅直接相连，还共享大量共同邻居，则它们的 TOM 值接近 1，表明具有高度的网络邻域相似性。TOM 比直接相关系数对测量噪声更鲁棒，是 WGCNA 模块稳定性的关键保证。
+
+下面用一个 6 基因的小例子直观展示 TOM 的计算过程。第一段代码按公式手动实现，便于理解每一项的来源；第二段调用 WGCNA 的 `TOMsimilarity()`，二者结果一致。
+
+```r
+library(WGCNA)
+
+# A small simulated expression matrix: 20 samples x 6 genes
+set.seed(42)
+datExpr <- matrix(rnorm(20 * 6), nrow = 20, ncol = 6)
+colnames(datExpr) <- paste0("Gene", 1:6)
+
+# Step 1: build the (unsigned) adjacency matrix with soft-thresholding power beta = 6
+beta <- 6
+corMat <- cor(datExpr)                 # Pearson correlation between genes
+adjacency <- abs(corMat)^beta          # adjacency a_ij in [0, 1]
+diag(adjacency) <- 0                   # remove self-loops (a_ii = 0)
+
+# Step 2: compute TOM manually following the WGCNA formula
+n <- ncol(adjacency)
+k <- rowSums(adjacency)                # connectivity k_i = sum_u a_iu
+L <- adjacency %*% adjacency           # L_ij = sum_u a_iu * a_ju (shared neighbors)
+TOM_manual <- matrix(0, n, n)
+for (i in 1:n) {
+  for (j in 1:n) {
+    numerator   <- L[i, j] + adjacency[i, j]
+    denominator <- min(k[i], k[j]) + 1 - adjacency[i, j]
+    TOM_manual[i, j] <- numerator / denominator
+  }
+}
+diag(TOM_manual) <- 1                   # a gene fully overlaps with itself
+
+# Step 3: the same result using WGCNA's built-in function
+TOM_wgcna <- TOMsimilarity(adjacency, TOMType = "unsigned")
+
+# Verify both approaches agree (differences are within floating-point tolerance)
+max(abs(TOM_manual - TOM_wgcna))
+#> [1] 2.220446e-16
+```
+
+在真实分析中无需手动实现，直接使用 `TOMsimilarity()` 即可；上述展开仅用于揭示公式背后的逻辑。
+
+## 层次聚类与动态树切割
+
+得到 TOM 之后，WGCNA 以 $1 - \text{TOM}$ 作为基因间的相异度（dissimilarity），采用平均连接法（average linkage）进行层次聚类，生成基因聚类树状图（dendrogram）。树状图的每个叶节点是一个基因，紧密共表达的基因在低高度处汇合形成致密分支，而模块即对应于树状图上的这些分支。识别模块的本质，就是将树状图切割成若干分支。
+
+{{Wiki:Hierarchical_clustering}}
+
+最朴素的切割方式是**固定高度切割（Static / Fixed-height Cut）**：在树状图上画一条水平线，线下的每个独立分支即为一个模块。然而固定高度切割存在根本缺陷：真实的共表达模块在大小、致密程度和汇合高度上差异很大，单一的全局切割高度无法同时适配它们——切得太低会把一个大模块拆成碎片，切得太高则会把若干小模块强行合并。换言之，固定高度假设了所有模块具有相同的"深度"，这与生物数据的异质性相悖。
+
+**动态树切割（Dynamic Tree Cut）**正是为解决这一问题而设计。它不依赖单一高度，而是自适应地分析树状图每个分支的**形状**——综合考虑分支的高度、大小、内部致密度以及与相邻分支的间隔——据此决定该分支是否构成一个独立模块。其要点包括：
+
+- **自底向上识别分支**：从树状图底部开始，将满足最小规模（`minClusterSize`，默认 20–30 个基因）且形态致密的分支判定为候选模块。
+- **分裂敏感度可调**：`deepSplit` 参数（0–4）控制切割的精细程度，值越大越倾向于拆分出更多、更小的模块。
+- **混合模式（Hybrid）的 PAM 阶段**：动态树切割的混合算法在初步分支识别后，可选地将未分配基因（树状图上的"散叶"）按 PAM（Partitioning Around Medoids）思想就近归入最相似的模块，从而减少落入"灰色（grey）"未分配集合的基因数量。
+
+下面用一组模拟数据直观对比两种切割策略。我们构造 4 个大小与致密度各异的共表达模块外加一批无结构的背景基因，构建 TOM 树状图后分别施加固定高度切割与动态树切割，并将两者的模块分配结果以颜色条并列展示于同一树状图下方（@fig-dynamic-treecut）。
+
+```r
+#| label: fig-dynamic-treecut
+#| fig-cap: "固定高度切割与动态树切割的对比（模拟数据）。上方为基于 TOM 相异度的基因聚类树状图；中间颜色条为固定高度切割（在单一高度处切割）的模块分配，下方颜色条为动态树切割的结果。模拟数据包含 4 个大小（60/40/25/15 个基因）与致密度各异的真实模块。固定高度切割难以兼顾不同尺度的分支——较松散的小模块被并入灰色未分配集合；动态树切割则依据分支形状自适应地恢复了全部 4 个模块。"
+library(WGCNA)
+
+set.seed(2024)
+nSamples <- 40
+
+# Generate one co-expression module: genes sharing a latent eigengene signal,
+# with 'tightness' controlling how strongly each gene tracks that signal.
+make_module <- function(n_genes, tightness) {
+    eigengene <- rnorm(nSamples)
+    sapply(seq_len(n_genes), function(g) {
+        tightness * eigengene + rnorm(nSamples, 0, 1 - tightness)
+    })
+}
+
+m1 <- make_module(60, 0.85)   # large, tight
+m2 <- make_module(40, 0.65)   # medium, looser
+m3 <- make_module(25, 0.80)   # small, tight
+m4 <- make_module(15, 0.55)   # very small, loose
+background <- matrix(rnorm(nSamples * 30), nSamples, 30)  # unclustered genes
+
+datExpr <- cbind(m1, m2, m3, m4, background)
+colnames(datExpr) <- paste0("G", seq_len(ncol(datExpr)))
+
+# Adjacency -> TOM -> dissimilarity -> hierarchical clustering
+adj      <- adjacency(datExpr, power = 6, type = "signed")
+dissTOM  <- 1 - TOMsimilarity(adj, TOMType = "signed")
+geneTree <- hclust(as.dist(dissTOM), method = "average")
+
+# (a) Static cut at a single fixed height
+static_colors <- labels2colors(
+    cutreeStatic(geneTree, cutHeight = 0.99, minSize = 15))
+
+# (b) Dynamic Tree Cut: branch-shape adaptive
+dynamic_mods <- cutreeDynamic(dendro = geneTree, distM = dissTOM,
+                              deepSplit = 2, pamRespectsDendro = FALSE,
+                              minClusterSize = 15)
+dynamic_colors <- labels2colors(dynamic_mods)
+
+plotDendroAndColors(geneTree,
+    colors      = cbind(static_colors, dynamic_colors),
+    groupLabels = c("Static cut (fixed h)", "Dynamic Tree Cut"),
+    dendroLabels = FALSE, hang = 0.03, addGuide = TRUE,
+    main = "Gene dendrogram: static vs dynamic tree cut (simulated)")
+```
+
+为了揭示"自适应"究竟发生了什么，下面仅用 base R（不调用任何 WGCNA 函数）手动复现动态树切割的**核心思想**。动态树切割的树方法（tree method）本质上是**自底向上**的：沿树状图从最低的汇合高度向上遍历每一次合并，让致密的分支不断生长；当某次合并试图把**两个都已达到最小规模的成熟分支**连接起来时（这通常发生在很高的"黏合"高度处），就拒绝合并，将它们判定为两个独立模块；始终未能长到最小规模的零散分支则保留为未分配（灰色）。
+
+```r
+# Manual, base-R illustration of dynamic (bottom-up) branch detection.
+# Reuses geneTree (the hclust object) built in the previous chunk; no WGCNA calls.
+merge_mat <- geneTree$merge   # each row joins two items, in increasing-height order
+n_leaf    <- nrow(merge_mat) + 1
+min_size  <- 15
+
+# For each merge node, node_members[[k]] holds the gene indices still "growing"
+# in that branch. A negative entry in merge_mat is an original gene; a positive
+# entry refers to an earlier merge node.
+node_members <- vector("list", nrow(merge_mat))
+finalized    <- list()        # branches frozen as distinct modules
+
+members_of <- function(item) {
+    if (item < 0) -item                  # an original gene (leaf)
+    else          node_members[[item]]   # a previously built branch
+}
+
+for (k in seq_len(nrow(merge_mat))) {
+    left  <- members_of(merge_mat[k, 1])
+    right <- members_of(merge_mat[k, 2])
+    if (length(left) >= min_size && length(right) >= min_size) {
+        # Tall "gluing" merge between two mature branches -> keep them separate
+        finalized <- c(finalized, list(left), list(right))
+        node_members[[k]] <- integer(0)  # nothing propagates upward
+    } else {
+        node_members[[k]] <- c(left, right)  # let the branch keep growing
+    }
+}
+# A branch still growing at the very top is a module if it reached min_size
+top_branch <- node_members[[nrow(merge_mat)]]
+if (length(top_branch) >= min_size) finalized <- c(finalized, list(top_branch))
+
+# Turn the detected branches into an integer label per gene (0 = unassigned/grey)
+manual_labels <- integer(n_leaf)
+for (m in seq_along(finalized)) manual_labels[finalized[[m]]] <- m
+
+cat("Modules detected by the manual rule:", length(finalized), "\n")
+print(table(manual_labels))
+```
+
+将 `manual_labels` 与前一段 `cutreeDynamic()` 的结果比对，可见二者在 4 个真实模块上的划分高度一致——这说明"自底向上、拒绝黏合成熟分支"确实是动态树切割的核心逻辑。
+
+:::warning
+**简化说明：** 上述手动实现仅用于阐明原理，省略了 `cutreeDynamic()` 的两项关键稳健化机制：（1）**PAM 阶段**——按 Partitioning Around Medoids 思想将零散基因就近归入最相似的模块；（2）**分支形状的统计判定**——对分支的核心致密度与离散度做量化评估，从而把缺乏内部凝聚力的松散基因团（如本例中的背景噪声基因）正确判为灰色，而非误报为模块。因此手动版可能高估模块数量。真实分析务必使用 `cutreeDynamic()` / `blockwiseModules()`。
+:::
+
+:::info
+**黄金法则：** 动态树切割让"模块边界"由数据的层次结构自身决定，而非由分析者主观设定的单一阈值决定。这正是 WGCNA 能在同一数据集中稳定识别出大小迥异的共表达模块的关键所在。
+:::
+
+识别出初步模块后，部分模块的表达模式可能高度相似（其模块特征基因高度相关）。WGCNA 通过 `mergeCutHeight` 参数对这些冗余模块进行合并（详见后文"模块特征基因"一节），最终得到一组互不冗余的功能模块。至此，模块识别的完整逻辑链条为：**TOM → 层次聚类 → 动态树切割 → 模块合并**。
+
+---
+
+# WGCNA 完整分析流程
+
+## 数据准备与质量控制
+
+```r
+library(WGCNA)
+library(DESeq2)
+library(airway)
+
+# Enable multi-threading
+enableWGCNAThreads(nThreads = 4)
+
+# Load airway dataset
+data(airway)
+dds <- DESeqDataSet(airway, design = ~ cell + dex)
+dds <- dds[rowSums(counts(dds)) > 10, ]
+vsd <- vst(dds, blind = FALSE)
+expr_mat <- t(assay(vsd))  # transpose: rows = samples, cols = genes
+
+cat("Matrix dimensions:", nrow(expr_mat), "samples x",
+    ncol(expr_mat), "genes\n")
+```
+
+:::warning
+**样本数要求：** WGCNA 官方建议样本数至少 15 个，20 个以上时结果更稳定。airway 数据集仅有 8 个样本，严格来说不满足此要求，本文用于教学演示目的。在实际研究中，应使用样本数 ≥ 15 的数据集，或采用其他共表达分析工具（如 CEMiTool、hdWGCNA for scRNA-seq）。
+:::
+
+```r
+# Detect outlier samples using hierarchical clustering
+sample_tree <- hclust(dist(expr_mat), method = "average")
+```
+
+```r
+#| label: fig-sample-tree
+#| fig-cap: "样本层次聚类树状图，用于离群样本检测（使用 airway 数据集演示）。各样本间的欧氏距离通过 VST 归一化表达矩阵计算；红色虚线为离群样本截断阈值，距离显著超过阈值的样本应在 WGCNA 分析前排除。"
+library(DESeq2)
+library(airway)
+
+data(airway)
+dds_st <- DESeqDataSet(airway, design = ~ cell + dex)
+dds_st <- dds_st[rowSums(counts(dds_st)) > 10, ]
+vsd_st <- vst(dds_st, blind = FALSE)
+expr_demo <- t(assay(vsd_st))
+
+sample_tree_demo <- hclust(dist(expr_demo), method = "average")
+plot(sample_tree_demo,
+     main = "Sample clustering to detect outliers",
+     sub = "", xlab = "", cex.lab = 1.2, cex.axis = 1.0, cex.main = 1.2,
+     labels = paste0(colData(airway)$cell, "_", colData(airway)$dex))
+abline(h = 40, col = "red", lty = 2)
+```
+
+```r
+# Remove outliers if any (based on visual inspection of the dendrogram)
+clust <- cutreeStatic(sample_tree, cutHeight = 15, minSize = 2)
+keep_samples <- (clust == 1)
+expr_mat_clean <- expr_mat[keep_samples, ]
+cat("Samples retained:", sum(keep_samples), "\n")
+```
+
+## 软阈值选择
+
+```r
+# Select soft threshold (choose smallest beta where R^2 >= 0.85)
+selected_beta <- sft$powerEstimate
+cat("Selected soft threshold (beta):", selected_beta, "\n")
+
+# If automatic selection fails (R^2 never reaches 0.85):
+# For signed networks with < 15 samples, beta = 12-18 is typically reasonable
+if (is.na(selected_beta)) {
+    selected_beta <- 12
+    message("Auto-selection failed; using beta = 12 as default for small dataset")
+}
+```
+
+## 网络构建与模块识别
+
+模块识别遵循前文确立的逻辑链条（**TOM → 层次聚类 → 动态树切割 → 模块合并**，参见"层次聚类与动态树切割"一节及 @fig-dynamic-treecut）。在实际分析中，`blockwiseModules()` 一步封装了上述全部环节：它内部完成邻接矩阵与 TOM 的计算、层次聚类、动态树切割识别模块，并按 `mergeCutHeight` 自动合并冗余模块。
+
+```r
+# Construct network and identify modules (requires WGCNA)
+net <- blockwiseModules(
+    expr_mat_clean,
+    power            = selected_beta,
+    networkType      = "signed",
+    TOMType          = "signed",
+    minModuleSize    = 30,      # minimum genes per module (dynamic tree cut)
+    deepSplit        = 2,       # branch-split sensitivity (0-4), higher = more modules
+    reassignThreshold = 0,
+    mergeCutHeight   = 0.25,    # merge modules with ME correlation > 0.75
+    numericLabels    = FALSE,
+    pamRespectsDendro = FALSE,
+    saveTOMs         = TRUE,
+    saveTOMFileBase  = "WGCNA_TOM",
+    verbose          = 0
+)
+
+# Module summary
+module_colors <- net$colors
+module_table <- table(module_colors)
+cat("Number of modules:", length(unique(module_colors[module_colors != "grey"])), "\n")
+print(sort(module_table, decreasing = TRUE))
+```
+
+`blockwiseModules()` 返回的 `net$dendrograms` 与 `net$colors` 可直接传入 `plotDendroAndColors()`，得到与 @fig-dynamic-treecut 相同形式的"树状图 + 模块颜色条"可视化，用于检查模块划分是否与树状图分支结构吻合。
+
+:::tip
+**参数调优建议：** `minModuleSize`、`deepSplit` 与 `mergeCutHeight` 三者共同决定最终模块的数量与粒度。小样本数据宜适当增大 `minModuleSize`（如 30）并降低 `deepSplit`（如 1–2），以获得更稳健、更大粒度的模块；若发现模块过于破碎，可提高 `mergeCutHeight` 增强合并。
+:::
+
+## 模块特征基因（Module Eigengene）
+
+每个模块通过其**模块特征基因（Module Eigengene, ME）**来概括——ME 是该模块内所有基因表达矩阵的第一主成分，代表该模块的整体表达趋势。ME 是一个长度等于样本数的向量，可以直接与样本的表型变量进行皮尔逊相关分析。
+
+```r
+# Calculate module eigengenes (requires WGCNA)
+ME_list <- moduleEigengenes(expr_mat_clean, module_colors)
+MEs <- orderMEs(ME_list$eigengenes)
+ME_cor <- cor(MEs, use = "p")
+```
+
+```r
+#| label: fig-me-tree
+#| fig-cap: "模块特征基因（ME）的相关矩阵热图（模拟示意）。颜色代表 ME 间的皮尔逊相关系数，高度相关的模块（r > 0.75）在实际分析中将被 mergeCutHeight 参数合并。"
+library(ggplot2)
+
+# Simulated ME correlation matrix (5 modules)
+set.seed(7)
+me_names <- c("MEturquoise", "MEblue", "MEbrown", "MEyellow", "MEgreen")
+me_cor_sim <- matrix(c(
+     1.00,  0.72, -0.30, -0.15,  0.10,
+     0.72,  1.00, -0.25, -0.20,  0.05,
+    -0.30, -0.25,  1.00,  0.68, -0.40,
+    -0.15, -0.20,  0.68,  1.00, -0.35,
+     0.10,  0.05, -0.40, -0.35,  1.00
+), nrow = 5, dimnames = list(me_names, me_names))
+
+me_df <- as.data.frame(as.table(me_cor_sim))
+names(me_df) <- c("ME1", "ME2", "Correlation")
+
+ggplot(me_df, aes(x = ME1, y = ME2, fill = Correlation)) +
+    geom_tile(color = "white") +
+    geom_text(aes(label = round(Correlation, 2)), size = 3) +
+    scale_fill_gradient2(low = "#2166ac", mid = "white", high = "#d73027",
+                         midpoint = 0, limits = c(-1, 1)) +
+    labs(x = NULL, y = NULL, title = "Module Eigengene correlation matrix") +
+    theme_bw(base_size = 11) +
+    theme(axis.text.x = element_text(angle = 30, hjust = 1))
+```
+
+## 模块-表型关联分析
+
+```r
+# Correlate module eigengenes with traits (requires WGCNA + computed MEs)
+sample_info <- colData(airway)[keep_samples, ]
+trait_data <- data.frame(
+    dex_treated  = as.numeric(sample_info$dex == "trt"),
+    cell_N61311  = as.numeric(sample_info$cell == "N61311"),
+    cell_N052611 = as.numeric(sample_info$cell == "N052611"),
+    cell_N080611 = as.numeric(sample_info$cell == "N080611")
+)
+nSamples <- nrow(expr_mat_clean)
+module_trait_cor    <- cor(MEs, trait_data, use = "p")
+module_trait_pvalue <- corPvalueStudent(module_trait_cor, nSamples)
+```
+
+```r
+#| label: fig-module-trait-heatmap
+#| fig-cap: "模块-表型关联热图（模拟数据示意）。每个格子显示模块特征基因与表型变量的皮尔逊相关系数及 P 值。红色代表正相关，蓝色代表负相关，颜色深浅反映相关系数绝对值大小。turquoise 模块与 dex 处理高度正相关，brown 模块与 dex 处理负相关。"
+library(ggplot2)
+
+# Simulated module-trait correlation matrix
+me_names <- c("MEturquoise", "MEblue", "MEbrown", "MEyellow", "MEgreen")
+traits    <- c("dex_treated", "cell_N61311", "cell_N052611", "cell_N080611")
+
+cor_vals <- matrix(c(
+     0.87, -0.15,  0.10, -0.05,
+     0.62, -0.08,  0.20, -0.12,
+    -0.79,  0.22, -0.18,  0.09,
+    -0.41,  0.55, -0.33,  0.18,
+     0.12, -0.45,  0.61, -0.28
+), nrow = 5, byrow = TRUE,
+dimnames = list(me_names, traits))
+
+pval_vals <- matrix(c(
+    2e-3, 0.68, 0.78, 0.90,
+    0.09, 0.83, 0.58, 0.75,
+    4e-3, 0.55, 0.63, 0.81,
+    0.27, 0.13, 0.37, 0.63,
+    0.75, 0.21, 0.09, 0.45
+), nrow = 5, byrow = TRUE)
+
+df_ht <- as.data.frame(as.table(cor_vals))
+names(df_ht) <- c("Module", "Trait", "Correlation")
+df_ht$label <- paste0(round(cor_vals, 2), "\n(p=",
+                       formatC(as.vector(pval_vals), format = "e", digits = 1), ")")
+
+ggplot(df_ht, aes(x = Trait, y = Module, fill = Correlation)) +
+    geom_tile(color = "white", linewidth = 0.5) +
+    geom_text(aes(label = label), size = 2.5, lineheight = 0.9) +
+    scale_fill_gradient2(low = "#2166ac", mid = "white", high = "#d73027",
+                         midpoint = 0, limits = c(-1, 1), name = "r") +
+    labs(x = "Sample Traits", y = "Module Eigengenes") +
+    theme_bw(base_size = 11) +
+    theme(axis.text.x = element_text(angle = 20, hjust = 1))
+```
+
+## 枢纽基因识别
+
+在与表型显著关联的模块中，枢纽基因（Hub gene）是模块内连接度最高的基因，通常也是潜在的核心调控因子。WGCNA 通过两个指标来量化每个基因的重要性：
+
+- **模块成员度（Module Membership, kME）**：基因表达量与模块特征基因的皮尔逊相关系数，反映该基因与模块整体表达模式的一致性。$|\text{kME}| > 0.8$ 为高置信度模块成员。
+- **基因显著性（Gene Significance, GS）**：基因表达量与目标表型变量的皮尔逊相关系数，直接反映基因与表型的关联强度。$|\text{GS}| > 0.5$ 为具有显著表型关联的基因。
+
+枢纽基因定义为同时满足高 kME 和高 GS 的基因。
+
+```r
+# Hub gene calculation (requires WGCNA computed objects)
+target_module <- sub("^ME", "", rownames(module_trait_cor)[
+    which.max(abs(module_trait_cor[, "dex_treated"]))])
+module_genes <- names(module_colors)[module_colors == target_module]
+kME <- as.numeric(cor(expr_mat_clean[, module_genes],
+                       MEs[, paste0("ME", target_module)], use = "p"))
+GS  <- as.numeric(cor(expr_mat_clean[, module_genes],
+                       trait_data$dex_treated, use = "p"))
+hub_df    <- data.frame(gene = module_genes, kME = kME, GS = GS)
+hub_genes <- hub_df |> filter(abs(kME) > 0.8, abs(GS) > 0.5)
+```
+
+```r
+#| label: fig-kme-gs-scatter
+#| fig-cap: "模块成员度（kME）与基因显著性（GS）的散点图（模拟数据示意）。每个点代表 turquoise 模块内的一个基因，红色点为满足枢纽基因标准（|kME| > 0.8 且 |GS| > 0.5）的候选枢纽基因。两个指标的正相关关系验证了该模块与 dex 处理状态的真实关联。"
+library(ggplot2)
+library(dplyr)
+set.seed(99)
+n_mod <- 250
+# Simulate kME-GS relationship with realistic correlation structure
+kme_sim <- rnorm(n_mod, 0, 0.4)
+gs_sim  <- 0.7 * kme_sim + rnorm(n_mod, 0, 0.25)
+# Add a cluster of hub genes with high kME and GS
+kme_hubs <- runif(25, 0.82, 0.97)
+gs_hubs  <- runif(25, 0.52, 0.88)
+hub_sim_df <- data.frame(
+    kME = c(kme_sim, kme_hubs),
+    GS  = c(gs_sim, gs_hubs)
+) |> mutate(is_hub = abs(kME) > 0.8 & abs(GS) > 0.5)
+
+target_module <- "turquoise"
+
+ggplot(hub_sim_df, aes(x = kME, y = GS, color = is_hub)) +
+    geom_point(alpha = 0.6, size = 1.5) +
+    scale_color_manual(values = c("grey70", "#d62728"),
+                       labels = c("Non-hub", "Hub gene candidate")) +
+    geom_vline(xintercept = c(-0.8, 0.8), linetype = "dashed",
+               color = "grey40", linewidth = 0.4) +
+    geom_hline(yintercept = c(-0.5, 0.5), linetype = "dashed",
+               color = "grey40", linewidth = 0.4) +
+    labs(x = paste0("Module Membership (kME, ", target_module, " module)"),
+         y = "Gene Significance (GS, dex treatment)",
+         color = NULL) +
+    theme_bw(base_size = 12) +
+    theme(legend.position = "top")
+```
+
+## 枢纽基因的 GO 功能富集验证
+
+```r
+# GO enrichment for hub genes (requires hub_genes object from WGCNA pipeline)
+library(clusterProfiler)
+library(org.Hs.eg.db)
+hub_entrez <- bitr(hub_genes$gene, fromType = "ENSEMBL",
+                   toType = "ENTREZID", OrgDb = org.Hs.eg.db)
+go_hub <- enrichGO(gene = hub_entrez$ENTREZID, OrgDb = org.Hs.eg.db,
+                   ont = "BP", pAdjustMethod = "BH",
+                   pvalueCutoff = 0.05, qvalueCutoff = 0.2)
+```
+
+```r
+#| label: fig-hub-go
+#| fig-cap: "目标模块枢纽基因的 GO 生物过程富集分析结果（使用 airway DEG 替代演示）。实际分析中，输入基因集为 WGCNA 枢纽基因；此处用 airway dex vs control 的显著差异表达基因代替，以展示相同的可视化格式。"
+#| message: false
+#| warning: false
+library(clusterProfiler)
+library(org.Hs.eg.db)
+library(DESeq2)
+library(airway)
+
+data(airway)
+dds_go <- DESeqDataSet(airway, design = ~ cell + dex)
+dds_go <- dds_go[rowSums(counts(dds_go)) > 10, ]
+dds_go <- DESeq(dds_go, quiet = TRUE)
+res_go <- results(dds_go, contrast = c("dex", "trt", "untrt"))
+sig_go <- rownames(subset(res_go, padj < 0.01 & abs(log2FoldChange) > 1.5))
+
+gmap <- bitr(sig_go, fromType = "ENSEMBL", toType = "ENTREZID",
+             OrgDb = org.Hs.eg.db, drop = TRUE)
+go_demo <- enrichGO(gene = gmap$ENTREZID, OrgDb = org.Hs.eg.db,
+                    ont = "BP", pAdjustMethod = "BH",
+                    pvalueCutoff = 0.05, qvalueCutoff = 0.2)
+if (!is.null(go_demo) && nrow(go_demo@result) > 0) {
+    dotplot(go_demo, showCategory = 12,
+            title = "GO BP: airway DEGs (illustrative hub-gene enrichment format)")
+}
+```
+
+---
+
+# WGCNA 与 DEA 结果的整合
+
+WGCNA 和 DEA 是互补而非相互替代的分析视角。将两者整合可以回答：差异表达基因是否集中富集在某个特定的共表达模块中？
+
+```r
+# Load DESeq2 results from Chapter 4
+# dds_result <- results(dds, contrast = c("dex", "trt", "untrt"))
+# Assume dea_sig contains significant DEGs (padj < 0.05, |log2FC| > 1)
+
+# Check enrichment of DEGs in WGCNA modules
+deg_module_overlap <- table(
+    module_colors[names(module_colors) %in% rownames(dea_sig)]
+) |> sort(decreasing = TRUE)
+
+cat("DEG distribution across WGCNA modules:\n")
+print(deg_module_overlap)
+
+# Fisher's exact test for enrichment in target module
+total_genes     <- length(module_colors)
+module_size     <- sum(module_colors == target_module)
+deg_total       <- nrow(dea_sig)
+deg_in_module   <- deg_module_overlap[target_module]
+
+fisher_mat <- matrix(
+    c(deg_in_module,
+      module_size - deg_in_module,
+      deg_total - deg_in_module,
+      total_genes - module_size - deg_total + deg_in_module),
+    nrow = 2
+)
+fisher.test(fisher_mat, alternative = "greater")
+```
+
+---
+
+# WGCNA 的局限性与注意事项
+
+:::warning
+**关键局限性：**
+
+1. **样本量要求**：WGCNA 对样本量敏感，< 15 个样本时软阈值拟合不稳定，模块边界不可靠。对于小样本数据，应提高 `mergeCutHeight`，得到更大粒度的模块，或改用 CEMiTool 等对小样本更稳健的工具。
+
+2. **无向网络**：WGCNA 建立的是基于相关性的无向网络，无法推断调控方向（A 调控 B 或 B 调控 A）。专题 5.6 将介绍如何使用 GENIE3 为共表达模块添加方向性调控边。
+
+3. **批次效应敏感性**：若数据存在强批次效应（如不同批次采集的样本），WGCNA 发现的模块可能反映批次差异而非生物学信号。应在 WGCNA 分析前使用 limma `removeBatchEffect` 或 ComBat 处理批次效应，而不是在 WGCNA 模型中包含批次变量。
+
+4. **共线性问题**：若所有样本均属于同一处理组或细胞系，则 cell 变量与 dex 变量可能高度共线，模块-表型关联结果应结合实验设计谨慎解读。
+:::
+
+---
+
+# 课后自测 (Post-Lesson Quiz)
+
+1. WGCNA 中软阈值（$\beta$）的选择原则是什么？为什么不直接使用硬阈值（将相关系数低于某阈值的边设为 0）来构建网络？
+
+2. 模块特征基因（Module Eigengene, ME）的数学定义是什么？为什么使用 ME 而非模块内基因的平均表达量来代表模块整体活性？
+
+3. 拓扑重叠矩阵（TOM）相比直接使用邻接矩阵有什么优势？TOM 值高意味着两个基因在网络中处于什么关系？
+
+4. 在模块-表型关联热图中，如果某模块的 ME 与 dex 处理的相关系数为 -0.85（P = 0.003），这意味着什么生物学含义？
+
+5. 枢纽基因的标准通常定义为 $|\text{kME}| > 0.8$ 且 $|\text{GS}| > 0.5$。请解释这两个指标各自量化的是什么，为什么需要同时满足两个条件？
+
+6. WGCNA 的 `mergeCutHeight` 参数控制什么？将其从 0.25 改为 0.4 会对分析结果产生什么影响？
+
+7. 为什么 WGCNA 分析应在 VST 或 rlog 归一化后的数据上进行，而不是直接使用原始计数数据？
+
+8. 一位研究者在 12 个样本上运行 WGCNA，发现软阈值自动选择失败（$R^2$ 始终低于 0.85）。这种情况的可能原因是什么？如何处理？
+
+<details>
+<summary><strong>参考答案 (Reference Answers)</strong></summary>
+
+1. *软阈值选择原则：取满足无标度拓扑拟合度 $R^2 \geq 0.85$ 的最小 $\beta$ 值，同时要求平均连接度 > 100。不直接使用硬阈值的原因：（1）硬阈值的切断值选择是任意的，结果对阈值敏感；（2）硬阈值会导致信息损失（低于阈值的真实弱关联被完全丢弃）；（3）软阈值化产生的加权网络对噪声更鲁棒，模块边界更稳定。*
+
+2. *ME 是模块内所有基因表达矩阵的第一主成分向量（长度等于样本数）。使用第一主成分而非平均值的原因：（1）主成分考虑了基因间的协方差结构，比简单平均更充分利用了模块内的信息；（2）对于方向相反的调控关系（负相关共表达），平均值会相互抵消，而 PCA 能正确捕捉主要变异方向；（3）第一主成分通常能解释模块内 > 40% 的方差，是模块整体活性的高效摘要。*
+
+3. *TOM 的优势：TOM 衡量的是两个基因在网络邻域结构上的相似性（共同邻居的数量），而非仅仅是两者之间的直接连接强度。TOM 对测量噪声（单个基因表达的随机波动）更鲁棒，因为共同邻居的信息对随机误差起到了平均效应。TOM 值高（接近 1）意味着两个基因不仅直接高度相关，还与大量相同的其他基因相关，属于紧密的功能邻域成员。*
+
+4. *ME 与 dex 处理相关系数为 -0.85 意味着：该模块的整体表达活性在 dex 处理样本中显著低于未处理样本，即 dex 处理**下调**了该模块的整体活性。P = 0.003 表明这种负相关在统计上显著（而非随机）。生物学上，该模块内的基因可能代表了被 dex（糖皮质激素）所抑制的炎症或免疫应答相关通路。*
+
+5. *kME（模块成员度）量化基因表达量与模块特征基因的相关性，反映该基因与模块整体活性的同步程度——高 kME 意味着该基因是模块的核心成员。GS（基因显著性）量化基因表达量与目标表型的直接相关性，反映基因的表型关联强度。同时满足两个条件的生物学意义：枢纽基因不仅在网络中处于核心位置（高 kME），而且其表达量直接与表型相关（高 GS），因此最可能是驱动该模块表型效应的功能关键节点。仅满足高 kME 的基因可能只是模块的"结构核心"但与表型无关；仅满足高 GS 的基因可能是表型关联基因但不属于模块的调控核心。*
+
+6. *`mergeCutHeight` 控制模块合并的相似性阈值：高度 $h$ 对应 ME 之间的相关系数 $r = 1 - h$（因为聚类使用的是 1-相关距离）。`mergeCutHeight = 0.25` 意味着 ME 相关系数 > 0.75 的模块被合并。将其从 0.25 改为 0.4，相当于合并 ME 相关系数 > 0.6 的模块，会产生更少、更大的模块（聚合程度更高）。这可能将具有相似但不完全相同功能的模块合并在一起，适合样本量较小或基因数较少的情形；但在大样本中可能过度合并，损失生物学分辨率。*
+
+7. *原始计数数据不满足 WGCNA 的基本假设：（1）WGCNA 基于皮尔逊相关系数，要求数据近似正态分布；原始计数数据高度右偏，方差与均值正相关（过度离散），违反正态假设。（2）低表达基因的计数受随机采样噪声主导，直接计算相关系数会放大噪声。VST（方差稳定化变换）通过方差稳定化将数据转化为近似正态分布，且方差不再依赖于均值，是 WGCNA 的推荐输入。*
+
+8. *可能原因：（1）样本量过少（12 < 15），统计功效不足以估计稳定的无标度拓扑；（2）数据中存在强批次效应或离群样本，导致基因相关结构不呈无标度分布；（3）数据经过了过度的归一化或去除了太多基因，残差方差过低。处理方法：（1）首先检查并去除离群样本；（2）对数据进行批次效应校正；（3）若 $R^2$ 最高也只有 0.7–0.8，可手动选择 $\beta = 12$（signed 网络）或 $\beta = 6$（unsigned 网络）作为经验默认值；（4）考虑使用对小样本更稳健的工具（如 CEMiTool）。*
+
+</details>

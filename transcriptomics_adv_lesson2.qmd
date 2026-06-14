@@ -1,2 +1,487 @@
-# 第五章 课时2
+---
+title: "可变多腺苷酸化分析与长读长转录组展望"
+date: today
+format:
+  html:
+    code-fold: false
+    toc: true
+    toc-depth: 3
+    number-sections: true
+    theme: cosmo
+crossref:
+  fig-title: 图
+  fig-prefix: 图
+  tbl-title: 表
+  tbl-prefix: 表
+  chapters: false
+---
 
+# 专题概述
+
+可变多腺苷酸化（Alternative Polyadenylation, APA）是真核生物重要的转录后调控方式。许多基因不只有一个多腺苷酸化位点（Polyadenylation Site, PAS）；细胞选择不同 PAS 时，会产生 3' 非翻译区（3' UTR）长度不同的转录本。一般而言，长 3' UTR 含有更多 miRNA 结合位点和 RNA 结合蛋白（RBP）识别元件，因此更容易影响 mRNA 稳定性、定位和翻译效率。增殖活跃的细胞和部分肿瘤细胞常出现 3' UTR 缩短，这可能帮助转录本避开部分 miRNA 介导的抑制。
+
+本专题重点比较两类 APA 分析思路：DaPars2 从 RNA-seq 覆盖度中寻找变化点（changepoint），适合发现未注释 PAS；QAPA 依赖已知 PAS 注释，适合在注释完善的物种中进行稳定定量。专题最后简要介绍长读长全长转录组技术（PacBio IsoSeq、Oxford Nanopore direct RNA-seq）和 SQANTI3 质量评估，为第 7 章的多组学整合分析作铺垫。
+
+**学习目标**：理解 APA 的生物学机制及其在增殖与分化调控中的作用；掌握 PDUI 与 ΔPDUI 指标的定义与解读；能够运行 DaPars2 完整流程并解读显著 APA 基因；了解 QAPA 的适用场景与 DaPars2 的互补关系；理解长读长测序技术在全长转录本重建方面相对于短读长的本质优势。
+
+---
+
+# 可变多腺苷酸化的生物学基础
+
+![可变多腺苷酸化（APA）示意图。同一基因的 3' UTR 区域含有近端（proximal）与远端（distal）两个多腺苷酸化位点（PAS），细胞通过选择不同位点产生 3' UTR 长度不同的转录本变体：选择近端 PAS 产生短 3' UTR，选择远端 PAS 产生长 3' UTR。](https://upload.wikimedia.org/wikipedia/commons/d/df/Alternative_polyadenylation.svg){#fig-alternative-polyadenylation width=85%}
+
+## 多腺苷酸化位点的分子识别机制
+
+mRNA 的 3' 端加工可以理解为"切割 + 加尾"两步。前体 mRNA（pre-mRNA）先在 PAS 附近被切割，随后 poly-A 聚合酶添加 poly-A 尾，形成成熟 mRNA。PAS 附近通常含有六核苷酸信号（Hexamer Signal），其中 AATAAA 最常见，ATTAAA、AGTAAA 等变体也较常见。裂解和多腺苷酸化特异性因子复合物（Cleavage and Polyadenylation Specificity Factor, CPSF）识别这些信号，并协助确定切割位置。
+
+当一个基因含有多个功能性 PAS 时，近端 PAS（proximal PAS）和远端 PAS（distal PAS）会发生竞争（@fig-alternative-polyadenylation）。选择近端 PAS 会提前终止转录本，产生短 3' UTR；选择远端 PAS 则产生长 3' UTR。这一选择受多种 RBP 调控，例如 CFIm25/CFIm68 常促进远端 PAS 使用，FIP1 常促进近端 PAS 使用。
+
+## APA 的功能后果与生物学意义
+
+3' UTR 长度变化主要通过以下方式影响转录本命运：
+
+- **miRNA 介导的抑制**：长 3' UTR 通常包含更多 miRNA 结合位点，更容易发生 mRNA 降解或翻译抑制。3' UTR 缩短可减少这类调控元件。
+- **mRNA 稳定性**：许多 mRNA 降解信号位于 3' UTR。若 APA 去除这些区域，转录本半衰期可能延长。
+- **蛋白质亚细胞定位**：某些基因（如 *MBP*、*Arc*）的 3' UTR 含有轴突靶向信号（zipcode 序列），APA 可影响蛋白质的局部合成位点。
+- **内含子 APA（Intronic APA）**：若替代 PAS 位于内含子中，转录本可提前终止，产生 C 端截短的蛋白质异构体。这类事件可能直接改变蛋白质结构和功能。
+
+:::note
+**核心区别：**
+
+APA 与可变剪接（专题 5.1）都可以从标准 Bulk RNA-seq BAM 文件中分析，但关注点不同。可变剪接主要看外显子-外显子连接处的 junction reads，并用 PSI 描述外显子是否被纳入；APA 主要看 3' UTR 覆盖度是否在某个位置突然下降。简言之，可变剪接更常改变蛋白质异构体，APA 更常改变转录后调控信号。
+:::
+
+---
+
+# DaPars2：基于覆盖密度的 APA 检测
+
+## 算法原理
+
+DaPars2（Dynamic Analysis of Alternative Polyadenylation from RNA-seq，version 2）的直觉很简单：如果样本偏向使用近端 PAS，那么近端 PAS 之后的 3' UTR 延伸段会缺少 reads，覆盖度会明显下降；如果偏向使用远端 PAS，整个 3' UTR 的覆盖度会相对连续。DaPars2 因此在每个基因的 3' UTR 内寻找覆盖度变化点，并将该位置解释为潜在近端 PAS（@fig-changepoint-detection）。这一策略不要求事先知道 PAS 坐标。
+
+![变化点检测的经典示例：尼罗河年度流量数据中的突变点检测（贝叶斯方法）。算法在一维信号序列中自动定位统计特征（如均值）发生骤变的位置（约 1900 年阿斯旺低坝建成前后）。DaPars2 将同类思想应用于 3' UTR 的读段覆盖密度曲线，把覆盖密度骤降的断点判定为潜在的近端 PAS。](https://upload.wikimedia.org/wikipedia/commons/d/df/Nile_river_flow_bayesian_changepoint_detection.png){#fig-changepoint-detection width=85%}
+
+核心量化指标为**PDUI（Percent Distal site Usage Index）**，定义为：
+
+$$\text{PDUI} = \frac{\text{长 3' UTR 转录本读段数}}{\text{长 3' UTR 转录本读段数} + \text{短 3' UTR 转录本读段数}}$$
+
+PDUI 的值在 0 到 1 之间。接近 1 表示远端 PAS 使用比例高，即长 3' UTR 更多；接近 0 表示近端 PAS 使用比例高，即短 3' UTR 更多。两组样本间的差异指标 **ΔPDUI** 定义为：
+
+$$\Delta\text{PDUI} = \text{PDUI}_{\text{case}} - \text{PDUI}_{\text{control}}$$
+
+ΔPDUI > 0 表示处理条件下 3' UTR 延长；ΔPDUI < 0 表示 3' UTR 缩短。显著性检验采用 Wald 检验，多重检验校正采用 Benjamini-Hochberg FDR。
+
+## DaPars2 完整分析流程
+
+DaPars2 通常分两步运行。第一步把 BAM 文件转换为 3' UTR 覆盖度文件；第二步在覆盖度曲线上寻找变化点，并比较两组样本的 PDUI。下面代码展示完整流程，实际运行前需将 DaPars2 脚本路径和染色体大小文件替换为本地路径。
+
+```bash
+# DaPars2 analysis on airway dataset
+# Input: HISAT2-aligned BAM files from /Users/angdong/Documents/bio_example/bulkRNA/bam/
+
+BAM_DIR="/Users/angdong/Documents/bio_example/bulkRNA/bam"
+REF_GTF="/Users/angdong/Documents/bio_example/bulkRNA/ref/GRCh38.109.gtf"
+GENOME_FA="/Users/angdong/Documents/bio_example/bulkRNA/ref/Homo_sapiens.GRCh38.dna.primary_assembly.fa"
+OUTDIR="/Users/angdong/Documents/bio_example/bulkRNA/apa"
+
+mkdir -p ${OUTDIR}
+
+# Step 1: Generate genome-wide coverage files using samtools
+# DaPars2 requires per-base bedgraph coverage (strand-specific for RF libraries)
+for sample in SRR1039508 SRR1039510 SRR1039512 SRR1039514 SRR1039516; do
+    BAM="${BAM_DIR}/${sample}_1M.sorted.bam"
+    # Forward strand (reads mapped to + strand from RF library = reverse complement)
+    samtools view -b -f 128 -F 16 ${BAM} \
+        | bedtools genomecov -ibam - -bg -split \
+        > ${OUTDIR}/${sample}_fwd.bedgraph
+    # Reverse strand
+    samtools view -b -f 80 ${BAM} \
+        | bedtools genomecov -ibam - -bg -split \
+        >> ${OUTDIR}/${sample}_fwd.bedgraph
+    sort -k1,1 -k2,2n ${OUTDIR}/${sample}_fwd.bedgraph \
+        > ${OUTDIR}/${sample}_sorted.bedgraph
+done
+
+# Step 2: Build 3' UTR annotation from GTF (DaPars2 requires UTR BED file)
+# Extract last exon per transcript to define 3' UTR regions
+python /path/to/DaPars2/DaPars_Extract_Anno.py \
+    -b ${REF_GTF} \
+    -s /path/to/hg38_chr_size.txt \
+    -o ${OUTDIR}/hg38_extracted_3UTR.bed
+
+# Step 3: Run DaPars2 differential APA analysis
+# Condition 1: untreated (4 samples)
+# Condition 2: dex-treated (1 sample in teaching subset; use all replicates in real analysis)
+python /path/to/DaPars2/DaPars2_Multi_Sample_Multi_Chr.py \
+    -c ${OUTDIR}/hg38_extracted_3UTR.bed \
+    -A ${OUTDIR}/SRR1039508_sorted.bedgraph,${OUTDIR}/SRR1039510_sorted.bedgraph,\
+${OUTDIR}/SRR1039512_sorted.bedgraph,${OUTDIR}/SRR1039514_sorted.bedgraph \
+    -B ${OUTDIR}/SRR1039516_sorted.bedgraph \
+    -o ${OUTDIR}/dapars2_output \
+    -n 15 \           # minimum read coverage threshold
+    -p 0.1            # FDR cutoff for initial filtering
+
+# Output: dapars2_output_All_Prediction_Results.txt
+```
+
+:::tip
+**链特异性参数：**
+
+APA 分析对读段方向很敏感，因为 3' UTR 常与相邻基因或反义转录信号接近。airway 数据集使用 dUTP 方案建库（fr-firststrand，HISAT2 参数为 `--rna-strandness RF`），生成 bedgraph 时必须保留正确链向。若链特异性设置错误，错误链的 reads 可能制造虚假覆盖度变化。可用 RSeQC 的 `infer_experiment.py` 快速验证链特异性。
+:::
+
+## DaPars2 结果解读
+
+DaPars2 结果解读的重点是三列：对照组 PDUI、处理组 PDUI 和 ΔPDUI。筛选时通常同时要求 FDR 达标和 `abs(delta_pdui)` 足够大；只看 P 值容易得到统计显著但效应很小的事件。
+
+```r
+# Parse and visualize DaPars2 output
+library(dplyr)
+library(ggplot2)
+library(readr)
+
+# Read DaPars2 result table
+dapars_result <- read_tsv(
+    "/Users/angdong/Documents/bio_example/bulkRNA/apa/dapars2_output_All_Prediction_Results.txt"
+) |>
+    rename(
+        gene = Gene,
+        pdui_control = PDUI_Group_1,
+        pdui_case = PDUI_Group_2,
+        delta_pdui = `PDUI_Group_2 - PDUI_Group_1`,
+        pvalue = P_val,
+        fdr = adjusted.P_val
+    )
+
+# Filter significant APA events
+sig_apa <- dapars_result |>
+    filter(
+        fdr < 0.05,
+        abs(delta_pdui) > 0.2,
+        !is.na(pdui_control),
+        !is.na(pdui_case)
+    ) |>
+    mutate(
+        apa_direction = case_when(
+            delta_pdui > 0  ~ "3' UTR Lengthening",
+            delta_pdui < 0  ~ "3' UTR Shortening"
+        )
+    )
+
+cat("Total significant APA events:", nrow(sig_apa), "\n")
+cat("3' UTR lengthening:", sum(sig_apa$delta_pdui > 0), "\n")
+cat("3' UTR shortening:",  sum(sig_apa$delta_pdui < 0), "\n")
+```
+
+```r
+#| label: fig-dapars2-volcano
+#| fig-cap: "DaPars2 差异 APA 分析结果火山图。横轴为 ΔPDUI（正值表示 dex 处理后 3' UTR 延长，负值表示缩短），纵轴为 -log10(FDR)。虚线标注显著性阈值（FDR = 0.05，|ΔPDUI| = 0.2）。"
+library(dplyr)
+library(ggplot2)
+
+# Simulated DaPars2 output for illustration
+set.seed(42)
+n_genes <- 3000
+dapars_sim <- data.frame(
+    delta_pdui = c(
+        rnorm(n_genes * 0.85, mean = 0,    sd = 0.08),
+        rnorm(n_genes * 0.08, mean = -0.35, sd = 0.10),
+        rnorm(n_genes * 0.07, mean =  0.30, sd = 0.10)
+    ),
+    fdr = runif(n_genes)
+) |>
+    mutate(
+        fdr = ifelse(abs(delta_pdui) > 0.15, fdr * 0.01, fdr),
+        sig = fdr < 0.05 & abs(delta_pdui) > 0.2,
+        color_group = case_when(
+            sig & delta_pdui > 0 ~ "Lengthening (sig.)",
+            sig & delta_pdui < 0 ~ "Shortening (sig.)",
+            TRUE ~ "Not significant"
+        )
+    )
+
+ggplot(dapars_sim, aes(x = delta_pdui, y = -log10(fdr + 1e-10),
+                        color = color_group)) +
+    geom_point(alpha = 0.5, size = 0.8) +
+    geom_hline(yintercept = -log10(0.05), linetype = "dashed",
+               color = "grey50", linewidth = 0.6) +
+    geom_vline(xintercept = c(-0.2, 0.2), linetype = "dashed",
+               color = "grey50", linewidth = 0.6) +
+    scale_color_manual(values = c(
+        "Lengthening (sig.)" = "#d62728",
+        "Shortening (sig.)"  = "#1f77b4",
+        "Not significant"    = "grey70"
+    )) +
+    labs(x = "ΔPDUI (dex - control)",
+         y = expression(-log[10](FDR)),
+         color = NULL,
+         caption = "Simulated data for illustration; replace with actual DaPars2 output") +
+    theme_bw(base_size = 12) +
+    theme(legend.position = "top")
+```
+
+```r
+#| label: fig-dapars2-pdui-scatter
+#| fig-cap: "各样本 PDUI 值散点图。每个点代表一个基因在对照组（横轴）与 dex 处理组（纵轴）的 PDUI 值，对角线为参考线（无差异）。显著缩短的基因（ΔPDUI < -0.2，FDR < 0.05）标注为蓝色，显著延长的基因标注为红色。"
+library(ggplot2)
+
+set.seed(123)
+pdui_sim <- data.frame(
+    pdui_ctrl = runif(3000, 0.1, 0.95),
+    noise     = rnorm(3000, 0, 0.08)
+) |>
+    mutate(
+        pdui_dex = pmin(pmax(pdui_ctrl + noise, 0.01), 0.99),
+        delta     = pdui_dex - pdui_ctrl,
+        group     = case_when(
+            delta < -0.2 ~ "Shortening",
+            delta >  0.2 ~ "Lengthening",
+            TRUE         ~ "Unchanged"
+        )
+    )
+
+ggplot(pdui_sim, aes(x = pdui_ctrl, y = pdui_dex, color = group)) +
+    geom_point(alpha = 0.4, size = 0.7) +
+    geom_abline(slope = 1, intercept = 0, linetype = "dashed",
+                color = "black", linewidth = 0.6) +
+    scale_color_manual(values = c(
+        "Shortening"  = "#1f77b4",
+        "Lengthening" = "#d62728",
+        "Unchanged"   = "grey70"
+    )) +
+    labs(x = "PDUI (Control)", y = "PDUI (Dex-treated)", color = NULL,
+         caption = "Simulated data for illustration") +
+    coord_fixed(xlim = c(0, 1), ylim = c(0, 1)) +
+    theme_bw(base_size = 12) +
+    theme(legend.position = "top")
+```
+
+---
+
+# QAPA：基于已注释 3' UTR 的精确定量
+
+## QAPA 的设计思路与 DaPars2 的互补关系
+
+QAPA（Quantification of Alternative Polyadenylation）采用注释驱动的思路。它先根据 PolyA_DB 或 PolyASite 等数据库构建 3' UTR 参考序列，再用 Salmon 对这些候选 3' UTR 进行定量，最后报告每个 PAS 的相对使用比例（PAU，Poly-A Usage）。
+
+因此，QAPA 适合"已知 PAS 的精确定量"，DaPars2 适合"未知 PAS 的发现"。两者不是互相替代，而是回答不同问题：
+
+| 场景 | 推荐工具 |
+|---|---|
+| 模式生物，PAS 注释完善 | QAPA（定量精度高） |
+| 非模式生物或样本类型特异 PAS | DaPars2（无需预注释） |
+| 发现新型 PAS | DaPars2 |
+| 低测序深度样本 | QAPA（伪比对更敏感） |
+
+```bash
+# QAPA workflow
+# Requires: qapa, salmon, PolyASite 2.0 annotation
+
+# Step 1: Build QAPA reference from PolyASite annotation
+qapa build \
+    --db /path/to/atlas.clusters.2.0.GRCh38.96.bed \
+    -g /Users/angdong/Documents/bio_example/bulkRNA/ref/GRCh38.109.gtf \
+    -f /Users/angdong/Documents/bio_example/bulkRNA/ref/Homo_sapiens.GRCh38.dna.primary_assembly.fa \
+    > qapa_3utrs.fa
+
+# Step 2: Build Salmon index on QAPA reference
+salmon index \
+    -t qapa_3utrs.fa \
+    -i qapa_salmon_index \
+    --threads 8
+
+# Step 3: Quantify each sample with Salmon
+for sample in SRR1039508 SRR1039510 SRR1039512 SRR1039514 SRR1039516; do
+    TRIM_DIR="/Users/angdong/Documents/bio_example/bulkRNA/qc/fastp"
+    salmon quant \
+        -i qapa_salmon_index \
+        -l ISR \
+        -1 ${TRIM_DIR}/${sample}_1_1M_trimmed.fastq.gz \
+        -2 ${TRIM_DIR}/${sample}_2_1M_trimmed.fastq.gz \
+        -p 8 \
+        --validateMappings \
+        -o qapa_quant/${sample}
+done
+
+# Step 4: Compute PAU (Poly-A Usage) per PAS
+qapa quant \
+    --db /path/to/atlas.clusters.2.0.GRCh38.96.bed \
+    qapa_quant/*/quant.sf \
+    > qapa_pau_results.txt
+```
+
+上述流程依赖外部 PAS 注释文件，因此更适合作为方法展示。若研究目标是发现样本特异的新 PAS，应优先使用 DaPars2 或其他无注释发现工具，再用独立数据进行验证。
+
+```r
+# Compare DaPars2 and QAPA results for genes detected by both methods
+library(dplyr)
+library(ggplot2)
+
+# Read QAPA output (PAU per PAS per sample)
+qapa_result <- read.table("qapa_pau_results.txt",
+                           header = TRUE, sep = "\t") |>
+    filter(!is.na(PAU)) |>
+    group_by(Gene) |>
+    # Compute delta PAU for proximal vs distal PAS
+    summarize(
+        delta_pau = mean(PAU[grepl("proximal", APA_ID)], na.rm = TRUE) -
+                    mean(PAU[grepl("distal",   APA_ID)], na.rm = TRUE),
+        .groups = "drop"
+    )
+```
+
+---
+
+# APA 下游功能分析
+
+## 差异 APA 基因的 GO 富集分析
+
+识别显著 APA 基因后，可以用 GO 富集分析概括这些基因涉及的生物学过程。需要注意的是，APA 改变的是转录本调控潜力，不一定改变基因总表达量。因此，差异 APA 基因集和差异表达基因集（DEA，参见第4章）可能指向不同的功能类别。
+
+```r
+library(clusterProfiler)
+library(org.Hs.eg.db)
+library(dplyr)
+
+# Significant APA genes (use results from DaPars2 analysis above)
+# Here we use simulated gene list for demonstration
+sig_apa_genes <- c(
+    "DICER1", "IGF2BP1", "CCND1", "MYC", "VEGFA",
+    "ELAVL1", "PTBP1", "KHSRP", "ZFC3H1", "NUDT21"
+)
+
+# Convert gene symbols to Entrez IDs
+gene_entrez <- bitr(sig_apa_genes, fromType = "SYMBOL",
+                    toType = "ENTREZID", OrgDb = org.Hs.eg.db)
+
+# GO enrichment (Biological Process)
+go_bp <- enrichGO(
+    gene          = gene_entrez$ENTREZID,
+    OrgDb         = org.Hs.eg.db,
+    ont           = "BP",
+    pAdjustMethod = "BH",
+    pvalueCutoff  = 0.05,
+    readable      = TRUE
+)
+```
+
+```r
+#| label: fig-apa-go
+#| fig-cap: "差异 APA 基因集 GO 生物过程富集分析结果（前 15 条目）。点的大小代表富集基因数量，颜色代表校正后 p 值。"
+library(ggplot2)
+library(dplyr)
+
+# Simulated GO enrichment results
+go_sim <- data.frame(
+    Description = c(
+        "mRNA 3'-end processing", "regulation of mRNA stability",
+        "RNA splicing", "miRNA-mediated gene silencing",
+        "cell proliferation", "response to glucocorticoid",
+        "translation regulation", "cytoplasmic mRNA processing body",
+        "poly(A) RNA binding", "RNA binding"
+    ),
+    Count = c(8, 7, 6, 6, 5, 5, 4, 4, 3, 3),
+    p_adj = c(0.0001, 0.0003, 0.001, 0.002, 0.005,
+              0.006, 0.01, 0.012, 0.02, 0.03)
+) |>
+    mutate(Description = reorder(Description, -p_adj))
+
+ggplot(go_sim, aes(x = -log10(p_adj), y = Description,
+                    size = Count, color = p_adj)) +
+    geom_point() +
+    scale_color_gradient(low = "#d62728", high = "#aec7e8",
+                         name = "Adjusted p") +
+    scale_size_continuous(range = c(3, 8), name = "Gene count") +
+    labs(x = expression(-log[10]("Adjusted p-value")),
+         y = NULL,
+         caption = "Simulated data for illustration") +
+    theme_bw(base_size = 11) +
+    theme(legend.position = "right")
+```
+
+## APA 与差异剪接结果的联合解读
+
+将专题 5.1 的 rMATS 结果与本专题的 DaPars2 结果取交集，可以找到同时发生可变剪接和 APA 的基因。这类基因可能同时改变蛋白质异构体和 3' UTR 调控元件，值得优先检查。
+
+```r
+library(ggplot2)
+library(VennDiagram)
+library(grid)
+
+# Simulated gene sets from rMATS and DaPars2
+# Replace with actual results from respective analyses
+rmats_sig_genes  <- paste0("GENE_", sample(1:500, 120, replace = FALSE))
+dapars_sig_genes <- paste0("GENE_", sample(1:500, 95,  replace = FALSE))
+
+overlap_genes <- intersect(rmats_sig_genes, dapars_sig_genes)
+cat("Genes regulated by both AS and APA:", length(overlap_genes), "\n")
+
+# Fisher's exact test for enrichment significance
+contingency <- matrix(
+    c(length(overlap_genes),
+      length(rmats_sig_genes)  - length(overlap_genes),
+      length(dapars_sig_genes) - length(overlap_genes),
+      500 - length(union(rmats_sig_genes, dapars_sig_genes))),
+    nrow = 2
+)
+fisher.test(contingency)
+```
+
+---
+
+# 长读长转录组学展望
+
+:::note
+**长读长转录组学展望：全长异构体与 RNA 修饰直接检测**
+
+短读长测序通常只能看到转录本的局部片段。当两个异构体共享大部分外显子、只在少数剪接位点不同的时候，短读段很难判断每个片段来自哪一条完整转录本。长读长测序可以直接读取完整 cDNA 或 RNA 分子，因此更适合解析全长异构体结构。
+
+**PacBio IsoSeq** 先把 cDNA 做成闭合环形模板（SMRTbell），再对同一分子多轮测序并生成共识序列（CCS，Circular Consensus Sequencing）。多轮共识可以显著降低随机错误，形成高准确率的 HiFi reads。常见流程包括引物去除（`lima`）、全长非嵌合读段过滤（`isoseq3 refine`）、聚类（`isoseq3 cluster`）和基因组比对（`pbmm2`）。
+
+**Oxford Nanopore direct RNA-seq** 可直接测 RNA 分子，不需要逆转录，因此能够保留 m⁶A、假尿苷等修饰相关信号。它在 RNA 修饰组学（Epitranscriptomics）中具有独特优势。常用比对工具为 minimap2，direct RNA-seq 通常使用 `-ax splice -uf` 等参数。
+
+**SQANTI3**（Structural and Quality Annotation of Novel Transcript Isoforms version 3）用于评估长读长转录本结构。它会把转录本分为 FSM（Full Splice Match）、ISM（Incomplete Splice Match）、NIC（Novel In Catalog）、NNC（Novel Not in Catalog）等类别，并结合 CAGE peak、poly-A signal 等证据判断 5' 端和 3' 端是否可信。
+
+本专题只强调长读长技术的核心价值：它能把"局部片段"提升为"完整转录本"。IsoSeq3、Nanopore 碱基识别、SQANTI3 过滤和短长读长联合分析将在第 7 章系统展开。
+:::
+
+---
+
+# 课后自测 (Post-Lesson Quiz)
+
+1. 近端 PAS（proximal PAS）和远端 PAS（distal PAS）的选择如何影响 3' UTR 长度？为什么肿瘤细胞中常见 3' UTR 缩短？
+
+2. PDUI 指标的定义是什么？ΔPDUI = -0.35 在生物学上意味着什么？
+
+3. DaPars2 在识别多腺苷酸化位点时使用了什么算法策略？与 QAPA 相比，在哪些实验场景下 DaPars2 具有优势？
+
+4. 为什么在 APA 分析中链特异性（strandedness）参数的正确设置比在常规差异表达分析中更为关键？
+
+5. 内含子 APA（Intronic APA）与 3' UTR APA 的主要功能差异是什么？
+
+6. 如果一个基因同时发生差异剪接和 3' UTR 缩短，生物学上可能意味着什么？
+
+7. PacBio HiFi reads 为什么比单次测序读段更准确？FLNC 读段的定义是什么？
+
+8. SQANTI3 中 NIC 与 NNC 类别的区别是什么？为什么 NNC 类别的转录本需要最多的额外验证？
+
+<details>
+<summary><strong>参考答案 (Reference Answers)</strong></summary>
+
+1. *近端 PAS 被选择时，转录本提前终止，形成短 3' UTR；远端 PAS 被选择时，转录本保留更长的 3' UTR。长 3' UTR 往往含有更多 miRNA 结合位点。肿瘤细胞中 3' UTR 缩短可减少这些抑制元件，使部分促增殖基因更容易维持较高表达。*
+
+2. *PDUI（Percent Distal site Usage Index）= 长 3' UTR 转录本读段数 /（长 + 短 3' UTR 转录本读段数），值域 [0, 1]，越高表示越偏向使用远端 PAS（长 3' UTR）。ΔPDUI = -0.35 表示在处理条件下，该基因的 PDUI 比对照组降低了 0.35，即处理使细胞明显偏向使用近端 PAS，导致该基因 3' UTR 显著缩短。*
+
+3. *DaPars2 使用变化点检测（changepoint detection）：在 3' UTR 覆盖度曲线上寻找突然下降的位置，并把该位置解释为潜在近端 PAS。它不依赖预先注释的 PAS，因此适合 PAS 注释不完善的物种、样本特异性 PAS 发现，以及参考数据库覆盖不足的研究。*
+
+4. *APA 分析依赖 3' UTR 局部覆盖度。如果链特异性设置错误，来自相邻基因或反义链的 reads 会污染目标 3' UTR，可能产生虚假变化点或掩盖真实变化点。常规差异表达分析多使用基因整体计数，对这类局部方向错误相对不敏感。*
+
+5. *3' UTR APA 通常不改变蛋白质编码序列，主要改变 miRNA 调控、mRNA 稳定性和翻译效率。内含子 APA 会使转录本在内含子中提前终止，可能产生 C 端截短蛋白，因而更容易直接改变蛋白质结构和功能。*
+
+6. *这说明该基因可能同时在两个层面发生变化：可变剪接改变蛋白质异构体，APA 改变 3' UTR 调控元件。若两类事件发生在同一基因上，说明该基因可能处于较强的 RNA 加工调控之下。是否发生在同一条转录本分子上，需要长读长测序进一步确认。*
+
+7. *PacBio IsoSeq 使用闭合环形模板，使同一分子可被多轮读取。多个亚读段取共识后，随机错误被校正，因此 HiFi reads 比单次测序读段更准确。FLNC（Full-Length Non-Chimeric）读段指同时含有 5' 引物和 3' 引物、且内部不含接头序列的全长非嵌合读段。*
+
+8. *NIC（Novel In Catalog）使用的是已知剪接位点的新组合；NNC（Novel Not in Catalog）包含从未在注释中出现过的新剪接供体或受体位点。NNC 更需要额外验证，因为它既可能是真实的新异构体，也可能来自测序错误、比对错误或 RT-switching 等技术伪影。*
+
+</details>

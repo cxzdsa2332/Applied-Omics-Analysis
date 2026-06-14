@@ -1,2 +1,635 @@
-# 第五章 课时4
+---
+title: "基因调控网络推断——从随机森林到动力系统"
+date: today
+format:
+  html:
+    code-fold: false
+    toc: true
+    toc-depth: 3
+    number-sections: true
+    theme: cosmo
+crossref:
+  fig-title: 图
+  fig-prefix: 图
+  tbl-title: 表
+  tbl-prefix: 表
+  chapters: false
+---
 
+# 专题概述
+
+专题 5.5 介绍的 WGCNA 能够识别共表达模块并将其与表型关联，但所建立的网络是**无向**的——它告诉我们"基因 A 和基因 B 倾向于同时高表达或同时低表达"，却无法回答"是 A 调控 B，还是 B 调控 A"。基因调控网络（Gene Regulatory Network, GRN）推断方法的目标是从表达数据中重建有向调控图：节点通常以转录因子（Transcription Factor, TF）为调控子（Regulator），有向边表示调控关系的方向与强度。
+
+本专题介绍两类方法。专题 5.6 讲解 **GENIE3/dynGENIE3**：基于随机森林特征重要性的统计学方法，适用于稳态大规模数据或时间序列数据，是目前在 BEELINE 等基准测试中表现最稳定的 GRN 推断工具之一。专题 5.7 讲解 **ODE/SINDy**：将 GRN 推断从"有向图"提升至"动力系统"层次，通过微分方程的辨识恢复调控关系的动力学参数，适用于时间分辨率较高的精细时序实验。
+
+**学习目标**：理解 GENIE3 将 GRN 推断转化为特征选择问题的核心思想；掌握随机森林特征重要性矩阵到网络的转换策略；了解 dynGENIE3 如何利用时序先后关系约束调控方向；理解 ODE 参数化建模框架与 SINDy 稀疏辨识的数学原理；能够评估 GRN 推断结果并与 WGCNA 共表达模块整合。
+
+---
+
+# GENIE3 与 dynGENIE3——基于随机森林的调控网络推断
+
+## GRN 推断问题的统计本质
+
+设有 $p$ 个基因，其稳态表达量为 $x_1, x_2, \ldots, x_p$，在 $n$ 个样本中测量。GRN 推断的目标是为每个目标基因 $j$ 找到其真实调控子集合 $\text{Reg}(j) \subseteq \{1, \ldots, p\} \setminus \{j\}$。在统计学框架下，这等价于高维变量选择问题：给定目标变量 $x_j$，在 $p-1$ 个候选预测变量中选出真正对 $x_j$ 有影响的子集。
+
+这一问题的困难在于 $p \gg n$（基因数远多于样本数），不能直接使用普通线性回归。经典解法包括：
+
+- **LASSO**：$\ell_1$ 正则化线性回归，假设调控关系是线性的，对非线性调控关系不适用。
+- **ARACNE**：基于互信息的方法，可以捕捉非线性关系，但计算代价高且对连续噪声敏感。
+- **GENIE3**：基于随机森林的非参数方法，对非线性关系天然鲁棒，无需预设调控函数形式，在 DREAM5 系统生物学挑战赛中取得最优综合表现。
+
+## GENIE3 的基础回归模型
+
+GENIE3 的基本模型非常朴素：对每一个靶基因 $j$，假设它的表达量可以由一组候选调控子的表达量预测：
+
+$$x_j = f_j(\mathbf{x}_{\mathcal{R}}) + \epsilon_j$$
+
+其中 $\mathcal{R}$ 是候选调控子集合，可以是所有其他基因，也可以是预先给定的 TF 集合；$f_j(\cdot)$ 是未知的调控函数；$\epsilon_j$ 是未建模因素与测量噪声。GENIE3 不试图一次性估计完整的联合网络，而是把问题拆成 $p$ 个独立的监督学习任务：
+
+$$\widehat{f}_j = \arg\min_f \sum_{s=1}^{n} \left(x_{sj} - f(\mathbf{x}_{s,\mathcal{R}})\right)^2$$
+
+在这个框架下，一条候选边 $i \to j$ 的强度并不是通过回归系数给出，而是通过"基因 $i$ 对预测靶基因 $j$ 的贡献有多大"来衡量。GENIE3 使用随机森林或极端随机树（Extra-Trees）拟合 $\widehat{f}_j$，再将树模型中的变量重要性作为边权：
+
+$$W_{ij} = \text{Imp}_{j}(i)$$
+
+更具体地，若某棵树在某个节点用调控子 $i$ 进行分裂，并使靶基因 $j$ 的表达方差下降了 $\Delta Var$，则这次分裂为 $i \to j$ 累积一部分重要性。对所有树、所有由 $i$ 触发的分裂求和并归一化，即得到 $W_{ij}$。因此，$W_{ij}$ 可以理解为：
+
+> 如果没有基因 $i$ 这个特征，预测靶基因 $j$ 的表达会损失多少信息？
+
+这一建模方式有三个重要后果：
+
+- GENIE3 可以捕捉非线性调控关系，例如阈值效应、饱和效应和简单的交互效应。
+- 输出的 $W_{ij}$ 是**预测重要性**，不是生物化学意义上的激活/抑制强度，也不包含正负调控方向。
+- 因为每个靶基因独立建模，GENIE3 天然适合并行计算；但也因此不会显式保证全局网络拓扑性质，例如模块性、连通性或无标度结构。
+
+:::note
+**GENIE3 与 LASSO 的对应关系：** 如果把 $f_j$ 限制为线性函数，则模型变为
+
+$$x_j = \sum_{i \in \mathcal{R}} \beta_{ij}x_i + \epsilon_j$$
+
+此时可以用 LASSO 通过 $\ell_1$ 正则化筛选少数非零 $\beta_{ij}$。GENIE3 的区别在于把线性函数换成树集成模型，并用变量重要性代替回归系数。换句话说，GENIE3 是一种"非参数版本的逐靶基因特征选择"。
+:::
+
+## GENIE3 的算法框架
+
+GENIE3（GEne Network Inference with Ensemble of trees）的核心思想是：将 GRN 推断分解为 $p$ 个独立的**特征重要性回归**子问题。
+
+对每个目标基因 $j$（$j = 1, \ldots, p$）：
+
+1. 以所有其他基因（或限定的 TF 集合）的表达量 $\mathbf{x}_{\setminus j} = (x_1, \ldots, x_{j-1}, x_{j+1}, \ldots, x_p)$ 为特征，以 $x_j$ 为因变量，训练一个随机森林回归模型。
+2. 提取每个特征（候选调控子）的重要性得分（MDI，Mean Decrease in Impurity），得到向量 $\mathbf{w}_j = (w_{1j}, w_{2j}, \ldots)$，其中 $w_{ij}$ 衡量基因 $i$ 对预测 $x_j$ 表达量的贡献。
+3. 汇总所有目标基因的重要性向量，构建权重矩阵 $\mathbf{W} \in \mathbb{R}^{p \times p}$，其中 $W_{ij}$ 代表假定调控边 $i \to j$ 的强度。
+4. 对 $\mathbf{W}$ 按值排序，取 Top-$k$ 边（或基于基准数据集评估确定截止阈值）作为预测调控网络。
+
+![随机森林通过 Bagging 策略构建多棵决策树，并以多数投票或均值聚合结果示意图](https://upload.wikimedia.org/wikipedia/commons/thumb/e/e3/Random_Forest_Bagging_Illustration.png/500px-Random_Forest_Bagging_Illustration.png){#fig-random-forest width=85%}
+
+图片引用自维基百科：[Random forest](https://en.wikipedia.org/wiki/Random_forest)
+
+:::note
+**为什么限定 TF 集合：** 全基因组范围内（$p \sim 20000$）对每个目标基因训练随机森林的计算代价极高。更重要的是，调控网络的**调控子**在生物学上应主要是转录因子——已知人类基因组中约有 1,600 个 TF（AnimalTFDB 数据库）。将候选调控子限定为已知 TF 集合，既减少了计算量，又提高了生物学可解释性，是 GENIE3 在转录组数据上的标准做法。
+:::
+
+**GENIE3 与 WGCNA 的互补关系**：WGCNA 回答"哪些基因协同变化"（无向模块），GENIE3 回答"谁调控谁"（有向边）。一种常见的组合探索策略是：先用 WGCNA 识别与表型显著相关的目标模块，再以模块内基因为靶基因、以**模块外**已知转录因子（TF）为候选调控子运行 GENIE3，推断外部 TF 对模块内基因的有向调控关系。
+
+:::warning
+**模块内共线性陷阱：** 不建议直接在模块内部所有基因之间运行 GENIE3。WGCNA 模块的定义本身要求成员间高度共表达（|r| 常 > 0.8），这种高共线性会导致随机森林的**特征重要性分裂**（Importance Splitting）——当两个特征高度相关时，重要性得分在它们之间任意分配，无法可靠区分真正的调控子。更根本的问题是：模块内枢纽基因的重要性得分高，很可能仅仅因为它与所有成员相关性最高（这正是 WGCNA 选拔枢纽基因的准则），而非因为它在生物学上调控了其他基因。稳健的做法是将候选调控子限定为**模块外的 TF 集合**，从而将 GENIE3 的输入特征与模块内共表达结构解耦。
+:::
+
+## GENIE3 实践
+
+```r
+#| label: genie3-setup
+#| message: false
+#| warning: false
+#| cache: true
+# Install and load required packages
+# BiocManager::install("GENIE3")
+library(GENIE3)
+library(DESeq2)
+library(airway)
+library(dplyr)
+library(igraph)
+
+# ── Data preparation ──────────────────────────────────────────────
+data(airway)
+dds <- DESeqDataSet(airway, design = ~ cell + dex)
+dds <- dds[rowSums(counts(dds)) > 10, ]
+vsd <- vst(dds, blind = FALSE)
+
+# Expression matrix: genes × samples (GENIE3 convention)
+expr_mat_genie3 <- assay(vsd)
+
+# For demo: use a small example TF set from known glucocorticoid response regulators
+tf_genes <- c("NR3C1", "RELA", "NFKB1", "SP1", "KLF4",
+               "CEBPB", "IRF1", "STAT1", "STAT3", "JUN")
+
+# Keep only TFs present in the expression matrix (match by gene symbol via rownames)
+# airway rownames are Ensembl IDs; map to symbols first
+library(org.Hs.eg.db)
+sym_map <- mapIds(org.Hs.eg.db, keys = rownames(expr_mat_genie3),
+                  column = "SYMBOL", keytype = "ENSEMBL",
+                  multiVals = "first")
+tf_ensembl <- names(sym_map)[!is.na(sym_map) & sym_map %in% tf_genes]
+tf_present  <- tf_ensembl
+cat("TFs present in data:", length(tf_present), "\n")
+```
+
+```r
+#| label: genie3-run
+#| cache: true
+#| message: false
+# ── Run GENIE3 ────────────────────────────────────────────────────
+set.seed(42)
+weight_matrix <- GENIE3(
+    expr_mat_genie3,
+    regulators  = tf_present,   # limit to TF set
+    nTrees      = 1000,         # number of trees per target gene
+    nCores      = 4,
+    returnMatrix = TRUE
+)
+
+# Convert weight matrix to ranked edge list
+link_list <- getLinkList(weight_matrix, threshold = 0)
+
+# Show top 20 predicted regulatory edges
+head(link_list, 20)
+```
+
+```r
+#| label: genie3-network
+#| cache: true
+# ── Network thresholding and visualization ─────────────────────────
+# Keep top 200 edges (adjust based on network density preference)
+top_edges <- head(link_list, 200)
+
+# Build igraph object
+grn_graph <- graph_from_data_frame(
+    d        = top_edges[, c("regulatoryGene", "targetGene", "weight")],
+    directed = TRUE
+)
+
+# Node attributes: distinguish TF nodes from target nodes
+V(grn_graph)$is_TF <- V(grn_graph)$name %in% tf_present
+V(grn_graph)$color  <- ifelse(V(grn_graph)$is_TF, "#d62728", "#4472C4")
+
+# Basic network statistics
+cat("Nodes:", vcount(grn_graph), "\n")
+cat("Edges:", ecount(grn_graph), "\n")
+cat("Network density:", edge_density(grn_graph), "\n")
+
+# Top regulators by out-degree
+out_deg <- sort(degree(grn_graph, mode = "out"), decreasing = TRUE)
+cat("Top regulators (out-degree):\n")
+print(head(out_deg, 10))
+```
+
+```r
+#| label: fig-grn-network
+#| fig-cap: "GENIE3 推断的基因调控网络可视化（Top-200 调控边）。红色节点为转录因子（调控子），蓝色节点为靶基因；节点大小与出度（调控靶基因数量）成正比，边的透明度与调控权重成正比。"
+library(ggraph)
+library(tidygraph)
+
+grn_tidy <- as_tbl_graph(grn_graph)
+
+ggraph(grn_tidy, layout = "stress") +
+    geom_edge_link(aes(alpha = weight), color = "grey50",
+                   arrow = arrow(length = unit(2, "mm"), type = "closed"),
+                   end_cap = circle(3, "mm")) +
+    geom_node_point(aes(color = is_TF,
+                        size = centrality_degree(mode = "out"))) +
+    geom_node_text(aes(label = name,
+                       filter = centrality_degree(mode = "out") > 5),
+                   size = 2.8, repel = TRUE) +
+    scale_color_manual(values = c("FALSE" = "#4472C4", "TRUE" = "#d62728"),
+                       labels = c("Target gene", "Transcription factor")) +
+    scale_size_continuous(range = c(2, 8)) +
+    scale_edge_alpha_continuous(range = c(0.1, 0.7)) +
+    labs(color = NULL, size = "Out-degree") +
+    theme_void(base_size = 11) +
+    theme(legend.position = "right")
+```
+
+### GENIE3 结果与 WGCNA 模块的整合验证
+
+```r
+# Cross-validate: are WGCNA hub genes also high-outdegree nodes in GENIE3?
+# Assume hub_genes$gene from lesson 3 contains hub gene IDs
+
+# Check overlap: WGCNA hub genes appearing as TF targets in GENIE3 network
+wgcna_hubs_in_grn <- hub_genes$gene[hub_genes$gene %in% V(grn_graph)$name]
+cat("WGCNA hub genes appearing in GENIE3 network:",
+    length(wgcna_hubs_in_grn), "\n")
+
+# For each WGCNA hub gene, find its predicted regulators
+for (hub in head(wgcna_hubs_in_grn, 5)) {
+    regulators <- names(neighbors(grn_graph, hub, mode = "in"))
+    cat(hub, "predicted regulators:", paste(regulators, collapse = ", "), "\n")
+}
+```
+
+## dynGENIE3：时间序列数据下的有向调控推断
+
+GENIE3 的核心假设是稳态（steady-state）：样本之间没有时间关系，每个样本都是独立的表达快照。然而，在时间序列 RNA-seq 实验中（如细胞分化、药物刺激后多时间点采样），样本之间存在明确的时序关系，时序先后本身就提供了因果方向的约束——时间点 $t$ 的调控子表达量应该预测时间点 $t+1$ 的靶基因表达量，而非反向。
+
+dynGENIE3 将 GENIE3 的特征回归框架扩展为**时序回归**：
+
+$$x_j(t+\Delta t) = f\bigl(\mathbf{x}_{\setminus j}(t)\bigr) + \epsilon$$
+
+即目标基因在下一时间点的表达量由当前时间点所有调控子的表达量预测。这一框架利用了时序先后约束，显著减少了无方向依据的假阳性调控边。
+
+```r
+# dynGENIE3 requires time-series data
+# For demonstration: simulate a time-series expression dataset
+# In real analysis: use actual time-course RNA-seq data (e.g., LPS stimulation)
+set.seed(123)
+n_timepoints <- 8
+n_genes      <- 50
+n_tf         <- 5
+
+# Simulate: TFs drive target gene expression with 1-step lag
+tf_expr  <- matrix(rnorm(n_tf * n_timepoints), nrow = n_tf)
+tgt_expr <- matrix(0, nrow = n_genes - n_tf, ncol = n_timepoints)
+
+# Each target gene depends on 2 random TFs (lagged)
+for (g in 1:(n_genes - n_tf)) {
+    reg_tfs <- sample(1:n_tf, 2)
+    tgt_expr[g, -1] <- 0.6 * tf_expr[reg_tfs[1], -n_timepoints] +
+                       0.4 * tf_expr[reg_tfs[2], -n_timepoints] +
+                       rnorm(n_timepoints - 1, 0, 0.3)
+}
+
+ts_matrix <- rbind(tf_expr, tgt_expr)
+rownames(ts_matrix) <- c(paste0("TF", 1:n_tf),
+                          paste0("Gene", 1:(n_genes - n_tf)))
+
+# dynGENIE3: stack current vs next time point
+X_current <- ts_matrix[, -n_timepoints]    # t = 1, ..., T-1
+X_next    <- ts_matrix[, -1]               # t = 2, ..., T
+# Transpose: samples (time points) × genes
+expr_dyn  <- t(X_next)
+
+# Run GENIE3 on time-shifted data (dynGENIE3 logic)
+tf_ids_dyn <- paste0("TF", 1:n_tf)
+weight_dyn <- GENIE3(
+    t(X_next),
+    regulators  = tf_ids_dyn,
+    nTrees      = 500,
+    nCores      = 4,
+    returnMatrix = TRUE
+)
+
+dynenie3_edges <- getLinkList(weight_dyn, threshold = 0)
+cat("Top dynGENIE3 predicted edges:\n")
+head(dynenie3_edges, 10)
+```
+
+:::tip
+**dynGENIE3 的数据要求：** 时间间隔应尽量均匀，且相邻时间点之间的生物学变化应足够大（能够被测序检测到）。若时间间隔过短（如 5 分钟采样，基因表达量变化不显著），dynGENIE3 会退化为 GENIE3 的行为。若时间间隔过长（基因调控已经完成多个回路），滞后一步的假设会失效，可考虑使用多步滞后（1 步、2 步同时纳入模型）。
+:::
+
+---
+
+# ODE 参数化建模与 SINDy——转录调控的动态方程辨识
+
+## 从"有向图"到"动力系统"
+
+GENIE3/dynGENIE3 给出的是调控关系的**拓扑图**——谁调控谁，强度如何排序。但这仍然是一个描述性的统计模型：它不能告诉我们，如果某个 TF 的表达量增加 2 倍，靶基因的表达量将在多少分钟后变化多少。要回答这类**定量预测**问题，需要引入微分方程模型。
+
+常微分方程（ODE）建模将基因表达动态表示为连续时间的动力系统，最简单的形式是：
+
+$$\frac{dx_i}{dt} = \underbrace{\alpha_i}_{\text{basal transcription}} + \sum_{j \in \text{Reg}(i)} w_{ij} \cdot g(x_j) - \underbrace{\gamma_i x_i}_{\text{degradation}}$$
+
+其中：
+- $\alpha_i > 0$：基础转录速率（TF 不存在时的本底表达）
+- $w_{ij}$：调控强度（正值为转录激活，负值为转录抑制）
+- $g(x_j)$：非线性响应函数，通常采用 Hill 函数 $g(x) = x^n / (K^n + x^n)$
+- $\gamma_i > 0$：mRNA 降解速率
+
+![常微分方程描述的抛物线轨迹——ODE 建模的经典物理示例，基因调控 ODE 同样描述基因表达量随时间的变化轨迹](https://upload.wikimedia.org/wikipedia/commons/thumb/a/a4/Parabolic_trajectory.svg/960px-Parabolic_trajectory.svg.png){#fig-ode-parabola width=70%}
+
+图片引用自维基百科：[Ordinary differential equation](https://en.wikipedia.org/wiki/Ordinary_differential_equation)
+
+**参数辨识**的目标是从时序表达数据中估计每个基因的参数 $(\alpha_i, \{w_{ij}\}, \{K_j\}, \{n_j\}, \gamma_i)$，使模型预测的表达轨迹与实测数据之间的残差最小化。
+
+## Hill 函数的生物学含义
+
+Hill 函数是基因调控建模中最常用的非线性响应函数，其形式为：
+
+$$g(x) = \frac{x^n}{K^n + x^n}$$
+
+其中 $K$ 为半饱和常数（当 $x = K$ 时，$g(K) = 0.5$），$n$ 为 Hill 系数。Hill 系数的生物学含义是协同性：$n = 1$ 对应无协同效应（简单的米氏动力学）；$n > 1$ 对应正协同效应（多个 TF 分子需要同时结合才能激活，如 RNAP 的 sigma 因子招募）；$n \gg 1$ 时 Hill 函数趋近于阶跃函数（开关特性）。
+
+```r
+#| label: fig-hill-function
+#| fig-cap: "不同 Hill 系数下的 Hill 函数曲线（K = 1）。Hill 系数 n 越大，响应曲线越陡峭，转录激活越接近开关特性。n = 1 对应米氏型调控，n = 2 对应二聚化协同调控，n = 4 对应强协同性。"
+library(ggplot2)
+
+x_vals <- seq(0, 3, by = 0.01)
+K <- 1
+
+hill_data <- do.call(rbind, lapply(c(1, 2, 4, 8), function(n) {
+    data.frame(
+        x = x_vals,
+        g = x_vals^n / (K^n + x_vals^n),
+        n = factor(paste0("n = ", n))
+    )
+}))
+
+ggplot(hill_data, aes(x = x, y = g, color = n)) +
+    geom_line(linewidth = 1) +
+    geom_vline(xintercept = K, linetype = "dashed",
+               color = "grey50", linewidth = 0.5) +
+    geom_hline(yintercept = 0.5, linetype = "dashed",
+               color = "grey50", linewidth = 0.5) +
+    annotate("text", x = K + 0.05, y = 0.05,
+             label = "K (half-saturation)", hjust = 0,
+             size = 3, color = "grey40") +
+    labs(x = "Regulator concentration x",
+         y = "g(x) = activation level",
+         color = "Hill coefficient") +
+    scale_color_brewer(palette = "Set1") +
+    theme_bw(base_size = 12)
+```
+
+## SINDy：稀疏辨识非线性动力学
+
+当 ODE 的函数形式本身是未知的（即不确定是 Hill 函数还是线性函数还是多项式函数），SINDy（Sparse Identification of Nonlinear Dynamics）提供了一种数据驱动的方式来自动发现调控方程的函数形式。
+
+:::note
+**历史背景：** SINDy 由 Brunton、Proctor 与 Kutz 于 2016 年在 *PNAS* 发表，最初用于流体力学中混沌吸引子方程的辨识（从噪声数据中重新发现 Lorenz 系统方程）。将其迁移至基因调控系统是近年计算生物学的前沿探索——挑战在于生物系统的噪声水平远高于物理系统，且大多数基因的动力学并不满足严格的稀疏性。这一背景提醒读者：SINDy 是强大的通用工具，在基因组尺度上仍处于方法论探索阶段。
+:::
+
+**SINDy 的数学框架**
+
+给定时间序列矩阵 $\mathbf{X} \in \mathbb{R}^{T \times p}$（$T$ 个时间点，$p$ 个基因），SINDy 假设每个基因的动力学方程可以用候选函数库（Feature Library）中少数几项的线性组合来近似表达：
+
+$$\dot{\mathbf{X}} \approx \boldsymbol{\Theta}(\mathbf{X}) \cdot \boldsymbol{\Xi}$$
+
+其中：
+- $\dot{\mathbf{X}} \in \mathbb{R}^{T \times p}$：表达量对时间的导数（通过数值微分估计）
+- $\boldsymbol{\Theta}(\mathbf{X}) \in \mathbb{R}^{T \times L}$：候选函数库矩阵，每列是一个候选函数在所有时间点的值（如常数项、线性项、交叉项、Hill 函数项等）
+- $\boldsymbol{\Xi} \in \mathbb{R}^{L \times p}$：稀疏系数矩阵，每列对应一个基因的动力学方程中各函数项的系数
+
+通过对 $\boldsymbol{\Xi}$ 施加 $\ell_1$ 正则化（LASSO）或序贯阈值最小二乘（STLSQ）强制稀疏解，即可从数据中自动筛选出最简方程形式。
+
+![LASSO（$\ell_1$）与岭回归（$\ell_2$）约束区域对比：$\ell_1$ 的菱形角点导致稀疏解，正则化路径在坐标轴上与等值线相交](https://upload.wikimedia.org/wikipedia/commons/thumb/f/f8/L1_and_L2_balls.svg/500px-L1_and_L2_balls.svg.png){#fig-lasso-l1l2 width=70%}
+
+图片引用自维基百科：[Lasso (statistics)](https://en.wikipedia.org/wiki/Lasso_(statistics))
+
+**稀疏性先验的生物学合理性**：已知的模式生物转录调控网络（如大肠杆菌的 RegulonDB、酵母的 YEASTRACT）显示，每个基因平均只受 2–5 个直接调控子调控，即调控关系是稀疏的。因此，稀疏性先验在生物学上是合理的假设。
+
+## SINDy 实践（Python/PySINDy）
+
+SINDy 的主要实现是 Python 的 `pysindy` 库，支持自定义候选函数库（包括 Hill 函数）。
+
+```python
+import numpy as np
+import pysindy as ps
+from pysindy.feature_library import CustomLibrary, PolynomialLibrary
+from scipy.integrate import odeint
+import matplotlib.pyplot as plt
+
+# ── Generate synthetic gene regulatory time-series ────────────────
+# Ground truth: 3-gene network with known ODE parameters
+# Gene 1 (TF): autonomous oscillator
+# Gene 2: activated by Gene 1 (Hill activation)
+# Gene 3: repressed by Gene 2 (Hill repression)
+
+def true_grn(y, t):
+    x1, x2, x3 = y
+    K, n = 1.0, 2.0          # Hill parameters
+    gamma = np.array([0.5, 0.3, 0.4])  # degradation rates
+    alpha = np.array([0.1, 0.05, 0.05])
+
+    dx1 = alpha[0] + 0.8 * np.sin(0.5 * t) - gamma[0] * x1
+    dx2 = alpha[1] + 0.6 * (x1**n / (K**n + x1**n)) - gamma[1] * x2
+    dx3 = alpha[2] + 0.4 * (K**n / (K**n + x2**n)) - gamma[2] * x3
+    return [dx1, dx2, dx3]
+
+# Integrate ODE to generate "true" time series
+t = np.linspace(0, 20, 100)
+y0 = [0.5, 0.3, 0.8]
+X_true = odeint(true_grn, y0, t)
+
+# Add measurement noise (realistic RNA-seq noise level ~10%)
+np.random.seed(42)
+X_noisy = X_true + np.random.normal(0, 0.08, X_true.shape)
+X_noisy = np.clip(X_noisy, 0, None)  # expression cannot be negative
+
+# ── Build custom feature library for gene regulation ──────────────
+# Functions: constant, linear terms, Hill activation, Hill repression
+def hill_act(x, K=1.0, n=2.0):
+    return x**n / (K**n + x**n)
+
+def hill_rep(x, K=1.0, n=2.0):
+    return K**n / (K**n + x**n)
+
+# Build library from combinations of Hill functions
+library_functions = [
+    lambda x: np.ones(len(x)),          # constant (basal transcription)
+    lambda x: x,                         # linear degradation term
+    lambda x: hill_act(x),              # Hill activation (K=1, n=2)
+    lambda x: hill_rep(x),              # Hill repression
+]
+library_names = ["1", "x", "hill_act(x)", "hill_rep(x)"]
+
+custom_library = CustomLibrary(
+    library_functions=library_functions,
+    function_names=library_names
+)
+```
+
+```python
+# ── Fit SINDy model with STLSQ optimizer ──────────────────────────
+# STLSQ (Sequential Threshold Least Squares) is the default SINDy optimizer
+optimizer = ps.STLSQ(
+    threshold=0.05,     # sparsity threshold: coefficients below this are zeroed
+    alpha=0.05,         # L2 regularization for numerical stability
+    max_iter=20
+)
+
+model = ps.SINDy(
+    feature_library=custom_library,
+    optimizer=optimizer,
+    feature_names=["x1", "x2", "x3"]
+)
+
+# Fit on noisy data
+model.fit(X_noisy, t=t)
+
+# Print discovered equations
+print("Discovered governing equations:")
+model.print()
+```
+
+```python
+# ── Validate: simulate with discovered equations and compare ──────
+X_sim = model.simulate(y0, t)
+
+fig, axes = plt.subplots(1, 3, figsize=(12, 4))
+gene_names = ["TF (Gene 1)", "Target Gene 2", "Target Gene 3"]
+colors = ["#d62728", "#4472C4", "#2ca02c"]
+
+for i, (ax, name, color) in enumerate(zip(axes, gene_names, colors)):
+    ax.plot(t, X_noisy[:, i], "o", markersize=2, alpha=0.5,
+            color=color, label="Observed (noisy)")
+    ax.plot(t, X_true[:, i], "--", linewidth=1.5,
+            color="grey", label="True ODE")
+    ax.plot(t, X_sim[:, i], "-", linewidth=2,
+            color=color, label="SINDy fit")
+    ax.set_title(name)
+    ax.set_xlabel("Time")
+    ax.set_ylabel("Expression")
+    ax.legend(fontsize=7)
+
+plt.tight_layout()
+plt.savefig("sindy_fit_comparison.pdf", dpi=150)
+plt.show()
+```
+
+```r
+#| label: fig-sindy-fit
+#| fig-cap: "SINDy 方程辨识结果验证。三个基因的表达轨迹对比：灰色虚线为真实 ODE 模拟的轨迹，彩色实线为 SINDy 辨识方程的预测轨迹，散点为加入测量噪声后的观测数据。SINDy 在 10% 噪声水平下能够准确重建基础调控方程。"
+# This figure is generated by the Python code block above.
+# Display only when the file exists (Python environment required).
+if (file.exists("sindy_fit_comparison.pdf")) {
+    knitr::include_graphics("sindy_fit_comparison.pdf")
+} else {
+    message("Run the Python SINDy block first to generate sindy_fit_comparison.pdf")
+    plot.new()
+    text(0.5, 0.5, "Figure generated by Python (pysindy)\nRun Python block to produce output",
+         cex = 1.1, col = "grey40", adj = 0.5)
+}
+```
+
+### 弱 SINDy（Weak SINDy）：对测量噪声的鲁棒改进
+
+经典 SINDy 的一个关键弱点是需要对时序数据进行**数值微分**（计算 $\dot{\mathbf{X}}$），而数值微分对测量噪声极为敏感——噪声经有限差分后会被放大，导致 $\dot{\mathbf{X}}$ 的估计充满误差。弱 SINDy（Weak SINDy）通过将 ODE 转化为积分（弱）形式来规避这一问题：
+
+$$\int_0^T \dot{x}_i(t) \cdot \phi(t) \, dt = \int_0^T f(\mathbf{x}(t)) \cdot \phi(t) \, dt$$
+
+其中 $\phi(t)$ 是测试函数（如分段多项式）。将左端通过分部积分转化后，方程中不再出现 $\dot{x}_i$，而是直接依赖 $x_i$ 的观测值。弱 SINDy 对噪声的鲁棒性显著优于经典 SINDy，在生物学数据（噪声水平通常为 20–40%）上尤为重要。
+
+```python
+# Weak SINDy: more robust to measurement noise
+from pysindy.feature_library import WeakPDELibrary
+
+# For 1D time-series (ODE case), use integration window approach
+# PySINDy's weakform implementation
+model_weak = ps.SINDy(
+    feature_library=ps.WeakPDELibrary(
+        library_functions=library_functions,
+        function_names=library_names,
+        spatiotemporal_grid=t,
+        K=10,        # number of integration windows
+        num_pts_per_domain=10
+    ),
+    optimizer=ps.STLSQ(threshold=0.05)
+)
+
+# Add higher noise to test robustness
+X_high_noise = X_true + np.random.normal(0, 0.25, X_true.shape)
+X_high_noise = np.clip(X_high_noise, 0, None)
+
+model_weak.fit(X_high_noise, t=t)
+print("Weak SINDy equations (25% noise level):")
+model_weak.print()
+```
+
+## ODE/SINDy 与 GENIE3 的互补关系总结
+
+| 维度 | GENIE3 | ODE 参数化 | SINDy |
+|---|---|---|---|
+| **数据类型** | 稳态，大 $n$ | 时序，小 $n$，精细 | 时序，中等 $n$ |
+| **输出** | 有向加权边排序 | 完整动力学方程+参数 | 稀疏动力学方程 |
+| **可解释性** | 调控强度排名 | 定量预测（扰动模拟） | 函数形式发现 |
+| **调控关系假设** | 非参数（任意函数） | 预设函数形式（Hill） | 从候选库中自动选择 |
+| **噪声鲁棒性** | 高（集成学习） | 中（依赖优化算法） | 中（经典）/ 高（弱SINDy） |
+| **计算代价** | $O(p^2 \cdot n \cdot T_{\text{tree}})$ | $O(p \cdot T_{\text{opt}})$ | $O(L \cdot p \cdot T)$ |
+| **典型样本需求** | $n \geq 100$（稳态） | $n_t \geq 20$（时间点） | $n_t \geq 30$（时间点） |
+
+:::info
+**黄金法则：** 在实际研究中，GENIE3、ODE 和 SINDy 不是竞争关系，而是适用于不同数据类型的互补工具。推荐的整合策略是：（1）用 WGCNA 识别与表型相关的共表达模块，确定候选功能基因集；（2）以模块内基因为靶基因、**模块外**已知 TF 为候选调控子运行 GENIE3，推断有向调控边（避免模块内高共线性导致的重要性分裂；需要样本量 ≥ 50 的稳态数据）；（3）对 GENIE3 识别的核心调控回路，设计定点时序扰动实验，用 ODE/SINDy 辨识调控方程的动力学参数；（4）用辨识的 ODE 模型进行扰动模拟，预测未观测条件下的基因表达动态。
+:::
+
+---
+
+# 评估 GRN 推断的质量
+
+## AUROC 与 AUPR：两种评估指标的适用场景
+
+在有已知真实调控网络（Golden Standard Network）可供对照时（如 DREAM5 挑战赛的测试数据集，或来自 ChIP-seq 的 TF 结合数据），可以计算：
+
+- **AUROC（Area Under ROC Curve）**：在所有预测强度阈值下，真阳性率（TPR）对假阳性率（FPR）的曲线下面积。AUROC = 0.5 为随机猜测，理论最大值为 1。AUROC 对网络稀疏度不敏感，但在高度稀疏网络（真实调控边极少）时会高估性能。
+- **AUPR（Area Under Precision-Recall Curve）**：精确率对召回率的曲线下面积。AUPR 对高度稀疏网络的评估更加敏感和准确，在真实 GRN 中（每个基因平均只有 2–5 个调控子，即极度稀疏）优先使用 AUPR。
+
+```r
+library(PRROC)
+
+# Assume we have ground truth edges (from ChIP-seq TF binding data)
+# and GENIE3 predicted edge weights
+
+# ground_truth: binary vector (1 = true regulatory edge, 0 = not)
+# predicted_scores: GENIE3 weight for each candidate edge
+
+# AUROC
+roc_obj <- roc.curve(
+    scores.class0 = predicted_scores[ground_truth == 1],
+    scores.class1 = predicted_scores[ground_truth == 0],
+    curve = TRUE
+)
+cat("AUROC:", roc_obj$auc, "\n")
+
+# AUPR
+pr_obj <- pr.curve(
+    scores.class0 = predicted_scores[ground_truth == 1],
+    scores.class1 = predicted_scores[ground_truth == 0],
+    curve = TRUE
+)
+cat("AUPR:", pr_obj$auc.integral, "\n")
+
+# Baseline AUPR (random predictor) = fraction of positive edges
+cat("Baseline AUPR (random):",
+    sum(ground_truth == 1) / length(ground_truth), "\n")
+```
+
+---
+
+# 课后自测 (Post-Lesson Quiz)
+
+1. GENIE3 将 GRN 推断问题分解为 $p$ 个独立子问题，每个子问题的输入和输出分别是什么？为什么这种分解策略在计算上是可行的？
+
+2. 为什么在 GENIE3 分析中通常将候选调控子限定为已知的转录因子集合，而非全部基因？这一策略对结果的精度有何影响？
+
+3. dynGENIE3 相比 GENIE3 利用了时序数据的哪种额外信息？具体地，dynGENIE3 的回归目标变量是什么？
+
+4. Hill 函数 $g(x) = x^n/(K^n + x^n)$ 中，参数 $K$ 和 $n$ 的生物学意义分别是什么？当 $n \to \infty$ 时，Hill 函数趋近于什么形状？
+
+5. SINDy 的候选函数库（Feature Library）在基因调控应用中应包含哪些类型的函数？为什么不应包含过高次数的多项式项？
+
+6. 弱 SINDy（Weak SINDy）解决了经典 SINDy 的什么问题？其核心数学思想是什么？
+
+7. 在 GRN 推断评估中，为什么 AUPR 比 AUROC 更适合评估高度稀疏的真实调控网络？
+
+8. 请描述一个将 WGCNA（专题 5.5）、GENIE3（专题 5.6）和 ODE 建模（专题 5.7）整合使用的完整分析流程，说明每个工具在流程中回答什么问题。
+
+<details>
+<summary><strong>参考答案 (Reference Answers)</strong></summary>
+
+1. *每个子问题的输入：候选调控子（所有其他基因或 TF 集合）的表达量矩阵 $\mathbf{x}_{\setminus j}$；输出：每个候选调控子对目标基因 $x_j$ 的特征重要性得分向量 $\mathbf{w}_j$。计算可行性：因为将一个 $p \times n$ 的联合估计问题分解为 $p$ 个独立的 $n \times (p-1)$ 随机森林回归，每个子问题可以独立并行计算，总计算复杂度为 $O(p^2 n T_{\text{tree}})$，在多核服务器上可在数小时内完成。*
+
+2. *限定 TF 集合的理由：（1）生物学上，调控网络的调控子应以转录因子为主，非 TF 基因之间的"调控关系"通常是间接的；（2）减少候选特征数量（从 $p \sim 20000$ 降至约 1600），显著降低计算量；（3）减少特征空间维度可以降低假阳性率（多重比较问题）。对精度的影响：限定 TF 集合后，GENIE3 能更精确地估计 TF 对靶基因的贡献，AUPR 通常高于使用全部基因作为候选调控子的结果。*
+
+3. *dynGENIE3 利用了**时序先后关系**作为因果方向约束。具体地，dynGENIE3 的回归目标变量是下一时间点 $t+\Delta t$ 的靶基因表达量 $x_j(t+\Delta t)$，而预测特征是当前时间点 $t$ 的调控子表达量 $\mathbf{x}_{\setminus j}(t)$。这一时序滞后设计利用了"原因先于结果"的时序因果约束，避免了稳态 GENIE3 中纯相关性带来的方向歧义。*
+
+4. *$K$（半饱和常数）：当调控子浓度 $x = K$ 时，Hill 函数值恰好为 0.5，即转录激活达到最大激活量的一半；$K$ 反映了 TF 与启动子结合的亲和力，$K$ 越小说明 TF 结合能力越强。$n$（Hill 系数）：反映调控的协同性，$n = 1$ 无协同效应，$n > 1$ 表示需要多个 TF 分子协同结合（如二聚化、四聚化）。当 $n \to \infty$ 时，Hill 函数趋近于 Heaviside 阶跃函数（$g(x) = 0$ 当 $x < K$，$g(x) = 1$ 当 $x > K$），即完美的开关特性。*
+
+5. *候选函数库应包含：（1）常数项（代表基础转录速率 $\alpha$）；（2）一阶线性项（代表 mRNA 降解项 $-\gamma x$）；（3）Hill 激活函数项；（4）Hill 抑制函数项；（5）二阶交叉项（代表两个调控子的协同效应）。不应包含过高次数多项式的原因：高次多项式（如 4 次、5 次）会导致候选库矩阵 $\boldsymbol{\Theta}$ 的列之间高度共线（多重共线性），使 LASSO/STLSQ 的稀疏辨识结果不稳定；且高次多项式在生物学上缺乏直接解释，容易导致过拟合。*
+
+6. *弱 SINDy 解决的问题：经典 SINDy 需要对时序数据进行数值微分来估计 $\dot{\mathbf{X}}$，数值微分（有限差分）对测量噪声极为敏感，噪声会被放大导致导数估计充满误差。核心数学思想：将 ODE $\dot{x}_i = f(\mathbf{x})$ 两边同乘以测试函数 $\phi(t)$，并在时间区间 $[0,T]$ 上积分；通过分部积分，将含 $\dot{x}_i$ 的项转化为含 $x_i$ 的项，从而避免计算导数。最终问题变为纯积分方程形式，直接依赖观测值 $x_i(t)$，对测量噪声的鲁棒性显著提升。*
+
+7. *AUROC 在计算假阳性率（FPR）时，分母是所有实际阴性样本的数量。在高度稀疏的网络中（如 $p = 100$ 个基因，每个基因平均 3 个调控子，则真实边约 300 条，而候选边总数为 $100 \times 99 = 9900$ 条，阴性边约 9600 条），即使 FPR 很小（如 5%），对应的假阳性边数量也高达 480 条，远多于真阳性边数。AUROC 会给出看似很高（> 0.9）但实际假阳性极多的误导性结果。AUPR 的精确率（Precision）直接衡量预测为正的样本中真阳性的比例，对稀疏网络中的假阳性堆积更敏感，能更真实地反映工具在实际应用中的预测精度。*
+
+8. *完整整合流程：（1）**WGCNA**：以多样本稳态表达矩阵为输入，识别与目标表型（如 dex 处理）显著相关的共表达模块，确定候选功能基因集合和枢纽基因——回答"哪些基因协同变化，与表型的关联模块是哪个"。（2）**GENIE3**：以目标模块内基因为**靶基因**、以**模块外**已知 TF 集合为候选调控子，在全样本稳态表达矩阵上推断有向调控边的权重排序——回答"哪些外部 TF 可能驱动该模块的协同表达"。注意：不建议在模块内部所有基因之间运行 GENIE3，因为模块成员间的高共线性（|r| > 0.8）会导致特征重要性分裂，使结果仅仅反映相关性结构而非真实调控关系。（3）**ODE/SINDy**：设计针对 GENIE3 预测的核心调控 TF 的时序扰动实验（如 TF 过表达后多时间点采样），用辨识的 ODE 方程估计调控动力学参数——回答"调控是激活还是抑制，响应时间和饱和浓度是多少，对扰动的定量预测是什么"。*
+
+</details>
