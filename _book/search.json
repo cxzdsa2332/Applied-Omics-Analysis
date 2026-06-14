@@ -5200,12 +5200,12 @@
   {
     "objectID": "05-transcriptomics-advanced.html",
     "href": "05-transcriptomics-advanced.html",
-    "title": "25  Bulk 转录组高级分析：结构变异、成分解析与调控网络",
+    "title": "25  Bulk 转录组高级分析：转录本结构与调控网络",
     "section": "",
-    "text": "26 整体概述\n标准 Bulk RNA-seq 分析（第4章）聚焦于基因表达量的变化，但转录组所携带的信息远不止于此。同一基因可以通过可变剪接（Alternative Splicing）产生功能各异的蛋白质异构体，也可以通过选择不同多腺苷酸化位点（Alternative Polyadenylation, APA）调节转录本 3’ 端结构，进而影响 mRNA 稳定性与翻译效率；染色体重排可产生融合转录本（Fusion Transcript），在肿瘤诊断中具有重要价值；RNA 编辑（RNA Editing）则在转录后层面进一步扩展了转录组的信息容量。另一方面，来自组织样本的 Bulk RNA-seq 信号是多种细胞类型的混合，计算去卷积（Deconvolution）能够从中估计各细胞类型的比例，在肿瘤微环境与免疫学研究中已成为标准分析步骤。在理解个体基因变化与组织成分之后，共表达网络与基因调控网络分析能够进一步揭示基因之间的协同调控关系与调控方向。本章在第4章基础上，系统讲解上述四个高级分析方向。\n学习目标：掌握可变剪接五种事件类型及 rMATS 的 PSI 差异检验框架；理解可变多腺苷酸化的生物学意义与 DaPars2 的检测原理；掌握细胞类型去卷积的统计框架与主流工具；了解 RNA 编辑检测的原理与常见假阳性来源；能运用 WGCNA 识别与表型相关的共表达基因模块；理解 GENIE3 基于随机森林的有向调控边推断策略。",
+    "text": "26 整体概述\n标准 Bulk RNA-seq 分析（第4章）通常以基因表达量为主要对象，回答”哪些基因表达升高或降低”。然而，同一个基因可以产生多个转录本异构体；这些异构体可能具有不同的剪接结构、3’ 端长度、蛋白质结构域或转录后调控元件。因此，高级转录组分析需要进一步回答两个层次的问题：转录本结构如何变化，基因之间又如何以网络形式协同变化。本章围绕五个专题展开：先从可变剪接、基因融合与可变多腺苷酸化进入转录本结构层面，再介绍长读长转录组技术对全长异构体重建的补充价值，随后进入 WGCNA 共表达网络与 GENIE3/SINDy 调控网络推断，最后以扰动稳态方法讨论如何在明确实验设计下学习非线性基因调控动力系统。全章仍以第4章的 airway 数据集和已生成的表达矩阵、BAM 文件为主要实践基础；涉及扰动稳态的部分则以论文模型与模拟数据为主，强调机制建模对实验设计的额外要求。\n学习目标：理解可变剪接、基因融合与可变多腺苷酸化的生物学意义；掌握 PSI、PDUI、ΔPDUI 等转录本结构指标的解释；能够解读 rMATS、STAR-Fusion、DaPars2 与 QAPA 的核心输出；理解 WGCNA 如何从表达矩阵构建共表达模块并关联表型；了解 GENIE3/dynGENIE3、ODE 与 SINDy 在基因调控网络推断中的适用场景与局限；理解扰动稳态数据如何将非线性调控模型转化为可估计的稀疏参数问题。\n\n\n\n27 结构导览\n本章当前包含五个专题，按”转录本结构 → 共表达模块 → 调控方向 → 扰动稳态机制模型”的逻辑组织：\n输入：第4章产生的 clean FASTQ、BAM 文件、原始计数矩阵和归一化表达矩阵\n  │\n  ├── 模块 A：转录本结构分析（专题 5.1–5.2）\n  │     │\n  │     ├── 专题 5.1  可变剪接差异分析与基因融合鉴定\n  │     │           rMATS → PSI / ΔPSI / FDR\n  │     │           STAR-Fusion / Arriba → 融合转录本候选事件\n  │     │\n  │     └── 专题 5.2  可变多腺苷酸化分析与长读长转录组展望\n  │                 DaPars2 / QAPA → PDUI / ΔPDUI / PAS 使用变化\n  │                 PacBio IsoSeq / Nanopore direct RNA-seq / SQANTI3\n  │\n  └── 模块 B：表达网络与调控网络（专题 5.3–5.5）\n        │\n        ├── 专题 5.3  加权基因共表达网络分析\n        │           WGCNA → 软阈值选择 → 模块识别 → 模块-表型关联 → 枢纽基因\n        │\n        ├── 专题 5.4  基因调控网络推断\n        │           GENIE3 / dynGENIE3 → 有向调控边\n        │           ODE / SINDy → 时间序列调控方程辨识\n        │\n        └── 专题 5.5  扰动稳态下的非线性调控模型学习\n                    过表达 / 敲低 / 敲除 → 新稳态表达谱\n                    热力学 ODE 模型 → 稳态线性化 → LASSO 稀疏项选择\n模块 A 主要使用第4章产生的 BAM 文件或原始 FASTQ，关注单个基因内部的转录本结构变化。模块 B 主要使用归一化表达矩阵，关注基因之间的协同表达、调控方向与动态机制。两类分析互为补充：结构分析解释”同一基因产生了什么转录本”，网络分析解释”多个基因如何共同响应实验条件”。\n\n\n\n28 各专题简介\n\n28.0.1 专题 5.1：可变剪接差异分析与基因融合鉴定\n本专题首先介绍可变剪接（Alternative Splicing）的基本事件类型，并以 PSI（Percent Spliced-In）量化外显子纳入比例。rMATS 部分重点讲解 junction reads 计数、Beta 二项分布建模、ΔPSI 解释和 JC/JCEC 输出文件差异。专题后半部分转向基因融合（Gene Fusion），说明融合转录本的产生机制、STAR-Fusion 的两步过滤策略，以及 Arriba 可视化的基本思路。\n核心概念：\n\n七种可变剪接事件：SE、A5SS、A3SS、RI、MXE、AFE、ALE\nPSI 与 ΔPSI：外显子纳入比例及其组间变化\nrMATS 输出字段：IJC_SAMPLE、SJC_SAMPLE、IncLevelDifference、FDR\n基因融合：嵌合读段、融合断点、框内融合与框外融合\nSTAR-Fusion 与 Arriba：融合事件检测、过滤与可视化\n\n实践内容：使用 airway 数据的 STAR 比对结果运行 rMATS，筛选差异剪接事件并绘制火山图与 Sashimi 图；演示 STAR-Fusion 和 Arriba 的融合转录本检测流程，学习解读高置信度融合候选事件。\n\n\n28.0.2 专题 5.2：可变多腺苷酸化分析与长读长转录组展望\n本专题围绕转录本 3’ 端结构变化展开。可变多腺苷酸化（Alternative Polyadenylation, APA）通过选择近端或远端多腺苷酸化位点（Polyadenylation Site, PAS），产生不同长度的 3’ 非翻译区（3’ UTR），从而影响 miRNA 调控、mRNA 稳定性和翻译效率。专题比较 DaPars2 与 QAPA 两类分析思路，并简要介绍 PacBio IsoSeq、Oxford Nanopore direct RNA-seq 和 SQANTI3 在全长转录本重建中的作用。\n核心概念：\n\nPAS、近端 PAS、远端 PAS 与 3’ UTR 长度变化\nPDUI 与 ΔPDUI：远端 PAS 使用比例及其组间差异\nDaPars2：基于 3’ UTR 覆盖度变化点发现潜在 PAS\nQAPA：基于已注释 PAS 的精确定量\n长读长转录组：全长异构体、RNA 修饰直接检测、SQANTI3 结构分类\n\n实践内容：使用第4章的 HISAT2 BAM 文件演示 DaPars2 工作流，筛选显著 APA 基因并绘制 ΔPDUI 结果图；展示 QAPA 的参考构建与 Salmon 定量思路；通过长读长转录组展望说明短读长方法在全长异构体重建中的局限。\n\n\n28.0.3 专题 5.3：加权基因共表达网络分析\n本专题从单基因差异表达转向基因模块层面。加权基因共表达网络分析（Weighted Gene Co-expression Network Analysis, WGCNA）根据多样本表达矩阵中的基因相关性构建网络，并将高度共表达的基因划分为模块。每个模块可用模块特征基因（Module Eigengene, ME）概括，再与实验条件或表型变量建立关联，从而发现与特定生物状态相关的功能基因集和枢纽基因（Hub gene）。\n核心概念：\n\n软阈值（Soft Thresholding）与无标度拓扑拟合\n拓扑重叠矩阵（Topological Overlap Matrix, TOM）\n层次聚类、动态树切割与模块合并\n模块特征基因（Module Eigengene, ME）与模块-表型关联\n模块成员度（kME）、基因显著性（Gene Significance, GS）与枢纽基因识别\n\n实践内容：使用 airway 数据集的 DESeq2 VST 表达矩阵运行 WGCNA，完成样本离群检测、软阈值选择、模块构建、模块-表型关联热图绘制和枢纽基因筛选；进一步将 WGCNA 模块与差异表达基因结果整合解释。\n\n\n28.0.4 专题 5.4：基因调控网络推断——从随机森林到动力系统\n本专题在 WGCNA 的基础上进一步讨论调控方向。WGCNA 给出的是无向共表达关系，而基因调控网络（Gene Regulatory Network, GRN）推断试图回答”哪个转录因子可能调控哪个靶基因”。GENIE3 将每个靶基因的表达预测建模为随机森林回归任务，用特征重要性为候选调控边排序；dynGENIE3 则利用时间序列先后关系增强方向约束。专题后半部分介绍 ODE 参数化建模与 SINDy 稀疏辨识，将调控网络从有向图扩展到动态方程。\n核心概念：\n\nGRN 推断的高维变量选择本质\nGENIE3：逐靶基因随机森林回归与特征重要性边权\ndynGENIE3：时间序列表达数据中的滞后调控关系\nWGCNA 与 GENIE3 的互补：共表达模块与有向调控边整合\nODE、Hill 函数、SINDy 与弱 SINDy：动态调控方程辨识\nAUROC 与 AUPR：稀疏调控网络评估指标\n\n实践内容：以 airway VST 表达矩阵为输入，演示 GENIE3 的候选转录因子筛选、权重矩阵构建、Top 调控边提取和网络可视化；使用模拟时间序列数据展示 dynGENIE3 与 SINDy 的基本思想，并讨论其对真实时序 RNA-seq 实验设计的要求。\n\n\n28.0.5 专题 5.5：扰动稳态下的非线性基因调控模型学习\n本专题基于 Meister 等人提出的扰动稳态方法，讨论如何在没有密集时间序列的情况下学习一个非线性基因调控动力系统。该方法从 Bintu 型热力学转录模型出发，将 RNA 聚合酶结合概率写成有理函数；再利用扰动后稳态条件，把原本非线性的 ODE 参数估计问题转化为对参数线性的约束优化问题。其核心价值在于把实验设计、可解释模型和稀疏参数选择连接在一起。\n核心概念：\n\n扰动稳态（Perturbed Steady-State）：过表达、敲低或敲除后系统重新达到的表达平衡\nBintu 型热力学转录模型：RNAP 结合概率、有理函数、激活、抑制和协同调控\n稳态线性化：利用 \\(dx/dt=0\\) 与 \\(dy/dt=0\\) 将非线性模型转化为线性参数方程\n带约束 LASSO：\\(0\\leq b_i\\leq c_i\\)、\\(c_i(0)=1\\) 与稀疏项选择\n非可辨识性：仅用稳态数据时自调控项可能存在等价方程，需要额外动态信息打破平局\n与 GENIE3/SINDy 的关系：稳态扰动数据、时间序列数据和纯表达矩阵的建模差异\n\n实践内容：围绕论文提出的扰动稳态框架推导关键方程；用小型模拟数据演示如何把候选非线性调控项转化为线性设计矩阵，并用简化 LASSO 恢复主要调控项；讨论该方法在真实 RNA-seq 或 Perturb-seq 实验中的设计要求与局限。",
     "crumbs": [
       "第二阶段：转录组与单细胞",
-      "<span class='chapter-number'>25</span>  <span class='chapter-title'>Bulk 转录组高级分析：结构变异、成分解析与调控网络</span>"
+      "<span class='chapter-number'>25</span>  <span class='chapter-title'>Bulk 转录组高级分析：转录本结构与调控网络</span>"
     ]
   },
   {
@@ -6229,6 +6229,160 @@
     "crumbs": [
       "第二阶段：转录组与单细胞",
       "<span class='chapter-number'>28</span>  <span class='chapter-title'>加权基因共表达网络分析（WGCNA）</span>"
+    ]
+  },
+  {
+    "objectID": "transcriptomics_adv_lesson5.html",
+    "href": "transcriptomics_adv_lesson5.html",
+    "title": "30  专题 5.5：扰动稳态下的非线性基因调控模型学习",
+    "section": "",
+    "text": "31 专题概述\n专题 5.4 已介绍基因调控网络（Gene Regulatory Network, GRN）推断的两条路线：GENIE3 通过机器学习方法从表达矩阵中排序有向调控边，ODE/SINDy 则尝试从时间序列数据中学习动力学方程。本专题进一步讨论一个更具实验设计意识的问题：如果没有高时间分辨率的时间序列，是否仍然可以学习一个非线性的基因调控动力系统？Meister 等人提出的扰动稳态方法给出了一个有代表性的回答：通过过表达、敲低或敲除实验获得多个新的稳态表达谱，再利用稳态条件把原本非线性的 ODE 参数估计问题转化为带约束的凸优化问题（Meister et al., 2013）。\n本专题不要求读者复现论文中的完整算法，而是提炼其建模思想。核心主线包括：热力学转录模型如何写成有理函数形式；为什么稳态条件可以消去时间导数；如何把每个基因的调控方程拆成独立的线性回归问题；为什么需要 LASSO 进行稀疏项选择；以及这种方法在真实 RNA-seq 研究中需要怎样的实验设计与验证策略。最后通过一个小型模拟例子展示”非线性模型在稳态处线性化”的计算逻辑。\n学习目标：理解扰动稳态（perturbed steady-state）在 GRN 推断中的作用；掌握 Bintu 型热力学转录模型的有理函数结构；能够推导稳态条件下的线性参数方程；理解带约束 LASSO 在调控项选择中的意义；能够区分该方法与 WGCNA、GENIE3、SINDy 的数据需求和适用场景。",
+    "crumbs": [
+      "第二阶段：转录组与单细胞",
+      "<span class='chapter-number'>30</span>  <span class='chapter-title'>专题 5.5：扰动稳态下的非线性基因调控模型学习</span>"
+    ]
+  },
+  {
+    "objectID": "transcriptomics_adv_lesson5.html#为什么需要扰动稳态",
+    "href": "transcriptomics_adv_lesson5.html#为什么需要扰动稳态",
+    "title": "30  专题 5.5：扰动稳态下的非线性基因调控模型学习",
+    "section": "32.1 为什么需要扰动稳态",
+    "text": "32.1 为什么需要扰动稳态\n共表达网络和随机森林网络可以从多样本表达矩阵中发现有用的统计关联，但它们通常不能直接描述系统在扰动后的动态轨迹。若某个转录因子被敲低，细胞会经历一段非稳态调整过程，最终可能进入新的稳态。仅在原始稳态附近建立线性模型，往往难以外推到这种较大的状态改变。\n扰动稳态方法的基本思想是：与其密集采样整个动态过程，不如系统地制造多个新的稳态。每一次过表达、敲低或敲除实验都可以把细胞推向一个新的表达状态。若这些状态足够多、足够多样，就能为调控方程提供多组约束。论文的关键贡献在于指出：虽然原始调控模型是非线性的，但在稳态条件下，每个观测状态都能产生一条关于模型参数的线性方程。\n\n稳态不是静止不变：\n稳态（steady-state）不是没有分子合成和降解，而是合成速率与降解速率达到平衡，因此表达量在观测尺度上近似恒定。扰动稳态指经过敲低、敲除或过表达后，系统重新达到的平衡状态。该状态通常不同于原始野生型状态，因而能揭示调控关系的因果方向。",
+    "crumbs": [
+      "第二阶段：转录组与单细胞",
+      "<span class='chapter-number'>30</span>  <span class='chapter-title'>专题 5.5：扰动稳态下的非线性基因调控模型学习</span>"
+    ]
+  },
+  {
+    "objectID": "transcriptomics_adv_lesson5.html#方法定位",
+    "href": "transcriptomics_adv_lesson5.html#方法定位",
+    "title": "30  专题 5.5：扰动稳态下的非线性基因调控模型学习",
+    "section": "32.2 方法定位",
+    "text": "32.2 方法定位\n这篇论文可以看作三类思想的交汇点：\n\n\n\n思路\n在本专题中的角色\n\n\n\n\n热力学生物物理模型\n给出可解释的非线性转录函数\n\n\n扰动实验设计\n让表达数据包含因果调控信息\n\n\n稀疏凸优化\n从大量候选调控项中选择少数有效项\n\n\n\n与 WGCNA 相比，该方法不只寻找共表达模块，而是拟合可预测的动力系统。与 GENIE3 相比，它输出的是方程参数，而不是特征重要性排序。与 SINDy 相比，它不依赖密集时间序列，而是依赖多个扰动后的稳态测量。",
+    "crumbs": [
+      "第二阶段：转录组与单细胞",
+      "<span class='chapter-number'>30</span>  <span class='chapter-title'>专题 5.5：扰动稳态下的非线性基因调控模型学习</span>"
+    ]
+  },
+  {
+    "objectID": "transcriptomics_adv_lesson5.html#rna-与蛋白的-ode-形式",
+    "href": "transcriptomics_adv_lesson5.html#rna-与蛋白的-ode-形式",
+    "title": "30  专题 5.5：扰动稳态下的非线性基因调控模型学习",
+    "section": "33.1 RNA 与蛋白的 ODE 形式",
+    "text": "33.1 RNA 与蛋白的 ODE 形式\n设系统中共有 \\(n\\) 个基因。令 \\(x_i\\) 表示第 \\(i\\) 个基因的 RNA 浓度，\\(y_i\\) 表示对应蛋白浓度。论文采用的基本动力学形式为：\n\\[\n\\frac{dx_i}{dt} = \\tau_i f_i(y) - \\lambda_i^{RNA}x_i\n\\]\n\\[\n\\frac{dy_i}{dt} = r_i x_i - \\lambda_i^{Protein}y_i\n\\]\n其中，\\(\\tau_i\\) 是转录最大速率，\\(f_i(y)\\) 是 RNA 聚合酶（RNA polymerase, RNAP）结合启动子的概率，\\(\\lambda_i^{RNA}\\) 和 \\(\\lambda_i^{Protein}\\) 分别表示 RNA 与蛋白降解速率，\\(r_i\\) 表示翻译速率。这个框架将基因表达写成”产生项 - 降解项”。所有复杂调控都集中在 \\(f_i(y)\\) 中。",
+    "crumbs": [
+      "第二阶段：转录组与单细胞",
+      "<span class='chapter-number'>30</span>  <span class='chapter-title'>专题 5.5：扰动稳态下的非线性基因调控模型学习</span>"
+    ]
+  },
+  {
+    "objectID": "transcriptomics_adv_lesson5.html#热力学转录函数",
+    "href": "transcriptomics_adv_lesson5.html#热力学转录函数",
+    "title": "30  专题 5.5：扰动稳态下的非线性基因调控模型学习",
+    "section": "33.2 热力学转录函数",
+    "text": "33.2 热力学转录函数\nBintu 型热力学模型把 \\(f_i(y)\\) 写成有理函数。其一般形式为：\n\\[\nf_i(y)=\n\\frac{\nb_{i0}+\\sum_j b_{ij}\\prod_{k\\in S_{ij}} y_k\n}{\n1+\\sum_j c_{ij}\\prod_{k\\in S_{ij}} y_k\n}\n\\]\n其中，\\(S_{ij}\\) 表示第 \\(j\\) 个候选调控复合物所包含的蛋白集合。例如，\\(S_{ij}=\\{2\\}\\) 表示蛋白 2 单独调控基因 \\(i\\)；\\(S_{ij}=\\{2,3\\}\\) 表示蛋白 2 与蛋白 3 形成复合物后协同调控基因 \\(i\\)。系数 \\(b_{ij}\\) 与 \\(c_{ij}\\) 均非负，并满足 \\(0\\leq b_{ij}\\leq c_{ij}\\)。这个约束来自热力学概率解释：分母表示所有启动子构象的相对权重，分子表示 RNAP 结合构象的相对权重。\n这一形式可以同时表达激活、抑制、自调控和协同调控。若某项主要出现在分母中，它会降低 RNAP 结合概率，表现为抑制；若某项同时影响分子和分母，其效果取决于系数大小和当前表达背景。与简单线性模型相比，有理函数能表达”两个调控因子共同出现才有效”这类组合效应。\n\n核心直觉：\n非线性并不一定来自复杂的黑箱模型。这里的非线性来自启动子状态的热力学加权：不同转录因子及其复合物竞争或协助 RNAP 结合，最终形成一个分子和分母都包含调控项的有理函数。",
+    "crumbs": [
+      "第二阶段：转录组与单细胞",
+      "<span class='chapter-number'>30</span>  <span class='chapter-title'>专题 5.5：扰动稳态下的非线性基因调控模型学习</span>"
+    ]
+  },
+  {
+    "objectID": "transcriptomics_adv_lesson5.html#两基因示意",
+    "href": "transcriptomics_adv_lesson5.html#两基因示意",
+    "title": "30  专题 5.5：扰动稳态下的非线性基因调控模型学习",
+    "section": "33.3 两基因示意",
+    "text": "33.3 两基因示意\n以两个基因为例，假设基因 1 被蛋白 2 激活，同时被自身蛋白抑制；基因 2 被蛋白 1 与蛋白 2 形成的复合物抑制。对应的 RNA 方程可写为：\n\\[\n\\frac{dx_1}{dt}\n=\n\\tau_1\n\\frac{b_{10}+b_{11}y_2}{1+c_{11}y_2+c_{12}y_1}\n-\\lambda_1^{RNA}x_1\n\\]\n\\[\n\\frac{dx_2}{dt}\n=\n\\tau_2\n\\frac{b_{20}}{1+c_{21}y_1y_2}\n-\\lambda_2^{RNA}x_2\n\\]\n这个例子展示了三种调控模式：\\(y_2\\) 对基因 1 的单因子调控，\\(y_1\\) 对基因 1 的自调控，以及 \\(y_1y_2\\) 对基因 2 的协同抑制。实际建模时，研究者通常不知道哪些项真实存在，因此需要先列出候选项，再通过稀疏估计选择有效项。",
+    "crumbs": [
+      "第二阶段：转录组与单细胞",
+      "<span class='chapter-number'>30</span>  <span class='chapter-title'>专题 5.5：扰动稳态下的非线性基因调控模型学习</span>"
+    ]
+  },
+  {
+    "objectID": "transcriptomics_adv_lesson5.html#稳态条件",
+    "href": "transcriptomics_adv_lesson5.html#稳态条件",
+    "title": "30  专题 5.5：扰动稳态下的非线性基因调控模型学习",
+    "section": "34.1 稳态条件",
+    "text": "34.1 稳态条件\n在稳态下，RNA 和蛋白浓度不再随时间变化，因此：\n\\[\n\\frac{dx_i}{dt}=0,\\qquad \\frac{dy_i}{dt}=0\n\\]\n由蛋白方程可得：\n\\[\ny_i=\\frac{r_i}{\\lambda_i^{Protein}}x_i\n\\]\n这意味着在稳态处，蛋白浓度可以视为 RNA 浓度的比例变换。将这些比例常数吸收到模型系数中，就可以把 \\(f_i(y)\\) 改写为关于 RNA 表达量 \\(x\\) 的函数。为了简化记号，令 \\(\\gamma_i=\\lambda_i^{RNA}\\)，则 RNA 方程在稳态下可写为：\n\\[\n\\tau_i\n\\frac{\nb_{i0}+\\sum_j b_{ij}\\prod_{k\\in S_{ij}}x_k\n}{\n1+\\sum_j c_{ij}\\prod_{k\\in S_{ij}}x_k\n}\n-\\gamma_i x_i\n=0\n\\]",
+    "crumbs": [
+      "第二阶段：转录组与单细胞",
+      "<span class='chapter-number'>30</span>  <span class='chapter-title'>专题 5.5：扰动稳态下的非线性基因调控模型学习</span>"
+    ]
+  },
+  {
+    "objectID": "transcriptomics_adv_lesson5.html#关键线性化步骤",
+    "href": "transcriptomics_adv_lesson5.html#关键线性化步骤",
+    "title": "30  专题 5.5：扰动稳态下的非线性基因调控模型学习",
+    "section": "34.2 关键线性化步骤",
+    "text": "34.2 关键线性化步骤\n将上式两边乘以分母：\n\\[\n\\tau_i\n\\left(\nb_{i0}+\\sum_j b_{ij}\\prod_{k\\in S_{ij}}x_k\n\\right)\n-\n\\gamma_i x_i\n\\left(\n1+\\sum_j c_{ij}\\prod_{k\\in S_{ij}}x_k\n\\right)\n=0\n\\]\n这个式子对表达量 \\(x\\) 仍然是非线性的，因为包含 \\(x_jx_k\\) 等乘积项；但对未知参数 \\(b_{ij}\\) 和 \\(c_{ij}\\) 是线性的。换言之，非线性调控项被当作已经观测到的特征，参数估计变成线性问题。每一个扰动稳态样本 \\(x^{(m)}\\) 都提供一条线性方程。多个稳态样本叠加后，就可以形成一个线性系统。\n设 \\(z_i\\) 为候选调控项向量，例如：\n\\[\nz_i = (1,\\ x_1,\\ x_2,\\ \\ldots,\\ x_n,\\ x_1x_2,\\ x_1x_3,\\ \\ldots)\n\\]\n那么第 \\(i\\) 个基因在所有稳态样本上的方程可写为：\n\\[\n\\left[\n\\tau_i G_i,\\ -\\gamma_iD_iG_i\n\\right]\n\\begin{bmatrix}\nb_i\\\\\nc_i\n\\end{bmatrix}\n=0\n\\]\n其中，\\(G_i\\) 是由各稳态样本的 \\(z_i\\) 组成的设计矩阵，\\(D_i\\) 是以目标基因表达量 \\(x_i\\) 为对角元素的对角矩阵。由于每个目标基因的参数独立，可以对每个基因分别求解。\n\n推导记忆法：\n原模型难，是因为 \\(f_i\\) 是分式非线性函数。稳态条件提供两步简化：第一步用 \\(dx/dt=dy/dt=0\\) 消去时间导数；第二步把分母乘过去。乘完以后，表达量乘积变成设计矩阵中的特征，未知系数仍然线性出现。",
+    "crumbs": [
+      "第二阶段：转录组与单细胞",
+      "<span class='chapter-number'>30</span>  <span class='chapter-title'>专题 5.5：扰动稳态下的非线性基因调控模型学习</span>"
+    ]
+  },
+  {
+    "objectID": "transcriptomics_adv_lesson5.html#为什么需要-lasso",
+    "href": "transcriptomics_adv_lesson5.html#为什么需要-lasso",
+    "title": "30  专题 5.5：扰动稳态下的非线性基因调控模型学习",
+    "section": "35.1 为什么需要 LASSO",
+    "text": "35.1 为什么需要 LASSO\n如果考虑所有一阶和二阶调控项，候选项数量会迅速增长。对于 \\(n\\) 个基因，最高二阶项的候选数约为：\n\\[\nT_{n,2}=1+n+\\binom{n}{2}\n\\]\n每个候选项还可能对应 \\(b\\) 和 \\(c\\) 两组系数，直接估计会需要大量稳态样本。真实生物网络通常是稀疏的，即每个基因只受少数调控因子或复合物控制。论文因此使用 \\(\\ell_1\\) 正则化进行参数选择：\n\\[\n\\min_{b_i,c_i}\n\\left\\|\n\\left[\n\\tau_i G_i,\\ -\\gamma_iD_iG_i\n\\right]\n\\begin{bmatrix}\nb_i\\\\\nc_i\n\\end{bmatrix}\n\\right\\|_2\n+\n\\lambda(\\|b_i\\|_1+\\|c_i\\|_1)\n\\]\n约束条件为：\n\\[\n0\\leq b_i\\leq c_i,\\qquad c_i(0)=1\n\\]\n其中，\\(\\lambda\\) 控制稀疏程度，可通过交叉验证选择。\\(\\ell_1\\) 正则化使许多候选项的系数趋近于 0，从而实现调控项选择。非零的 \\(c_{ij}\\) 通常表示对应项参与了基因 \\(i\\) 的调控；\\(b_{ij}\\) 与 \\(c_{ij}\\) 的相对大小则帮助判断调控效果。",
+    "crumbs": [
+      "第二阶段：转录组与单细胞",
+      "<span class='chapter-number'>30</span>  <span class='chapter-title'>专题 5.5：扰动稳态下的非线性基因调控模型学习</span>"
+    ]
+  },
+  {
+    "objectID": "transcriptomics_adv_lesson5.html#扰动稳态实验流程",
+    "href": "transcriptomics_adv_lesson5.html#扰动稳态实验流程",
+    "title": "30  专题 5.5：扰动稳态下的非线性基因调控模型学习",
+    "section": "35.2 扰动稳态实验流程",
+    "text": "35.2 扰动稳态实验流程\n扰动稳态方法对实验设计有明确要求。典型流程如下：\n确定候选基因集合\n  │\n  ├── 对每个基因进行过表达、敲低或敲除\n  │\n  ├── 等待系统进入新的稳态\n  │\n  ├── 测量所有候选基因的表达量\n  │\n  ├── 将多个稳态表达谱组成设计矩阵\n  │\n  └── 对每个目标基因分别求解稀疏调控方程\n在现代转录组实验中，表达测量可以由 RNA-seq 完成；扰动可由 CRISPRi、CRISPRa、RNAi、ORF 过表达或传统敲除实现。需要注意的是，这种方法并不是把普通病例-对照 RNA-seq 数据直接丢进模型，而是要求有计划地制造多个扰动稳态。因此，它更适合小到中等规模的候选调控网络，而不适合在没有扰动设计的情况下进行全基因组盲推断。\n\n实验设计限制：\nairway 数据集只有 dexamethasone 处理与对照，并不是系统性单基因扰动实验。因此它适合演示差异表达、WGCNA 和一般 GRN 推断，不适合严格复现扰动稳态模型学习。下面的代码使用模拟稳态数据说明算法思想，而不是对 airway 数据得出生物学结论。",
+    "crumbs": [
+      "第二阶段：转录组与单细胞",
+      "<span class='chapter-number'>30</span>  <span class='chapter-title'>专题 5.5：扰动稳态下的非线性基因调控模型学习</span>"
+    ]
+  },
+  {
+    "objectID": "transcriptomics_adv_lesson5.html#系数如何转化为调控网络",
+    "href": "transcriptomics_adv_lesson5.html#系数如何转化为调控网络",
+    "title": "30  专题 5.5：扰动稳态下的非线性基因调控模型学习",
+    "section": "37.1 系数如何转化为调控网络",
+    "text": "37.1 系数如何转化为调控网络\n在拟合完成后，可以把非零调控项转化为网络边。若某个候选项包含单个调控因子 \\(g_j\\)，则可画出 \\(g_j\\to g_i\\) 的边。若候选项包含复合物 \\(g_jg_k\\)，则表示组合调控，可画为 \\(g_j\\) 与 \\(g_k\\) 共同作用于目标基因 \\(g_i\\)。自调控项则对应自环。\n系数大小可用于表示调控强度，但不应机械解释为单一的激活或抑制。由于模型是有理函数，调控方向可能依赖当前表达背景。实践中需要结合局部导数、扰动验证和生物学先验解释边的方向与符号。",
+    "crumbs": [
+      "第二阶段：转录组与单细胞",
+      "<span class='chapter-number'>30</span>  <span class='chapter-title'>专题 5.5：扰动稳态下的非线性基因调控模型学习</span>"
+    ]
+  },
+  {
+    "objectID": "transcriptomics_adv_lesson5.html#非可辨识性",
+    "href": "transcriptomics_adv_lesson5.html#非可辨识性",
+    "title": "30  专题 5.5：扰动稳态下的非线性基因调控模型学习",
+    "section": "37.2 非可辨识性",
+    "text": "37.2 非可辨识性\n论文特别讨论了自调控带来的非可辨识性（nonidentifiability）。仅使用稳态表达量时，某些方程形式可能在所有稳态上给出相同约束，因此无法判断自调控项究竟是否存在，或究竟应写成哪一种等价形式。解决办法是补充少量非稳态导数信息，例如在特定扰动后立即测量表达变化率，用动态信息打破稳态等价性。",
+    "crumbs": [
+      "第二阶段：转录组与单细胞",
+      "<span class='chapter-number'>30</span>  <span class='chapter-title'>专题 5.5：扰动稳态下的非线性基因调控模型学习</span>"
+    ]
+  },
+  {
+    "objectID": "transcriptomics_adv_lesson5.html#噪声与样本量",
+    "href": "transcriptomics_adv_lesson5.html#噪声与样本量",
+    "title": "30  专题 5.5：扰动稳态下的非线性基因调控模型学习",
+    "section": "37.3 噪声与样本量",
+    "text": "37.3 噪声与样本量\n扰动稳态方法对数据质量敏感。低噪声模拟中，主要调控项可以被较好恢复；噪声增加时，需要更多扰动组合或更强的先验约束才能稳定选择弱调控项。对于 RNA-seq 数据，测序深度、批次效应、归一化方法和低表达基因过滤都会影响稳态表达矩阵的可靠性。\n\n解释边界：\n该方法适合候选网络规模有限、扰动设计充分、稳态定义清楚的系统。它不适合直接替代全基因组探索性 GRN 工具。若研究对象包含强烈细胞异质性、未达到稳态的时间点、显著反馈延迟或强随机转录噪声，则应谨慎使用，并优先结合时间序列、单细胞扰动或蛋白水平测量。",
+    "crumbs": [
+      "第二阶段：转录组与单细胞",
+      "<span class='chapter-number'>30</span>  <span class='chapter-title'>专题 5.5：扰动稳态下的非线性基因调控模型学习</span>"
+    ]
+  },
+  {
+    "objectID": "transcriptomics_adv_lesson5.html#与第-5-章其他方法的关系",
+    "href": "transcriptomics_adv_lesson5.html#与第-5-章其他方法的关系",
+    "title": "30  专题 5.5：扰动稳态下的非线性基因调控模型学习",
+    "section": "37.4 与第 5 章其他方法的关系",
+    "text": "37.4 与第 5 章其他方法的关系\n\n\n\n\n\n\n\n\n\n\n方法\n输入数据\n输出\n优势\n主要限制\n\n\n\n\nWGCNA\n多样本表达矩阵\n无向共表达模块\n稳定、易解释、适合表型关联\n无法推断因果方向\n\n\nGENIE3\n稳态表达矩阵\n有向边排序\n可处理非线性预测关系\n输出不是机制方程\n\n\nSINDy\n时间序列表达矩阵\n稀疏动力学方程\n可学习动态方程形式\n需要高质量时间序列\n\n\n扰动稳态模型\n多个扰动后稳态\n非线性 ODE 参数\n机制解释强、实验可设计\n需要系统扰动与稳态验证",
+    "crumbs": [
+      "第二阶段：转录组与单细胞",
+      "<span class='chapter-number'>30</span>  <span class='chapter-title'>专题 5.5：扰动稳态下的非线性基因调控模型学习</span>"
     ]
   }
 ]

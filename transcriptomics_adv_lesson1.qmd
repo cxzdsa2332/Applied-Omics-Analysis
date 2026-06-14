@@ -150,18 +150,17 @@ ${STAR_DIR}/SRR1039514_Aligned.sortedByCoord.out.bam" > group2_bams.txt
 
 ### 运行 rMATS
 
-rMATS 采用两步运行策略：第一步仅计数（`--statoff`），第二步在计数基础上执行统计检验。两步分离的设计允许在多个比较组之间复用同一批比对结果，节省计算时间。
+rMATS（rmats-turbo）通过 `rmats.py` 调用。一次完整运行依次完成三件事：解析比对文件、统计各类事件的 junction reads、对 PSI 差异执行 Beta 二项检验。
 
 ```bash
 GTF="/Users/angdong/Documents/bio_example/bulkRNA/ref/GRCh38.109.gtf"
 OUTPUT_DIR="rmats_output"
-TMP_DIR="${OUTPUT_DIR}/tmp"
+TMP_DIR="rmats_tmp"
 mkdir -p ${OUTPUT_DIR} ${TMP_DIR}
 
-# Step 1: counting only (can be parallelized across experiments)
 # --readLength 63 matches the airway PE63 reads; --variable-read-length
 # is required because fastp trimming produces reads shorter than 63 bp.
-python -m rmats \
+rmats.py \
     --b1 group1_bams.txt \
     --b2 group2_bams.txt \
     --gtf ${GTF} \
@@ -170,21 +169,12 @@ python -m rmats \
     -t paired \
     --readLength 63 \
     --variable-read-length \
-    --nthread 8 \
-    --statoff
-
-# Step 2: statistical testing
-python -m rmats \
-    --b1 group1_bams.txt \
-    --b2 group2_bams.txt \
-    --gtf ${GTF} \
-    --od ${OUTPUT_DIR} \
-    --tmp ${TMP_DIR} \
-    -t paired \
-    --readLength 63 \
-    --variable-read-length \
-    --nthread 8
+    --nthread 6
 ```
+
+:::tip
+**计数与统计的分离：** 加上 `--statoff` 可只输出各事件的 read 计数与 PSI 值而跳过统计检验，适用于仅需 PSI 的下游分析。对于大规模队列，rMATS 还支持 `--task prep`（对每个样本单独预处理并缓存到 `--tmp`）与 `--task post`（在缓存基础上完成计数与统计）两阶段拆分，从而在多个比较组之间复用同一批样本的预处理结果，节省计算时间。
+:::
 
 ### 解读输出文件
 
