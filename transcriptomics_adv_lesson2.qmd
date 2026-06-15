@@ -61,200 +61,261 @@ DaPars2（Dynamic Analysis of Alternative Polyadenylation from RNA-seq，version
 
 ![变化点检测的经典示例：尼罗河年度流量数据中的突变点检测（贝叶斯方法）。算法在一维信号序列中自动定位统计特征（如均值）发生骤变的位置（约 1900 年阿斯旺低坝建成前后）。DaPars2 将同类思想应用于 3' UTR 的读段覆盖密度曲线，把覆盖密度骤降的断点判定为潜在的近端 PAS。](https://upload.wikimedia.org/wikipedia/commons/d/df/Nile_river_flow_bayesian_changepoint_detection.png){#fig-changepoint-detection width=85%}
 
-核心量化指标为**PDUI（Percent Distal site Usage Index）**，定义为：
+### 阶梯模型：把覆盖度分解为长短两种异构体
 
-$$\text{PDUI} = \frac{\text{长 3' UTR 转录本读段数}}{\text{长 3' UTR 转录本读段数} + \text{短 3' UTR 转录本读段数}}$$
+要理解 DaPars2 如何定位变化点，关键是认识到 3' UTR 的覆盖度并非平滑下降，而是呈现**阶梯状**。假设某基因只使用两个 PAS：一个近端位点（proximal PAS）和一个远端位点（distal PAS）。短转录本在近端 PAS 处终止，只覆盖 3' UTR 的前半段；长转录本一直延伸到远端 PAS，覆盖整个 3' UTR。两种转录本在样本中按各自的丰度同时存在。
 
-PDUI 的值在 0 到 1 之间。接近 1 表示远端 PAS 使用比例高，即长 3' UTR 更多；接近 0 表示近端 PAS 使用比例高，即短 3' UTR 更多。两组样本间的差异指标 **ΔPDUI** 定义为：
+由此可推出覆盖度曲线的形状。在近端 PAS 之前的**共有区段**（common region），长、短转录本都贡献 reads，覆盖度等于两者丰度之和；越过近端 PAS 进入**延伸区段**（extended region）后，短转录本已经终止，只剩长转录本贡献 reads，覆盖度骤然下降到长转录本的丰度。因此理想情况下，覆盖度是一条带有单个"台阶"的折线，台阶的拐点就是近端 PAS 的位置（@fig-changepoint-detection）。下图用示意方式表达这一结构：
+
+```
+覆盖度
+  │
+  │■■■■■■■■■■■■           ← 共有区段：长丰度 + 短丰度
+  │■■■■■■■■■■■■
+  │■■■■■■■■■■■■─────────  ← 台阶（拐点 = 近端 PAS）
+  │            ░░░░░░░░░  ← 延伸区段：仅长丰度
+  └────────────┼────────→ 3' UTR 位置
+            近端 PAS    远端 PAS
+```
+
+DaPars2 把这一结构写成一个简单的**两段回归模型**：设近端 PAS 位于位置 $P$，长转录本的覆盖丰度为 $w_L$，短转录本的覆盖丰度为 $w_S$，则任意位置 $i$ 的期望覆盖度为
+
+$$
+E[\text{coverage}(i)] =
+\begin{cases}
+w_L + w_S, & i \le P \quad (\text{共有区段}) \\
+w_L, & i > P \quad (\text{延伸区段})
+\end{cases}
+$$
+
+算法的任务是同时估计三个未知量：拐点位置 $P$、长丰度 $w_L$、短丰度 $w_S$。做法是**遍历所有候选拐点**：对 3' UTR 内每一个可能的 $P$，用最小二乘法拟合上式（在约束 $w_L, w_S \ge 0$ 下求出对应的 $w_L$ 与 $w_S$），计算拟合曲线与真实覆盖度的残差平方和；使残差最小的那个 $P$ 即被判定为近端 PAS。这本质上就是一维信号上的变化点检测——与 @fig-changepoint-detection 中识别尼罗河流量均值突变是同一类问题，只是这里的"信号"是沿 3' UTR 排列的读段密度。
+
+:::note
+**为什么不需要预先知道 PAS 坐标：** 阶梯模型只假设"存在一个让覆盖度骤降的拐点"，拐点的位置是从数据中估计出来的，而非来自注释文件。这正是 DaPars2 能在注释不完善的物种或样本特异 PAS 上工作的根本原因（参见本专题末尾与 QAPA 的对比）。
+:::
+
+### 从拟合丰度到 PDUI
+
+拟合得到的两个丰度 $w_L$ 与 $w_S$ 直接给出了长、短两种异构体的相对用量，核心量化指标 **PDUI（Percent Distal site Usage Index）** 正是建立在它们之上：
+
+$$\text{PDUI} = \frac{w_L}{w_L + w_S}$$
+
+直观地说，分子 $w_L$ 是使用远端 PAS（长 3' UTR）的转录本丰度，分母是长、短两种转录本的丰度之和。因此 PDUI 衡量的是"在所有该基因的转录本中，有多大比例选择了远端 PAS"。其值在 0 到 1 之间：接近 1 表示远端 PAS 使用比例高，即长 3' UTR 更多；接近 0 表示近端 PAS 使用比例高，即短 3' UTR 更多。需要注意，DaPars2 在工具内部只为每个样本各自估计一个 PDUI，并不做组间比较。两组样本间的差异指标 **ΔPDUI** 定义为：
 
 $$\Delta\text{PDUI} = \text{PDUI}_{\text{case}} - \text{PDUI}_{\text{control}}$$
 
-ΔPDUI > 0 表示处理条件下 3' UTR 延长；ΔPDUI < 0 表示 3' UTR 缩短。显著性检验采用 Wald 检验，多重检验校正采用 Benjamini-Hochberg FDR。
+ΔPDUI > 0 表示处理条件下 3' UTR 延长；ΔPDUI < 0 表示 3' UTR 缩短。ΔPDUI 与显著性检验均在工具外完成：本专题下游用两组样本的 PDUI 做 t 检验，并以 Benjamini-Hochberg FDR 做多重检验校正（详见后文 R 代码）。
 
 ## DaPars2 完整分析流程
 
-DaPars2 通常分两步运行。第一步把 BAM 文件转换为 3' UTR 覆盖度文件；第二步在覆盖度曲线上寻找变化点，并比较两组样本的 PDUI。下面代码展示完整流程，实际运行前需将 DaPars2 脚本路径和染色体大小文件替换为本地路径。
+DaPars2 本身没有 conda/pip 包，需从官方仓库获取脚本（`git clone https://github.com/3UTR/DaPars2.git`），其脚本基于 Python 3，依赖 `numpy`、`scipy` 和 `bedtools`。完整流程分四步：构建 3' UTR 注释、生成覆盖度文件、运行 DaPars2、合并各染色体结果。下面以本地 HISAT2 比对结果（`bulkRNA/bam/`，参见第4章）实际运行，所有路径均为可直接执行的绝对路径。
+
+:::warning
+**关于 DaPars2 的命令行接口：** DaPars2（v2）的接口与旧版 DaPars（v1）完全不同。它**不接受** `-A`/`-B`/`-c`/`-o` 等分组命令行参数，而是读取一个**配置文件**，并要求显式提供一个**染色体名单文件**和一个**测序深度文件**。更关键的是，**DaPars2 只输出每个样本各自的 PDUI 值，不在工具内部做两组比较与统计检验**——分组、ΔPDUI 计算和显著性检验全部由用户在下游（如 R）完成。这与 v1 直接给出 P 值的行为不同。
+:::
+
+**第一步：构建 3' UTR 注释。** `DaPars_Extract_Anno.py` 的输入不是 GTF，而是 RefSeq 基因模型的 12 列 BED（来自 UCSC refGene）和一个"转录本 ID → 基因名"映射表。本地 BAM 比对到 Ensembl 风格的 GRCh38 参考（contig 名为 `17` 而非 `chr17`），因此在转换时去掉 `chr` 前缀，使注释与 BAM 命名一致。
 
 ```bash
-# DaPars2 analysis on airway dataset
-# Input: HISAT2-aligned BAM files from /Users/angdong/Documents/bio_example/bulkRNA/bam/
+DAPARS="/Users/angdong/Documents/bio_example/DaPars2/src"
+APA="/Users/angdong/Documents/bio_example/apa"
+mkdir -p "${APA}/anno"
+cd "${APA}/anno"
 
+# Download UCSC hg38 refGene (genePred table)
+curl -sL "https://hgdownload.soe.ucsc.edu/goldenPath/hg38/database/refGene.txt.gz" \
+    -o refGene.txt.gz
+gunzip -kf refGene.txt.gz
+
+# Convert genePred -> BED12, stripping the "chr" prefix to match Ensembl BAMs
+awk 'BEGIN{FS=OFS="\t"}
+{
+  chrom=$3; sub(/^chr/,"",chrom);
+  if (chrom ~ /_/) next;                       # skip alt/random contigs
+  n=$9; split($10,es,","); split($11,ee,",");
+  sizes=""; starts="";
+  for(i=1;i<=n;i++){ sizes=sizes (ee[i]-es[i]) ","; starts=starts (es[i]-$5) "," }
+  print chrom,$5,$6,$2,0,$4,$7,$8,0,n,sizes,starts
+}' refGene.txt > hg38_refseq_gene.bed12
+
+# Transcript-to-symbol map (header line + two columns)
+{ printf "#name\tname2\n"; awk 'BEGIN{FS=OFS="\t"}{print $2,$13}' refGene.txt | sort -u; } \
+    > refseq_to_symbol.txt
+
+# Extract the 3' UTR regions DaPars2 will scan
+python "${DAPARS}/DaPars_Extract_Anno.py" \
+    -b hg38_refseq_gene.bed12 \
+    -s refseq_to_symbol.txt \
+    -o hg38_3UTR_annotation.bed
+# -> "Total extracted 3' UTR: 37100"
+```
+
+**第二步：生成覆盖度（Wig）文件与测序深度表。** DaPars2 读取 bedGraph 格式的覆盖度文件（习惯以 `.wig` 命名）。BAM 已按坐标排序，`bedtools genomecov` 输出即按染色体分块、按坐标递增，符合 DaPars2 的解析要求。测序深度文件每行一个样本，最后一列为该样本的比对读段数，用于跨样本归一化。
+
+```bash
 BAM_DIR="/Users/angdong/Documents/bio_example/bulkRNA/bam"
-REF_GTF="/Users/angdong/Documents/bio_example/bulkRNA/ref/GRCh38.109.gtf"
-GENOME_FA="/Users/angdong/Documents/bio_example/bulkRNA/ref/Homo_sapiens.GRCh38.dna.primary_assembly.fa"
-OUTDIR="/Users/angdong/Documents/bio_example/bulkRNA/apa"
+APA="/Users/angdong/Documents/bio_example/apa"
+mkdir -p "${APA}/wig"
+: > "${APA}/sequencing_depth.txt"
 
-mkdir -p ${OUTDIR}
-
-# Step 1: Generate genome-wide coverage files using samtools
-# DaPars2 requires per-base bedgraph coverage (strand-specific for RF libraries)
-for sample in SRR1039508 SRR1039510 SRR1039512 SRR1039514 SRR1039516; do
-    BAM="${BAM_DIR}/${sample}_1M.sorted.bam"
-    # Forward strand (reads mapped to + strand from RF library = reverse complement)
-    samtools view -b -f 128 -F 16 ${BAM} \
-        | bedtools genomecov -ibam - -bg -split \
-        > ${OUTDIR}/${sample}_fwd.bedgraph
-    # Reverse strand
-    samtools view -b -f 80 ${BAM} \
-        | bedtools genomecov -ibam - -bg -split \
-        >> ${OUTDIR}/${sample}_fwd.bedgraph
-    sort -k1,1 -k2,2n ${OUTDIR}/${sample}_fwd.bedgraph \
-        > ${OUTDIR}/${sample}_sorted.bedgraph
+for S in SRR1039508 SRR1039510 SRR1039512 SRR1039514 SRR1039516; do
+    BAM="${BAM_DIR}/${S}_1M.sorted.bam"
+    bedtools genomecov -ibam "${BAM}" -bg -split > "${APA}/wig/${S}.wig"
+    DEPTH=$(samtools view -c -F 0x104 "${BAM}")   # primary mapped reads
+    printf "%s\t%s\n" "${S}" "${DEPTH}" >> "${APA}/sequencing_depth.txt"
 done
+```
 
-# Step 2: Build 3' UTR annotation from GTF (DaPars2 requires UTR BED file)
-# Extract last exon per transcript to define 3' UTR regions
-python /path/to/DaPars2/DaPars_Extract_Anno.py \
-    -b ${REF_GTF} \
-    -s /path/to/hg38_chr_size.txt \
-    -o ${OUTDIR}/hg38_extracted_3UTR.bed
+**第三步：编写配置文件并运行 DaPars2。** 配置文件用 `key=value` 行声明输入；`Aligned_Wig_files` 以逗号分隔，其顺序决定输出列的顺序，须与测序深度表一致。
 
-# Step 3: Run DaPars2 differential APA analysis
-# Condition 1: untreated (4 samples)
-# Condition 2: dex-treated (1 sample in teaching subset; use all replicates in real analysis)
-python /path/to/DaPars2/DaPars2_Multi_Sample_Multi_Chr.py \
-    -c ${OUTDIR}/hg38_extracted_3UTR.bed \
-    -A ${OUTDIR}/SRR1039508_sorted.bedgraph,${OUTDIR}/SRR1039510_sorted.bedgraph,\
-${OUTDIR}/SRR1039512_sorted.bedgraph,${OUTDIR}/SRR1039514_sorted.bedgraph \
-    -B ${OUTDIR}/SRR1039516_sorted.bedgraph \
-    -o ${OUTDIR}/dapars2_output \
-    -n 15 \           # minimum read coverage threshold
-    -p 0.1            # FDR cutoff for initial filtering
+```bash
+APA="/Users/angdong/Documents/bio_example/apa"
+W="${APA}/wig"
+cd "${APA}"
 
-# Output: dapars2_output_All_Prediction_Results.txt
+cat > dapars2_config.txt <<EOF
+Annotated_3UTR=${APA}/anno/hg38_3UTR_annotation.bed
+Aligned_Wig_files=${W}/SRR1039508.wig,${W}/SRR1039510.wig,${W}/SRR1039512.wig,${W}/SRR1039514.wig,${W}/SRR1039516.wig
+Output_directory=${APA}/dapars2_output
+Output_result_file=dapars2_airway
+Coverage_threshold=10
+Num_Threads=4
+sequencing_depth_file=${APA}/sequencing_depth.txt
+EOF
+
+# Chromosome list (one per line; must match the BAM/annotation naming)
+printf "%s\n" 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 X Y > chr_list.txt
+
+# Run: the script takes the config file and the chromosome list as positional args
+python "${DAPARS}/DaPars2_Multi_Sample_Multi_Chr.py" dapars2_config.txt chr_list.txt
+```
+
+:::note
+**macOS / Python ≥ 3.8 的多进程兼容性：** DaPars2 内部用 `multiprocessing.Manager`，但脚本顶层缺少 `if __name__ == "__main__"` 保护。在 macOS（及 Python 3.8+ 默认的 `spawn` 启动方式）下会因子进程重新导入脚本而崩溃（`EOFError`）。解决办法是在调用前强制使用 `fork` 启动方式，用如下三行包装脚本即可（Linux 默认即为 `fork`，无需此步）：
+
+```python
+import sys, multiprocessing
+multiprocessing.set_start_method("fork", force=True)
+script = "/Users/angdong/Documents/bio_example/DaPars2/src/DaPars2_Multi_Sample_Multi_Chr.py"
+sys.argv = [script] + sys.argv[1:]
+exec(compile(open(script).read(), script, "exec"))
+```
+:::
+
+**第四步：合并各染色体结果。** DaPars2 为每条染色体单独建立 `dapars2_output_<chr>/` 目录并输出 `..._result_temp.<chr>.txt`。将它们合并为一张总表，便于下游读取。
+
+```bash
+APA="/Users/angdong/Documents/bio_example/apa"
+cd "${APA}"
+FIRST=$(ls dapars2_output_*/dapars2_airway_result_temp.*.txt | head -1)
+head -1 "${FIRST}" > dapars2_airway_All_Prediction_Results.txt
+for f in dapars2_output_*/dapars2_airway_result_temp.*.txt; do
+    tail -n +2 "${f}"
+done >> dapars2_airway_All_Prediction_Results.txt
+# This run yields 1139 predicted APA genes; 642 have a PDUI value in all 5 samples.
 ```
 
 :::tip
-**链特异性参数：**
-
-APA 分析对读段方向很敏感，因为 3' UTR 常与相邻基因或反义转录信号接近。airway 数据集使用 dUTP 方案建库（fr-firststrand，HISAT2 参数为 `--rna-strandness RF`），生成 bedgraph 时必须保留正确链向。若链特异性设置错误，错误链的 reads 可能制造虚假覆盖度变化。可用 RSeQC 的 `infer_experiment.py` 快速验证链特异性。
+**链特异性的取舍：** 上面用 `bedtools genomecov -bg` 生成的是合并双链的总覆盖度，流程简单、足以演示 DaPars2 的完整运行。但 APA 分析对读段方向敏感，因为 3' UTR 常与相邻基因或反义转录信号接近。airway 数据集使用 dUTP 方案建库（fr-firststrand，HISAT2 参数为 `--rna-strandness RF`），在正式分析中应按链拆分 BAM（如 `samtools view -f 128 -F 16` 与 `-f 80` 组合）后分别生成覆盖度，避免错误链 reads 制造虚假覆盖度变化。可用 RSeQC 的 `infer_experiment.py` 先确认文库的链特异性。
 :::
 
 ## DaPars2 结果解读
 
-DaPars2 结果解读的重点是三列：对照组 PDUI、处理组 PDUI 和 ΔPDUI。筛选时通常同时要求 FDR 达标和 `abs(delta_pdui)` 足够大；只看 P 值容易得到统计显著但效应很小的事件。
+DaPars2 输出表的核心列是 `Gene`（格式 `refseq|symbol|chr|strand`）、`Predicted_Proximal_APA`（预测的近端 PAS 坐标）、`Loci`（3' UTR 区间）以及每个样本一列的 `*_PDUI` 值。由于 DaPars2 不在工具内部分组，分组比较需在 R 中完成：定义两组、对每个基因计算组均 PDUI 与 ΔPDUI、用 t 检验得到 P 值并做 BH 校正。本演示沿用与可变剪接专题一致的零假设设置——把 4 个 untreated 样本拆成两组（508/510 与 512/514），借以走通统计流程而非得出生物学结论。
+
+:::warning
+**关于本演示的分组：** 本地 PE 数据中仅 SRR1039516 为 dexamethasone 处理样本，无法构成处理组的生物学重复，无法进行有意义的两组检验。因此这里将 4 个 untreated 样本人为拆为两组（各 2 个重复），本质是一次零假设（null）对比，仅用于演示 DaPars2 的完整流程。在真实研究中两组应对应不同实验条件，且每组建议 ≥ 3 个重复。
+:::
 
 ```r
-# Parse and visualize DaPars2 output
+# Parse DaPars2 output and run the group comparison downstream
 library(dplyr)
-library(ggplot2)
 library(readr)
+library(tidyr)
 
-# Read DaPars2 result table
-dapars_result <- read_tsv(
-    "/Users/angdong/Documents/bio_example/bulkRNA/apa/dapars2_output_All_Prediction_Results.txt"
-) |>
-    rename(
-        gene = Gene,
-        pdui_control = PDUI_Group_1,
-        pdui_case = PDUI_Group_2,
-        delta_pdui = `PDUI_Group_2 - PDUI_Group_1`,
-        pvalue = P_val,
-        fdr = adjusted.P_val
-    )
+res <- read_tsv(
+    "/Users/angdong/Documents/bio_example/apa/dapars2_airway_All_Prediction_Results.txt",
+    show_col_types = FALSE
+)
+# Rename the per-sample PDUI columns (full paths -> sample IDs)
+names(res) <- sub(".*/(SRR[0-9]+)_PDUI$", "\\1", names(res))
 
-# Filter significant APA events
-sig_apa <- dapars_result |>
-    filter(
-        fdr < 0.05,
-        abs(delta_pdui) > 0.2,
-        !is.na(pdui_control),
-        !is.na(pdui_case)
-    ) |>
+# Define two groups (null demo: two subsets of untreated samples)
+g1 <- c("SRR1039508", "SRR1039510")
+g2 <- c("SRR1039512", "SRR1039514")
+
+dapars_result <- res |>
+    separate(Gene, into = c("refseq", "symbol", "chr", "strand"),
+             sep = "\\|", remove = FALSE) |>
+    mutate(across(all_of(c(g1, g2)), as.numeric)) |>
+    # DaPars2 reports NA where coverage is insufficient; keep complete cases
+    filter(if_all(all_of(c(g1, g2)), ~ !is.na(.))) |>
+    rowwise() |>
     mutate(
-        apa_direction = case_when(
-            delta_pdui > 0  ~ "3' UTR Lengthening",
-            delta_pdui < 0  ~ "3' UTR Shortening"
-        )
-    )
+        pdui_g1    = mean(c_across(all_of(g1))),
+        pdui_g2    = mean(c_across(all_of(g2))),
+        delta_pdui = pdui_g2 - pdui_g1,
+        pvalue     = tryCatch(
+            t.test(c_across(all_of(g1)), c_across(all_of(g2)))$p.value,
+            error = function(e) NA_real_)
+    ) |>
+    ungroup() |>
+    mutate(fdr = p.adjust(pvalue, method = "BH"))
 
-cat("Total significant APA events:", nrow(sig_apa), "\n")
+# Filter significant APA events: FDR < 0.05 AND |dPDUI| > 0.2
+sig_apa <- dapars_result |>
+    filter(!is.na(fdr), fdr < 0.05, abs(delta_pdui) > 0.2) |>
+    mutate(apa_direction = if_else(delta_pdui > 0,
+                                   "3' UTR Lengthening", "3' UTR Shortening"))
+
+cat("Genes analyzed (complete cases):", nrow(dapars_result), "\n")
+cat("Total significant APA events:",   nrow(sig_apa), "\n")
 cat("3' UTR lengthening:", sum(sig_apa$delta_pdui > 0), "\n")
 cat("3' UTR shortening:",  sum(sig_apa$delta_pdui < 0), "\n")
+# In this null demo: 642 genes analyzed, 0 significant after FDR correction.
 ```
 
-```r
-#| label: fig-dapars2-volcano
-#| fig-cap: "DaPars2 差异 APA 分析结果火山图。横轴为 ΔPDUI（正值表示 dex 处理后 3' UTR 延长，负值表示缩短），纵轴为 -log10(FDR)。虚线标注显著性阈值（FDR = 0.05，|ΔPDUI| = 0.2）。"
-library(dplyr)
-library(ggplot2)
-
-# Simulated DaPars2 output for illustration
-set.seed(42)
-n_genes <- 3000
-dapars_sim <- data.frame(
-    delta_pdui = c(
-        rnorm(n_genes * 0.85, mean = 0,    sd = 0.08),
-        rnorm(n_genes * 0.08, mean = -0.35, sd = 0.10),
-        rnorm(n_genes * 0.07, mean =  0.30, sd = 0.10)
-    ),
-    fdr = runif(n_genes)
-) |>
-    mutate(
-        fdr = ifelse(abs(delta_pdui) > 0.15, fdr * 0.01, fdr),
-        sig = fdr < 0.05 & abs(delta_pdui) > 0.2,
-        color_group = case_when(
-            sig & delta_pdui > 0 ~ "Lengthening (sig.)",
-            sig & delta_pdui < 0 ~ "Shortening (sig.)",
-            TRUE ~ "Not significant"
-        )
-    )
-
-ggplot(dapars_sim, aes(x = delta_pdui, y = -log10(fdr + 1e-10),
-                        color = color_group)) +
-    geom_point(alpha = 0.5, size = 0.8) +
-    geom_hline(yintercept = -log10(0.05), linetype = "dashed",
-               color = "grey50", linewidth = 0.6) +
-    geom_vline(xintercept = c(-0.2, 0.2), linetype = "dashed",
-               color = "grey50", linewidth = 0.6) +
-    scale_color_manual(values = c(
-        "Lengthening (sig.)" = "#d62728",
-        "Shortening (sig.)"  = "#1f77b4",
-        "Not significant"    = "grey70"
-    )) +
-    labs(x = "ΔPDUI (dex - control)",
-         y = expression(-log[10](FDR)),
-         color = NULL,
-         caption = "Simulated data for illustration; replace with actual DaPars2 output") +
-    theme_bw(base_size = 12) +
-    theme(legend.position = "top")
-```
+基于上面 `dapars_result` 表，可绘制火山图（ΔPDUI vs FDR）和组间 PDUI 散点图。下面代码使用真实数据生成 @fig-dapars2-volcano 与 @fig-dapars2-scatter。
 
 ```r
-#| label: fig-dapars2-pdui-scatter
-#| fig-cap: "各样本 PDUI 值散点图。每个点代表一个基因在对照组（横轴）与 dex 处理组（纵轴）的 PDUI 值，对角线为参考线（无差异）。显著缩短的基因（ΔPDUI < -0.2，FDR < 0.05）标注为蓝色，显著延长的基因标注为红色。"
+#| eval: false
 library(ggplot2)
 
-set.seed(123)
-pdui_sim <- data.frame(
-    pdui_ctrl = runif(3000, 0.1, 0.95),
-    noise     = rnorm(3000, 0, 0.08)
-) |>
-    mutate(
-        pdui_dex = pmin(pmax(pdui_ctrl + noise, 0.01), 0.99),
-        delta     = pdui_dex - pdui_ctrl,
-        group     = case_when(
-            delta < -0.2 ~ "Shortening",
-            delta >  0.2 ~ "Lengthening",
-            TRUE         ~ "Unchanged"
-        )
-    )
+dapars_result <- dapars_result |>
+    mutate(color_group = case_when(
+        fdr < 0.05 & delta_pdui >  0.2 ~ "Lengthening (sig.)",
+        fdr < 0.05 & delta_pdui < -0.2 ~ "Shortening (sig.)",
+        TRUE                           ~ "Not significant"))
 
-ggplot(pdui_sim, aes(x = pdui_ctrl, y = pdui_dex, color = group)) +
-    geom_point(alpha = 0.4, size = 0.7) +
-    geom_abline(slope = 1, intercept = 0, linetype = "dashed",
-                color = "black", linewidth = 0.6) +
-    scale_color_manual(values = c(
-        "Shortening"  = "#1f77b4",
-        "Lengthening" = "#d62728",
-        "Unchanged"   = "grey70"
-    )) +
-    labs(x = "PDUI (Control)", y = "PDUI (Dex-treated)", color = NULL,
-         caption = "Simulated data for illustration") +
+pal <- c("Lengthening (sig.)" = "#d62728",
+         "Shortening (sig.)"  = "#1f77b4",
+         "Not significant"    = "grey70")
+
+# Volcano: dPDUI vs -log10(FDR)
+ggplot(dapars_result, aes(delta_pdui, -log10(fdr), color = color_group)) +
+    geom_point(alpha = 0.5, size = 0.9) +
+    geom_hline(yintercept = -log10(0.05), linetype = "dashed", color = "grey50") +
+    geom_vline(xintercept = c(-0.2, 0.2), linetype = "dashed", color = "grey50") +
+    scale_color_manual(values = pal) +
+    labs(x = "ΔPDUI (Group2 - Group1)", y = expression(-log[10](FDR)),
+         color = NULL) +
+    theme_bw(base_size = 12) + theme(legend.position = "top")
+
+# Scatter: per-group mean PDUI
+ggplot(dapars_result, aes(pdui_g1, pdui_g2, color = color_group)) +
+    geom_point(alpha = 0.5, size = 0.9) +
+    geom_abline(slope = 1, intercept = 0, linetype = "dashed") +
+    scale_color_manual(values = pal) +
     coord_fixed(xlim = c(0, 1), ylim = c(0, 1)) +
-    theme_bw(base_size = 12) +
-    theme(legend.position = "top")
+    labs(x = "PDUI (Group1)", y = "PDUI (Group2)", color = NULL) +
+    theme_bw(base_size = 12) + theme(legend.position = "top")
 ```
+
+![DaPars2 差异 APA 分析火山图（真实数据，airway 零假设对照）。横轴为 ΔPDUI（正值表示 Group2 相对 Group1 的 3' UTR 延长，负值表示缩短），纵轴为 -log₁₀(FDR)。虚线标注显著性阈值（FDR = 0.05，|ΔPDUI| = 0.2）。由于两组均为 untreated 样本，全部 642 个基因经 BH 校正后 FDR 远高于 0.05（点贴近 y≈0），无一进入显著区——这正是无真实生物学差异时的预期形态。](images/fig-dapars2-volcano.png){#fig-dapars2-volcano width=85%}
+
+![组间 PDUI 散点图（真实数据）。每个点为一个基因在 Group1（横轴）与 Group2（纵轴）的组均 PDUI，对角线为无差异参考线。点沿对角线对称散布、无显著延长或缩短基因，符合零假设对照的预期。少数偏离对角线的点 ΔPDUI 虽大，但仅 2 个重复时 t 检验功效极低，FDR 校正后均不显著。](images/fig-dapars2-scatter.png){#fig-dapars2-scatter width=70%}
+
+**结果解读：** 本次运行从 1139 个被预测出近端 PAS 的基因中，得到 642 个在全部 5 个样本均有有效 PDUI 的基因。在零假设分组（508/510 vs 512/514）下，ΔPDUI 中位数约为 0，分布近似对称（@fig-dapars2-scatter），经 BH 校正后无一基因满足 `FDR < 0.05 且 |ΔPDUI| > 0.2`。这一"零结果"恰恰验证了流程的正确性：当两组之间不存在真实的 APA 调控差异时，DaPars2 加下游统计不会凭空制造假阳性。需要强调的是，PDUI 大幅偏离对角线的个别基因（如 `WDR83OS`、`PTMS`）其 |ΔPDUI| 可达 0.4–0.5，但仅 2 个重复时 t 检验功效极低，P 值不显著——这提示在小样本 APA 分析中，应同时报告效应量与覆盖度，切勿仅凭 ΔPDUI 解读单个基因。
 
 ---
 

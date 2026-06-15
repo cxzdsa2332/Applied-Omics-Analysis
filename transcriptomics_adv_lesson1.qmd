@@ -66,12 +66,16 @@ $$\Psi = \frac{I}{I + S}$$
 
 rMATS（replicate Multivariate Analysis of Transcript Splicing）是目前最广泛使用的可变剪接差异分析工具。与早期工具相比，rMATS 的核心改进在于：（1）专门设计用于处理**有重复样本**的实验设计，能够对样本间的 PSI 变异进行统计建模；（2）使用 **Beta 二项分布**（Beta-Binomial distribution）而非简单二项分布，更好地捕捉生物学重复之间的过度离散（overdispersion）现象。
 
-**rMATS 的统计推断流程**：
+**rMATS 的统计推断流程**：可以将整个流程理解为四个递进的问题——"数清楚有多少 reads" → "把比例上的随机波动建模出来" → "估计两组到底差多少" → "判断这个差异是不是偶然"。
 
-1. **读段计数**：对每个可变剪接事件，统计每个样本的 inclusion junction reads（$I_k$）和 skipping junction reads（$S_k$）。
-2. **Beta 二项分布建模**：对每个组，假设每个样本的读段计数服从 Beta-Binomial 分布，其中 Beta 先验参数刻画了组内的变异性。
-3. **$\Delta\Psi$ 的后验估计**：通过贝叶斯推断得到 $\Delta\Psi$ 的后验分布，报告后验均值与置信区间。
-4. **显著性检验**：计算 $|\Delta\Psi| > \delta$（通常 $\delta = 0.05$）的后验概率；同时报告 FDR 校正后的 P 值。
+1. **读段计数**：对每个可变剪接事件，统计每个样本的 inclusion junction reads（$I_k$，支持纳入外显子）和 skipping junction reads（$S_k$，支持跳过外显子）。单个样本的 PSI 即由这两个数算出：$\Psi_k = I_k / (I_k + S_k)$。这一步的本质是把"剪接选择"转化为一个"成功/失败"的计数问题——每条 junction read 都是一次投票，投给"纳入"或"跳过"。
+2. **Beta 二项分布建模**：关键在于 PSI 不是一个固定常数。即使在同一实验条件下，不同生物学重复测得的 PSI 也会有波动，这种"重复之间比例本身就在变"的现象称为过度离散（overdispersion）。rMATS 用两层结构刻画它：内层用二项分布描述"给定真实纳入概率时，$I_k$ 在总 reads 中的随机抽样"；外层用 Beta 分布描述"各重复的真实纳入概率本身围绕组均值的散布"。两层叠加即 Beta 二项分布——读段越少、重复间波动越大，模型给出的不确定性就越大。
+3. **$\Delta\Psi$ 的后验估计**：在上述模型下，通过贝叶斯推断同时估计两组的 PSI 均值，并直接得到两者之差 $\Delta\Psi = \Psi_1 - \Psi_2$ 的后验分布。报告的不是一个孤立的点估计，而是后验均值加置信区间——区间越窄，说明该事件的 reads 支持越充分、估计越可信。
+4. **显著性检验**：rMATS 检验的不是"$\Delta\Psi$ 是否恰好为 0"，而是"差异是否大到具有生物学意义"。它计算后验分布中 $|\Delta\Psi| > \delta$（阈值通常取 $\delta = 0.05$）的概率，据此给出 P 值，再经多重检验校正得到 FDR。因此一个事件要被判为显著，需同时满足两点：差异幅度足够大（$|\Delta\Psi|$ 超过阈值）且证据足够稳（FDR 足够小）。
+
+:::info
+**黄金法则：幅度与置信缺一不可。** rMATS 的输出永远要同时看 `IncLevelDifference`（$\Delta\Psi$，差异多大）和 `FDR`（差异多可信）。一个 $\Delta\Psi = 0.6$ 但 reads 极少、FDR 接近 1 的事件不可信；一个 FDR 极小但 $\Delta\Psi$ 只有 0.02 的事件虽统计显著却几乎没有生物学意义。真正值得关注的是两者皆达标的事件。
+:::
 
 rMATS 支持两种计数模式，对应两个输出文件系列：
 
@@ -184,8 +188,8 @@ ls ${OUTPUT_DIR}/*.JC.txt
 # SE.MATS.JC.txt  A5SS.MATS.JC.txt  A3SS.MATS.JC.txt
 # RI.MATS.JC.txt  MXE.MATS.JC.txt
 
-# Preview SE results
-head -2 ${OUTPUT_DIR}/SE.MATS.JC.txt | cut -f1-12
+# Preview the key SE columns (gene, exon coords, junction counts, stats)
+cut -f3,6,7,13-16,19-23 ${OUTPUT_DIR}/SE.MATS.JC.txt | head -3 | column -t
 ```
 
 rMATS 输出的关键字段说明（以 `SE.MATS.JC.txt` 为例）：
@@ -207,7 +211,7 @@ library(dplyr)
 library(ggplot2)
 
 # Read SE results
-se <- read.table("rmats_output/SE.MATS.JC.txt",
+se <- read.table("/Users/angdong/Documents/bio_example/bulkRNA/rmats_output/SE.MATS.JC.txt",
                  header = TRUE, sep = "\t", stringsAsFactors = FALSE)
 
 # Filter: |dPSI| > 0.1 and FDR < 0.05 with sufficient read coverage
@@ -229,21 +233,11 @@ head(sig_se[, c("geneSymbol", "IncLevelDifference", "FDR")], 10)
 
 ```r
 #| label: fig-rmats-volcano
-#| fig-cap: "rMATS 可变外显子跳跃事件的火山图。横轴为 ΔPSI，纵轴为 -log₁₀(FDR)，红色点为显著差异事件（|ΔPSI| > 0.1，FDR < 0.05）。"
+#| fig-cap: "rMATS 可变外显子跳跃事件的火山图（真实数据，SE.MATS.JC.txt）。横轴为 ΔPSI，纵轴为 -log₁₀(FDR)，红色点为显著差异事件（|ΔPSI| > 0.1，FDR < 0.05）。本演示为零假设对照，绝大多数事件 FDR≈1（点密集分布于 y=0 一线），仅极少数点升起，这正是无真实生物学差异时的预期形态。"
 library(dplyr)
 library(ggplot2)
 
-# Simulate rMATS-like SE results for rendering demonstration
-set.seed(42)
-n_events <- 3000
-se <- data.frame(
-    geneSymbol          = paste0("Gene", seq_len(n_events)),
-    IncLevelDifference  = rnorm(n_events, 0, 0.15),
-    FDR                 = runif(n_events, 1e-6, 1)
-)
-se$FDR[abs(se$IncLevelDifference) > 0.2] <-
-    runif(sum(abs(se$IncLevelDifference) > 0.2), 1e-6, 0.05)
-
+# Reuse the real SE results loaded above (rmats_output/SE.MATS.JC.txt)
 se_plot <- se |>
     filter(!is.na(FDR), FDR > 0) |>
     mutate(
@@ -267,27 +261,96 @@ ggplot(se_plot, aes(x = IncLevelDifference, y = neg_log10_fdr,
     theme(legend.position = "top")
 ```
 
+#### 多事件类型的并排火山图
+
+单张火山图只能展示一类剪接事件。`scRNAtoolVis` 包的 `jjVolcano()` 专为多组差异结果设计：它将每个分组（这里即 SE、A3SS、A5SS 三类剪接事件）绘制成一列，纵轴为差异幅度，正负分别对应 inclusion 升高与降低，并在中央用色块标注分组、自动为每组标注差异最显著的若干事件，从而在一张图中横向比较各类事件的整体差异分布。
+
+`jjVolcano()` 的输入沿用 Seurat `FindAllMarkers()` 的列名约定，需要 `gene`、`avg_log2FC`、`cluster`、`p_val`、`p_val_adj` 五列。将 rMATS 字段映射过去即可：`geneSymbol → gene`、`IncLevelDifference (ΔPSI) → avg_log2FC`、事件类型 `→ cluster`、`PValue → p_val`、`FDR → p_val_adj`。
+
+:::note
+**依赖说明：** `scRNAtoolVis` 发布于 GitHub，需先安装：`remotes::install_github("junjunlab/scRNAtoolVis")`（依赖 `Seurat`、`ComplexHeatmap`、`jjAnno` 等）。本代码读取真实的 rMATS 输出文件，需先完成前述比对与 rMATS 分析。
+:::
+
+```r
+#| label: fig-rmats-volcano-multi
+#| fig-cap: "三类可变剪接事件（SE、A3SS、A5SS）的多组火山图（jjVolcano）。每列为一类事件，纵轴为 ΔPSI（avg_log2FC 列）；红/蓝点为 |ΔPSI| 超过阈值（±0.1）的 inclusion 升高（sigUp）与降低（sigDown）事件，中央色块标注事件类型，标签为各组 FDR 达标且 ΔPSI 最显著的若干事件。本演示为零假设对照，结果仅用于展示绘图流程。"
+library(scRNAtoolVis)
+library(dplyr)
+
+rmats_dir <- "/Users/angdong/Documents/bio_example/bulkRNA/rmats_output"
+events <- c("SE", "A3SS", "A5SS")
+
+# Assemble a Seurat-FindAllMarkers-style table from the rMATS outputs
+diff_data <- lapply(events, function(ev) {
+    read.table(file.path(rmats_dir, paste0(ev, ".MATS.JC.txt")),
+               header = TRUE, sep = "\t", stringsAsFactors = FALSE) |>
+        filter(!is.na(FDR), !is.na(IncLevelDifference)) |>
+        transmute(gene       = geneSymbol,
+                  avg_log2FC = IncLevelDifference,   # dPSI on the y-axis
+                  cluster    = ev,
+                  p_val      = PValue,
+                  p_val_adj  = FDR)
+}) |>
+    bind_rows() |>
+    mutate(cluster = factor(cluster, levels = events))
+
+# Multi-group volcano: dPSI cutoff 0.1, FDR cutoff 0.05, label top 5 per event
+jjVolcano(diffData       = diff_data,
+          log2FC.cutoff  = 0.1,
+          adjustP.cutoff = 0.05,
+          topGeneN       = 5,
+          size           = 3,
+          aesCol         = c("#1f77b4", "#d62728"),
+          tile.col       = c("#8da0cb", "#66c2a5", "#fc8d62"),
+          legend.position = "top") +
+    ggplot2::ylab(expression(Delta*Psi))
+```
+
 ### Sashimi 图可视化
 
 Sashimi 图是可变剪接分析中最直观的可视化方式：横轴为基因组坐标，纵轴为覆盖深度，弧线连接两个剪接位点，弧线粗细（或标注数字）代表跨越该连接的 junction reads 数量。从 Sashimi 图中，读者可以直观地看到处理组与对照组在某一外显子两侧 junction reads 数量的差异，从而验证 rMATS 统计结果是否与覆盖度模式一致。
 
-```bash
-# Generate Sashimi plot for top significant SE event
-# Requires rmats2sashimiplot (conda install -c bioconda rmats2sashimiplot)
-# Coordinates are taken from the top row of sig_se
-TOP_GENE="GENE_SYMBOL"  # replace with actual top gene
-COORDS="chr:start:end:strand"  # replace with actual coordinates
+rmats2sashimiplot 直接读取 rMATS 的事件结果文件（`-e`），并按其中记录的外显子坐标作图。最方便的做法是从完整的 `SE.MATS.JC.txt` 中抽取目标事件（连同表头）写入一个子集文件，再传给 `-e`。下面以 SNHG29 基因（`ENSG00000175061`）中 FDR 最低、$\Delta\Psi$ 最大的可变外显子跳跃事件（ID 11851）为例：
 
+```bash
+# Requires rmats2sashimiplot (conda install -c bioconda rmats2sashimiplot)
+RM="/Users/angdong/Documents/bio_example/bulkRNA/rmats_output"
+STAR_DIR="/Users/angdong/Documents/bio_example/bulkRNA/STAR"
+OUT="/Users/angdong/Documents/bio_example/bulkRNA/sashimi_output"
+mkdir -p "${OUT}"
+
+# Extract the target SNHG29 SE event (ID 11851) together with the header line
+head -1 "${RM}/SE.MATS.JC.txt" > "${OUT}/SNHG29_SE.txt"
+awk -F'\t' '$1==11851' "${RM}/SE.MATS.JC.txt" >> "${OUT}/SNHG29_SE.txt"
+
+# Build the comma-separated BAM lists for each group
+B1="${STAR_DIR}/SRR1039508_Aligned.sortedByCoord.out.bam,${STAR_DIR}/SRR1039510_Aligned.sortedByCoord.out.bam"
+B2="${STAR_DIR}/SRR1039512_Aligned.sortedByCoord.out.bam,${STAR_DIR}/SRR1039514_Aligned.sortedByCoord.out.bam"
+
+# --remove-event-chr-prefix strips the "chr" in the event file (chr17) to match
+# the Ensembl-style BAM contig names (17); drop it if your BAM uses "chr17".
 rmats2sashimiplot \
-    --b1 "$(cat group1_bams.txt)" \
-    --b2 "$(cat group2_bams.txt)" \
+    --b1 "${B1}" \
+    --b2 "${B2}" \
     --event-type SE \
-    --event-coordinates ${COORDS} \
-    --l1 "Group1" \
-    --l2 "Group2" \
+    -e "${OUT}/SNHG29_SE.txt" \
+    --l1 Group1 \
+    --l2 Group2 \
+    --exon_s 1 --intron_s 5 \
     --min-counts 5 \
-    --output sashimi_output/
+    --remove-event-chr-prefix \
+    -o "${OUT}/SNHG29"
 ```
+
+:::note
+**两个易错点：** （1）事件类型参数为 `--event-type`（非 `-t`），且需配合 `-e` 传入 rMATS 事件文件，而非手动拼写坐标字符串。（2）本专题的 BAM 由 STAR 比对到 Ensembl GRCh38 参考，contig 名为 `17`，而 rMATS 输出沿用 `chr17`；二者不一致时 Sashimi 图会读不到 reads，须加 `--remove-event-chr-prefix` 将事件坐标对齐到 BAM 命名。
+:::
+
+运行后，图像以 PDF 形式输出至 `sashimi_output/SNHG29/Sashimi_plot/` 目录。@fig-sashimi-snhg29 即为该事件的结果。
+
+![SNHG29 可变外显子跳跃事件（chr17:16,439,580–16,439,703）的 Sashimi 图。四条轨道自上而下为 Group1（SRR1039508、SRR1039510，红色）与 Group2（SRR1039512、SRR1039514，橙色）的覆盖深度（RPKM），弧线上的数字为跨越对应剪接位点的 junction reads 数量，各轨道右侧标注其 PSI 值（IncLevel）。底部为该事件涉及的两种转录本结构（纳入型与跳跃型）。](images/fig-sashimi-snhg29.png){#fig-sashimi-snhg29 width=85%}
+
+**结果解读：** 该事件的关键在于比较中段可变外显子两侧"纳入型"junction reads 的相对丰度。Group1 两个样本的纳入型 junction reads（约 25、20）明显高于 Group2（约 6、7），对应右侧标注的 PSI 值——Group1 为 0.42 与 0.40，Group2 为 0.26 与 0.17，组间 $\Delta\Psi \approx +0.18$。这一覆盖度与 junction 模式与 rMATS 的统计结果（IncLevelDifference = 0.195，FDR = 0.042）方向一致、量级吻合，说明该差异并非个别样本的离群表现，而是组内可重复的趋势。需要强调的是，本演示的分组本质上是零假设对照（详见前文 warning），此处的差异仅用于示范如何将 Sashimi 图与 rMATS 统计量交叉验证，不应作为 SNHG29 受 dexamethasone 调控的生物学证据。
 
 ### 差异剪接基因的 GO 富集分析
 

@@ -771,7 +771,7 @@
     "href": "references.html#参考文献",
     "title": "参考资料",
     "section": "参考文献",
-    "text": "参考文献",
+    "text": "参考文献\nMeister, A., Li, Y. H., Choi, B., & Wong, W. H. (2013). Learning a nonlinear dynamical system model of gene regulation: A perturbed steady-state approach. The Annals of Applied Statistics, 7(3), 1311–1333. https://doi.org/10.1214/13-AOAS645",
     "crumbs": [
       "参考资料"
     ]
@@ -5686,7 +5686,7 @@
     "href": "transcriptomics_adv_lesson1.html#rmats基于贝叶斯框架的差异剪接检验",
     "title": "26  可变剪接差异分析与基因融合鉴定",
     "section": "28.3 rMATS：基于贝叶斯框架的差异剪接检验",
-    "text": "28.3 rMATS：基于贝叶斯框架的差异剪接检验\nrMATS（replicate Multivariate Analysis of Transcript Splicing）是目前最广泛使用的可变剪接差异分析工具。与早期工具相比，rMATS 的核心改进在于：（1）专门设计用于处理有重复样本的实验设计，能够对样本间的 PSI 变异进行统计建模；（2）使用 Beta 二项分布（Beta-Binomial distribution）而非简单二项分布，更好地捕捉生物学重复之间的过度离散（overdispersion）现象。\nrMATS 的统计推断流程：\n\n读段计数：对每个可变剪接事件，统计每个样本的 inclusion junction reads（\\(I_k\\)）和 skipping junction reads（\\(S_k\\)）。\nBeta 二项分布建模：对每个组，假设每个样本的读段计数服从 Beta-Binomial 分布，其中 Beta 先验参数刻画了组内的变异性。\n\\(\\Delta\\Psi\\) 的后验估计：通过贝叶斯推断得到 \\(\\Delta\\Psi\\) 的后验分布，报告后验均值与置信区间。\n显著性检验：计算 \\(|\\Delta\\Psi| &gt; \\delta\\)（通常 \\(\\delta = 0.05\\)）的后验概率；同时报告 FDR 校正后的 P 值。\n\nrMATS 支持两种计数模式，对应两个输出文件系列：\n\nJC（Junction Counts only）：仅使用跨越剪接位点的 junction reads，对外显子长度变化不敏感，推荐作为主要分析依据。\nJCEC（Junction Counts and Exon body Counts）：同时纳入外显子体内的 reads，信号更强但对 reads 的均匀覆盖有依赖，适合外显子较长的事件。",
+    "text": "28.3 rMATS：基于贝叶斯框架的差异剪接检验\nrMATS（replicate Multivariate Analysis of Transcript Splicing）是目前最广泛使用的可变剪接差异分析工具。与早期工具相比，rMATS 的核心改进在于：（1）专门设计用于处理有重复样本的实验设计，能够对样本间的 PSI 变异进行统计建模；（2）使用 Beta 二项分布（Beta-Binomial distribution）而非简单二项分布，更好地捕捉生物学重复之间的过度离散（overdispersion）现象。\nrMATS 的统计推断流程：可以将整个流程理解为四个递进的问题——“数清楚有多少 reads” → “把比例上的随机波动建模出来” → “估计两组到底差多少” → “判断这个差异是不是偶然”。\n\n读段计数：对每个可变剪接事件，统计每个样本的 inclusion junction reads（\\(I_k\\)，支持纳入外显子）和 skipping junction reads（\\(S_k\\)，支持跳过外显子）。单个样本的 PSI 即由这两个数算出：\\(\\Psi_k = I_k / (I_k + S_k)\\)。这一步的本质是把”剪接选择”转化为一个”成功/失败”的计数问题——每条 junction read 都是一次投票，投给”纳入”或”跳过”。\nBeta 二项分布建模：关键在于 PSI 不是一个固定常数。即使在同一实验条件下，不同生物学重复测得的 PSI 也会有波动，这种”重复之间比例本身就在变”的现象称为过度离散（overdispersion）。rMATS 用两层结构刻画它：内层用二项分布描述”给定真实纳入概率时，\\(I_k\\) 在总 reads 中的随机抽样”；外层用 Beta 分布描述”各重复的真实纳入概率本身围绕组均值的散布”。两层叠加即 Beta 二项分布——读段越少、重复间波动越大，模型给出的不确定性就越大。\n\\(\\Delta\\Psi\\) 的后验估计：在上述模型下，通过贝叶斯推断同时估计两组的 PSI 均值，并直接得到两者之差 \\(\\Delta\\Psi = \\Psi_1 - \\Psi_2\\) 的后验分布。报告的不是一个孤立的点估计，而是后验均值加置信区间——区间越窄，说明该事件的 reads 支持越充分、估计越可信。\n显著性检验：rMATS 检验的不是”\\(\\Delta\\Psi\\) 是否恰好为 0”，而是”差异是否大到具有生物学意义”。它计算后验分布中 \\(|\\Delta\\Psi| &gt; \\delta\\)（阈值通常取 \\(\\delta = 0.05\\)）的概率，据此给出 P 值，再经多重检验校正得到 FDR。因此一个事件要被判为显著，需同时满足两点：差异幅度足够大（\\(|\\Delta\\Psi|\\) 超过阈值）且证据足够稳（FDR 足够小）。\n\n\n黄金法则：幅度与置信缺一不可。 rMATS 的输出永远要同时看 IncLevelDifference（\\(\\Delta\\Psi\\)，差异多大）和 FDR（差异多可信）。一个 \\(\\Delta\\Psi = 0.6\\) 但 reads 极少、FDR 接近 1 的事件不可信；一个 FDR 极小但 \\(\\Delta\\Psi\\) 只有 0.02 的事件虽统计显著却几乎没有生物学意义。真正值得关注的是两者皆达标的事件。\n\nrMATS 支持两种计数模式，对应两个输出文件系列：\n\nJC（Junction Counts only）：仅使用跨越剪接位点的 junction reads，对外显子长度变化不敏感，推荐作为主要分析依据。\nJCEC（Junction Counts and Exon body Counts）：同时纳入外显子体内的 reads，信号更强但对 reads 的均匀覆盖有依赖，适合外显子较长的事件。",
     "crumbs": [
       "第二阶段：转录组与单细胞",
       "<span class='chapter-number'>26</span>  <span class='chapter-title'>可变剪接差异分析与基因融合鉴定</span>"
@@ -5697,7 +5697,7 @@
     "href": "transcriptomics_adv_lesson1.html#实践rmats-差异剪接分析",
     "title": "26  可变剪接差异分析与基因融合鉴定",
     "section": "28.4 实践：rMATS 差异剪接分析",
-    "text": "28.4 实践：rMATS 差异剪接分析\n\n28.4.1 环境准备与输入数据\nrMATS 在解析 junction reads 时依赖比对器写入的剪接信息与链向标签（XS），其官方测试基准与推荐流程均基于 STAR。因此本专题不复用第4章的 HISAT2 比对结果，而是用 STAR 对同一批 airway 数据（气道平滑肌细胞，参见第4章）重新比对。下面对 5 个双端样本（经 fastp 质控修剪）逐一比对，输出统一存放于 bulkRNA/STAR/。\n首先需要 STAR 基因组索引。若尚未构建，可用基因组 FASTA 生成（本例的本地索引位于 ref/star_index/）：\nREF=\"/Users/angdong/Documents/bio_example/bulkRNA/ref\"\nSTAR_INDEX=\"${REF}/star_index\"\n\n# Build the genome index (run once; needs ~30 GB RAM for the human genome).\n# Supplying --sjdbGTFfile here pre-inserts annotated junctions and improves\n# junction sensitivity; omit it to build an annotation-free index and let STAR\n# detect splice junctions de novo (sufficient for rMATS event quantification).\nSTAR --runMode genomeGenerate \\\n     --runThreadN 8 \\\n     --genomeDir \"${STAR_INDEX}\" \\\n     --genomeFastaFiles \"${REF}/Homo_sapiens.GRCh38.dna.primary_assembly.fa\"\n然后对 5 个双端样本（经 fastp 质控修剪）逐一比对：\nSTAR_INDEX=\"/Users/angdong/Documents/bio_example/bulkRNA/ref/star_index\"\nFASTP_DIR=\"/Users/angdong/Documents/bio_example/bulkRNA/qc/fastp\"\nSTAR_DIR=\"/Users/angdong/Documents/bio_example/bulkRNA/STAR\"\nmkdir -p \"${STAR_DIR}\"\n\n# --outSAMstrandField intronMotif writes the XS tag rMATS uses for strand inference.\nfor S in SRR1039508 SRR1039510 SRR1039512 SRR1039514 SRR1039516; do\n    STAR --runThreadN 8 \\\n         --genomeDir \"${STAR_INDEX}\" \\\n         --readFilesIn \"${FASTP_DIR}/${S}_1_1M_trimmed.fastq.gz\" \\\n                       \"${FASTP_DIR}/${S}_2_1M_trimmed.fastq.gz\" \\\n         --readFilesCommand \"gunzip -c\" \\\n         --outSAMtype BAM SortedByCoordinate \\\n         --outSAMstrandField intronMotif \\\n         --alignSJoverhangMin 8 \\\n         --outFilterMismatchNmax 999 \\\n         --alignIntronMin 20 \\\n         --alignIntronMax 1000000 \\\n         --outFileNamePrefix \"${STAR_DIR}/${S}_\"\n    samtools index \"${STAR_DIR}/${S}_Aligned.sortedByCoord.out.bam\"\ndone\n\n--readFilesCommand 的写法： STAR 通过该参数调用外部命令解压输入。在 macOS（zsh）下 zcat 默认仅识别 .Z 后缀，应使用 \"gunzip -c\"；Linux/bash 环境则两者皆可。\n\n得到比对结果后，将样本写入 rMATS 的分组清单。rMATS 对样本数要求宽松，但建议每组至少 2 个重复以获得可靠的 Beta 二项分布参数估计。\n\n关于本演示的分组： 本地 PE 数据中仅 SRR1039516 为 dexamethasone 处理样本，无法构成处理组的生物学重复。因此下面将 4 个 untreated 样本人为拆分为两组（508/510 与 512/514），仅用于演示 rMATS 的完整运行与统计流程，其本质是一次零假设（null）对比，不应据此得出生物学结论。在真实研究中，两组应对应不同实验条件（如 dex 处理 vs 未处理）。\n\nSTAR_DIR=\"/Users/angdong/Documents/bio_example/bulkRNA/STAR\"\n\n# Group 1: SRR1039508, SRR1039510\nprintf \"${STAR_DIR}/SRR1039508_Aligned.sortedByCoord.out.bam,\\\n${STAR_DIR}/SRR1039510_Aligned.sortedByCoord.out.bam\" &gt; group1_bams.txt\n\n# Group 2: SRR1039512, SRR1039514\nprintf \"${STAR_DIR}/SRR1039512_Aligned.sortedByCoord.out.bam,\\\n${STAR_DIR}/SRR1039514_Aligned.sortedByCoord.out.bam\" &gt; group2_bams.txt\n\n\n28.4.2 运行 rMATS\nrMATS 采用两步运行策略：第一步仅计数（--statoff），第二步在计数基础上执行统计检验。两步分离的设计允许在多个比较组之间复用同一批比对结果，节省计算时间。\nGTF=\"/Users/angdong/Documents/bio_example/bulkRNA/ref/GRCh38.109.gtf\"\nOUTPUT_DIR=\"rmats_output\"\nTMP_DIR=\"${OUTPUT_DIR}/tmp\"\nmkdir -p ${OUTPUT_DIR} ${TMP_DIR}\n\n# Step 1: counting only (can be parallelized across experiments)\n# --readLength 63 matches the airway PE63 reads; --variable-read-length\n# is required because fastp trimming produces reads shorter than 63 bp.\npython -m rmats \\\n    --b1 group1_bams.txt \\\n    --b2 group2_bams.txt \\\n    --gtf ${GTF} \\\n    --od ${OUTPUT_DIR} \\\n    --tmp ${TMP_DIR} \\\n    -t paired \\\n    --readLength 63 \\\n    --variable-read-length \\\n    --nthread 8 \\\n    --statoff\n\n# Step 2: statistical testing\npython -m rmats \\\n    --b1 group1_bams.txt \\\n    --b2 group2_bams.txt \\\n    --gtf ${GTF} \\\n    --od ${OUTPUT_DIR} \\\n    --tmp ${TMP_DIR} \\\n    -t paired \\\n    --readLength 63 \\\n    --variable-read-length \\\n    --nthread 8\n\n\n28.4.3 解读输出文件\n# List output files\nls ${OUTPUT_DIR}/*.JC.txt\n# SE.MATS.JC.txt  A5SS.MATS.JC.txt  A3SS.MATS.JC.txt\n# RI.MATS.JC.txt  MXE.MATS.JC.txt\n\n# Preview SE results\nhead -2 ${OUTPUT_DIR}/SE.MATS.JC.txt | cut -f1-12\nrMATS 输出的关键字段说明（以 SE.MATS.JC.txt 为例）：\n\n\n\n\n\n\n\n字段\n含义\n\n\n\n\nGeneID\nEnsembl 基因 ID\n\n\ngeneSymbol\n基因名称\n\n\nexonStart_0base, exonEnd\n目标可变外显子的坐标（0-based）\n\n\nIJC_SAMPLE_1 / SJC_SAMPLE_1\n组1各样本的 inclusion / skipping junction read 计数（逗号分隔）\n\n\nIncLevel1 / IncLevel2\n组1和组2各样本的 PSI 值\n\n\nIncLevelDifference\n\\(\\Delta\\Psi = \\overline{\\Psi_1} - \\overline{\\Psi_2}\\)\n\n\nPValue / FDR\n统计显著性\n\n\n\n\n\n28.4.4 筛选显著差异剪接事件\nlibrary(dplyr)\nlibrary(ggplot2)\n\n# Read SE results\nse &lt;- read.table(\"rmats_output/SE.MATS.JC.txt\",\n                 header = TRUE, sep = \"\\t\", stringsAsFactors = FALSE)\n\n# Filter: |dPSI| &gt; 0.1 and FDR &lt; 0.05 with sufficient read coverage\nsig_se &lt;- se |&gt;\n    filter(\n        abs(IncLevelDifference) &gt; 0.1,\n        FDR &lt; 0.05,\n        # Require mean &gt;= 10 junction reads across samples in each group\n        sapply(strsplit(as.character(IJC_SAMPLE_1), \",\"),\n               function(x) mean(as.numeric(x), na.rm = TRUE)) &gt;= 10,\n        sapply(strsplit(as.character(IJC_SAMPLE_2), \",\"),\n               function(x) mean(as.numeric(x), na.rm = TRUE)) &gt;= 10\n    ) |&gt;\n    arrange(FDR)\n\ncat(\"Significant SE events:\", nrow(sig_se), \"\\n\")\nhead(sig_se[, c(\"geneSymbol\", \"IncLevelDifference\", \"FDR\")], 10)\n#| label: fig-rmats-volcano\n#| fig-cap: \"rMATS 可变外显子跳跃事件的火山图。横轴为 ΔPSI，纵轴为 -log₁₀(FDR)，红色点为显著差异事件（|ΔPSI| &gt; 0.1，FDR &lt; 0.05）。\"\nlibrary(dplyr)\nlibrary(ggplot2)\n\n# Simulate rMATS-like SE results for rendering demonstration\nset.seed(42)\nn_events &lt;- 3000\nse &lt;- data.frame(\n    geneSymbol          = paste0(\"Gene\", seq_len(n_events)),\n    IncLevelDifference  = rnorm(n_events, 0, 0.15),\n    FDR                 = runif(n_events, 1e-6, 1)\n)\nse$FDR[abs(se$IncLevelDifference) &gt; 0.2] &lt;-\n    runif(sum(abs(se$IncLevelDifference) &gt; 0.2), 1e-6, 0.05)\n\nse_plot &lt;- se |&gt;\n    filter(!is.na(FDR), FDR &gt; 0) |&gt;\n    mutate(\n        neg_log10_fdr = -log10(FDR),\n        significant = abs(IncLevelDifference) &gt; 0.1 & FDR &lt; 0.05\n    )\n\nggplot(se_plot, aes(x = IncLevelDifference, y = neg_log10_fdr,\n                    color = significant)) +\n    geom_point(alpha = 0.5, size = 0.8) +\n    scale_color_manual(values = c(\"grey70\", \"#d62728\"),\n                       labels = c(\"Not significant\", \"Significant\")) +\n    geom_vline(xintercept = c(-0.1, 0.1), linetype = \"dashed\",\n               color = \"grey40\", linewidth = 0.5) +\n    geom_hline(yintercept = -log10(0.05), linetype = \"dashed\",\n               color = \"grey40\", linewidth = 0.5) +\n    labs(x = expression(Delta*Psi ~ \"(IncLevelDifference)\"),\n         y = expression(-log[10](FDR)),\n         color = NULL) +\n    theme_bw(base_size = 12) +\n    theme(legend.position = \"top\")\n\n\n28.4.5 Sashimi 图可视化\nSashimi 图是可变剪接分析中最直观的可视化方式：横轴为基因组坐标，纵轴为覆盖深度，弧线连接两个剪接位点，弧线粗细（或标注数字）代表跨越该连接的 junction reads 数量。从 Sashimi 图中，读者可以直观地看到处理组与对照组在某一外显子两侧 junction reads 数量的差异，从而验证 rMATS 统计结果是否与覆盖度模式一致。\n# Generate Sashimi plot for top significant SE event\n# Requires rmats2sashimiplot (conda install -c bioconda rmats2sashimiplot)\n# Coordinates are taken from the top row of sig_se\nTOP_GENE=\"GENE_SYMBOL\"  # replace with actual top gene\nCOORDS=\"chr:start:end:strand\"  # replace with actual coordinates\n\nrmats2sashimiplot \\\n    --b1 \"$(cat group1_bams.txt)\" \\\n    --b2 \"$(cat group2_bams.txt)\" \\\n    --event-type SE \\\n    --event-coordinates ${COORDS} \\\n    --l1 \"Group1\" \\\n    --l2 \"Group2\" \\\n    --min-counts 5 \\\n    --output sashimi_output/\n\n\n28.4.6 差异剪接基因的 GO 富集分析\nlibrary(clusterProfiler)\nlibrary(org.Hs.eg.db)\n\n# Extract unique gene IDs from significant SE events\nsig_genes_ensembl &lt;- unique(sig_se$GeneID)\n\n# Convert Ensembl to Entrez\ngene_map &lt;- bitr(sig_genes_ensembl,\n                 fromType = \"ENSEMBL\",\n                 toType   = \"ENTREZID\",\n                 OrgDb    = org.Hs.eg.db)\n\n# GO Biological Process enrichment\ngo_bp &lt;- enrichGO(\n    gene          = gene_map$ENTREZID,\n    OrgDb         = org.Hs.eg.db,\n    ont           = \"BP\",\n    pAdjustMethod = \"BH\",\n    pvalueCutoff  = 0.05,\n    qvalueCutoff  = 0.2\n)\n#| label: fig-se-go-dotplot\n#| fig-cap: \"差异剪接基因（SE 事件）的 GO 生物过程富集结果示意。实际分析中，气泡大小代表该通路中的差异剪接基因数量，颜色深浅代表调整后的 P 值。\"\n#| message: false\n#| warning: false\n# GO enrichment requires real rMATS output and org.Hs.eg.db.\n# The block below shows the expected output format using the airway dataset\n# as a stand-in so the document renders without external BAM files.\nlibrary(clusterProfiler)\nlibrary(org.Hs.eg.db)\nlibrary(airway)\nlibrary(DESeq2)\n\ndata(airway)\ndds &lt;- DESeqDataSet(airway, design = ~ cell + dex)\ndds &lt;- DESeq(dds)\nres &lt;- results(dds, contrast = c(\"dex\", \"trt\", \"untrt\"))\nsig_genes &lt;- rownames(subset(res, padj &lt; 0.05 & abs(log2FoldChange) &gt; 1))\n\nif (length(sig_genes) &gt; 0) {\n    gene_map &lt;- bitr(sig_genes, fromType = \"ENSEMBL\",\n                     toType = \"ENTREZID\", OrgDb = org.Hs.eg.db,\n                     drop = TRUE)\n    go_bp &lt;- enrichGO(gene          = gene_map$ENTREZID,\n                      OrgDb         = org.Hs.eg.db,\n                      ont           = \"BP\",\n                      pAdjustMethod = \"BH\",\n                      pvalueCutoff  = 0.05,\n                      qvalueCutoff  = 0.2)\n    if (!is.null(go_bp) && nrow(go_bp@result) &gt; 0) {\n        dotplot(go_bp, showCategory = 15,\n                title = \"GO BP: DEGs from airway dex vs control (illustrative)\")\n    }\n}",
+    "text": "28.4 实践：rMATS 差异剪接分析\n\n28.4.1 环境准备与输入数据\nrMATS 在解析 junction reads 时依赖比对器写入的剪接信息与链向标签（XS），其官方测试基准与推荐流程均基于 STAR。因此本专题不复用第4章的 HISAT2 比对结果，而是用 STAR 对同一批 airway 数据（气道平滑肌细胞，参见第4章）重新比对。下面对 5 个双端样本（经 fastp 质控修剪）逐一比对，输出统一存放于 bulkRNA/STAR/。\n首先需要 STAR 基因组索引。若尚未构建，可用基因组 FASTA 生成（本例的本地索引位于 ref/star_index/）：\nREF=\"/Users/angdong/Documents/bio_example/bulkRNA/ref\"\nSTAR_INDEX=\"${REF}/star_index\"\n\n# Build the genome index (run once; needs ~30 GB RAM for the human genome).\n# Supplying --sjdbGTFfile here pre-inserts annotated junctions and improves\n# junction sensitivity; omit it to build an annotation-free index and let STAR\n# detect splice junctions de novo (sufficient for rMATS event quantification).\nSTAR --runMode genomeGenerate \\\n     --runThreadN 8 \\\n     --genomeDir \"${STAR_INDEX}\" \\\n     --genomeFastaFiles \"${REF}/Homo_sapiens.GRCh38.dna.primary_assembly.fa\"\n然后对 5 个双端样本（经 fastp 质控修剪）逐一比对：\nSTAR_INDEX=\"/Users/angdong/Documents/bio_example/bulkRNA/ref/star_index\"\nFASTP_DIR=\"/Users/angdong/Documents/bio_example/bulkRNA/qc/fastp\"\nSTAR_DIR=\"/Users/angdong/Documents/bio_example/bulkRNA/STAR\"\nmkdir -p \"${STAR_DIR}\"\n\n# --outSAMstrandField intronMotif writes the XS tag rMATS uses for strand inference.\nfor S in SRR1039508 SRR1039510 SRR1039512 SRR1039514 SRR1039516; do\n    STAR --runThreadN 8 \\\n         --genomeDir \"${STAR_INDEX}\" \\\n         --readFilesIn \"${FASTP_DIR}/${S}_1_1M_trimmed.fastq.gz\" \\\n                       \"${FASTP_DIR}/${S}_2_1M_trimmed.fastq.gz\" \\\n         --readFilesCommand \"gunzip -c\" \\\n         --outSAMtype BAM SortedByCoordinate \\\n         --outSAMstrandField intronMotif \\\n         --alignSJoverhangMin 8 \\\n         --outFilterMismatchNmax 999 \\\n         --alignIntronMin 20 \\\n         --alignIntronMax 1000000 \\\n         --outFileNamePrefix \"${STAR_DIR}/${S}_\"\n    samtools index \"${STAR_DIR}/${S}_Aligned.sortedByCoord.out.bam\"\ndone\n\n--readFilesCommand 的写法： STAR 通过该参数调用外部命令解压输入。在 macOS（zsh）下 zcat 默认仅识别 .Z 后缀，应使用 \"gunzip -c\"；Linux/bash 环境则两者皆可。\n\n得到比对结果后，将样本写入 rMATS 的分组清单。rMATS 对样本数要求宽松，但建议每组至少 2 个重复以获得可靠的 Beta 二项分布参数估计。\n\n关于本演示的分组： 本地 PE 数据中仅 SRR1039516 为 dexamethasone 处理样本，无法构成处理组的生物学重复。因此下面将 4 个 untreated 样本人为拆分为两组（508/510 与 512/514），仅用于演示 rMATS 的完整运行与统计流程，其本质是一次零假设（null）对比，不应据此得出生物学结论。在真实研究中，两组应对应不同实验条件（如 dex 处理 vs 未处理）。\n\nSTAR_DIR=\"/Users/angdong/Documents/bio_example/bulkRNA/STAR\"\n\n# Group 1: SRR1039508, SRR1039510\nprintf \"${STAR_DIR}/SRR1039508_Aligned.sortedByCoord.out.bam,\\\n${STAR_DIR}/SRR1039510_Aligned.sortedByCoord.out.bam\" &gt; group1_bams.txt\n\n# Group 2: SRR1039512, SRR1039514\nprintf \"${STAR_DIR}/SRR1039512_Aligned.sortedByCoord.out.bam,\\\n${STAR_DIR}/SRR1039514_Aligned.sortedByCoord.out.bam\" &gt; group2_bams.txt\n\n\n28.4.2 运行 rMATS\nrMATS（rmats-turbo）通过 rmats.py 调用。一次完整运行依次完成三件事：解析比对文件、统计各类事件的 junction reads、对 PSI 差异执行 Beta 二项检验。\nGTF=\"/Users/angdong/Documents/bio_example/bulkRNA/ref/GRCh38.109.gtf\"\nOUTPUT_DIR=\"rmats_output\"\nTMP_DIR=\"rmats_tmp\"\nmkdir -p ${OUTPUT_DIR} ${TMP_DIR}\n\n# --readLength 63 matches the airway PE63 reads; --variable-read-length\n# is required because fastp trimming produces reads shorter than 63 bp.\nrmats.py \\\n    --b1 group1_bams.txt \\\n    --b2 group2_bams.txt \\\n    --gtf ${GTF} \\\n    --od ${OUTPUT_DIR} \\\n    --tmp ${TMP_DIR} \\\n    -t paired \\\n    --readLength 63 \\\n    --variable-read-length \\\n    --nthread 6\n\n计数与统计的分离： 加上 --statoff 可只输出各事件的 read 计数与 PSI 值而跳过统计检验，适用于仅需 PSI 的下游分析。对于大规模队列，rMATS 还支持 --task prep（对每个样本单独预处理并缓存到 --tmp）与 --task post（在缓存基础上完成计数与统计）两阶段拆分，从而在多个比较组之间复用同一批样本的预处理结果，节省计算时间。\n\n\n\n28.4.3 解读输出文件\n# List output files\nls ${OUTPUT_DIR}/*.JC.txt\n# SE.MATS.JC.txt  A5SS.MATS.JC.txt  A3SS.MATS.JC.txt\n# RI.MATS.JC.txt  MXE.MATS.JC.txt\n\n# Preview the key SE columns (gene, exon coords, junction counts, stats)\ncut -f3,6,7,13-16,19-23 ${OUTPUT_DIR}/SE.MATS.JC.txt | head -3 | column -t\nrMATS 输出的关键字段说明（以 SE.MATS.JC.txt 为例）：\n\n\n\n\n\n\n\n字段\n含义\n\n\n\n\nGeneID\nEnsembl 基因 ID\n\n\ngeneSymbol\n基因名称\n\n\nexonStart_0base, exonEnd\n目标可变外显子的坐标（0-based）\n\n\nIJC_SAMPLE_1 / SJC_SAMPLE_1\n组1各样本的 inclusion / skipping junction read 计数（逗号分隔）\n\n\nIncLevel1 / IncLevel2\n组1和组2各样本的 PSI 值\n\n\nIncLevelDifference\n\\(\\Delta\\Psi = \\overline{\\Psi_1} - \\overline{\\Psi_2}\\)\n\n\nPValue / FDR\n统计显著性\n\n\n\n\n\n28.4.4 筛选显著差异剪接事件\nlibrary(dplyr)\nlibrary(ggplot2)\n\n# Read SE results\nse &lt;- read.table(\"/Users/angdong/Documents/bio_example/bulkRNA/rmats_output/SE.MATS.JC.txt\",\n                 header = TRUE, sep = \"\\t\", stringsAsFactors = FALSE)\n\n# Filter: |dPSI| &gt; 0.1 and FDR &lt; 0.05 with sufficient read coverage\nsig_se &lt;- se |&gt;\n    filter(\n        abs(IncLevelDifference) &gt; 0.1,\n        FDR &lt; 0.05,\n        # Require mean &gt;= 10 junction reads across samples in each group\n        sapply(strsplit(as.character(IJC_SAMPLE_1), \",\"),\n               function(x) mean(as.numeric(x), na.rm = TRUE)) &gt;= 10,\n        sapply(strsplit(as.character(IJC_SAMPLE_2), \",\"),\n               function(x) mean(as.numeric(x), na.rm = TRUE)) &gt;= 10\n    ) |&gt;\n    arrange(FDR)\n\ncat(\"Significant SE events:\", nrow(sig_se), \"\\n\")\nhead(sig_se[, c(\"geneSymbol\", \"IncLevelDifference\", \"FDR\")], 10)\n#| label: fig-rmats-volcano\n#| fig-cap: \"rMATS 可变外显子跳跃事件的火山图（真实数据，SE.MATS.JC.txt）。横轴为 ΔPSI，纵轴为 -log₁₀(FDR)，红色点为显著差异事件（|ΔPSI| &gt; 0.1，FDR &lt; 0.05）。本演示为零假设对照，绝大多数事件 FDR≈1（点密集分布于 y=0 一线），仅极少数点升起，这正是无真实生物学差异时的预期形态。\"\nlibrary(dplyr)\nlibrary(ggplot2)\n\n# Reuse the real SE results loaded above (rmats_output/SE.MATS.JC.txt)\nse_plot &lt;- se |&gt;\n    filter(!is.na(FDR), FDR &gt; 0) |&gt;\n    mutate(\n        neg_log10_fdr = -log10(FDR),\n        significant = abs(IncLevelDifference) &gt; 0.1 & FDR &lt; 0.05\n    )\n\nggplot(se_plot, aes(x = IncLevelDifference, y = neg_log10_fdr,\n                    color = significant)) +\n    geom_point(alpha = 0.5, size = 0.8) +\n    scale_color_manual(values = c(\"grey70\", \"#d62728\"),\n                       labels = c(\"Not significant\", \"Significant\")) +\n    geom_vline(xintercept = c(-0.1, 0.1), linetype = \"dashed\",\n               color = \"grey40\", linewidth = 0.5) +\n    geom_hline(yintercept = -log10(0.05), linetype = \"dashed\",\n               color = \"grey40\", linewidth = 0.5) +\n    labs(x = expression(Delta*Psi ~ \"(IncLevelDifference)\"),\n         y = expression(-log[10](FDR)),\n         color = NULL) +\n    theme_bw(base_size = 12) +\n    theme(legend.position = \"top\")\n\n28.4.4.1 多事件类型的并排火山图\n单张火山图只能展示一类剪接事件。scRNAtoolVis 包的 jjVolcano() 专为多组差异结果设计：它将每个分组（这里即 SE、A3SS、A5SS 三类剪接事件）绘制成一列，纵轴为差异幅度，正负分别对应 inclusion 升高与降低，并在中央用色块标注分组、自动为每组标注差异最显著的若干事件，从而在一张图中横向比较各类事件的整体差异分布。\njjVolcano() 的输入沿用 Seurat FindAllMarkers() 的列名约定，需要 gene、avg_log2FC、cluster、p_val、p_val_adj 五列。将 rMATS 字段映射过去即可：geneSymbol → gene、IncLevelDifference (ΔPSI) → avg_log2FC、事件类型 → cluster、PValue → p_val、FDR → p_val_adj。\n\n依赖说明： scRNAtoolVis 发布于 GitHub，需先安装：remotes::install_github(\"junjunlab/scRNAtoolVis\")（依赖 Seurat、ComplexHeatmap、jjAnno 等）。本代码读取真实的 rMATS 输出文件，需先完成前述比对与 rMATS 分析。\n\n#| label: fig-rmats-volcano-multi\n#| fig-cap: \"三类可变剪接事件（SE、A3SS、A5SS）的多组火山图（jjVolcano）。每列为一类事件，纵轴为 ΔPSI（avg_log2FC 列）；红/蓝点为 |ΔPSI| 超过阈值（±0.1）的 inclusion 升高（sigUp）与降低（sigDown）事件，中央色块标注事件类型，标签为各组 FDR 达标且 ΔPSI 最显著的若干事件。本演示为零假设对照，结果仅用于展示绘图流程。\"\nlibrary(scRNAtoolVis)\nlibrary(dplyr)\n\nrmats_dir &lt;- \"/Users/angdong/Documents/bio_example/bulkRNA/rmats_output\"\nevents &lt;- c(\"SE\", \"A3SS\", \"A5SS\")\n\n# Assemble a Seurat-FindAllMarkers-style table from the rMATS outputs\ndiff_data &lt;- lapply(events, function(ev) {\n    read.table(file.path(rmats_dir, paste0(ev, \".MATS.JC.txt\")),\n               header = TRUE, sep = \"\\t\", stringsAsFactors = FALSE) |&gt;\n        filter(!is.na(FDR), !is.na(IncLevelDifference)) |&gt;\n        transmute(gene       = geneSymbol,\n                  avg_log2FC = IncLevelDifference,   # dPSI on the y-axis\n                  cluster    = ev,\n                  p_val      = PValue,\n                  p_val_adj  = FDR)\n}) |&gt;\n    bind_rows() |&gt;\n    mutate(cluster = factor(cluster, levels = events))\n\n# Multi-group volcano: dPSI cutoff 0.1, FDR cutoff 0.05, label top 5 per event\njjVolcano(diffData       = diff_data,\n          log2FC.cutoff  = 0.1,\n          adjustP.cutoff = 0.05,\n          topGeneN       = 5,\n          size           = 3,\n          aesCol         = c(\"#1f77b4\", \"#d62728\"),\n          tile.col       = c(\"#8da0cb\", \"#66c2a5\", \"#fc8d62\"),\n          legend.position = \"top\") +\n    ggplot2::ylab(expression(Delta*Psi))\n\n\n\n28.4.5 Sashimi 图可视化\nSashimi 图是可变剪接分析中最直观的可视化方式：横轴为基因组坐标，纵轴为覆盖深度，弧线连接两个剪接位点，弧线粗细（或标注数字）代表跨越该连接的 junction reads 数量。从 Sashimi 图中，读者可以直观地看到处理组与对照组在某一外显子两侧 junction reads 数量的差异，从而验证 rMATS 统计结果是否与覆盖度模式一致。\nrmats2sashimiplot 直接读取 rMATS 的事件结果文件（-e），并按其中记录的外显子坐标作图。最方便的做法是从完整的 SE.MATS.JC.txt 中抽取目标事件（连同表头）写入一个子集文件，再传给 -e。下面以 SNHG29 基因（ENSG00000175061）中 FDR 最低、\\(\\Delta\\Psi\\) 最大的可变外显子跳跃事件（ID 11851）为例：\n# Requires rmats2sashimiplot (conda install -c bioconda rmats2sashimiplot)\nRM=\"/Users/angdong/Documents/bio_example/bulkRNA/rmats_output\"\nSTAR_DIR=\"/Users/angdong/Documents/bio_example/bulkRNA/STAR\"\nOUT=\"/Users/angdong/Documents/bio_example/bulkRNA/sashimi_output\"\nmkdir -p \"${OUT}\"\n\n# Extract the target SNHG29 SE event (ID 11851) together with the header line\nhead -1 \"${RM}/SE.MATS.JC.txt\" &gt; \"${OUT}/SNHG29_SE.txt\"\nawk -F'\\t' '$1==11851' \"${RM}/SE.MATS.JC.txt\" &gt;&gt; \"${OUT}/SNHG29_SE.txt\"\n\n# Build the comma-separated BAM lists for each group\nB1=\"${STAR_DIR}/SRR1039508_Aligned.sortedByCoord.out.bam,${STAR_DIR}/SRR1039510_Aligned.sortedByCoord.out.bam\"\nB2=\"${STAR_DIR}/SRR1039512_Aligned.sortedByCoord.out.bam,${STAR_DIR}/SRR1039514_Aligned.sortedByCoord.out.bam\"\n\n# --remove-event-chr-prefix strips the \"chr\" in the event file (chr17) to match\n# the Ensembl-style BAM contig names (17); drop it if your BAM uses \"chr17\".\nrmats2sashimiplot \\\n    --b1 \"${B1}\" \\\n    --b2 \"${B2}\" \\\n    --event-type SE \\\n    -e \"${OUT}/SNHG29_SE.txt\" \\\n    --l1 Group1 \\\n    --l2 Group2 \\\n    --exon_s 1 --intron_s 5 \\\n    --min-counts 5 \\\n    --remove-event-chr-prefix \\\n    -o \"${OUT}/SNHG29\"\n\n两个易错点： （1）事件类型参数为 --event-type（非 -t），且需配合 -e 传入 rMATS 事件文件，而非手动拼写坐标字符串。（2）本专题的 BAM 由 STAR 比对到 Ensembl GRCh38 参考，contig 名为 17，而 rMATS 输出沿用 chr17；二者不一致时 Sashimi 图会读不到 reads，须加 --remove-event-chr-prefix 将事件坐标对齐到 BAM 命名。\n\n运行后，图像以 PDF 形式输出至 sashimi_output/SNHG29/Sashimi_plot/ 目录。图 2 即为该事件的结果。\n\n\n\n\n\n\n图 2: SNHG29 可变外显子跳跃事件（chr17:16,439,580–16,439,703）的 Sashimi 图。四条轨道自上而下为 Group1（SRR1039508、SRR1039510，红色）与 Group2（SRR1039512、SRR1039514，橙色）的覆盖深度（RPKM），弧线上的数字为跨越对应剪接位点的 junction reads 数量，各轨道右侧标注其 PSI 值（IncLevel）。底部为该事件涉及的两种转录本结构（纳入型与跳跃型）。\n\n\n\n结果解读： 该事件的关键在于比较中段可变外显子两侧”纳入型”junction reads 的相对丰度。Group1 两个样本的纳入型 junction reads（约 25、20）明显高于 Group2（约 6、7），对应右侧标注的 PSI 值——Group1 为 0.42 与 0.40，Group2 为 0.26 与 0.17，组间 \\(\\Delta\\Psi \\approx +0.18\\)。这一覆盖度与 junction 模式与 rMATS 的统计结果（IncLevelDifference = 0.195，FDR = 0.042）方向一致、量级吻合，说明该差异并非个别样本的离群表现，而是组内可重复的趋势。需要强调的是，本演示的分组本质上是零假设对照（详见前文 warning），此处的差异仅用于示范如何将 Sashimi 图与 rMATS 统计量交叉验证，不应作为 SNHG29 受 dexamethasone 调控的生物学证据。\n\n\n28.4.6 差异剪接基因的 GO 富集分析\nlibrary(clusterProfiler)\nlibrary(org.Hs.eg.db)\n\n# Extract unique gene IDs from significant SE events\nsig_genes_ensembl &lt;- unique(sig_se$GeneID)\n\n# Convert Ensembl to Entrez\ngene_map &lt;- bitr(sig_genes_ensembl,\n                 fromType = \"ENSEMBL\",\n                 toType   = \"ENTREZID\",\n                 OrgDb    = org.Hs.eg.db)\n\n# GO Biological Process enrichment\ngo_bp &lt;- enrichGO(\n    gene          = gene_map$ENTREZID,\n    OrgDb         = org.Hs.eg.db,\n    ont           = \"BP\",\n    pAdjustMethod = \"BH\",\n    pvalueCutoff  = 0.05,\n    qvalueCutoff  = 0.2\n)\n#| label: fig-se-go-dotplot\n#| fig-cap: \"差异剪接基因（SE 事件）的 GO 生物过程富集结果示意。实际分析中，气泡大小代表该通路中的差异剪接基因数量，颜色深浅代表调整后的 P 值。\"\n#| message: false\n#| warning: false\n# GO enrichment requires real rMATS output and org.Hs.eg.db.\n# The block below shows the expected output format using the airway dataset\n# as a stand-in so the document renders without external BAM files.\nlibrary(clusterProfiler)\nlibrary(org.Hs.eg.db)\nlibrary(airway)\nlibrary(DESeq2)\n\ndata(airway)\ndds &lt;- DESeqDataSet(airway, design = ~ cell + dex)\ndds &lt;- DESeq(dds)\nres &lt;- results(dds, contrast = c(\"dex\", \"trt\", \"untrt\"))\nsig_genes &lt;- rownames(subset(res, padj &lt; 0.05 & abs(log2FoldChange) &gt; 1))\n\nif (length(sig_genes) &gt; 0) {\n    gene_map &lt;- bitr(sig_genes, fromType = \"ENSEMBL\",\n                     toType = \"ENTREZID\", OrgDb = org.Hs.eg.db,\n                     drop = TRUE)\n    go_bp &lt;- enrichGO(gene          = gene_map$ENTREZID,\n                      OrgDb         = org.Hs.eg.db,\n                      ont           = \"BP\",\n                      pAdjustMethod = \"BH\",\n                      pvalueCutoff  = 0.05,\n                      qvalueCutoff  = 0.2)\n    if (!is.null(go_bp) && nrow(go_bp@result) &gt; 0) {\n        dotplot(go_bp, showCategory = 15,\n                title = \"GO BP: DEGs from airway dex vs control (illustrative)\")\n    }\n}",
     "crumbs": [
       "第二阶段：转录组与单细胞",
       "<span class='chapter-number'>26</span>  <span class='chapter-title'>可变剪接差异分析与基因融合鉴定</span>"
@@ -5728,12 +5728,12 @@
   {
     "objectID": "transcriptomics_adv_lesson2.html",
     "href": "transcriptomics_adv_lesson2.html",
-    "title": "27  专题 5.3：可变多腺苷酸化分析与长读长转录组展望",
+    "title": "27  可变多腺苷酸化分析与长读长转录组展望",
     "section": "",
     "text": "28 专题概述\n可变多腺苷酸化（Alternative Polyadenylation, APA）是真核生物重要的转录后调控方式。许多基因不只有一个多腺苷酸化位点（Polyadenylation Site, PAS）；细胞选择不同 PAS 时，会产生 3’ 非翻译区（3’ UTR）长度不同的转录本。一般而言，长 3’ UTR 含有更多 miRNA 结合位点和 RNA 结合蛋白（RBP）识别元件，因此更容易影响 mRNA 稳定性、定位和翻译效率。增殖活跃的细胞和部分肿瘤细胞常出现 3’ UTR 缩短，这可能帮助转录本避开部分 miRNA 介导的抑制。\n本专题重点比较两类 APA 分析思路：DaPars2 从 RNA-seq 覆盖度中寻找变化点（changepoint），适合发现未注释 PAS；QAPA 依赖已知 PAS 注释，适合在注释完善的物种中进行稳定定量。专题最后简要介绍长读长全长转录组技术（PacBio IsoSeq、Oxford Nanopore direct RNA-seq）和 SQANTI3 质量评估，为第 7 章的多组学整合分析作铺垫。\n学习目标：理解 APA 的生物学机制及其在增殖与分化调控中的作用；掌握 PDUI 与 ΔPDUI 指标的定义与解读；能够运行 DaPars2 完整流程并解读显著 APA 基因；了解 QAPA 的适用场景与 DaPars2 的互补关系；理解长读长测序技术在全长转录本重建方面相对于短读长的本质优势。",
     "crumbs": [
       "第二阶段：转录组与单细胞",
-      "<span class='chapter-number'>27</span>  <span class='chapter-title'>专题 5.3：可变多腺苷酸化分析与长读长转录组展望</span>"
+      "<span class='chapter-number'>27</span>  <span class='chapter-title'>可变多腺苷酸化分析与长读长转录组展望</span>"
     ]
   },
   {
@@ -6047,89 +6047,89 @@
   {
     "objectID": "transcriptomics_adv_lesson2.html#多腺苷酸化位点的分子识别机制",
     "href": "transcriptomics_adv_lesson2.html#多腺苷酸化位点的分子识别机制",
-    "title": "27  专题 5.3：可变多腺苷酸化分析与长读长转录组展望",
+    "title": "27  可变多腺苷酸化分析与长读长转录组展望",
     "section": "29.1 多腺苷酸化位点的分子识别机制",
     "text": "29.1 多腺苷酸化位点的分子识别机制\nmRNA 的 3’ 端加工可以理解为”切割 + 加尾”两步。前体 mRNA（pre-mRNA）先在 PAS 附近被切割，随后 poly-A 聚合酶添加 poly-A 尾，形成成熟 mRNA。PAS 附近通常含有六核苷酸信号（Hexamer Signal），其中 AATAAA 最常见，ATTAAA、AGTAAA 等变体也较常见。裂解和多腺苷酸化特异性因子复合物（Cleavage and Polyadenylation Specificity Factor, CPSF）识别这些信号，并协助确定切割位置。\n当一个基因含有多个功能性 PAS 时，近端 PAS（proximal PAS）和远端 PAS（distal PAS）会发生竞争（图 1）。选择近端 PAS 会提前终止转录本，产生短 3’ UTR；选择远端 PAS 则产生长 3’ UTR。这一选择受多种 RBP 调控，例如 CFIm25/CFIm68 常促进远端 PAS 使用，FIP1 常促进近端 PAS 使用。",
     "crumbs": [
       "第二阶段：转录组与单细胞",
-      "<span class='chapter-number'>27</span>  <span class='chapter-title'>专题 5.3：可变多腺苷酸化分析与长读长转录组展望</span>"
+      "<span class='chapter-number'>27</span>  <span class='chapter-title'>可变多腺苷酸化分析与长读长转录组展望</span>"
     ]
   },
   {
     "objectID": "transcriptomics_adv_lesson2.html#apa-的功能后果与生物学意义",
     "href": "transcriptomics_adv_lesson2.html#apa-的功能后果与生物学意义",
-    "title": "27  专题 5.3：可变多腺苷酸化分析与长读长转录组展望",
+    "title": "27  可变多腺苷酸化分析与长读长转录组展望",
     "section": "29.2 APA 的功能后果与生物学意义",
     "text": "29.2 APA 的功能后果与生物学意义\n3’ UTR 长度变化主要通过以下方式影响转录本命运：\n\nmiRNA 介导的抑制：长 3’ UTR 通常包含更多 miRNA 结合位点，更容易发生 mRNA 降解或翻译抑制。3’ UTR 缩短可减少这类调控元件。\nmRNA 稳定性：许多 mRNA 降解信号位于 3’ UTR。若 APA 去除这些区域，转录本半衰期可能延长。\n蛋白质亚细胞定位：某些基因（如 MBP、Arc）的 3’ UTR 含有轴突靶向信号（zipcode 序列），APA 可影响蛋白质的局部合成位点。\n内含子 APA（Intronic APA）：若替代 PAS 位于内含子中，转录本可提前终止，产生 C 端截短的蛋白质异构体。这类事件可能直接改变蛋白质结构和功能。\n\n\n核心区别：\nAPA 与可变剪接（专题 5.1）都可以从标准 Bulk RNA-seq BAM 文件中分析，但关注点不同。可变剪接主要看外显子-外显子连接处的 junction reads，并用 PSI 描述外显子是否被纳入；APA 主要看 3’ UTR 覆盖度是否在某个位置突然下降。简言之，可变剪接更常改变蛋白质异构体，APA 更常改变转录后调控信号。",
     "crumbs": [
       "第二阶段：转录组与单细胞",
-      "<span class='chapter-number'>27</span>  <span class='chapter-title'>专题 5.3：可变多腺苷酸化分析与长读长转录组展望</span>"
+      "<span class='chapter-number'>27</span>  <span class='chapter-title'>可变多腺苷酸化分析与长读长转录组展望</span>"
     ]
   },
   {
     "objectID": "transcriptomics_adv_lesson2.html#算法原理",
     "href": "transcriptomics_adv_lesson2.html#算法原理",
-    "title": "27  专题 5.3：可变多腺苷酸化分析与长读长转录组展望",
+    "title": "27  可变多腺苷酸化分析与长读长转录组展望",
     "section": "30.1 算法原理",
     "text": "30.1 算法原理\nDaPars2（Dynamic Analysis of Alternative Polyadenylation from RNA-seq，version 2）的直觉很简单：如果样本偏向使用近端 PAS，那么近端 PAS 之后的 3’ UTR 延伸段会缺少 reads，覆盖度会明显下降；如果偏向使用远端 PAS，整个 3’ UTR 的覆盖度会相对连续。DaPars2 因此在每个基因的 3’ UTR 内寻找覆盖度变化点，并将该位置解释为潜在近端 PAS（图 2）。这一策略不要求事先知道 PAS 坐标。\n\n\n\n\n\n\n图 2: 变化点检测的经典示例：尼罗河年度流量数据中的突变点检测（贝叶斯方法）。算法在一维信号序列中自动定位统计特征（如均值）发生骤变的位置（约 1900 年阿斯旺低坝建成前后）。DaPars2 将同类思想应用于 3’ UTR 的读段覆盖密度曲线，把覆盖密度骤降的断点判定为潜在的近端 PAS。\n\n\n\n核心量化指标为PDUI（Percent Distal site Usage Index），定义为：\n\\[\\text{PDUI} = \\frac{\\text{长 3' UTR 转录本读段数}}{\\text{长 3' UTR 转录本读段数} + \\text{短 3' UTR 转录本读段数}}\\]\nPDUI 的值在 0 到 1 之间。接近 1 表示远端 PAS 使用比例高，即长 3’ UTR 更多；接近 0 表示近端 PAS 使用比例高，即短 3’ UTR 更多。两组样本间的差异指标 ΔPDUI 定义为：\n\\[\\Delta\\text{PDUI} = \\text{PDUI}_{\\text{case}} - \\text{PDUI}_{\\text{control}}\\]\nΔPDUI &gt; 0 表示处理条件下 3’ UTR 延长；ΔPDUI &lt; 0 表示 3’ UTR 缩短。显著性检验采用 Wald 检验，多重检验校正采用 Benjamini-Hochberg FDR。",
     "crumbs": [
       "第二阶段：转录组与单细胞",
-      "<span class='chapter-number'>27</span>  <span class='chapter-title'>专题 5.3：可变多腺苷酸化分析与长读长转录组展望</span>"
+      "<span class='chapter-number'>27</span>  <span class='chapter-title'>可变多腺苷酸化分析与长读长转录组展望</span>"
     ]
   },
   {
     "objectID": "transcriptomics_adv_lesson2.html#dapars2-完整分析流程",
     "href": "transcriptomics_adv_lesson2.html#dapars2-完整分析流程",
-    "title": "27  专题 5.3：可变多腺苷酸化分析与长读长转录组展望",
+    "title": "27  可变多腺苷酸化分析与长读长转录组展望",
     "section": "30.2 DaPars2 完整分析流程",
     "text": "30.2 DaPars2 完整分析流程\nDaPars2 通常分两步运行。第一步把 BAM 文件转换为 3’ UTR 覆盖度文件；第二步在覆盖度曲线上寻找变化点，并比较两组样本的 PDUI。下面代码展示完整流程，实际运行前需将 DaPars2 脚本路径和染色体大小文件替换为本地路径。\n# DaPars2 analysis on airway dataset\n# Input: HISAT2-aligned BAM files from /Users/angdong/Documents/bio_example/bulkRNA/bam/\n\nBAM_DIR=\"/Users/angdong/Documents/bio_example/bulkRNA/bam\"\nREF_GTF=\"/Users/angdong/Documents/bio_example/bulkRNA/ref/GRCh38.109.gtf\"\nGENOME_FA=\"/Users/angdong/Documents/bio_example/bulkRNA/ref/Homo_sapiens.GRCh38.dna.primary_assembly.fa\"\nOUTDIR=\"/Users/angdong/Documents/bio_example/bulkRNA/apa\"\n\nmkdir -p ${OUTDIR}\n\n# Step 1: Generate genome-wide coverage files using samtools\n# DaPars2 requires per-base bedgraph coverage (strand-specific for RF libraries)\nfor sample in SRR1039508 SRR1039510 SRR1039512 SRR1039514 SRR1039516; do\n    BAM=\"${BAM_DIR}/${sample}_1M.sorted.bam\"\n    # Forward strand (reads mapped to + strand from RF library = reverse complement)\n    samtools view -b -f 128 -F 16 ${BAM} \\\n        | bedtools genomecov -ibam - -bg -split \\\n        &gt; ${OUTDIR}/${sample}_fwd.bedgraph\n    # Reverse strand\n    samtools view -b -f 80 ${BAM} \\\n        | bedtools genomecov -ibam - -bg -split \\\n        &gt;&gt; ${OUTDIR}/${sample}_fwd.bedgraph\n    sort -k1,1 -k2,2n ${OUTDIR}/${sample}_fwd.bedgraph \\\n        &gt; ${OUTDIR}/${sample}_sorted.bedgraph\ndone\n\n# Step 2: Build 3' UTR annotation from GTF (DaPars2 requires UTR BED file)\n# Extract last exon per transcript to define 3' UTR regions\npython /path/to/DaPars2/DaPars_Extract_Anno.py \\\n    -b ${REF_GTF} \\\n    -s /path/to/hg38_chr_size.txt \\\n    -o ${OUTDIR}/hg38_extracted_3UTR.bed\n\n# Step 3: Run DaPars2 differential APA analysis\n# Condition 1: untreated (4 samples)\n# Condition 2: dex-treated (1 sample in teaching subset; use all replicates in real analysis)\npython /path/to/DaPars2/DaPars2_Multi_Sample_Multi_Chr.py \\\n    -c ${OUTDIR}/hg38_extracted_3UTR.bed \\\n    -A ${OUTDIR}/SRR1039508_sorted.bedgraph,${OUTDIR}/SRR1039510_sorted.bedgraph,\\\n${OUTDIR}/SRR1039512_sorted.bedgraph,${OUTDIR}/SRR1039514_sorted.bedgraph \\\n    -B ${OUTDIR}/SRR1039516_sorted.bedgraph \\\n    -o ${OUTDIR}/dapars2_output \\\n    -n 15 \\           # minimum read coverage threshold\n    -p 0.1            # FDR cutoff for initial filtering\n\n# Output: dapars2_output_All_Prediction_Results.txt\n\n链特异性参数：\nAPA 分析对读段方向很敏感，因为 3’ UTR 常与相邻基因或反义转录信号接近。airway 数据集使用 dUTP 方案建库（fr-firststrand，HISAT2 参数为 --rna-strandness RF），生成 bedgraph 时必须保留正确链向。若链特异性设置错误，错误链的 reads 可能制造虚假覆盖度变化。可用 RSeQC 的 infer_experiment.py 快速验证链特异性。",
     "crumbs": [
       "第二阶段：转录组与单细胞",
-      "<span class='chapter-number'>27</span>  <span class='chapter-title'>专题 5.3：可变多腺苷酸化分析与长读长转录组展望</span>"
+      "<span class='chapter-number'>27</span>  <span class='chapter-title'>可变多腺苷酸化分析与长读长转录组展望</span>"
     ]
   },
   {
     "objectID": "transcriptomics_adv_lesson2.html#dapars2-结果解读",
     "href": "transcriptomics_adv_lesson2.html#dapars2-结果解读",
-    "title": "27  专题 5.3：可变多腺苷酸化分析与长读长转录组展望",
+    "title": "27  可变多腺苷酸化分析与长读长转录组展望",
     "section": "30.3 DaPars2 结果解读",
     "text": "30.3 DaPars2 结果解读\nDaPars2 结果解读的重点是三列：对照组 PDUI、处理组 PDUI 和 ΔPDUI。筛选时通常同时要求 FDR 达标和 abs(delta_pdui) 足够大；只看 P 值容易得到统计显著但效应很小的事件。\n# Parse and visualize DaPars2 output\nlibrary(dplyr)\nlibrary(ggplot2)\nlibrary(readr)\n\n# Read DaPars2 result table\ndapars_result &lt;- read_tsv(\n    \"/Users/angdong/Documents/bio_example/bulkRNA/apa/dapars2_output_All_Prediction_Results.txt\"\n) |&gt;\n    rename(\n        gene = Gene,\n        pdui_control = PDUI_Group_1,\n        pdui_case = PDUI_Group_2,\n        delta_pdui = `PDUI_Group_2 - PDUI_Group_1`,\n        pvalue = P_val,\n        fdr = adjusted.P_val\n    )\n\n# Filter significant APA events\nsig_apa &lt;- dapars_result |&gt;\n    filter(\n        fdr &lt; 0.05,\n        abs(delta_pdui) &gt; 0.2,\n        !is.na(pdui_control),\n        !is.na(pdui_case)\n    ) |&gt;\n    mutate(\n        apa_direction = case_when(\n            delta_pdui &gt; 0  ~ \"3' UTR Lengthening\",\n            delta_pdui &lt; 0  ~ \"3' UTR Shortening\"\n        )\n    )\n\ncat(\"Total significant APA events:\", nrow(sig_apa), \"\\n\")\ncat(\"3' UTR lengthening:\", sum(sig_apa$delta_pdui &gt; 0), \"\\n\")\ncat(\"3' UTR shortening:\",  sum(sig_apa$delta_pdui &lt; 0), \"\\n\")\n#| label: fig-dapars2-volcano\n#| fig-cap: \"DaPars2 差异 APA 分析结果火山图。横轴为 ΔPDUI（正值表示 dex 处理后 3' UTR 延长，负值表示缩短），纵轴为 -log10(FDR)。虚线标注显著性阈值（FDR = 0.05，|ΔPDUI| = 0.2）。\"\nlibrary(dplyr)\nlibrary(ggplot2)\n\n# Simulated DaPars2 output for illustration\nset.seed(42)\nn_genes &lt;- 3000\ndapars_sim &lt;- data.frame(\n    delta_pdui = c(\n        rnorm(n_genes * 0.85, mean = 0,    sd = 0.08),\n        rnorm(n_genes * 0.08, mean = -0.35, sd = 0.10),\n        rnorm(n_genes * 0.07, mean =  0.30, sd = 0.10)\n    ),\n    fdr = runif(n_genes)\n) |&gt;\n    mutate(\n        fdr = ifelse(abs(delta_pdui) &gt; 0.15, fdr * 0.01, fdr),\n        sig = fdr &lt; 0.05 & abs(delta_pdui) &gt; 0.2,\n        color_group = case_when(\n            sig & delta_pdui &gt; 0 ~ \"Lengthening (sig.)\",\n            sig & delta_pdui &lt; 0 ~ \"Shortening (sig.)\",\n            TRUE ~ \"Not significant\"\n        )\n    )\n\nggplot(dapars_sim, aes(x = delta_pdui, y = -log10(fdr + 1e-10),\n                        color = color_group)) +\n    geom_point(alpha = 0.5, size = 0.8) +\n    geom_hline(yintercept = -log10(0.05), linetype = \"dashed\",\n               color = \"grey50\", linewidth = 0.6) +\n    geom_vline(xintercept = c(-0.2, 0.2), linetype = \"dashed\",\n               color = \"grey50\", linewidth = 0.6) +\n    scale_color_manual(values = c(\n        \"Lengthening (sig.)\" = \"#d62728\",\n        \"Shortening (sig.)\"  = \"#1f77b4\",\n        \"Not significant\"    = \"grey70\"\n    )) +\n    labs(x = \"ΔPDUI (dex - control)\",\n         y = expression(-log[10](FDR)),\n         color = NULL,\n         caption = \"Simulated data for illustration; replace with actual DaPars2 output\") +\n    theme_bw(base_size = 12) +\n    theme(legend.position = \"top\")\n#| label: fig-dapars2-pdui-scatter\n#| fig-cap: \"各样本 PDUI 值散点图。每个点代表一个基因在对照组（横轴）与 dex 处理组（纵轴）的 PDUI 值，对角线为参考线（无差异）。显著缩短的基因（ΔPDUI &lt; -0.2，FDR &lt; 0.05）标注为蓝色，显著延长的基因标注为红色。\"\nlibrary(ggplot2)\n\nset.seed(123)\npdui_sim &lt;- data.frame(\n    pdui_ctrl = runif(3000, 0.1, 0.95),\n    noise     = rnorm(3000, 0, 0.08)\n) |&gt;\n    mutate(\n        pdui_dex = pmin(pmax(pdui_ctrl + noise, 0.01), 0.99),\n        delta     = pdui_dex - pdui_ctrl,\n        group     = case_when(\n            delta &lt; -0.2 ~ \"Shortening\",\n            delta &gt;  0.2 ~ \"Lengthening\",\n            TRUE         ~ \"Unchanged\"\n        )\n    )\n\nggplot(pdui_sim, aes(x = pdui_ctrl, y = pdui_dex, color = group)) +\n    geom_point(alpha = 0.4, size = 0.7) +\n    geom_abline(slope = 1, intercept = 0, linetype = \"dashed\",\n                color = \"black\", linewidth = 0.6) +\n    scale_color_manual(values = c(\n        \"Shortening\"  = \"#1f77b4\",\n        \"Lengthening\" = \"#d62728\",\n        \"Unchanged\"   = \"grey70\"\n    )) +\n    labs(x = \"PDUI (Control)\", y = \"PDUI (Dex-treated)\", color = NULL,\n         caption = \"Simulated data for illustration\") +\n    coord_fixed(xlim = c(0, 1), ylim = c(0, 1)) +\n    theme_bw(base_size = 12) +\n    theme(legend.position = \"top\")",
     "crumbs": [
       "第二阶段：转录组与单细胞",
-      "<span class='chapter-number'>27</span>  <span class='chapter-title'>专题 5.3：可变多腺苷酸化分析与长读长转录组展望</span>"
+      "<span class='chapter-number'>27</span>  <span class='chapter-title'>可变多腺苷酸化分析与长读长转录组展望</span>"
     ]
   },
   {
     "objectID": "transcriptomics_adv_lesson2.html#qapa-的设计思路与-dapars2-的互补关系",
     "href": "transcriptomics_adv_lesson2.html#qapa-的设计思路与-dapars2-的互补关系",
-    "title": "27  专题 5.3：可变多腺苷酸化分析与长读长转录组展望",
+    "title": "27  可变多腺苷酸化分析与长读长转录组展望",
     "section": "31.1 QAPA 的设计思路与 DaPars2 的互补关系",
     "text": "31.1 QAPA 的设计思路与 DaPars2 的互补关系\nQAPA（Quantification of Alternative Polyadenylation）采用注释驱动的思路。它先根据 PolyA_DB 或 PolyASite 等数据库构建 3’ UTR 参考序列，再用 Salmon 对这些候选 3’ UTR 进行定量，最后报告每个 PAS 的相对使用比例（PAU，Poly-A Usage）。\n因此，QAPA 适合”已知 PAS 的精确定量”，DaPars2 适合”未知 PAS 的发现”。两者不是互相替代，而是回答不同问题：\n\n\n\n场景\n推荐工具\n\n\n\n\n模式生物，PAS 注释完善\nQAPA（定量精度高）\n\n\n非模式生物或样本类型特异 PAS\nDaPars2（无需预注释）\n\n\n发现新型 PAS\nDaPars2\n\n\n低测序深度样本\nQAPA（伪比对更敏感）\n\n\n\n# QAPA workflow\n# Requires: qapa, salmon, PolyASite 2.0 annotation\n\n# Step 1: Build QAPA reference from PolyASite annotation\nqapa build \\\n    --db /path/to/atlas.clusters.2.0.GRCh38.96.bed \\\n    -g /Users/angdong/Documents/bio_example/bulkRNA/ref/GRCh38.109.gtf \\\n    -f /Users/angdong/Documents/bio_example/bulkRNA/ref/Homo_sapiens.GRCh38.dna.primary_assembly.fa \\\n    &gt; qapa_3utrs.fa\n\n# Step 2: Build Salmon index on QAPA reference\nsalmon index \\\n    -t qapa_3utrs.fa \\\n    -i qapa_salmon_index \\\n    --threads 8\n\n# Step 3: Quantify each sample with Salmon\nfor sample in SRR1039508 SRR1039510 SRR1039512 SRR1039514 SRR1039516; do\n    TRIM_DIR=\"/Users/angdong/Documents/bio_example/bulkRNA/qc/fastp\"\n    salmon quant \\\n        -i qapa_salmon_index \\\n        -l ISR \\\n        -1 ${TRIM_DIR}/${sample}_1_1M_trimmed.fastq.gz \\\n        -2 ${TRIM_DIR}/${sample}_2_1M_trimmed.fastq.gz \\\n        -p 8 \\\n        --validateMappings \\\n        -o qapa_quant/${sample}\ndone\n\n# Step 4: Compute PAU (Poly-A Usage) per PAS\nqapa quant \\\n    --db /path/to/atlas.clusters.2.0.GRCh38.96.bed \\\n    qapa_quant/*/quant.sf \\\n    &gt; qapa_pau_results.txt\n上述流程依赖外部 PAS 注释文件，因此更适合作为方法展示。若研究目标是发现样本特异的新 PAS，应优先使用 DaPars2 或其他无注释发现工具，再用独立数据进行验证。\n# Compare DaPars2 and QAPA results for genes detected by both methods\nlibrary(dplyr)\nlibrary(ggplot2)\n\n# Read QAPA output (PAU per PAS per sample)\nqapa_result &lt;- read.table(\"qapa_pau_results.txt\",\n                           header = TRUE, sep = \"\\t\") |&gt;\n    filter(!is.na(PAU)) |&gt;\n    group_by(Gene) |&gt;\n    # Compute delta PAU for proximal vs distal PAS\n    summarize(\n        delta_pau = mean(PAU[grepl(\"proximal\", APA_ID)], na.rm = TRUE) -\n                    mean(PAU[grepl(\"distal\",   APA_ID)], na.rm = TRUE),\n        .groups = \"drop\"\n    )",
     "crumbs": [
       "第二阶段：转录组与单细胞",
-      "<span class='chapter-number'>27</span>  <span class='chapter-title'>专题 5.3：可变多腺苷酸化分析与长读长转录组展望</span>"
+      "<span class='chapter-number'>27</span>  <span class='chapter-title'>可变多腺苷酸化分析与长读长转录组展望</span>"
     ]
   },
   {
     "objectID": "transcriptomics_adv_lesson2.html#差异-apa-基因的-go-富集分析",
     "href": "transcriptomics_adv_lesson2.html#差异-apa-基因的-go-富集分析",
-    "title": "27  专题 5.3：可变多腺苷酸化分析与长读长转录组展望",
+    "title": "27  可变多腺苷酸化分析与长读长转录组展望",
     "section": "32.1 差异 APA 基因的 GO 富集分析",
     "text": "32.1 差异 APA 基因的 GO 富集分析\n识别显著 APA 基因后，可以用 GO 富集分析概括这些基因涉及的生物学过程。需要注意的是，APA 改变的是转录本调控潜力，不一定改变基因总表达量。因此，差异 APA 基因集和差异表达基因集（DEA，参见第4章）可能指向不同的功能类别。\nlibrary(clusterProfiler)\nlibrary(org.Hs.eg.db)\nlibrary(dplyr)\n\n# Significant APA genes (use results from DaPars2 analysis above)\n# Here we use simulated gene list for demonstration\nsig_apa_genes &lt;- c(\n    \"DICER1\", \"IGF2BP1\", \"CCND1\", \"MYC\", \"VEGFA\",\n    \"ELAVL1\", \"PTBP1\", \"KHSRP\", \"ZFC3H1\", \"NUDT21\"\n)\n\n# Convert gene symbols to Entrez IDs\ngene_entrez &lt;- bitr(sig_apa_genes, fromType = \"SYMBOL\",\n                    toType = \"ENTREZID\", OrgDb = org.Hs.eg.db)\n\n# GO enrichment (Biological Process)\ngo_bp &lt;- enrichGO(\n    gene          = gene_entrez$ENTREZID,\n    OrgDb         = org.Hs.eg.db,\n    ont           = \"BP\",\n    pAdjustMethod = \"BH\",\n    pvalueCutoff  = 0.05,\n    readable      = TRUE\n)\n#| label: fig-apa-go\n#| fig-cap: \"差异 APA 基因集 GO 生物过程富集分析结果（前 15 条目）。点的大小代表富集基因数量，颜色代表校正后 p 值。\"\nlibrary(ggplot2)\nlibrary(dplyr)\n\n# Simulated GO enrichment results\ngo_sim &lt;- data.frame(\n    Description = c(\n        \"mRNA 3'-end processing\", \"regulation of mRNA stability\",\n        \"RNA splicing\", \"miRNA-mediated gene silencing\",\n        \"cell proliferation\", \"response to glucocorticoid\",\n        \"translation regulation\", \"cytoplasmic mRNA processing body\",\n        \"poly(A) RNA binding\", \"RNA binding\"\n    ),\n    Count = c(8, 7, 6, 6, 5, 5, 4, 4, 3, 3),\n    p_adj = c(0.0001, 0.0003, 0.001, 0.002, 0.005,\n              0.006, 0.01, 0.012, 0.02, 0.03)\n) |&gt;\n    mutate(Description = reorder(Description, -p_adj))\n\nggplot(go_sim, aes(x = -log10(p_adj), y = Description,\n                    size = Count, color = p_adj)) +\n    geom_point() +\n    scale_color_gradient(low = \"#d62728\", high = \"#aec7e8\",\n                         name = \"Adjusted p\") +\n    scale_size_continuous(range = c(3, 8), name = \"Gene count\") +\n    labs(x = expression(-log[10](\"Adjusted p-value\")),\n         y = NULL,\n         caption = \"Simulated data for illustration\") +\n    theme_bw(base_size = 11) +\n    theme(legend.position = \"right\")",
     "crumbs": [
       "第二阶段：转录组与单细胞",
-      "<span class='chapter-number'>27</span>  <span class='chapter-title'>专题 5.3：可变多腺苷酸化分析与长读长转录组展望</span>"
+      "<span class='chapter-number'>27</span>  <span class='chapter-title'>可变多腺苷酸化分析与长读长转录组展望</span>"
     ]
   },
   {
     "objectID": "transcriptomics_adv_lesson2.html#apa-与差异剪接结果的联合解读",
     "href": "transcriptomics_adv_lesson2.html#apa-与差异剪接结果的联合解读",
-    "title": "27  专题 5.3：可变多腺苷酸化分析与长读长转录组展望",
+    "title": "27  可变多腺苷酸化分析与长读长转录组展望",
     "section": "32.2 APA 与差异剪接结果的联合解读",
     "text": "32.2 APA 与差异剪接结果的联合解读\n将专题 5.1 的 rMATS 结果与本专题的 DaPars2 结果取交集，可以找到同时发生可变剪接和 APA 的基因。这类基因可能同时改变蛋白质异构体和 3’ UTR 调控元件，值得优先检查。\nlibrary(ggplot2)\nlibrary(VennDiagram)\nlibrary(grid)\n\n# Simulated gene sets from rMATS and DaPars2\n# Replace with actual results from respective analyses\nrmats_sig_genes  &lt;- paste0(\"GENE_\", sample(1:500, 120, replace = FALSE))\ndapars_sig_genes &lt;- paste0(\"GENE_\", sample(1:500, 95,  replace = FALSE))\n\noverlap_genes &lt;- intersect(rmats_sig_genes, dapars_sig_genes)\ncat(\"Genes regulated by both AS and APA:\", length(overlap_genes), \"\\n\")\n\n# Fisher's exact test for enrichment significance\ncontingency &lt;- matrix(\n    c(length(overlap_genes),\n      length(rmats_sig_genes)  - length(overlap_genes),\n      length(dapars_sig_genes) - length(overlap_genes),\n      500 - length(union(rmats_sig_genes, dapars_sig_genes))),\n    nrow = 2\n)\nfisher.test(contingency)",
     "crumbs": [
       "第二阶段：转录组与单细胞",
-      "<span class='chapter-number'>27</span>  <span class='chapter-title'>专题 5.3：可变多腺苷酸化分析与长读长转录组展望</span>"
+      "<span class='chapter-number'>27</span>  <span class='chapter-title'>可变多腺苷酸化分析与长读长转录组展望</span>"
     ]
   },
   {
@@ -6234,155 +6234,155 @@
   {
     "objectID": "transcriptomics_adv_lesson5.html",
     "href": "transcriptomics_adv_lesson5.html",
-    "title": "30  专题 5.5：扰动稳态下的非线性基因调控模型学习",
+    "title": "30  扰动稳态下的非线性基因调控模型学习",
     "section": "",
     "text": "31 专题概述\n专题 5.4 已介绍基因调控网络（Gene Regulatory Network, GRN）推断的两条路线：GENIE3 通过机器学习方法从表达矩阵中排序有向调控边，ODE/SINDy 则尝试从时间序列数据中学习动力学方程。本专题进一步讨论一个更具实验设计意识的问题：如果没有高时间分辨率的时间序列，是否仍然可以学习一个非线性的基因调控动力系统？Meister 等人提出的扰动稳态方法给出了一个有代表性的回答：通过过表达、敲低或敲除实验获得多个新的稳态表达谱，再利用稳态条件把原本非线性的 ODE 参数估计问题转化为带约束的凸优化问题（Meister et al., 2013）。\n本专题不要求读者复现论文中的完整算法，而是提炼其建模思想。核心主线包括：热力学转录模型如何写成有理函数形式；为什么稳态条件可以消去时间导数；如何把每个基因的调控方程拆成独立的线性回归问题；为什么需要 LASSO 进行稀疏项选择；以及这种方法在真实 RNA-seq 研究中需要怎样的实验设计与验证策略。最后通过一个小型模拟例子展示”非线性模型在稳态处线性化”的计算逻辑。\n学习目标：理解扰动稳态（perturbed steady-state）在 GRN 推断中的作用；掌握 Bintu 型热力学转录模型的有理函数结构；能够推导稳态条件下的线性参数方程；理解带约束 LASSO 在调控项选择中的意义；能够区分该方法与 WGCNA、GENIE3、SINDy 的数据需求和适用场景。",
     "crumbs": [
       "第二阶段：转录组与单细胞",
-      "<span class='chapter-number'>30</span>  <span class='chapter-title'>专题 5.5：扰动稳态下的非线性基因调控模型学习</span>"
+      "<span class='chapter-number'>30</span>  <span class='chapter-title'>扰动稳态下的非线性基因调控模型学习</span>"
     ]
   },
   {
     "objectID": "transcriptomics_adv_lesson5.html#为什么需要扰动稳态",
     "href": "transcriptomics_adv_lesson5.html#为什么需要扰动稳态",
-    "title": "30  专题 5.5：扰动稳态下的非线性基因调控模型学习",
+    "title": "30  扰动稳态下的非线性基因调控模型学习",
     "section": "32.1 为什么需要扰动稳态",
     "text": "32.1 为什么需要扰动稳态\n共表达网络和随机森林网络可以从多样本表达矩阵中发现有用的统计关联，但它们通常不能直接描述系统在扰动后的动态轨迹。若某个转录因子被敲低，细胞会经历一段非稳态调整过程，最终可能进入新的稳态。仅在原始稳态附近建立线性模型，往往难以外推到这种较大的状态改变。\n扰动稳态方法的基本思想是：与其密集采样整个动态过程，不如系统地制造多个新的稳态。每一次过表达、敲低或敲除实验都可以把细胞推向一个新的表达状态。若这些状态足够多、足够多样，就能为调控方程提供多组约束。论文的关键贡献在于指出：虽然原始调控模型是非线性的，但在稳态条件下，每个观测状态都能产生一条关于模型参数的线性方程。\n\n稳态不是静止不变：\n稳态（steady-state）不是没有分子合成和降解，而是合成速率与降解速率达到平衡，因此表达量在观测尺度上近似恒定。扰动稳态指经过敲低、敲除或过表达后，系统重新达到的平衡状态。该状态通常不同于原始野生型状态，因而能揭示调控关系的因果方向。",
     "crumbs": [
       "第二阶段：转录组与单细胞",
-      "<span class='chapter-number'>30</span>  <span class='chapter-title'>专题 5.5：扰动稳态下的非线性基因调控模型学习</span>"
+      "<span class='chapter-number'>30</span>  <span class='chapter-title'>扰动稳态下的非线性基因调控模型学习</span>"
     ]
   },
   {
     "objectID": "transcriptomics_adv_lesson5.html#方法定位",
     "href": "transcriptomics_adv_lesson5.html#方法定位",
-    "title": "30  专题 5.5：扰动稳态下的非线性基因调控模型学习",
+    "title": "30  扰动稳态下的非线性基因调控模型学习",
     "section": "32.2 方法定位",
     "text": "32.2 方法定位\n这篇论文可以看作三类思想的交汇点：\n\n\n\n思路\n在本专题中的角色\n\n\n\n\n热力学生物物理模型\n给出可解释的非线性转录函数\n\n\n扰动实验设计\n让表达数据包含因果调控信息\n\n\n稀疏凸优化\n从大量候选调控项中选择少数有效项\n\n\n\n与 WGCNA 相比，该方法不只寻找共表达模块，而是拟合可预测的动力系统。与 GENIE3 相比，它输出的是方程参数，而不是特征重要性排序。与 SINDy 相比，它不依赖密集时间序列，而是依赖多个扰动后的稳态测量。",
     "crumbs": [
       "第二阶段：转录组与单细胞",
-      "<span class='chapter-number'>30</span>  <span class='chapter-title'>专题 5.5：扰动稳态下的非线性基因调控模型学习</span>"
+      "<span class='chapter-number'>30</span>  <span class='chapter-title'>扰动稳态下的非线性基因调控模型学习</span>"
     ]
   },
   {
     "objectID": "transcriptomics_adv_lesson5.html#rna-与蛋白的-ode-形式",
     "href": "transcriptomics_adv_lesson5.html#rna-与蛋白的-ode-形式",
-    "title": "30  专题 5.5：扰动稳态下的非线性基因调控模型学习",
+    "title": "30  扰动稳态下的非线性基因调控模型学习",
     "section": "33.1 RNA 与蛋白的 ODE 形式",
     "text": "33.1 RNA 与蛋白的 ODE 形式\n设系统中共有 \\(n\\) 个基因。令 \\(x_i\\) 表示第 \\(i\\) 个基因的 RNA 浓度，\\(y_i\\) 表示对应蛋白浓度。论文采用的基本动力学形式为：\n\\[\n\\frac{dx_i}{dt} = \\tau_i f_i(y) - \\lambda_i^{RNA}x_i\n\\]\n\\[\n\\frac{dy_i}{dt} = r_i x_i - \\lambda_i^{Protein}y_i\n\\]\n其中，\\(\\tau_i\\) 是转录最大速率，\\(f_i(y)\\) 是 RNA 聚合酶（RNA polymerase, RNAP）结合启动子的概率，\\(\\lambda_i^{RNA}\\) 和 \\(\\lambda_i^{Protein}\\) 分别表示 RNA 与蛋白降解速率，\\(r_i\\) 表示翻译速率。这个框架将基因表达写成”产生项 - 降解项”。所有复杂调控都集中在 \\(f_i(y)\\) 中。",
     "crumbs": [
       "第二阶段：转录组与单细胞",
-      "<span class='chapter-number'>30</span>  <span class='chapter-title'>专题 5.5：扰动稳态下的非线性基因调控模型学习</span>"
+      "<span class='chapter-number'>30</span>  <span class='chapter-title'>扰动稳态下的非线性基因调控模型学习</span>"
     ]
   },
   {
     "objectID": "transcriptomics_adv_lesson5.html#热力学转录函数",
     "href": "transcriptomics_adv_lesson5.html#热力学转录函数",
-    "title": "30  专题 5.5：扰动稳态下的非线性基因调控模型学习",
+    "title": "30  扰动稳态下的非线性基因调控模型学习",
     "section": "33.2 热力学转录函数",
     "text": "33.2 热力学转录函数\nBintu 型热力学模型把 \\(f_i(y)\\) 写成有理函数。其一般形式为：\n\\[\nf_i(y)=\n\\frac{\nb_{i0}+\\sum_j b_{ij}\\prod_{k\\in S_{ij}} y_k\n}{\n1+\\sum_j c_{ij}\\prod_{k\\in S_{ij}} y_k\n}\n\\]\n其中，\\(S_{ij}\\) 表示第 \\(j\\) 个候选调控复合物所包含的蛋白集合。例如，\\(S_{ij}=\\{2\\}\\) 表示蛋白 2 单独调控基因 \\(i\\)；\\(S_{ij}=\\{2,3\\}\\) 表示蛋白 2 与蛋白 3 形成复合物后协同调控基因 \\(i\\)。系数 \\(b_{ij}\\) 与 \\(c_{ij}\\) 均非负，并满足 \\(0\\leq b_{ij}\\leq c_{ij}\\)。这个约束来自热力学概率解释：分母表示所有启动子构象的相对权重，分子表示 RNAP 结合构象的相对权重。\n这一形式可以同时表达激活、抑制、自调控和协同调控。若某项主要出现在分母中，它会降低 RNAP 结合概率，表现为抑制；若某项同时影响分子和分母，其效果取决于系数大小和当前表达背景。与简单线性模型相比，有理函数能表达”两个调控因子共同出现才有效”这类组合效应。\n\n核心直觉：\n非线性并不一定来自复杂的黑箱模型。这里的非线性来自启动子状态的热力学加权：不同转录因子及其复合物竞争或协助 RNAP 结合，最终形成一个分子和分母都包含调控项的有理函数。",
     "crumbs": [
       "第二阶段：转录组与单细胞",
-      "<span class='chapter-number'>30</span>  <span class='chapter-title'>专题 5.5：扰动稳态下的非线性基因调控模型学习</span>"
+      "<span class='chapter-number'>30</span>  <span class='chapter-title'>扰动稳态下的非线性基因调控模型学习</span>"
     ]
   },
   {
     "objectID": "transcriptomics_adv_lesson5.html#两基因示意",
     "href": "transcriptomics_adv_lesson5.html#两基因示意",
-    "title": "30  专题 5.5：扰动稳态下的非线性基因调控模型学习",
+    "title": "30  扰动稳态下的非线性基因调控模型学习",
     "section": "33.3 两基因示意",
     "text": "33.3 两基因示意\n以两个基因为例，假设基因 1 被蛋白 2 激活，同时被自身蛋白抑制；基因 2 被蛋白 1 与蛋白 2 形成的复合物抑制。对应的 RNA 方程可写为：\n\\[\n\\frac{dx_1}{dt}\n=\n\\tau_1\n\\frac{b_{10}+b_{11}y_2}{1+c_{11}y_2+c_{12}y_1}\n-\\lambda_1^{RNA}x_1\n\\]\n\\[\n\\frac{dx_2}{dt}\n=\n\\tau_2\n\\frac{b_{20}}{1+c_{21}y_1y_2}\n-\\lambda_2^{RNA}x_2\n\\]\n这个例子展示了三种调控模式：\\(y_2\\) 对基因 1 的单因子调控，\\(y_1\\) 对基因 1 的自调控，以及 \\(y_1y_2\\) 对基因 2 的协同抑制。实际建模时，研究者通常不知道哪些项真实存在，因此需要先列出候选项，再通过稀疏估计选择有效项。",
     "crumbs": [
       "第二阶段：转录组与单细胞",
-      "<span class='chapter-number'>30</span>  <span class='chapter-title'>专题 5.5：扰动稳态下的非线性基因调控模型学习</span>"
+      "<span class='chapter-number'>30</span>  <span class='chapter-title'>扰动稳态下的非线性基因调控模型学习</span>"
     ]
   },
   {
     "objectID": "transcriptomics_adv_lesson5.html#稳态条件",
     "href": "transcriptomics_adv_lesson5.html#稳态条件",
-    "title": "30  专题 5.5：扰动稳态下的非线性基因调控模型学习",
+    "title": "30  扰动稳态下的非线性基因调控模型学习",
     "section": "34.1 稳态条件",
     "text": "34.1 稳态条件\n在稳态下，RNA 和蛋白浓度不再随时间变化，因此：\n\\[\n\\frac{dx_i}{dt}=0,\\qquad \\frac{dy_i}{dt}=0\n\\]\n由蛋白方程可得：\n\\[\ny_i=\\frac{r_i}{\\lambda_i^{Protein}}x_i\n\\]\n这意味着在稳态处，蛋白浓度可以视为 RNA 浓度的比例变换。将这些比例常数吸收到模型系数中，就可以把 \\(f_i(y)\\) 改写为关于 RNA 表达量 \\(x\\) 的函数。为了简化记号，令 \\(\\gamma_i=\\lambda_i^{RNA}\\)，则 RNA 方程在稳态下可写为：\n\\[\n\\tau_i\n\\frac{\nb_{i0}+\\sum_j b_{ij}\\prod_{k\\in S_{ij}}x_k\n}{\n1+\\sum_j c_{ij}\\prod_{k\\in S_{ij}}x_k\n}\n-\\gamma_i x_i\n=0\n\\]",
     "crumbs": [
       "第二阶段：转录组与单细胞",
-      "<span class='chapter-number'>30</span>  <span class='chapter-title'>专题 5.5：扰动稳态下的非线性基因调控模型学习</span>"
+      "<span class='chapter-number'>30</span>  <span class='chapter-title'>扰动稳态下的非线性基因调控模型学习</span>"
     ]
   },
   {
     "objectID": "transcriptomics_adv_lesson5.html#关键线性化步骤",
     "href": "transcriptomics_adv_lesson5.html#关键线性化步骤",
-    "title": "30  专题 5.5：扰动稳态下的非线性基因调控模型学习",
+    "title": "30  扰动稳态下的非线性基因调控模型学习",
     "section": "34.2 关键线性化步骤",
     "text": "34.2 关键线性化步骤\n将上式两边乘以分母：\n\\[\n\\tau_i\n\\left(\nb_{i0}+\\sum_j b_{ij}\\prod_{k\\in S_{ij}}x_k\n\\right)\n-\n\\gamma_i x_i\n\\left(\n1+\\sum_j c_{ij}\\prod_{k\\in S_{ij}}x_k\n\\right)\n=0\n\\]\n这个式子对表达量 \\(x\\) 仍然是非线性的，因为包含 \\(x_jx_k\\) 等乘积项；但对未知参数 \\(b_{ij}\\) 和 \\(c_{ij}\\) 是线性的。换言之，非线性调控项被当作已经观测到的特征，参数估计变成线性问题。每一个扰动稳态样本 \\(x^{(m)}\\) 都提供一条线性方程。多个稳态样本叠加后，就可以形成一个线性系统。\n设 \\(z_i\\) 为候选调控项向量，例如：\n\\[\nz_i = (1,\\ x_1,\\ x_2,\\ \\ldots,\\ x_n,\\ x_1x_2,\\ x_1x_3,\\ \\ldots)\n\\]\n那么第 \\(i\\) 个基因在所有稳态样本上的方程可写为：\n\\[\n\\left[\n\\tau_i G_i,\\ -\\gamma_iD_iG_i\n\\right]\n\\begin{bmatrix}\nb_i\\\\\nc_i\n\\end{bmatrix}\n=0\n\\]\n其中，\\(G_i\\) 是由各稳态样本的 \\(z_i\\) 组成的设计矩阵，\\(D_i\\) 是以目标基因表达量 \\(x_i\\) 为对角元素的对角矩阵。由于每个目标基因的参数独立，可以对每个基因分别求解。\n\n推导记忆法：\n原模型难，是因为 \\(f_i\\) 是分式非线性函数。稳态条件提供两步简化：第一步用 \\(dx/dt=dy/dt=0\\) 消去时间导数；第二步把分母乘过去。乘完以后，表达量乘积变成设计矩阵中的特征，未知系数仍然线性出现。",
     "crumbs": [
       "第二阶段：转录组与单细胞",
-      "<span class='chapter-number'>30</span>  <span class='chapter-title'>专题 5.5：扰动稳态下的非线性基因调控模型学习</span>"
+      "<span class='chapter-number'>30</span>  <span class='chapter-title'>扰动稳态下的非线性基因调控模型学习</span>"
     ]
   },
   {
     "objectID": "transcriptomics_adv_lesson5.html#为什么需要-lasso",
     "href": "transcriptomics_adv_lesson5.html#为什么需要-lasso",
-    "title": "30  专题 5.5：扰动稳态下的非线性基因调控模型学习",
+    "title": "30  扰动稳态下的非线性基因调控模型学习",
     "section": "35.1 为什么需要 LASSO",
     "text": "35.1 为什么需要 LASSO\n如果考虑所有一阶和二阶调控项，候选项数量会迅速增长。对于 \\(n\\) 个基因，最高二阶项的候选数约为：\n\\[\nT_{n,2}=1+n+\\binom{n}{2}\n\\]\n每个候选项还可能对应 \\(b\\) 和 \\(c\\) 两组系数，直接估计会需要大量稳态样本。真实生物网络通常是稀疏的，即每个基因只受少数调控因子或复合物控制。论文因此使用 \\(\\ell_1\\) 正则化进行参数选择：\n\\[\n\\min_{b_i,c_i}\n\\left\\|\n\\left[\n\\tau_i G_i,\\ -\\gamma_iD_iG_i\n\\right]\n\\begin{bmatrix}\nb_i\\\\\nc_i\n\\end{bmatrix}\n\\right\\|_2\n+\n\\lambda(\\|b_i\\|_1+\\|c_i\\|_1)\n\\]\n约束条件为：\n\\[\n0\\leq b_i\\leq c_i,\\qquad c_i(0)=1\n\\]\n其中，\\(\\lambda\\) 控制稀疏程度，可通过交叉验证选择。\\(\\ell_1\\) 正则化使许多候选项的系数趋近于 0，从而实现调控项选择。非零的 \\(c_{ij}\\) 通常表示对应项参与了基因 \\(i\\) 的调控；\\(b_{ij}\\) 与 \\(c_{ij}\\) 的相对大小则帮助判断调控效果。",
     "crumbs": [
       "第二阶段：转录组与单细胞",
-      "<span class='chapter-number'>30</span>  <span class='chapter-title'>专题 5.5：扰动稳态下的非线性基因调控模型学习</span>"
+      "<span class='chapter-number'>30</span>  <span class='chapter-title'>扰动稳态下的非线性基因调控模型学习</span>"
     ]
   },
   {
     "objectID": "transcriptomics_adv_lesson5.html#扰动稳态实验流程",
     "href": "transcriptomics_adv_lesson5.html#扰动稳态实验流程",
-    "title": "30  专题 5.5：扰动稳态下的非线性基因调控模型学习",
+    "title": "30  扰动稳态下的非线性基因调控模型学习",
     "section": "35.2 扰动稳态实验流程",
     "text": "35.2 扰动稳态实验流程\n扰动稳态方法对实验设计有明确要求。典型流程如下：\n确定候选基因集合\n  │\n  ├── 对每个基因进行过表达、敲低或敲除\n  │\n  ├── 等待系统进入新的稳态\n  │\n  ├── 测量所有候选基因的表达量\n  │\n  ├── 将多个稳态表达谱组成设计矩阵\n  │\n  └── 对每个目标基因分别求解稀疏调控方程\n在现代转录组实验中，表达测量可以由 RNA-seq 完成；扰动可由 CRISPRi、CRISPRa、RNAi、ORF 过表达或传统敲除实现。需要注意的是，这种方法并不是把普通病例-对照 RNA-seq 数据直接丢进模型，而是要求有计划地制造多个扰动稳态。因此，它更适合小到中等规模的候选调控网络，而不适合在没有扰动设计的情况下进行全基因组盲推断。\n\n实验设计限制：\nairway 数据集只有 dexamethasone 处理与对照，并不是系统性单基因扰动实验。因此它适合演示差异表达、WGCNA 和一般 GRN 推断，不适合严格复现扰动稳态模型学习。下面的代码使用模拟稳态数据说明算法思想，而不是对 airway 数据得出生物学结论。",
     "crumbs": [
       "第二阶段：转录组与单细胞",
-      "<span class='chapter-number'>30</span>  <span class='chapter-title'>专题 5.5：扰动稳态下的非线性基因调控模型学习</span>"
+      "<span class='chapter-number'>30</span>  <span class='chapter-title'>扰动稳态下的非线性基因调控模型学习</span>"
     ]
   },
   {
     "objectID": "transcriptomics_adv_lesson5.html#系数如何转化为调控网络",
     "href": "transcriptomics_adv_lesson5.html#系数如何转化为调控网络",
-    "title": "30  专题 5.5：扰动稳态下的非线性基因调控模型学习",
+    "title": "30  扰动稳态下的非线性基因调控模型学习",
     "section": "37.1 系数如何转化为调控网络",
     "text": "37.1 系数如何转化为调控网络\n在拟合完成后，可以把非零调控项转化为网络边。若某个候选项包含单个调控因子 \\(g_j\\)，则可画出 \\(g_j\\to g_i\\) 的边。若候选项包含复合物 \\(g_jg_k\\)，则表示组合调控，可画为 \\(g_j\\) 与 \\(g_k\\) 共同作用于目标基因 \\(g_i\\)。自调控项则对应自环。\n系数大小可用于表示调控强度，但不应机械解释为单一的激活或抑制。由于模型是有理函数，调控方向可能依赖当前表达背景。实践中需要结合局部导数、扰动验证和生物学先验解释边的方向与符号。",
     "crumbs": [
       "第二阶段：转录组与单细胞",
-      "<span class='chapter-number'>30</span>  <span class='chapter-title'>专题 5.5：扰动稳态下的非线性基因调控模型学习</span>"
+      "<span class='chapter-number'>30</span>  <span class='chapter-title'>扰动稳态下的非线性基因调控模型学习</span>"
     ]
   },
   {
     "objectID": "transcriptomics_adv_lesson5.html#非可辨识性",
     "href": "transcriptomics_adv_lesson5.html#非可辨识性",
-    "title": "30  专题 5.5：扰动稳态下的非线性基因调控模型学习",
+    "title": "30  扰动稳态下的非线性基因调控模型学习",
     "section": "37.2 非可辨识性",
     "text": "37.2 非可辨识性\n论文特别讨论了自调控带来的非可辨识性（nonidentifiability）。仅使用稳态表达量时，某些方程形式可能在所有稳态上给出相同约束，因此无法判断自调控项究竟是否存在，或究竟应写成哪一种等价形式。解决办法是补充少量非稳态导数信息，例如在特定扰动后立即测量表达变化率，用动态信息打破稳态等价性。",
     "crumbs": [
       "第二阶段：转录组与单细胞",
-      "<span class='chapter-number'>30</span>  <span class='chapter-title'>专题 5.5：扰动稳态下的非线性基因调控模型学习</span>"
+      "<span class='chapter-number'>30</span>  <span class='chapter-title'>扰动稳态下的非线性基因调控模型学习</span>"
     ]
   },
   {
     "objectID": "transcriptomics_adv_lesson5.html#噪声与样本量",
     "href": "transcriptomics_adv_lesson5.html#噪声与样本量",
-    "title": "30  专题 5.5：扰动稳态下的非线性基因调控模型学习",
+    "title": "30  扰动稳态下的非线性基因调控模型学习",
     "section": "37.3 噪声与样本量",
     "text": "37.3 噪声与样本量\n扰动稳态方法对数据质量敏感。低噪声模拟中，主要调控项可以被较好恢复；噪声增加时，需要更多扰动组合或更强的先验约束才能稳定选择弱调控项。对于 RNA-seq 数据，测序深度、批次效应、归一化方法和低表达基因过滤都会影响稳态表达矩阵的可靠性。\n\n解释边界：\n该方法适合候选网络规模有限、扰动设计充分、稳态定义清楚的系统。它不适合直接替代全基因组探索性 GRN 工具。若研究对象包含强烈细胞异质性、未达到稳态的时间点、显著反馈延迟或强随机转录噪声，则应谨慎使用，并优先结合时间序列、单细胞扰动或蛋白水平测量。",
     "crumbs": [
       "第二阶段：转录组与单细胞",
-      "<span class='chapter-number'>30</span>  <span class='chapter-title'>专题 5.5：扰动稳态下的非线性基因调控模型学习</span>"
+      "<span class='chapter-number'>30</span>  <span class='chapter-title'>扰动稳态下的非线性基因调控模型学习</span>"
     ]
   },
   {
     "objectID": "transcriptomics_adv_lesson5.html#与第-5-章其他方法的关系",
     "href": "transcriptomics_adv_lesson5.html#与第-5-章其他方法的关系",
-    "title": "30  专题 5.5：扰动稳态下的非线性基因调控模型学习",
+    "title": "30  扰动稳态下的非线性基因调控模型学习",
     "section": "37.4 与第 5 章其他方法的关系",
     "text": "37.4 与第 5 章其他方法的关系\n\n\n\n\n\n\n\n\n\n\n方法\n输入数据\n输出\n优势\n主要限制\n\n\n\n\nWGCNA\n多样本表达矩阵\n无向共表达模块\n稳定、易解释、适合表型关联\n无法推断因果方向\n\n\nGENIE3\n稳态表达矩阵\n有向边排序\n可处理非线性预测关系\n输出不是机制方程\n\n\nSINDy\n时间序列表达矩阵\n稀疏动力学方程\n可学习动态方程形式\n需要高质量时间序列\n\n\n扰动稳态模型\n多个扰动后稳态\n非线性 ODE 参数\n机制解释强、实验可设计\n需要系统扰动与稳态验证",
     "crumbs": [
       "第二阶段：转录组与单细胞",
-      "<span class='chapter-number'>30</span>  <span class='chapter-title'>专题 5.5：扰动稳态下的非线性基因调控模型学习</span>"
+      "<span class='chapter-number'>30</span>  <span class='chapter-title'>扰动稳态下的非线性基因调控模型学习</span>"
     ]
   }
 ]

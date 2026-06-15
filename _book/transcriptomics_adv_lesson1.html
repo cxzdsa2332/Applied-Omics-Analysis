@@ -6,7 +6,7 @@
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
-<meta name="dcterms.date" content="2026-06-14">
+<meta name="dcterms.date" content="2026-06-15">
 
 <title>26&nbsp; 可变剪接差异分析与基因融合鉴定 – Introduction to Applied High-throughput Biological Data Analysis</title>
 <style>
@@ -357,7 +357,7 @@ window.Quarto = {
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./transcriptomics_adv_lesson2.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">27</span>&nbsp; <span class="chapter-title">专题 5.3：可变多腺苷酸化分析与长读长转录组展望</span></span></a>
+ <span class="menu-text"><span class="chapter-number">27</span>&nbsp; <span class="chapter-title">可变多腺苷酸化分析与长读长转录组展望</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
@@ -375,7 +375,7 @@ window.Quarto = {
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./transcriptomics_adv_lesson5.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">30</span>&nbsp; <span class="chapter-title">第五章 课时5</span></span></a>
+ <span class="menu-text"><span class="chapter-number">30</span>&nbsp; <span class="chapter-title">扰动稳态下的非线性基因调控模型学习</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
@@ -645,7 +645,7 @@ window.Quarto = {
     <div>
     <div class="quarto-title-meta-heading">Published</div>
     <div class="quarto-title-meta-contents">
-      <p class="date">June 14, 2026</p>
+      <p class="date">June 15, 2026</p>
     </div>
   </div>
   
@@ -706,13 +706,16 @@ window.Quarto = {
 <section id="rmats基于贝叶斯框架的差异剪接检验" class="level2" data-number="28.3">
 <h2 data-number="28.3" class="anchored" data-anchor-id="rmats基于贝叶斯框架的差异剪接检验"><span class="header-section-number">28.3</span> rMATS：基于贝叶斯框架的差异剪接检验</h2>
 <p>rMATS（replicate Multivariate Analysis of Transcript Splicing）是目前最广泛使用的可变剪接差异分析工具。与早期工具相比，rMATS 的核心改进在于：（1）专门设计用于处理<strong>有重复样本</strong>的实验设计，能够对样本间的 PSI 变异进行统计建模；（2）使用 <strong>Beta 二项分布</strong>（Beta-Binomial distribution）而非简单二项分布，更好地捕捉生物学重复之间的过度离散（overdispersion）现象。</p>
-<p><strong>rMATS 的统计推断流程</strong>：</p>
+<p><strong>rMATS 的统计推断流程</strong>：可以将整个流程理解为四个递进的问题——“数清楚有多少 reads” → “把比例上的随机波动建模出来” → “估计两组到底差多少” → “判断这个差异是不是偶然”。</p>
 <ol type="1">
-<li><strong>读段计数</strong>：对每个可变剪接事件，统计每个样本的 inclusion junction reads（<span class="math inline">\(I_k\)</span>）和 skipping junction reads（<span class="math inline">\(S_k\)</span>）。</li>
-<li><strong>Beta 二项分布建模</strong>：对每个组，假设每个样本的读段计数服从 Beta-Binomial 分布，其中 Beta 先验参数刻画了组内的变异性。</li>
-<li><strong><span class="math inline">\(\Delta\Psi\)</span> 的后验估计</strong>：通过贝叶斯推断得到 <span class="math inline">\(\Delta\Psi\)</span> 的后验分布，报告后验均值与置信区间。</li>
-<li><strong>显著性检验</strong>：计算 <span class="math inline">\(|\Delta\Psi| &gt; \delta\)</span>（通常 <span class="math inline">\(\delta = 0.05\)</span>）的后验概率；同时报告 FDR 校正后的 P 值。</li>
+<li><strong>读段计数</strong>：对每个可变剪接事件，统计每个样本的 inclusion junction reads（<span class="math inline">\(I_k\)</span>，支持纳入外显子）和 skipping junction reads（<span class="math inline">\(S_k\)</span>，支持跳过外显子）。单个样本的 PSI 即由这两个数算出：<span class="math inline">\(\Psi_k = I_k / (I_k + S_k)\)</span>。这一步的本质是把”剪接选择”转化为一个”成功/失败”的计数问题——每条 junction read 都是一次投票，投给”纳入”或”跳过”。</li>
+<li><strong>Beta 二项分布建模</strong>：关键在于 PSI 不是一个固定常数。即使在同一实验条件下，不同生物学重复测得的 PSI 也会有波动，这种”重复之间比例本身就在变”的现象称为过度离散（overdispersion）。rMATS 用两层结构刻画它：内层用二项分布描述”给定真实纳入概率时，<span class="math inline">\(I_k\)</span> 在总 reads 中的随机抽样”；外层用 Beta 分布描述”各重复的真实纳入概率本身围绕组均值的散布”。两层叠加即 Beta 二项分布——读段越少、重复间波动越大，模型给出的不确定性就越大。</li>
+<li><strong><span class="math inline">\(\Delta\Psi\)</span> 的后验估计</strong>：在上述模型下，通过贝叶斯推断同时估计两组的 PSI 均值，并直接得到两者之差 <span class="math inline">\(\Delta\Psi = \Psi_1 - \Psi_2\)</span> 的后验分布。报告的不是一个孤立的点估计，而是后验均值加置信区间——区间越窄，说明该事件的 reads 支持越充分、估计越可信。</li>
+<li><strong>显著性检验</strong>：rMATS 检验的不是”<span class="math inline">\(\Delta\Psi\)</span> 是否恰好为 0”，而是”差异是否大到具有生物学意义”。它计算后验分布中 <span class="math inline">\(|\Delta\Psi| &gt; \delta\)</span>（阈值通常取 <span class="math inline">\(\delta = 0.05\)</span>）的概率，据此给出 P 值，再经多重检验校正得到 FDR。因此一个事件要被判为显著，需同时满足两点：差异幅度足够大（<span class="math inline">\(|\Delta\Psi|\)</span> 超过阈值）且证据足够稳（FDR 足够小）。</li>
 </ol>
+<div class="info">
+<p><strong>黄金法则：幅度与置信缺一不可。</strong> rMATS 的输出永远要同时看 <code>IncLevelDifference</code>（<span class="math inline">\(\Delta\Psi\)</span>，差异多大）和 <code>FDR</code>（差异多可信）。一个 <span class="math inline">\(\Delta\Psi = 0.6\)</span> 但 reads 极少、FDR 接近 1 的事件不可信；一个 FDR 极小但 <span class="math inline">\(\Delta\Psi\)</span> 只有 0.02 的事件虽统计显著却几乎没有生物学意义。真正值得关注的是两者皆达标的事件。</p>
+</div>
 <p>rMATS 支持两种计数模式，对应两个输出文件系列：</p>
 <ul>
 <li><strong>JC（Junction Counts only）</strong>：仅使用跨越剪接位点的 junction reads，对外显子长度变化不敏感，推荐作为主要分析依据。</li>
@@ -777,38 +780,27 @@ window.Quarto = {
 </section>
 <section id="运行-rmats" class="level3" data-number="28.4.2">
 <h3 data-number="28.4.2" class="anchored" data-anchor-id="运行-rmats"><span class="header-section-number">28.4.2</span> 运行 rMATS</h3>
-<p>rMATS 采用两步运行策略：第一步仅计数（<code>--statoff</code>），第二步在计数基础上执行统计检验。两步分离的设计允许在多个比较组之间复用同一批比对结果，节省计算时间。</p>
+<p>rMATS（rmats-turbo）通过 <code>rmats.py</code> 调用。一次完整运行依次完成三件事：解析比对文件、统计各类事件的 junction reads、对 PSI 差异执行 Beta 二项检验。</p>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb4"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="va">GTF</span><span class="op">=</span><span class="st">"/Users/angdong/Documents/bio_example/bulkRNA/ref/GRCh38.109.gtf"</span></span>
 <span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a><span class="va">OUTPUT_DIR</span><span class="op">=</span><span class="st">"rmats_output"</span></span>
-<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a><span class="va">TMP_DIR</span><span class="op">=</span><span class="st">"</span><span class="va">${OUTPUT_DIR}</span><span class="st">/tmp"</span></span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a><span class="va">TMP_DIR</span><span class="op">=</span><span class="st">"rmats_tmp"</span></span>
 <span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a><span class="fu">mkdir</span> <span class="at">-p</span> <span class="va">${OUTPUT_DIR}</span> <span class="va">${TMP_DIR}</span></span>
 <span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a><span class="co"># Step 1: counting only (can be parallelized across experiments)</span></span>
-<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a><span class="co"># --readLength 63 matches the airway PE63 reads; --variable-read-length</span></span>
-<span id="cb4-8"><a href="#cb4-8" aria-hidden="true" tabindex="-1"></a><span class="co"># is required because fastp trimming produces reads shorter than 63 bp.</span></span>
-<span id="cb4-9"><a href="#cb4-9" aria-hidden="true" tabindex="-1"></a><span class="ex">python</span> <span class="at">-m</span> rmats <span class="dt">\</span></span>
-<span id="cb4-10"><a href="#cb4-10" aria-hidden="true" tabindex="-1"></a>    <span class="at">--b1</span> group1_bams.txt <span class="dt">\</span></span>
-<span id="cb4-11"><a href="#cb4-11" aria-hidden="true" tabindex="-1"></a>    <span class="at">--b2</span> group2_bams.txt <span class="dt">\</span></span>
-<span id="cb4-12"><a href="#cb4-12" aria-hidden="true" tabindex="-1"></a>    <span class="at">--gtf</span> <span class="va">${GTF}</span> <span class="dt">\</span></span>
-<span id="cb4-13"><a href="#cb4-13" aria-hidden="true" tabindex="-1"></a>    <span class="at">--od</span> <span class="va">${OUTPUT_DIR}</span> <span class="dt">\</span></span>
-<span id="cb4-14"><a href="#cb4-14" aria-hidden="true" tabindex="-1"></a>    <span class="at">--tmp</span> <span class="va">${TMP_DIR}</span> <span class="dt">\</span></span>
-<span id="cb4-15"><a href="#cb4-15" aria-hidden="true" tabindex="-1"></a>    <span class="at">-t</span> paired <span class="dt">\</span></span>
-<span id="cb4-16"><a href="#cb4-16" aria-hidden="true" tabindex="-1"></a>    <span class="at">--readLength</span> 63 <span class="dt">\</span></span>
-<span id="cb4-17"><a href="#cb4-17" aria-hidden="true" tabindex="-1"></a>    <span class="at">--variable-read-length</span> <span class="dt">\</span></span>
-<span id="cb4-18"><a href="#cb4-18" aria-hidden="true" tabindex="-1"></a>    <span class="at">--nthread</span> 8 <span class="dt">\</span></span>
-<span id="cb4-19"><a href="#cb4-19" aria-hidden="true" tabindex="-1"></a>    <span class="at">--statoff</span></span>
-<span id="cb4-20"><a href="#cb4-20" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb4-21"><a href="#cb4-21" aria-hidden="true" tabindex="-1"></a><span class="co"># Step 2: statistical testing</span></span>
-<span id="cb4-22"><a href="#cb4-22" aria-hidden="true" tabindex="-1"></a><span class="ex">python</span> <span class="at">-m</span> rmats <span class="dt">\</span></span>
-<span id="cb4-23"><a href="#cb4-23" aria-hidden="true" tabindex="-1"></a>    <span class="at">--b1</span> group1_bams.txt <span class="dt">\</span></span>
-<span id="cb4-24"><a href="#cb4-24" aria-hidden="true" tabindex="-1"></a>    <span class="at">--b2</span> group2_bams.txt <span class="dt">\</span></span>
-<span id="cb4-25"><a href="#cb4-25" aria-hidden="true" tabindex="-1"></a>    <span class="at">--gtf</span> <span class="va">${GTF}</span> <span class="dt">\</span></span>
-<span id="cb4-26"><a href="#cb4-26" aria-hidden="true" tabindex="-1"></a>    <span class="at">--od</span> <span class="va">${OUTPUT_DIR}</span> <span class="dt">\</span></span>
-<span id="cb4-27"><a href="#cb4-27" aria-hidden="true" tabindex="-1"></a>    <span class="at">--tmp</span> <span class="va">${TMP_DIR}</span> <span class="dt">\</span></span>
-<span id="cb4-28"><a href="#cb4-28" aria-hidden="true" tabindex="-1"></a>    <span class="at">-t</span> paired <span class="dt">\</span></span>
-<span id="cb4-29"><a href="#cb4-29" aria-hidden="true" tabindex="-1"></a>    <span class="at">--readLength</span> 63 <span class="dt">\</span></span>
-<span id="cb4-30"><a href="#cb4-30" aria-hidden="true" tabindex="-1"></a>    <span class="at">--variable-read-length</span> <span class="dt">\</span></span>
-<span id="cb4-31"><a href="#cb4-31" aria-hidden="true" tabindex="-1"></a>    <span class="at">--nthread</span> 8</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a><span class="co"># --readLength 63 matches the airway PE63 reads; --variable-read-length</span></span>
+<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a><span class="co"># is required because fastp trimming produces reads shorter than 63 bp.</span></span>
+<span id="cb4-8"><a href="#cb4-8" aria-hidden="true" tabindex="-1"></a><span class="ex">rmats.py</span> <span class="dt">\</span></span>
+<span id="cb4-9"><a href="#cb4-9" aria-hidden="true" tabindex="-1"></a>    <span class="at">--b1</span> group1_bams.txt <span class="dt">\</span></span>
+<span id="cb4-10"><a href="#cb4-10" aria-hidden="true" tabindex="-1"></a>    <span class="at">--b2</span> group2_bams.txt <span class="dt">\</span></span>
+<span id="cb4-11"><a href="#cb4-11" aria-hidden="true" tabindex="-1"></a>    <span class="at">--gtf</span> <span class="va">${GTF}</span> <span class="dt">\</span></span>
+<span id="cb4-12"><a href="#cb4-12" aria-hidden="true" tabindex="-1"></a>    <span class="at">--od</span> <span class="va">${OUTPUT_DIR}</span> <span class="dt">\</span></span>
+<span id="cb4-13"><a href="#cb4-13" aria-hidden="true" tabindex="-1"></a>    <span class="at">--tmp</span> <span class="va">${TMP_DIR}</span> <span class="dt">\</span></span>
+<span id="cb4-14"><a href="#cb4-14" aria-hidden="true" tabindex="-1"></a>    <span class="at">-t</span> paired <span class="dt">\</span></span>
+<span id="cb4-15"><a href="#cb4-15" aria-hidden="true" tabindex="-1"></a>    <span class="at">--readLength</span> 63 <span class="dt">\</span></span>
+<span id="cb4-16"><a href="#cb4-16" aria-hidden="true" tabindex="-1"></a>    <span class="at">--variable-read-length</span> <span class="dt">\</span></span>
+<span id="cb4-17"><a href="#cb4-17" aria-hidden="true" tabindex="-1"></a>    <span class="at">--nthread</span> 6</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="tip">
+<p><strong>计数与统计的分离：</strong> 加上 <code>--statoff</code> 可只输出各事件的 read 计数与 PSI 值而跳过统计检验，适用于仅需 PSI 的下游分析。对于大规模队列，rMATS 还支持 <code>--task prep</code>（对每个样本单独预处理并缓存到 <code>--tmp</code>）与 <code>--task post</code>（在缓存基础上完成计数与统计）两阶段拆分，从而在多个比较组之间复用同一批样本的预处理结果，节省计算时间。</p>
+</div>
 </section>
 <section id="解读输出文件" class="level3" data-number="28.4.3">
 <h3 data-number="28.4.3" class="anchored" data-anchor-id="解读输出文件"><span class="header-section-number">28.4.3</span> 解读输出文件</h3>
@@ -817,8 +809,8 @@ window.Quarto = {
 <span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a><span class="co"># SE.MATS.JC.txt  A5SS.MATS.JC.txt  A3SS.MATS.JC.txt</span></span>
 <span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a><span class="co"># RI.MATS.JC.txt  MXE.MATS.JC.txt</span></span>
 <span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a><span class="co"># Preview SE results</span></span>
-<span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a><span class="fu">head</span> <span class="at">-2</span> <span class="va">${OUTPUT_DIR}</span>/SE.MATS.JC.txt <span class="kw">|</span> <span class="fu">cut</span> <span class="at">-f1-12</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a><span class="co"># Preview the key SE columns (gene, exon coords, junction counts, stats)</span></span>
+<span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a><span class="fu">cut</span> <span class="at">-f3,6,7,13-16,19-23</span> <span class="va">${OUTPUT_DIR}</span>/SE.MATS.JC.txt <span class="kw">|</span> <span class="fu">head</span> <span class="at">-3</span> <span class="kw">|</span> <span class="ex">column</span> <span class="at">-t</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <p>rMATS 输出的关键字段说明（以 <code>SE.MATS.JC.txt</code> 为例）：</p>
 <table class="caption-top table">
 <colgroup>
@@ -869,7 +861,7 @@ window.Quarto = {
 <span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(ggplot2)</span>
 <span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a><span class="co"># Read SE results</span></span>
-<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a>se <span class="ot">&lt;-</span> <span class="fu">read.table</span>(<span class="st">"rmats_output/SE.MATS.JC.txt"</span>,</span>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a>se <span class="ot">&lt;-</span> <span class="fu">read.table</span>(<span class="st">"/Users/angdong/Documents/bio_example/bulkRNA/rmats_output/SE.MATS.JC.txt"</span>,</span>
 <span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a>                 <span class="at">header =</span> <span class="cn">TRUE</span>, <span class="at">sep =</span> <span class="st">"</span><span class="sc">\t</span><span class="st">"</span>, <span class="at">stringsAsFactors =</span> <span class="cn">FALSE</span>)</span>
 <span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb6-8"><a href="#cb6-8" aria-hidden="true" tabindex="-1"></a><span class="co"># Filter: |dPSI| &gt; 0.1 and FDR &lt; 0.05 with sufficient read coverage</span></span>
@@ -888,118 +880,176 @@ window.Quarto = {
 <span id="cb6-21"><a href="#cb6-21" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">"Significant SE events:"</span>, <span class="fu">nrow</span>(sig_se), <span class="st">"</span><span class="sc">\n</span><span class="st">"</span>)</span>
 <span id="cb6-22"><a href="#cb6-22" aria-hidden="true" tabindex="-1"></a><span class="fu">head</span>(sig_se[, <span class="fu">c</span>(<span class="st">"geneSymbol"</span>, <span class="st">"IncLevelDifference"</span>, <span class="st">"FDR"</span>)], <span class="dv">10</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb7"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="co">#| label: fig-rmats-volcano</span></span>
-<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a><span class="co">#| fig-cap: "rMATS 可变外显子跳跃事件的火山图。横轴为 ΔPSI，纵轴为 -log₁₀(FDR)，红色点为显著差异事件（|ΔPSI| &gt; 0.1，FDR &lt; 0.05）。"</span></span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a><span class="co">#| fig-cap: "rMATS 可变外显子跳跃事件的火山图（真实数据，SE.MATS.JC.txt）。横轴为 ΔPSI，纵轴为 -log₁₀(FDR)，红色点为显著差异事件（|ΔPSI| &gt; 0.1，FDR &lt; 0.05）。本演示为零假设对照，绝大多数事件 FDR≈1（点密集分布于 y=0 一线），仅极少数点升起，这正是无真实生物学差异时的预期形态。"</span></span>
 <span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(dplyr)</span>
 <span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(ggplot2)</span>
 <span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a><span class="co"># Simulate rMATS-like SE results for rendering demonstration</span></span>
-<span id="cb7-7"><a href="#cb7-7" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">42</span>)</span>
-<span id="cb7-8"><a href="#cb7-8" aria-hidden="true" tabindex="-1"></a>n_events <span class="ot">&lt;-</span> <span class="dv">3000</span></span>
-<span id="cb7-9"><a href="#cb7-9" aria-hidden="true" tabindex="-1"></a>se <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(</span>
-<span id="cb7-10"><a href="#cb7-10" aria-hidden="true" tabindex="-1"></a>    <span class="at">geneSymbol          =</span> <span class="fu">paste0</span>(<span class="st">"Gene"</span>, <span class="fu">seq_len</span>(n_events)),</span>
-<span id="cb7-11"><a href="#cb7-11" aria-hidden="true" tabindex="-1"></a>    <span class="at">IncLevelDifference  =</span> <span class="fu">rnorm</span>(n_events, <span class="dv">0</span>, <span class="fl">0.15</span>),</span>
-<span id="cb7-12"><a href="#cb7-12" aria-hidden="true" tabindex="-1"></a>    <span class="at">FDR                 =</span> <span class="fu">runif</span>(n_events, <span class="fl">1e-6</span>, <span class="dv">1</span>)</span>
-<span id="cb7-13"><a href="#cb7-13" aria-hidden="true" tabindex="-1"></a>)</span>
-<span id="cb7-14"><a href="#cb7-14" aria-hidden="true" tabindex="-1"></a>se<span class="sc">$</span>FDR[<span class="fu">abs</span>(se<span class="sc">$</span>IncLevelDifference) <span class="sc">&gt;</span> <span class="fl">0.2</span>] <span class="ot">&lt;-</span></span>
-<span id="cb7-15"><a href="#cb7-15" aria-hidden="true" tabindex="-1"></a>    <span class="fu">runif</span>(<span class="fu">sum</span>(<span class="fu">abs</span>(se<span class="sc">$</span>IncLevelDifference) <span class="sc">&gt;</span> <span class="fl">0.2</span>), <span class="fl">1e-6</span>, <span class="fl">0.05</span>)</span>
-<span id="cb7-16"><a href="#cb7-16" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb7-17"><a href="#cb7-17" aria-hidden="true" tabindex="-1"></a>se_plot <span class="ot">&lt;-</span> se <span class="sc">|&gt;</span></span>
-<span id="cb7-18"><a href="#cb7-18" aria-hidden="true" tabindex="-1"></a>    <span class="fu">filter</span>(<span class="sc">!</span><span class="fu">is.na</span>(FDR), FDR <span class="sc">&gt;</span> <span class="dv">0</span>) <span class="sc">|&gt;</span></span>
-<span id="cb7-19"><a href="#cb7-19" aria-hidden="true" tabindex="-1"></a>    <span class="fu">mutate</span>(</span>
-<span id="cb7-20"><a href="#cb7-20" aria-hidden="true" tabindex="-1"></a>        <span class="at">neg_log10_fdr =</span> <span class="sc">-</span><span class="fu">log10</span>(FDR),</span>
-<span id="cb7-21"><a href="#cb7-21" aria-hidden="true" tabindex="-1"></a>        <span class="at">significant =</span> <span class="fu">abs</span>(IncLevelDifference) <span class="sc">&gt;</span> <span class="fl">0.1</span> <span class="sc">&amp;</span> FDR <span class="sc">&lt;</span> <span class="fl">0.05</span></span>
-<span id="cb7-22"><a href="#cb7-22" aria-hidden="true" tabindex="-1"></a>    )</span>
-<span id="cb7-23"><a href="#cb7-23" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb7-24"><a href="#cb7-24" aria-hidden="true" tabindex="-1"></a><span class="fu">ggplot</span>(se_plot, <span class="fu">aes</span>(<span class="at">x =</span> IncLevelDifference, <span class="at">y =</span> neg_log10_fdr,</span>
-<span id="cb7-25"><a href="#cb7-25" aria-hidden="true" tabindex="-1"></a>                    <span class="at">color =</span> significant)) <span class="sc">+</span></span>
-<span id="cb7-26"><a href="#cb7-26" aria-hidden="true" tabindex="-1"></a>    <span class="fu">geom_point</span>(<span class="at">alpha =</span> <span class="fl">0.5</span>, <span class="at">size =</span> <span class="fl">0.8</span>) <span class="sc">+</span></span>
-<span id="cb7-27"><a href="#cb7-27" aria-hidden="true" tabindex="-1"></a>    <span class="fu">scale_color_manual</span>(<span class="at">values =</span> <span class="fu">c</span>(<span class="st">"grey70"</span>, <span class="st">"#d62728"</span>),</span>
-<span id="cb7-28"><a href="#cb7-28" aria-hidden="true" tabindex="-1"></a>                       <span class="at">labels =</span> <span class="fu">c</span>(<span class="st">"Not significant"</span>, <span class="st">"Significant"</span>)) <span class="sc">+</span></span>
-<span id="cb7-29"><a href="#cb7-29" aria-hidden="true" tabindex="-1"></a>    <span class="fu">geom_vline</span>(<span class="at">xintercept =</span> <span class="fu">c</span>(<span class="sc">-</span><span class="fl">0.1</span>, <span class="fl">0.1</span>), <span class="at">linetype =</span> <span class="st">"dashed"</span>,</span>
-<span id="cb7-30"><a href="#cb7-30" aria-hidden="true" tabindex="-1"></a>               <span class="at">color =</span> <span class="st">"grey40"</span>, <span class="at">linewidth =</span> <span class="fl">0.5</span>) <span class="sc">+</span></span>
-<span id="cb7-31"><a href="#cb7-31" aria-hidden="true" tabindex="-1"></a>    <span class="fu">geom_hline</span>(<span class="at">yintercept =</span> <span class="sc">-</span><span class="fu">log10</span>(<span class="fl">0.05</span>), <span class="at">linetype =</span> <span class="st">"dashed"</span>,</span>
-<span id="cb7-32"><a href="#cb7-32" aria-hidden="true" tabindex="-1"></a>               <span class="at">color =</span> <span class="st">"grey40"</span>, <span class="at">linewidth =</span> <span class="fl">0.5</span>) <span class="sc">+</span></span>
-<span id="cb7-33"><a href="#cb7-33" aria-hidden="true" tabindex="-1"></a>    <span class="fu">labs</span>(<span class="at">x =</span> <span class="fu">expression</span>(Delta<span class="sc">*</span>Psi <span class="sc">~</span> <span class="st">"(IncLevelDifference)"</span>),</span>
-<span id="cb7-34"><a href="#cb7-34" aria-hidden="true" tabindex="-1"></a>         <span class="at">y =</span> <span class="fu">expression</span>(<span class="sc">-</span>log[<span class="dv">10</span>](FDR)),</span>
-<span id="cb7-35"><a href="#cb7-35" aria-hidden="true" tabindex="-1"></a>         <span class="at">color =</span> <span class="cn">NULL</span>) <span class="sc">+</span></span>
-<span id="cb7-36"><a href="#cb7-36" aria-hidden="true" tabindex="-1"></a>    <span class="fu">theme_bw</span>(<span class="at">base_size =</span> <span class="dv">12</span>) <span class="sc">+</span></span>
-<span id="cb7-37"><a href="#cb7-37" aria-hidden="true" tabindex="-1"></a>    <span class="fu">theme</span>(<span class="at">legend.position =</span> <span class="st">"top"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a><span class="co"># Reuse the real SE results loaded above (rmats_output/SE.MATS.JC.txt)</span></span>
+<span id="cb7-7"><a href="#cb7-7" aria-hidden="true" tabindex="-1"></a>se_plot <span class="ot">&lt;-</span> se <span class="sc">|&gt;</span></span>
+<span id="cb7-8"><a href="#cb7-8" aria-hidden="true" tabindex="-1"></a>    <span class="fu">filter</span>(<span class="sc">!</span><span class="fu">is.na</span>(FDR), FDR <span class="sc">&gt;</span> <span class="dv">0</span>) <span class="sc">|&gt;</span></span>
+<span id="cb7-9"><a href="#cb7-9" aria-hidden="true" tabindex="-1"></a>    <span class="fu">mutate</span>(</span>
+<span id="cb7-10"><a href="#cb7-10" aria-hidden="true" tabindex="-1"></a>        <span class="at">neg_log10_fdr =</span> <span class="sc">-</span><span class="fu">log10</span>(FDR),</span>
+<span id="cb7-11"><a href="#cb7-11" aria-hidden="true" tabindex="-1"></a>        <span class="at">significant =</span> <span class="fu">abs</span>(IncLevelDifference) <span class="sc">&gt;</span> <span class="fl">0.1</span> <span class="sc">&amp;</span> FDR <span class="sc">&lt;</span> <span class="fl">0.05</span></span>
+<span id="cb7-12"><a href="#cb7-12" aria-hidden="true" tabindex="-1"></a>    )</span>
+<span id="cb7-13"><a href="#cb7-13" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-14"><a href="#cb7-14" aria-hidden="true" tabindex="-1"></a><span class="fu">ggplot</span>(se_plot, <span class="fu">aes</span>(<span class="at">x =</span> IncLevelDifference, <span class="at">y =</span> neg_log10_fdr,</span>
+<span id="cb7-15"><a href="#cb7-15" aria-hidden="true" tabindex="-1"></a>                    <span class="at">color =</span> significant)) <span class="sc">+</span></span>
+<span id="cb7-16"><a href="#cb7-16" aria-hidden="true" tabindex="-1"></a>    <span class="fu">geom_point</span>(<span class="at">alpha =</span> <span class="fl">0.5</span>, <span class="at">size =</span> <span class="fl">0.8</span>) <span class="sc">+</span></span>
+<span id="cb7-17"><a href="#cb7-17" aria-hidden="true" tabindex="-1"></a>    <span class="fu">scale_color_manual</span>(<span class="at">values =</span> <span class="fu">c</span>(<span class="st">"grey70"</span>, <span class="st">"#d62728"</span>),</span>
+<span id="cb7-18"><a href="#cb7-18" aria-hidden="true" tabindex="-1"></a>                       <span class="at">labels =</span> <span class="fu">c</span>(<span class="st">"Not significant"</span>, <span class="st">"Significant"</span>)) <span class="sc">+</span></span>
+<span id="cb7-19"><a href="#cb7-19" aria-hidden="true" tabindex="-1"></a>    <span class="fu">geom_vline</span>(<span class="at">xintercept =</span> <span class="fu">c</span>(<span class="sc">-</span><span class="fl">0.1</span>, <span class="fl">0.1</span>), <span class="at">linetype =</span> <span class="st">"dashed"</span>,</span>
+<span id="cb7-20"><a href="#cb7-20" aria-hidden="true" tabindex="-1"></a>               <span class="at">color =</span> <span class="st">"grey40"</span>, <span class="at">linewidth =</span> <span class="fl">0.5</span>) <span class="sc">+</span></span>
+<span id="cb7-21"><a href="#cb7-21" aria-hidden="true" tabindex="-1"></a>    <span class="fu">geom_hline</span>(<span class="at">yintercept =</span> <span class="sc">-</span><span class="fu">log10</span>(<span class="fl">0.05</span>), <span class="at">linetype =</span> <span class="st">"dashed"</span>,</span>
+<span id="cb7-22"><a href="#cb7-22" aria-hidden="true" tabindex="-1"></a>               <span class="at">color =</span> <span class="st">"grey40"</span>, <span class="at">linewidth =</span> <span class="fl">0.5</span>) <span class="sc">+</span></span>
+<span id="cb7-23"><a href="#cb7-23" aria-hidden="true" tabindex="-1"></a>    <span class="fu">labs</span>(<span class="at">x =</span> <span class="fu">expression</span>(Delta<span class="sc">*</span>Psi <span class="sc">~</span> <span class="st">"(IncLevelDifference)"</span>),</span>
+<span id="cb7-24"><a href="#cb7-24" aria-hidden="true" tabindex="-1"></a>         <span class="at">y =</span> <span class="fu">expression</span>(<span class="sc">-</span>log[<span class="dv">10</span>](FDR)),</span>
+<span id="cb7-25"><a href="#cb7-25" aria-hidden="true" tabindex="-1"></a>         <span class="at">color =</span> <span class="cn">NULL</span>) <span class="sc">+</span></span>
+<span id="cb7-26"><a href="#cb7-26" aria-hidden="true" tabindex="-1"></a>    <span class="fu">theme_bw</span>(<span class="at">base_size =</span> <span class="dv">12</span>) <span class="sc">+</span></span>
+<span id="cb7-27"><a href="#cb7-27" aria-hidden="true" tabindex="-1"></a>    <span class="fu">theme</span>(<span class="at">legend.position =</span> <span class="st">"top"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<section id="多事件类型的并排火山图" class="level4" data-number="28.4.4.1">
+<h4 data-number="28.4.4.1" class="anchored" data-anchor-id="多事件类型的并排火山图"><span class="header-section-number">28.4.4.1</span> 多事件类型的并排火山图</h4>
+<p>单张火山图只能展示一类剪接事件。<code>scRNAtoolVis</code> 包的 <code>jjVolcano()</code> 专为多组差异结果设计：它将每个分组（这里即 SE、A3SS、A5SS 三类剪接事件）绘制成一列，纵轴为差异幅度，正负分别对应 inclusion 升高与降低，并在中央用色块标注分组、自动为每组标注差异最显著的若干事件，从而在一张图中横向比较各类事件的整体差异分布。</p>
+<p><code>jjVolcano()</code> 的输入沿用 Seurat <code>FindAllMarkers()</code> 的列名约定，需要 <code>gene</code>、<code>avg_log2FC</code>、<code>cluster</code>、<code>p_val</code>、<code>p_val_adj</code> 五列。将 rMATS 字段映射过去即可：<code>geneSymbol → gene</code>、<code>IncLevelDifference (ΔPSI) → avg_log2FC</code>、事件类型 <code>→ cluster</code>、<code>PValue → p_val</code>、<code>FDR → p_val_adj</code>。</p>
+<div class="note">
+<p><strong>依赖说明：</strong> <code>scRNAtoolVis</code> 发布于 GitHub，需先安装：<code>remotes::install_github("junjunlab/scRNAtoolVis")</code>（依赖 <code>Seurat</code>、<code>ComplexHeatmap</code>、<code>jjAnno</code> 等）。本代码读取真实的 rMATS 输出文件，需先完成前述比对与 rMATS 分析。</p>
+</div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb8"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="co">#| label: fig-rmats-volcano-multi</span></span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a><span class="co">#| fig-cap: "三类可变剪接事件（SE、A3SS、A5SS）的多组火山图（jjVolcano）。每列为一类事件，纵轴为 ΔPSI（avg_log2FC 列）；红/蓝点为 |ΔPSI| 超过阈值（±0.1）的 inclusion 升高（sigUp）与降低（sigDown）事件，中央色块标注事件类型，标签为各组 FDR 达标且 ΔPSI 最显著的若干事件。本演示为零假设对照，结果仅用于展示绘图流程。"</span></span>
+<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(scRNAtoolVis)</span>
+<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(dplyr)</span>
+<span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-6"><a href="#cb8-6" aria-hidden="true" tabindex="-1"></a>rmats_dir <span class="ot">&lt;-</span> <span class="st">"/Users/angdong/Documents/bio_example/bulkRNA/rmats_output"</span></span>
+<span id="cb8-7"><a href="#cb8-7" aria-hidden="true" tabindex="-1"></a>events <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="st">"SE"</span>, <span class="st">"A3SS"</span>, <span class="st">"A5SS"</span>)</span>
+<span id="cb8-8"><a href="#cb8-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-9"><a href="#cb8-9" aria-hidden="true" tabindex="-1"></a><span class="co"># Assemble a Seurat-FindAllMarkers-style table from the rMATS outputs</span></span>
+<span id="cb8-10"><a href="#cb8-10" aria-hidden="true" tabindex="-1"></a>diff_data <span class="ot">&lt;-</span> <span class="fu">lapply</span>(events, <span class="cf">function</span>(ev) {</span>
+<span id="cb8-11"><a href="#cb8-11" aria-hidden="true" tabindex="-1"></a>    <span class="fu">read.table</span>(<span class="fu">file.path</span>(rmats_dir, <span class="fu">paste0</span>(ev, <span class="st">".MATS.JC.txt"</span>)),</span>
+<span id="cb8-12"><a href="#cb8-12" aria-hidden="true" tabindex="-1"></a>               <span class="at">header =</span> <span class="cn">TRUE</span>, <span class="at">sep =</span> <span class="st">"</span><span class="sc">\t</span><span class="st">"</span>, <span class="at">stringsAsFactors =</span> <span class="cn">FALSE</span>) <span class="sc">|&gt;</span></span>
+<span id="cb8-13"><a href="#cb8-13" aria-hidden="true" tabindex="-1"></a>        <span class="fu">filter</span>(<span class="sc">!</span><span class="fu">is.na</span>(FDR), <span class="sc">!</span><span class="fu">is.na</span>(IncLevelDifference)) <span class="sc">|&gt;</span></span>
+<span id="cb8-14"><a href="#cb8-14" aria-hidden="true" tabindex="-1"></a>        <span class="fu">transmute</span>(<span class="at">gene       =</span> geneSymbol,</span>
+<span id="cb8-15"><a href="#cb8-15" aria-hidden="true" tabindex="-1"></a>                  <span class="at">avg_log2FC =</span> IncLevelDifference,   <span class="co"># dPSI on the y-axis</span></span>
+<span id="cb8-16"><a href="#cb8-16" aria-hidden="true" tabindex="-1"></a>                  <span class="at">cluster    =</span> ev,</span>
+<span id="cb8-17"><a href="#cb8-17" aria-hidden="true" tabindex="-1"></a>                  <span class="at">p_val      =</span> PValue,</span>
+<span id="cb8-18"><a href="#cb8-18" aria-hidden="true" tabindex="-1"></a>                  <span class="at">p_val_adj  =</span> FDR)</span>
+<span id="cb8-19"><a href="#cb8-19" aria-hidden="true" tabindex="-1"></a>}) <span class="sc">|&gt;</span></span>
+<span id="cb8-20"><a href="#cb8-20" aria-hidden="true" tabindex="-1"></a>    <span class="fu">bind_rows</span>() <span class="sc">|&gt;</span></span>
+<span id="cb8-21"><a href="#cb8-21" aria-hidden="true" tabindex="-1"></a>    <span class="fu">mutate</span>(<span class="at">cluster =</span> <span class="fu">factor</span>(cluster, <span class="at">levels =</span> events))</span>
+<span id="cb8-22"><a href="#cb8-22" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-23"><a href="#cb8-23" aria-hidden="true" tabindex="-1"></a><span class="co"># Multi-group volcano: dPSI cutoff 0.1, FDR cutoff 0.05, label top 5 per event</span></span>
+<span id="cb8-24"><a href="#cb8-24" aria-hidden="true" tabindex="-1"></a><span class="fu">jjVolcano</span>(<span class="at">diffData       =</span> diff_data,</span>
+<span id="cb8-25"><a href="#cb8-25" aria-hidden="true" tabindex="-1"></a>          <span class="at">log2FC.cutoff  =</span> <span class="fl">0.1</span>,</span>
+<span id="cb8-26"><a href="#cb8-26" aria-hidden="true" tabindex="-1"></a>          <span class="at">adjustP.cutoff =</span> <span class="fl">0.05</span>,</span>
+<span id="cb8-27"><a href="#cb8-27" aria-hidden="true" tabindex="-1"></a>          <span class="at">topGeneN       =</span> <span class="dv">5</span>,</span>
+<span id="cb8-28"><a href="#cb8-28" aria-hidden="true" tabindex="-1"></a>          <span class="at">size           =</span> <span class="dv">3</span>,</span>
+<span id="cb8-29"><a href="#cb8-29" aria-hidden="true" tabindex="-1"></a>          <span class="at">aesCol         =</span> <span class="fu">c</span>(<span class="st">"#1f77b4"</span>, <span class="st">"#d62728"</span>),</span>
+<span id="cb8-30"><a href="#cb8-30" aria-hidden="true" tabindex="-1"></a>          <span class="at">tile.col       =</span> <span class="fu">c</span>(<span class="st">"#8da0cb"</span>, <span class="st">"#66c2a5"</span>, <span class="st">"#fc8d62"</span>),</span>
+<span id="cb8-31"><a href="#cb8-31" aria-hidden="true" tabindex="-1"></a>          <span class="at">legend.position =</span> <span class="st">"top"</span>) <span class="sc">+</span></span>
+<span id="cb8-32"><a href="#cb8-32" aria-hidden="true" tabindex="-1"></a>    ggplot2<span class="sc">::</span><span class="fu">ylab</span>(<span class="fu">expression</span>(Delta<span class="sc">*</span>Psi))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</section>
 </section>
 <section id="sashimi-图可视化" class="level3" data-number="28.4.5">
 <h3 data-number="28.4.5" class="anchored" data-anchor-id="sashimi-图可视化"><span class="header-section-number">28.4.5</span> Sashimi 图可视化</h3>
 <p>Sashimi 图是可变剪接分析中最直观的可视化方式：横轴为基因组坐标，纵轴为覆盖深度，弧线连接两个剪接位点，弧线粗细（或标注数字）代表跨越该连接的 junction reads 数量。从 Sashimi 图中，读者可以直观地看到处理组与对照组在某一外显子两侧 junction reads 数量的差异，从而验证 rMATS 统计结果是否与覆盖度模式一致。</p>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb8"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Generate Sashimi plot for top significant SE event</span></span>
-<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a><span class="co"># Requires rmats2sashimiplot (conda install -c bioconda rmats2sashimiplot)</span></span>
-<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a><span class="co"># Coordinates are taken from the top row of sig_se</span></span>
-<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a><span class="va">TOP_GENE</span><span class="op">=</span><span class="st">"GENE_SYMBOL"</span>  <span class="co"># replace with actual top gene</span></span>
-<span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a><span class="va">COORDS</span><span class="op">=</span><span class="st">"chr:start:end:strand"</span>  <span class="co"># replace with actual coordinates</span></span>
-<span id="cb8-6"><a href="#cb8-6" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb8-7"><a href="#cb8-7" aria-hidden="true" tabindex="-1"></a><span class="ex">rmats2sashimiplot</span> <span class="dt">\</span></span>
-<span id="cb8-8"><a href="#cb8-8" aria-hidden="true" tabindex="-1"></a>    <span class="at">--b1</span> <span class="st">"</span><span class="va">$(</span><span class="fu">cat</span> group1_bams.txt<span class="va">)</span><span class="st">"</span> <span class="dt">\</span></span>
-<span id="cb8-9"><a href="#cb8-9" aria-hidden="true" tabindex="-1"></a>    <span class="at">--b2</span> <span class="st">"</span><span class="va">$(</span><span class="fu">cat</span> group2_bams.txt<span class="va">)</span><span class="st">"</span> <span class="dt">\</span></span>
-<span id="cb8-10"><a href="#cb8-10" aria-hidden="true" tabindex="-1"></a>    <span class="at">--event-type</span> SE <span class="dt">\</span></span>
-<span id="cb8-11"><a href="#cb8-11" aria-hidden="true" tabindex="-1"></a>    <span class="at">--event-coordinates</span> <span class="va">${COORDS}</span> <span class="dt">\</span></span>
-<span id="cb8-12"><a href="#cb8-12" aria-hidden="true" tabindex="-1"></a>    <span class="at">--l1</span> <span class="st">"Group1"</span> <span class="dt">\</span></span>
-<span id="cb8-13"><a href="#cb8-13" aria-hidden="true" tabindex="-1"></a>    <span class="at">--l2</span> <span class="st">"Group2"</span> <span class="dt">\</span></span>
-<span id="cb8-14"><a href="#cb8-14" aria-hidden="true" tabindex="-1"></a>    <span class="at">--min-counts</span> 5 <span class="dt">\</span></span>
-<span id="cb8-15"><a href="#cb8-15" aria-hidden="true" tabindex="-1"></a>    <span class="at">--output</span> sashimi_output/</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>rmats2sashimiplot 直接读取 rMATS 的事件结果文件（<code>-e</code>），并按其中记录的外显子坐标作图。最方便的做法是从完整的 <code>SE.MATS.JC.txt</code> 中抽取目标事件（连同表头）写入一个子集文件，再传给 <code>-e</code>。下面以 SNHG29 基因（<code>ENSG00000175061</code>）中 FDR 最低、<span class="math inline">\(\Delta\Psi\)</span> 最大的可变外显子跳跃事件（ID 11851）为例：</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb9"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Requires rmats2sashimiplot (conda install -c bioconda rmats2sashimiplot)</span></span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a><span class="va">RM</span><span class="op">=</span><span class="st">"/Users/angdong/Documents/bio_example/bulkRNA/rmats_output"</span></span>
+<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a><span class="va">STAR_DIR</span><span class="op">=</span><span class="st">"/Users/angdong/Documents/bio_example/bulkRNA/STAR"</span></span>
+<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a><span class="va">OUT</span><span class="op">=</span><span class="st">"/Users/angdong/Documents/bio_example/bulkRNA/sashimi_output"</span></span>
+<span id="cb9-5"><a href="#cb9-5" aria-hidden="true" tabindex="-1"></a><span class="fu">mkdir</span> <span class="at">-p</span> <span class="st">"</span><span class="va">${OUT}</span><span class="st">"</span></span>
+<span id="cb9-6"><a href="#cb9-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-7"><a href="#cb9-7" aria-hidden="true" tabindex="-1"></a><span class="co"># Extract the target SNHG29 SE event (ID 11851) together with the header line</span></span>
+<span id="cb9-8"><a href="#cb9-8" aria-hidden="true" tabindex="-1"></a><span class="fu">head</span> <span class="at">-1</span> <span class="st">"</span><span class="va">${RM}</span><span class="st">/SE.MATS.JC.txt"</span> <span class="op">&gt;</span> <span class="st">"</span><span class="va">${OUT}</span><span class="st">/SNHG29_SE.txt"</span></span>
+<span id="cb9-9"><a href="#cb9-9" aria-hidden="true" tabindex="-1"></a><span class="fu">awk</span> <span class="at">-F</span><span class="st">'\t'</span> <span class="st">'$1==11851'</span> <span class="st">"</span><span class="va">${RM}</span><span class="st">/SE.MATS.JC.txt"</span> <span class="op">&gt;&gt;</span> <span class="st">"</span><span class="va">${OUT}</span><span class="st">/SNHG29_SE.txt"</span></span>
+<span id="cb9-10"><a href="#cb9-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-11"><a href="#cb9-11" aria-hidden="true" tabindex="-1"></a><span class="co"># Build the comma-separated BAM lists for each group</span></span>
+<span id="cb9-12"><a href="#cb9-12" aria-hidden="true" tabindex="-1"></a><span class="va">B1</span><span class="op">=</span><span class="st">"</span><span class="va">${STAR_DIR}</span><span class="st">/SRR1039508_Aligned.sortedByCoord.out.bam,</span><span class="va">${STAR_DIR}</span><span class="st">/SRR1039510_Aligned.sortedByCoord.out.bam"</span></span>
+<span id="cb9-13"><a href="#cb9-13" aria-hidden="true" tabindex="-1"></a><span class="va">B2</span><span class="op">=</span><span class="st">"</span><span class="va">${STAR_DIR}</span><span class="st">/SRR1039512_Aligned.sortedByCoord.out.bam,</span><span class="va">${STAR_DIR}</span><span class="st">/SRR1039514_Aligned.sortedByCoord.out.bam"</span></span>
+<span id="cb9-14"><a href="#cb9-14" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-15"><a href="#cb9-15" aria-hidden="true" tabindex="-1"></a><span class="co"># --remove-event-chr-prefix strips the "chr" in the event file (chr17) to match</span></span>
+<span id="cb9-16"><a href="#cb9-16" aria-hidden="true" tabindex="-1"></a><span class="co"># the Ensembl-style BAM contig names (17); drop it if your BAM uses "chr17".</span></span>
+<span id="cb9-17"><a href="#cb9-17" aria-hidden="true" tabindex="-1"></a><span class="ex">rmats2sashimiplot</span> <span class="dt">\</span></span>
+<span id="cb9-18"><a href="#cb9-18" aria-hidden="true" tabindex="-1"></a>    <span class="at">--b1</span> <span class="st">"</span><span class="va">${B1}</span><span class="st">"</span> <span class="dt">\</span></span>
+<span id="cb9-19"><a href="#cb9-19" aria-hidden="true" tabindex="-1"></a>    <span class="at">--b2</span> <span class="st">"</span><span class="va">${B2}</span><span class="st">"</span> <span class="dt">\</span></span>
+<span id="cb9-20"><a href="#cb9-20" aria-hidden="true" tabindex="-1"></a>    <span class="at">--event-type</span> SE <span class="dt">\</span></span>
+<span id="cb9-21"><a href="#cb9-21" aria-hidden="true" tabindex="-1"></a>    <span class="at">-e</span> <span class="st">"</span><span class="va">${OUT}</span><span class="st">/SNHG29_SE.txt"</span> <span class="dt">\</span></span>
+<span id="cb9-22"><a href="#cb9-22" aria-hidden="true" tabindex="-1"></a>    <span class="at">--l1</span> Group1 <span class="dt">\</span></span>
+<span id="cb9-23"><a href="#cb9-23" aria-hidden="true" tabindex="-1"></a>    <span class="at">--l2</span> Group2 <span class="dt">\</span></span>
+<span id="cb9-24"><a href="#cb9-24" aria-hidden="true" tabindex="-1"></a>    <span class="at">--exon_s</span> 1 <span class="at">--intron_s</span> 5 <span class="dt">\</span></span>
+<span id="cb9-25"><a href="#cb9-25" aria-hidden="true" tabindex="-1"></a>    <span class="at">--min-counts</span> 5 <span class="dt">\</span></span>
+<span id="cb9-26"><a href="#cb9-26" aria-hidden="true" tabindex="-1"></a>    <span class="at">--remove-event-chr-prefix</span> <span class="dt">\</span></span>
+<span id="cb9-27"><a href="#cb9-27" aria-hidden="true" tabindex="-1"></a>    <span class="at">-o</span> <span class="st">"</span><span class="va">${OUT}</span><span class="st">/SNHG29"</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="note">
+<p><strong>两个易错点：</strong> （1）事件类型参数为 <code>--event-type</code>（非 <code>-t</code>），且需配合 <code>-e</code> 传入 rMATS 事件文件，而非手动拼写坐标字符串。（2）本专题的 BAM 由 STAR 比对到 Ensembl GRCh38 参考，contig 名为 <code>17</code>，而 rMATS 输出沿用 <code>chr17</code>；二者不一致时 Sashimi 图会读不到 reads，须加 <code>--remove-event-chr-prefix</code> 将事件坐标对齐到 BAM 命名。</p>
+</div>
+<p>运行后，图像以 PDF 形式输出至 <code>sashimi_output/SNHG29/Sashimi_plot/</code> 目录。<a href="#fig-sashimi-snhg29" class="quarto-xref">图&nbsp;<span>2</span></a> 即为该事件的结果。</p>
+<div id="fig-sashimi-snhg29" class="quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-sashimi-snhg29-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<img src="images/fig-sashimi-snhg29.png" class="img-fluid figure-img" style="width:85.0%">
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-sashimi-snhg29-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+图&nbsp;2: SNHG29 可变外显子跳跃事件（chr17:16,439,580–16,439,703）的 Sashimi 图。四条轨道自上而下为 Group1（SRR1039508、SRR1039510，红色）与 Group2（SRR1039512、SRR1039514，橙色）的覆盖深度（RPKM），弧线上的数字为跨越对应剪接位点的 junction reads 数量，各轨道右侧标注其 PSI 值（IncLevel）。底部为该事件涉及的两种转录本结构（纳入型与跳跃型）。
+</figcaption>
+</figure>
+</div>
+<p><strong>结果解读：</strong> 该事件的关键在于比较中段可变外显子两侧”纳入型”junction reads 的相对丰度。Group1 两个样本的纳入型 junction reads（约 25、20）明显高于 Group2（约 6、7），对应右侧标注的 PSI 值——Group1 为 0.42 与 0.40，Group2 为 0.26 与 0.17，组间 <span class="math inline">\(\Delta\Psi \approx +0.18\)</span>。这一覆盖度与 junction 模式与 rMATS 的统计结果（IncLevelDifference = 0.195，FDR = 0.042）方向一致、量级吻合，说明该差异并非个别样本的离群表现，而是组内可重复的趋势。需要强调的是，本演示的分组本质上是零假设对照（详见前文 warning），此处的差异仅用于示范如何将 Sashimi 图与 rMATS 统计量交叉验证，不应作为 SNHG29 受 dexamethasone 调控的生物学证据。</p>
 </section>
 <section id="差异剪接基因的-go-富集分析" class="level3" data-number="28.4.6">
 <h3 data-number="28.4.6" class="anchored" data-anchor-id="差异剪接基因的-go-富集分析"><span class="header-section-number">28.4.6</span> 差异剪接基因的 GO 富集分析</h3>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb9"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(clusterProfiler)</span>
-<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(org.Hs.eg.db)</span>
-<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a><span class="co"># Extract unique gene IDs from significant SE events</span></span>
-<span id="cb9-5"><a href="#cb9-5" aria-hidden="true" tabindex="-1"></a>sig_genes_ensembl <span class="ot">&lt;-</span> <span class="fu">unique</span>(sig_se<span class="sc">$</span>GeneID)</span>
-<span id="cb9-6"><a href="#cb9-6" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb9-7"><a href="#cb9-7" aria-hidden="true" tabindex="-1"></a><span class="co"># Convert Ensembl to Entrez</span></span>
-<span id="cb9-8"><a href="#cb9-8" aria-hidden="true" tabindex="-1"></a>gene_map <span class="ot">&lt;-</span> <span class="fu">bitr</span>(sig_genes_ensembl,</span>
-<span id="cb9-9"><a href="#cb9-9" aria-hidden="true" tabindex="-1"></a>                 <span class="at">fromType =</span> <span class="st">"ENSEMBL"</span>,</span>
-<span id="cb9-10"><a href="#cb9-10" aria-hidden="true" tabindex="-1"></a>                 <span class="at">toType   =</span> <span class="st">"ENTREZID"</span>,</span>
-<span id="cb9-11"><a href="#cb9-11" aria-hidden="true" tabindex="-1"></a>                 <span class="at">OrgDb    =</span> org.Hs.eg.db)</span>
-<span id="cb9-12"><a href="#cb9-12" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb9-13"><a href="#cb9-13" aria-hidden="true" tabindex="-1"></a><span class="co"># GO Biological Process enrichment</span></span>
-<span id="cb9-14"><a href="#cb9-14" aria-hidden="true" tabindex="-1"></a>go_bp <span class="ot">&lt;-</span> <span class="fu">enrichGO</span>(</span>
-<span id="cb9-15"><a href="#cb9-15" aria-hidden="true" tabindex="-1"></a>    <span class="at">gene          =</span> gene_map<span class="sc">$</span>ENTREZID,</span>
-<span id="cb9-16"><a href="#cb9-16" aria-hidden="true" tabindex="-1"></a>    <span class="at">OrgDb         =</span> org.Hs.eg.db,</span>
-<span id="cb9-17"><a href="#cb9-17" aria-hidden="true" tabindex="-1"></a>    <span class="at">ont           =</span> <span class="st">"BP"</span>,</span>
-<span id="cb9-18"><a href="#cb9-18" aria-hidden="true" tabindex="-1"></a>    <span class="at">pAdjustMethod =</span> <span class="st">"BH"</span>,</span>
-<span id="cb9-19"><a href="#cb9-19" aria-hidden="true" tabindex="-1"></a>    <span class="at">pvalueCutoff  =</span> <span class="fl">0.05</span>,</span>
-<span id="cb9-20"><a href="#cb9-20" aria-hidden="true" tabindex="-1"></a>    <span class="at">qvalueCutoff  =</span> <span class="fl">0.2</span></span>
-<span id="cb9-21"><a href="#cb9-21" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb10"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="co">#| label: fig-se-go-dotplot</span></span>
-<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a><span class="co">#| fig-cap: "差异剪接基因（SE 事件）的 GO 生物过程富集结果示意。实际分析中，气泡大小代表该通路中的差异剪接基因数量，颜色深浅代表调整后的 P 值。"</span></span>
-<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a><span class="co">#| message: false</span></span>
-<span id="cb10-4"><a href="#cb10-4" aria-hidden="true" tabindex="-1"></a><span class="co">#| warning: false</span></span>
-<span id="cb10-5"><a href="#cb10-5" aria-hidden="true" tabindex="-1"></a><span class="co"># GO enrichment requires real rMATS output and org.Hs.eg.db.</span></span>
-<span id="cb10-6"><a href="#cb10-6" aria-hidden="true" tabindex="-1"></a><span class="co"># The block below shows the expected output format using the airway dataset</span></span>
-<span id="cb10-7"><a href="#cb10-7" aria-hidden="true" tabindex="-1"></a><span class="co"># as a stand-in so the document renders without external BAM files.</span></span>
-<span id="cb10-8"><a href="#cb10-8" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(clusterProfiler)</span>
-<span id="cb10-9"><a href="#cb10-9" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(org.Hs.eg.db)</span>
-<span id="cb10-10"><a href="#cb10-10" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(airway)</span>
-<span id="cb10-11"><a href="#cb10-11" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(DESeq2)</span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb10"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(clusterProfiler)</span>
+<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(org.Hs.eg.db)</span>
+<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-4"><a href="#cb10-4" aria-hidden="true" tabindex="-1"></a><span class="co"># Extract unique gene IDs from significant SE events</span></span>
+<span id="cb10-5"><a href="#cb10-5" aria-hidden="true" tabindex="-1"></a>sig_genes_ensembl <span class="ot">&lt;-</span> <span class="fu">unique</span>(sig_se<span class="sc">$</span>GeneID)</span>
+<span id="cb10-6"><a href="#cb10-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-7"><a href="#cb10-7" aria-hidden="true" tabindex="-1"></a><span class="co"># Convert Ensembl to Entrez</span></span>
+<span id="cb10-8"><a href="#cb10-8" aria-hidden="true" tabindex="-1"></a>gene_map <span class="ot">&lt;-</span> <span class="fu">bitr</span>(sig_genes_ensembl,</span>
+<span id="cb10-9"><a href="#cb10-9" aria-hidden="true" tabindex="-1"></a>                 <span class="at">fromType =</span> <span class="st">"ENSEMBL"</span>,</span>
+<span id="cb10-10"><a href="#cb10-10" aria-hidden="true" tabindex="-1"></a>                 <span class="at">toType   =</span> <span class="st">"ENTREZID"</span>,</span>
+<span id="cb10-11"><a href="#cb10-11" aria-hidden="true" tabindex="-1"></a>                 <span class="at">OrgDb    =</span> org.Hs.eg.db)</span>
 <span id="cb10-12"><a href="#cb10-12" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb10-13"><a href="#cb10-13" aria-hidden="true" tabindex="-1"></a><span class="fu">data</span>(airway)</span>
-<span id="cb10-14"><a href="#cb10-14" aria-hidden="true" tabindex="-1"></a>dds <span class="ot">&lt;-</span> <span class="fu">DESeqDataSet</span>(airway, <span class="at">design =</span> <span class="sc">~</span> cell <span class="sc">+</span> dex)</span>
-<span id="cb10-15"><a href="#cb10-15" aria-hidden="true" tabindex="-1"></a>dds <span class="ot">&lt;-</span> <span class="fu">DESeq</span>(dds)</span>
-<span id="cb10-16"><a href="#cb10-16" aria-hidden="true" tabindex="-1"></a>res <span class="ot">&lt;-</span> <span class="fu">results</span>(dds, <span class="at">contrast =</span> <span class="fu">c</span>(<span class="st">"dex"</span>, <span class="st">"trt"</span>, <span class="st">"untrt"</span>))</span>
-<span id="cb10-17"><a href="#cb10-17" aria-hidden="true" tabindex="-1"></a>sig_genes <span class="ot">&lt;-</span> <span class="fu">rownames</span>(<span class="fu">subset</span>(res, padj <span class="sc">&lt;</span> <span class="fl">0.05</span> <span class="sc">&amp;</span> <span class="fu">abs</span>(log2FoldChange) <span class="sc">&gt;</span> <span class="dv">1</span>))</span>
-<span id="cb10-18"><a href="#cb10-18" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb10-19"><a href="#cb10-19" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> (<span class="fu">length</span>(sig_genes) <span class="sc">&gt;</span> <span class="dv">0</span>) {</span>
-<span id="cb10-20"><a href="#cb10-20" aria-hidden="true" tabindex="-1"></a>    gene_map <span class="ot">&lt;-</span> <span class="fu">bitr</span>(sig_genes, <span class="at">fromType =</span> <span class="st">"ENSEMBL"</span>,</span>
-<span id="cb10-21"><a href="#cb10-21" aria-hidden="true" tabindex="-1"></a>                     <span class="at">toType =</span> <span class="st">"ENTREZID"</span>, <span class="at">OrgDb =</span> org.Hs.eg.db,</span>
-<span id="cb10-22"><a href="#cb10-22" aria-hidden="true" tabindex="-1"></a>                     <span class="at">drop =</span> <span class="cn">TRUE</span>)</span>
-<span id="cb10-23"><a href="#cb10-23" aria-hidden="true" tabindex="-1"></a>    go_bp <span class="ot">&lt;-</span> <span class="fu">enrichGO</span>(<span class="at">gene          =</span> gene_map<span class="sc">$</span>ENTREZID,</span>
-<span id="cb10-24"><a href="#cb10-24" aria-hidden="true" tabindex="-1"></a>                      <span class="at">OrgDb         =</span> org.Hs.eg.db,</span>
-<span id="cb10-25"><a href="#cb10-25" aria-hidden="true" tabindex="-1"></a>                      <span class="at">ont           =</span> <span class="st">"BP"</span>,</span>
-<span id="cb10-26"><a href="#cb10-26" aria-hidden="true" tabindex="-1"></a>                      <span class="at">pAdjustMethod =</span> <span class="st">"BH"</span>,</span>
-<span id="cb10-27"><a href="#cb10-27" aria-hidden="true" tabindex="-1"></a>                      <span class="at">pvalueCutoff  =</span> <span class="fl">0.05</span>,</span>
-<span id="cb10-28"><a href="#cb10-28" aria-hidden="true" tabindex="-1"></a>                      <span class="at">qvalueCutoff  =</span> <span class="fl">0.2</span>)</span>
-<span id="cb10-29"><a href="#cb10-29" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> (<span class="sc">!</span><span class="fu">is.null</span>(go_bp) <span class="sc">&amp;&amp;</span> <span class="fu">nrow</span>(go_bp<span class="sc">@</span>result) <span class="sc">&gt;</span> <span class="dv">0</span>) {</span>
-<span id="cb10-30"><a href="#cb10-30" aria-hidden="true" tabindex="-1"></a>        <span class="fu">dotplot</span>(go_bp, <span class="at">showCategory =</span> <span class="dv">15</span>,</span>
-<span id="cb10-31"><a href="#cb10-31" aria-hidden="true" tabindex="-1"></a>                <span class="at">title =</span> <span class="st">"GO BP: DEGs from airway dex vs control (illustrative)"</span>)</span>
-<span id="cb10-32"><a href="#cb10-32" aria-hidden="true" tabindex="-1"></a>    }</span>
-<span id="cb10-33"><a href="#cb10-33" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<span id="cb10-13"><a href="#cb10-13" aria-hidden="true" tabindex="-1"></a><span class="co"># GO Biological Process enrichment</span></span>
+<span id="cb10-14"><a href="#cb10-14" aria-hidden="true" tabindex="-1"></a>go_bp <span class="ot">&lt;-</span> <span class="fu">enrichGO</span>(</span>
+<span id="cb10-15"><a href="#cb10-15" aria-hidden="true" tabindex="-1"></a>    <span class="at">gene          =</span> gene_map<span class="sc">$</span>ENTREZID,</span>
+<span id="cb10-16"><a href="#cb10-16" aria-hidden="true" tabindex="-1"></a>    <span class="at">OrgDb         =</span> org.Hs.eg.db,</span>
+<span id="cb10-17"><a href="#cb10-17" aria-hidden="true" tabindex="-1"></a>    <span class="at">ont           =</span> <span class="st">"BP"</span>,</span>
+<span id="cb10-18"><a href="#cb10-18" aria-hidden="true" tabindex="-1"></a>    <span class="at">pAdjustMethod =</span> <span class="st">"BH"</span>,</span>
+<span id="cb10-19"><a href="#cb10-19" aria-hidden="true" tabindex="-1"></a>    <span class="at">pvalueCutoff  =</span> <span class="fl">0.05</span>,</span>
+<span id="cb10-20"><a href="#cb10-20" aria-hidden="true" tabindex="-1"></a>    <span class="at">qvalueCutoff  =</span> <span class="fl">0.2</span></span>
+<span id="cb10-21"><a href="#cb10-21" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb11"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="co">#| label: fig-se-go-dotplot</span></span>
+<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a><span class="co">#| fig-cap: "差异剪接基因（SE 事件）的 GO 生物过程富集结果示意。实际分析中，气泡大小代表该通路中的差异剪接基因数量，颜色深浅代表调整后的 P 值。"</span></span>
+<span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a><span class="co">#| message: false</span></span>
+<span id="cb11-4"><a href="#cb11-4" aria-hidden="true" tabindex="-1"></a><span class="co">#| warning: false</span></span>
+<span id="cb11-5"><a href="#cb11-5" aria-hidden="true" tabindex="-1"></a><span class="co"># GO enrichment requires real rMATS output and org.Hs.eg.db.</span></span>
+<span id="cb11-6"><a href="#cb11-6" aria-hidden="true" tabindex="-1"></a><span class="co"># The block below shows the expected output format using the airway dataset</span></span>
+<span id="cb11-7"><a href="#cb11-7" aria-hidden="true" tabindex="-1"></a><span class="co"># as a stand-in so the document renders without external BAM files.</span></span>
+<span id="cb11-8"><a href="#cb11-8" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(clusterProfiler)</span>
+<span id="cb11-9"><a href="#cb11-9" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(org.Hs.eg.db)</span>
+<span id="cb11-10"><a href="#cb11-10" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(airway)</span>
+<span id="cb11-11"><a href="#cb11-11" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(DESeq2)</span>
+<span id="cb11-12"><a href="#cb11-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-13"><a href="#cb11-13" aria-hidden="true" tabindex="-1"></a><span class="fu">data</span>(airway)</span>
+<span id="cb11-14"><a href="#cb11-14" aria-hidden="true" tabindex="-1"></a>dds <span class="ot">&lt;-</span> <span class="fu">DESeqDataSet</span>(airway, <span class="at">design =</span> <span class="sc">~</span> cell <span class="sc">+</span> dex)</span>
+<span id="cb11-15"><a href="#cb11-15" aria-hidden="true" tabindex="-1"></a>dds <span class="ot">&lt;-</span> <span class="fu">DESeq</span>(dds)</span>
+<span id="cb11-16"><a href="#cb11-16" aria-hidden="true" tabindex="-1"></a>res <span class="ot">&lt;-</span> <span class="fu">results</span>(dds, <span class="at">contrast =</span> <span class="fu">c</span>(<span class="st">"dex"</span>, <span class="st">"trt"</span>, <span class="st">"untrt"</span>))</span>
+<span id="cb11-17"><a href="#cb11-17" aria-hidden="true" tabindex="-1"></a>sig_genes <span class="ot">&lt;-</span> <span class="fu">rownames</span>(<span class="fu">subset</span>(res, padj <span class="sc">&lt;</span> <span class="fl">0.05</span> <span class="sc">&amp;</span> <span class="fu">abs</span>(log2FoldChange) <span class="sc">&gt;</span> <span class="dv">1</span>))</span>
+<span id="cb11-18"><a href="#cb11-18" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-19"><a href="#cb11-19" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> (<span class="fu">length</span>(sig_genes) <span class="sc">&gt;</span> <span class="dv">0</span>) {</span>
+<span id="cb11-20"><a href="#cb11-20" aria-hidden="true" tabindex="-1"></a>    gene_map <span class="ot">&lt;-</span> <span class="fu">bitr</span>(sig_genes, <span class="at">fromType =</span> <span class="st">"ENSEMBL"</span>,</span>
+<span id="cb11-21"><a href="#cb11-21" aria-hidden="true" tabindex="-1"></a>                     <span class="at">toType =</span> <span class="st">"ENTREZID"</span>, <span class="at">OrgDb =</span> org.Hs.eg.db,</span>
+<span id="cb11-22"><a href="#cb11-22" aria-hidden="true" tabindex="-1"></a>                     <span class="at">drop =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb11-23"><a href="#cb11-23" aria-hidden="true" tabindex="-1"></a>    go_bp <span class="ot">&lt;-</span> <span class="fu">enrichGO</span>(<span class="at">gene          =</span> gene_map<span class="sc">$</span>ENTREZID,</span>
+<span id="cb11-24"><a href="#cb11-24" aria-hidden="true" tabindex="-1"></a>                      <span class="at">OrgDb         =</span> org.Hs.eg.db,</span>
+<span id="cb11-25"><a href="#cb11-25" aria-hidden="true" tabindex="-1"></a>                      <span class="at">ont           =</span> <span class="st">"BP"</span>,</span>
+<span id="cb11-26"><a href="#cb11-26" aria-hidden="true" tabindex="-1"></a>                      <span class="at">pAdjustMethod =</span> <span class="st">"BH"</span>,</span>
+<span id="cb11-27"><a href="#cb11-27" aria-hidden="true" tabindex="-1"></a>                      <span class="at">pvalueCutoff  =</span> <span class="fl">0.05</span>,</span>
+<span id="cb11-28"><a href="#cb11-28" aria-hidden="true" tabindex="-1"></a>                      <span class="at">qvalueCutoff  =</span> <span class="fl">0.2</span>)</span>
+<span id="cb11-29"><a href="#cb11-29" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> (<span class="sc">!</span><span class="fu">is.null</span>(go_bp) <span class="sc">&amp;&amp;</span> <span class="fu">nrow</span>(go_bp<span class="sc">@</span>result) <span class="sc">&gt;</span> <span class="dv">0</span>) {</span>
+<span id="cb11-30"><a href="#cb11-30" aria-hidden="true" tabindex="-1"></a>        <span class="fu">dotplot</span>(go_bp, <span class="at">showCategory =</span> <span class="dv">15</span>,</span>
+<span id="cb11-31"><a href="#cb11-31" aria-hidden="true" tabindex="-1"></a>                <span class="at">title =</span> <span class="st">"GO BP: DEGs from airway dex vs control (illustrative)"</span>)</span>
+<span id="cb11-32"><a href="#cb11-32" aria-hidden="true" tabindex="-1"></a>    }</span>
+<span id="cb11-33"><a href="#cb11-33" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <hr>
 </section>
 </section>
@@ -1024,54 +1074,54 @@ window.Quarto = {
 <p>STAR-Fusion 依赖于 STAR 比对器在嵌合比对（Chimeric Alignment）模式下产生的跨基因边界读段。其检测流程分为两个阶段：</p>
 <p><strong>第一阶段：STAR 嵌合比对</strong></p>
 <p>通过以下参数启用 STAR 的嵌合比对模式，嵌合读段被记录在 <code>Chimeric.out.junction</code> 文件中：</p>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb11"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="ex">STAR</span> <span class="dt">\</span></span>
-<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a>    <span class="at">--runMode</span> alignReads <span class="dt">\</span></span>
-<span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a>    <span class="at">--genomeDir</span> /path/to/star_genome <span class="dt">\</span></span>
-<span id="cb11-4"><a href="#cb11-4" aria-hidden="true" tabindex="-1"></a>    <span class="at">--readFilesIn</span> sample_R1.fastq.gz sample_R2.fastq.gz <span class="dt">\</span></span>
-<span id="cb11-5"><a href="#cb11-5" aria-hidden="true" tabindex="-1"></a>    <span class="at">--readFilesCommand</span> zcat <span class="dt">\</span></span>
-<span id="cb11-6"><a href="#cb11-6" aria-hidden="true" tabindex="-1"></a>    <span class="at">--outSAMtype</span> BAM SortedByCoordinate <span class="dt">\</span></span>
-<span id="cb11-7"><a href="#cb11-7" aria-hidden="true" tabindex="-1"></a>    <span class="at">--chimSegmentMin</span> 12 <span class="dt">\</span></span>
-<span id="cb11-8"><a href="#cb11-8" aria-hidden="true" tabindex="-1"></a>    <span class="at">--chimJunctionOverhangMin</span> 8 <span class="dt">\</span></span>
-<span id="cb11-9"><a href="#cb11-9" aria-hidden="true" tabindex="-1"></a>    <span class="at">--chimOutType</span> WithinBAM SeparateSAMold <span class="dt">\</span></span>
-<span id="cb11-10"><a href="#cb11-10" aria-hidden="true" tabindex="-1"></a>    <span class="at">--chimOutJunctionFormat</span> 1 <span class="dt">\</span></span>
-<span id="cb11-11"><a href="#cb11-11" aria-hidden="true" tabindex="-1"></a>    <span class="at">--alignSJDBoverhangMin</span> 10 <span class="dt">\</span></span>
-<span id="cb11-12"><a href="#cb11-12" aria-hidden="true" tabindex="-1"></a>    <span class="at">--alignMatesGapMax</span> 100000 <span class="dt">\</span></span>
-<span id="cb11-13"><a href="#cb11-13" aria-hidden="true" tabindex="-1"></a>    <span class="at">--alignIntronMax</span> 100000 <span class="dt">\</span></span>
-<span id="cb11-14"><a href="#cb11-14" aria-hidden="true" tabindex="-1"></a>    <span class="at">--runThreadN</span> 8 <span class="dt">\</span></span>
-<span id="cb11-15"><a href="#cb11-15" aria-hidden="true" tabindex="-1"></a>    <span class="at">--outFileNamePrefix</span> star_output/</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb12"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="ex">STAR</span> <span class="dt">\</span></span>
+<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a>    <span class="at">--runMode</span> alignReads <span class="dt">\</span></span>
+<span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a>    <span class="at">--genomeDir</span> /path/to/star_genome <span class="dt">\</span></span>
+<span id="cb12-4"><a href="#cb12-4" aria-hidden="true" tabindex="-1"></a>    <span class="at">--readFilesIn</span> sample_R1.fastq.gz sample_R2.fastq.gz <span class="dt">\</span></span>
+<span id="cb12-5"><a href="#cb12-5" aria-hidden="true" tabindex="-1"></a>    <span class="at">--readFilesCommand</span> zcat <span class="dt">\</span></span>
+<span id="cb12-6"><a href="#cb12-6" aria-hidden="true" tabindex="-1"></a>    <span class="at">--outSAMtype</span> BAM SortedByCoordinate <span class="dt">\</span></span>
+<span id="cb12-7"><a href="#cb12-7" aria-hidden="true" tabindex="-1"></a>    <span class="at">--chimSegmentMin</span> 12 <span class="dt">\</span></span>
+<span id="cb12-8"><a href="#cb12-8" aria-hidden="true" tabindex="-1"></a>    <span class="at">--chimJunctionOverhangMin</span> 8 <span class="dt">\</span></span>
+<span id="cb12-9"><a href="#cb12-9" aria-hidden="true" tabindex="-1"></a>    <span class="at">--chimOutType</span> WithinBAM SeparateSAMold <span class="dt">\</span></span>
+<span id="cb12-10"><a href="#cb12-10" aria-hidden="true" tabindex="-1"></a>    <span class="at">--chimOutJunctionFormat</span> 1 <span class="dt">\</span></span>
+<span id="cb12-11"><a href="#cb12-11" aria-hidden="true" tabindex="-1"></a>    <span class="at">--alignSJDBoverhangMin</span> 10 <span class="dt">\</span></span>
+<span id="cb12-12"><a href="#cb12-12" aria-hidden="true" tabindex="-1"></a>    <span class="at">--alignMatesGapMax</span> 100000 <span class="dt">\</span></span>
+<span id="cb12-13"><a href="#cb12-13" aria-hidden="true" tabindex="-1"></a>    <span class="at">--alignIntronMax</span> 100000 <span class="dt">\</span></span>
+<span id="cb12-14"><a href="#cb12-14" aria-hidden="true" tabindex="-1"></a>    <span class="at">--runThreadN</span> 8 <span class="dt">\</span></span>
+<span id="cb12-15"><a href="#cb12-15" aria-hidden="true" tabindex="-1"></a>    <span class="at">--outFileNamePrefix</span> star_output/</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <p><strong>第二阶段：STAR-Fusion 过滤</strong></p>
 <p>原始嵌合比对中含有大量假阳性。STAR-Fusion 对其进行系统过滤：（1）与 CTAT 资源库中已知假阳性融合数据库比对，去除重复区域和旁系同源基因对产生的假融合；（2）通过 FusionInspector 模块，在局部重建的融合转录本参考序列上对候选支持读段进行精确重比对验证；（3）过滤 FFPM（Fusion Fragments Per Million）低于 0.1 的低表达融合事件。</p>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb12"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Run STAR-Fusion after STAR alignment</span></span>
-<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a><span class="va">CTAT_LIB</span><span class="op">=</span><span class="st">"/path/to/GRCh38_gencode_v37_CTAT_lib"</span></span>
-<span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-4"><a href="#cb12-4" aria-hidden="true" tabindex="-1"></a><span class="ex">STAR-Fusion</span> <span class="dt">\</span></span>
-<span id="cb12-5"><a href="#cb12-5" aria-hidden="true" tabindex="-1"></a>    <span class="at">--genome_lib_dir</span> <span class="va">${CTAT_LIB}</span> <span class="dt">\</span></span>
-<span id="cb12-6"><a href="#cb12-6" aria-hidden="true" tabindex="-1"></a>    <span class="at">--chimeric_junction</span> star_output/Chimeric.out.junction <span class="dt">\</span></span>
-<span id="cb12-7"><a href="#cb12-7" aria-hidden="true" tabindex="-1"></a>    <span class="at">--output_dir</span> star_fusion_output <span class="dt">\</span></span>
-<span id="cb12-8"><a href="#cb12-8" aria-hidden="true" tabindex="-1"></a>    <span class="at">--examine_coding_effect</span> <span class="dt">\</span></span>
-<span id="cb12-9"><a href="#cb12-9" aria-hidden="true" tabindex="-1"></a>    <span class="at">--FusionInspector</span> validate <span class="dt">\</span></span>
-<span id="cb12-10"><a href="#cb12-10" aria-hidden="true" tabindex="-1"></a>    <span class="at">--CPU</span> 8</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb13"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Run STAR-Fusion after STAR alignment</span></span>
+<span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a><span class="va">CTAT_LIB</span><span class="op">=</span><span class="st">"/path/to/GRCh38_gencode_v37_CTAT_lib"</span></span>
+<span id="cb13-3"><a href="#cb13-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb13-4"><a href="#cb13-4" aria-hidden="true" tabindex="-1"></a><span class="ex">STAR-Fusion</span> <span class="dt">\</span></span>
+<span id="cb13-5"><a href="#cb13-5" aria-hidden="true" tabindex="-1"></a>    <span class="at">--genome_lib_dir</span> <span class="va">${CTAT_LIB}</span> <span class="dt">\</span></span>
+<span id="cb13-6"><a href="#cb13-6" aria-hidden="true" tabindex="-1"></a>    <span class="at">--chimeric_junction</span> star_output/Chimeric.out.junction <span class="dt">\</span></span>
+<span id="cb13-7"><a href="#cb13-7" aria-hidden="true" tabindex="-1"></a>    <span class="at">--output_dir</span> star_fusion_output <span class="dt">\</span></span>
+<span id="cb13-8"><a href="#cb13-8" aria-hidden="true" tabindex="-1"></a>    <span class="at">--examine_coding_effect</span> <span class="dt">\</span></span>
+<span id="cb13-9"><a href="#cb13-9" aria-hidden="true" tabindex="-1"></a>    <span class="at">--FusionInspector</span> validate <span class="dt">\</span></span>
+<span id="cb13-10"><a href="#cb13-10" aria-hidden="true" tabindex="-1"></a>    <span class="at">--CPU</span> 8</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <section id="解读-star-fusion-输出" class="level3" data-number="29.2.1">
 <h3 data-number="29.2.1" class="anchored" data-anchor-id="解读-star-fusion-输出"><span class="header-section-number">29.2.1</span> 解读 STAR-Fusion 输出</h3>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb13"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Read main output file</span></span>
-<span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a>fusions <span class="ot">&lt;-</span> <span class="fu">read.table</span>(</span>
-<span id="cb13-3"><a href="#cb13-3" aria-hidden="true" tabindex="-1"></a>    <span class="st">"star_fusion_output/star-fusion.fusion_predictions.abridged.tsv"</span>,</span>
-<span id="cb13-4"><a href="#cb13-4" aria-hidden="true" tabindex="-1"></a>    <span class="at">header =</span> <span class="cn">TRUE</span>, <span class="at">sep =</span> <span class="st">"</span><span class="sc">\t</span><span class="st">"</span>, <span class="at">comment.char =</span> <span class="st">""</span>, <span class="at">check.names =</span> <span class="cn">FALSE</span></span>
-<span id="cb13-5"><a href="#cb13-5" aria-hidden="true" tabindex="-1"></a>)</span>
-<span id="cb13-6"><a href="#cb13-6" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb13-7"><a href="#cb13-7" aria-hidden="true" tabindex="-1"></a><span class="co"># Filter high-confidence fusions</span></span>
-<span id="cb13-8"><a href="#cb13-8" aria-hidden="true" tabindex="-1"></a>hc_fusions <span class="ot">&lt;-</span> fusions <span class="sc">|&gt;</span></span>
-<span id="cb13-9"><a href="#cb13-9" aria-hidden="true" tabindex="-1"></a>    <span class="fu">filter</span>(</span>
-<span id="cb13-10"><a href="#cb13-10" aria-hidden="true" tabindex="-1"></a>        FFPM <span class="sc">&gt;=</span> <span class="fl">0.1</span>,</span>
-<span id="cb13-11"><a href="#cb13-11" aria-hidden="true" tabindex="-1"></a>        JunctionReadCount <span class="sc">&gt;=</span> <span class="dv">3</span>,</span>
-<span id="cb13-12"><a href="#cb13-12" aria-hidden="true" tabindex="-1"></a>        LargeAnchorSupport <span class="sc">==</span> <span class="st">"YES_LDAS"</span></span>
-<span id="cb13-13"><a href="#cb13-13" aria-hidden="true" tabindex="-1"></a>    ) <span class="sc">|&gt;</span></span>
-<span id="cb13-14"><a href="#cb13-14" aria-hidden="true" tabindex="-1"></a>    <span class="fu">arrange</span>(<span class="fu">desc</span>(FFPM))</span>
-<span id="cb13-15"><a href="#cb13-15" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb13-16"><a href="#cb13-16" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">"High-confidence fusions:"</span>, <span class="fu">nrow</span>(hc_fusions), <span class="st">"</span><span class="sc">\n</span><span class="st">"</span>)</span>
-<span id="cb13-17"><a href="#cb13-17" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(hc_fusions[, <span class="fu">c</span>(<span class="st">"#FusionName"</span>, <span class="st">"JunctionReadCount"</span>,</span>
-<span id="cb13-18"><a href="#cb13-18" aria-hidden="true" tabindex="-1"></a>                      <span class="st">"SpanningFragCount"</span>, <span class="st">"FFPM"</span>,</span>
-<span id="cb13-19"><a href="#cb13-19" aria-hidden="true" tabindex="-1"></a>                      <span class="st">"CDS_LEFT_ID"</span>, <span class="st">"annots"</span>)])</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb14"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Read main output file</span></span>
+<span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a>fusions <span class="ot">&lt;-</span> <span class="fu">read.table</span>(</span>
+<span id="cb14-3"><a href="#cb14-3" aria-hidden="true" tabindex="-1"></a>    <span class="st">"star_fusion_output/star-fusion.fusion_predictions.abridged.tsv"</span>,</span>
+<span id="cb14-4"><a href="#cb14-4" aria-hidden="true" tabindex="-1"></a>    <span class="at">header =</span> <span class="cn">TRUE</span>, <span class="at">sep =</span> <span class="st">"</span><span class="sc">\t</span><span class="st">"</span>, <span class="at">comment.char =</span> <span class="st">""</span>, <span class="at">check.names =</span> <span class="cn">FALSE</span></span>
+<span id="cb14-5"><a href="#cb14-5" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb14-6"><a href="#cb14-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb14-7"><a href="#cb14-7" aria-hidden="true" tabindex="-1"></a><span class="co"># Filter high-confidence fusions</span></span>
+<span id="cb14-8"><a href="#cb14-8" aria-hidden="true" tabindex="-1"></a>hc_fusions <span class="ot">&lt;-</span> fusions <span class="sc">|&gt;</span></span>
+<span id="cb14-9"><a href="#cb14-9" aria-hidden="true" tabindex="-1"></a>    <span class="fu">filter</span>(</span>
+<span id="cb14-10"><a href="#cb14-10" aria-hidden="true" tabindex="-1"></a>        FFPM <span class="sc">&gt;=</span> <span class="fl">0.1</span>,</span>
+<span id="cb14-11"><a href="#cb14-11" aria-hidden="true" tabindex="-1"></a>        JunctionReadCount <span class="sc">&gt;=</span> <span class="dv">3</span>,</span>
+<span id="cb14-12"><a href="#cb14-12" aria-hidden="true" tabindex="-1"></a>        LargeAnchorSupport <span class="sc">==</span> <span class="st">"YES_LDAS"</span></span>
+<span id="cb14-13"><a href="#cb14-13" aria-hidden="true" tabindex="-1"></a>    ) <span class="sc">|&gt;</span></span>
+<span id="cb14-14"><a href="#cb14-14" aria-hidden="true" tabindex="-1"></a>    <span class="fu">arrange</span>(<span class="fu">desc</span>(FFPM))</span>
+<span id="cb14-15"><a href="#cb14-15" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb14-16"><a href="#cb14-16" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">"High-confidence fusions:"</span>, <span class="fu">nrow</span>(hc_fusions), <span class="st">"</span><span class="sc">\n</span><span class="st">"</span>)</span>
+<span id="cb14-17"><a href="#cb14-17" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(hc_fusions[, <span class="fu">c</span>(<span class="st">"#FusionName"</span>, <span class="st">"JunctionReadCount"</span>,</span>
+<span id="cb14-18"><a href="#cb14-18" aria-hidden="true" tabindex="-1"></a>                      <span class="st">"SpanningFragCount"</span>, <span class="st">"FFPM"</span>,</span>
+<span id="cb14-19"><a href="#cb14-19" aria-hidden="true" tabindex="-1"></a>                      <span class="st">"CDS_LEFT_ID"</span>, <span class="st">"annots"</span>)])</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <p>STAR-Fusion 输出的关键字段含义：</p>
 <table class="caption-top table">
 <colgroup>
@@ -1119,23 +1169,23 @@ window.Quarto = {
 <section id="arriba-可视化融合转录本结构" class="level3" data-number="29.2.2">
 <h3 data-number="29.2.2" class="anchored" data-anchor-id="arriba-可视化融合转录本结构"><span class="header-section-number">29.2.2</span> Arriba 可视化融合转录本结构</h3>
 <p>Arriba 是 STAR-Fusion 的有力替代工具，其内置可视化模块能够生成高质量的融合转录本结构图，直观展示两个融合伴侣基因的外显子结构、断点位置与功能域保留情况。</p>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb14"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Run Arriba detection</span></span>
-<span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a><span class="ex">arriba</span> <span class="dt">\</span></span>
-<span id="cb14-3"><a href="#cb14-3" aria-hidden="true" tabindex="-1"></a>    <span class="at">-x</span> star_output/Aligned.sortedByCoord.out.bam <span class="dt">\</span></span>
-<span id="cb14-4"><a href="#cb14-4" aria-hidden="true" tabindex="-1"></a>    <span class="at">-a</span> /path/to/GRCh38.fa <span class="dt">\</span></span>
-<span id="cb14-5"><a href="#cb14-5" aria-hidden="true" tabindex="-1"></a>    <span class="at">-g</span> /path/to/gencode.v37.annotation.gtf <span class="dt">\</span></span>
-<span id="cb14-6"><a href="#cb14-6" aria-hidden="true" tabindex="-1"></a>    <span class="at">-o</span> fusions.tsv <span class="dt">\</span></span>
-<span id="cb14-7"><a href="#cb14-7" aria-hidden="true" tabindex="-1"></a>    <span class="at">-O</span> fusions.discarded.tsv <span class="dt">\</span></span>
-<span id="cb14-8"><a href="#cb14-8" aria-hidden="true" tabindex="-1"></a>    <span class="at">-T</span> <span class="at">-P</span>  <span class="co"># report tags and peptide sequences</span></span>
-<span id="cb14-9"><a href="#cb14-9" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb14-10"><a href="#cb14-10" aria-hidden="true" tabindex="-1"></a><span class="co"># Generate visualization PDF</span></span>
-<span id="cb14-11"><a href="#cb14-11" aria-hidden="true" tabindex="-1"></a><span class="ex">draw_fusions.R</span> <span class="dt">\</span></span>
-<span id="cb14-12"><a href="#cb14-12" aria-hidden="true" tabindex="-1"></a>    <span class="at">--fusions</span> fusions.tsv <span class="dt">\</span></span>
-<span id="cb14-13"><a href="#cb14-13" aria-hidden="true" tabindex="-1"></a>    <span class="at">--alignments</span> star_output/Aligned.sortedByCoord.out.bam <span class="dt">\</span></span>
-<span id="cb14-14"><a href="#cb14-14" aria-hidden="true" tabindex="-1"></a>    <span class="at">--output</span> arriba_visualization.pdf <span class="dt">\</span></span>
-<span id="cb14-15"><a href="#cb14-15" aria-hidden="true" tabindex="-1"></a>    <span class="at">--annotation</span> /path/to/gencode.v37.annotation.gtf <span class="dt">\</span></span>
-<span id="cb14-16"><a href="#cb14-16" aria-hidden="true" tabindex="-1"></a>    <span class="at">--cytobands</span> /path/to/cytobands_hg38.tsv <span class="dt">\</span></span>
-<span id="cb14-17"><a href="#cb14-17" aria-hidden="true" tabindex="-1"></a>    <span class="at">--proteinDomains</span> /path/to/protein_domains_hg38_GRCh38.gff3</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb15"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Run Arriba detection</span></span>
+<span id="cb15-2"><a href="#cb15-2" aria-hidden="true" tabindex="-1"></a><span class="ex">arriba</span> <span class="dt">\</span></span>
+<span id="cb15-3"><a href="#cb15-3" aria-hidden="true" tabindex="-1"></a>    <span class="at">-x</span> star_output/Aligned.sortedByCoord.out.bam <span class="dt">\</span></span>
+<span id="cb15-4"><a href="#cb15-4" aria-hidden="true" tabindex="-1"></a>    <span class="at">-a</span> /path/to/GRCh38.fa <span class="dt">\</span></span>
+<span id="cb15-5"><a href="#cb15-5" aria-hidden="true" tabindex="-1"></a>    <span class="at">-g</span> /path/to/gencode.v37.annotation.gtf <span class="dt">\</span></span>
+<span id="cb15-6"><a href="#cb15-6" aria-hidden="true" tabindex="-1"></a>    <span class="at">-o</span> fusions.tsv <span class="dt">\</span></span>
+<span id="cb15-7"><a href="#cb15-7" aria-hidden="true" tabindex="-1"></a>    <span class="at">-O</span> fusions.discarded.tsv <span class="dt">\</span></span>
+<span id="cb15-8"><a href="#cb15-8" aria-hidden="true" tabindex="-1"></a>    <span class="at">-T</span> <span class="at">-P</span>  <span class="co"># report tags and peptide sequences</span></span>
+<span id="cb15-9"><a href="#cb15-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-10"><a href="#cb15-10" aria-hidden="true" tabindex="-1"></a><span class="co"># Generate visualization PDF</span></span>
+<span id="cb15-11"><a href="#cb15-11" aria-hidden="true" tabindex="-1"></a><span class="ex">draw_fusions.R</span> <span class="dt">\</span></span>
+<span id="cb15-12"><a href="#cb15-12" aria-hidden="true" tabindex="-1"></a>    <span class="at">--fusions</span> fusions.tsv <span class="dt">\</span></span>
+<span id="cb15-13"><a href="#cb15-13" aria-hidden="true" tabindex="-1"></a>    <span class="at">--alignments</span> star_output/Aligned.sortedByCoord.out.bam <span class="dt">\</span></span>
+<span id="cb15-14"><a href="#cb15-14" aria-hidden="true" tabindex="-1"></a>    <span class="at">--output</span> arriba_visualization.pdf <span class="dt">\</span></span>
+<span id="cb15-15"><a href="#cb15-15" aria-hidden="true" tabindex="-1"></a>    <span class="at">--annotation</span> /path/to/gencode.v37.annotation.gtf <span class="dt">\</span></span>
+<span id="cb15-16"><a href="#cb15-16" aria-hidden="true" tabindex="-1"></a>    <span class="at">--cytobands</span> /path/to/cytobands_hg38.tsv <span class="dt">\</span></span>
+<span id="cb15-17"><a href="#cb15-17" aria-hidden="true" tabindex="-1"></a>    <span class="at">--proteinDomains</span> /path/to/protein_domains_hg38_GRCh38.gff3</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="tip">
 <p><strong>实践建议：</strong> 对于肿瘤 RNA-seq 样本，建议同时运行 STAR-Fusion 和 Arriba，取两者共同预测的融合事件（共识集），可将特异性从约 70% 提升至约 90%。对于任何具有生物学或临床意义的融合候选，均应通过 RT-PCR 扩增融合断点区域并 Sanger 测序进行湿实验验证。</p>
 </div>
@@ -1587,8 +1637,8 @@ window.Quarto = {
       </a>          
   </div>
   <div class="nav-page nav-page-next">
-      <a href="./transcriptomics_adv_lesson2.html" class="pagination-link" aria-label="专题 5.3：可变多腺苷酸化分析与长读长转录组展望">
-        <span class="nav-page-text"><span class="chapter-number">27</span>&nbsp; <span class="chapter-title">专题 5.3：可变多腺苷酸化分析与长读长转录组展望</span></span> <i class="bi bi-arrow-right-short"></i>
+      <a href="./transcriptomics_adv_lesson2.html" class="pagination-link" aria-label="可变多腺苷酸化分析与长读长转录组展望">
+        <span class="nav-page-text"><span class="chapter-number">27</span>&nbsp; <span class="chapter-title">可变多腺苷酸化分析与长读长转录组展望</span></span> <i class="bi bi-arrow-right-short"></i>
       </a>
   </div>
 </nav>
