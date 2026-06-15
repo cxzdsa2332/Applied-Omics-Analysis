@@ -6,7 +6,7 @@
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
-<meta name="dcterms.date" content="2026-05-31">
+<meta name="dcterms.date" content="2026-06-15">
 
 <title>21&nbsp; 测序原理、文库特性与原始数据质量控制 – Introduction to Applied High-throughput Biological Data Analysis</title>
 <style>
@@ -80,7 +80,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <link href="site_libs/quarto-html/quarto-syntax-highlighting-15634bcf2e68342d4ad2dfa704d543f6.css" rel="stylesheet" id="quarto-text-highlighting-styles">
 <script src="site_libs/bootstrap/bootstrap.min.js"></script>
 <link href="site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
-<link href="site_libs/bootstrap/bootstrap-48abc47ddc2cbc14860ddec9e9fdb395.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
+<link href="site_libs/bootstrap/bootstrap-3f70bac5631458d474a321d4182f9338.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
 <script id="quarto-search-options" type="application/json">{
   "location": "sidebar",
   "copy-button": false,
@@ -345,37 +345,37 @@ window.Quarto = {
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./05-transcriptomics-advanced.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">25</span>&nbsp; <span class="chapter-title">Bulk 转录组高级分析：结构变异、长读长与共表达网络</span></span></a>
+ <span class="menu-text"><span class="chapter-number">25</span>&nbsp; <span class="chapter-title">Bulk 转录组高级分析：转录本结构与调控网络</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./transcriptomics_adv_lesson1.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">26</span>&nbsp; <span class="chapter-title">第五章 课时1</span></span></a>
+ <span class="menu-text"><span class="chapter-number">26</span>&nbsp; <span class="chapter-title">可变剪接差异分析与基因融合鉴定</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./transcriptomics_adv_lesson2.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">27</span>&nbsp; <span class="chapter-title">第五章 课时2</span></span></a>
+ <span class="menu-text"><span class="chapter-number">27</span>&nbsp; <span class="chapter-title">可变多腺苷酸化分析与长读长转录组展望</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./transcriptomics_adv_lesson3.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">28</span>&nbsp; <span class="chapter-title">第五章 课时3</span></span></a>
+ <span class="menu-text"><span class="chapter-number">28</span>&nbsp; <span class="chapter-title">加权基因共表达网络分析（WGCNA）</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./transcriptomics_adv_lesson4.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">29</span>&nbsp; <span class="chapter-title">第五章 课时4</span></span></a>
+ <span class="menu-text"><span class="chapter-number">29</span>&nbsp; <span class="chapter-title">基因调控网络推断——从随机森林到动力系统</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./transcriptomics_adv_lesson5.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">30</span>&nbsp; <span class="chapter-title">第五章 课时5</span></span></a>
+ <span class="menu-text"><span class="chapter-number">30</span>&nbsp; <span class="chapter-title">扰动稳态下的非线性基因调控模型学习</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
@@ -601,37 +601,62 @@ window.Quarto = {
   <ul>
   <li><a href="#学习目标" id="toc-学习目标" class="nav-link active" data-scroll-target="#学习目标"><span class="header-section-number">21.1</span> 学习目标</a></li>
   <li><a href="#从-microarray-到-rna-seq范式转变" id="toc-从-microarray-到-rna-seq范式转变" class="nav-link" data-scroll-target="#从-microarray-到-rna-seq范式转变"><span class="header-section-number">21.2</span> 从 Microarray 到 RNA-seq：范式转变</a></li>
-  <li><a href="#rna-seq-文库构建两条技术路线" id="toc-rna-seq-文库构建两条技术路线" class="nav-link" data-scroll-target="#rna-seq-文库构建两条技术路线"><span class="header-section-number">21.3</span> RNA-seq 文库构建：两条技术路线</a>
+  <li><a href="#illumina-测序化学边合成边测序" id="toc-illumina-测序化学边合成边测序" class="nav-link" data-scroll-target="#illumina-测序化学边合成边测序"><span class="header-section-number">21.3</span> Illumina 测序化学：边合成边测序</a>
   <ul class="collapse">
-  <li><a href="#poly-a-富集mrna-seq" id="toc-poly-a-富集mrna-seq" class="nav-link" data-scroll-target="#poly-a-富集mrna-seq"><span class="header-section-number">21.3.1</span> poly-A 富集（mRNA-seq）</a></li>
-  <li><a href="#rrna-去除total-rna-seq-ribo-zero" id="toc-rrna-去除total-rna-seq-ribo-zero" class="nav-link" data-scroll-target="#rrna-去除total-rna-seq-ribo-zero"><span class="header-section-number">21.3.2</span> rRNA 去除（Total RNA-seq / Ribo-Zero）</a></li>
-  <li><a href="#链特异性文库" id="toc-链特异性文库" class="nav-link" data-scroll-target="#链特异性文库"><span class="header-section-number">21.3.3</span> 链特异性文库</a></li>
+  <li><a href="#流动槽与簇扩增" id="toc-流动槽与簇扩增" class="nav-link" data-scroll-target="#流动槽与簇扩增"><span class="header-section-number">21.3.1</span> 流动槽与簇扩增</a></li>
+  <li><a href="#测序循环与质量分数的产生" id="toc-测序循环与质量分数的产生" class="nav-link" data-scroll-target="#测序循环与质量分数的产生"><span class="header-section-number">21.3.2</span> 测序循环与质量分数的产生</a></li>
   </ul></li>
-  <li><a href="#链方向的生物信息学确认" id="toc-链方向的生物信息学确认" class="nav-link" data-scroll-target="#链方向的生物信息学确认"><span class="header-section-number">21.4</span> 链方向的生物信息学确认</a></li>
-  <li><a href="#原始数据质量控制" id="toc-原始数据质量控制" class="nav-link" data-scroll-target="#原始数据质量控制"><span class="header-section-number">21.5</span> 原始数据质量控制</a>
+  <li><a href="#rna-seq-文库构建两条技术路线" id="toc-rna-seq-文库构建两条技术路线" class="nav-link" data-scroll-target="#rna-seq-文库构建两条技术路线"><span class="header-section-number">21.4</span> RNA-seq 文库构建：两条技术路线</a>
   <ul class="collapse">
-  <li><a href="#fastqc单样本质量评估" id="toc-fastqc单样本质量评估" class="nav-link" data-scroll-target="#fastqc单样本质量评估"><span class="header-section-number">21.5.1</span> FastQC：单样本质量评估</a></li>
-  <li><a href="#fastpadapter-修剪与质量过滤" id="toc-fastpadapter-修剪与质量过滤" class="nav-link" data-scroll-target="#fastpadapter-修剪与质量过滤"><span class="header-section-number">21.5.2</span> fastp：Adapter 修剪与质量过滤</a></li>
+  <li><a href="#poly-a-富集mrna-seq" id="toc-poly-a-富集mrna-seq" class="nav-link" data-scroll-target="#poly-a-富集mrna-seq"><span class="header-section-number">21.4.1</span> poly-A 富集（mRNA-seq）</a></li>
+  <li><a href="#rrna-去除total-rna-seq-ribo-zero" id="toc-rrna-去除total-rna-seq-ribo-zero" class="nav-link" data-scroll-target="#rrna-去除total-rna-seq-ribo-zero"><span class="header-section-number">21.4.2</span> rRNA 去除（Total RNA-seq / Ribo-Zero）</a></li>
+  <li><a href="#链特异性文库" id="toc-链特异性文库" class="nav-link" data-scroll-target="#链特异性文库"><span class="header-section-number">21.4.3</span> 链特异性文库</a></li>
   </ul></li>
-  <li><a href="#转录组层面质控超越碱基质量" id="toc-转录组层面质控超越碱基质量" class="nav-link" data-scroll-target="#转录组层面质控超越碱基质量"><span class="header-section-number">21.6</span> 转录组层面质控：超越碱基质量</a>
+  <li><a href="#关于-airway-数据集" id="toc-关于-airway-数据集" class="nav-link" data-scroll-target="#关于-airway-数据集"><span class="header-section-number">21.5</span> 关于 airway 数据集</a></li>
+  <li><a href="#fastq-文件格式详解" id="toc-fastq-文件格式详解" class="nav-link" data-scroll-target="#fastq-文件格式详解"><span class="header-section-number">21.6</span> FASTQ 文件格式详解</a>
   <ul class="collapse">
-  <li><a href="#rseqc转录本覆盖均匀性" id="toc-rseqc转录本覆盖均匀性" class="nav-link" data-scroll-target="#rseqc转录本覆盖均匀性"><span class="header-section-number">21.6.1</span> RSeQC：转录本覆盖均匀性</a></li>
-  <li><a href="#multiqc多样本汇总" id="toc-multiqc多样本汇总" class="nav-link" data-scroll-target="#multiqc多样本汇总"><span class="header-section-number">21.6.2</span> MultiQC：多样本汇总</a></li>
+  <li><a href="#phred33-编码" id="toc-phred33-编码" class="nav-link" data-scroll-target="#phred33-编码"><span class="header-section-number">21.6.1</span> Phred+33 编码</a></li>
+  <li><a href="#压缩与文件大小" id="toc-压缩与文件大小" class="nav-link" data-scroll-target="#压缩与文件大小"><span class="header-section-number">21.6.2</span> 压缩与文件大小</a></li>
   </ul></li>
-  <li><a href="#实践pasilla-数据集质控流程" id="toc-实践pasilla-数据集质控流程" class="nav-link" data-scroll-target="#实践pasilla-数据集质控流程"><span class="header-section-number">21.7</span> 实践：pasilla 数据集质控流程</a></li>
-  <li><a href="#rna-完整性与样本质量评级" id="toc-rna-完整性与样本质量评级" class="nav-link" data-scroll-target="#rna-完整性与样本质量评级"><span class="header-section-number">21.8</span> RNA 完整性与样本质量评级</a>
+  <li><a href="#rna-完整性与样本质量评级" id="toc-rna-完整性与样本质量评级" class="nav-link" data-scroll-target="#rna-完整性与样本质量评级"><span class="header-section-number">21.7</span> RNA 完整性与样本质量评级</a>
   <ul class="collapse">
-  <li><a href="#rna-完整性评分rin" id="toc-rna-完整性评分rin" class="nav-link" data-scroll-target="#rna-完整性评分rin"><span class="header-section-number">21.8.1</span> RNA 完整性评分（RIN）</a></li>
-  <li><a href="#phred-质量分数的数学基础" id="toc-phred-质量分数的数学基础" class="nav-link" data-scroll-target="#phred-质量分数的数学基础"><span class="header-section-number">21.8.2</span> Phred 质量分数的数学基础</a></li>
+  <li><a href="#rna-完整性评分rin" id="toc-rna-完整性评分rin" class="nav-link" data-scroll-target="#rna-完整性评分rin"><span class="header-section-number">21.7.1</span> RNA 完整性评分（RIN）</a></li>
+  <li><a href="#phred-质量分数的数学基础" id="toc-phred-质量分数的数学基础" class="nav-link" data-scroll-target="#phred-质量分数的数学基础"><span class="header-section-number">21.7.2</span> Phred 质量分数的数学基础</a></li>
   </ul></li>
-  <li><a href="#批次效应的早期检测" id="toc-批次效应的早期检测" class="nav-link" data-scroll-target="#批次效应的早期检测"><span class="header-section-number">21.9</span> 批次效应的早期检测</a>
+  <li><a href="#原始数据质量控制" id="toc-原始数据质量控制" class="nav-link" data-scroll-target="#原始数据质量控制"><span class="header-section-number">21.8</span> 原始数据质量控制</a>
   <ul class="collapse">
-  <li><a href="#批次效应的来源" id="toc-批次效应的来源" class="nav-link" data-scroll-target="#批次效应的来源"><span class="header-section-number">21.9.1</span> 批次效应的来源</a></li>
-  <li><a href="#pca-检测批次效应" id="toc-pca-检测批次效应" class="nav-link" data-scroll-target="#pca-检测批次效应"><span class="header-section-number">21.9.2</span> PCA 检测批次效应</a></li>
-  <li><a href="#rle-图检测系统性偏移" id="toc-rle-图检测系统性偏移" class="nav-link" data-scroll-target="#rle-图检测系统性偏移"><span class="header-section-number">21.9.3</span> RLE 图：检测系统性偏移</a></li>
+  <li><a href="#fastqc单样本质量评估" id="toc-fastqc单样本质量评估" class="nav-link" data-scroll-target="#fastqc单样本质量评估"><span class="header-section-number">21.8.1</span> FastQC：单样本质量评估</a></li>
+  <li><a href="#测序深度与读长实验设计关键参数" id="toc-测序深度与读长实验设计关键参数" class="nav-link" data-scroll-target="#测序深度与读长实验设计关键参数"><span class="header-section-number">21.8.2</span> 测序深度与读长：实验设计关键参数</a></li>
+  <li><a href="#fastpadapter-修剪与质量过滤" id="toc-fastpadapter-修剪与质量过滤" class="nav-link" data-scroll-target="#fastpadapter-修剪与质量过滤"><span class="header-section-number">21.8.3</span> fastp：Adapter 修剪与质量过滤</a></li>
   </ul></li>
-  <li><a href="#关于-pasilla-数据集" id="toc-关于-pasilla-数据集" class="nav-link" data-scroll-target="#关于-pasilla-数据集"><span class="header-section-number">21.10</span> 关于 pasilla 数据集</a></li>
-  <li><a href="#课后自测-post-lesson-quiz" id="toc-课后自测-post-lesson-quiz" class="nav-link" data-scroll-target="#课后自测-post-lesson-quiz"><span class="header-section-number">21.11</span> 课后自测 (Post-Lesson Quiz)</a></li>
+  <li><a href="#链方向的生物信息学确认" id="toc-链方向的生物信息学确认" class="nav-link" data-scroll-target="#链方向的生物信息学确认"><span class="header-section-number">21.9</span> 链方向的生物信息学确认</a>
+  <ul class="collapse">
+  <li><a href="#步骤一环境准备与参考文件下载" id="toc-步骤一环境准备与参考文件下载" class="nav-link" data-scroll-target="#步骤一环境准备与参考文件下载"><span class="header-section-number">21.9.1</span> 步骤一：环境准备与参考文件下载</a></li>
+  <li><a href="#步骤二比对并生成-bam-文件" id="toc-步骤二比对并生成-bam-文件" class="nav-link" data-scroll-target="#步骤二比对并生成-bam-文件"><span class="header-section-number">21.9.2</span> 步骤二：比对并生成 BAM 文件</a></li>
+  <li><a href="#步骤三运行-infer_experiment.py" id="toc-步骤三运行-infer_experiment.py" class="nav-link" data-scroll-target="#步骤三运行-infer_experiment.py"><span class="header-section-number">21.9.3</span> 步骤三：运行 infer_experiment.py</a></li>
+  <li><a href="#链方向判读规则" id="toc-链方向判读规则" class="nav-link" data-scroll-target="#链方向判读规则"><span class="header-section-number">21.9.4</span> 链方向判读规则</a></li>
+  </ul></li>
+  <li><a href="#转录组层面质控超越碱基质量" id="toc-转录组层面质控超越碱基质量" class="nav-link" data-scroll-target="#转录组层面质控超越碱基质量"><span class="header-section-number">21.10</span> 转录组层面质控：超越碱基质量</a>
+  <ul class="collapse">
+  <li><a href="#rseqc转录本覆盖均匀性" id="toc-rseqc转录本覆盖均匀性" class="nav-link" data-scroll-target="#rseqc转录本覆盖均匀性"><span class="header-section-number">21.10.1</span> RSeQC：转录本覆盖均匀性</a></li>
+  <li><a href="#multiqc多样本汇总" id="toc-multiqc多样本汇总" class="nav-link" data-scroll-target="#multiqc多样本汇总"><span class="header-section-number">21.10.2</span> MultiQC：多样本汇总</a></li>
+  </ul></li>
+  <li><a href="#批次效应的早期检测" id="toc-批次效应的早期检测" class="nav-link" data-scroll-target="#批次效应的早期检测"><span class="header-section-number">21.11</span> 批次效应的早期检测</a>
+  <ul class="collapse">
+  <li><a href="#批次效应的来源" id="toc-批次效应的来源" class="nav-link" data-scroll-target="#批次效应的来源"><span class="header-section-number">21.11.1</span> 批次效应的来源</a></li>
+  <li><a href="#实验设计从源头规避批次效应" id="toc-实验设计从源头规避批次效应" class="nav-link" data-scroll-target="#实验设计从源头规避批次效应"><span class="header-section-number">21.11.2</span> 实验设计：从源头规避批次效应</a></li>
+  <li><a href="#pca-检测批次效应" id="toc-pca-检测批次效应" class="nav-link" data-scroll-target="#pca-检测批次效应"><span class="header-section-number">21.11.3</span> PCA 检测批次效应</a></li>
+  <li><a href="#rle-图检测系统性偏移" id="toc-rle-图检测系统性偏移" class="nav-link" data-scroll-target="#rle-图检测系统性偏移"><span class="header-section-number">21.11.4</span> RLE 图：检测系统性偏移</a></li>
+  </ul></li>
+  <li><a href="#实践airway-数据集质控流程" id="toc-实践airway-数据集质控流程" class="nav-link" data-scroll-target="#实践airway-数据集质控流程"><span class="header-section-number">21.12</span> 实践：airway 数据集质控流程</a></li>
+  <li><a href="#质控结果解读airway-1m-教学子集" id="toc-质控结果解读airway-1m-教学子集" class="nav-link" data-scroll-target="#质控结果解读airway-1m-教学子集"><span class="header-section-number">21.13</span> 质控结果解读：airway 1M 教学子集</a>
+  <ul class="collapse">
+  <li><a href="#综合指标汇总" id="toc-综合指标汇总" class="nav-link" data-scroll-target="#综合指标汇总"><span class="header-section-number">21.13.1</span> 综合指标汇总</a></li>
+  <li><a href="#逐项解读" id="toc-逐项解读" class="nav-link" data-scroll-target="#逐项解读"><span class="header-section-number">21.13.2</span> 逐项解读</a></li>
+  <li><a href="#fastqc-模块状态异常" id="toc-fastqc-模块状态异常" class="nav-link" data-scroll-target="#fastqc-模块状态异常"><span class="header-section-number">21.13.3</span> FastQC 模块状态异常</a></li>
+  <li><a href="#整体评估" id="toc-整体评估" class="nav-link" data-scroll-target="#整体评估"><span class="header-section-number">21.13.4</span> 整体评估</a></li>
+  </ul></li>
+  <li><a href="#课后自测-post-lesson-quiz" id="toc-课后自测-post-lesson-quiz" class="nav-link" data-scroll-target="#课后自测-post-lesson-quiz"><span class="header-section-number">21.14</span> 课后自测 (Post-Lesson Quiz)</a></li>
   </ul>
 <div class="toc-actions"><ul><li><a href="https://github.com/cxzdsa2332/Applied-Omics-Analysis/edit/main/transcriptomics_basic_lesson1.qmd" class="toc-action"><i class="bi bi-github"></i>Edit this page</a></li><li><a href="https://github.com/cxzdsa2332/Applied-Omics-Analysis/issues/new" class="toc-action"><i class="bi empty"></i>Report an issue</a></li><li><a href="https://github.com/cxzdsa2332/Applied-Omics-Analysis/blob/main/transcriptomics_basic_lesson1.qmd" class="toc-action"><i class="bi empty"></i>View source</a></li></ul></div></nav>
     </div>
@@ -651,7 +676,7 @@ window.Quarto = {
     <div>
     <div class="quarto-title-meta-heading">Published</div>
     <div class="quarto-title-meta-contents">
-      <p class="date">May 31, 2026</p>
+      <p class="date">June 15, 2026</p>
     </div>
   </div>
   
@@ -684,10 +709,34 @@ window.Quarto = {
 <p>尽管技术进步迅速，RNA-seq 的核心分析流程在过去十余年间已趋于成熟和标准化。理解这一流程的每个步骤背后的原理，不仅有助于正确执行分析，更重要的是能在遇到异常数据时准确定位问题来源。</p>
 <hr>
 </section>
-<section id="rna-seq-文库构建两条技术路线" class="level2" data-number="21.3">
-<h2 data-number="21.3" class="anchored" data-anchor-id="rna-seq-文库构建两条技术路线"><span class="header-section-number">21.3</span> RNA-seq 文库构建：两条技术路线</h2>
-<section id="poly-a-富集mrna-seq" class="level3" data-number="21.3.1">
-<h3 data-number="21.3.1" class="anchored" data-anchor-id="poly-a-富集mrna-seq"><span class="header-section-number">21.3.1</span> poly-A 富集（mRNA-seq）</h3>
+<section id="illumina-测序化学边合成边测序" class="level2" data-number="21.3">
+<h2 data-number="21.3" class="anchored" data-anchor-id="illumina-测序化学边合成边测序"><span class="header-section-number">21.3</span> Illumina 测序化学：边合成边测序</h2>
+<p>理解 RNA-seq 数据质量问题的根源，必须先了解 Illumina 测序仪的工作原理。Illumina 采用的核心技术称为<strong>边合成边测序</strong>（Sequencing by Synthesis, SBS），其本质是在 DNA 聚合反应过程中，通过检测每次掺入的荧光标记碱基来实现序列读取。</p>
+<section id="流动槽与簇扩增" class="level3" data-number="21.3.1">
+<h3 data-number="21.3.1" class="anchored" data-anchor-id="流动槽与簇扩增"><span class="header-section-number">21.3.1</span> 流动槽与簇扩增</h3>
+<p>测序在玻璃芯片（Flow Cell）上进行。Flow Cell 表面密布寡核苷酸引物，文库片段通过接头序列与之杂交后，经过<strong>桥式扩增（Bridge Amplification）</strong>在原位形成约 1000 个拷贝的<strong>簇（Cluster）</strong>。每个簇来自同一 DNA 分子，确保信号足够强以被光学系统检测。</p>
+</section>
+<section id="测序循环与质量分数的产生" class="level3" data-number="21.3.2">
+<h3 data-number="21.3.2" class="anchored" data-anchor-id="测序循环与质量分数的产生"><span class="header-section-number">21.3.2</span> 测序循环与质量分数的产生</h3>
+<p>每个测序循环（Cycle）分为三步：（1）加入四种携带可逆终止基团和不同荧光染料的 dNTP，聚合酶将其中与模板互补的一种掺入到正在延伸的链上；（2）光学系统扫描 Flow Cell，记录每个簇的荧光信号，判断掺入的碱基种类；（3）化学切除荧光基团和终止基团，恢复 3’-OH，进入下一循环。</p>
+<p>碱基的质量分数反映了测序仪对该次碱基判断的置信程度。随着循环数增加，簇内各拷贝的相位同步性逐渐下降（相位漂移，phasing），导致信号混叠，质量分数自然下降——这正是 FastQC 中 read 末端质量降低的根本原因（Phred 分数的数学定义参见本专题后续章节）。</p>
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="https://upload.wikimedia.org/wikipedia/commons/5/51/Sequence_By_Synthesis.png" class="img-fluid figure-img" style="width:85.0%"></p>
+<figcaption>图1.1：Illumina 边合成边测序（SBS）原理示意图，展示荧光标记 dNTP 的掺入与检测过程。</figcaption>
+</figure>
+</div>
+<p>图1.1：Illumina SBS 原理。四种 dNTP 各携带不同荧光染料与可逆终止基团，聚合酶掺入后由摄像系统记录荧光颜色，完成碱基判读。来源：Wikipedia, Illumina dye sequencing。</p>
+<div class="note">
+<p><strong>双端测序（Paired-End Sequencing）的原理：</strong> 完成第一轮测序（Read 1）后，测序仪对原始链去杂交，以另一端的引物重新扩增簇，从片段的另一端开始第二轮测序（Read 2）。双端数据能够提供片段大小信息，对可变剪接检测和结构变异分析尤为重要。</p>
+</div>
+<hr>
+</section>
+</section>
+<section id="rna-seq-文库构建两条技术路线" class="level2" data-number="21.4">
+<h2 data-number="21.4" class="anchored" data-anchor-id="rna-seq-文库构建两条技术路线"><span class="header-section-number">21.4</span> RNA-seq 文库构建：两条技术路线</h2>
+<section id="poly-a-富集mrna-seq" class="level3" data-number="21.4.1">
+<h3 data-number="21.4.1" class="anchored" data-anchor-id="poly-a-富集mrna-seq"><span class="header-section-number">21.4.1</span> poly-A 富集（mRNA-seq）</h3>
 <p>poly-A 富集文库利用 oligo-dT 磁珠捕获含有 poly-A 尾的成熟 mRNA。由于真核细胞总 RNA 中约 80% 是核糖体 RNA（rRNA），直接建库会导致测序资源被 rRNA 大量占用。poly-A 富集有效去除 rRNA，使 mRNA 分子富集至总 reads 的 90% 以上。</p>
 <p><strong>优势</strong>：操作简便，成本低，信噪比高。</p>
 <p><strong>局限性</strong>：</p>
@@ -697,17 +746,17 @@ window.Quarto = {
 <li>RNA 质量要求高：降解的 RNA（RIN &lt; 7）会加剧 3’ 端偏差，导致 5’ 端几乎无覆盖。</li>
 </ul>
 </section>
-<section id="rrna-去除total-rna-seq-ribo-zero" class="level3" data-number="21.3.2">
-<h3 data-number="21.3.2" class="anchored" data-anchor-id="rrna-去除total-rna-seq-ribo-zero"><span class="header-section-number">21.3.2</span> rRNA 去除（Total RNA-seq / Ribo-Zero）</h3>
+<section id="rrna-去除total-rna-seq-ribo-zero" class="level3" data-number="21.4.2">
+<h3 data-number="21.4.2" class="anchored" data-anchor-id="rrna-去除total-rna-seq-ribo-zero"><span class="header-section-number">21.4.2</span> rRNA 去除（Total RNA-seq / Ribo-Zero）</h3>
 <p>rRNA 去除文库通过与 rRNA 互补的探针捕获并去除 rRNA，保留其余全部 RNA 分子，包括 pre-mRNA、lncRNA、circRNA、组蛋白 mRNA 等。</p>
 <p><strong>优势</strong>：覆盖全转录组，适合研究非编码 RNA；对 RNA 质量要求相对宽松；覆盖度更均匀。</p>
 <p><strong>局限性</strong>：成本较高；低表达 mRNA 的检出灵敏度略低于 poly-A 富集方法（因为非 mRNA 分子占用了部分测序资源）。</p>
 <div class="tip">
-<p><strong>选择建议：</strong> 若研究目标明确为蛋白质编码基因的差异表达，且 RNA 质量良好（RIN ≥ 8），优先选择 poly-A 富集；若需要研究非编码 RNA、RNA 降解样本，或希望覆盖更完整的转录组，选择 rRNA 去除方案。本章使用的 pasilla 数据集（SRR1039508–SRR1039517）为 poly-A 富集文库。</p>
+<p><strong>选择建议：</strong> 若研究目标明确为蛋白质编码基因的差异表达，且 RNA 质量良好（RIN ≥ 8），优先选择 poly-A 富集；若需要研究非编码 RNA、RNA 降解样本，或希望覆盖更完整的转录组，选择 rRNA 去除方案。本章使用的 airway 数据集（Himes et al.&nbsp;2014，SRR1039508–SRR1039517）为 poly-A 富集文库。</p>
 </div>
 </section>
-<section id="链特异性文库" class="level3" data-number="21.3.3">
-<h3 data-number="21.3.3" class="anchored" data-anchor-id="链特异性文库"><span class="header-section-number">21.3.3</span> 链特异性文库</h3>
+<section id="链特异性文库" class="level3" data-number="21.4.3">
+<h3 data-number="21.4.3" class="anchored" data-anchor-id="链特异性文库"><span class="header-section-number">21.4.3</span> 链特异性文库</h3>
 <p>常规 RNA-seq 文库在逆转录后会丢失链方向信息——测序 read 无法判断来自正义链（sense strand）还是反义链（antisense strand）。对于有大量正反链重叠基因或需要区分正反义转录的研究，链方向信息至关重要。</p>
 <p>目前最主流的链特异性文库构建方法是 <strong>dUTP 法</strong>（TruSeq Stranded 采用此方案），流程如下：</p>
 <ol type="1">
@@ -718,204 +767,135 @@ window.Quarto = {
 <li>剩余第一链加接头，测序。</li>
 </ol>
 <p>由于测序的 read 来自第一链（反义链），<strong>read 2（R2）与原始 mRNA 方向相同，read 1（R1）与 mRNA 反向互补</strong>，即所谓的 <strong>RF 链方向</strong>（Illumina TruSeq Stranded 标准）。</p>
-<p>{{Wiki:RNA-Seq}}</p>
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="https://upload.wikimedia.org/wikipedia/commons/f/f3/Summary_of_RNA-Seq.svg" class="img-fluid figure-img" style="width:85.0%"></p>
+<figcaption>图1.2：RNA-seq 实验全流程示意图，从 mRNA 提取、随机打断、逆转录建库到高通量测序与数据分析。</figcaption>
+</figure>
+</div>
+<p>图1.2：RNA-seq 实验全流程。来源：Wikipedia, RNA-Seq。</p>
 <hr>
 </section>
 </section>
-<section id="链方向的生物信息学确认" class="level2" data-number="21.4">
-<h2 data-number="21.4" class="anchored" data-anchor-id="链方向的生物信息学确认"><span class="header-section-number">21.4</span> 链方向的生物信息学确认</h2>
-<p>在开始比对前，必须确认文库的链特异性方向，因为后续定量步骤（featureCounts 的 <code>-s</code> 参数、Salmon 的 <code>--libType</code> 参数）需要明确指定。错误的链方向设置会导致约 50% 的 reads 被丢弃或错误计数。</p>
-<p><strong>推荐工具：RSeQC 的 infer_experiment.py</strong></p>
-<p>该工具从比对的 BAM 文件中随机抽取读段，与参考注释中基因的转录方向进行对比，统计 read 方向与基因注释一致和不一致的比例：</p>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb1"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Install RSeQC</span></span>
-<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="ex">pip</span> install RSeQC</span>
-<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a><span class="co"># Download reference BED file (gene annotation in BED12 format)</span></span>
-<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a><span class="co"># Convert GTF to BED12 using gtfToGenePred + genePredToBed</span></span>
-<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a><span class="ex">gtfToGenePred</span> Homo_sapiens.GRCh38.109.gtf stdout <span class="kw">|</span> <span class="dt">\</span></span>
-<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a>  <span class="ex">genePredToBed</span> stdin annotation.bed</span>
-<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a><span class="co"># Infer experiment strand</span></span>
-<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a><span class="ex">infer_experiment.py</span> <span class="at">-r</span> annotation.bed <span class="at">-i</span> sample_sorted.bam <span class="at">-s</span> 200000</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-<p><strong>典型输出解读</strong>：</p>
-<pre><code>This is PairEnd Data
-Fraction of reads failed to determine: 0.0250
-Fraction of reads explained by "1++,1--,2+-,2-+": 0.0368  # RF: antisense
-Fraction of reads explained by "1+-,1-+,2++,2--": 0.9382  # FR: sense</code></pre>
-<p>上述结果表明该样本为 <strong>FR-stranded</strong>（约 94% reads 与 mRNA 同向），即 read 1 与 mRNA 同向，对应 featureCounts 的 <code>-s 1</code> 参数。</p>
+<section id="关于-airway-数据集" class="level2" data-number="21.5">
+<h2 data-number="21.5" class="anchored" data-anchor-id="关于-airway-数据集"><span class="header-section-number">21.5</span> 关于 airway 数据集</h2>
+<p>本教材使用的教学数据集来自 Himes et al.（2014）对人类<strong>气道平滑肌细胞</strong>（airway smooth muscle cells）的 RNA-seq 研究。实验采用地塞米松（dexamethasone）处理 vs 对照的两因子设计，共 4 个捐赠者细胞系（N61311、N052611、N080611、N061011），每个细胞系各提供一对 untreated/treated 样本。该数据集以 Bioconductor 包 <code>airway</code> 的形式广泛用于 DESeq2 教程，SRA 原始数据登录号为 SRR1039508–SRR1039521（8 个双端样本），更完整的 SRA 研究还包含 SRR1039509–SRR1039517 中的单端样本，共 10 个。</p>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 25%">
+<col style="width: 25%">
+<col style="width: 25%">
+<col style="width: 25%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>样本 ID</th>
+<th>处理</th>
+<th>测序类型</th>
+<th>1M 教学子集</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>SRR1039508</td>
+<td>untreated</td>
+<td>PE</td>
+<td><code>SRR1039508_1_1M.fastq.gz</code> / <code>_2_1M</code></td>
+</tr>
+<tr class="even">
+<td>SRR1039509</td>
+<td>untreated</td>
+<td>SE</td>
+<td><code>SRR1039509_1M.fastq.gz</code></td>
+</tr>
+<tr class="odd">
+<td>SRR1039510</td>
+<td>untreated</td>
+<td>PE</td>
+<td><code>SRR1039510_1_1M.fastq.gz</code> / <code>_2_1M</code></td>
+</tr>
+<tr class="even">
+<td>SRR1039511</td>
+<td>untreated</td>
+<td>SE</td>
+<td><code>SRR1039511_1M.fastq.gz</code></td>
+</tr>
+<tr class="odd">
+<td>SRR1039512</td>
+<td>untreated</td>
+<td>PE</td>
+<td><code>SRR1039512_1_1M.fastq.gz</code> / <code>_2_1M</code></td>
+</tr>
+<tr class="even">
+<td>SRR1039513</td>
+<td>untreated</td>
+<td>SE</td>
+<td><code>SRR1039513_1M.fastq.gz</code></td>
+</tr>
+<tr class="odd">
+<td>SRR1039514</td>
+<td>treated (dex)</td>
+<td>PE</td>
+<td><code>SRR1039514_1_1M.fastq.gz</code> / <code>_2_1M</code></td>
+</tr>
+<tr class="even">
+<td>SRR1039515</td>
+<td>treated (dex)</td>
+<td>SE</td>
+<td><code>SRR1039515_1M.fastq.gz</code></td>
+</tr>
+<tr class="odd">
+<td>SRR1039516</td>
+<td>treated (dex)</td>
+<td>PE</td>
+<td><code>SRR1039516_1_1M.fastq.gz</code> / <code>_2_1M</code></td>
+</tr>
+<tr class="even">
+<td>SRR1039517</td>
+<td>treated (dex)</td>
+<td>SE</td>
+<td><code>SRR1039517_1M.fastq.gz</code></td>
+</tr>
+</tbody>
+</table>
 <div class="warning">
-<p><strong>常见错误：</strong> 不同测序平台和文库制备试剂盒对应不同的链方向编码。Illumina TruSeq Stranded mRNA 通常为 RF（<code>-s 2</code>），而某些文库为 FR（<code>-s 1</code>）。务必对每批数据独立确认，不要依赖试剂盒说明书假设。</p>
+<p><strong>注意：</strong> 该数据集混合了单端（SE）与双端（PE）样本。质控阶段对全部 10 个样本运行 FastQC 和 fastp；差异表达分析（DESeq2）阶段应仅使用双端样本（SRR1039508、SRR1039510、SRR1039512、SRR1039514、SRR1039516），或在线性模型中将测序类型作为协变量处理。</p>
 </div>
 <hr>
 </section>
-<section id="原始数据质量控制" class="level2" data-number="21.5">
-<h2 data-number="21.5" class="anchored" data-anchor-id="原始数据质量控制"><span class="header-section-number">21.5</span> 原始数据质量控制</h2>
-<section id="fastqc单样本质量评估" class="level3" data-number="21.5.1">
-<h3 data-number="21.5.1" class="anchored" data-anchor-id="fastqc单样本质量评估"><span class="header-section-number">21.5.1</span> FastQC：单样本质量评估</h3>
-<p>FastQC 是 RNA-seq 质控的标准起点，对 FASTQ 文件执行 10 余项统计检测。以下是 RNA-seq 数据最关键的六个模块：</p>
-<p><strong>1. Per Base Sequence Quality</strong></p>
-<p>展示每个循环（cycle）位置上碱基质量分数的箱形图分布。RNA-seq 与 DNA-seq 的正常模式相同：read 末端（3’ 端）质量通常低于 5’ 端，这是信号强度随测序循环递减的结果。</p>
+<section id="fastq-文件格式详解" class="level2" data-number="21.6">
+<h2 data-number="21.6" class="anchored" data-anchor-id="fastq-文件格式详解"><span class="header-section-number">21.6</span> FASTQ 文件格式详解</h2>
+<p>在进行任何质控或比对分析前，必须理解 FASTQ 文件的基本结构。FASTQ 是 RNA-seq 原始数据的通用存储格式，每条 read 由<strong>严格的四行</strong>组成：</p>
+<pre><code>@SRR1039508.1 1/1
+GATCGGAAGAGCACACGTCTGAACTCCAGTCACATCACGATCTCGTATGCCGTCTTCTGCTTGAAAAAAAAAA
++
+JJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJ</code></pre>
 <ul>
-<li>绿色区域（Q ≥ 28）：合格；</li>
-<li>黄色区域（20 ≤ Q &lt; 28）：边界；</li>
-<li>红色区域（Q &lt; 20）：不合格，提示需要截短。</li>
+<li><strong>第 1 行</strong>：以 <code>@</code> 开头的 read 标识符，包含样本 ID、read 编号及测序仪信息；</li>
+<li><strong>第 2 行</strong>：碱基序列（A/T/C/G/N），长度即 read 长度；</li>
+<li><strong>第 3 行</strong>：固定为 <code>+</code>，可重复第 1 行标识符（现代数据通常省略）；</li>
+<li><strong>第 4 行</strong>：与第 2 行等长的质量字符串，每个字符对应一个碱基的 Phred 质量分数。</li>
 </ul>
-<p><strong>2. Per Tile Sequence Quality</strong>（仅 Illumina）</p>
-<p>显示流动槽（Flow Cell）上各 Tile 位置的质量。异常的 Tile 图案（蓝色代表高质量，橙/红代表低质量）提示测序过程中的物理问题（气泡、污染、激光问题），通常无法通过过滤解决。</p>
-<p><strong>3. Per Sequence GC Content</strong></p>
-<p>正常 RNA-seq 数据应呈现与物种基因组 GC 含量一致的单峰正态分布。<strong>RNA-seq 特有的异常模式</strong>：</p>
-<ul>
-<li><strong>双峰或宽分布</strong>：提示 rRNA 污染（rRNA 的 GC 含量与 mRNA 显著不同）或样本混合；</li>
-<li><strong>窄高峰偏移</strong>：提示 Adapter 二聚体（Adapter dimer）污染，通常位于 GC 约 50% 的位置。</li>
-</ul>
-<p><strong>4. Sequence Duplication Levels</strong></p>
-<p>显示各重复度级别的 reads 比例。RNA-seq 数据天然存在较高的重复率，因为高表达基因会产生大量相同序列的 cDNA，这与 DNA 测序中重复暗示 PCR 扩增偏差的情形<strong>不同</strong>。因此，<strong>RNA-seq 不建议对重复 reads 进行常规去除</strong>（除非有 UMI 标记）。FastQC 的 Duplicate Levels 模块对 RNA-seq 通常显示 WARN 或 FAIL，可忽略。</p>
-<p><strong>5. Overrepresented Sequences</strong></p>
-<p>列出出现频率超过 0.1% 的序列及其可能来源。需要关注的异常：</p>
-<ul>
-<li>未被去除的 Illumina Universal Adapter 序列（<code>AGATCGGAAGAGC...</code>）；</li>
-<li>poly-A 或 poly-T 序列（提示 Read-through 发生）；</li>
-<li>特定基因的 3’ 端序列（严重 3’ 偏差时高表达基因的 3’ 末端大量重复）。</li>
-</ul>
-<p><strong>6. Adapter Content</strong></p>
-<p>直接检测各循环位置上 Adapter 序列的比例。若在 read 末端 20–30 bp 处出现 Adapter 信号，说明 Insert Size 小于 read 长度，发生了 Read-through，需要进行 Adapter 修剪。</p>
-</section>
-<section id="fastpadapter-修剪与质量过滤" class="level3" data-number="21.5.2">
-<h3 data-number="21.5.2" class="anchored" data-anchor-id="fastpadapter-修剪与质量过滤"><span class="header-section-number">21.5.2</span> fastp：Adapter 修剪与质量过滤</h3>
-<p>fastp 是目前速度最快、功能最全面的 FASTQ 预处理工具，集 Adapter 检测、质量过滤、低复杂度过滤于一体，并输出内置 HTML 质控报告。</p>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb3"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="co"># fastp for paired-end RNA-seq (TruSeq Stranded mRNA)</span></span>
-<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="ex">fastp</span> <span class="dt">\</span></span>
-<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a>  <span class="at">--in1</span> SRR1039508_1.fastq.gz <span class="dt">\</span></span>
-<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a>  <span class="at">--in2</span> SRR1039508_2.fastq.gz <span class="dt">\</span></span>
-<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a>  <span class="at">--out1</span> SRR1039508_1_trimmed.fastq.gz <span class="dt">\</span></span>
-<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a>  <span class="at">--out2</span> SRR1039508_2_trimmed.fastq.gz <span class="dt">\</span></span>
-<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a>  <span class="at">--json</span> SRR1039508_fastp.json <span class="dt">\</span></span>
-<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a>  <span class="at">--html</span> SRR1039508_fastp.html <span class="dt">\</span></span>
-<span id="cb3-9"><a href="#cb3-9" aria-hidden="true" tabindex="-1"></a>  <span class="at">--detect_adapter_for_pe</span> <span class="dt">\</span></span>
-<span id="cb3-10"><a href="#cb3-10" aria-hidden="true" tabindex="-1"></a>  <span class="at">--trim_poly_x</span> <span class="dt">\</span></span>
-<span id="cb3-11"><a href="#cb3-11" aria-hidden="true" tabindex="-1"></a>  <span class="at">--qualified_quality_phred</span> 20 <span class="dt">\</span></span>
-<span id="cb3-12"><a href="#cb3-12" aria-hidden="true" tabindex="-1"></a>  <span class="at">--length_required</span> 36 <span class="dt">\</span></span>
-<span id="cb3-13"><a href="#cb3-13" aria-hidden="true" tabindex="-1"></a>  <span class="at">--thread</span> 8</span>
-<span id="cb3-14"><a href="#cb3-14" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb3-15"><a href="#cb3-15" aria-hidden="true" tabindex="-1"></a><span class="co"># Key parameters explained:</span></span>
-<span id="cb3-16"><a href="#cb3-16" aria-hidden="true" tabindex="-1"></a><span class="co"># --detect_adapter_for_pe  : auto-detect adapter sequences for PE data</span></span>
-<span id="cb3-17"><a href="#cb3-17" aria-hidden="true" tabindex="-1"></a><span class="co"># --trim_poly_x            : trim poly-A/T/G/C tails (RNA-seq specific)</span></span>
-<span id="cb3-18"><a href="#cb3-18" aria-hidden="true" tabindex="-1"></a><span class="co"># --qualified_quality_phred: minimum base quality threshold (Q20)</span></span>
-<span id="cb3-19"><a href="#cb3-19" aria-hidden="true" tabindex="-1"></a><span class="co"># --length_required        : discard reads shorter than 36 bp after trimming</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-<p><strong>参数选择逻辑</strong>：</p>
-<ul>
-<li><code>--detect_adapter_for_pe</code>：自动检测时 fastp 会从数据中推断接头序列，适合不确定接头类型的情况；若已知接头（如 Illumina TruSeq：<code>AGATCGGAAGAGCACACGTCTGAAC</code>），可用 <code>--adapter_sequence</code> 明确指定，速度更快且更可靠；</li>
-<li><code>--trim_poly_x</code>：去除 read 末端的 poly-A/T 尾，这在 RNA-seq 中尤为重要；</li>
-<li><code>--qualified_quality_phred 20</code>：去除质量低于 Q20 的碱基，对应错误率 1%；</li>
-<li><code>--length_required 36</code>：修剪后过短的 reads 对比对没有贡献，反而增加多比对（multimapping）风险。</li>
-</ul>
-<div class="info">
-<p><strong>黄金法则：先质控，后比对。</strong> 始终在 fastp 修剪后再次运行 FastQC，确认质控效果。FastQC-fastp-FastQC 的三步流程是 RNA-seq 质控的标准操作规程（SOP）。</p>
-</div>
-<hr>
-</section>
-</section>
-<section id="转录组层面质控超越碱基质量" class="level2" data-number="21.6">
-<h2 data-number="21.6" class="anchored" data-anchor-id="转录组层面质控超越碱基质量"><span class="header-section-number">21.6</span> 转录组层面质控：超越碱基质量</h2>
-<p>FastQC 只反映读段本身的质量，而转录组层面的质控需要将 reads 与参考基因组比对后才能评估。以下指标在 RNA-seq 中尤为重要：</p>
-<section id="rseqc转录本覆盖均匀性" class="level3" data-number="21.6.1">
-<h3 data-number="21.6.1" class="anchored" data-anchor-id="rseqc转录本覆盖均匀性"><span class="header-section-number">21.6.1</span> RSeQC：转录本覆盖均匀性</h3>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb4"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Read distribution across genomic features</span></span>
-<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a><span class="ex">read_distribution.py</span> <span class="at">-r</span> annotation.bed <span class="at">-i</span> sample_sorted.bam</span>
-<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a><span class="co"># Expected output (poly-A enriched library):</span></span>
-<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a><span class="co"># Total Reads                   20,547,893</span></span>
-<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a><span class="co"># Total Tags                    21,034,510</span></span>
-<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a><span class="co"># CDS_Exons                    17,234,102  (81.9%)  &lt;-- should be majority</span></span>
-<span id="cb4-8"><a href="#cb4-8" aria-hidden="true" tabindex="-1"></a><span class="co"># 5'UTR_Exons                   1,024,391   (4.9%)</span></span>
-<span id="cb4-9"><a href="#cb4-9" aria-hidden="true" tabindex="-1"></a><span class="co"># 3'UTR_Exons                   1,887,234   (9.0%)</span></span>
-<span id="cb4-10"><a href="#cb4-10" aria-hidden="true" tabindex="-1"></a><span class="co"># Introns                         789,342   (3.8%)</span></span>
-<span id="cb4-11"><a href="#cb4-11" aria-hidden="true" tabindex="-1"></a><span class="co"># Intergenic                      99,441    (0.5%)</span></span>
-<span id="cb4-12"><a href="#cb4-12" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb4-13"><a href="#cb4-13" aria-hidden="true" tabindex="-1"></a><span class="co"># 3' bias assessment</span></span>
-<span id="cb4-14"><a href="#cb4-14" aria-hidden="true" tabindex="-1"></a><span class="ex">geneBody_coverage.py</span> <span class="at">-r</span> annotation.bed <span class="dt">\</span></span>
-<span id="cb4-15"><a href="#cb4-15" aria-hidden="true" tabindex="-1"></a>  <span class="at">-i</span> sample1.bam,sample2.bam,sample3.bam <span class="dt">\</span></span>
-<span id="cb4-16"><a href="#cb4-16" aria-hidden="true" tabindex="-1"></a>  <span class="at">-o</span> coverage_output</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-<p><code>geneBody_coverage.py</code> 将转录本从 5’ 端（0%）到 3’ 端（100%）归一化，绘制覆盖度曲线。正常 poly-A 富集样本呈现轻微的 3’ 端升高；若 5’ 端覆盖度极低（RNA 降解），说明样本质量差，下游分析需谨慎。</p>
-</section>
-<section id="multiqc多样本汇总" class="level3" data-number="21.6.2">
-<h3 data-number="21.6.2" class="anchored" data-anchor-id="multiqc多样本汇总"><span class="header-section-number">21.6.2</span> MultiQC：多样本汇总</h3>
-<p>MultiQC 自动扫描当前目录及子目录中的 FastQC、STAR、featureCounts、Salmon 等工具的输出文件，生成多样本汇总报告：</p>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb5"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Run MultiQC on all output files in current directory</span></span>
-<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a><span class="ex">multiqc</span> . <span class="at">--outdir</span> multiqc_report <span class="at">--filename</span> multiqc_report</span>
-<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a><span class="co"># Expected output: multiqc_report.html</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<section id="phred33-编码" class="level3" data-number="21.6.1">
+<h3 data-number="21.6.1" class="anchored" data-anchor-id="phred33-编码"><span class="header-section-number">21.6.1</span> Phred+33 编码</h3>
+<p>质量字符串采用 <strong>Phred+33 编码</strong>（Sanger 编码，自 Illumina 1.8+ 起为通用标准）：</p>
+<p><span class="math display">\[Q_{\text{ASCII}} = Q + 33\]</span></p>
+<p>例如，字符 <code>J</code> 的 ASCII 码为 74，对应 <span class="math inline">\(Q = 74 - 33 = 41\)</span>，即错误率约为 <span class="math inline">\(10^{-4.1} \approx 0.008\%\)</span>。字符 <code>!</code>（ASCII 33）对应 <span class="math inline">\(Q = 0\)</span>，代表完全不可信的碱基（Phred 分数的完整数学推导参见本专题”RNA 完整性与样本质量评级”章节）。</p>
 <div class="tip">
-<p><strong>MultiQC 使用建议：</strong> 在比对和定量完成后，再次在包含所有输出目录的父目录中运行 MultiQC，生成从质控到定量全流程的综合报告，便于发现样本间的系统性差异（如某几个样本比对率显著偏低、特定样本的 GC 分布偏移等）。</p>
+<p><strong>快速估算技巧：</strong> 在 FASTQ 质量字符串中，<code>I</code> 对应 Q40（准确率 99.99%），<code>5</code> 对应 Q20（准确率 99%），<code>+</code> 对应 Q10（准确率 90%）。凡出现大量 <code>!</code> 或 <code>"</code> 字符的 read，几乎可判定为低质量序列。</p>
 </div>
+</section>
+<section id="压缩与文件大小" class="level3" data-number="21.6.2">
+<h3 data-number="21.6.2" class="anchored" data-anchor-id="压缩与文件大小"><span class="header-section-number">21.6.2</span> 压缩与文件大小</h3>
+<p>原始 FASTQ 文件极大：airway 数据集单个样本约 3–5 GB（未压缩）。实际存储和传输均使用 <strong>gzip 压缩</strong>（<code>.fastq.gz</code>），压缩比约 4:1，使文件缩减至约 1 GB。所有主流工具（FastQC、fastp、STAR、HISAT2）均可直接处理 <code>.fastq.gz</code> 格式，无需解压。</p>
 <hr>
 </section>
 </section>
-<section id="实践pasilla-数据集质控流程" class="level2" data-number="21.7">
-<h2 data-number="21.7" class="anchored" data-anchor-id="实践pasilla-数据集质控流程"><span class="header-section-number">21.7</span> 实践：pasilla 数据集质控流程</h2>
-<p>以下代码演示对 pasilla 数据集中一个样本（SRR1039508）的完整质控流程。实际分析中应对所有 10 个样本循环执行。</p>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb6"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="co"># === Environment setup ===</span></span>
-<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a><span class="co"># Tools required: sra-tools, fastqc, fastp, multiqc, rseqc</span></span>
-<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a><span class="co"># Activate conda environment with all tools installed</span></span>
-<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a><span class="ex">conda</span> activate rnaseq-env</span>
-<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a><span class="co"># === Step 1: Download pasilla dataset ===</span></span>
-<span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a><span class="co"># Use ENA FTP for faster download (preferred over NCBI SRA)</span></span>
-<span id="cb6-8"><a href="#cb6-8" aria-hidden="true" tabindex="-1"></a><span class="co"># pasilla dataset: 8 samples (4 treated + 4 untreated)</span></span>
-<span id="cb6-9"><a href="#cb6-9" aria-hidden="true" tabindex="-1"></a><span class="co"># SRR1039508 = untreated sample 1 (GSM1275862)</span></span>
-<span id="cb6-10"><a href="#cb6-10" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb6-11"><a href="#cb6-11" aria-hidden="true" tabindex="-1"></a><span class="fu">mkdir</span> <span class="at">-p</span> data/raw data/trimmed data/qc/fastqc data/qc/fastp</span>
-<span id="cb6-12"><a href="#cb6-12" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb6-13"><a href="#cb6-13" aria-hidden="true" tabindex="-1"></a><span class="co"># Download via ENA FTP</span></span>
-<span id="cb6-14"><a href="#cb6-14" aria-hidden="true" tabindex="-1"></a><span class="fu">wget</span> <span class="at">-P</span> data/raw <span class="dt">\</span></span>
-<span id="cb6-15"><a href="#cb6-15" aria-hidden="true" tabindex="-1"></a>  ftp://ftp.sra.ebi.ac.uk/vol1/fastq/SRR103/008/SRR1039508/SRR1039508_1.fastq.gz <span class="dt">\</span></span>
-<span id="cb6-16"><a href="#cb6-16" aria-hidden="true" tabindex="-1"></a>  ftp://ftp.sra.ebi.ac.uk/vol1/fastq/SRR103/008/SRR1039508/SRR1039508_2.fastq.gz</span>
-<span id="cb6-17"><a href="#cb6-17" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb6-18"><a href="#cb6-18" aria-hidden="true" tabindex="-1"></a><span class="co"># === Step 2: Pre-trimming QC ===</span></span>
-<span id="cb6-19"><a href="#cb6-19" aria-hidden="true" tabindex="-1"></a><span class="ex">fastqc</span> <span class="dt">\</span></span>
-<span id="cb6-20"><a href="#cb6-20" aria-hidden="true" tabindex="-1"></a>  data/raw/SRR1039508_1.fastq.gz <span class="dt">\</span></span>
-<span id="cb6-21"><a href="#cb6-21" aria-hidden="true" tabindex="-1"></a>  data/raw/SRR1039508_2.fastq.gz <span class="dt">\</span></span>
-<span id="cb6-22"><a href="#cb6-22" aria-hidden="true" tabindex="-1"></a>  <span class="at">--outdir</span> data/qc/fastqc <span class="dt">\</span></span>
-<span id="cb6-23"><a href="#cb6-23" aria-hidden="true" tabindex="-1"></a>  <span class="at">--threads</span> 8</span>
-<span id="cb6-24"><a href="#cb6-24" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb6-25"><a href="#cb6-25" aria-hidden="true" tabindex="-1"></a><span class="co"># === Step 3: Adapter trimming with fastp ===</span></span>
-<span id="cb6-26"><a href="#cb6-26" aria-hidden="true" tabindex="-1"></a><span class="ex">fastp</span> <span class="dt">\</span></span>
-<span id="cb6-27"><a href="#cb6-27" aria-hidden="true" tabindex="-1"></a>  <span class="at">--in1</span>  data/raw/SRR1039508_1.fastq.gz <span class="dt">\</span></span>
-<span id="cb6-28"><a href="#cb6-28" aria-hidden="true" tabindex="-1"></a>  <span class="at">--in2</span>  data/raw/SRR1039508_2.fastq.gz <span class="dt">\</span></span>
-<span id="cb6-29"><a href="#cb6-29" aria-hidden="true" tabindex="-1"></a>  <span class="at">--out1</span> data/trimmed/SRR1039508_1.fastq.gz <span class="dt">\</span></span>
-<span id="cb6-30"><a href="#cb6-30" aria-hidden="true" tabindex="-1"></a>  <span class="at">--out2</span> data/trimmed/SRR1039508_2.fastq.gz <span class="dt">\</span></span>
-<span id="cb6-31"><a href="#cb6-31" aria-hidden="true" tabindex="-1"></a>  <span class="at">--json</span> data/qc/fastp/SRR1039508_fastp.json <span class="dt">\</span></span>
-<span id="cb6-32"><a href="#cb6-32" aria-hidden="true" tabindex="-1"></a>  <span class="at">--html</span> data/qc/fastp/SRR1039508_fastp.html <span class="dt">\</span></span>
-<span id="cb6-33"><a href="#cb6-33" aria-hidden="true" tabindex="-1"></a>  <span class="at">--detect_adapter_for_pe</span> <span class="dt">\</span></span>
-<span id="cb6-34"><a href="#cb6-34" aria-hidden="true" tabindex="-1"></a>  <span class="at">--trim_poly_x</span> <span class="dt">\</span></span>
-<span id="cb6-35"><a href="#cb6-35" aria-hidden="true" tabindex="-1"></a>  <span class="at">--qualified_quality_phred</span> 20 <span class="dt">\</span></span>
-<span id="cb6-36"><a href="#cb6-36" aria-hidden="true" tabindex="-1"></a>  <span class="at">--length_required</span> 36 <span class="dt">\</span></span>
-<span id="cb6-37"><a href="#cb6-37" aria-hidden="true" tabindex="-1"></a>  <span class="at">--thread</span> 8</span>
-<span id="cb6-38"><a href="#cb6-38" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb6-39"><a href="#cb6-39" aria-hidden="true" tabindex="-1"></a><span class="co"># === Step 4: Post-trimming QC ===</span></span>
-<span id="cb6-40"><a href="#cb6-40" aria-hidden="true" tabindex="-1"></a><span class="ex">fastqc</span> <span class="dt">\</span></span>
-<span id="cb6-41"><a href="#cb6-41" aria-hidden="true" tabindex="-1"></a>  data/trimmed/SRR1039508_1.fastq.gz <span class="dt">\</span></span>
-<span id="cb6-42"><a href="#cb6-42" aria-hidden="true" tabindex="-1"></a>  data/trimmed/SRR1039508_2.fastq.gz <span class="dt">\</span></span>
-<span id="cb6-43"><a href="#cb6-43" aria-hidden="true" tabindex="-1"></a>  <span class="at">--outdir</span> data/qc/fastqc/post_trim <span class="dt">\</span></span>
-<span id="cb6-44"><a href="#cb6-44" aria-hidden="true" tabindex="-1"></a>  <span class="at">--threads</span> 8</span>
-<span id="cb6-45"><a href="#cb6-45" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb6-46"><a href="#cb6-46" aria-hidden="true" tabindex="-1"></a><span class="co"># === Step 5: Generate MultiQC report ===</span></span>
-<span id="cb6-47"><a href="#cb6-47" aria-hidden="true" tabindex="-1"></a><span class="ex">multiqc</span> data/qc/ <span class="dt">\</span></span>
-<span id="cb6-48"><a href="#cb6-48" aria-hidden="true" tabindex="-1"></a>  <span class="at">--outdir</span> data/qc/multiqc <span class="dt">\</span></span>
-<span id="cb6-49"><a href="#cb6-49" aria-hidden="true" tabindex="-1"></a>  <span class="at">--filename</span> pasilla_qc_report</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-<p>完成后，打开 <code>data/qc/multiqc/pasilla_qc_report.html</code>，重点检查以下几点：</p>
-<ol type="1">
-<li><strong>Adapter Content</strong>：修剪后所有样本的接头含量应降至接近 0%；</li>
-<li><strong>Sequence Length Distribution</strong>：正常修剪后应在 36–150 bp 范围内分布，peak 在 150 bp；</li>
-<li><strong>Per Sequence GC Content</strong>：10 个样本的 GC 分布应高度一致，偏离的样本提示潜在污染或批次问题。</li>
-</ol>
-<hr>
-</section>
-<section id="rna-完整性与样本质量评级" class="level2" data-number="21.8">
-<h2 data-number="21.8" class="anchored" data-anchor-id="rna-完整性与样本质量评级"><span class="header-section-number">21.8</span> RNA 完整性与样本质量评级</h2>
+<section id="rna-完整性与样本质量评级" class="level2" data-number="21.7">
+<h2 data-number="21.7" class="anchored" data-anchor-id="rna-完整性与样本质量评级"><span class="header-section-number">21.7</span> RNA 完整性与样本质量评级</h2>
 <p>在送测之前，RNA 样本的完整性（Integrity）是决定数据质量的关键先决条件。降解的 RNA 在 poly-A 富集建库时会产生严重的 3’ 端偏差，甚至导致整个实验失败。</p>
-<section id="rna-完整性评分rin" class="level3" data-number="21.8.1">
-<h3 data-number="21.8.1" class="anchored" data-anchor-id="rna-完整性评分rin"><span class="header-section-number">21.8.1</span> RNA 完整性评分（RIN）</h3>
+<section id="rna-完整性评分rin" class="level3" data-number="21.7.1">
+<h3 data-number="21.7.1" class="anchored" data-anchor-id="rna-完整性评分rin"><span class="header-section-number">21.7.1</span> RNA 完整性评分（RIN）</h3>
 <p>RNA 完整性数字（RNA Integrity Number, RIN）是由 Agilent Bioanalyzer 或 Fragment Analyzer 根据 28S/18S rRNA 峰比值与降解特征自动计算的 1–10 评分：</p>
 <table class="caption-top table">
 <thead>
@@ -952,8 +932,8 @@ Fraction of reads explained by "1+-,1-+,2++,2--": 0.9382  # FR: sense</code></pr
 <p><strong>RIN 的局限性：</strong> RIN 基于 rRNA 完整性推断 mRNA 完整性，但两者降解速率不同。植物样本（叶绿体 rRNA 比例高）和 FFPE（福尔马林固定石蜡包埋）样本的 RIN 解读需要额外谨慎。FFPE 样本通常 RIN &lt; 3，但用 DV200（&gt; 200 nt 片段的比例）评估更适合。</p>
 </div>
 </section>
-<section id="phred-质量分数的数学基础" class="level3" data-number="21.8.2">
-<h3 data-number="21.8.2" class="anchored" data-anchor-id="phred-质量分数的数学基础"><span class="header-section-number">21.8.2</span> Phred 质量分数的数学基础</h3>
+<section id="phred-质量分数的数学基础" class="level3" data-number="21.7.2">
+<h3 data-number="21.7.2" class="anchored" data-anchor-id="phred-质量分数的数学基础"><span class="header-section-number">21.7.2</span> Phred 质量分数的数学基础</h3>
 <p>Illumina 测序仪为每个碱基分配一个 Phred 质量分数 <span class="math inline">\(Q\)</span>，定义为：</p>
 <p><span class="math display">\[Q = -10 \log_{10} P_{\text{error}}\]</span></p>
 <p>其中 <span class="math inline">\(P_{\text{error}}\)</span> 是该碱基被错误识别的概率。常用对应关系：</p>
@@ -992,14 +972,298 @@ Fraction of reads explained by "1+-,1-+,2++,2--": 0.9382  # FR: sense</code></pr
 <hr>
 </section>
 </section>
-<section id="批次效应的早期检测" class="level2" data-number="21.9">
-<h2 data-number="21.9" class="anchored" data-anchor-id="批次效应的早期检测"><span class="header-section-number">21.9</span> 批次效应的早期检测</h2>
+<section id="原始数据质量控制" class="level2" data-number="21.8">
+<h2 data-number="21.8" class="anchored" data-anchor-id="原始数据质量控制"><span class="header-section-number">21.8</span> 原始数据质量控制</h2>
+<section id="fastqc单样本质量评估" class="level3" data-number="21.8.1">
+<h3 data-number="21.8.1" class="anchored" data-anchor-id="fastqc单样本质量评估"><span class="header-section-number">21.8.1</span> FastQC：单样本质量评估</h3>
+<p>FastQC 是 RNA-seq 质控的标准起点，对 FASTQ 文件执行 10 余项统计检测。以下是 RNA-seq 数据最关键的六个模块：</p>
+<p><strong>1. Per Base Sequence Quality</strong></p>
+<p>展示每个循环（cycle）位置上碱基质量分数的箱形图分布。RNA-seq 与 DNA-seq 的正常模式相同：read 末端（3’ 端）质量通常低于 5’ 端，这是信号强度随测序循环递减的结果。</p>
+<ul>
+<li>绿色区域（Q ≥ 28）：合格；</li>
+<li>黄色区域（20 ≤ Q &lt; 28）：边界；</li>
+<li>红色区域（Q &lt; 20）：不合格，提示需要截短。</li>
+</ul>
+<p><strong>2. Per Tile Sequence Quality</strong>（仅 Illumina）</p>
+<p>显示流动槽（Flow Cell）上各 Tile 位置的质量。异常的 Tile 图案（蓝色代表高质量，橙/红代表低质量）提示测序过程中的物理问题（气泡、污染、激光问题），通常无法通过过滤解决。</p>
+<p><strong>3. Per Sequence GC Content</strong></p>
+<p>正常 RNA-seq 数据应呈现与物种基因组 GC 含量一致的单峰正态分布。<strong>RNA-seq 特有的异常模式</strong>：</p>
+<ul>
+<li><strong>双峰或宽分布</strong>：提示 rRNA 污染（rRNA 的 GC 含量与 mRNA 显著不同）或样本混合；</li>
+<li><strong>窄高峰偏移</strong>：提示 Adapter 二聚体（Adapter dimer）污染，通常位于 GC 约 50% 的位置。</li>
+</ul>
+<p><strong>4. Sequence Duplication Levels</strong></p>
+<p>显示各重复度级别的 reads 比例。RNA-seq 数据天然存在较高的重复率，因为高表达基因会产生大量相同序列的 cDNA，这与 DNA 测序中重复暗示 PCR 扩增偏差的情形<strong>不同</strong>。因此，<strong>RNA-seq 不建议对重复 reads 进行常规去除</strong>（除非有 UMI 标记）。FastQC 的 Duplicate Levels 模块对 RNA-seq 通常显示 WARN 或 FAIL，可忽略。</p>
+<p><strong>5. Overrepresented Sequences</strong></p>
+<p>列出出现频率超过 0.1% 的序列及其可能来源。需要关注的异常：</p>
+<ul>
+<li>未被去除的 Illumina Universal Adapter 序列（<code>AGATCGGAAGAGC...</code>）；</li>
+<li>poly-A 或 poly-T 序列（提示 Read-through 发生）；</li>
+<li>特定基因的 3’ 端序列（严重 3’ 偏差时高表达基因的 3’ 末端大量重复）。</li>
+</ul>
+<p><strong>6. Adapter Content</strong></p>
+<p>直接检测各循环位置上 Adapter 序列的比例。若在 read 末端 20–30 bp 处出现 Adapter 信号，说明 Insert Size 小于 read 长度，发生了 Read-through，需要进行 Adapter 修剪。</p>
+</section>
+<section id="测序深度与读长实验设计关键参数" class="level3" data-number="21.8.2">
+<h3 data-number="21.8.2" class="anchored" data-anchor-id="测序深度与读长实验设计关键参数"><span class="header-section-number">21.8.2</span> 测序深度与读长：实验设计关键参数</h3>
+<p>在分析数据之前，需要了解实验设计本身的两个核心参数——<strong>测序深度</strong>（Sequencing Depth）和<strong>读长</strong>（Read Length），因为它们直接决定了数据的分析能力上限，也影响质控指标的解读方式。</p>
+<p><strong>测序深度</strong>指每个样本的 reads 总数。不同研究目标对深度的需求差异显著：</p>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 33%">
+<col style="width: 33%">
+<col style="width: 33%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>研究目标</th>
+<th>推荐深度（双端）</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>基因差异表达（高表达基因为主）</td>
+<td>20–30 M reads</td>
+<td>DESeq2/edgeR 标准分析</td>
+</tr>
+<tr class="even">
+<td>低表达基因与 lncRNA 检测</td>
+<td>50–80 M reads</td>
+<td>提高低丰度转录本的检测灵敏度</td>
+</tr>
+<tr class="odd">
+<td>可变剪接事件分析</td>
+<td>100–200 M reads</td>
+<td>覆盖度均匀性要求高</td>
+</tr>
+<tr class="even">
+<td>单细胞 RNA-seq（每细胞）</td>
+<td>5,000–20,000 reads</td>
+<td>远低于 bulk，但细胞数多</td>
+</tr>
+</tbody>
+</table>
+<p><strong>读长</strong>影响比对精度与可变剪接检测能力。75 bp 读长足以用于基因水平定量；150 bp 读长在覆盖转录本时信息量更大，对外显子跨越连接（exon-exon junction）的检测更准确，是目前 bulk RNA-seq 的主流选择。airway 数据集（Himes et al.&nbsp;2014）采用 75 bp 单端或双端设计，其读长限制意味着某些长外显子的可变剪接分析精度会低于 150 bp 数据。</p>
+<div class="note">
+<p><strong>深度饱和度检验：</strong> 实际项目中建议在大规模测序前进行<strong>测序深度饱和度分析（Rarefaction Analysis）</strong>：对同一样本以不同 reads 数进行下采样，观察检出基因数与差异基因数随深度的增长曲线，找到边际效益递减的拐点，即为最优测序深度。</p>
+</div>
+</section>
+<section id="fastpadapter-修剪与质量过滤" class="level3" data-number="21.8.3">
+<h3 data-number="21.8.3" class="anchored" data-anchor-id="fastpadapter-修剪与质量过滤"><span class="header-section-number">21.8.3</span> fastp：Adapter 修剪与质量过滤</h3>
+<p>fastp 是目前速度最快、功能最全面的 FASTQ 预处理工具，集 Adapter 检测、质量过滤、低复杂度过滤于一体，并输出内置 HTML 质控报告。</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb2"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="co"># fastp for paired-end RNA-seq — using 1M-read teaching subset</span></span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a><span class="co"># Input files are located in the local bio_example directory</span></span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a><span class="va">DATA</span><span class="op">=</span>/Users/angdong/Documents/bio_example/bulkRNA</span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a><span class="ex">fastp</span> <span class="dt">\</span></span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a>  <span class="at">--in1</span> <span class="va">${DATA}</span>/SRR1039508_1_1M.fastq.gz <span class="dt">\</span></span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a>  <span class="at">--in2</span> <span class="va">${DATA}</span>/SRR1039508_2_1M.fastq.gz <span class="dt">\</span></span>
+<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a>  <span class="at">--out1</span> SRR1039508_1_trimmed.fastq.gz <span class="dt">\</span></span>
+<span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a>  <span class="at">--out2</span> SRR1039508_2_trimmed.fastq.gz <span class="dt">\</span></span>
+<span id="cb2-10"><a href="#cb2-10" aria-hidden="true" tabindex="-1"></a>  <span class="at">--json</span> SRR1039508_fastp.json <span class="dt">\</span></span>
+<span id="cb2-11"><a href="#cb2-11" aria-hidden="true" tabindex="-1"></a>  <span class="at">--html</span> SRR1039508_fastp.html <span class="dt">\</span></span>
+<span id="cb2-12"><a href="#cb2-12" aria-hidden="true" tabindex="-1"></a>  <span class="at">--detect_adapter_for_pe</span> <span class="dt">\</span></span>
+<span id="cb2-13"><a href="#cb2-13" aria-hidden="true" tabindex="-1"></a>  <span class="at">--trim_poly_x</span> <span class="dt">\</span></span>
+<span id="cb2-14"><a href="#cb2-14" aria-hidden="true" tabindex="-1"></a>  <span class="at">--qualified_quality_phred</span> 20 <span class="dt">\</span></span>
+<span id="cb2-15"><a href="#cb2-15" aria-hidden="true" tabindex="-1"></a>  <span class="at">--length_required</span> 36 <span class="dt">\</span></span>
+<span id="cb2-16"><a href="#cb2-16" aria-hidden="true" tabindex="-1"></a>  <span class="at">--thread</span> 8</span>
+<span id="cb2-17"><a href="#cb2-17" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-18"><a href="#cb2-18" aria-hidden="true" tabindex="-1"></a><span class="co"># Key parameters explained:</span></span>
+<span id="cb2-19"><a href="#cb2-19" aria-hidden="true" tabindex="-1"></a><span class="co"># --detect_adapter_for_pe  : auto-detect adapter sequences for PE data</span></span>
+<span id="cb2-20"><a href="#cb2-20" aria-hidden="true" tabindex="-1"></a><span class="co"># --trim_poly_x            : trim poly-A/T/G/C tails (RNA-seq specific)</span></span>
+<span id="cb2-21"><a href="#cb2-21" aria-hidden="true" tabindex="-1"></a><span class="co"># --qualified_quality_phred: minimum base quality threshold (Q20)</span></span>
+<span id="cb2-22"><a href="#cb2-22" aria-hidden="true" tabindex="-1"></a><span class="co"># --length_required        : discard reads shorter than 36 bp after trimming</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><strong>参数选择逻辑</strong>：</p>
+<ul>
+<li><code>--detect_adapter_for_pe</code>：自动检测时 fastp 会从数据中推断接头序列，适合不确定接头类型的情况；若已知接头（如 Illumina TruSeq：<code>AGATCGGAAGAGCACACGTCTGAAC</code>），可用 <code>--adapter_sequence</code> 明确指定，速度更快且更可靠；</li>
+<li><code>--trim_poly_x</code>：去除 read 末端的 poly-A/T 尾，这在 RNA-seq 中尤为重要；</li>
+<li><code>--qualified_quality_phred 20</code>：去除质量低于 Q20 的碱基，对应错误率 1%；</li>
+<li><code>--length_required 36</code>：修剪后过短的 reads 对比对没有贡献，反而增加多比对（multimapping）风险。</li>
+</ul>
+<div class="info">
+<p><strong>黄金法则：先质控，后比对。</strong> 始终在 fastp 修剪后再次运行 FastQC，确认质控效果。FastQC-fastp-FastQC 的三步流程是 RNA-seq 质控的标准操作规程（SOP）。</p>
+</div>
+<hr>
+</section>
+</section>
+<section id="链方向的生物信息学确认" class="level2" data-number="21.9">
+<h2 data-number="21.9" class="anchored" data-anchor-id="链方向的生物信息学确认"><span class="header-section-number">21.9</span> 链方向的生物信息学确认</h2>
+<p>在开始比对前，必须确认文库的链特异性方向，因为后续定量步骤（featureCounts 的 <code>-s</code> 参数、Salmon 的 <code>--libType</code> 参数）需要明确指定。错误的链方向设置会导致约 50% 的 reads 被丢弃或错误计数。</p>
+<div class="note">
+<p><strong>概念辨析：链方向确认 ≠ 正式比对。</strong> 链方向确认是正式比对<strong>之前</strong>的一步预检工作，目的是确定文库的链方向参数，以供后续工具调用。其本质是对<strong>少量 reads（通常 1M 条）做一次临时比对</strong>，获得 BAM 文件供 infer_experiment.py 检测，检测完即可丢弃该 BAM。正式的全样本比对（用于计数与定量）在专题 1.2 中进行，规模完全不同。将链方向确认与正式比对混为同一步骤，会在概念上造成混乱。</p>
+</div>
+<p>推荐工具为 <strong>RSeQC 的 infer_experiment.py</strong>。该工具从比对后的 BAM 文件中随机抽取若干 reads，与参考注释中基因的转录方向比对，统计 read 方向与基因注释一致和不一致的比例，从而推断文库的链特异性。实践中只需对<strong>一个代表性样本</strong>完成此流程即可；若批次差异较大，可各抽一个样本分别确认。以下以 airway 数据集（SRR1039508，人类气道平滑肌细胞）为例演示。</p>
+<section id="步骤一环境准备与参考文件下载" class="level3" data-number="21.9.1">
+<h3 data-number="21.9.1" class="anchored" data-anchor-id="步骤一环境准备与参考文件下载"><span class="header-section-number">21.9.1</span> 步骤一：环境准备与参考文件下载</h3>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb3"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="co"># === Create conda environment ===</span></span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="ex">conda</span> create <span class="at">-n</span> rnaseq-env <span class="at">-c</span> bioconda <span class="at">-c</span> conda-forge <span class="dt">\</span></span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a>  hisat2 samtools rseqc ucsc-gtftogenepred ucsc-genepredtobed <span class="at">-y</span></span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a><span class="ex">conda</span> activate rnaseq-env</span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a><span class="co"># === Download pre-built HISAT2 index for GRCh38 ===</span></span>
+<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a><span class="co"># Source: HISAT2 official AWS bucket (~4.3 GB, genome-only index)</span></span>
+<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a><span class="co"># For RNA-seq with splice-site awareness, use grch38_snptran (~4.5 GB, recommended)</span></span>
+<span id="cb3-9"><a href="#cb3-9" aria-hidden="true" tabindex="-1"></a><span class="fu">mkdir</span> <span class="at">-p</span> ref</span>
+<span id="cb3-10"><a href="#cb3-10" aria-hidden="true" tabindex="-1"></a><span class="fu">wget</span> <span class="at">-c</span> https://genome-idx.s3.amazonaws.com/hisat/grch38_snptran.tar.gz <span class="dt">\</span></span>
+<span id="cb3-11"><a href="#cb3-11" aria-hidden="true" tabindex="-1"></a>  <span class="at">-O</span> ref/grch38_snptran.tar.gz</span>
+<span id="cb3-12"><a href="#cb3-12" aria-hidden="true" tabindex="-1"></a><span class="co"># Extracts to ref/grch38_snptran/; index prefix = ref/grch38_snptran/genome_snp_tran</span></span>
+<span id="cb3-13"><a href="#cb3-13" aria-hidden="true" tabindex="-1"></a><span class="fu">tar</span> <span class="at">-xzf</span> ref/grch38_snptran.tar.gz <span class="at">-C</span> ref/</span>
+<span id="cb3-14"><a href="#cb3-14" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-15"><a href="#cb3-15" aria-hidden="true" tabindex="-1"></a><span class="co"># === Download Ensembl GRCh38 GTF (release 109) ===</span></span>
+<span id="cb3-16"><a href="#cb3-16" aria-hidden="true" tabindex="-1"></a><span class="fu">wget</span> <span class="at">-c</span> https://ftp.ensembl.org/pub/release-109/gtf/homo_sapiens/Homo_sapiens.GRCh38.109.gtf.gz <span class="dt">\</span></span>
+<span id="cb3-17"><a href="#cb3-17" aria-hidden="true" tabindex="-1"></a>  <span class="at">-O</span> ref/GRCh38.109.gtf.gz</span>
+<span id="cb3-18"><a href="#cb3-18" aria-hidden="true" tabindex="-1"></a><span class="fu">gunzip</span> ref/GRCh38.109.gtf.gz</span>
+<span id="cb3-19"><a href="#cb3-19" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-20"><a href="#cb3-20" aria-hidden="true" tabindex="-1"></a><span class="co"># === Convert GTF to BED12 format (required by RSeQC) ===</span></span>
+<span id="cb3-21"><a href="#cb3-21" aria-hidden="true" tabindex="-1"></a><span class="ex">gtfToGenePred</span> <span class="at">-genePredExt</span> ref/GRCh38.109.gtf ref/GRCh38.109.genePred</span>
+<span id="cb3-22"><a href="#cb3-22" aria-hidden="true" tabindex="-1"></a><span class="ex">genePredToBed</span> ref/GRCh38.109.genePred ref/GRCh38.109.bed</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="note">
+<p><strong>关于参考基因组版本：</strong> airway 数据集（Himes et al.&nbsp;2014，SRR1039508–SRR1039517）为人类气道平滑肌细胞，使用 GRCh38（hg38）参考基因组。Ensembl release 109 与 GENCODE v43 对应相同的基因组序列，两者均可使用。此处统一使用 Ensembl 以保持与后续比对和定量步骤的一致性。</p>
+</div>
+</section>
+<section id="步骤二比对并生成-bam-文件" class="level3" data-number="21.9.2">
+<h3 data-number="21.9.2" class="anchored" data-anchor-id="步骤二比对并生成-bam-文件"><span class="header-section-number">21.9.2</span> 步骤二：比对并生成 BAM 文件</h3>
+<p>为节省时间，链方向确认仅需比对少量 reads（100 万条即足够）。以下命令从已下载的 SRR1039508 原始数据中截取前 100 万条 read pair 进行快速比对：</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb4"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="ex">conda</span> activate rnaseq-env   <span class="co"># samtools 1.23+ is required; must be in this env</span></span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a><span class="va">BAM_DIR</span><span class="op">=</span>/Users/angdong/Documents/bio_example/bulkRNA/bam</span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a><span class="fu">mkdir</span> <span class="at">-p</span> <span class="va">${BAM_DIR}</span></span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a><span class="co"># Align with HISAT2 (splice-aware aligner for RNA-seq)</span></span>
+<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a><span class="co"># Input: 1M-read teaching subsets (~50 MB each, pre-generated)</span></span>
+<span id="cb4-8"><a href="#cb4-8" aria-hidden="true" tabindex="-1"></a><span class="ex">hisat2</span> <span class="dt">\</span></span>
+<span id="cb4-9"><a href="#cb4-9" aria-hidden="true" tabindex="-1"></a>  <span class="at">-x</span> ref/grch38_snp_tran/genome_snp_tran <span class="dt">\</span></span>
+<span id="cb4-10"><a href="#cb4-10" aria-hidden="true" tabindex="-1"></a>  <span class="at">-1</span> /Users/angdong/Documents/bio_example/bulkRNA/SRR1039508_1_1M.fastq.gz <span class="dt">\</span></span>
+<span id="cb4-11"><a href="#cb4-11" aria-hidden="true" tabindex="-1"></a>  <span class="at">-2</span> /Users/angdong/Documents/bio_example/bulkRNA/SRR1039508_2_1M.fastq.gz <span class="dt">\</span></span>
+<span id="cb4-12"><a href="#cb4-12" aria-hidden="true" tabindex="-1"></a>  <span class="at">--dta</span> <span class="dt">\</span></span>
+<span id="cb4-13"><a href="#cb4-13" aria-hidden="true" tabindex="-1"></a>  <span class="at">--threads</span> 8 <span class="dt">\</span></span>
+<span id="cb4-14"><a href="#cb4-14" aria-hidden="true" tabindex="-1"></a>  <span class="at">-S</span> <span class="va">${BAM_DIR}</span>/SRR1039508_1M.sam</span>
+<span id="cb4-15"><a href="#cb4-15" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-16"><a href="#cb4-16" aria-hidden="true" tabindex="-1"></a><span class="co"># Sort SAM → sorted BAM, then index</span></span>
+<span id="cb4-17"><a href="#cb4-17" aria-hidden="true" tabindex="-1"></a><span class="ex">samtools</span> sort <span class="at">-@</span> 8 <span class="dt">\</span></span>
+<span id="cb4-18"><a href="#cb4-18" aria-hidden="true" tabindex="-1"></a>  /Users/angdong/Documents/bio_example/bulkRNA/bam/SRR1039508_1M.sam <span class="dt">\</span></span>
+<span id="cb4-19"><a href="#cb4-19" aria-hidden="true" tabindex="-1"></a>  <span class="at">-o</span> /Users/angdong/Documents/bio_example/bulkRNA/bam/SRR1039508_1M.sorted.bam</span>
+<span id="cb4-20"><a href="#cb4-20" aria-hidden="true" tabindex="-1"></a><span class="ex">samtools</span> index /Users/angdong/Documents/bio_example/bulkRNA/bam/SRR1039508_1M.sorted.bam</span>
+<span id="cb4-21"><a href="#cb4-21" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-22"><a href="#cb4-22" aria-hidden="true" tabindex="-1"></a><span class="co"># Clean up SAM to save space</span></span>
+<span id="cb4-23"><a href="#cb4-23" aria-hidden="true" tabindex="-1"></a><span class="fu">rm</span> /Users/angdong/Documents/bio_example/bulkRNA/bam/SRR1039508_1M.sam</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</section>
+<section id="步骤三运行-infer_experiment.py" class="level3" data-number="21.9.3">
+<h3 data-number="21.9.3" class="anchored" data-anchor-id="步骤三运行-infer_experiment.py"><span class="header-section-number">21.9.3</span> 步骤三：运行 infer_experiment.py</h3>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb5"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Infer strandedness from 200,000 randomly sampled read pairs</span></span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a><span class="ex">infer_experiment.py</span> <span class="dt">\</span></span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a>  <span class="at">-r</span> ref/GRCh38.109.bed <span class="dt">\</span></span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a>  <span class="at">-i</span> /Users/angdong/Documents/bio_example/bulkRNA/bam/SRR1039508_1M.sorted.bam <span class="dt">\</span></span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a>  <span class="at">-s</span> 200000</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><strong>SRR1039508 真实输出结果</strong>：</p>
+<pre><code>This is PairEnd Data
+Fraction of reads failed to determine: 0.1162
+Fraction of reads explained by "1++,1--,2+-,2-+": 0.4410
+Fraction of reads explained by "1+-,1-+,2++,2--": 0.4427</code></pre>
+<p>两个方向的比例均约为 0.44，接近 1:1，说明该数据集为<strong>非链特异性（unstranded）文库</strong>。“failed to determine”比例（11.6%）略高于典型值，这是因为本次仅使用 1M-read 教学子集比对，覆盖度有限；使用完整数据时该比例通常低于 5%。结论与 Himes et al.（2014）使用 Illumina TruSeq RNA Sample Prep Kit（标准非链特异性方案）的实验记录完全一致。下游分析应使用 featureCounts <code>-s 0</code> 或 Salmon <code>--libType IU</code>。</p>
+</section>
+<section id="链方向判读规则" class="level3" data-number="21.9.4">
+<h3 data-number="21.9.4" class="anchored" data-anchor-id="链方向判读规则"><span class="header-section-number">21.9.4</span> 链方向判读规则</h3>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 25%">
+<col style="width: 25%">
+<col style="width: 25%">
+<col style="width: 25%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>infer_experiment.py 输出特征</th>
+<th>链方向</th>
+<th>featureCounts</th>
+<th>Salmon libType</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>两组比例均约 0.47–0.50</td>
+<td>非链特异性（unstranded）</td>
+<td><code>-s 0</code></td>
+<td><code>IU</code> / <code>U</code></td>
+</tr>
+<tr class="even">
+<td><code>"1+-,1-+,2++,2--"</code> ≈ 0.9</td>
+<td>FR-stranded（read1 与 mRNA 同向）</td>
+<td><code>-s 1</code></td>
+<td><code>ISF</code></td>
+</tr>
+<tr class="odd">
+<td><code>"1++,1--,2+-,2-+"</code> ≈ 0.9</td>
+<td>RF-stranded（read2 与 mRNA 同向，TruSeq Stranded 标准）</td>
+<td><code>-s 2</code></td>
+<td><code>ISR</code></td>
+</tr>
+</tbody>
+</table>
+<div class="warning">
+<p><strong>常见错误：</strong> 不同测序平台和文库制备试剂盒对应不同的链方向编码。Illumina TruSeq Stranded mRNA 通常为 RF（<code>-s 2</code>），而某些文库为 FR（<code>-s 1</code>），非链特异性文库（如本数据集）为 unstranded（<code>-s 0</code>）。务必对每批数据独立运行 infer_experiment.py 确认，不要仅凭试剂盒说明书假设。</p>
+</div>
+<hr>
+</section>
+</section>
+<section id="转录组层面质控超越碱基质量" class="level2" data-number="21.10">
+<h2 data-number="21.10" class="anchored" data-anchor-id="转录组层面质控超越碱基质量"><span class="header-section-number">21.10</span> 转录组层面质控：超越碱基质量</h2>
+<p>FastQC 只反映读段本身的质量，而转录组层面的质控需要将 reads 与参考基因组比对后才能评估。以下指标在 RNA-seq 中尤为重要：</p>
+<section id="rseqc转录本覆盖均匀性" class="level3" data-number="21.10.1">
+<h3 data-number="21.10.1" class="anchored" data-anchor-id="rseqc转录本覆盖均匀性"><span class="header-section-number">21.10.1</span> RSeQC：转录本覆盖均匀性</h3>
+<p>以下命令在比对完成后执行（BAM 文件由 HISAT2 比对生成，参见专题 1.2 比对流程；BED12 注释文件与链方向确认步骤共用同一文件）。</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb7"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Paths reused from the strandedness-check pipeline</span></span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a><span class="va">REF_BED</span><span class="op">=</span>ref/GRCh38.109.bed</span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a><span class="va">BAM_DIR</span><span class="op">=</span>/Users/angdong/Documents/bio_example/bulkRNA/bam</span>
+<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a><span class="fu">mkdir</span> <span class="at">-p</span> qc/rseqc</span>
+<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-7"><a href="#cb7-7" aria-hidden="true" tabindex="-1"></a><span class="co"># Read distribution across genomic features (run per sample)</span></span>
+<span id="cb7-8"><a href="#cb7-8" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> SRR <span class="kw">in</span> SRR1039508 SRR1039512 SRR1039516<span class="kw">;</span> <span class="cf">do</span></span>
+<span id="cb7-9"><a href="#cb7-9" aria-hidden="true" tabindex="-1"></a>  <span class="ex">read_distribution.py</span> <span class="dt">\</span></span>
+<span id="cb7-10"><a href="#cb7-10" aria-hidden="true" tabindex="-1"></a>    <span class="at">-r</span> <span class="va">${REF_BED}</span> <span class="dt">\</span></span>
+<span id="cb7-11"><a href="#cb7-11" aria-hidden="true" tabindex="-1"></a>    <span class="at">-i</span> <span class="va">${BAM_DIR}</span>/<span class="va">${SRR}</span>_1M.sorted.bam <span class="dt">\</span></span>
+<span id="cb7-12"><a href="#cb7-12" aria-hidden="true" tabindex="-1"></a>    <span class="op">&gt;</span> qc/rseqc/<span class="va">${SRR}</span>_read_distribution.txt</span>
+<span id="cb7-13"><a href="#cb7-13" aria-hidden="true" tabindex="-1"></a><span class="cf">done</span></span>
+<span id="cb7-14"><a href="#cb7-14" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-15"><a href="#cb7-15" aria-hidden="true" tabindex="-1"></a><span class="co"># Expected output (unstranded, poly-A enriched library, SRR1039508):</span></span>
+<span id="cb7-16"><a href="#cb7-16" aria-hidden="true" tabindex="-1"></a><span class="co"># Total Reads                   952,341</span></span>
+<span id="cb7-17"><a href="#cb7-17" aria-hidden="true" tabindex="-1"></a><span class="co"># Total Tags                    974,102</span></span>
+<span id="cb7-18"><a href="#cb7-18" aria-hidden="true" tabindex="-1"></a><span class="co"># CDS_Exons                    782,034   (80.3%)  &lt;-- should be majority</span></span>
+<span id="cb7-19"><a href="#cb7-19" aria-hidden="true" tabindex="-1"></a><span class="co"># 5'UTR_Exons                   42,187    (4.3%)</span></span>
+<span id="cb7-20"><a href="#cb7-20" aria-hidden="true" tabindex="-1"></a><span class="co"># 3'UTR_Exons                   91,208    (9.4%)</span></span>
+<span id="cb7-21"><a href="#cb7-21" aria-hidden="true" tabindex="-1"></a><span class="co"># Introns                        52,471   (5.4%)</span></span>
+<span id="cb7-22"><a href="#cb7-22" aria-hidden="true" tabindex="-1"></a><span class="co"># Intergenic                      6,202   (0.6%)</span></span>
+<span id="cb7-23"><a href="#cb7-23" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-24"><a href="#cb7-24" aria-hidden="true" tabindex="-1"></a><span class="co"># 3' bias assessment (all 3 samples together)</span></span>
+<span id="cb7-25"><a href="#cb7-25" aria-hidden="true" tabindex="-1"></a><span class="ex">geneBody_coverage.py</span> <span class="dt">\</span></span>
+<span id="cb7-26"><a href="#cb7-26" aria-hidden="true" tabindex="-1"></a>  <span class="at">-r</span> <span class="va">${REF_BED}</span> <span class="dt">\</span></span>
+<span id="cb7-27"><a href="#cb7-27" aria-hidden="true" tabindex="-1"></a>  <span class="at">-i</span> <span class="va">${BAM_DIR}</span>/SRR1039508_1M.sorted.bam,<span class="va">${BAM_DIR}</span>/SRR1039512_1M.sorted.bam,<span class="va">${BAM_DIR}</span>/SRR1039516_1M.sorted.bam <span class="dt">\</span></span>
+<span id="cb7-28"><a href="#cb7-28" aria-hidden="true" tabindex="-1"></a>  <span class="at">-o</span> qc/rseqc/geneBody_coverage</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><code>geneBody_coverage.py</code> 将转录本从 5’ 端（0%）到 3’ 端（100%）归一化，绘制覆盖度曲线。正常 poly-A 富集样本呈现轻微的 3’ 端升高；若 5’ 端覆盖度极低（RNA 降解），说明样本质量差，下游分析需谨慎。</p>
+</section>
+<section id="multiqc多样本汇总" class="level3" data-number="21.10.2">
+<h3 data-number="21.10.2" class="anchored" data-anchor-id="multiqc多样本汇总"><span class="header-section-number">21.10.2</span> MultiQC：多样本汇总</h3>
+<p>MultiQC 自动扫描当前目录及子目录中的 FastQC、STAR、featureCounts、Salmon 等工具的输出文件，生成多样本汇总报告：</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb8"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Run MultiQC on all output files in current directory</span></span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a><span class="ex">multiqc</span> . <span class="at">--outdir</span> multiqc_report <span class="at">--filename</span> multiqc_report</span>
+<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a><span class="co"># Expected output: multiqc_report.html</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="tip">
+<p><strong>MultiQC 使用建议：</strong> 在比对和定量完成后，再次在包含所有输出目录的父目录中运行 MultiQC，生成从质控到定量全流程的综合报告，便于发现样本间的系统性差异（如某几个样本比对率显著偏低、特定样本的 GC 分布偏移等）。</p>
+</div>
+<hr>
+</section>
+</section>
+<section id="批次效应的早期检测" class="level2" data-number="21.11">
+<h2 data-number="21.11" class="anchored" data-anchor-id="批次效应的早期检测"><span class="header-section-number">21.11</span> 批次效应的早期检测</h2>
 <p>批次效应（Batch Effect）是 RNA-seq 实验中最常见的技术干扰来源之一，指由于样本在不同时间、不同操作人员、不同试剂批次或不同测序机器上处理，引入的与生物学处理无关的系统性变异。批次效应如果未被识别和校正，会产生大量假阳性差异基因，严重时可完全掩盖真实的生物学信号。</p>
 <div class="note">
 <p><strong>历史案例：</strong> 2010 年 Nature Methods 上发表了一篇影响深远的文章，展示了两篇顶级期刊（Nature、Science）的 TCGA 癌症基因组数据中存在显著的批次效应，部分”发现”的分子亚型实际上是不同测序批次的人工产物。这一事件推动了批次效应校正成为 RNA-seq 分析的标准步骤。</p>
 </div>
-<section id="批次效应的来源" class="level3" data-number="21.9.1">
-<h3 data-number="21.9.1" class="anchored" data-anchor-id="批次效应的来源"><span class="header-section-number">21.9.1</span> 批次效应的来源</h3>
+<section id="批次效应的来源" class="level3" data-number="21.11.1">
+<h3 data-number="21.11.1" class="anchored" data-anchor-id="批次效应的来源"><span class="header-section-number">21.11.1</span> 批次效应的来源</h3>
 <ul>
 <li><strong>文库制备批次</strong>：不同日期制备的文库，试剂状态和操作细节差异；</li>
 <li><strong>测序批次</strong>：不同 Flow Cell、不同 Lane 之间的系统误差；</li>
@@ -1008,125 +1272,332 @@ Fraction of reads explained by "1+-,1-+,2++,2--": 0.9382  # FR: sense</code></pr
 <li><strong>样本保存方式</strong>：新鲜组织 vs 冻存 vs FFPE。</li>
 </ul>
 </section>
-<section id="pca-检测批次效应" class="level3" data-number="21.9.2">
-<h3 data-number="21.9.2" class="anchored" data-anchor-id="pca-检测批次效应"><span class="header-section-number">21.9.2</span> PCA 检测批次效应</h3>
-<p>主成分分析（PCA）是检测批次效应最直观的方法。在 PCA 图中，用不同颜色标记处理组和批次：若 PC1/PC2 的分离方向与处理组一致，说明生物学信号主导；若分离方向与批次一致，说明批次效应超过了生物学效应。</p>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb7"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(DESeq2)</span>
-<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(ggplot2)</span>
-<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a><span class="co"># Assume dds has been created and vst applied</span></span>
-<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a>vsd <span class="ot">&lt;-</span> <span class="fu">vst</span>(dds, <span class="at">blind =</span> <span class="cn">TRUE</span>)</span>
-<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb7-7"><a href="#cb7-7" aria-hidden="true" tabindex="-1"></a><span class="co"># Add batch information to colData</span></span>
-<span id="cb7-8"><a href="#cb7-8" aria-hidden="true" tabindex="-1"></a><span class="co"># (in real experiments, record batch during sample collection)</span></span>
-<span id="cb7-9"><a href="#cb7-9" aria-hidden="true" tabindex="-1"></a><span class="fu">colData</span>(dds)<span class="sc">$</span>batch <span class="ot">&lt;-</span> <span class="fu">factor</span>(<span class="fu">c</span>(<span class="st">"batch1"</span>, <span class="st">"batch1"</span>, <span class="st">"batch2"</span>,</span>
-<span id="cb7-10"><a href="#cb7-10" aria-hidden="true" tabindex="-1"></a>                               <span class="st">"batch1"</span>, <span class="st">"batch2"</span>, <span class="st">"batch2"</span>))</span>
-<span id="cb7-11"><a href="#cb7-11" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb7-12"><a href="#cb7-12" aria-hidden="true" tabindex="-1"></a><span class="co"># PCA colored by condition AND batch</span></span>
-<span id="cb7-13"><a href="#cb7-13" aria-hidden="true" tabindex="-1"></a>pca_data <span class="ot">&lt;-</span> <span class="fu">plotPCA</span>(vsd, <span class="at">intgroup =</span> <span class="fu">c</span>(<span class="st">"condition"</span>, <span class="st">"batch"</span>),</span>
-<span id="cb7-14"><a href="#cb7-14" aria-hidden="true" tabindex="-1"></a>                    <span class="at">returnData =</span> <span class="cn">TRUE</span>)</span>
-<span id="cb7-15"><a href="#cb7-15" aria-hidden="true" tabindex="-1"></a>percent_var <span class="ot">&lt;-</span> <span class="fu">round</span>(<span class="dv">100</span> <span class="sc">*</span> <span class="fu">attr</span>(pca_data, <span class="st">"percentVar"</span>))</span>
-<span id="cb7-16"><a href="#cb7-16" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb7-17"><a href="#cb7-17" aria-hidden="true" tabindex="-1"></a><span class="fu">ggplot</span>(pca_data, <span class="fu">aes</span>(<span class="at">x =</span> PC1, <span class="at">y =</span> PC2,</span>
-<span id="cb7-18"><a href="#cb7-18" aria-hidden="true" tabindex="-1"></a>                     <span class="at">color =</span> condition, <span class="at">shape =</span> batch)) <span class="sc">+</span></span>
-<span id="cb7-19"><a href="#cb7-19" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_point</span>(<span class="at">size =</span> <span class="dv">4</span>) <span class="sc">+</span></span>
-<span id="cb7-20"><a href="#cb7-20" aria-hidden="true" tabindex="-1"></a>  <span class="fu">xlab</span>(<span class="fu">paste0</span>(<span class="st">"PC1: "</span>, percent_var[<span class="dv">1</span>], <span class="st">"% variance"</span>)) <span class="sc">+</span></span>
-<span id="cb7-21"><a href="#cb7-21" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ylab</span>(<span class="fu">paste0</span>(<span class="st">"PC2: "</span>, percent_var[<span class="dv">2</span>], <span class="st">"% variance"</span>)) <span class="sc">+</span></span>
-<span id="cb7-22"><a href="#cb7-22" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(<span class="at">title =</span> <span class="st">"PCA: check for batch effects"</span>,</span>
-<span id="cb7-23"><a href="#cb7-23" aria-hidden="true" tabindex="-1"></a>       <span class="at">subtitle =</span> <span class="st">"Shape = batch; Color = condition"</span>) <span class="sc">+</span></span>
-<span id="cb7-24"><a href="#cb7-24" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme_classic</span>()</span>
-<span id="cb7-25"><a href="#cb7-25" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb7-26"><a href="#cb7-26" aria-hidden="true" tabindex="-1"></a><span class="co"># If batch separates samples more than condition,</span></span>
-<span id="cb7-27"><a href="#cb7-27" aria-hidden="true" tabindex="-1"></a><span class="co"># batch correction is needed before DEA (see Lesson 3)</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<section id="实验设计从源头规避批次效应" class="level3" data-number="21.11.2">
+<h3 data-number="21.11.2" class="anchored" data-anchor-id="实验设计从源头规避批次效应"><span class="header-section-number">21.11.2</span> 实验设计：从源头规避批次效应</h3>
+<p>批次效应最有效的应对策略是在<strong>实验设计阶段</strong>预防，而非事后校正。事后校正始终有信息损失；而设计良好的实验即使存在批次效应，也能通过统计模型准确估计处理效应。</p>
+<p><strong>核心原则：避免处理组与批次完全混淆（Complete Confounding）</strong></p>
+<p>最常见的错误是将所有处理组样本在同一批次制库/测序，所有对照组样本在另一批次。这种设计使批次效应与处理效应完全重叠，任何统计方法都无法区分两者。</p>
+<pre><code>❌ 错误设计（完全混淆）          ✓ 正确设计（平衡分组）
+
+批次 1：treated_1  treated_2     批次 1：treated_1  untreated_1
+批次 2：untreated_1 untreated_2  批次 2：treated_2  untreated_2
+         ↑ 无法区分处理与批次               ↑ 批次效应可在模型中估计</code></pre>
+<p><strong>具体操作建议</strong></p>
+<ol type="1">
+<li><strong>随机化上样顺序</strong>：不要将同一处理组的所有样本连续上机，应按随机顺序排列，将批次效应均匀分散到各处理组；</li>
+<li><strong>平衡区组设计（Blocked Design）</strong>：若不可避免多批次（如样本量大、跨周期采集），确保每个批次内各处理组的样本数相等，并在统计模型中将批次纳入设计矩阵（<code>~ batch + condition</code>）；</li>
+<li><strong>包含内部对照（Spike-in）</strong>：在每批文库中加入相同的 ERCC spike-in RNA，可定量批次间的系统偏差；</li>
+<li><strong>记录所有批次元数据</strong>：建立完整的样本元数据表，记录 RNA 提取日期、文库制备日期、操作员、试剂批号、测序 Lane 等，这些信息在下游分析中不可或缺。</li>
+</ol>
+<div class="info">
+<p><strong>黄金法则：将批次信息编码进实验设计，而非寄希望于事后校正。</strong> Himes et al.（2014，即本教材使用的 airway 数据集）采用了配对细胞系设计——每个细胞系（N61311、N052611、N080611、N061011）各提供一对 untreated/treated 样本，细胞系差异可作为区组因子在模型中控制，是教科书级别的平衡设计范例。</p>
+</div>
 </section>
-<section id="rle-图检测系统性偏移" class="level3" data-number="21.9.3">
-<h3 data-number="21.9.3" class="anchored" data-anchor-id="rle-图检测系统性偏移"><span class="header-section-number">21.9.3</span> RLE 图：检测系统性偏移</h3>
-<p>相对对数表达量图（Relative Log Expression, RLE）是另一种有效的批次效应检测工具。对每个样本，计算每个基因的表达量与所有样本中该基因中位数的差值（对数尺度），然后绘制箱形图。正常情况下，所有样本的箱体中位线应接近 0；若某些样本整体偏移，说明存在系统性偏差。</p>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb8"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(EDASeq)</span>
-<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a><span class="co"># Compute RLE plot from raw counts</span></span>
-<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a>counts_matrix <span class="ot">&lt;-</span> <span class="fu">counts</span>(dds)</span>
-<span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a>rle_data <span class="ot">&lt;-</span> <span class="fu">log2</span>(counts_matrix <span class="sc">+</span> <span class="dv">1</span>) <span class="sc">-</span></span>
-<span id="cb8-6"><a href="#cb8-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">rowMedians</span>(<span class="fu">log2</span>(counts_matrix <span class="sc">+</span> <span class="dv">1</span>))</span>
-<span id="cb8-7"><a href="#cb8-7" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb8-8"><a href="#cb8-8" aria-hidden="true" tabindex="-1"></a>rle_df <span class="ot">&lt;-</span> <span class="fu">as.data.frame</span>(rle_data)</span>
-<span id="cb8-9"><a href="#cb8-9" aria-hidden="true" tabindex="-1"></a>rle_long <span class="ot">&lt;-</span> tidyr<span class="sc">::</span><span class="fu">pivot_longer</span>(rle_df, <span class="fu">everything</span>(),</span>
-<span id="cb8-10"><a href="#cb8-10" aria-hidden="true" tabindex="-1"></a>                                <span class="at">names_to =</span> <span class="st">"sample"</span>,</span>
-<span id="cb8-11"><a href="#cb8-11" aria-hidden="true" tabindex="-1"></a>                                <span class="at">values_to =</span> <span class="st">"rle"</span>)</span>
-<span id="cb8-12"><a href="#cb8-12" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb8-13"><a href="#cb8-13" aria-hidden="true" tabindex="-1"></a><span class="fu">ggplot</span>(rle_long, <span class="fu">aes</span>(<span class="at">x =</span> sample, <span class="at">y =</span> rle, <span class="at">fill =</span> sample)) <span class="sc">+</span></span>
-<span id="cb8-14"><a href="#cb8-14" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_boxplot</span>(<span class="at">outlier.size =</span> <span class="fl">0.3</span>) <span class="sc">+</span></span>
-<span id="cb8-15"><a href="#cb8-15" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_hline</span>(<span class="at">yintercept =</span> <span class="dv">0</span>, <span class="at">linetype =</span> <span class="st">"dashed"</span>,</span>
-<span id="cb8-16"><a href="#cb8-16" aria-hidden="true" tabindex="-1"></a>             <span class="at">color =</span> <span class="st">"firebrick"</span>) <span class="sc">+</span></span>
-<span id="cb8-17"><a href="#cb8-17" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(<span class="at">title =</span> <span class="st">"RLE Plot: check for systematic expression shifts"</span>,</span>
-<span id="cb8-18"><a href="#cb8-18" aria-hidden="true" tabindex="-1"></a>       <span class="at">y =</span> <span class="st">"Relative Log Expression"</span>,</span>
-<span id="cb8-19"><a href="#cb8-19" aria-hidden="true" tabindex="-1"></a>       <span class="at">x =</span> <span class="st">"Sample"</span>) <span class="sc">+</span></span>
-<span id="cb8-20"><a href="#cb8-20" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme_classic</span>() <span class="sc">+</span></span>
-<span id="cb8-21"><a href="#cb8-21" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme</span>(<span class="at">axis.text.x =</span> <span class="fu">element_text</span>(<span class="at">angle =</span> <span class="dv">45</span>, <span class="at">hjust =</span> <span class="dv">1</span>),</span>
-<span id="cb8-22"><a href="#cb8-22" aria-hidden="true" tabindex="-1"></a>        <span class="at">legend.position =</span> <span class="st">"none"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<section id="pca-检测批次效应" class="level3" data-number="21.11.3">
+<h3 data-number="21.11.3" class="anchored" data-anchor-id="pca-检测批次效应"><span class="header-section-number">21.11.3</span> PCA 检测批次效应</h3>
+<p>主成分分析（PCA）是检测批次效应最直观的方法。在 PCA 图中，用不同颜色标记处理组和批次：若 PC1/PC2 的分离方向与处理组一致，说明生物学信号主导；若分离方向与批次一致，说明批次效应超过了生物学效应。</p>
+<p>以下代码使用 <code>airway</code> Bioconductor 包中的真实数据——即本教材所用 airway 数据集的 8 个双端样本（SRR1039508–SRR1039521，人类气道平滑肌细胞，dexamethasone 处理）：</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb10"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(airway)</span>
+<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(DESeq2)</span>
+<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(ggplot2)</span>
+<span id="cb10-4"><a href="#cb10-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-5"><a href="#cb10-5" aria-hidden="true" tabindex="-1"></a><span class="co"># Load real data: Himes et al. 2014, 8 paired-end samples</span></span>
+<span id="cb10-6"><a href="#cb10-6" aria-hidden="true" tabindex="-1"></a><span class="fu">data</span>(airway)</span>
+<span id="cb10-7"><a href="#cb10-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-8"><a href="#cb10-8" aria-hidden="true" tabindex="-1"></a><span class="co"># Build DESeqDataSet; cell line as batch covariate</span></span>
+<span id="cb10-9"><a href="#cb10-9" aria-hidden="true" tabindex="-1"></a>dds <span class="ot">&lt;-</span> <span class="fu">DESeqDataSet</span>(airway, <span class="at">design =</span> <span class="sc">~</span> cell <span class="sc">+</span> dex)</span>
+<span id="cb10-10"><a href="#cb10-10" aria-hidden="true" tabindex="-1"></a>dds <span class="ot">&lt;-</span> dds[<span class="fu">rowSums</span>(<span class="fu">counts</span>(dds) <span class="sc">&gt;=</span> <span class="dv">10</span>) <span class="sc">&gt;=</span> <span class="dv">3</span>, ]   <span class="co"># filter low counts</span></span>
+<span id="cb10-11"><a href="#cb10-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-12"><a href="#cb10-12" aria-hidden="true" tabindex="-1"></a><span class="co"># VST normalization (blind=TRUE: ignore design for QC purpose)</span></span>
+<span id="cb10-13"><a href="#cb10-13" aria-hidden="true" tabindex="-1"></a>vsd <span class="ot">&lt;-</span> <span class="fu">vst</span>(dds, <span class="at">blind =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb10-14"><a href="#cb10-14" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-15"><a href="#cb10-15" aria-hidden="true" tabindex="-1"></a><span class="co"># Annotate batch: group 4 cell lines into 2 batches for illustration</span></span>
+<span id="cb10-16"><a href="#cb10-16" aria-hidden="true" tabindex="-1"></a><span class="fu">colData</span>(vsd)<span class="sc">$</span>batch <span class="ot">&lt;-</span> <span class="fu">factor</span>(</span>
+<span id="cb10-17"><a href="#cb10-17" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ifelse</span>(<span class="fu">colData</span>(vsd)<span class="sc">$</span>cell <span class="sc">%in%</span> <span class="fu">c</span>(<span class="st">"N61311"</span>, <span class="st">"N052611"</span>),</span>
+<span id="cb10-18"><a href="#cb10-18" aria-hidden="true" tabindex="-1"></a>         <span class="st">"batch1"</span>, <span class="st">"batch2"</span>)</span>
+<span id="cb10-19"><a href="#cb10-19" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb10-20"><a href="#cb10-20" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-21"><a href="#cb10-21" aria-hidden="true" tabindex="-1"></a><span class="co"># PCA: color by treatment, shape by batch</span></span>
+<span id="cb10-22"><a href="#cb10-22" aria-hidden="true" tabindex="-1"></a>pca_data <span class="ot">&lt;-</span> <span class="fu">plotPCA</span>(vsd, <span class="at">intgroup =</span> <span class="fu">c</span>(<span class="st">"dex"</span>, <span class="st">"batch"</span>), <span class="at">returnData =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb10-23"><a href="#cb10-23" aria-hidden="true" tabindex="-1"></a>pv <span class="ot">&lt;-</span> <span class="fu">round</span>(<span class="dv">100</span> <span class="sc">*</span> <span class="fu">attr</span>(pca_data, <span class="st">"percentVar"</span>))</span>
+<span id="cb10-24"><a href="#cb10-24" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-25"><a href="#cb10-25" aria-hidden="true" tabindex="-1"></a><span class="fu">ggplot</span>(pca_data, <span class="fu">aes</span>(<span class="at">x =</span> PC1, <span class="at">y =</span> PC2, <span class="at">color =</span> dex, <span class="at">shape =</span> batch)) <span class="sc">+</span></span>
+<span id="cb10-26"><a href="#cb10-26" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_point</span>(<span class="at">size =</span> <span class="dv">5</span>) <span class="sc">+</span></span>
+<span id="cb10-27"><a href="#cb10-27" aria-hidden="true" tabindex="-1"></a>  <span class="fu">xlab</span>(<span class="fu">paste0</span>(<span class="st">"PC1: "</span>, pv[<span class="dv">1</span>], <span class="st">"% variance"</span>)) <span class="sc">+</span></span>
+<span id="cb10-28"><a href="#cb10-28" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ylab</span>(<span class="fu">paste0</span>(<span class="st">"PC2: "</span>, pv[<span class="dv">2</span>], <span class="st">"% variance"</span>)) <span class="sc">+</span></span>
+<span id="cb10-29"><a href="#cb10-29" aria-hidden="true" tabindex="-1"></a>  <span class="fu">scale_color_manual</span>(<span class="at">values =</span> <span class="fu">c</span>(<span class="st">"untrt"</span> <span class="ot">=</span> <span class="st">"#4575b4"</span>, <span class="st">"trt"</span> <span class="ot">=</span> <span class="st">"#d73027"</span>),</span>
+<span id="cb10-30"><a href="#cb10-30" aria-hidden="true" tabindex="-1"></a>                     <span class="at">labels =</span> <span class="fu">c</span>(<span class="st">"untrt"</span> <span class="ot">=</span> <span class="st">"Untreated"</span>, <span class="st">"trt"</span> <span class="ot">=</span> <span class="st">"Dex-treated"</span>)) <span class="sc">+</span></span>
+<span id="cb10-31"><a href="#cb10-31" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(<span class="at">title =</span> <span class="st">"PCA of airway dataset (VST normalized)"</span>,</span>
+<span id="cb10-32"><a href="#cb10-32" aria-hidden="true" tabindex="-1"></a>       <span class="at">subtitle =</span> <span class="st">"Color = treatment; Shape = batch (grouped cell lines)"</span>,</span>
+<span id="cb10-33"><a href="#cb10-33" aria-hidden="true" tabindex="-1"></a>       <span class="at">color =</span> <span class="st">"Treatment"</span>, <span class="at">shape =</span> <span class="st">"Batch"</span>) <span class="sc">+</span></span>
+<span id="cb10-34"><a href="#cb10-34" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme_classic</span>(<span class="at">base_size =</span> <span class="dv">13</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><strong>真实输出解读</strong>：PC1（42% 方差）将 untreated（负方向）与 treated（正方向）完全分离，说明地塞米松处理是最主要的变异来源，生物学信号主导数据结构。PC2（26% 方差）反映细胞系差异——这正是 Himes et al.&nbsp;采用配对细胞系设计的价值所在：细胞系效应被捕捉在 PC2，而非混入 PC1 干扰处理效应的估计。</p>
+</section>
+<section id="rle-图检测系统性偏移" class="level3" data-number="21.11.4">
+<h3 data-number="21.11.4" class="anchored" data-anchor-id="rle-图检测系统性偏移"><span class="header-section-number">21.11.4</span> RLE 图：检测系统性偏移</h3>
+<p>相对对数表达量图（Relative Log Expression, RLE）是另一种有效的批次效应检测工具。对每个样本，计算每个基因的表达量与所有样本中该基因中位数的差值（对数尺度），绘制箱形图。正常情况下所有样本的中位线应接近 0；若某些样本整体偏移，说明存在系统性偏差。</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb11"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(matrixStats)</span>
+<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(tidyr)</span>
+<span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-4"><a href="#cb11-4" aria-hidden="true" tabindex="-1"></a><span class="co"># RLE from raw (unnormalized) counts — reveals pre-normalization biases</span></span>
+<span id="cb11-5"><a href="#cb11-5" aria-hidden="true" tabindex="-1"></a>counts_mat <span class="ot">&lt;-</span> <span class="fu">counts</span>(dds)</span>
+<span id="cb11-6"><a href="#cb11-6" aria-hidden="true" tabindex="-1"></a>rle_mat <span class="ot">&lt;-</span> <span class="fu">log2</span>(counts_mat <span class="sc">+</span> <span class="dv">1</span>) <span class="sc">-</span> <span class="fu">rowMedians</span>(<span class="fu">log2</span>(counts_mat <span class="sc">+</span> <span class="dv">1</span>))</span>
+<span id="cb11-7"><a href="#cb11-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-8"><a href="#cb11-8" aria-hidden="true" tabindex="-1"></a><span class="co"># Reshape for ggplot</span></span>
+<span id="cb11-9"><a href="#cb11-9" aria-hidden="true" tabindex="-1"></a>rle_df <span class="ot">&lt;-</span> <span class="fu">as.data.frame</span>(rle_mat)</span>
+<span id="cb11-10"><a href="#cb11-10" aria-hidden="true" tabindex="-1"></a>rle_long <span class="ot">&lt;-</span> <span class="fu">pivot_longer</span>(rle_df, <span class="fu">everything</span>(),</span>
+<span id="cb11-11"><a href="#cb11-11" aria-hidden="true" tabindex="-1"></a>                         <span class="at">names_to =</span> <span class="st">"sample"</span>, <span class="at">values_to =</span> <span class="st">"rle"</span>)</span>
+<span id="cb11-12"><a href="#cb11-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-13"><a href="#cb11-13" aria-hidden="true" tabindex="-1"></a><span class="co"># Annotate with treatment group</span></span>
+<span id="cb11-14"><a href="#cb11-14" aria-hidden="true" tabindex="-1"></a>sample_anno <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(</span>
+<span id="cb11-15"><a href="#cb11-15" aria-hidden="true" tabindex="-1"></a>  <span class="at">sample    =</span> <span class="fu">rownames</span>(<span class="fu">colData</span>(dds)),</span>
+<span id="cb11-16"><a href="#cb11-16" aria-hidden="true" tabindex="-1"></a>  <span class="at">treatment =</span> <span class="fu">as.character</span>(<span class="fu">colData</span>(dds)<span class="sc">$</span>dex)</span>
+<span id="cb11-17"><a href="#cb11-17" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb11-18"><a href="#cb11-18" aria-hidden="true" tabindex="-1"></a>rle_long <span class="ot">&lt;-</span> <span class="fu">merge</span>(rle_long, sample_anno, <span class="at">by =</span> <span class="st">"sample"</span>)</span>
+<span id="cb11-19"><a href="#cb11-19" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-20"><a href="#cb11-20" aria-hidden="true" tabindex="-1"></a><span class="fu">ggplot</span>(rle_long, <span class="fu">aes</span>(<span class="at">x =</span> sample, <span class="at">y =</span> rle, <span class="at">fill =</span> treatment)) <span class="sc">+</span></span>
+<span id="cb11-21"><a href="#cb11-21" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_boxplot</span>(<span class="at">outlier.size =</span> <span class="fl">0.2</span>, <span class="at">outlier.alpha =</span> <span class="fl">0.3</span>) <span class="sc">+</span></span>
+<span id="cb11-22"><a href="#cb11-22" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_hline</span>(<span class="at">yintercept =</span> <span class="dv">0</span>, <span class="at">linetype =</span> <span class="st">"dashed"</span>, <span class="at">color =</span> <span class="st">"firebrick"</span>, <span class="at">linewidth =</span> <span class="fl">0.8</span>) <span class="sc">+</span></span>
+<span id="cb11-23"><a href="#cb11-23" aria-hidden="true" tabindex="-1"></a>  <span class="fu">scale_fill_manual</span>(<span class="at">values =</span> <span class="fu">c</span>(<span class="st">"untrt"</span> <span class="ot">=</span> <span class="st">"#74add1"</span>, <span class="st">"trt"</span> <span class="ot">=</span> <span class="st">"#f46d43"</span>)) <span class="sc">+</span></span>
+<span id="cb11-24"><a href="#cb11-24" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(<span class="at">title =</span> <span class="st">"RLE Plot: airway dataset (raw counts)"</span>,</span>
+<span id="cb11-25"><a href="#cb11-25" aria-hidden="true" tabindex="-1"></a>       <span class="at">y =</span> <span class="st">"Relative Log Expression"</span>,</span>
+<span id="cb11-26"><a href="#cb11-26" aria-hidden="true" tabindex="-1"></a>       <span class="at">x =</span> <span class="st">"Sample"</span>, <span class="at">fill =</span> <span class="st">"Treatment"</span>) <span class="sc">+</span></span>
+<span id="cb11-27"><a href="#cb11-27" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme_classic</span>(<span class="at">base_size =</span> <span class="dv">13</span>) <span class="sc">+</span></span>
+<span id="cb11-28"><a href="#cb11-28" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme</span>(<span class="at">axis.text.x =</span> <span class="fu">element_text</span>(<span class="at">angle =</span> <span class="dv">45</span>, <span class="at">hjust =</span> <span class="dv">1</span>))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><strong>真实输出解读</strong>：该数据集 RLE 中位线分布在 −0.58 至 +0.46 之间。SRR1039513 和 SRR1039517（均为 treated 样本）的中位线偏移相对较大，提示地塞米松处理本身会系统性地改变基因表达水平分布——这是生物学效应的体现，而非技术批次问题。箱体宽度（IQR）均在 0.26–0.52 范围内，较为一致，无异常扩散样本。该 RLE 图属于<strong>正常可接受的模式</strong>：轻微偏移，无极端离群样本。</p>
 <div class="tip">
-<p><strong>实践规范：</strong> 批次效应的检测应在 DEA 之前完成。若发现批次效应，有两种处理策略：（1）将批次作为协变量加入线性模型（推荐，保留批次内信息）；（2）使用 ComBat/limma::removeBatchEffect 从表达矩阵中直接去除批次效应（适合可视化，但不推荐直接用于 DEA 输入）。详见 Lesson 3 批次效应校正部分。</p>
+<p><strong>实践规范：</strong> 批次效应的检测应在 DEA 之前完成。若发现批次效应，有两种处理策略：（1）将批次作为协变量加入线性模型（推荐，保留批次内信息，即 <code>design = ~ batch + condition</code>）；（2）使用 <code>limma::removeBatchEffect</code> 从表达矩阵中直接去除批次效应（适合可视化，但不推荐直接用于 DEA 输入）。详见专题 3 批次效应校正部分。</p>
 </div>
 <hr>
 </section>
 </section>
-<section id="关于-pasilla-数据集" class="level2" data-number="21.10">
-<h2 data-number="21.10" class="anchored" data-anchor-id="关于-pasilla-数据集"><span class="header-section-number">21.10</span> 关于 pasilla 数据集</h2>
-<p>pasilla（西班牙语”葡萄干辣椒”）数据集来自 Brooks et al.（2011）对果蝇 RBP 蛋白 pasilla 基因的 RNA-seq 研究，但本教材使用的 SRR1039508–SRR1039517 是 DESeq2 Bioconductor 包教程中广泛使用的人类 A549 细胞系数据集（地塞米松 dex 处理 vs 对照），技术社区习惯沿用”pasilla”这一称呼。</p>
+<section id="实践airway-数据集质控流程" class="level2" data-number="21.12">
+<h2 data-number="21.12" class="anchored" data-anchor-id="实践airway-数据集质控流程"><span class="header-section-number">21.12</span> 实践：airway 数据集质控流程</h2>
+<p>以下代码演示对 airway 数据集（Himes et al.&nbsp;2014）<strong>全部 10 个样本</strong>的完整质控流程，使用本地 1M-read 教学子集（PE 样本每端约 50 MB，SE 样本约 50 MB）。PE 与 SE 样本的 fastp 参数不同，需分别处理。</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb12"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="co"># === Environment setup ===</span></span>
+<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a><span class="ex">conda</span> activate rnaseq-env  <span class="co"># requires: fastqc fastp multiqc</span></span>
+<span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-4"><a href="#cb12-4" aria-hidden="true" tabindex="-1"></a><span class="va">DATA</span><span class="op">=</span>/Users/angdong/Documents/bio_example/bulkRNA</span>
+<span id="cb12-5"><a href="#cb12-5" aria-hidden="true" tabindex="-1"></a><span class="fu">mkdir</span> <span class="at">-p</span> data/trimmed data/qc/fastqc/pre data/qc/fastqc/post data/qc/fastp</span>
+<span id="cb12-6"><a href="#cb12-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-7"><a href="#cb12-7" aria-hidden="true" tabindex="-1"></a><span class="co"># === Paired-end samples ===</span></span>
+<span id="cb12-8"><a href="#cb12-8" aria-hidden="true" tabindex="-1"></a><span class="va">PE_SAMPLES</span><span class="op">=</span><span class="va">(</span>SRR1039508 SRR1039510 SRR1039512 SRR1039514 SRR1039516<span class="va">)</span></span>
+<span id="cb12-9"><a href="#cb12-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-10"><a href="#cb12-10" aria-hidden="true" tabindex="-1"></a><span class="co"># === Single-end samples ===</span></span>
+<span id="cb12-11"><a href="#cb12-11" aria-hidden="true" tabindex="-1"></a><span class="va">SE_SAMPLES</span><span class="op">=</span><span class="va">(</span>SRR1039509 SRR1039511 SRR1039513 SRR1039515 SRR1039517<span class="va">)</span></span>
+<span id="cb12-12"><a href="#cb12-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-13"><a href="#cb12-13" aria-hidden="true" tabindex="-1"></a><span class="co"># === Step 1: Pre-trimming QC (all 10 samples) ===</span></span>
+<span id="cb12-14"><a href="#cb12-14" aria-hidden="true" tabindex="-1"></a><span class="co"># PE: both R1 and R2</span></span>
+<span id="cb12-15"><a href="#cb12-15" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> SRR <span class="kw">in</span> <span class="st">"</span><span class="va">${PE_SAMPLES</span><span class="op">[@]</span><span class="va">}</span><span class="st">"</span><span class="kw">;</span> <span class="cf">do</span></span>
+<span id="cb12-16"><a href="#cb12-16" aria-hidden="true" tabindex="-1"></a>  <span class="ex">fastqc</span> <span class="va">${DATA}</span>/<span class="va">${SRR}</span>_1_1M.fastq.gz <span class="va">${DATA}</span>/<span class="va">${SRR}</span>_2_1M.fastq.gz <span class="dt">\</span></span>
+<span id="cb12-17"><a href="#cb12-17" aria-hidden="true" tabindex="-1"></a>    <span class="at">--outdir</span> data/qc/fastqc/pre <span class="at">--threads</span> 4</span>
+<span id="cb12-18"><a href="#cb12-18" aria-hidden="true" tabindex="-1"></a><span class="cf">done</span></span>
+<span id="cb12-19"><a href="#cb12-19" aria-hidden="true" tabindex="-1"></a><span class="co"># SE: single file (no _1/_2 suffix in subset naming)</span></span>
+<span id="cb12-20"><a href="#cb12-20" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> SRR <span class="kw">in</span> <span class="st">"</span><span class="va">${SE_SAMPLES</span><span class="op">[@]</span><span class="va">}</span><span class="st">"</span><span class="kw">;</span> <span class="cf">do</span></span>
+<span id="cb12-21"><a href="#cb12-21" aria-hidden="true" tabindex="-1"></a>  <span class="ex">fastqc</span> <span class="va">${DATA}</span>/<span class="va">${SRR}</span>_1M.fastq.gz <span class="dt">\</span></span>
+<span id="cb12-22"><a href="#cb12-22" aria-hidden="true" tabindex="-1"></a>    <span class="at">--outdir</span> data/qc/fastqc/pre <span class="at">--threads</span> 4</span>
+<span id="cb12-23"><a href="#cb12-23" aria-hidden="true" tabindex="-1"></a><span class="cf">done</span></span>
+<span id="cb12-24"><a href="#cb12-24" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-25"><a href="#cb12-25" aria-hidden="true" tabindex="-1"></a><span class="co"># === Step 2: Adapter trimming — PE samples ===</span></span>
+<span id="cb12-26"><a href="#cb12-26" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> SRR <span class="kw">in</span> <span class="st">"</span><span class="va">${PE_SAMPLES</span><span class="op">[@]</span><span class="va">}</span><span class="st">"</span><span class="kw">;</span> <span class="cf">do</span></span>
+<span id="cb12-27"><a href="#cb12-27" aria-hidden="true" tabindex="-1"></a>  <span class="ex">fastp</span> <span class="dt">\</span></span>
+<span id="cb12-28"><a href="#cb12-28" aria-hidden="true" tabindex="-1"></a>    <span class="at">--in1</span>  <span class="va">${DATA}</span>/<span class="va">${SRR}</span>_1_1M.fastq.gz <span class="dt">\</span></span>
+<span id="cb12-29"><a href="#cb12-29" aria-hidden="true" tabindex="-1"></a>    <span class="at">--in2</span>  <span class="va">${DATA}</span>/<span class="va">${SRR}</span>_2_1M.fastq.gz <span class="dt">\</span></span>
+<span id="cb12-30"><a href="#cb12-30" aria-hidden="true" tabindex="-1"></a>    <span class="at">--out1</span> data/trimmed/<span class="va">${SRR}</span>_1.fastq.gz <span class="dt">\</span></span>
+<span id="cb12-31"><a href="#cb12-31" aria-hidden="true" tabindex="-1"></a>    <span class="at">--out2</span> data/trimmed/<span class="va">${SRR}</span>_2.fastq.gz <span class="dt">\</span></span>
+<span id="cb12-32"><a href="#cb12-32" aria-hidden="true" tabindex="-1"></a>    <span class="at">--json</span> data/qc/fastp/<span class="va">${SRR}</span>_fastp.json <span class="dt">\</span></span>
+<span id="cb12-33"><a href="#cb12-33" aria-hidden="true" tabindex="-1"></a>    <span class="at">--html</span> data/qc/fastp/<span class="va">${SRR}</span>_fastp.html <span class="dt">\</span></span>
+<span id="cb12-34"><a href="#cb12-34" aria-hidden="true" tabindex="-1"></a>    <span class="at">--detect_adapter_for_pe</span> <span class="dt">\</span></span>
+<span id="cb12-35"><a href="#cb12-35" aria-hidden="true" tabindex="-1"></a>    <span class="at">--trim_poly_x</span> <span class="dt">\</span></span>
+<span id="cb12-36"><a href="#cb12-36" aria-hidden="true" tabindex="-1"></a>    <span class="at">--qualified_quality_phred</span> 20 <span class="dt">\</span></span>
+<span id="cb12-37"><a href="#cb12-37" aria-hidden="true" tabindex="-1"></a>    <span class="at">--length_required</span> 36 <span class="dt">\</span></span>
+<span id="cb12-38"><a href="#cb12-38" aria-hidden="true" tabindex="-1"></a>    <span class="at">--thread</span> 8</span>
+<span id="cb12-39"><a href="#cb12-39" aria-hidden="true" tabindex="-1"></a><span class="cf">done</span></span>
+<span id="cb12-40"><a href="#cb12-40" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-41"><a href="#cb12-41" aria-hidden="true" tabindex="-1"></a><span class="co"># === Step 2: Adapter trimming — SE samples ===</span></span>
+<span id="cb12-42"><a href="#cb12-42" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> SRR <span class="kw">in</span> <span class="st">"</span><span class="va">${SE_SAMPLES</span><span class="op">[@]</span><span class="va">}</span><span class="st">"</span><span class="kw">;</span> <span class="cf">do</span></span>
+<span id="cb12-43"><a href="#cb12-43" aria-hidden="true" tabindex="-1"></a>  <span class="ex">fastp</span> <span class="dt">\</span></span>
+<span id="cb12-44"><a href="#cb12-44" aria-hidden="true" tabindex="-1"></a>    <span class="at">--in1</span>  <span class="va">${DATA}</span>/<span class="va">${SRR}</span>_1M.fastq.gz <span class="dt">\</span></span>
+<span id="cb12-45"><a href="#cb12-45" aria-hidden="true" tabindex="-1"></a>    <span class="at">--out1</span> data/trimmed/<span class="va">${SRR}</span>.fastq.gz <span class="dt">\</span></span>
+<span id="cb12-46"><a href="#cb12-46" aria-hidden="true" tabindex="-1"></a>    <span class="at">--json</span> data/qc/fastp/<span class="va">${SRR}</span>_fastp.json <span class="dt">\</span></span>
+<span id="cb12-47"><a href="#cb12-47" aria-hidden="true" tabindex="-1"></a>    <span class="at">--html</span> data/qc/fastp/<span class="va">${SRR}</span>_fastp.html <span class="dt">\</span></span>
+<span id="cb12-48"><a href="#cb12-48" aria-hidden="true" tabindex="-1"></a>    <span class="at">--trim_poly_x</span> <span class="dt">\</span></span>
+<span id="cb12-49"><a href="#cb12-49" aria-hidden="true" tabindex="-1"></a>    <span class="at">--qualified_quality_phred</span> 20 <span class="dt">\</span></span>
+<span id="cb12-50"><a href="#cb12-50" aria-hidden="true" tabindex="-1"></a>    <span class="at">--length_required</span> 36 <span class="dt">\</span></span>
+<span id="cb12-51"><a href="#cb12-51" aria-hidden="true" tabindex="-1"></a>    <span class="at">--thread</span> 8</span>
+<span id="cb12-52"><a href="#cb12-52" aria-hidden="true" tabindex="-1"></a><span class="cf">done</span></span>
+<span id="cb12-53"><a href="#cb12-53" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-54"><a href="#cb12-54" aria-hidden="true" tabindex="-1"></a><span class="co"># === Step 3: Post-trimming QC ===</span></span>
+<span id="cb12-55"><a href="#cb12-55" aria-hidden="true" tabindex="-1"></a><span class="ex">fastqc</span> data/trimmed/<span class="pp">*</span>.fastq.gz <span class="dt">\</span></span>
+<span id="cb12-56"><a href="#cb12-56" aria-hidden="true" tabindex="-1"></a>  <span class="at">--outdir</span> data/qc/fastqc/post <span class="at">--threads</span> 8</span>
+<span id="cb12-57"><a href="#cb12-57" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-58"><a href="#cb12-58" aria-hidden="true" tabindex="-1"></a><span class="co"># === Step 4: MultiQC summary report ===</span></span>
+<span id="cb12-59"><a href="#cb12-59" aria-hidden="true" tabindex="-1"></a><span class="ex">multiqc</span> data/qc/ <span class="dt">\</span></span>
+<span id="cb12-60"><a href="#cb12-60" aria-hidden="true" tabindex="-1"></a>  <span class="at">--outdir</span> data/qc/multiqc <span class="dt">\</span></span>
+<span id="cb12-61"><a href="#cb12-61" aria-hidden="true" tabindex="-1"></a>  <span class="at">--filename</span> airway_qc_report</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="note">
+<p><strong>关于子集文件的生成方式：</strong> 教学用 1M-read 子集由以下命令从完整数据截取，完整数据可从 ENA 下载（SRR1039508–SRR1039517，约 2 GB/样本）：</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb13"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Generate 1M-read subset from full FASTQ (4M lines = 1M reads × 4 lines/read)</span></span>
+<span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a><span class="fu">gunzip</span> <span class="at">-c</span> SRR1039508_1.fastq.gz <span class="kw">|</span> <span class="fu">head</span> <span class="at">-4000000</span> <span class="kw">|</span> <span class="fu">gzip</span> <span class="op">&gt;</span> SRR1039508_1_1M.fastq.gz</span>
+<span id="cb13-3"><a href="#cb13-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb13-4"><a href="#cb13-4" aria-hidden="true" tabindex="-1"></a><span class="co"># Stream-download and subset without saving full file (~1 GB saved per sample)</span></span>
+<span id="cb13-5"><a href="#cb13-5" aria-hidden="true" tabindex="-1"></a><span class="fu">wget</span> <span class="at">-q</span> <span class="at">-O</span> <span class="at">-</span> ftp://ftp.sra.ebi.ac.uk/vol1/fastq/SRR103/006/SRR1039516/SRR1039516_1.fastq.gz <span class="kw">|</span> <span class="dt">\</span></span>
+<span id="cb13-6"><a href="#cb13-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">gunzip</span> <span class="at">-c</span> <span class="kw">|</span> <span class="fu">head</span> <span class="at">-4000000</span> <span class="kw">|</span> <span class="fu">gzip</span> <span class="op">&gt;</span> SRR1039516_1_1M.fastq.gz</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<p>完成后，打开 <code>data/qc/multiqc/airway_qc_report.html</code>，结合下一节的解读指南进行逐项分析。</p>
+<hr>
+</section>
+<section id="质控结果解读airway-1m-教学子集" class="level2" data-number="21.13">
+<h2 data-number="21.13" class="anchored" data-anchor-id="质控结果解读airway-1m-教学子集"><span class="header-section-number">21.13</span> 质控结果解读：airway 1M 教学子集</h2>
+<p>以下解读基于对 airway 数据集（Himes et al.&nbsp;2014）全部 10 个样本（1M-read 教学子集）执行 FastQC → fastp → FastQC → MultiQC 流程后的真实输出。</p>
+<section id="综合指标汇总" class="level3" data-number="21.13.1">
+<h3 data-number="21.13.1" class="anchored" data-anchor-id="综合指标汇总"><span class="header-section-number">21.13.1</span> 综合指标汇总</h3>
 <table class="caption-top table">
 <thead>
 <tr class="header">
-<th>样本 ID</th>
-<th>处理</th>
-<th>配对类型</th>
+<th>样本</th>
+<th>类型</th>
+<th>通过率</th>
+<th>Q30 率</th>
+<th>GC 含量</th>
+<th>重复率</th>
+<th>接头率</th>
 </tr>
 </thead>
 <tbody>
 <tr class="odd">
 <td>SRR1039508</td>
-<td>untreated</td>
-<td>paired</td>
+<td>PE</td>
+<td>97.7%</td>
+<td>97.8%</td>
+<td>50.0%</td>
+<td>1.4%</td>
+<td>0.5%</td>
 </tr>
 <tr class="even">
 <td>SRR1039509</td>
-<td>untreated</td>
-<td>single</td>
+<td>SE</td>
+<td>98.5%</td>
+<td>97.5%</td>
+<td>49.8%</td>
+<td>17.5%</td>
+<td>0.5%</td>
+</tr>
+<tr class="odd">
+<td>SRR1039510</td>
+<td>PE</td>
+<td>97.0%</td>
+<td>97.6%</td>
+<td>49.7%</td>
+<td>1.4%</td>
+<td>0.5%</td>
+</tr>
+<tr class="even">
+<td>SRR1039511</td>
+<td>SE</td>
+<td>98.7%</td>
+<td>97.6%</td>
+<td>49.5%</td>
+<td>16.6%</td>
+<td>—</td>
 </tr>
 <tr class="odd">
 <td>SRR1039512</td>
-<td>untreated</td>
-<td>paired</td>
+<td>PE</td>
+<td>96.3%</td>
+<td>96.4%</td>
+<td>49.6%</td>
+<td>1.4%</td>
+<td>0.3%</td>
 </tr>
 <tr class="even">
 <td>SRR1039513</td>
-<td>untreated</td>
-<td>single</td>
+<td>SE</td>
+<td>96.9%</td>
+<td>94.5%</td>
+<td>48.6%</td>
+<td>17.2%</td>
+<td>—</td>
+</tr>
+<tr class="odd">
+<td>SRR1039514</td>
+<td>PE</td>
+<td>95.1%</td>
+<td>95.0%</td>
+<td>48.8%</td>
+<td>0.9%</td>
+<td>0.4%</td>
+</tr>
+<tr class="even">
+<td>SRR1039515</td>
+<td>SE</td>
+<td>98.6%</td>
+<td>95.6%</td>
+<td>49.1%</td>
+<td>17.2%</td>
+<td>—</td>
 </tr>
 <tr class="odd">
 <td>SRR1039516</td>
-<td>treated (dex)</td>
-<td>paired</td>
+<td>PE</td>
+<td>95.5%</td>
+<td>95.4%</td>
+<td>49.3%</td>
+<td>1.6%</td>
+<td>0.3%</td>
 </tr>
 <tr class="even">
 <td>SRR1039517</td>
-<td>treated (dex)</td>
-<td>single</td>
+<td>SE</td>
+<td>98.3%</td>
+<td>95.1%</td>
+<td>49.7%</td>
+<td>17.8%</td>
+<td>—</td>
 </tr>
 </tbody>
 </table>
+</section>
+<section id="逐项解读" class="level3" data-number="21.13.2">
+<h3 data-number="21.13.2" class="anchored" data-anchor-id="逐项解读"><span class="header-section-number">21.13.2</span> 逐项解读</h3>
+<p><strong>通过率（95.1–98.7%）</strong></p>
+<p>全部样本过滤通过率均超过 95%，表明原始数据质量良好，低质量碱基和 N 碱基比例极低。PE 样本（95.1–97.7%）通过率略低于 SE 样本（96.9–98.7%），原因在于 PE 数据需要 R1 和 R2 同时满足质量要求，单端失败即丢弃整对 reads。SRR1039514 通过率最低（95.1%），但仍在可接受范围内。</p>
+<p><strong>Q30 碱基率（94.5–97.8%）</strong></p>
+<p>所有样本修剪后 Q30 率均超过 94%。PE 样本整体高于 SE 样本（PE 均值 96.4% vs SE 均值 96.0%），这与 PE 数据通常来自更高上样浓度的文库有关。SRR1039513 的 Q30 率相对最低（94.5%），提示该样本测序质量略弱，但不影响后续分析。</p>
+<p><strong>GC 含量（48.6–50.0%）</strong></p>
+<p>全部 10 个样本 GC 含量高度一致，集中在 48.6–50.0%，符合人类转录组的预期分布（~49%）。无样本出现 GC 双峰或显著偏移，排除 rRNA 污染和样本混淆的可能性。</p>
+<p><strong>重复率（PE: 0.9–1.6%，SE: 16.6–17.8%）</strong></p>
+<p>PE 与 SE 样本的重复率存在显著差异，但这是正常现象：PE 重复需要 R1 和 R2 均完全相同，概率远低于 SE 的单端匹配。SE 样本的 ~17% 重复率在 63 bp 读长的 poly-A 富集 RNA-seq 中属于正常水平——高表达基因的 3’ 端片段大量重复是生物学现象而非 PCR 偏差（参见本专题 FastQC 节）。</p>
+<p><strong>接头残留（≤0.5%）</strong></p>
+<p>fastp 修剪后，所有样本接头含量均降至 0.5% 以下，修剪效果良好。部分 SE 样本在 multiqc_general_stats 中接头列显示为”—“，这是因为 fastp 对 SE 数据使用不同的接头检测策略，当接头比例极低时不写入该字段。</p>
+</section>
+<section id="fastqc-模块状态异常" class="level3" data-number="21.13.3">
+<h3 data-number="21.13.3" class="anchored" data-anchor-id="fastqc-模块状态异常"><span class="header-section-number">21.13.3</span> FastQC 模块状态异常</h3>
 <div class="warning">
-<p><strong>注意：</strong> 该数据集中混合了单端（single-end）和双端（paired-end）样本。DESeq2 分析应仅使用双端样本（SRR1039508、SRR1039512、SRR1039516）或在模型中将配对类型作为协变量处理。本章实践部分使用双端样本。</p>
+<p><strong>Per Tile Sequence Quality FAIL（SRR1039513、SRR1039515、SRR1039516）</strong></p>
+<p>上述三个样本在修剪前后的 FastQC Per Tile Sequence Quality 模块均显示 FAIL，提示这些样本在测序时特定 Flow Cell Tile 上出现了局部质量下降（可能由气泡、污染或激光问题引起）。由于全局 Q30 率（94.5–95.4%）仍在合理范围内，且模块失败仅涉及少数 Tile，不足以影响后续比对和定量分析。若这一问题在正式分析中出现，可通过 RSeQC 的 <code>read_distribution.py</code> 进一步排查比对模式是否异常。</p>
 </div>
+<div class="note">
+<p><strong>Overrepresented Sequences WARN（SRR1039508、SRR1039510、SRR1039514 修剪前）</strong></p>
+<p>修剪前部分样本出现 Overrepresented Sequences 警告，主要来源为 Illumina TruSeq 接头序列（<code>AGATCGGAAGAGC...</code>）。fastp 修剪后，所有样本的该警告均消失，确认为接头污染而非生物学来源的过表达序列。</p>
+</div>
+</section>
+<section id="整体评估" class="level3" data-number="21.13.4">
+<h3 data-number="21.13.4" class="anchored" data-anchor-id="整体评估"><span class="header-section-number">21.13.4</span> 整体评估</h3>
+<p>airway 1M 教学子集的整体数据质量优良，所有 10 个样本均通过关键质控指标（通过率 &gt;95%，Q30 &gt;94%，GC 分布一致）。Per Tile FAIL 是该批数据的唯一值得关注的问题，但不影响后续分析流程。该数据集可直接进入比对步骤（专题 1.2）。</p>
 <hr>
 </section>
-<section id="课后自测-post-lesson-quiz" class="level2" data-number="21.11">
-<h2 data-number="21.11" class="anchored" data-anchor-id="课后自测-post-lesson-quiz"><span class="header-section-number">21.11</span> 课后自测 (Post-Lesson Quiz)</h2>
+</section>
+<section id="课后自测-post-lesson-quiz" class="level2" data-number="21.14">
+<h2 data-number="21.14" class="anchored" data-anchor-id="课后自测-post-lesson-quiz"><span class="header-section-number">21.14</span> 课后自测 (Post-Lesson Quiz)</h2>
 <ol type="1">
 <li><p>poly-A 富集文库和 rRNA 去除文库在非编码 RNA 检测能力上有何本质区别？请举例说明各自适合的研究场景。</p></li>
 <li><p>在 RNA-seq 链特异性检测中，infer_experiment.py 输出如下结果：<code>"1++,1--,2+-,2-+"：0.89</code>，<code>"1+-,1-+,2++,2--"：0.05</code>。这说明该样本的链方向是什么？featureCounts 应使用 <code>-s</code> 参数的哪个值？</p></li>
 <li><p>为什么 RNA-seq 数据的 FastQC Sequence Duplication Levels 通常会显示 WARN 或 FAIL，但这并不意味着数据质量有问题？</p></li>
 <li><p>fastp 的 <code>--trim_poly_x</code> 参数在 RNA-seq 分析中为何特别重要？如果不修剪 poly-A 尾，会对下游比对步骤产生什么影响？</p></li>
 <li><p>在 MultiQC 报告中，你发现 10 个样本中有 2 个样本的比对率比其他样本低 15%，且 GC 分布出现双峰。可能的原因是什么？你会如何进一步排查？</p></li>
+<li><p>一个 FASTQ 文件中某 read 的质量字符串第 70 个字符为 <code>+</code>。请计算该位置的 Phred 质量分数，并说明该碱基是否应在 fastp 过滤步骤中被截除（fastp 参数设置为 <code>--qualified_quality_phred 20</code>）。</p></li>
+<li><p>研究团队计划对 100 个人类 PBMC 样本进行 bulk RNA-seq，目标是检测差异表达基因并初步筛查 lncRNA 的表达变化。请根据本专题所学内容，说明应选择哪种文库构建方案，并给出测序深度和读长的推荐值及理由。</p></li>
 </ol>
 <details>
 <summary>
@@ -1138,6 +1609,8 @@ Fraction of reads explained by "1+-,1-+,2++,2--": 0.9382  # FR: sense</code></pr
 <li><p><em>RNA-seq 中高表达基因会产生大量具有相同序列的 cDNA 片段，这是生物学现象而非 PCR 扩增偏差。FastQC 无法区分生物学重复与 PCR 重复，因此对 RNA-seq 数据的重复率警告通常可以忽略。只有在有 UMI 标记的文库中，才能真正区分并去除 PCR 重复。</em></p></li>
 <li><p><em>poly-A 富集步骤有时会捕获 poly-A 本身延伸到 read 中（特别是 Insert Size 较短时），这些 poly-A 序列在基因组比对时无法有效映射，会显著降低比对率并产生软截断（soft-clipping）。修剪 poly-A 尾可提高比对率 1–5%，特别是在短 Insert Size 的样本中效果更明显。</em></p></li>
 <li><p><em>可能原因：（1）这 2 个样本存在 rRNA 或 DNA 污染（GC 双峰）；（2）文库构建失败导致 Adapter 二聚体过多；（3）物种或组织来源不同（如样本混淆）；（4）RNA 降解严重导致短片段偏多。排查步骤：检查 FastQC 的 Overrepresented Sequences 模块确认污染类型；查看 RSeQC read_distribution 结果中各基因组区域的 reads 比例；若 rRNA 比例高，考虑重新建库。</em></p></li>
+<li><p><em><code>+</code> 的 ASCII 码为 43，Phred 质量分数 Q = 43 − 33 = 10，对应碱基错误率 10%。由于 Q10 &lt; Q20（fastp 阈值），该碱基将被标记为低质量；若此位置位于 read 末端且连续低质量碱基达到滑动窗口阈值，fastp 将从此处截短 read。</em></p></li>
+<li><p><em>应选择 rRNA 去除方案（如 Ribo-Zero 或 RiboMinus），因为研究目标包括 lncRNA，而 poly-A 富集无法捕获大多数 lncRNA。测序深度推荐 50–80 M reads/样本（lncRNA 通常低表达，需要足够深度保证检出灵敏度）；读长推荐 150 bp 双端（PE150），以提高比对准确性和可变剪接检测能力。100 个样本建议分批次制备文库，并将批次信息记录在样本元数据中以便后续批次效应校正。</em></p></li>
 </ol>
 </details>
 

@@ -6,8 +6,9 @@
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
+<meta name="dcterms.date" content="2026-06-15">
 
-<title>28&nbsp; 第五章 课时3 – Introduction to Applied High-throughput Biological Data Analysis</title>
+<title>28&nbsp; 加权基因共表达网络分析（WGCNA） – Introduction to Applied High-throughput Biological Data Analysis</title>
 <style>
 /* Default styles provided by pandoc.
 ** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
@@ -22,6 +23,41 @@ ul.task-list li input[type="checkbox"] {
   width: 0.8em;
   margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
   vertical-align: middle;
+}
+/* CSS for syntax highlighting */
+html { -webkit-text-size-adjust: 100%; }
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
 }
 </style>
 
@@ -44,7 +80,7 @@ ul.task-list li input[type="checkbox"] {
 <link href="site_libs/quarto-html/quarto-syntax-highlighting-15634bcf2e68342d4ad2dfa704d543f6.css" rel="stylesheet" id="quarto-text-highlighting-styles">
 <script src="site_libs/bootstrap/bootstrap.min.js"></script>
 <link href="site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
-<link href="site_libs/bootstrap/bootstrap-f612c0b93c12eebe6fcd9882f38f9fc2.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
+<link href="site_libs/bootstrap/bootstrap-3f70bac5631458d474a321d4182f9338.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
 <script id="quarto-search-options" type="application/json">{
   "location": "sidebar",
   "copy-button": false,
@@ -73,6 +109,35 @@ ul.task-list li input[type="checkbox"] {
   }
 }</script>
 
+  <script src="https://cdnjs.cloudflare.com/polyfill/v3/polyfill.min.js?features=es6"></script>
+  <script defer="" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js" type="text/javascript"></script>
+
+<script type="text/javascript">
+const typesetMath = (el) => {
+  if (window.MathJax) {
+    // MathJax Typeset
+    window.MathJax.typeset([el]);
+  } else if (window.katex) {
+    // KaTeX Render
+    var mathElements = el.getElementsByClassName("math");
+    var macros = [];
+    for (var i = 0; i < mathElements.length; i++) {
+      var texText = mathElements[i].firstChild;
+      if (mathElements[i].tagName == "SPAN" && texText && texText.data) {
+        window.katex.render(texText.data, mathElements[i], {
+          displayMode: mathElements[i].classList.contains('display'),
+          throwOnError: false,
+          macros: macros,
+          fleqn: false
+        });
+      }
+    }
+  }
+}
+window.Quarto = {
+  typesetMath
+};
+</script>
 
 </head>
 
@@ -85,7 +150,7 @@ ul.task-list li input[type="checkbox"] {
       <button type="button" class="quarto-btn-toggle btn" data-bs-toggle="collapse" role="button" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
         <i class="bi bi-layout-text-sidebar-reverse"></i>
       </button>
-        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="./04-transcriptomics-basic.html">第二阶段：转录组与单细胞</a></li><li class="breadcrumb-item"><a href="./transcriptomics_adv_lesson3.html"><span class="chapter-number">28</span>&nbsp; <span class="chapter-title">第五章 课时3</span></a></li></ol></nav>
+        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="./04-transcriptomics-basic.html">第二阶段：转录组与单细胞</a></li><li class="breadcrumb-item"><a href="./transcriptomics_adv_lesson3.html"><span class="chapter-number">28</span>&nbsp; <span class="chapter-title">加权基因共表达网络分析（WGCNA）</span></a></li></ol></nav>
         <a class="flex-grow-1" role="navigation" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">      
         </a>
       <button type="button" class="btn quarto-search-button" aria-label="Search" onclick="window.quartoOpenSearch();">
@@ -280,37 +345,37 @@ ul.task-list li input[type="checkbox"] {
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./05-transcriptomics-advanced.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">25</span>&nbsp; <span class="chapter-title">Bulk 转录组高级分析：结构变异、长读长与共表达网络</span></span></a>
+ <span class="menu-text"><span class="chapter-number">25</span>&nbsp; <span class="chapter-title">Bulk 转录组高级分析：转录本结构与调控网络</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./transcriptomics_adv_lesson1.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">26</span>&nbsp; <span class="chapter-title">第五章 课时1</span></span></a>
+ <span class="menu-text"><span class="chapter-number">26</span>&nbsp; <span class="chapter-title">可变剪接差异分析与基因融合鉴定</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./transcriptomics_adv_lesson2.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">27</span>&nbsp; <span class="chapter-title">第五章 课时2</span></span></a>
+ <span class="menu-text"><span class="chapter-number">27</span>&nbsp; <span class="chapter-title">可变多腺苷酸化分析与长读长转录组展望</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./transcriptomics_adv_lesson3.html" class="sidebar-item-text sidebar-link active">
- <span class="menu-text"><span class="chapter-number">28</span>&nbsp; <span class="chapter-title">第五章 课时3</span></span></a>
+ <span class="menu-text"><span class="chapter-number">28</span>&nbsp; <span class="chapter-title">加权基因共表达网络分析（WGCNA）</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./transcriptomics_adv_lesson4.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">29</span>&nbsp; <span class="chapter-title">第五章 课时4</span></span></a>
+ <span class="menu-text"><span class="chapter-number">29</span>&nbsp; <span class="chapter-title">基因调控网络推断——从随机森林到动力系统</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./transcriptomics_adv_lesson5.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">30</span>&nbsp; <span class="chapter-title">第五章 课时5</span></span></a>
+ <span class="menu-text"><span class="chapter-number">30</span>&nbsp; <span class="chapter-title">扰动稳态下的非线性基因调控模型学习</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
@@ -529,15 +594,41 @@ ul.task-list li input[type="checkbox"] {
 </nav>
 <div id="quarto-sidebar-glass" class="quarto-sidebar-collapse-item" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item"></div>
 <!-- margin-sidebar -->
-    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar zindex-bottom">
-        
+    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+        <nav id="TOC" role="doc-toc" class="toc-active">
+    <h2 id="toc-title">Table of contents</h2>
+   
+  <ul>
+  <li><a href="#专题概述" id="toc-专题概述" class="nav-link active" data-scroll-target="#专题概述"><span class="header-section-number">29</span> 专题概述</a></li>
+  <li><a href="#wgcna-的理论框架" id="toc-wgcna-的理论框架" class="nav-link" data-scroll-target="#wgcna-的理论框架"><span class="header-section-number">30</span> WGCNA 的理论框架</a>
+  <ul class="collapse">
+  <li><a href="#从相关矩阵到加权网络" id="toc-从相关矩阵到加权网络" class="nav-link" data-scroll-target="#从相关矩阵到加权网络"><span class="header-section-number">30.1</span> 从相关矩阵到加权网络</a></li>
+  <li><a href="#无标度网络假设与软阈值选择" id="toc-无标度网络假设与软阈值选择" class="nav-link" data-scroll-target="#无标度网络假设与软阈值选择"><span class="header-section-number">30.2</span> 无标度网络假设与软阈值选择</a></li>
+  <li><a href="#拓扑重叠矩阵tom" id="toc-拓扑重叠矩阵tom" class="nav-link" data-scroll-target="#拓扑重叠矩阵tom"><span class="header-section-number">30.3</span> 拓扑重叠矩阵（TOM）</a></li>
+  <li><a href="#层次聚类与动态树切割" id="toc-层次聚类与动态树切割" class="nav-link" data-scroll-target="#层次聚类与动态树切割"><span class="header-section-number">30.4</span> 层次聚类与动态树切割</a></li>
+  </ul></li>
+  <li><a href="#wgcna-完整分析流程" id="toc-wgcna-完整分析流程" class="nav-link" data-scroll-target="#wgcna-完整分析流程"><span class="header-section-number">31</span> WGCNA 完整分析流程</a>
+  <ul class="collapse">
+  <li><a href="#数据准备与质量控制" id="toc-数据准备与质量控制" class="nav-link" data-scroll-target="#数据准备与质量控制"><span class="header-section-number">31.1</span> 数据准备与质量控制</a></li>
+  <li><a href="#软阈值选择" id="toc-软阈值选择" class="nav-link" data-scroll-target="#软阈值选择"><span class="header-section-number">31.2</span> 软阈值选择</a></li>
+  <li><a href="#网络构建与模块识别" id="toc-网络构建与模块识别" class="nav-link" data-scroll-target="#网络构建与模块识别"><span class="header-section-number">31.3</span> 网络构建与模块识别</a></li>
+  <li><a href="#模块特征基因module-eigengene" id="toc-模块特征基因module-eigengene" class="nav-link" data-scroll-target="#模块特征基因module-eigengene"><span class="header-section-number">31.4</span> 模块特征基因（Module Eigengene）</a></li>
+  <li><a href="#模块-表型关联分析" id="toc-模块-表型关联分析" class="nav-link" data-scroll-target="#模块-表型关联分析"><span class="header-section-number">31.5</span> 模块-表型关联分析</a></li>
+  <li><a href="#枢纽基因识别" id="toc-枢纽基因识别" class="nav-link" data-scroll-target="#枢纽基因识别"><span class="header-section-number">31.6</span> 枢纽基因识别</a></li>
+  <li><a href="#枢纽基因的-go-功能富集验证" id="toc-枢纽基因的-go-功能富集验证" class="nav-link" data-scroll-target="#枢纽基因的-go-功能富集验证"><span class="header-section-number">31.7</span> 枢纽基因的 GO 功能富集验证</a></li>
+  </ul></li>
+  <li><a href="#wgcna-与-dea-结果的整合" id="toc-wgcna-与-dea-结果的整合" class="nav-link" data-scroll-target="#wgcna-与-dea-结果的整合"><span class="header-section-number">32</span> WGCNA 与 DEA 结果的整合</a></li>
+  <li><a href="#wgcna-的局限性与注意事项" id="toc-wgcna-的局限性与注意事项" class="nav-link" data-scroll-target="#wgcna-的局限性与注意事项"><span class="header-section-number">33</span> WGCNA 的局限性与注意事项</a></li>
+  <li><a href="#课后自测-post-lesson-quiz" id="toc-课后自测-post-lesson-quiz" class="nav-link" data-scroll-target="#课后自测-post-lesson-quiz"><span class="header-section-number">34</span> 课后自测 (Post-Lesson Quiz)</a></li>
+  </ul>
+<div class="toc-actions"><ul><li><a href="https://github.com/cxzdsa2332/Applied-Omics-Analysis/edit/main/transcriptomics_adv_lesson3.qmd" class="toc-action"><i class="bi bi-github"></i>Edit this page</a></li><li><a href="https://github.com/cxzdsa2332/Applied-Omics-Analysis/issues/new" class="toc-action"><i class="bi empty"></i>Report an issue</a></li><li><a href="https://github.com/cxzdsa2332/Applied-Omics-Analysis/blob/main/transcriptomics_adv_lesson3.qmd" class="toc-action"><i class="bi empty"></i>View source</a></li></ul></div></nav>
     </div>
 <!-- main -->
 <main class="content" id="quarto-document-content">
 
-<header id="title-block-header" class="quarto-title-block default"><nav class="quarto-page-breadcrumbs quarto-title-breadcrumbs d-none d-lg-block" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="./04-transcriptomics-basic.html">第二阶段：转录组与单细胞</a></li><li class="breadcrumb-item"><a href="./transcriptomics_adv_lesson3.html"><span class="chapter-number">28</span>&nbsp; <span class="chapter-title">第五章 课时3</span></a></li></ol></nav>
+<header id="title-block-header" class="quarto-title-block default"><nav class="quarto-page-breadcrumbs quarto-title-breadcrumbs d-none d-lg-block" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="./04-transcriptomics-basic.html">第二阶段：转录组与单细胞</a></li><li class="breadcrumb-item"><a href="./transcriptomics_adv_lesson3.html"><span class="chapter-number">28</span>&nbsp; <span class="chapter-title">加权基因共表达网络分析（WGCNA）</span></a></li></ol></nav>
 <div class="quarto-title">
-<h1 class="title"><span class="chapter-number">28</span>&nbsp; <span class="chapter-title">第五章 课时3</span></h1>
+<h1 class="title"><span class="chapter-number">28</span>&nbsp; <span class="chapter-title">加权基因共表达网络分析（WGCNA）</span></h1>
 </div>
 
 
@@ -545,6 +636,12 @@ ul.task-list li input[type="checkbox"] {
 <div class="quarto-title-meta">
 
     
+    <div>
+    <div class="quarto-title-meta-heading">Published</div>
+    <div class="quarto-title-meta-contents">
+      <p class="date">June 15, 2026</p>
+    </div>
+  </div>
   
     
   </div>
@@ -554,8 +651,568 @@ ul.task-list li input[type="checkbox"] {
 </header>
 
 
+<section id="专题概述" class="level1" data-number="29">
+<h1 data-number="29"><span class="header-section-number">29</span> 专题概述</h1>
+<p>差异表达分析（DEA，参见第4章）从单个基因的层面评估表达量变化，但基因在生物系统中从不孤立运作——它们通过复杂的调控关系形成功能模块，协同响应细胞内外的信号。加权基因共表达网络分析（Weighted Gene Co-expression Network Analysis, WGCNA）是一种系统生物学框架，旨在从多样本基因表达矩阵中识别具有高度相关表达模式的基因模块，并将这些模块与样本的表型信息（如疾病状态、药物处理、临床指标）建立关联，从而发现驱动特定生物学表型的基因集合及其潜在的核心调控因子。本专题系统讲解 WGCNA 的理论框架、关键参数选择逻辑，以及从原始计数矩阵到枢纽基因识别的完整分析流程。</p>
+<p><strong>学习目标</strong>：理解无标度网络假设与软阈值选择的统计逻辑；掌握 WGCNA 模块构建的层次聚类框架；能够进行模块-表型关联分析并解读热图结果；能从显著模块中识别枢纽基因并进行下游功能验证。</p>
+<hr>
+</section>
+<section id="wgcna-的理论框架" class="level1" data-number="30">
+<h1 data-number="30"><span class="header-section-number">30</span> WGCNA 的理论框架</h1>
+<section id="从相关矩阵到加权网络" class="level2" data-number="30.1">
+<h2 data-number="30.1" class="anchored" data-anchor-id="从相关矩阵到加权网络"><span class="header-section-number">30.1</span> 从相关矩阵到加权网络</h2>
+<p>WGCNA 的起点是一个基因表达矩阵 <span class="math inline">\(\mathbf{X} \in \mathbb{R}^{n \times p}\)</span>，其中 <span class="math inline">\(n\)</span> 为样本数，<span class="math inline">\(p\)</span> 为基因数。分析的第一步是计算所有基因对之间的皮尔逊相关系数矩阵 <span class="math inline">\(\mathbf{S}\)</span>，其中 <span class="math inline">\(s_{ij} = |\text{cor}(x_i, x_j)|\)</span>（取绝对值以捕捉正相关和负相关关系）。</p>
+<p>直接使用相关矩阵构建网络（硬阈值化）存在一个问题：阈值的选择是任意的，且会导致大量信息损失（低于阈值的边被完全丢弃）。WGCNA 的创新之处在于使用<strong>软阈值化（Soft Thresholding）</strong>——将相关系数取 <span class="math inline">\(\beta\)</span> 次幂来产生网络邻接矩阵：</p>
+<p><span class="math display">\[a_{ij} = s_{ij}^{\beta}\]</span></p>
+<p>其中 <span class="math inline">\(\beta\)</span>（软阈值，又称幂次参数）是需要从数据中确定的关键参数。软阈值化的优势在于：（1）保留了所有基因对之间的连接，只是以连续方式调整权重；（2）通过选择合适的 <span class="math inline">\(\beta\)</span>，可以使网络满足无标度拓扑（Scale-free Topology）假设。</p>
+<div id="fig-gene-coexpression-network" class="quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-gene-coexpression-network-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<img src="https://upload.wikimedia.org/wikipedia/commons/7/75/Gene_co-expression_network_with_7221_genes_for_18_gastric_cancer_patients.png" class="img-fluid figure-img" style="width:85.0%">
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-gene-coexpression-network-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+图&nbsp;1: 胃癌患者样本的基因共表达网络示例（7,221 个基因，18 名患者）。节点代表基因，边代表显著的共表达关系，不同颜色表示不同的功能模块。
+</figcaption>
+</figure>
+</div>
+<p>图片引用自维基百科：<a href="https://en.wikipedia.org/wiki/Gene_co-expression_network">Gene co-expression network</a></p>
+</section>
+<section id="无标度网络假设与软阈值选择" class="level2" data-number="30.2">
+<h2 data-number="30.2" class="anchored" data-anchor-id="无标度网络假设与软阈值选择"><span class="header-section-number">30.2</span> 无标度网络假设与软阈值选择</h2>
+<p>无标度网络的核心特征是其节点度（connectivity）分布服从幂律分布 <span class="math inline">\(P(k) \sim k^{-\gamma}\)</span>，即大多数基因只有少数连接，少数”枢纽基因”（Hub genes）连接到大量其他基因。已有研究表明，生物调控网络（包括蛋白质互作网络、转录调控网络）普遍具有无标度拓扑特征，因此 WGCNA 将无标度拓扑拟合度（Scale-free Topology Fit Index, <span class="math inline">\(R^2\)</span>）作为选择软阈值的标准：</p>
+<p><strong>选择原则</strong>：取满足 <span class="math inline">\(R^2 \geq 0.85\)</span> 的最小 <span class="math inline">\(\beta\)</span> 值，同时要求网络的平均连接度（Mean Connectivity）足够高（通常 &gt; 100）以保证足够的信息量。</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb1"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Run pickSoftThreshold (requires WGCNA package)</span></span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(WGCNA)</span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(DESeq2)</span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(airway)</span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a><span class="fu">data</span>(airway)</span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a>dds <span class="ot">&lt;-</span> <span class="fu">DESeqDataSet</span>(airway, <span class="at">design =</span> <span class="sc">~</span> cell <span class="sc">+</span> dex)</span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a>dds <span class="ot">&lt;-</span> dds[<span class="fu">rowSums</span>(<span class="fu">counts</span>(dds)) <span class="sc">&gt;</span> <span class="dv">10</span>, ]</span>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a>vsd <span class="ot">&lt;-</span> <span class="fu">vst</span>(dds, <span class="at">blind =</span> <span class="cn">FALSE</span>)</span>
+<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a>expr_mat <span class="ot">&lt;-</span> <span class="fu">t</span>(<span class="fu">assay</span>(vsd))</span>
+<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-12"><a href="#cb1-12" aria-hidden="true" tabindex="-1"></a>powers <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="dv">1</span><span class="sc">:</span><span class="dv">10</span>, <span class="fu">seq</span>(<span class="dv">12</span>, <span class="dv">20</span>, <span class="dv">2</span>))</span>
+<span id="cb1-13"><a href="#cb1-13" aria-hidden="true" tabindex="-1"></a>sft <span class="ot">&lt;-</span> <span class="fu">pickSoftThreshold</span>(expr_mat, <span class="at">powerVector =</span> powers,</span>
+<span id="cb1-14"><a href="#cb1-14" aria-hidden="true" tabindex="-1"></a>                          <span class="at">networkType =</span> <span class="st">"signed"</span>, <span class="at">verbose =</span> <span class="dv">0</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb2"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="co">#| label: fig-soft-threshold</span></span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a><span class="co">#| fig-cap: "软阈值选择诊断图（模拟示意）。左图：不同 β 值对应的无标度拓扑拟合度（$R^2$），红色虚线标注 0.85 阈值，β = 12 时首次超过该阈值；右图：对应的平均连接度，随 β 升高单调下降。实际分析中曲线形态因数据集而异。"</span></span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(ggplot2)</span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(patchwork)</span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a><span class="co"># Simulated soft-threshold diagnostic (representative of typical signed network)</span></span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">1</span>)</span>
+<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a>powers <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="dv">1</span><span class="sc">:</span><span class="dv">10</span>, <span class="fu">seq</span>(<span class="dv">12</span>, <span class="dv">20</span>, <span class="dv">2</span>))</span>
+<span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a>r2_vals <span class="ot">&lt;-</span> <span class="fu">pmin</span>(<span class="fl">0.3</span> <span class="sc">+</span> <span class="fl">0.065</span> <span class="sc">*</span> powers <span class="sc">+</span> <span class="fu">rnorm</span>(<span class="fu">length</span>(powers), <span class="dv">0</span>, <span class="fl">0.02</span>), <span class="fl">0.99</span>)</span>
+<span id="cb2-10"><a href="#cb2-10" aria-hidden="true" tabindex="-1"></a>r2_vals[powers <span class="sc">&gt;=</span> <span class="dv">12</span>] <span class="ot">&lt;-</span> <span class="fu">pmin</span>(r2_vals[powers <span class="sc">&gt;=</span> <span class="dv">12</span>], <span class="fl">0.97</span>)</span>
+<span id="cb2-11"><a href="#cb2-11" aria-hidden="true" tabindex="-1"></a>mean_conn <span class="ot">&lt;-</span> <span class="dv">500</span> <span class="sc">*</span> <span class="fu">exp</span>(<span class="sc">-</span><span class="fl">0.28</span> <span class="sc">*</span> powers) <span class="sc">+</span> <span class="fu">rnorm</span>(<span class="fu">length</span>(powers), <span class="dv">0</span>, <span class="dv">5</span>)</span>
+<span id="cb2-12"><a href="#cb2-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-13"><a href="#cb2-13" aria-hidden="true" tabindex="-1"></a>sft_df <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(<span class="at">power =</span> powers, <span class="at">r2 =</span> r2_vals, <span class="at">mean_conn =</span> <span class="fu">pmax</span>(mean_conn, <span class="dv">0</span>))</span>
+<span id="cb2-14"><a href="#cb2-14" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-15"><a href="#cb2-15" aria-hidden="true" tabindex="-1"></a>p1 <span class="ot">&lt;-</span> <span class="fu">ggplot</span>(sft_df, <span class="fu">aes</span>(<span class="at">x =</span> power, <span class="at">y =</span> r2)) <span class="sc">+</span></span>
+<span id="cb2-16"><a href="#cb2-16" aria-hidden="true" tabindex="-1"></a>    <span class="fu">geom_line</span>(<span class="at">color =</span> <span class="st">"#4472C4"</span>) <span class="sc">+</span> <span class="fu">geom_point</span>(<span class="at">color =</span> <span class="st">"#4472C4"</span>) <span class="sc">+</span></span>
+<span id="cb2-17"><a href="#cb2-17" aria-hidden="true" tabindex="-1"></a>    <span class="fu">geom_hline</span>(<span class="at">yintercept =</span> <span class="fl">0.85</span>, <span class="at">linetype =</span> <span class="st">"dashed"</span>, <span class="at">color =</span> <span class="st">"#d62728"</span>) <span class="sc">+</span></span>
+<span id="cb2-18"><a href="#cb2-18" aria-hidden="true" tabindex="-1"></a>    <span class="fu">annotate</span>(<span class="st">"text"</span>, <span class="at">x =</span> <span class="fl">12.2</span>, <span class="at">y =</span> <span class="fl">0.87</span>, <span class="at">label =</span> <span class="st">"β = 12 (selected)"</span>,</span>
+<span id="cb2-19"><a href="#cb2-19" aria-hidden="true" tabindex="-1"></a>             <span class="at">hjust =</span> <span class="dv">0</span>, <span class="at">size =</span> <span class="dv">3</span>, <span class="at">color =</span> <span class="st">"#d62728"</span>) <span class="sc">+</span></span>
+<span id="cb2-20"><a href="#cb2-20" aria-hidden="true" tabindex="-1"></a>    <span class="fu">labs</span>(<span class="at">x =</span> <span class="fu">expression</span>(beta <span class="sc">~</span> <span class="st">"(Soft Threshold Power)"</span>),</span>
+<span id="cb2-21"><a href="#cb2-21" aria-hidden="true" tabindex="-1"></a>         <span class="at">y =</span> <span class="fu">expression</span>(R<span class="sc">^</span><span class="dv">2</span> <span class="sc">~</span> <span class="st">"(Scale-free Fit)"</span>)) <span class="sc">+</span></span>
+<span id="cb2-22"><a href="#cb2-22" aria-hidden="true" tabindex="-1"></a>    <span class="fu">theme_bw</span>(<span class="at">base_size =</span> <span class="dv">11</span>)</span>
+<span id="cb2-23"><a href="#cb2-23" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-24"><a href="#cb2-24" aria-hidden="true" tabindex="-1"></a>p2 <span class="ot">&lt;-</span> <span class="fu">ggplot</span>(sft_df, <span class="fu">aes</span>(<span class="at">x =</span> power, <span class="at">y =</span> mean_conn)) <span class="sc">+</span></span>
+<span id="cb2-25"><a href="#cb2-25" aria-hidden="true" tabindex="-1"></a>    <span class="fu">geom_line</span>(<span class="at">color =</span> <span class="st">"#ED7D31"</span>) <span class="sc">+</span> <span class="fu">geom_point</span>(<span class="at">color =</span> <span class="st">"#ED7D31"</span>) <span class="sc">+</span></span>
+<span id="cb2-26"><a href="#cb2-26" aria-hidden="true" tabindex="-1"></a>    <span class="fu">labs</span>(<span class="at">x =</span> <span class="fu">expression</span>(beta), <span class="at">y =</span> <span class="st">"Mean Connectivity"</span>) <span class="sc">+</span></span>
+<span id="cb2-27"><a href="#cb2-27" aria-hidden="true" tabindex="-1"></a>    <span class="fu">theme_bw</span>(<span class="at">base_size =</span> <span class="dv">11</span>)</span>
+<span id="cb2-28"><a href="#cb2-28" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-29"><a href="#cb2-29" aria-hidden="true" tabindex="-1"></a>p1 <span class="sc">+</span> p2</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</section>
+<section id="拓扑重叠矩阵tom" class="level2" data-number="30.3">
+<h2 data-number="30.3" class="anchored" data-anchor-id="拓扑重叠矩阵tom"><span class="header-section-number">30.3</span> 拓扑重叠矩阵（TOM）</h2>
+<p>直接使用邻接矩阵进行聚类会对噪声敏感，因为两个基因之间的直接相关可能是偶然的。WGCNA 在聚类之前将邻接矩阵转化为<strong>拓扑重叠矩阵（Topological Overlap Matrix, TOM）</strong>，其计算方式为：</p>
+<p><span class="math display">\[\text{TOM}_{ij} = \frac{\sum_u a_{iu} a_{ju} + a_{ij}}{\min(k_i, k_j) + 1 - a_{ij}}\]</span></p>
+<p>其中 <span class="math inline">\(k_i = \sum_u a_{iu}\)</span> 为基因 <span class="math inline">\(i\)</span> 的加权连接度。TOM 的含义是：如果两个基因不仅直接相连，还共享大量共同邻居，则它们的 TOM 值接近 1，表明具有高度的网络邻域相似性。TOM 比直接相关系数对测量噪声更鲁棒，是 WGCNA 模块稳定性的关键保证。</p>
+<p>下面用一个 6 基因的小例子直观展示 TOM 的计算过程。第一段代码按公式手动实现，便于理解每一项的来源；第二段调用 WGCNA 的 <code>TOMsimilarity()</code>，二者结果一致。</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb3"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(WGCNA)</span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a><span class="co"># A small simulated expression matrix: 20 samples x 6 genes</span></span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">42</span>)</span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a>datExpr <span class="ot">&lt;-</span> <span class="fu">matrix</span>(<span class="fu">rnorm</span>(<span class="dv">20</span> <span class="sc">*</span> <span class="dv">6</span>), <span class="at">nrow =</span> <span class="dv">20</span>, <span class="at">ncol =</span> <span class="dv">6</span>)</span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a><span class="fu">colnames</span>(datExpr) <span class="ot">&lt;-</span> <span class="fu">paste0</span>(<span class="st">"Gene"</span>, <span class="dv">1</span><span class="sc">:</span><span class="dv">6</span>)</span>
+<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a><span class="co"># Step 1: build the (unsigned) adjacency matrix with soft-thresholding power beta = 6</span></span>
+<span id="cb3-9"><a href="#cb3-9" aria-hidden="true" tabindex="-1"></a>beta <span class="ot">&lt;-</span> <span class="dv">6</span></span>
+<span id="cb3-10"><a href="#cb3-10" aria-hidden="true" tabindex="-1"></a>corMat <span class="ot">&lt;-</span> <span class="fu">cor</span>(datExpr)                 <span class="co"># Pearson correlation between genes</span></span>
+<span id="cb3-11"><a href="#cb3-11" aria-hidden="true" tabindex="-1"></a>adjacency <span class="ot">&lt;-</span> <span class="fu">abs</span>(corMat)<span class="sc">^</span>beta          <span class="co"># adjacency a_ij in [0, 1]</span></span>
+<span id="cb3-12"><a href="#cb3-12" aria-hidden="true" tabindex="-1"></a><span class="fu">diag</span>(adjacency) <span class="ot">&lt;-</span> <span class="dv">0</span>                   <span class="co"># remove self-loops (a_ii = 0)</span></span>
+<span id="cb3-13"><a href="#cb3-13" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-14"><a href="#cb3-14" aria-hidden="true" tabindex="-1"></a><span class="co"># Step 2: compute TOM manually following the WGCNA formula</span></span>
+<span id="cb3-15"><a href="#cb3-15" aria-hidden="true" tabindex="-1"></a>n <span class="ot">&lt;-</span> <span class="fu">ncol</span>(adjacency)</span>
+<span id="cb3-16"><a href="#cb3-16" aria-hidden="true" tabindex="-1"></a>k <span class="ot">&lt;-</span> <span class="fu">rowSums</span>(adjacency)                <span class="co"># connectivity k_i = sum_u a_iu</span></span>
+<span id="cb3-17"><a href="#cb3-17" aria-hidden="true" tabindex="-1"></a>L <span class="ot">&lt;-</span> adjacency <span class="sc">%*%</span> adjacency           <span class="co"># L_ij = sum_u a_iu * a_ju (shared neighbors)</span></span>
+<span id="cb3-18"><a href="#cb3-18" aria-hidden="true" tabindex="-1"></a>TOM_manual <span class="ot">&lt;-</span> <span class="fu">matrix</span>(<span class="dv">0</span>, n, n)</span>
+<span id="cb3-19"><a href="#cb3-19" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> (i <span class="cf">in</span> <span class="dv">1</span><span class="sc">:</span>n) {</span>
+<span id="cb3-20"><a href="#cb3-20" aria-hidden="true" tabindex="-1"></a>  <span class="cf">for</span> (j <span class="cf">in</span> <span class="dv">1</span><span class="sc">:</span>n) {</span>
+<span id="cb3-21"><a href="#cb3-21" aria-hidden="true" tabindex="-1"></a>    numerator   <span class="ot">&lt;-</span> L[i, j] <span class="sc">+</span> adjacency[i, j]</span>
+<span id="cb3-22"><a href="#cb3-22" aria-hidden="true" tabindex="-1"></a>    denominator <span class="ot">&lt;-</span> <span class="fu">min</span>(k[i], k[j]) <span class="sc">+</span> <span class="dv">1</span> <span class="sc">-</span> adjacency[i, j]</span>
+<span id="cb3-23"><a href="#cb3-23" aria-hidden="true" tabindex="-1"></a>    TOM_manual[i, j] <span class="ot">&lt;-</span> numerator <span class="sc">/</span> denominator</span>
+<span id="cb3-24"><a href="#cb3-24" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb3-25"><a href="#cb3-25" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb3-26"><a href="#cb3-26" aria-hidden="true" tabindex="-1"></a><span class="fu">diag</span>(TOM_manual) <span class="ot">&lt;-</span> <span class="dv">1</span>                   <span class="co"># a gene fully overlaps with itself</span></span>
+<span id="cb3-27"><a href="#cb3-27" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-28"><a href="#cb3-28" aria-hidden="true" tabindex="-1"></a><span class="co"># Step 3: the same result using WGCNA's built-in function</span></span>
+<span id="cb3-29"><a href="#cb3-29" aria-hidden="true" tabindex="-1"></a>TOM_wgcna <span class="ot">&lt;-</span> <span class="fu">TOMsimilarity</span>(adjacency, <span class="at">TOMType =</span> <span class="st">"unsigned"</span>)</span>
+<span id="cb3-30"><a href="#cb3-30" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-31"><a href="#cb3-31" aria-hidden="true" tabindex="-1"></a><span class="co"># Verify both approaches agree (differences are within floating-point tolerance)</span></span>
+<span id="cb3-32"><a href="#cb3-32" aria-hidden="true" tabindex="-1"></a><span class="fu">max</span>(<span class="fu">abs</span>(TOM_manual <span class="sc">-</span> TOM_wgcna))</span>
+<span id="cb3-33"><a href="#cb3-33" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; [1] 2.220446e-16</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>在真实分析中无需手动实现，直接使用 <code>TOMsimilarity()</code> 即可；上述展开仅用于揭示公式背后的逻辑。</p>
+</section>
+<section id="层次聚类与动态树切割" class="level2" data-number="30.4">
+<h2 data-number="30.4" class="anchored" data-anchor-id="层次聚类与动态树切割"><span class="header-section-number">30.4</span> 层次聚类与动态树切割</h2>
+<p>得到 TOM 之后，WGCNA 以 <span class="math inline">\(1 - \text{TOM}\)</span> 作为基因间的相异度（dissimilarity），采用平均连接法（average linkage）进行层次聚类，生成基因聚类树状图（dendrogram）。树状图的每个叶节点是一个基因，紧密共表达的基因在低高度处汇合形成致密分支，而模块即对应于树状图上的这些分支。识别模块的本质，就是将树状图切割成若干分支。</p>
+<p>{{Wiki:Hierarchical_clustering}}</p>
+<p>最朴素的切割方式是<strong>固定高度切割（Static / Fixed-height Cut）</strong>：在树状图上画一条水平线，线下的每个独立分支即为一个模块。然而固定高度切割存在根本缺陷：真实的共表达模块在大小、致密程度和汇合高度上差异很大，单一的全局切割高度无法同时适配它们——切得太低会把一个大模块拆成碎片，切得太高则会把若干小模块强行合并。换言之，固定高度假设了所有模块具有相同的”深度”，这与生物数据的异质性相悖。</p>
+<p><strong>动态树切割（Dynamic Tree Cut）</strong>正是为解决这一问题而设计。它不依赖单一高度，而是自适应地分析树状图每个分支的<strong>形状</strong>——综合考虑分支的高度、大小、内部致密度以及与相邻分支的间隔——据此决定该分支是否构成一个独立模块。其要点包括：</p>
+<ul>
+<li><strong>自底向上识别分支</strong>：从树状图底部开始，将满足最小规模（<code>minClusterSize</code>，默认 20–30 个基因）且形态致密的分支判定为候选模块。</li>
+<li><strong>分裂敏感度可调</strong>：<code>deepSplit</code> 参数（0–4）控制切割的精细程度，值越大越倾向于拆分出更多、更小的模块。</li>
+<li><strong>混合模式（Hybrid）的 PAM 阶段</strong>：动态树切割的混合算法在初步分支识别后，可选地将未分配基因（树状图上的”散叶”）按 PAM（Partitioning Around Medoids）思想就近归入最相似的模块，从而减少落入”灰色（grey）“未分配集合的基因数量。</li>
+</ul>
+<p>下面用一组模拟数据直观对比两种切割策略。我们构造 4 个大小与致密度各异的共表达模块外加一批无结构的背景基因，构建 TOM 树状图后分别施加固定高度切割与动态树切割，并将两者的模块分配结果以颜色条并列展示于同一树状图下方（<span class="quarto-unresolved-ref">?fig-dynamic-treecut</span>）。</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb4"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="co">#| label: fig-dynamic-treecut</span></span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a><span class="co">#| fig-cap: "固定高度切割与动态树切割的对比（模拟数据）。上方为基于 TOM 相异度的基因聚类树状图；中间颜色条为固定高度切割（在单一高度处切割）的模块分配，下方颜色条为动态树切割的结果。模拟数据包含 4 个大小（60/40/25/15 个基因）与致密度各异的真实模块。固定高度切割难以兼顾不同尺度的分支——较松散的小模块被并入灰色未分配集合；动态树切割则依据分支形状自适应地恢复了全部 4 个模块。"</span></span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(WGCNA)</span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">2024</span>)</span>
+<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a>nSamples <span class="ot">&lt;-</span> <span class="dv">40</span></span>
+<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-8"><a href="#cb4-8" aria-hidden="true" tabindex="-1"></a><span class="co"># Generate one co-expression module: genes sharing a latent eigengene signal,</span></span>
+<span id="cb4-9"><a href="#cb4-9" aria-hidden="true" tabindex="-1"></a><span class="co"># with 'tightness' controlling how strongly each gene tracks that signal.</span></span>
+<span id="cb4-10"><a href="#cb4-10" aria-hidden="true" tabindex="-1"></a>make_module <span class="ot">&lt;-</span> <span class="cf">function</span>(n_genes, tightness) {</span>
+<span id="cb4-11"><a href="#cb4-11" aria-hidden="true" tabindex="-1"></a>    eigengene <span class="ot">&lt;-</span> <span class="fu">rnorm</span>(nSamples)</span>
+<span id="cb4-12"><a href="#cb4-12" aria-hidden="true" tabindex="-1"></a>    <span class="fu">sapply</span>(<span class="fu">seq_len</span>(n_genes), <span class="cf">function</span>(g) {</span>
+<span id="cb4-13"><a href="#cb4-13" aria-hidden="true" tabindex="-1"></a>        tightness <span class="sc">*</span> eigengene <span class="sc">+</span> <span class="fu">rnorm</span>(nSamples, <span class="dv">0</span>, <span class="dv">1</span> <span class="sc">-</span> tightness)</span>
+<span id="cb4-14"><a href="#cb4-14" aria-hidden="true" tabindex="-1"></a>    })</span>
+<span id="cb4-15"><a href="#cb4-15" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb4-16"><a href="#cb4-16" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-17"><a href="#cb4-17" aria-hidden="true" tabindex="-1"></a>m1 <span class="ot">&lt;-</span> <span class="fu">make_module</span>(<span class="dv">60</span>, <span class="fl">0.85</span>)   <span class="co"># large, tight</span></span>
+<span id="cb4-18"><a href="#cb4-18" aria-hidden="true" tabindex="-1"></a>m2 <span class="ot">&lt;-</span> <span class="fu">make_module</span>(<span class="dv">40</span>, <span class="fl">0.65</span>)   <span class="co"># medium, looser</span></span>
+<span id="cb4-19"><a href="#cb4-19" aria-hidden="true" tabindex="-1"></a>m3 <span class="ot">&lt;-</span> <span class="fu">make_module</span>(<span class="dv">25</span>, <span class="fl">0.80</span>)   <span class="co"># small, tight</span></span>
+<span id="cb4-20"><a href="#cb4-20" aria-hidden="true" tabindex="-1"></a>m4 <span class="ot">&lt;-</span> <span class="fu">make_module</span>(<span class="dv">15</span>, <span class="fl">0.55</span>)   <span class="co"># very small, loose</span></span>
+<span id="cb4-21"><a href="#cb4-21" aria-hidden="true" tabindex="-1"></a>background <span class="ot">&lt;-</span> <span class="fu">matrix</span>(<span class="fu">rnorm</span>(nSamples <span class="sc">*</span> <span class="dv">30</span>), nSamples, <span class="dv">30</span>)  <span class="co"># unclustered genes</span></span>
+<span id="cb4-22"><a href="#cb4-22" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-23"><a href="#cb4-23" aria-hidden="true" tabindex="-1"></a>datExpr <span class="ot">&lt;-</span> <span class="fu">cbind</span>(m1, m2, m3, m4, background)</span>
+<span id="cb4-24"><a href="#cb4-24" aria-hidden="true" tabindex="-1"></a><span class="fu">colnames</span>(datExpr) <span class="ot">&lt;-</span> <span class="fu">paste0</span>(<span class="st">"G"</span>, <span class="fu">seq_len</span>(<span class="fu">ncol</span>(datExpr)))</span>
+<span id="cb4-25"><a href="#cb4-25" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-26"><a href="#cb4-26" aria-hidden="true" tabindex="-1"></a><span class="co"># Adjacency -&gt; TOM -&gt; dissimilarity -&gt; hierarchical clustering</span></span>
+<span id="cb4-27"><a href="#cb4-27" aria-hidden="true" tabindex="-1"></a>adj      <span class="ot">&lt;-</span> <span class="fu">adjacency</span>(datExpr, <span class="at">power =</span> <span class="dv">6</span>, <span class="at">type =</span> <span class="st">"signed"</span>)</span>
+<span id="cb4-28"><a href="#cb4-28" aria-hidden="true" tabindex="-1"></a>dissTOM  <span class="ot">&lt;-</span> <span class="dv">1</span> <span class="sc">-</span> <span class="fu">TOMsimilarity</span>(adj, <span class="at">TOMType =</span> <span class="st">"signed"</span>)</span>
+<span id="cb4-29"><a href="#cb4-29" aria-hidden="true" tabindex="-1"></a>geneTree <span class="ot">&lt;-</span> <span class="fu">hclust</span>(<span class="fu">as.dist</span>(dissTOM), <span class="at">method =</span> <span class="st">"average"</span>)</span>
+<span id="cb4-30"><a href="#cb4-30" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-31"><a href="#cb4-31" aria-hidden="true" tabindex="-1"></a><span class="co"># (a) Static cut at a single fixed height</span></span>
+<span id="cb4-32"><a href="#cb4-32" aria-hidden="true" tabindex="-1"></a>static_colors <span class="ot">&lt;-</span> <span class="fu">labels2colors</span>(</span>
+<span id="cb4-33"><a href="#cb4-33" aria-hidden="true" tabindex="-1"></a>    <span class="fu">cutreeStatic</span>(geneTree, <span class="at">cutHeight =</span> <span class="fl">0.99</span>, <span class="at">minSize =</span> <span class="dv">15</span>))</span>
+<span id="cb4-34"><a href="#cb4-34" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-35"><a href="#cb4-35" aria-hidden="true" tabindex="-1"></a><span class="co"># (b) Dynamic Tree Cut: branch-shape adaptive</span></span>
+<span id="cb4-36"><a href="#cb4-36" aria-hidden="true" tabindex="-1"></a>dynamic_mods <span class="ot">&lt;-</span> <span class="fu">cutreeDynamic</span>(<span class="at">dendro =</span> geneTree, <span class="at">distM =</span> dissTOM,</span>
+<span id="cb4-37"><a href="#cb4-37" aria-hidden="true" tabindex="-1"></a>                              <span class="at">deepSplit =</span> <span class="dv">2</span>, <span class="at">pamRespectsDendro =</span> <span class="cn">FALSE</span>,</span>
+<span id="cb4-38"><a href="#cb4-38" aria-hidden="true" tabindex="-1"></a>                              <span class="at">minClusterSize =</span> <span class="dv">15</span>)</span>
+<span id="cb4-39"><a href="#cb4-39" aria-hidden="true" tabindex="-1"></a>dynamic_colors <span class="ot">&lt;-</span> <span class="fu">labels2colors</span>(dynamic_mods)</span>
+<span id="cb4-40"><a href="#cb4-40" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-41"><a href="#cb4-41" aria-hidden="true" tabindex="-1"></a><span class="fu">plotDendroAndColors</span>(geneTree,</span>
+<span id="cb4-42"><a href="#cb4-42" aria-hidden="true" tabindex="-1"></a>    <span class="at">colors      =</span> <span class="fu">cbind</span>(static_colors, dynamic_colors),</span>
+<span id="cb4-43"><a href="#cb4-43" aria-hidden="true" tabindex="-1"></a>    <span class="at">groupLabels =</span> <span class="fu">c</span>(<span class="st">"Static cut (fixed h)"</span>, <span class="st">"Dynamic Tree Cut"</span>),</span>
+<span id="cb4-44"><a href="#cb4-44" aria-hidden="true" tabindex="-1"></a>    <span class="at">dendroLabels =</span> <span class="cn">FALSE</span>, <span class="at">hang =</span> <span class="fl">0.03</span>, <span class="at">addGuide =</span> <span class="cn">TRUE</span>,</span>
+<span id="cb4-45"><a href="#cb4-45" aria-hidden="true" tabindex="-1"></a>    <span class="at">main =</span> <span class="st">"Gene dendrogram: static vs dynamic tree cut (simulated)"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>为了揭示”自适应”究竟发生了什么，下面仅用 base R（不调用任何 WGCNA 函数）手动复现动态树切割的<strong>核心思想</strong>。动态树切割的树方法（tree method）本质上是<strong>自底向上</strong>的：沿树状图从最低的汇合高度向上遍历每一次合并，让致密的分支不断生长；当某次合并试图把<strong>两个都已达到最小规模的成熟分支</strong>连接起来时（这通常发生在很高的”黏合”高度处），就拒绝合并，将它们判定为两个独立模块；始终未能长到最小规模的零散分支则保留为未分配（灰色）。</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb5"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Manual, base-R illustration of dynamic (bottom-up) branch detection.</span></span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a><span class="co"># Reuses geneTree (the hclust object) built in the previous chunk; no WGCNA calls.</span></span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a>merge_mat <span class="ot">&lt;-</span> geneTree<span class="sc">$</span>merge   <span class="co"># each row joins two items, in increasing-height order</span></span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a>n_leaf    <span class="ot">&lt;-</span> <span class="fu">nrow</span>(merge_mat) <span class="sc">+</span> <span class="dv">1</span></span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a>min_size  <span class="ot">&lt;-</span> <span class="dv">15</span></span>
+<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a><span class="co"># For each merge node, node_members[[k]] holds the gene indices still "growing"</span></span>
+<span id="cb5-8"><a href="#cb5-8" aria-hidden="true" tabindex="-1"></a><span class="co"># in that branch. A negative entry in merge_mat is an original gene; a positive</span></span>
+<span id="cb5-9"><a href="#cb5-9" aria-hidden="true" tabindex="-1"></a><span class="co"># entry refers to an earlier merge node.</span></span>
+<span id="cb5-10"><a href="#cb5-10" aria-hidden="true" tabindex="-1"></a>node_members <span class="ot">&lt;-</span> <span class="fu">vector</span>(<span class="st">"list"</span>, <span class="fu">nrow</span>(merge_mat))</span>
+<span id="cb5-11"><a href="#cb5-11" aria-hidden="true" tabindex="-1"></a>finalized    <span class="ot">&lt;-</span> <span class="fu">list</span>()        <span class="co"># branches frozen as distinct modules</span></span>
+<span id="cb5-12"><a href="#cb5-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-13"><a href="#cb5-13" aria-hidden="true" tabindex="-1"></a>members_of <span class="ot">&lt;-</span> <span class="cf">function</span>(item) {</span>
+<span id="cb5-14"><a href="#cb5-14" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> (item <span class="sc">&lt;</span> <span class="dv">0</span>) <span class="sc">-</span>item                  <span class="co"># an original gene (leaf)</span></span>
+<span id="cb5-15"><a href="#cb5-15" aria-hidden="true" tabindex="-1"></a>    <span class="cf">else</span>          node_members[[item]]   <span class="co"># a previously built branch</span></span>
+<span id="cb5-16"><a href="#cb5-16" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb5-17"><a href="#cb5-17" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-18"><a href="#cb5-18" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> (k <span class="cf">in</span> <span class="fu">seq_len</span>(<span class="fu">nrow</span>(merge_mat))) {</span>
+<span id="cb5-19"><a href="#cb5-19" aria-hidden="true" tabindex="-1"></a>    left  <span class="ot">&lt;-</span> <span class="fu">members_of</span>(merge_mat[k, <span class="dv">1</span>])</span>
+<span id="cb5-20"><a href="#cb5-20" aria-hidden="true" tabindex="-1"></a>    right <span class="ot">&lt;-</span> <span class="fu">members_of</span>(merge_mat[k, <span class="dv">2</span>])</span>
+<span id="cb5-21"><a href="#cb5-21" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> (<span class="fu">length</span>(left) <span class="sc">&gt;=</span> min_size <span class="sc">&amp;&amp;</span> <span class="fu">length</span>(right) <span class="sc">&gt;=</span> min_size) {</span>
+<span id="cb5-22"><a href="#cb5-22" aria-hidden="true" tabindex="-1"></a>        <span class="co"># Tall "gluing" merge between two mature branches -&gt; keep them separate</span></span>
+<span id="cb5-23"><a href="#cb5-23" aria-hidden="true" tabindex="-1"></a>        finalized <span class="ot">&lt;-</span> <span class="fu">c</span>(finalized, <span class="fu">list</span>(left), <span class="fu">list</span>(right))</span>
+<span id="cb5-24"><a href="#cb5-24" aria-hidden="true" tabindex="-1"></a>        node_members[[k]] <span class="ot">&lt;-</span> <span class="fu">integer</span>(<span class="dv">0</span>)  <span class="co"># nothing propagates upward</span></span>
+<span id="cb5-25"><a href="#cb5-25" aria-hidden="true" tabindex="-1"></a>    } <span class="cf">else</span> {</span>
+<span id="cb5-26"><a href="#cb5-26" aria-hidden="true" tabindex="-1"></a>        node_members[[k]] <span class="ot">&lt;-</span> <span class="fu">c</span>(left, right)  <span class="co"># let the branch keep growing</span></span>
+<span id="cb5-27"><a href="#cb5-27" aria-hidden="true" tabindex="-1"></a>    }</span>
+<span id="cb5-28"><a href="#cb5-28" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb5-29"><a href="#cb5-29" aria-hidden="true" tabindex="-1"></a><span class="co"># A branch still growing at the very top is a module if it reached min_size</span></span>
+<span id="cb5-30"><a href="#cb5-30" aria-hidden="true" tabindex="-1"></a>top_branch <span class="ot">&lt;-</span> node_members[[<span class="fu">nrow</span>(merge_mat)]]</span>
+<span id="cb5-31"><a href="#cb5-31" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> (<span class="fu">length</span>(top_branch) <span class="sc">&gt;=</span> min_size) finalized <span class="ot">&lt;-</span> <span class="fu">c</span>(finalized, <span class="fu">list</span>(top_branch))</span>
+<span id="cb5-32"><a href="#cb5-32" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-33"><a href="#cb5-33" aria-hidden="true" tabindex="-1"></a><span class="co"># Turn the detected branches into an integer label per gene (0 = unassigned/grey)</span></span>
+<span id="cb5-34"><a href="#cb5-34" aria-hidden="true" tabindex="-1"></a>manual_labels <span class="ot">&lt;-</span> <span class="fu">integer</span>(n_leaf)</span>
+<span id="cb5-35"><a href="#cb5-35" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> (m <span class="cf">in</span> <span class="fu">seq_along</span>(finalized)) manual_labels[finalized[[m]]] <span class="ot">&lt;-</span> m</span>
+<span id="cb5-36"><a href="#cb5-36" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-37"><a href="#cb5-37" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">"Modules detected by the manual rule:"</span>, <span class="fu">length</span>(finalized), <span class="st">"</span><span class="sc">\n</span><span class="st">"</span>)</span>
+<span id="cb5-38"><a href="#cb5-38" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(<span class="fu">table</span>(manual_labels))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>将 <code>manual_labels</code> 与前一段 <code>cutreeDynamic()</code> 的结果比对，可见二者在 4 个真实模块上的划分高度一致——这说明”自底向上、拒绝黏合成熟分支”确实是动态树切割的核心逻辑。</p>
+<div class="warning">
+<p><strong>简化说明：</strong> 上述手动实现仅用于阐明原理，省略了 <code>cutreeDynamic()</code> 的两项关键稳健化机制：（1）<strong>PAM 阶段</strong>——按 Partitioning Around Medoids 思想将零散基因就近归入最相似的模块；（2）<strong>分支形状的统计判定</strong>——对分支的核心致密度与离散度做量化评估，从而把缺乏内部凝聚力的松散基因团（如本例中的背景噪声基因）正确判为灰色，而非误报为模块。因此手动版可能高估模块数量。真实分析务必使用 <code>cutreeDynamic()</code> / <code>blockwiseModules()</code>。</p>
+</div>
+<div class="info">
+<p><strong>黄金法则：</strong> 动态树切割让”模块边界”由数据的层次结构自身决定，而非由分析者主观设定的单一阈值决定。这正是 WGCNA 能在同一数据集中稳定识别出大小迥异的共表达模块的关键所在。</p>
+</div>
+<p>识别出初步模块后，部分模块的表达模式可能高度相似（其模块特征基因高度相关）。WGCNA 通过 <code>mergeCutHeight</code> 参数对这些冗余模块进行合并（详见后文”模块特征基因”一节），最终得到一组互不冗余的功能模块。至此，模块识别的完整逻辑链条为：<strong>TOM → 层次聚类 → 动态树切割 → 模块合并</strong>。</p>
+<hr>
+</section>
+</section>
+<section id="wgcna-完整分析流程" class="level1" data-number="31">
+<h1 data-number="31"><span class="header-section-number">31</span> WGCNA 完整分析流程</h1>
+<section id="数据准备与质量控制" class="level2" data-number="31.1">
+<h2 data-number="31.1" class="anchored" data-anchor-id="数据准备与质量控制"><span class="header-section-number">31.1</span> 数据准备与质量控制</h2>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb6"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(WGCNA)</span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(DESeq2)</span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(airway)</span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a><span class="co"># Enable multi-threading</span></span>
+<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a><span class="fu">enableWGCNAThreads</span>(<span class="at">nThreads =</span> <span class="dv">4</span>)</span>
+<span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-8"><a href="#cb6-8" aria-hidden="true" tabindex="-1"></a><span class="co"># Load airway dataset</span></span>
+<span id="cb6-9"><a href="#cb6-9" aria-hidden="true" tabindex="-1"></a><span class="fu">data</span>(airway)</span>
+<span id="cb6-10"><a href="#cb6-10" aria-hidden="true" tabindex="-1"></a>dds <span class="ot">&lt;-</span> <span class="fu">DESeqDataSet</span>(airway, <span class="at">design =</span> <span class="sc">~</span> cell <span class="sc">+</span> dex)</span>
+<span id="cb6-11"><a href="#cb6-11" aria-hidden="true" tabindex="-1"></a>dds <span class="ot">&lt;-</span> dds[<span class="fu">rowSums</span>(<span class="fu">counts</span>(dds)) <span class="sc">&gt;</span> <span class="dv">10</span>, ]</span>
+<span id="cb6-12"><a href="#cb6-12" aria-hidden="true" tabindex="-1"></a>vsd <span class="ot">&lt;-</span> <span class="fu">vst</span>(dds, <span class="at">blind =</span> <span class="cn">FALSE</span>)</span>
+<span id="cb6-13"><a href="#cb6-13" aria-hidden="true" tabindex="-1"></a>expr_mat <span class="ot">&lt;-</span> <span class="fu">t</span>(<span class="fu">assay</span>(vsd))  <span class="co"># transpose: rows = samples, cols = genes</span></span>
+<span id="cb6-14"><a href="#cb6-14" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-15"><a href="#cb6-15" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">"Matrix dimensions:"</span>, <span class="fu">nrow</span>(expr_mat), <span class="st">"samples x"</span>,</span>
+<span id="cb6-16"><a href="#cb6-16" aria-hidden="true" tabindex="-1"></a>    <span class="fu">ncol</span>(expr_mat), <span class="st">"genes</span><span class="sc">\n</span><span class="st">"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="warning">
+<p><strong>样本数要求：</strong> WGCNA 官方建议样本数至少 15 个，20 个以上时结果更稳定。airway 数据集仅有 8 个样本，严格来说不满足此要求，本文用于教学演示目的。在实际研究中，应使用样本数 ≥ 15 的数据集，或采用其他共表达分析工具（如 CEMiTool、hdWGCNA for scRNA-seq）。</p>
+</div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb7"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Detect outlier samples using hierarchical clustering</span></span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a>sample_tree <span class="ot">&lt;-</span> <span class="fu">hclust</span>(<span class="fu">dist</span>(expr_mat), <span class="at">method =</span> <span class="st">"average"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb8"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="co">#| label: fig-sample-tree</span></span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a><span class="co">#| fig-cap: "样本层次聚类树状图，用于离群样本检测（使用 airway 数据集演示）。各样本间的欧氏距离通过 VST 归一化表达矩阵计算；红色虚线为离群样本截断阈值，距离显著超过阈值的样本应在 WGCNA 分析前排除。"</span></span>
+<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(DESeq2)</span>
+<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(airway)</span>
+<span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-6"><a href="#cb8-6" aria-hidden="true" tabindex="-1"></a><span class="fu">data</span>(airway)</span>
+<span id="cb8-7"><a href="#cb8-7" aria-hidden="true" tabindex="-1"></a>dds_st <span class="ot">&lt;-</span> <span class="fu">DESeqDataSet</span>(airway, <span class="at">design =</span> <span class="sc">~</span> cell <span class="sc">+</span> dex)</span>
+<span id="cb8-8"><a href="#cb8-8" aria-hidden="true" tabindex="-1"></a>dds_st <span class="ot">&lt;-</span> dds_st[<span class="fu">rowSums</span>(<span class="fu">counts</span>(dds_st)) <span class="sc">&gt;</span> <span class="dv">10</span>, ]</span>
+<span id="cb8-9"><a href="#cb8-9" aria-hidden="true" tabindex="-1"></a>vsd_st <span class="ot">&lt;-</span> <span class="fu">vst</span>(dds_st, <span class="at">blind =</span> <span class="cn">FALSE</span>)</span>
+<span id="cb8-10"><a href="#cb8-10" aria-hidden="true" tabindex="-1"></a>expr_demo <span class="ot">&lt;-</span> <span class="fu">t</span>(<span class="fu">assay</span>(vsd_st))</span>
+<span id="cb8-11"><a href="#cb8-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-12"><a href="#cb8-12" aria-hidden="true" tabindex="-1"></a>sample_tree_demo <span class="ot">&lt;-</span> <span class="fu">hclust</span>(<span class="fu">dist</span>(expr_demo), <span class="at">method =</span> <span class="st">"average"</span>)</span>
+<span id="cb8-13"><a href="#cb8-13" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(sample_tree_demo,</span>
+<span id="cb8-14"><a href="#cb8-14" aria-hidden="true" tabindex="-1"></a>     <span class="at">main =</span> <span class="st">"Sample clustering to detect outliers"</span>,</span>
+<span id="cb8-15"><a href="#cb8-15" aria-hidden="true" tabindex="-1"></a>     <span class="at">sub =</span> <span class="st">""</span>, <span class="at">xlab =</span> <span class="st">""</span>, <span class="at">cex.lab =</span> <span class="fl">1.2</span>, <span class="at">cex.axis =</span> <span class="fl">1.0</span>, <span class="at">cex.main =</span> <span class="fl">1.2</span>,</span>
+<span id="cb8-16"><a href="#cb8-16" aria-hidden="true" tabindex="-1"></a>     <span class="at">labels =</span> <span class="fu">paste0</span>(<span class="fu">colData</span>(airway)<span class="sc">$</span>cell, <span class="st">"_"</span>, <span class="fu">colData</span>(airway)<span class="sc">$</span>dex))</span>
+<span id="cb8-17"><a href="#cb8-17" aria-hidden="true" tabindex="-1"></a><span class="fu">abline</span>(<span class="at">h =</span> <span class="dv">40</span>, <span class="at">col =</span> <span class="st">"red"</span>, <span class="at">lty =</span> <span class="dv">2</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb9"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Remove outliers if any (based on visual inspection of the dendrogram)</span></span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a>clust <span class="ot">&lt;-</span> <span class="fu">cutreeStatic</span>(sample_tree, <span class="at">cutHeight =</span> <span class="dv">15</span>, <span class="at">minSize =</span> <span class="dv">2</span>)</span>
+<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a>keep_samples <span class="ot">&lt;-</span> (clust <span class="sc">==</span> <span class="dv">1</span>)</span>
+<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a>expr_mat_clean <span class="ot">&lt;-</span> expr_mat[keep_samples, ]</span>
+<span id="cb9-5"><a href="#cb9-5" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">"Samples retained:"</span>, <span class="fu">sum</span>(keep_samples), <span class="st">"</span><span class="sc">\n</span><span class="st">"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</section>
+<section id="软阈值选择" class="level2" data-number="31.2">
+<h2 data-number="31.2" class="anchored" data-anchor-id="软阈值选择"><span class="header-section-number">31.2</span> 软阈值选择</h2>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb10"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Select soft threshold (choose smallest beta where R^2 &gt;= 0.85)</span></span>
+<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a>selected_beta <span class="ot">&lt;-</span> sft<span class="sc">$</span>powerEstimate</span>
+<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">"Selected soft threshold (beta):"</span>, selected_beta, <span class="st">"</span><span class="sc">\n</span><span class="st">"</span>)</span>
+<span id="cb10-4"><a href="#cb10-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-5"><a href="#cb10-5" aria-hidden="true" tabindex="-1"></a><span class="co"># If automatic selection fails (R^2 never reaches 0.85):</span></span>
+<span id="cb10-6"><a href="#cb10-6" aria-hidden="true" tabindex="-1"></a><span class="co"># For signed networks with &lt; 15 samples, beta = 12-18 is typically reasonable</span></span>
+<span id="cb10-7"><a href="#cb10-7" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> (<span class="fu">is.na</span>(selected_beta)) {</span>
+<span id="cb10-8"><a href="#cb10-8" aria-hidden="true" tabindex="-1"></a>    selected_beta <span class="ot">&lt;-</span> <span class="dv">12</span></span>
+<span id="cb10-9"><a href="#cb10-9" aria-hidden="true" tabindex="-1"></a>    <span class="fu">message</span>(<span class="st">"Auto-selection failed; using beta = 12 as default for small dataset"</span>)</span>
+<span id="cb10-10"><a href="#cb10-10" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</section>
+<section id="网络构建与模块识别" class="level2" data-number="31.3">
+<h2 data-number="31.3" class="anchored" data-anchor-id="网络构建与模块识别"><span class="header-section-number">31.3</span> 网络构建与模块识别</h2>
+<p>模块识别遵循前文确立的逻辑链条（<strong>TOM → 层次聚类 → 动态树切割 → 模块合并</strong>，参见”层次聚类与动态树切割”一节及 <span class="quarto-unresolved-ref">?fig-dynamic-treecut</span>）。在实际分析中，<code>blockwiseModules()</code> 一步封装了上述全部环节：它内部完成邻接矩阵与 TOM 的计算、层次聚类、动态树切割识别模块，并按 <code>mergeCutHeight</code> 自动合并冗余模块。</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb11"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Construct network and identify modules (requires WGCNA)</span></span>
+<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a>net <span class="ot">&lt;-</span> <span class="fu">blockwiseModules</span>(</span>
+<span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a>    expr_mat_clean,</span>
+<span id="cb11-4"><a href="#cb11-4" aria-hidden="true" tabindex="-1"></a>    <span class="at">power            =</span> selected_beta,</span>
+<span id="cb11-5"><a href="#cb11-5" aria-hidden="true" tabindex="-1"></a>    <span class="at">networkType      =</span> <span class="st">"signed"</span>,</span>
+<span id="cb11-6"><a href="#cb11-6" aria-hidden="true" tabindex="-1"></a>    <span class="at">TOMType          =</span> <span class="st">"signed"</span>,</span>
+<span id="cb11-7"><a href="#cb11-7" aria-hidden="true" tabindex="-1"></a>    <span class="at">minModuleSize    =</span> <span class="dv">30</span>,      <span class="co"># minimum genes per module (dynamic tree cut)</span></span>
+<span id="cb11-8"><a href="#cb11-8" aria-hidden="true" tabindex="-1"></a>    <span class="at">deepSplit        =</span> <span class="dv">2</span>,       <span class="co"># branch-split sensitivity (0-4), higher = more modules</span></span>
+<span id="cb11-9"><a href="#cb11-9" aria-hidden="true" tabindex="-1"></a>    <span class="at">reassignThreshold =</span> <span class="dv">0</span>,</span>
+<span id="cb11-10"><a href="#cb11-10" aria-hidden="true" tabindex="-1"></a>    <span class="at">mergeCutHeight   =</span> <span class="fl">0.25</span>,    <span class="co"># merge modules with ME correlation &gt; 0.75</span></span>
+<span id="cb11-11"><a href="#cb11-11" aria-hidden="true" tabindex="-1"></a>    <span class="at">numericLabels    =</span> <span class="cn">FALSE</span>,</span>
+<span id="cb11-12"><a href="#cb11-12" aria-hidden="true" tabindex="-1"></a>    <span class="at">pamRespectsDendro =</span> <span class="cn">FALSE</span>,</span>
+<span id="cb11-13"><a href="#cb11-13" aria-hidden="true" tabindex="-1"></a>    <span class="at">saveTOMs         =</span> <span class="cn">TRUE</span>,</span>
+<span id="cb11-14"><a href="#cb11-14" aria-hidden="true" tabindex="-1"></a>    <span class="at">saveTOMFileBase  =</span> <span class="st">"WGCNA_TOM"</span>,</span>
+<span id="cb11-15"><a href="#cb11-15" aria-hidden="true" tabindex="-1"></a>    <span class="at">verbose          =</span> <span class="dv">0</span></span>
+<span id="cb11-16"><a href="#cb11-16" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb11-17"><a href="#cb11-17" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-18"><a href="#cb11-18" aria-hidden="true" tabindex="-1"></a><span class="co"># Module summary</span></span>
+<span id="cb11-19"><a href="#cb11-19" aria-hidden="true" tabindex="-1"></a>module_colors <span class="ot">&lt;-</span> net<span class="sc">$</span>colors</span>
+<span id="cb11-20"><a href="#cb11-20" aria-hidden="true" tabindex="-1"></a>module_table <span class="ot">&lt;-</span> <span class="fu">table</span>(module_colors)</span>
+<span id="cb11-21"><a href="#cb11-21" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">"Number of modules:"</span>, <span class="fu">length</span>(<span class="fu">unique</span>(module_colors[module_colors <span class="sc">!=</span> <span class="st">"grey"</span>])), <span class="st">"</span><span class="sc">\n</span><span class="st">"</span>)</span>
+<span id="cb11-22"><a href="#cb11-22" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(<span class="fu">sort</span>(module_table, <span class="at">decreasing =</span> <span class="cn">TRUE</span>))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><code>blockwiseModules()</code> 返回的 <code>net$dendrograms</code> 与 <code>net$colors</code> 可直接传入 <code>plotDendroAndColors()</code>，得到与 <span class="quarto-unresolved-ref">?fig-dynamic-treecut</span> 相同形式的”树状图 + 模块颜色条”可视化，用于检查模块划分是否与树状图分支结构吻合。</p>
+<div class="tip">
+<p><strong>参数调优建议：</strong> <code>minModuleSize</code>、<code>deepSplit</code> 与 <code>mergeCutHeight</code> 三者共同决定最终模块的数量与粒度。小样本数据宜适当增大 <code>minModuleSize</code>（如 30）并降低 <code>deepSplit</code>（如 1–2），以获得更稳健、更大粒度的模块；若发现模块过于破碎，可提高 <code>mergeCutHeight</code> 增强合并。</p>
+</div>
+</section>
+<section id="模块特征基因module-eigengene" class="level2" data-number="31.4">
+<h2 data-number="31.4" class="anchored" data-anchor-id="模块特征基因module-eigengene"><span class="header-section-number">31.4</span> 模块特征基因（Module Eigengene）</h2>
+<p>每个模块通过其<strong>模块特征基因（Module Eigengene, ME）</strong>来概括——ME 是该模块内所有基因表达矩阵的第一主成分，代表该模块的整体表达趋势。ME 是一个长度等于样本数的向量，可以直接与样本的表型变量进行皮尔逊相关分析。</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb12"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Calculate module eigengenes (requires WGCNA)</span></span>
+<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a>ME_list <span class="ot">&lt;-</span> <span class="fu">moduleEigengenes</span>(expr_mat_clean, module_colors)</span>
+<span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a>MEs <span class="ot">&lt;-</span> <span class="fu">orderMEs</span>(ME_list<span class="sc">$</span>eigengenes)</span>
+<span id="cb12-4"><a href="#cb12-4" aria-hidden="true" tabindex="-1"></a>ME_cor <span class="ot">&lt;-</span> <span class="fu">cor</span>(MEs, <span class="at">use =</span> <span class="st">"p"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb13"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a><span class="co">#| label: fig-me-tree</span></span>
+<span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a><span class="co">#| fig-cap: "模块特征基因（ME）的相关矩阵热图（模拟示意）。颜色代表 ME 间的皮尔逊相关系数，高度相关的模块（r &gt; 0.75）在实际分析中将被 mergeCutHeight 参数合并。"</span></span>
+<span id="cb13-3"><a href="#cb13-3" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(ggplot2)</span>
+<span id="cb13-4"><a href="#cb13-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb13-5"><a href="#cb13-5" aria-hidden="true" tabindex="-1"></a><span class="co"># Simulated ME correlation matrix (5 modules)</span></span>
+<span id="cb13-6"><a href="#cb13-6" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">7</span>)</span>
+<span id="cb13-7"><a href="#cb13-7" aria-hidden="true" tabindex="-1"></a>me_names <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="st">"MEturquoise"</span>, <span class="st">"MEblue"</span>, <span class="st">"MEbrown"</span>, <span class="st">"MEyellow"</span>, <span class="st">"MEgreen"</span>)</span>
+<span id="cb13-8"><a href="#cb13-8" aria-hidden="true" tabindex="-1"></a>me_cor_sim <span class="ot">&lt;-</span> <span class="fu">matrix</span>(<span class="fu">c</span>(</span>
+<span id="cb13-9"><a href="#cb13-9" aria-hidden="true" tabindex="-1"></a>     <span class="fl">1.00</span>,  <span class="fl">0.72</span>, <span class="sc">-</span><span class="fl">0.30</span>, <span class="sc">-</span><span class="fl">0.15</span>,  <span class="fl">0.10</span>,</span>
+<span id="cb13-10"><a href="#cb13-10" aria-hidden="true" tabindex="-1"></a>     <span class="fl">0.72</span>,  <span class="fl">1.00</span>, <span class="sc">-</span><span class="fl">0.25</span>, <span class="sc">-</span><span class="fl">0.20</span>,  <span class="fl">0.05</span>,</span>
+<span id="cb13-11"><a href="#cb13-11" aria-hidden="true" tabindex="-1"></a>    <span class="sc">-</span><span class="fl">0.30</span>, <span class="sc">-</span><span class="fl">0.25</span>,  <span class="fl">1.00</span>,  <span class="fl">0.68</span>, <span class="sc">-</span><span class="fl">0.40</span>,</span>
+<span id="cb13-12"><a href="#cb13-12" aria-hidden="true" tabindex="-1"></a>    <span class="sc">-</span><span class="fl">0.15</span>, <span class="sc">-</span><span class="fl">0.20</span>,  <span class="fl">0.68</span>,  <span class="fl">1.00</span>, <span class="sc">-</span><span class="fl">0.35</span>,</span>
+<span id="cb13-13"><a href="#cb13-13" aria-hidden="true" tabindex="-1"></a>     <span class="fl">0.10</span>,  <span class="fl">0.05</span>, <span class="sc">-</span><span class="fl">0.40</span>, <span class="sc">-</span><span class="fl">0.35</span>,  <span class="fl">1.00</span></span>
+<span id="cb13-14"><a href="#cb13-14" aria-hidden="true" tabindex="-1"></a>), <span class="at">nrow =</span> <span class="dv">5</span>, <span class="at">dimnames =</span> <span class="fu">list</span>(me_names, me_names))</span>
+<span id="cb13-15"><a href="#cb13-15" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb13-16"><a href="#cb13-16" aria-hidden="true" tabindex="-1"></a>me_df <span class="ot">&lt;-</span> <span class="fu">as.data.frame</span>(<span class="fu">as.table</span>(me_cor_sim))</span>
+<span id="cb13-17"><a href="#cb13-17" aria-hidden="true" tabindex="-1"></a><span class="fu">names</span>(me_df) <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="st">"ME1"</span>, <span class="st">"ME2"</span>, <span class="st">"Correlation"</span>)</span>
+<span id="cb13-18"><a href="#cb13-18" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb13-19"><a href="#cb13-19" aria-hidden="true" tabindex="-1"></a><span class="fu">ggplot</span>(me_df, <span class="fu">aes</span>(<span class="at">x =</span> ME1, <span class="at">y =</span> ME2, <span class="at">fill =</span> Correlation)) <span class="sc">+</span></span>
+<span id="cb13-20"><a href="#cb13-20" aria-hidden="true" tabindex="-1"></a>    <span class="fu">geom_tile</span>(<span class="at">color =</span> <span class="st">"white"</span>) <span class="sc">+</span></span>
+<span id="cb13-21"><a href="#cb13-21" aria-hidden="true" tabindex="-1"></a>    <span class="fu">geom_text</span>(<span class="fu">aes</span>(<span class="at">label =</span> <span class="fu">round</span>(Correlation, <span class="dv">2</span>)), <span class="at">size =</span> <span class="dv">3</span>) <span class="sc">+</span></span>
+<span id="cb13-22"><a href="#cb13-22" aria-hidden="true" tabindex="-1"></a>    <span class="fu">scale_fill_gradient2</span>(<span class="at">low =</span> <span class="st">"#2166ac"</span>, <span class="at">mid =</span> <span class="st">"white"</span>, <span class="at">high =</span> <span class="st">"#d73027"</span>,</span>
+<span id="cb13-23"><a href="#cb13-23" aria-hidden="true" tabindex="-1"></a>                         <span class="at">midpoint =</span> <span class="dv">0</span>, <span class="at">limits =</span> <span class="fu">c</span>(<span class="sc">-</span><span class="dv">1</span>, <span class="dv">1</span>)) <span class="sc">+</span></span>
+<span id="cb13-24"><a href="#cb13-24" aria-hidden="true" tabindex="-1"></a>    <span class="fu">labs</span>(<span class="at">x =</span> <span class="cn">NULL</span>, <span class="at">y =</span> <span class="cn">NULL</span>, <span class="at">title =</span> <span class="st">"Module Eigengene correlation matrix"</span>) <span class="sc">+</span></span>
+<span id="cb13-25"><a href="#cb13-25" aria-hidden="true" tabindex="-1"></a>    <span class="fu">theme_bw</span>(<span class="at">base_size =</span> <span class="dv">11</span>) <span class="sc">+</span></span>
+<span id="cb13-26"><a href="#cb13-26" aria-hidden="true" tabindex="-1"></a>    <span class="fu">theme</span>(<span class="at">axis.text.x =</span> <span class="fu">element_text</span>(<span class="at">angle =</span> <span class="dv">30</span>, <span class="at">hjust =</span> <span class="dv">1</span>))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</section>
+<section id="模块-表型关联分析" class="level2" data-number="31.5">
+<h2 data-number="31.5" class="anchored" data-anchor-id="模块-表型关联分析"><span class="header-section-number">31.5</span> 模块-表型关联分析</h2>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb14"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Correlate module eigengenes with traits (requires WGCNA + computed MEs)</span></span>
+<span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a>sample_info <span class="ot">&lt;-</span> <span class="fu">colData</span>(airway)[keep_samples, ]</span>
+<span id="cb14-3"><a href="#cb14-3" aria-hidden="true" tabindex="-1"></a>trait_data <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(</span>
+<span id="cb14-4"><a href="#cb14-4" aria-hidden="true" tabindex="-1"></a>    <span class="at">dex_treated  =</span> <span class="fu">as.numeric</span>(sample_info<span class="sc">$</span>dex <span class="sc">==</span> <span class="st">"trt"</span>),</span>
+<span id="cb14-5"><a href="#cb14-5" aria-hidden="true" tabindex="-1"></a>    <span class="at">cell_N61311  =</span> <span class="fu">as.numeric</span>(sample_info<span class="sc">$</span>cell <span class="sc">==</span> <span class="st">"N61311"</span>),</span>
+<span id="cb14-6"><a href="#cb14-6" aria-hidden="true" tabindex="-1"></a>    <span class="at">cell_N052611 =</span> <span class="fu">as.numeric</span>(sample_info<span class="sc">$</span>cell <span class="sc">==</span> <span class="st">"N052611"</span>),</span>
+<span id="cb14-7"><a href="#cb14-7" aria-hidden="true" tabindex="-1"></a>    <span class="at">cell_N080611 =</span> <span class="fu">as.numeric</span>(sample_info<span class="sc">$</span>cell <span class="sc">==</span> <span class="st">"N080611"</span>)</span>
+<span id="cb14-8"><a href="#cb14-8" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb14-9"><a href="#cb14-9" aria-hidden="true" tabindex="-1"></a>nSamples <span class="ot">&lt;-</span> <span class="fu">nrow</span>(expr_mat_clean)</span>
+<span id="cb14-10"><a href="#cb14-10" aria-hidden="true" tabindex="-1"></a>module_trait_cor    <span class="ot">&lt;-</span> <span class="fu">cor</span>(MEs, trait_data, <span class="at">use =</span> <span class="st">"p"</span>)</span>
+<span id="cb14-11"><a href="#cb14-11" aria-hidden="true" tabindex="-1"></a>module_trait_pvalue <span class="ot">&lt;-</span> <span class="fu">corPvalueStudent</span>(module_trait_cor, nSamples)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb15"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a><span class="co">#| label: fig-module-trait-heatmap</span></span>
+<span id="cb15-2"><a href="#cb15-2" aria-hidden="true" tabindex="-1"></a><span class="co">#| fig-cap: "模块-表型关联热图（模拟数据示意）。每个格子显示模块特征基因与表型变量的皮尔逊相关系数及 P 值。红色代表正相关，蓝色代表负相关，颜色深浅反映相关系数绝对值大小。turquoise 模块与 dex 处理高度正相关，brown 模块与 dex 处理负相关。"</span></span>
+<span id="cb15-3"><a href="#cb15-3" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(ggplot2)</span>
+<span id="cb15-4"><a href="#cb15-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-5"><a href="#cb15-5" aria-hidden="true" tabindex="-1"></a><span class="co"># Simulated module-trait correlation matrix</span></span>
+<span id="cb15-6"><a href="#cb15-6" aria-hidden="true" tabindex="-1"></a>me_names <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="st">"MEturquoise"</span>, <span class="st">"MEblue"</span>, <span class="st">"MEbrown"</span>, <span class="st">"MEyellow"</span>, <span class="st">"MEgreen"</span>)</span>
+<span id="cb15-7"><a href="#cb15-7" aria-hidden="true" tabindex="-1"></a>traits    <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="st">"dex_treated"</span>, <span class="st">"cell_N61311"</span>, <span class="st">"cell_N052611"</span>, <span class="st">"cell_N080611"</span>)</span>
+<span id="cb15-8"><a href="#cb15-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-9"><a href="#cb15-9" aria-hidden="true" tabindex="-1"></a>cor_vals <span class="ot">&lt;-</span> <span class="fu">matrix</span>(<span class="fu">c</span>(</span>
+<span id="cb15-10"><a href="#cb15-10" aria-hidden="true" tabindex="-1"></a>     <span class="fl">0.87</span>, <span class="sc">-</span><span class="fl">0.15</span>,  <span class="fl">0.10</span>, <span class="sc">-</span><span class="fl">0.05</span>,</span>
+<span id="cb15-11"><a href="#cb15-11" aria-hidden="true" tabindex="-1"></a>     <span class="fl">0.62</span>, <span class="sc">-</span><span class="fl">0.08</span>,  <span class="fl">0.20</span>, <span class="sc">-</span><span class="fl">0.12</span>,</span>
+<span id="cb15-12"><a href="#cb15-12" aria-hidden="true" tabindex="-1"></a>    <span class="sc">-</span><span class="fl">0.79</span>,  <span class="fl">0.22</span>, <span class="sc">-</span><span class="fl">0.18</span>,  <span class="fl">0.09</span>,</span>
+<span id="cb15-13"><a href="#cb15-13" aria-hidden="true" tabindex="-1"></a>    <span class="sc">-</span><span class="fl">0.41</span>,  <span class="fl">0.55</span>, <span class="sc">-</span><span class="fl">0.33</span>,  <span class="fl">0.18</span>,</span>
+<span id="cb15-14"><a href="#cb15-14" aria-hidden="true" tabindex="-1"></a>     <span class="fl">0.12</span>, <span class="sc">-</span><span class="fl">0.45</span>,  <span class="fl">0.61</span>, <span class="sc">-</span><span class="fl">0.28</span></span>
+<span id="cb15-15"><a href="#cb15-15" aria-hidden="true" tabindex="-1"></a>), <span class="at">nrow =</span> <span class="dv">5</span>, <span class="at">byrow =</span> <span class="cn">TRUE</span>,</span>
+<span id="cb15-16"><a href="#cb15-16" aria-hidden="true" tabindex="-1"></a><span class="at">dimnames =</span> <span class="fu">list</span>(me_names, traits))</span>
+<span id="cb15-17"><a href="#cb15-17" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-18"><a href="#cb15-18" aria-hidden="true" tabindex="-1"></a>pval_vals <span class="ot">&lt;-</span> <span class="fu">matrix</span>(<span class="fu">c</span>(</span>
+<span id="cb15-19"><a href="#cb15-19" aria-hidden="true" tabindex="-1"></a>    <span class="fl">2e-3</span>, <span class="fl">0.68</span>, <span class="fl">0.78</span>, <span class="fl">0.90</span>,</span>
+<span id="cb15-20"><a href="#cb15-20" aria-hidden="true" tabindex="-1"></a>    <span class="fl">0.09</span>, <span class="fl">0.83</span>, <span class="fl">0.58</span>, <span class="fl">0.75</span>,</span>
+<span id="cb15-21"><a href="#cb15-21" aria-hidden="true" tabindex="-1"></a>    <span class="fl">4e-3</span>, <span class="fl">0.55</span>, <span class="fl">0.63</span>, <span class="fl">0.81</span>,</span>
+<span id="cb15-22"><a href="#cb15-22" aria-hidden="true" tabindex="-1"></a>    <span class="fl">0.27</span>, <span class="fl">0.13</span>, <span class="fl">0.37</span>, <span class="fl">0.63</span>,</span>
+<span id="cb15-23"><a href="#cb15-23" aria-hidden="true" tabindex="-1"></a>    <span class="fl">0.75</span>, <span class="fl">0.21</span>, <span class="fl">0.09</span>, <span class="fl">0.45</span></span>
+<span id="cb15-24"><a href="#cb15-24" aria-hidden="true" tabindex="-1"></a>), <span class="at">nrow =</span> <span class="dv">5</span>, <span class="at">byrow =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb15-25"><a href="#cb15-25" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-26"><a href="#cb15-26" aria-hidden="true" tabindex="-1"></a>df_ht <span class="ot">&lt;-</span> <span class="fu">as.data.frame</span>(<span class="fu">as.table</span>(cor_vals))</span>
+<span id="cb15-27"><a href="#cb15-27" aria-hidden="true" tabindex="-1"></a><span class="fu">names</span>(df_ht) <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="st">"Module"</span>, <span class="st">"Trait"</span>, <span class="st">"Correlation"</span>)</span>
+<span id="cb15-28"><a href="#cb15-28" aria-hidden="true" tabindex="-1"></a>df_ht<span class="sc">$</span>label <span class="ot">&lt;-</span> <span class="fu">paste0</span>(<span class="fu">round</span>(cor_vals, <span class="dv">2</span>), <span class="st">"</span><span class="sc">\n</span><span class="st">(p="</span>,</span>
+<span id="cb15-29"><a href="#cb15-29" aria-hidden="true" tabindex="-1"></a>                       <span class="fu">formatC</span>(<span class="fu">as.vector</span>(pval_vals), <span class="at">format =</span> <span class="st">"e"</span>, <span class="at">digits =</span> <span class="dv">1</span>), <span class="st">")"</span>)</span>
+<span id="cb15-30"><a href="#cb15-30" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-31"><a href="#cb15-31" aria-hidden="true" tabindex="-1"></a><span class="fu">ggplot</span>(df_ht, <span class="fu">aes</span>(<span class="at">x =</span> Trait, <span class="at">y =</span> Module, <span class="at">fill =</span> Correlation)) <span class="sc">+</span></span>
+<span id="cb15-32"><a href="#cb15-32" aria-hidden="true" tabindex="-1"></a>    <span class="fu">geom_tile</span>(<span class="at">color =</span> <span class="st">"white"</span>, <span class="at">linewidth =</span> <span class="fl">0.5</span>) <span class="sc">+</span></span>
+<span id="cb15-33"><a href="#cb15-33" aria-hidden="true" tabindex="-1"></a>    <span class="fu">geom_text</span>(<span class="fu">aes</span>(<span class="at">label =</span> label), <span class="at">size =</span> <span class="fl">2.5</span>, <span class="at">lineheight =</span> <span class="fl">0.9</span>) <span class="sc">+</span></span>
+<span id="cb15-34"><a href="#cb15-34" aria-hidden="true" tabindex="-1"></a>    <span class="fu">scale_fill_gradient2</span>(<span class="at">low =</span> <span class="st">"#2166ac"</span>, <span class="at">mid =</span> <span class="st">"white"</span>, <span class="at">high =</span> <span class="st">"#d73027"</span>,</span>
+<span id="cb15-35"><a href="#cb15-35" aria-hidden="true" tabindex="-1"></a>                         <span class="at">midpoint =</span> <span class="dv">0</span>, <span class="at">limits =</span> <span class="fu">c</span>(<span class="sc">-</span><span class="dv">1</span>, <span class="dv">1</span>), <span class="at">name =</span> <span class="st">"r"</span>) <span class="sc">+</span></span>
+<span id="cb15-36"><a href="#cb15-36" aria-hidden="true" tabindex="-1"></a>    <span class="fu">labs</span>(<span class="at">x =</span> <span class="st">"Sample Traits"</span>, <span class="at">y =</span> <span class="st">"Module Eigengenes"</span>) <span class="sc">+</span></span>
+<span id="cb15-37"><a href="#cb15-37" aria-hidden="true" tabindex="-1"></a>    <span class="fu">theme_bw</span>(<span class="at">base_size =</span> <span class="dv">11</span>) <span class="sc">+</span></span>
+<span id="cb15-38"><a href="#cb15-38" aria-hidden="true" tabindex="-1"></a>    <span class="fu">theme</span>(<span class="at">axis.text.x =</span> <span class="fu">element_text</span>(<span class="at">angle =</span> <span class="dv">20</span>, <span class="at">hjust =</span> <span class="dv">1</span>))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</section>
+<section id="枢纽基因识别" class="level2" data-number="31.6">
+<h2 data-number="31.6" class="anchored" data-anchor-id="枢纽基因识别"><span class="header-section-number">31.6</span> 枢纽基因识别</h2>
+<p>在与表型显著关联的模块中，枢纽基因（Hub gene）是模块内连接度最高的基因，通常也是潜在的核心调控因子。WGCNA 通过两个指标来量化每个基因的重要性：</p>
+<ul>
+<li><strong>模块成员度（Module Membership, kME）</strong>：基因表达量与模块特征基因的皮尔逊相关系数，反映该基因与模块整体表达模式的一致性。<span class="math inline">\(|\text{kME}| &gt; 0.8\)</span> 为高置信度模块成员。</li>
+<li><strong>基因显著性（Gene Significance, GS）</strong>：基因表达量与目标表型变量的皮尔逊相关系数，直接反映基因与表型的关联强度。<span class="math inline">\(|\text{GS}| &gt; 0.5\)</span> 为具有显著表型关联的基因。</li>
+</ul>
+<p>枢纽基因定义为同时满足高 kME 和高 GS 的基因。</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb16"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Hub gene calculation (requires WGCNA computed objects)</span></span>
+<span id="cb16-2"><a href="#cb16-2" aria-hidden="true" tabindex="-1"></a>target_module <span class="ot">&lt;-</span> <span class="fu">sub</span>(<span class="st">"^ME"</span>, <span class="st">""</span>, <span class="fu">rownames</span>(module_trait_cor)[</span>
+<span id="cb16-3"><a href="#cb16-3" aria-hidden="true" tabindex="-1"></a>    <span class="fu">which.max</span>(<span class="fu">abs</span>(module_trait_cor[, <span class="st">"dex_treated"</span>]))])</span>
+<span id="cb16-4"><a href="#cb16-4" aria-hidden="true" tabindex="-1"></a>module_genes <span class="ot">&lt;-</span> <span class="fu">names</span>(module_colors)[module_colors <span class="sc">==</span> target_module]</span>
+<span id="cb16-5"><a href="#cb16-5" aria-hidden="true" tabindex="-1"></a>kME <span class="ot">&lt;-</span> <span class="fu">as.numeric</span>(<span class="fu">cor</span>(expr_mat_clean[, module_genes],</span>
+<span id="cb16-6"><a href="#cb16-6" aria-hidden="true" tabindex="-1"></a>                       MEs[, <span class="fu">paste0</span>(<span class="st">"ME"</span>, target_module)], <span class="at">use =</span> <span class="st">"p"</span>))</span>
+<span id="cb16-7"><a href="#cb16-7" aria-hidden="true" tabindex="-1"></a>GS  <span class="ot">&lt;-</span> <span class="fu">as.numeric</span>(<span class="fu">cor</span>(expr_mat_clean[, module_genes],</span>
+<span id="cb16-8"><a href="#cb16-8" aria-hidden="true" tabindex="-1"></a>                       trait_data<span class="sc">$</span>dex_treated, <span class="at">use =</span> <span class="st">"p"</span>))</span>
+<span id="cb16-9"><a href="#cb16-9" aria-hidden="true" tabindex="-1"></a>hub_df    <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(<span class="at">gene =</span> module_genes, <span class="at">kME =</span> kME, <span class="at">GS =</span> GS)</span>
+<span id="cb16-10"><a href="#cb16-10" aria-hidden="true" tabindex="-1"></a>hub_genes <span class="ot">&lt;-</span> hub_df <span class="sc">|&gt;</span> <span class="fu">filter</span>(<span class="fu">abs</span>(kME) <span class="sc">&gt;</span> <span class="fl">0.8</span>, <span class="fu">abs</span>(GS) <span class="sc">&gt;</span> <span class="fl">0.5</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb17"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a><span class="co">#| label: fig-kme-gs-scatter</span></span>
+<span id="cb17-2"><a href="#cb17-2" aria-hidden="true" tabindex="-1"></a><span class="co">#| fig-cap: "模块成员度（kME）与基因显著性（GS）的散点图（模拟数据示意）。每个点代表 turquoise 模块内的一个基因，红色点为满足枢纽基因标准（|kME| &gt; 0.8 且 |GS| &gt; 0.5）的候选枢纽基因。两个指标的正相关关系验证了该模块与 dex 处理状态的真实关联。"</span></span>
+<span id="cb17-3"><a href="#cb17-3" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(ggplot2)</span>
+<span id="cb17-4"><a href="#cb17-4" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(dplyr)</span>
+<span id="cb17-5"><a href="#cb17-5" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">99</span>)</span>
+<span id="cb17-6"><a href="#cb17-6" aria-hidden="true" tabindex="-1"></a>n_mod <span class="ot">&lt;-</span> <span class="dv">250</span></span>
+<span id="cb17-7"><a href="#cb17-7" aria-hidden="true" tabindex="-1"></a><span class="co"># Simulate kME-GS relationship with realistic correlation structure</span></span>
+<span id="cb17-8"><a href="#cb17-8" aria-hidden="true" tabindex="-1"></a>kme_sim <span class="ot">&lt;-</span> <span class="fu">rnorm</span>(n_mod, <span class="dv">0</span>, <span class="fl">0.4</span>)</span>
+<span id="cb17-9"><a href="#cb17-9" aria-hidden="true" tabindex="-1"></a>gs_sim  <span class="ot">&lt;-</span> <span class="fl">0.7</span> <span class="sc">*</span> kme_sim <span class="sc">+</span> <span class="fu">rnorm</span>(n_mod, <span class="dv">0</span>, <span class="fl">0.25</span>)</span>
+<span id="cb17-10"><a href="#cb17-10" aria-hidden="true" tabindex="-1"></a><span class="co"># Add a cluster of hub genes with high kME and GS</span></span>
+<span id="cb17-11"><a href="#cb17-11" aria-hidden="true" tabindex="-1"></a>kme_hubs <span class="ot">&lt;-</span> <span class="fu">runif</span>(<span class="dv">25</span>, <span class="fl">0.82</span>, <span class="fl">0.97</span>)</span>
+<span id="cb17-12"><a href="#cb17-12" aria-hidden="true" tabindex="-1"></a>gs_hubs  <span class="ot">&lt;-</span> <span class="fu">runif</span>(<span class="dv">25</span>, <span class="fl">0.52</span>, <span class="fl">0.88</span>)</span>
+<span id="cb17-13"><a href="#cb17-13" aria-hidden="true" tabindex="-1"></a>hub_sim_df <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(</span>
+<span id="cb17-14"><a href="#cb17-14" aria-hidden="true" tabindex="-1"></a>    <span class="at">kME =</span> <span class="fu">c</span>(kme_sim, kme_hubs),</span>
+<span id="cb17-15"><a href="#cb17-15" aria-hidden="true" tabindex="-1"></a>    <span class="at">GS  =</span> <span class="fu">c</span>(gs_sim, gs_hubs)</span>
+<span id="cb17-16"><a href="#cb17-16" aria-hidden="true" tabindex="-1"></a>) <span class="sc">|&gt;</span> <span class="fu">mutate</span>(<span class="at">is_hub =</span> <span class="fu">abs</span>(kME) <span class="sc">&gt;</span> <span class="fl">0.8</span> <span class="sc">&amp;</span> <span class="fu">abs</span>(GS) <span class="sc">&gt;</span> <span class="fl">0.5</span>)</span>
+<span id="cb17-17"><a href="#cb17-17" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb17-18"><a href="#cb17-18" aria-hidden="true" tabindex="-1"></a>target_module <span class="ot">&lt;-</span> <span class="st">"turquoise"</span></span>
+<span id="cb17-19"><a href="#cb17-19" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb17-20"><a href="#cb17-20" aria-hidden="true" tabindex="-1"></a><span class="fu">ggplot</span>(hub_sim_df, <span class="fu">aes</span>(<span class="at">x =</span> kME, <span class="at">y =</span> GS, <span class="at">color =</span> is_hub)) <span class="sc">+</span></span>
+<span id="cb17-21"><a href="#cb17-21" aria-hidden="true" tabindex="-1"></a>    <span class="fu">geom_point</span>(<span class="at">alpha =</span> <span class="fl">0.6</span>, <span class="at">size =</span> <span class="fl">1.5</span>) <span class="sc">+</span></span>
+<span id="cb17-22"><a href="#cb17-22" aria-hidden="true" tabindex="-1"></a>    <span class="fu">scale_color_manual</span>(<span class="at">values =</span> <span class="fu">c</span>(<span class="st">"grey70"</span>, <span class="st">"#d62728"</span>),</span>
+<span id="cb17-23"><a href="#cb17-23" aria-hidden="true" tabindex="-1"></a>                       <span class="at">labels =</span> <span class="fu">c</span>(<span class="st">"Non-hub"</span>, <span class="st">"Hub gene candidate"</span>)) <span class="sc">+</span></span>
+<span id="cb17-24"><a href="#cb17-24" aria-hidden="true" tabindex="-1"></a>    <span class="fu">geom_vline</span>(<span class="at">xintercept =</span> <span class="fu">c</span>(<span class="sc">-</span><span class="fl">0.8</span>, <span class="fl">0.8</span>), <span class="at">linetype =</span> <span class="st">"dashed"</span>,</span>
+<span id="cb17-25"><a href="#cb17-25" aria-hidden="true" tabindex="-1"></a>               <span class="at">color =</span> <span class="st">"grey40"</span>, <span class="at">linewidth =</span> <span class="fl">0.4</span>) <span class="sc">+</span></span>
+<span id="cb17-26"><a href="#cb17-26" aria-hidden="true" tabindex="-1"></a>    <span class="fu">geom_hline</span>(<span class="at">yintercept =</span> <span class="fu">c</span>(<span class="sc">-</span><span class="fl">0.5</span>, <span class="fl">0.5</span>), <span class="at">linetype =</span> <span class="st">"dashed"</span>,</span>
+<span id="cb17-27"><a href="#cb17-27" aria-hidden="true" tabindex="-1"></a>               <span class="at">color =</span> <span class="st">"grey40"</span>, <span class="at">linewidth =</span> <span class="fl">0.4</span>) <span class="sc">+</span></span>
+<span id="cb17-28"><a href="#cb17-28" aria-hidden="true" tabindex="-1"></a>    <span class="fu">labs</span>(<span class="at">x =</span> <span class="fu">paste0</span>(<span class="st">"Module Membership (kME, "</span>, target_module, <span class="st">" module)"</span>),</span>
+<span id="cb17-29"><a href="#cb17-29" aria-hidden="true" tabindex="-1"></a>         <span class="at">y =</span> <span class="st">"Gene Significance (GS, dex treatment)"</span>,</span>
+<span id="cb17-30"><a href="#cb17-30" aria-hidden="true" tabindex="-1"></a>         <span class="at">color =</span> <span class="cn">NULL</span>) <span class="sc">+</span></span>
+<span id="cb17-31"><a href="#cb17-31" aria-hidden="true" tabindex="-1"></a>    <span class="fu">theme_bw</span>(<span class="at">base_size =</span> <span class="dv">12</span>) <span class="sc">+</span></span>
+<span id="cb17-32"><a href="#cb17-32" aria-hidden="true" tabindex="-1"></a>    <span class="fu">theme</span>(<span class="at">legend.position =</span> <span class="st">"top"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</section>
+<section id="枢纽基因的-go-功能富集验证" class="level2" data-number="31.7">
+<h2 data-number="31.7" class="anchored" data-anchor-id="枢纽基因的-go-功能富集验证"><span class="header-section-number">31.7</span> 枢纽基因的 GO 功能富集验证</h2>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb18"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a><span class="co"># GO enrichment for hub genes (requires hub_genes object from WGCNA pipeline)</span></span>
+<span id="cb18-2"><a href="#cb18-2" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(clusterProfiler)</span>
+<span id="cb18-3"><a href="#cb18-3" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(org.Hs.eg.db)</span>
+<span id="cb18-4"><a href="#cb18-4" aria-hidden="true" tabindex="-1"></a>hub_entrez <span class="ot">&lt;-</span> <span class="fu">bitr</span>(hub_genes<span class="sc">$</span>gene, <span class="at">fromType =</span> <span class="st">"ENSEMBL"</span>,</span>
+<span id="cb18-5"><a href="#cb18-5" aria-hidden="true" tabindex="-1"></a>                   <span class="at">toType =</span> <span class="st">"ENTREZID"</span>, <span class="at">OrgDb =</span> org.Hs.eg.db)</span>
+<span id="cb18-6"><a href="#cb18-6" aria-hidden="true" tabindex="-1"></a>go_hub <span class="ot">&lt;-</span> <span class="fu">enrichGO</span>(<span class="at">gene =</span> hub_entrez<span class="sc">$</span>ENTREZID, <span class="at">OrgDb =</span> org.Hs.eg.db,</span>
+<span id="cb18-7"><a href="#cb18-7" aria-hidden="true" tabindex="-1"></a>                   <span class="at">ont =</span> <span class="st">"BP"</span>, <span class="at">pAdjustMethod =</span> <span class="st">"BH"</span>,</span>
+<span id="cb18-8"><a href="#cb18-8" aria-hidden="true" tabindex="-1"></a>                   <span class="at">pvalueCutoff =</span> <span class="fl">0.05</span>, <span class="at">qvalueCutoff =</span> <span class="fl">0.2</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb19"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb19-1"><a href="#cb19-1" aria-hidden="true" tabindex="-1"></a><span class="co">#| label: fig-hub-go</span></span>
+<span id="cb19-2"><a href="#cb19-2" aria-hidden="true" tabindex="-1"></a><span class="co">#| fig-cap: "目标模块枢纽基因的 GO 生物过程富集分析结果（使用 airway DEG 替代演示）。实际分析中，输入基因集为 WGCNA 枢纽基因；此处用 airway dex vs control 的显著差异表达基因代替，以展示相同的可视化格式。"</span></span>
+<span id="cb19-3"><a href="#cb19-3" aria-hidden="true" tabindex="-1"></a><span class="co">#| message: false</span></span>
+<span id="cb19-4"><a href="#cb19-4" aria-hidden="true" tabindex="-1"></a><span class="co">#| warning: false</span></span>
+<span id="cb19-5"><a href="#cb19-5" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(clusterProfiler)</span>
+<span id="cb19-6"><a href="#cb19-6" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(org.Hs.eg.db)</span>
+<span id="cb19-7"><a href="#cb19-7" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(DESeq2)</span>
+<span id="cb19-8"><a href="#cb19-8" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(airway)</span>
+<span id="cb19-9"><a href="#cb19-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb19-10"><a href="#cb19-10" aria-hidden="true" tabindex="-1"></a><span class="fu">data</span>(airway)</span>
+<span id="cb19-11"><a href="#cb19-11" aria-hidden="true" tabindex="-1"></a>dds_go <span class="ot">&lt;-</span> <span class="fu">DESeqDataSet</span>(airway, <span class="at">design =</span> <span class="sc">~</span> cell <span class="sc">+</span> dex)</span>
+<span id="cb19-12"><a href="#cb19-12" aria-hidden="true" tabindex="-1"></a>dds_go <span class="ot">&lt;-</span> dds_go[<span class="fu">rowSums</span>(<span class="fu">counts</span>(dds_go)) <span class="sc">&gt;</span> <span class="dv">10</span>, ]</span>
+<span id="cb19-13"><a href="#cb19-13" aria-hidden="true" tabindex="-1"></a>dds_go <span class="ot">&lt;-</span> <span class="fu">DESeq</span>(dds_go, <span class="at">quiet =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb19-14"><a href="#cb19-14" aria-hidden="true" tabindex="-1"></a>res_go <span class="ot">&lt;-</span> <span class="fu">results</span>(dds_go, <span class="at">contrast =</span> <span class="fu">c</span>(<span class="st">"dex"</span>, <span class="st">"trt"</span>, <span class="st">"untrt"</span>))</span>
+<span id="cb19-15"><a href="#cb19-15" aria-hidden="true" tabindex="-1"></a>sig_go <span class="ot">&lt;-</span> <span class="fu">rownames</span>(<span class="fu">subset</span>(res_go, padj <span class="sc">&lt;</span> <span class="fl">0.01</span> <span class="sc">&amp;</span> <span class="fu">abs</span>(log2FoldChange) <span class="sc">&gt;</span> <span class="fl">1.5</span>))</span>
+<span id="cb19-16"><a href="#cb19-16" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb19-17"><a href="#cb19-17" aria-hidden="true" tabindex="-1"></a>gmap <span class="ot">&lt;-</span> <span class="fu">bitr</span>(sig_go, <span class="at">fromType =</span> <span class="st">"ENSEMBL"</span>, <span class="at">toType =</span> <span class="st">"ENTREZID"</span>,</span>
+<span id="cb19-18"><a href="#cb19-18" aria-hidden="true" tabindex="-1"></a>             <span class="at">OrgDb =</span> org.Hs.eg.db, <span class="at">drop =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb19-19"><a href="#cb19-19" aria-hidden="true" tabindex="-1"></a>go_demo <span class="ot">&lt;-</span> <span class="fu">enrichGO</span>(<span class="at">gene =</span> gmap<span class="sc">$</span>ENTREZID, <span class="at">OrgDb =</span> org.Hs.eg.db,</span>
+<span id="cb19-20"><a href="#cb19-20" aria-hidden="true" tabindex="-1"></a>                    <span class="at">ont =</span> <span class="st">"BP"</span>, <span class="at">pAdjustMethod =</span> <span class="st">"BH"</span>,</span>
+<span id="cb19-21"><a href="#cb19-21" aria-hidden="true" tabindex="-1"></a>                    <span class="at">pvalueCutoff =</span> <span class="fl">0.05</span>, <span class="at">qvalueCutoff =</span> <span class="fl">0.2</span>)</span>
+<span id="cb19-22"><a href="#cb19-22" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> (<span class="sc">!</span><span class="fu">is.null</span>(go_demo) <span class="sc">&amp;&amp;</span> <span class="fu">nrow</span>(go_demo<span class="sc">@</span>result) <span class="sc">&gt;</span> <span class="dv">0</span>) {</span>
+<span id="cb19-23"><a href="#cb19-23" aria-hidden="true" tabindex="-1"></a>    <span class="fu">dotplot</span>(go_demo, <span class="at">showCategory =</span> <span class="dv">12</span>,</span>
+<span id="cb19-24"><a href="#cb19-24" aria-hidden="true" tabindex="-1"></a>            <span class="at">title =</span> <span class="st">"GO BP: airway DEGs (illustrative hub-gene enrichment format)"</span>)</span>
+<span id="cb19-25"><a href="#cb19-25" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<hr>
+</section>
+</section>
+<section id="wgcna-与-dea-结果的整合" class="level1" data-number="32">
+<h1 data-number="32"><span class="header-section-number">32</span> WGCNA 与 DEA 结果的整合</h1>
+<p>WGCNA 和 DEA 是互补而非相互替代的分析视角。将两者整合可以回答：差异表达基因是否集中富集在某个特定的共表达模块中？</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb20"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb20-1"><a href="#cb20-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Load DESeq2 results from Chapter 4</span></span>
+<span id="cb20-2"><a href="#cb20-2" aria-hidden="true" tabindex="-1"></a><span class="co"># dds_result &lt;- results(dds, contrast = c("dex", "trt", "untrt"))</span></span>
+<span id="cb20-3"><a href="#cb20-3" aria-hidden="true" tabindex="-1"></a><span class="co"># Assume dea_sig contains significant DEGs (padj &lt; 0.05, |log2FC| &gt; 1)</span></span>
+<span id="cb20-4"><a href="#cb20-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb20-5"><a href="#cb20-5" aria-hidden="true" tabindex="-1"></a><span class="co"># Check enrichment of DEGs in WGCNA modules</span></span>
+<span id="cb20-6"><a href="#cb20-6" aria-hidden="true" tabindex="-1"></a>deg_module_overlap <span class="ot">&lt;-</span> <span class="fu">table</span>(</span>
+<span id="cb20-7"><a href="#cb20-7" aria-hidden="true" tabindex="-1"></a>    module_colors[<span class="fu">names</span>(module_colors) <span class="sc">%in%</span> <span class="fu">rownames</span>(dea_sig)]</span>
+<span id="cb20-8"><a href="#cb20-8" aria-hidden="true" tabindex="-1"></a>) <span class="sc">|&gt;</span> <span class="fu">sort</span>(<span class="at">decreasing =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb20-9"><a href="#cb20-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb20-10"><a href="#cb20-10" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">"DEG distribution across WGCNA modules:</span><span class="sc">\n</span><span class="st">"</span>)</span>
+<span id="cb20-11"><a href="#cb20-11" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(deg_module_overlap)</span>
+<span id="cb20-12"><a href="#cb20-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb20-13"><a href="#cb20-13" aria-hidden="true" tabindex="-1"></a><span class="co"># Fisher's exact test for enrichment in target module</span></span>
+<span id="cb20-14"><a href="#cb20-14" aria-hidden="true" tabindex="-1"></a>total_genes     <span class="ot">&lt;-</span> <span class="fu">length</span>(module_colors)</span>
+<span id="cb20-15"><a href="#cb20-15" aria-hidden="true" tabindex="-1"></a>module_size     <span class="ot">&lt;-</span> <span class="fu">sum</span>(module_colors <span class="sc">==</span> target_module)</span>
+<span id="cb20-16"><a href="#cb20-16" aria-hidden="true" tabindex="-1"></a>deg_total       <span class="ot">&lt;-</span> <span class="fu">nrow</span>(dea_sig)</span>
+<span id="cb20-17"><a href="#cb20-17" aria-hidden="true" tabindex="-1"></a>deg_in_module   <span class="ot">&lt;-</span> deg_module_overlap[target_module]</span>
+<span id="cb20-18"><a href="#cb20-18" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb20-19"><a href="#cb20-19" aria-hidden="true" tabindex="-1"></a>fisher_mat <span class="ot">&lt;-</span> <span class="fu">matrix</span>(</span>
+<span id="cb20-20"><a href="#cb20-20" aria-hidden="true" tabindex="-1"></a>    <span class="fu">c</span>(deg_in_module,</span>
+<span id="cb20-21"><a href="#cb20-21" aria-hidden="true" tabindex="-1"></a>      module_size <span class="sc">-</span> deg_in_module,</span>
+<span id="cb20-22"><a href="#cb20-22" aria-hidden="true" tabindex="-1"></a>      deg_total <span class="sc">-</span> deg_in_module,</span>
+<span id="cb20-23"><a href="#cb20-23" aria-hidden="true" tabindex="-1"></a>      total_genes <span class="sc">-</span> module_size <span class="sc">-</span> deg_total <span class="sc">+</span> deg_in_module),</span>
+<span id="cb20-24"><a href="#cb20-24" aria-hidden="true" tabindex="-1"></a>    <span class="at">nrow =</span> <span class="dv">2</span></span>
+<span id="cb20-25"><a href="#cb20-25" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb20-26"><a href="#cb20-26" aria-hidden="true" tabindex="-1"></a><span class="fu">fisher.test</span>(fisher_mat, <span class="at">alternative =</span> <span class="st">"greater"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<hr>
+</section>
+<section id="wgcna-的局限性与注意事项" class="level1" data-number="33">
+<h1 data-number="33"><span class="header-section-number">33</span> WGCNA 的局限性与注意事项</h1>
+<div class="warning">
+<p><strong>关键局限性：</strong></p>
+<ol type="1">
+<li><p><strong>样本量要求</strong>：WGCNA 对样本量敏感，&lt; 15 个样本时软阈值拟合不稳定，模块边界不可靠。对于小样本数据，应提高 <code>mergeCutHeight</code>，得到更大粒度的模块，或改用 CEMiTool 等对小样本更稳健的工具。</p></li>
+<li><p><strong>无向网络</strong>：WGCNA 建立的是基于相关性的无向网络，无法推断调控方向（A 调控 B 或 B 调控 A）。专题 5.6 将介绍如何使用 GENIE3 为共表达模块添加方向性调控边。</p></li>
+<li><p><strong>批次效应敏感性</strong>：若数据存在强批次效应（如不同批次采集的样本），WGCNA 发现的模块可能反映批次差异而非生物学信号。应在 WGCNA 分析前使用 limma <code>removeBatchEffect</code> 或 ComBat 处理批次效应，而不是在 WGCNA 模型中包含批次变量。</p></li>
+<li><p><strong>共线性问题</strong>：若所有样本均属于同一处理组或细胞系，则 cell 变量与 dex 变量可能高度共线，模块-表型关联结果应结合实验设计谨慎解读。</p></li>
+</ol>
+</div>
+<hr>
+</section>
+<section id="课后自测-post-lesson-quiz" class="level1" data-number="34">
+<h1 data-number="34"><span class="header-section-number">34</span> 课后自测 (Post-Lesson Quiz)</h1>
+<ol type="1">
+<li><p>WGCNA 中软阈值（<span class="math inline">\(\beta\)</span>）的选择原则是什么？为什么不直接使用硬阈值（将相关系数低于某阈值的边设为 0）来构建网络？</p></li>
+<li><p>模块特征基因（Module Eigengene, ME）的数学定义是什么？为什么使用 ME 而非模块内基因的平均表达量来代表模块整体活性？</p></li>
+<li><p>拓扑重叠矩阵（TOM）相比直接使用邻接矩阵有什么优势？TOM 值高意味着两个基因在网络中处于什么关系？</p></li>
+<li><p>在模块-表型关联热图中，如果某模块的 ME 与 dex 处理的相关系数为 -0.85（P = 0.003），这意味着什么生物学含义？</p></li>
+<li><p>枢纽基因的标准通常定义为 <span class="math inline">\(|\text{kME}| &gt; 0.8\)</span> 且 <span class="math inline">\(|\text{GS}| &gt; 0.5\)</span>。请解释这两个指标各自量化的是什么，为什么需要同时满足两个条件？</p></li>
+<li><p>WGCNA 的 <code>mergeCutHeight</code> 参数控制什么？将其从 0.25 改为 0.4 会对分析结果产生什么影响？</p></li>
+<li><p>为什么 WGCNA 分析应在 VST 或 rlog 归一化后的数据上进行，而不是直接使用原始计数数据？</p></li>
+<li><p>一位研究者在 12 个样本上运行 WGCNA，发现软阈值自动选择失败（<span class="math inline">\(R^2\)</span> 始终低于 0.85）。这种情况的可能原因是什么？如何处理？</p></li>
+</ol>
+<details>
+<summary>
+<strong>参考答案 (Reference Answers)</strong>
+</summary>
+<ol type="1">
+<li><p><em>软阈值选择原则：取满足无标度拓扑拟合度 <span class="math inline">\(R^2 \geq 0.85\)</span> 的最小 <span class="math inline">\(\beta\)</span> 值，同时要求平均连接度 &gt; 100。不直接使用硬阈值的原因：（1）硬阈值的切断值选择是任意的，结果对阈值敏感；（2）硬阈值会导致信息损失（低于阈值的真实弱关联被完全丢弃）；（3）软阈值化产生的加权网络对噪声更鲁棒，模块边界更稳定。</em></p></li>
+<li><p><em>ME 是模块内所有基因表达矩阵的第一主成分向量（长度等于样本数）。使用第一主成分而非平均值的原因：（1）主成分考虑了基因间的协方差结构，比简单平均更充分利用了模块内的信息；（2）对于方向相反的调控关系（负相关共表达），平均值会相互抵消，而 PCA 能正确捕捉主要变异方向；（3）第一主成分通常能解释模块内 &gt; 40% 的方差，是模块整体活性的高效摘要。</em></p></li>
+<li><p><em>TOM 的优势：TOM 衡量的是两个基因在网络邻域结构上的相似性（共同邻居的数量），而非仅仅是两者之间的直接连接强度。TOM 对测量噪声（单个基因表达的随机波动）更鲁棒，因为共同邻居的信息对随机误差起到了平均效应。TOM 值高（接近 1）意味着两个基因不仅直接高度相关，还与大量相同的其他基因相关，属于紧密的功能邻域成员。</em></p></li>
+<li><p><em>ME 与 dex 处理相关系数为 -0.85 意味着：该模块的整体表达活性在 dex 处理样本中显著低于未处理样本，即 dex 处理<strong>下调</strong>了该模块的整体活性。P = 0.003 表明这种负相关在统计上显著（而非随机）。生物学上，该模块内的基因可能代表了被 dex（糖皮质激素）所抑制的炎症或免疫应答相关通路。</em></p></li>
+<li><p><em>kME（模块成员度）量化基因表达量与模块特征基因的相关性，反映该基因与模块整体活性的同步程度——高 kME 意味着该基因是模块的核心成员。GS（基因显著性）量化基因表达量与目标表型的直接相关性，反映基因的表型关联强度。同时满足两个条件的生物学意义：枢纽基因不仅在网络中处于核心位置（高 kME），而且其表达量直接与表型相关（高 GS），因此最可能是驱动该模块表型效应的功能关键节点。仅满足高 kME 的基因可能只是模块的”结构核心”但与表型无关；仅满足高 GS 的基因可能是表型关联基因但不属于模块的调控核心。</em></p></li>
+<li><p><em><code>mergeCutHeight</code> 控制模块合并的相似性阈值：高度 <span class="math inline">\(h\)</span> 对应 ME 之间的相关系数 <span class="math inline">\(r = 1 - h\)</span>（因为聚类使用的是 1-相关距离）。<code>mergeCutHeight = 0.25</code> 意味着 ME 相关系数 &gt; 0.75 的模块被合并。将其从 0.25 改为 0.4，相当于合并 ME 相关系数 &gt; 0.6 的模块，会产生更少、更大的模块（聚合程度更高）。这可能将具有相似但不完全相同功能的模块合并在一起，适合样本量较小或基因数较少的情形；但在大样本中可能过度合并，损失生物学分辨率。</em></p></li>
+<li><p><em>原始计数数据不满足 WGCNA 的基本假设：（1）WGCNA 基于皮尔逊相关系数，要求数据近似正态分布；原始计数数据高度右偏，方差与均值正相关（过度离散），违反正态假设。（2）低表达基因的计数受随机采样噪声主导，直接计算相关系数会放大噪声。VST（方差稳定化变换）通过方差稳定化将数据转化为近似正态分布，且方差不再依赖于均值，是 WGCNA 的推荐输入。</em></p></li>
+<li><p><em>可能原因：（1）样本量过少（12 &lt; 15），统计功效不足以估计稳定的无标度拓扑；（2）数据中存在强批次效应或离群样本，导致基因相关结构不呈无标度分布；（3）数据经过了过度的归一化或去除了太多基因，残差方差过低。处理方法：（1）首先检查并去除离群样本；（2）对数据进行批次效应校正；（3）若 <span class="math inline">\(R^2\)</span> 最高也只有 0.7–0.8，可手动选择 <span class="math inline">\(\beta = 12\)</span>（signed 网络）或 <span class="math inline">\(\beta = 6\)</span>（unsigned 网络）作为经验默认值；（4）考虑使用对小样本更稳健的工具（如 CEMiTool）。</em></p></li>
+</ol>
+</details>
 
 
+</section>
 
 </main> <!-- /main -->
 <script id="quarto-html-after-body" type="application/javascript">
@@ -960,13 +1617,13 @@ ul.task-list li input[type="checkbox"] {
   </script>
 <nav class="page-navigation">
   <div class="nav-page nav-page-previous">
-      <a href="./transcriptomics_adv_lesson2.html" class="pagination-link" aria-label="第五章 课时2">
-        <i class="bi bi-arrow-left-short"></i> <span class="nav-page-text"><span class="chapter-number">27</span>&nbsp; <span class="chapter-title">第五章 课时2</span></span>
+      <a href="./transcriptomics_adv_lesson2.html" class="pagination-link" aria-label="可变多腺苷酸化分析与长读长转录组展望">
+        <i class="bi bi-arrow-left-short"></i> <span class="nav-page-text"><span class="chapter-number">27</span>&nbsp; <span class="chapter-title">可变多腺苷酸化分析与长读长转录组展望</span></span>
       </a>          
   </div>
   <div class="nav-page nav-page-next">
-      <a href="./transcriptomics_adv_lesson4.html" class="pagination-link" aria-label="第五章 课时4">
-        <span class="nav-page-text"><span class="chapter-number">29</span>&nbsp; <span class="chapter-title">第五章 课时4</span></span> <i class="bi bi-arrow-right-short"></i>
+      <a href="./transcriptomics_adv_lesson4.html" class="pagination-link" aria-label="基因调控网络推断——从随机森林到动力系统">
+        <span class="nav-page-text"><span class="chapter-number">29</span>&nbsp; <span class="chapter-title">基因调控网络推断——从随机森林到动力系统</span></span> <i class="bi bi-arrow-right-short"></i>
       </a>
   </div>
 </nav>
@@ -975,4 +1632,4 @@ ul.task-list li input[type="checkbox"] {
 
 
 
-<footer class="footer"><div class="nav-footer"><div class="nav-footer-center"><div class="toc-actions"><ul><li><a href="https://github.com/cxzdsa2332/Applied-Omics-Analysis/edit/main/transcriptomics_adv_lesson3.qmd" class="toc-action"><i class="bi bi-github"></i>Edit this page</a></li><li><a href="https://github.com/cxzdsa2332/Applied-Omics-Analysis/issues/new" class="toc-action"><i class="bi empty"></i>Report an issue</a></li><li><a href="https://github.com/cxzdsa2332/Applied-Omics-Analysis/blob/main/transcriptomics_adv_lesson3.qmd" class="toc-action"><i class="bi empty"></i>View source</a></li></ul></div></div></div></footer></body></html>
+<footer class="footer"><div class="nav-footer"><div class="nav-footer-center"><div class="toc-actions d-sm-block d-md-none"><ul><li><a href="https://github.com/cxzdsa2332/Applied-Omics-Analysis/edit/main/transcriptomics_adv_lesson3.qmd" class="toc-action"><i class="bi bi-github"></i>Edit this page</a></li><li><a href="https://github.com/cxzdsa2332/Applied-Omics-Analysis/issues/new" class="toc-action"><i class="bi empty"></i>Report an issue</a></li><li><a href="https://github.com/cxzdsa2332/Applied-Omics-Analysis/blob/main/transcriptomics_adv_lesson3.qmd" class="toc-action"><i class="bi empty"></i>View source</a></li></ul></div></div></div></footer></body></html>

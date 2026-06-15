@@ -6,7 +6,7 @@
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
-<meta name="dcterms.date" content="2026-05-31">
+<meta name="dcterms.date" content="2026-06-15">
 
 <title>20&nbsp; Bulk 转录组分析基础：质量控制、定量与差异表达 – Introduction to Applied High-throughput Biological Data Analysis</title>
 <style>
@@ -45,7 +45,7 @@ ul.task-list li input[type="checkbox"] {
 <link href="site_libs/quarto-html/quarto-syntax-highlighting-15634bcf2e68342d4ad2dfa704d543f6.css" rel="stylesheet" id="quarto-text-highlighting-styles">
 <script src="site_libs/bootstrap/bootstrap.min.js"></script>
 <link href="site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
-<link href="site_libs/bootstrap/bootstrap-48abc47ddc2cbc14860ddec9e9fdb395.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
+<link href="site_libs/bootstrap/bootstrap-3f70bac5631458d474a321d4182f9338.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
 <script id="quarto-search-options" type="application/json">{
   "location": "sidebar",
   "copy-button": false,
@@ -310,37 +310,37 @@ window.Quarto = {
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./05-transcriptomics-advanced.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">25</span>&nbsp; <span class="chapter-title">Bulk 转录组高级分析：结构变异、长读长与共表达网络</span></span></a>
+ <span class="menu-text"><span class="chapter-number">25</span>&nbsp; <span class="chapter-title">Bulk 转录组高级分析：转录本结构与调控网络</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./transcriptomics_adv_lesson1.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">26</span>&nbsp; <span class="chapter-title">第五章 课时1</span></span></a>
+ <span class="menu-text"><span class="chapter-number">26</span>&nbsp; <span class="chapter-title">可变剪接差异分析与基因融合鉴定</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./transcriptomics_adv_lesson2.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">27</span>&nbsp; <span class="chapter-title">第五章 课时2</span></span></a>
+ <span class="menu-text"><span class="chapter-number">27</span>&nbsp; <span class="chapter-title">可变多腺苷酸化分析与长读长转录组展望</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./transcriptomics_adv_lesson3.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">28</span>&nbsp; <span class="chapter-title">第五章 课时3</span></span></a>
+ <span class="menu-text"><span class="chapter-number">28</span>&nbsp; <span class="chapter-title">加权基因共表达网络分析（WGCNA）</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./transcriptomics_adv_lesson4.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">29</span>&nbsp; <span class="chapter-title">第五章 课时4</span></span></a>
+ <span class="menu-text"><span class="chapter-number">29</span>&nbsp; <span class="chapter-title">基因调控网络推断——从随机森林到动力系统</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./transcriptomics_adv_lesson5.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">30</span>&nbsp; <span class="chapter-title">第五章 课时5</span></span></a>
+ <span class="menu-text"><span class="chapter-number">30</span>&nbsp; <span class="chapter-title">扰动稳态下的非线性基因调控模型学习</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
@@ -595,7 +595,7 @@ window.Quarto = {
     <div>
     <div class="quarto-title-meta-heading">Published</div>
     <div class="quarto-title-meta-contents">
-      <p class="date">May 31, 2026</p>
+      <p class="date">June 15, 2026</p>
     </div>
   </div>
   
@@ -609,23 +609,35 @@ window.Quarto = {
 
 <section id="整体概述" class="level1" data-number="21">
 <h1 data-number="21"><span class="header-section-number">21</span> 整体概述</h1>
-<p>Bulk RNA-seq 是转录组学研究的基石技术，自 2008 年前后逐步取代微阵列（Microarray），成为差异表达研究的主流范式。其核心分析问题可以概括为：在给定实验条件下，哪些基因的转录水平发生了统计显著的变化，变化幅度有多大，以及这些变化在生物学功能层面意味着什么。要回答这些问题，分析者需要依次完成三个阶段的工作：原始数据的质量控制与预处理、基因表达量的精确定量、以及在统计模型框架下的差异表达检验与功能解读。本章聚焦上述三个基础阶段，系统讲解从原始 FASTQ 文件到差异表达基因功能注释的完整标准流程，着重阐明每一步骤的方法论原理与参数选择逻辑，为第5章高级转录组分析奠定基础。</p>
-<p><strong>学习目标</strong>：掌握 RNA-seq 数据的质量评估标准与预处理策略；理解 splice-aware 比对与两种主流定量方法（基于比对计数 vs 伪比对）的原理差异；能独立运行 DESeq2 差异表达分析流程并进行 GO/KEGG/GSEA 功能富集解读。</p>
+<p>Bulk RNA-seq 是转录组学研究的基石技术，自 2008 年前后逐步取代微阵列（Microarray），成为差异表达研究的主流范式。其核心分析问题可以概括为：在给定实验条件下，哪些基因的转录水平发生了统计显著的变化，变化幅度有多大，以及这些变化在生物学功能层面意味着什么。要回答这些问题，分析者需要依次完成三个阶段的工作：原始数据的质量控制与预处理、基因表达量的精确定量、以及在统计模型框架下的差异表达检验与功能解读。本章以贯穿全章的 airway 数据集（Himes et al.&nbsp;2014，人类气道平滑肌细胞，4 个细胞系、dexamethasone 处理与对照的 2×4 配对设计）为实践主线，系统讲解从原始 FASTQ 文件到功能富集报告的完整标准流程。在方法论层面，本章着重阐明每一步骤的统计原理与参数选择逻辑——从 Phred 质量分数的概率解释、负二项分布对过离散的建模，到超几何检验与 GSEA 置换检验的手动推演——以便读者在使用工具的同时真正理解工具背后的假设与局限，为第5章高级转录组分析奠定方法论基础。</p>
+<p><strong>学习目标</strong>：掌握 RNA-seq 文库特性与数据质量评估标准；理解 splice-aware 比对算法原理及两种主流定量策略的差异；能独立运行 DESeq2/edgeR/limma-voom 差异表达分析并正确解读结果；掌握 ORA 与 GSEA 功能富集分析的原理与实践，识别结果解读中的常见误区。</p>
 <hr>
 </section>
 <section id="结构导览" class="level1" data-number="22">
 <h1 data-number="22"><span class="header-section-number">22</span> 结构导览</h1>
 <p>本章分为两个模块，共四个专题，按标准 Bulk RNA-seq 分析流程组织：</p>
-<pre><code>原始 FASTQ（SRR1039508–SRR1039517，pasilla 数据集）
+<pre><code>原始 FASTQ（SRR1039508–SRR1039521，airway 数据集，Himes et al. 2014）
   │
   ├── 模块 A：数据质控与表达量定量（专题 4.1–4.2）
-  │     ↓ FastQC/fastp 质控 → STAR/HISAT2 比对 → featureCounts/Salmon 定量
-  │     ↓ 输出：多样本原始计数矩阵（count matrix）
+  │     │
+  │     ├── 专题 4.1  FastQC / fastp / MultiQC
+  │     │           RNA完整性评估 · 链方向确认 · 批次效应早期检测（PCA / RLE）
+  │     │           输出：通过质控的 clean FASTQ + 样本元数据表
+  │     │
+  │     └── 专题 4.2  STAR / HISAT2 splice-aware 比对
+  │                 featureCounts 计数 · Salmon 伪比对 · tximport 汇总
+  │                 输出：基因级别原始计数矩阵（count matrix）
   │
   └── 模块 B：差异表达分析与功能富集（专题 4.3–4.4）
-        ↓ DESeq2/edgeR 差异检验 → 结果过滤与可视化
-        ↓ GO/KEGG ORA → GSEA → 结果解读
-        ↓ 输出：差异基因表 + 富集通路报告</code></pre>
+        │
+        ├── 专题 4.3  DESeq2 / edgeR / limma-voom 差异检验
+        │           批次效应建模与校正 · MA 图 / 火山图 / PCA / 热图
+        │           输出：差异基因表（padj &lt; 0.05，|LFC| &gt; 1）
+        │
+        └── 专题 4.4  GO / KEGG / Reactome ORA
+                    GSEA（全基因组 Wald stat 排序）
+                    UpSet 图 · pathview 通路可视化
+                    输出：功能富集报告 + 结果 CSV 文件</code></pre>
 <p>模块 A 的输出（原始计数矩阵）是模块 B 的直接输入；模块 B 的产出为第5章高级分析提供经过验证的起点。</p>
 <hr>
 </section>
@@ -636,74 +648,88 @@ window.Quarto = {
 </div>
 <section id="专题-4.1测序原理文库特性与原始数据质量控制" class="level2" data-number="23.1">
 <h2 data-number="23.1" class="anchored" data-anchor-id="专题-4.1测序原理文库特性与原始数据质量控制"><span class="header-section-number">23.1</span> 专题 4.1：测序原理、文库特性与原始数据质量控制</h2>
-<p>RNA-seq 数据的质量特征与 DNA 测序数据存在系统性差异，这些差异根植于文库构建方式的不同。poly-A 富集文库会优先捕获转录本 3’ 端，导致 3’/5’ 覆盖度不均；rRNA 去除（RiboZero）文库则覆盖分布更均匀，但可能残留非编码 RNA 信号。链特异性文库（Strand-specific library）记录了 RNA 链的方向信息，能区分正反链重叠基因的表达，是现代 RNA-seq 实验的标配。本专题系统讲解上述文库类型的特性，以及如何通过 FastQC 和 MultiQC 识别文库特有的质控异常信号，并利用 fastp 完成 Adapter 修剪与质量过滤。</p>
+<p>RNA-seq 数据的质量特征与 DNA 测序数据存在系统性差异，这些差异根植于文库构建方式的不同。poly-A 富集文库优先捕获转录本 3’ 端，rRNA 去除（RiboZero）文库覆盖分布更均匀但可能残留非编码 RNA 信号，而链特异性文库（Strand-specific library）通过 dUTP 策略记录 RNA 链的方向信息，是现代 RNA-seq 实验的标配。本专题系统讲解上述文库类型的特性，介绍 Phred 质量分数的概率解释与 FASTQ 格式编码规则，并讲解如何通过 FastQC 和 MultiQC 识别文库特有的质控异常信号、利用 fastp 完成 Adapter 修剪与质量过滤。本专题还重点讨论批次效应的成因与早期检测方法——PCA 图与 RLE 图是判断批次效应是否主导样本间变异的核心工具，应在差异分析之前完成诊断。</p>
 <p><strong>核心概念</strong>：</p>
 <ul>
-<li>RNA-seq 文库构建两条路线：poly-A 富集（mRNA-seq）vs rRNA 去除（Total RNA-seq）；各自的覆盖度偏差模式</li>
+<li>Illumina 测序化学：流动槽与簇扩增（Cluster amplification）；边合成边测序（SBS）的荧光信号产生机制</li>
+<li>Phred 质量分数：<span class="math inline">\(Q = -10 \log_{10}(P_e)\)</span>；Phred+33 编码（FASTQ 格式）；Q30 作为质控基准</li>
+<li>RNA 完整性：RNA 完整性评分（RIN, RNA Integrity Number）；RIN 与 3’/5’ 覆盖度偏差的关系</li>
+<li>文库构建两条路线：poly-A 富集（mRNA-seq）vs rRNA 去除（Total RNA-seq）；各自的覆盖度偏差模式</li>
 <li>链特异性文库：TruSeq Stranded 的 dUTP 策略；链方向的生物信息学确认（infer_experiment.py / RSeQC）</li>
 <li>FastQC 关键模块解读：Per base sequence quality、Per sequence GC content、Sequence Duplication Levels、Overrepresented sequences</li>
-<li>RNA-seq 特有的质控指标：rRNA 污染比例、3’ 端偏差（read_distribution.py）、外显子/内含子/基因间区比例</li>
+<li>RNA-seq 特有的质控指标：rRNA 污染比例、3’ 端偏差（read_distribution.py）、外显子 / 内含子 / 基因间区比例</li>
 <li>fastp 参数选择：<code>--detect_adapter_for_pe</code>（自动检测）vs 手动指定；<code>--trim_poly_x</code> 处理 poly-A read-through</li>
 <li>MultiQC 汇总报告：多样本质控状态的快速纵览</li>
+<li>批次效应早期检测：PCA 图判断主要变异来源；RLE（Relative Log Expression）图识别系统性偏移；实验设计层面的规避策略</li>
 </ul>
-<p><strong>实践内容</strong>：对 pasilla 数据集（SRR1039508–SRR1039517，10 个样本）运行 FastQC → fastp 修剪 → FastQC 复检 → MultiQC 汇总，识别链特异性方向并确认文库类型，生成贯穿全章的样本元数据表。</p>
+<p><strong>实践内容</strong>：对 airway 数据集（SRR1039508–SRR1039521，1M-read 教学子集）运行 FastQC → fastp 修剪 → FastQC 复检 → MultiQC 汇总，确认链特异性方向，生成贯穿全章的样本元数据表；运行 PCA 与 RLE 图诊断批次效应。</p>
 <hr>
 </section>
 <section id="专题-4.2splice-aware-比对与表达量定量" class="level2" data-number="23.2">
 <h2 data-number="23.2" class="anchored" data-anchor-id="专题-4.2splice-aware-比对与表达量定量"><span class="header-section-number">23.2</span> 专题 4.2：Splice-Aware 比对与表达量定量</h2>
-<p>RNA-seq 比对面临 DNA 比对所没有的根本挑战：成熟 mRNA 已切除内含子，一个跨越剪接位点的读段（junction read）在基因组上对应两段不连续的区间，普通比对工具无法正确处理。splice-aware 比对算法（STAR、HISAT2）通过两步策略解决这一问题：先将读段映射至外显子区域，再利用已知或新发现的剪接位点将跨越内含子的部分正确拼接。在定量层面，本专题深入对比两种主流策略：featureCounts 依赖比对结果逐外显子计数，而 Salmon 的伪比对（quasi-mapping）直接将读段与转录本序列匹配，无需全基因组比对，速度更快且内置偏差校正模型。</p>
+<p>RNA-seq 比对面临 DNA 比对所没有的根本挑战：成熟 mRNA 已切除内含子，一个跨越剪接位点的读段（junction read）在基因组上对应两段不连续区间，普通比对工具无法正确处理。splice-aware 比对算法（STAR、HISAT2）通过两步策略解决这一问题：先将读段映射至外显子区域，再利用已知或新发现的剪接位点正确拼接跨内含子部分。在定量层面，本专题深入对比两种主流策略：featureCounts 依赖比对结果逐外显子计数，而 Salmon 的伪比对（quasi-mapping）直接将读段与转录本序列匹配，无需全基因组比对，速度更快且内置偏差校正模型。本专题还介绍 SAM/BAM 格式的核心字段解析与比对质量诊断方法，以及如何通过与 airway 官方计数矩阵的相关性分析验证定量结果的可靠性。</p>
 <p>{{Wiki:RNA-Seq}}</p>
 <p><strong>核心概念</strong>：</p>
 <ul>
-<li>STAR 两步比对：种子查找（Maximal Mappable Prefix, MMP）→ 剪接位点验证；两遍比对（2-pass mode）提高新型剪接位点检出率</li>
-<li>HISAT2 的层次图 FM 索引（Hierarchical Graph FM-index）：全局基因组索引 + 局部剪接图索引</li>
-<li>GTF 注释文件的作用：外显子坐标提供 featureCounts 计数边界；转录本序列用于 Salmon 索引构建</li>
-<li>featureCounts 参数：<code>-s</code>（链特异性方向，0/1/2）；<code>-p</code>（双端模式）；多比对读段处理策略</li>
-<li>Salmon 工作流：<code>salmon index</code>（转录本索引）→ <code>salmon quant</code>（伪比对定量）；<code>--gcBias</code> 与 <code>--seqBias</code> 校正</li>
-<li>TPM vs FPKM vs 原始计数（raw counts）：各自适用场景；DESeq2 必须使用原始计数的原因</li>
+<li>Splice-aware 比对的必要性：junction read 的挑战；Read-through 问题</li>
+<li>STAR 算法：最大可映射前缀（Maximal Mappable Prefix, MMP）种子查找；两遍比对（2-pass mode）提高新型剪接位点检出率；<code>--outSAMtype BAM SortedByCoordinate</code> 直接输出排序 BAM</li>
+<li>HISAT2 的层次图 FM 索引（Hierarchical Graph FM-index）：全局基因组索引 + 局部剪接图索引；适用于内存受限场景</li>
+<li>GTF 注释文件的作用：外显子坐标为 featureCounts 提供计数边界；转录本序列用于 Salmon 索引构建</li>
+<li>SAM/BAM 格式：FLAG 字段（比对方向、配对状态）；CIGAR 字符串解析（M/N/S 含义）；samtools 常用操作</li>
+<li>featureCounts 参数：<code>-s</code>（链特异性方向，0/1/2）；<code>-p</code>（双端模式）；多比对读段处理策略；Summary 文件解读</li>
+<li>Salmon 工作流：<code>salmon index</code>（转录本索引）→ <code>salmon quant</code>（伪比对定量）；<code>--gcBias</code> 与 <code>--seqBias</code> 偏差校正</li>
+<li>TPM vs FPKM vs 原始计数（raw counts）：各自适用场景；DESeq2 必须使用原始计数的统计原因</li>
 <li>tximport：将 Salmon 转录本级别定量汇总至基因级别，传递推断不确定性（inferential replicates）</li>
+<li>定量质量诊断：未分配 reads 的成因分类；基因检出数量的合理范围；与参考计数矩阵的相关性验证</li>
 </ul>
-<p><strong>实践内容</strong>：STAR 双端比对 pasilla 数据集至 GRCh38 参考基因组；featureCounts 链特异性计数；Salmon 伪比对定量；tximport 汇总；散点图对比两种定量方法的基因计数相关性。</p>
+<p><strong>实践内容</strong>：STAR 双端比对 airway 数据集（1M-read 子集）至 GRCh38；featureCounts 链特异性计数（<code>-s 2</code>）；Salmon 伪比对定量；tximport 汇总；诊断 featureCounts Summary 中未分配比例；散点图对比两种定量方法与 airway 官方矩阵的相关性（Pearson r &gt; 0.99 为合格）。</p>
 <hr>
 </section>
 </section>
 <section id="模块-b差异表达分析与功能富集" class="level1" data-number="24">
 <h1 data-number="24"><span class="header-section-number">24</span> 模块 B：差异表达分析与功能富集</h1>
 <div class="note">
-<p><strong>模块目标：</strong> 掌握负二项分布框架下的差异表达统计检验原理，理解多重检验校正的必要性，能独立运行 DESeq2 并解读结果；掌握 ORA 与 GSEA 两类富集分析的方法论差异与适用场景。</p>
+<p><strong>模块目标：</strong> 掌握负二项分布框架下的差异表达统计检验原理，理解多重检验校正的必要性，能独立运行 DESeq2/edgeR/limma-voom 并正确解读结果；掌握 ORA 与 GSEA 两类富集分析的方法论差异与适用场景。</p>
 </div>
 <section id="专题-4.3差异表达分析" class="level2" data-number="24.1">
 <h2 data-number="24.1" class="anchored" data-anchor-id="专题-4.3差异表达分析"><span class="header-section-number">24.1</span> 专题 4.3：差异表达分析</h2>
-<p>差异表达分析（Differential Expression Analysis, DEA）的统计问题本质是：在有限重复数（通常 3–5 个）条件下，如何可靠估计每个基因的表达变异，并从数以万计的基因中识别出真实的表达差异，同时将假阳性率控制在可接受水平。RNA-seq 计数数据具有两个关键统计特性：均值与方差之间存在正相关（过离散，Overdispersion），使普通泊松模型不适用；低表达基因的方差估计极不稳定。DESeq2 通过跨基因的离散度缩减估计（Empirical Bayes shrinkage）解决上述问题，是当前 RNA-seq 差异表达分析的黄金标准工具之一。</p>
+<p>差异表达分析的统计问题本质是：在有限重复数（通常 3–5 个）条件下，如何可靠估计每个基因的表达变异，并从数以万计的基因中识别出真实的表达差异，同时将假阳性率控制在可接受水平。本专题从泊松分布的适用边界出发，系统推导负二项分布模型对生物学过离散的建模方式，并深入讲解 DESeq2 的三步核心流程——几何均值大小因子估计、Empirical Bayes 离散度缩减、NB-GLM Wald 检验——以及离散度参数如何通过 Fisher 信息矩阵影响系数的标准误差，进而决定检验效力。本专题同时覆盖 edgeR 拟似然框架（QLF）与 limma-voom 线性模型方法，提供三种主流工具的方法论对比与共识基因集策略；在工程层面，系统讲解批次效应的两种处理路径：在设计矩阵中建模（推荐）与 ComBat/removeBatchEffect 可视化校正。</p>
 <p>{{Wiki:Negative_binomial_distribution}}</p>
 <p><strong>核心概念</strong>：</p>
 <ul>
-<li>归一化的必要性：测序深度差异（文库大小）的校正；DESeq2 大小因子（Size Factor）的几何均值估计方法</li>
-<li>负二项分布模型：均值参数 <span class="math inline">\(\mu_{ij}\)</span> 与离散参数 <span class="math inline">\(\alpha_i\)</span>；过离散的生物学与技术来源</li>
-<li>DESeq2 离散度估计流程：基因特异性粗估计 → 拟合趋势曲线 → MAP 缩减（shrink towards trend）</li>
-<li>Wald 检验与对数倍数变化（Log2 Fold Change, LFC）：LFC 缩减（apeglm）消除低计数基因极端值</li>
-<li>似然比检验（LRT）：适用于多因子模型或时间序列实验</li>
-<li>多重检验校正：Benjamini-Hochberg 过程；独立假设加权（IHW）提高检验效力</li>
-<li>edgeR 拟似然框架（quasi-likelihood F-test）：与 DESeq2 的方法论对比</li>
-<li>结果可视化：MA 图、火山图（Volcano plot）、样本间距离热图、PCA 图</li>
+<li>泊松分布的适用边界：技术重复 vs 生物学重复；过离散（Overdispersion）的三类来源</li>
+<li>负二项分布：方差结构 <span class="math inline">\(\text{Var}(K_{ij}) = \mu_{ij} + \alpha_i \mu_{ij}^2\)</span>；基因特异性离散参数 <span class="math inline">\(\alpha_i\)</span> 的生物学含义</li>
+<li>DESeq2 第一步：几何均值大小因子估计；中位数对极端表达基因的鲁棒性</li>
+<li>DESeq2 第二步：离散度估计三步流程（MLE → 趋势曲线拟合 → MAP 贝叶斯缩减）；<code>plotDispEsts()</code> 诊断图解读</li>
+<li>DESeq2 第三步：NB-GLM Wald 检验；<span class="math inline">\(\tilde{\alpha}_i\)</span> 固定后的系数估计；<span class="math inline">\(\text{SE}(\hat{\beta}_{i1})\)</span> 与 <span class="math inline">\(\alpha_i\)</span>、<span class="math inline">\(\mu_{ij}\)</span> 的定量关系</li>
+<li>LFC 缩减（apeglm）：自适应 Laplace 先验；低计数基因 LFC 向零收缩；MA 图”左侧收敛”特征</li>
+<li>edgeR QLF 检验：TMM 归一化；<code>estimateDisp()</code> BCV 估计；quasi-likelihood 方差压缩；BCV 图解读</li>
+<li>limma-voom：log-CPM 转换；LOWESS 均值-方差趋势拟合；观测值级别精度权重；<code>eBayes(trend=TRUE, robust=TRUE)</code></li>
+<li>三方法比较：DESeq2 vs edgeR vs limma-voom 在 airway 数据集的 DEG 交集（Venn/UpSet）；共识 DEG 策略</li>
+<li>批次效应建模：设计矩阵包含批次协变量 <code>~ batch + condition</code>（推荐）</li>
+<li>批次效应可视化校正：<code>ComBat()</code>（参数/非参数）与 <code>limma::removeBatchEffect()</code>；<strong>仅用于可视化，不得作为 DEA 输入</strong>；kBET 定量评估</li>
+<li>多重检验校正：Benjamini-Hochberg 过程的数学推导；FDR 的正确解读（padj &lt; 0.05 ≠ 单基因 97% 真实概率）</li>
+<li>结果可视化：MA 图（apeglm 收缩效果诊断）；火山图（基础版 / 标注 HGNC symbol 增强版 / 特定基因高亮变体）；VST-PCA 图；样本间距离热图</li>
 </ul>
-<p><strong>实践内容</strong>：使用 tximport 导入的 pasilla 计数矩阵构建 DESeqDataSet；运行 DESeq2 标准流程；筛选差异基因（|LFC| &gt; 1，padj &lt; 0.05）；生成 MA 图与火山图；对比 apeglm 缩减前后 LFC 估计差异。</p>
+<p><strong>实践内容</strong>：以 airway 完整 8 样本数据集（<code>~ cell + dex</code> 区组设计）运行 DESeq2 标准流程；手动重现大小因子估计与 BH 校正，对比 DESeq2 内置结果；apeglm 缩减前后 LFC 对比；edgeR QLF 与 limma-voom 并行分析；三方法 DEG 交集 Venn 图；生成带 HGNC symbol 标注的增强版火山图。</p>
 <hr>
 </section>
 <section id="专题-4.4功能富集分析" class="level2" data-number="24.2">
 <h2 data-number="24.2" class="anchored" data-anchor-id="专题-4.4功能富集分析"><span class="header-section-number">24.2</span> 专题 4.4：功能富集分析</h2>
-<p>差异表达基因列表本身仅回答了”哪些基因变了”，而”这些变化在生物学上意味着什么”需要通过功能富集分析来回答。本专题介绍两类主流富集策略：过表示富集分析（Over-Representation Analysis, ORA）对差异基因列表进行超几何检验，检验特定功能集合是否被显著富集；基因集富集分析（Gene Set Enrichment Analysis, GSEA）不设定差异基因阈值，而是对全部基因按表达变化排序后计算富集得分，能检出整体趋势性变化。两种方法各有适用场景，实际分析中通常互为补充。</p>
+<p>差异表达基因列表仅回答了”哪些基因变了”，而”这些变化在生物学上意味着什么”需要通过功能富集分析来回答。本专题先介绍 GO、KEGG、Reactome、MSigDB 四类主流功能数据库的覆盖范围与层级结构，再从超几何检验的概率质量函数出发手动推演 ORA 计算过程，并通过背景集敏感性分析直观揭示错误背景集选择的统计后果。GSEA 部分同样提供从零实现：以模拟排序列表手动计算加权富集得分（ES），并通过 2000 次基因标签置换（gene permutation）构建经验零分布，与 <code>fgsea</code> 结果对比验证，使读者真正理解 NES 标准化的含义与 leading edge 基因的来源。在工具应用层面，本专题以 airway 数据集运行完整的 clusterProfiler 流程，并通过 UpSet 图比较 GO/KEGG/Reactome 三库结果的跨数据库重叠，以 pathview 将 LFC 数据叠加到 KEGG 通路图，以 pheatmap 展示 Top DEG 表达谱。</p>
 <p>{{Wiki:Gene_ontology}}</p>
 <p><strong>核心概念</strong>：</p>
 <ul>
-<li>功能数据库体系：Gene Ontology（GO）的三个本体（BP/MF/CC）；KEGG 通路数据库；MSigDB 基因集合库（Hallmark、C2、C5）</li>
-<li>ORA 统计原理：超几何检验；背景基因集的选择（全基因组 vs 检出基因）对结果的影响</li>
-<li>GSEA 算法：基因排序指标的选择；加权富集得分（ES）计算；标准化富集得分（NES）；leading edge 基因的生物学意义</li>
-<li>clusterProfiler 工具链：<code>enrichGO()</code>、<code>enrichKEGG()</code>、<code>gseGO()</code>、<code>gseKEGG()</code>；<code>simplify()</code> 去冗余</li>
-<li>富集结果可视化：dotplot、cnetplot、emapplot、ridgeplot（GSEA）</li>
-<li>富集结果的常见误读：功能注释覆盖度不均引入的偏差；通路重叠导致的假象；背景集选择不当</li>
+<li>功能数据库体系：GO 三本体（BP/MF/CC）及有向无环图（DAG）结构；祖先传播（ancestral propagation）问题与 <code>simplify()</code> 语义去冗余；KEGG 通路图的可视化特性；Reactome 的细粒度层级结构；MSigDB Hallmark / C2 / C5 基因集</li>
+<li>ORA 统计原理：超几何检验 <span class="math inline">\(p = \sum_{i=k}^{\min(n,K)} \frac{\binom{K}{i}\binom{N-K}{n-i}}{\binom{N}{n}}\)</span>；GeneRatio、BgRatio、富集倍数（Fold Enrichment）的计算与解读；背景基因集必须使用实验检测基因</li>
+<li>GSEA 算法：基因排序指标的选择（Wald stat 优于 LFC）；加权 ES 计算（命中步增量 ∝ |stat|，未命中步均等减量）；标准化富集得分 NES；leading edge 基因的定义与生物学意义</li>
+<li>置换策略：基因标签置换（gene permutation，适用于 n &lt; 7）vs 样本置换（sample permutation，统计更严格）；<code>fgsea</code> 的 <code>eps</code> 参数与精确近似算法</li>
+<li>clusterProfiler 工具链：<code>enrichGO()</code>、<code>enrichKEGG()</code>、<code>enrichPathway()</code>、<code>gseGO()</code>、<code>gseKEGG()</code>、<code>gsePathway()</code>；ID 转换（Ensembl → Entrez）与 <code>bitr()</code> 的多重映射处理</li>
+<li>富集结果可视化：dotplot（GeneRatio + padj）；emapplot（GO term 语义相似度网络）；cnetplot（基因-通路关联网络，LFC 着色）；ridgeplot（GSEA 基因排序分布）；pathview（KEGG 通路 LFC 叠加）</li>
+<li>跨数据库整合：UpSet 图比较 GO / KEGG / Reactome 共同检出基因；ORA 与 GSEA 共识通路作为高置信度报告对象</li>
+<li>结果批判性解读：功能注释覆盖度偏差；通路重叠假象；p 值大小与生物学重要性的非对应关系；leading edge 基因数量对结论可靠性的影响</li>
 </ul>
-<p><strong>实践内容</strong>：对 pasilla 差异基因运行 clusterProfiler GO ORA 与 KEGG ORA；运行 GSEA（全基因组按 Wald stat 排序）；使用 dotplot 与 emapplot 可视化；对比 ORA 与 GSEA 结果异同并分析差异原因。</p>
+<p><strong>实践内容</strong>：Ensembl ID → Entrez ID 转换；clusterProfiler GO BP / GO MF / KEGG ORA；GO BP GSEA 与 KEGG GSEA；手动实现超几何检验并验证背景集敏感性；手动实现加权 ES + 2000 次置换检验并与 fgsea 对比；UpSet 图比较三库重叠；pathview 可视化最显著 KEGG 通路；Top DEG pheatmap；生成汇总 CSV 文件。</p>
 
 
 </section>

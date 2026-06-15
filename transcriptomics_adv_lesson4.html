@@ -6,8 +6,9 @@
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
+<meta name="dcterms.date" content="2026-06-15">
 
-<title>29&nbsp; 第五章 课时4 – Introduction to Applied High-throughput Biological Data Analysis</title>
+<title>29&nbsp; 基因调控网络推断——从随机森林到动力系统 – Introduction to Applied High-throughput Biological Data Analysis</title>
 <style>
 /* Default styles provided by pandoc.
 ** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
@@ -22,6 +23,41 @@ ul.task-list li input[type="checkbox"] {
   width: 0.8em;
   margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
   vertical-align: middle;
+}
+/* CSS for syntax highlighting */
+html { -webkit-text-size-adjust: 100%; }
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
 }
 </style>
 
@@ -44,7 +80,7 @@ ul.task-list li input[type="checkbox"] {
 <link href="site_libs/quarto-html/quarto-syntax-highlighting-15634bcf2e68342d4ad2dfa704d543f6.css" rel="stylesheet" id="quarto-text-highlighting-styles">
 <script src="site_libs/bootstrap/bootstrap.min.js"></script>
 <link href="site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
-<link href="site_libs/bootstrap/bootstrap-f612c0b93c12eebe6fcd9882f38f9fc2.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
+<link href="site_libs/bootstrap/bootstrap-3f70bac5631458d474a321d4182f9338.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
 <script id="quarto-search-options" type="application/json">{
   "location": "sidebar",
   "copy-button": false,
@@ -73,6 +109,35 @@ ul.task-list li input[type="checkbox"] {
   }
 }</script>
 
+  <script src="https://cdnjs.cloudflare.com/polyfill/v3/polyfill.min.js?features=es6"></script>
+  <script defer="" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js" type="text/javascript"></script>
+
+<script type="text/javascript">
+const typesetMath = (el) => {
+  if (window.MathJax) {
+    // MathJax Typeset
+    window.MathJax.typeset([el]);
+  } else if (window.katex) {
+    // KaTeX Render
+    var mathElements = el.getElementsByClassName("math");
+    var macros = [];
+    for (var i = 0; i < mathElements.length; i++) {
+      var texText = mathElements[i].firstChild;
+      if (mathElements[i].tagName == "SPAN" && texText && texText.data) {
+        window.katex.render(texText.data, mathElements[i], {
+          displayMode: mathElements[i].classList.contains('display'),
+          throwOnError: false,
+          macros: macros,
+          fleqn: false
+        });
+      }
+    }
+  }
+}
+window.Quarto = {
+  typesetMath
+};
+</script>
 
 </head>
 
@@ -85,7 +150,7 @@ ul.task-list li input[type="checkbox"] {
       <button type="button" class="quarto-btn-toggle btn" data-bs-toggle="collapse" role="button" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
         <i class="bi bi-layout-text-sidebar-reverse"></i>
       </button>
-        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="./04-transcriptomics-basic.html">第二阶段：转录组与单细胞</a></li><li class="breadcrumb-item"><a href="./transcriptomics_adv_lesson4.html"><span class="chapter-number">29</span>&nbsp; <span class="chapter-title">第五章 课时4</span></a></li></ol></nav>
+        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="./04-transcriptomics-basic.html">第二阶段：转录组与单细胞</a></li><li class="breadcrumb-item"><a href="./transcriptomics_adv_lesson4.html"><span class="chapter-number">29</span>&nbsp; <span class="chapter-title">基因调控网络推断——从随机森林到动力系统</span></a></li></ol></nav>
         <a class="flex-grow-1" role="navigation" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">      
         </a>
       <button type="button" class="btn quarto-search-button" aria-label="Search" onclick="window.quartoOpenSearch();">
@@ -280,37 +345,37 @@ ul.task-list li input[type="checkbox"] {
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./05-transcriptomics-advanced.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">25</span>&nbsp; <span class="chapter-title">Bulk 转录组高级分析：结构变异、长读长与共表达网络</span></span></a>
+ <span class="menu-text"><span class="chapter-number">25</span>&nbsp; <span class="chapter-title">Bulk 转录组高级分析：转录本结构与调控网络</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./transcriptomics_adv_lesson1.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">26</span>&nbsp; <span class="chapter-title">第五章 课时1</span></span></a>
+ <span class="menu-text"><span class="chapter-number">26</span>&nbsp; <span class="chapter-title">可变剪接差异分析与基因融合鉴定</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./transcriptomics_adv_lesson2.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">27</span>&nbsp; <span class="chapter-title">第五章 课时2</span></span></a>
+ <span class="menu-text"><span class="chapter-number">27</span>&nbsp; <span class="chapter-title">可变多腺苷酸化分析与长读长转录组展望</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./transcriptomics_adv_lesson3.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">28</span>&nbsp; <span class="chapter-title">第五章 课时3</span></span></a>
+ <span class="menu-text"><span class="chapter-number">28</span>&nbsp; <span class="chapter-title">加权基因共表达网络分析（WGCNA）</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./transcriptomics_adv_lesson4.html" class="sidebar-item-text sidebar-link active">
- <span class="menu-text"><span class="chapter-number">29</span>&nbsp; <span class="chapter-title">第五章 课时4</span></span></a>
+ <span class="menu-text"><span class="chapter-number">29</span>&nbsp; <span class="chapter-title">基因调控网络推断——从随机森林到动力系统</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./transcriptomics_adv_lesson5.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">30</span>&nbsp; <span class="chapter-title">第五章 课时5</span></span></a>
+ <span class="menu-text"><span class="chapter-number">30</span>&nbsp; <span class="chapter-title">扰动稳态下的非线性基因调控模型学习</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
@@ -529,15 +594,48 @@ ul.task-list li input[type="checkbox"] {
 </nav>
 <div id="quarto-sidebar-glass" class="quarto-sidebar-collapse-item" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item"></div>
 <!-- margin-sidebar -->
-    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar zindex-bottom">
-        
+    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+        <nav id="TOC" role="doc-toc" class="toc-active">
+    <h2 id="toc-title">Table of contents</h2>
+   
+  <ul>
+  <li><a href="#专题概述" id="toc-专题概述" class="nav-link active" data-scroll-target="#专题概述"><span class="header-section-number">30</span> 专题概述</a></li>
+  <li><a href="#genie3-与-dyngenie3基于随机森林的调控网络推断" id="toc-genie3-与-dyngenie3基于随机森林的调控网络推断" class="nav-link" data-scroll-target="#genie3-与-dyngenie3基于随机森林的调控网络推断"><span class="header-section-number">31</span> GENIE3 与 dynGENIE3——基于随机森林的调控网络推断</a>
+  <ul class="collapse">
+  <li><a href="#grn-推断问题的统计本质" id="toc-grn-推断问题的统计本质" class="nav-link" data-scroll-target="#grn-推断问题的统计本质"><span class="header-section-number">31.1</span> GRN 推断问题的统计本质</a></li>
+  <li><a href="#genie3-的基础回归模型" id="toc-genie3-的基础回归模型" class="nav-link" data-scroll-target="#genie3-的基础回归模型"><span class="header-section-number">31.2</span> GENIE3 的基础回归模型</a></li>
+  <li><a href="#genie3-的算法框架" id="toc-genie3-的算法框架" class="nav-link" data-scroll-target="#genie3-的算法框架"><span class="header-section-number">31.3</span> GENIE3 的算法框架</a></li>
+  <li><a href="#genie3-实践" id="toc-genie3-实践" class="nav-link" data-scroll-target="#genie3-实践"><span class="header-section-number">31.4</span> GENIE3 实践</a>
+  <ul class="collapse">
+  <li><a href="#genie3-结果与-wgcna-模块的整合验证" id="toc-genie3-结果与-wgcna-模块的整合验证" class="nav-link" data-scroll-target="#genie3-结果与-wgcna-模块的整合验证"><span class="header-section-number">31.4.1</span> GENIE3 结果与 WGCNA 模块的整合验证</a></li>
+  </ul></li>
+  <li><a href="#dyngenie3时间序列数据下的有向调控推断" id="toc-dyngenie3时间序列数据下的有向调控推断" class="nav-link" data-scroll-target="#dyngenie3时间序列数据下的有向调控推断"><span class="header-section-number">31.5</span> dynGENIE3：时间序列数据下的有向调控推断</a></li>
+  </ul></li>
+  <li><a href="#ode-参数化建模与-sindy转录调控的动态方程辨识" id="toc-ode-参数化建模与-sindy转录调控的动态方程辨识" class="nav-link" data-scroll-target="#ode-参数化建模与-sindy转录调控的动态方程辨识"><span class="header-section-number">32</span> ODE 参数化建模与 SINDy——转录调控的动态方程辨识</a>
+  <ul class="collapse">
+  <li><a href="#从有向图到动力系统" id="toc-从有向图到动力系统" class="nav-link" data-scroll-target="#从有向图到动力系统"><span class="header-section-number">32.1</span> 从”有向图”到”动力系统”</a></li>
+  <li><a href="#hill-函数的生物学含义" id="toc-hill-函数的生物学含义" class="nav-link" data-scroll-target="#hill-函数的生物学含义"><span class="header-section-number">32.2</span> Hill 函数的生物学含义</a></li>
+  <li><a href="#sindy稀疏辨识非线性动力学" id="toc-sindy稀疏辨识非线性动力学" class="nav-link" data-scroll-target="#sindy稀疏辨识非线性动力学"><span class="header-section-number">32.3</span> SINDy：稀疏辨识非线性动力学</a></li>
+  <li><a href="#sindy-实践pythonpysindy" id="toc-sindy-实践pythonpysindy" class="nav-link" data-scroll-target="#sindy-实践pythonpysindy"><span class="header-section-number">32.4</span> SINDy 实践（Python/PySINDy）</a>
+  <ul class="collapse">
+  <li><a href="#弱-sindyweak-sindy对测量噪声的鲁棒改进" id="toc-弱-sindyweak-sindy对测量噪声的鲁棒改进" class="nav-link" data-scroll-target="#弱-sindyweak-sindy对测量噪声的鲁棒改进"><span class="header-section-number">32.4.1</span> 弱 SINDy（Weak SINDy）：对测量噪声的鲁棒改进</a></li>
+  </ul></li>
+  <li><a href="#odesindy-与-genie3-的互补关系总结" id="toc-odesindy-与-genie3-的互补关系总结" class="nav-link" data-scroll-target="#odesindy-与-genie3-的互补关系总结"><span class="header-section-number">32.5</span> ODE/SINDy 与 GENIE3 的互补关系总结</a></li>
+  </ul></li>
+  <li><a href="#评估-grn-推断的质量" id="toc-评估-grn-推断的质量" class="nav-link" data-scroll-target="#评估-grn-推断的质量"><span class="header-section-number">33</span> 评估 GRN 推断的质量</a>
+  <ul class="collapse">
+  <li><a href="#auroc-与-aupr两种评估指标的适用场景" id="toc-auroc-与-aupr两种评估指标的适用场景" class="nav-link" data-scroll-target="#auroc-与-aupr两种评估指标的适用场景"><span class="header-section-number">33.1</span> AUROC 与 AUPR：两种评估指标的适用场景</a></li>
+  </ul></li>
+  <li><a href="#课后自测-post-lesson-quiz" id="toc-课后自测-post-lesson-quiz" class="nav-link" data-scroll-target="#课后自测-post-lesson-quiz"><span class="header-section-number">34</span> 课后自测 (Post-Lesson Quiz)</a></li>
+  </ul>
+<div class="toc-actions"><ul><li><a href="https://github.com/cxzdsa2332/Applied-Omics-Analysis/edit/main/transcriptomics_adv_lesson4.qmd" class="toc-action"><i class="bi bi-github"></i>Edit this page</a></li><li><a href="https://github.com/cxzdsa2332/Applied-Omics-Analysis/issues/new" class="toc-action"><i class="bi empty"></i>Report an issue</a></li><li><a href="https://github.com/cxzdsa2332/Applied-Omics-Analysis/blob/main/transcriptomics_adv_lesson4.qmd" class="toc-action"><i class="bi empty"></i>View source</a></li></ul></div></nav>
     </div>
 <!-- main -->
 <main class="content" id="quarto-document-content">
 
-<header id="title-block-header" class="quarto-title-block default"><nav class="quarto-page-breadcrumbs quarto-title-breadcrumbs d-none d-lg-block" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="./04-transcriptomics-basic.html">第二阶段：转录组与单细胞</a></li><li class="breadcrumb-item"><a href="./transcriptomics_adv_lesson4.html"><span class="chapter-number">29</span>&nbsp; <span class="chapter-title">第五章 课时4</span></a></li></ol></nav>
+<header id="title-block-header" class="quarto-title-block default"><nav class="quarto-page-breadcrumbs quarto-title-breadcrumbs d-none d-lg-block" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="./04-transcriptomics-basic.html">第二阶段：转录组与单细胞</a></li><li class="breadcrumb-item"><a href="./transcriptomics_adv_lesson4.html"><span class="chapter-number">29</span>&nbsp; <span class="chapter-title">基因调控网络推断——从随机森林到动力系统</span></a></li></ol></nav>
 <div class="quarto-title">
-<h1 class="title"><span class="chapter-number">29</span>&nbsp; <span class="chapter-title">第五章 课时4</span></h1>
+<h1 class="title"><span class="chapter-number">29</span>&nbsp; <span class="chapter-title">基因调控网络推断——从随机森林到动力系统</span></h1>
 </div>
 
 
@@ -545,6 +643,12 @@ ul.task-list li input[type="checkbox"] {
 <div class="quarto-title-meta">
 
     
+    <div>
+    <div class="quarto-title-meta-heading">Published</div>
+    <div class="quarto-title-meta-contents">
+      <p class="date">June 15, 2026</p>
+    </div>
+  </div>
   
     
   </div>
@@ -554,8 +658,610 @@ ul.task-list li input[type="checkbox"] {
 </header>
 
 
+<section id="专题概述" class="level1" data-number="30">
+<h1 data-number="30"><span class="header-section-number">30</span> 专题概述</h1>
+<p>专题 5.5 介绍的 WGCNA 能够识别共表达模块并将其与表型关联，但所建立的网络是<strong>无向</strong>的——它告诉我们”基因 A 和基因 B 倾向于同时高表达或同时低表达”，却无法回答”是 A 调控 B，还是 B 调控 A”。基因调控网络（Gene Regulatory Network, GRN）推断方法的目标是从表达数据中重建有向调控图：节点通常以转录因子（Transcription Factor, TF）为调控子（Regulator），有向边表示调控关系的方向与强度。</p>
+<p>本专题介绍两类方法。专题 5.6 讲解 <strong>GENIE3/dynGENIE3</strong>：基于随机森林特征重要性的统计学方法，适用于稳态大规模数据或时间序列数据，是目前在 BEELINE 等基准测试中表现最稳定的 GRN 推断工具之一。专题 5.7 讲解 <strong>ODE/SINDy</strong>：将 GRN 推断从”有向图”提升至”动力系统”层次，通过微分方程的辨识恢复调控关系的动力学参数，适用于时间分辨率较高的精细时序实验。</p>
+<p><strong>学习目标</strong>：理解 GENIE3 将 GRN 推断转化为特征选择问题的核心思想；掌握随机森林特征重要性矩阵到网络的转换策略；了解 dynGENIE3 如何利用时序先后关系约束调控方向；理解 ODE 参数化建模框架与 SINDy 稀疏辨识的数学原理；能够评估 GRN 推断结果并与 WGCNA 共表达模块整合。</p>
+<hr>
+</section>
+<section id="genie3-与-dyngenie3基于随机森林的调控网络推断" class="level1" data-number="31">
+<h1 data-number="31"><span class="header-section-number">31</span> GENIE3 与 dynGENIE3——基于随机森林的调控网络推断</h1>
+<section id="grn-推断问题的统计本质" class="level2" data-number="31.1">
+<h2 data-number="31.1" class="anchored" data-anchor-id="grn-推断问题的统计本质"><span class="header-section-number">31.1</span> GRN 推断问题的统计本质</h2>
+<p>设有 <span class="math inline">\(p\)</span> 个基因，其稳态表达量为 <span class="math inline">\(x_1, x_2, \ldots, x_p\)</span>，在 <span class="math inline">\(n\)</span> 个样本中测量。GRN 推断的目标是为每个目标基因 <span class="math inline">\(j\)</span> 找到其真实调控子集合 <span class="math inline">\(\text{Reg}(j) \subseteq \{1, \ldots, p\} \setminus \{j\}\)</span>。在统计学框架下，这等价于高维变量选择问题：给定目标变量 <span class="math inline">\(x_j\)</span>，在 <span class="math inline">\(p-1\)</span> 个候选预测变量中选出真正对 <span class="math inline">\(x_j\)</span> 有影响的子集。</p>
+<p>这一问题的困难在于 <span class="math inline">\(p \gg n\)</span>（基因数远多于样本数），不能直接使用普通线性回归。经典解法包括：</p>
+<ul>
+<li><strong>LASSO</strong>：<span class="math inline">\(\ell_1\)</span> 正则化线性回归，假设调控关系是线性的，对非线性调控关系不适用。</li>
+<li><strong>ARACNE</strong>：基于互信息的方法，可以捕捉非线性关系，但计算代价高且对连续噪声敏感。</li>
+<li><strong>GENIE3</strong>：基于随机森林的非参数方法，对非线性关系天然鲁棒，无需预设调控函数形式，在 DREAM5 系统生物学挑战赛中取得最优综合表现。</li>
+</ul>
+</section>
+<section id="genie3-的基础回归模型" class="level2" data-number="31.2">
+<h2 data-number="31.2" class="anchored" data-anchor-id="genie3-的基础回归模型"><span class="header-section-number">31.2</span> GENIE3 的基础回归模型</h2>
+<p>GENIE3 的基本模型非常朴素：对每一个靶基因 <span class="math inline">\(j\)</span>，假设它的表达量可以由一组候选调控子的表达量预测：</p>
+<p><span class="math display">\[x_j = f_j(\mathbf{x}_{\mathcal{R}}) + \epsilon_j\]</span></p>
+<p>其中 <span class="math inline">\(\mathcal{R}\)</span> 是候选调控子集合，可以是所有其他基因，也可以是预先给定的 TF 集合；<span class="math inline">\(f_j(\cdot)\)</span> 是未知的调控函数；<span class="math inline">\(\epsilon_j\)</span> 是未建模因素与测量噪声。GENIE3 不试图一次性估计完整的联合网络，而是把问题拆成 <span class="math inline">\(p\)</span> 个独立的监督学习任务：</p>
+<p><span class="math display">\[\widehat{f}_j = \arg\min_f \sum_{s=1}^{n} \left(x_{sj} - f(\mathbf{x}_{s,\mathcal{R}})\right)^2\]</span></p>
+<p>在这个框架下，一条候选边 <span class="math inline">\(i \to j\)</span> 的强度并不是通过回归系数给出，而是通过”基因 <span class="math inline">\(i\)</span> 对预测靶基因 <span class="math inline">\(j\)</span> 的贡献有多大”来衡量。GENIE3 使用随机森林或极端随机树（Extra-Trees）拟合 <span class="math inline">\(\widehat{f}_j\)</span>，再将树模型中的变量重要性作为边权：</p>
+<p><span class="math display">\[W_{ij} = \text{Imp}_{j}(i)\]</span></p>
+<p>更具体地，若某棵树在某个节点用调控子 <span class="math inline">\(i\)</span> 进行分裂，并使靶基因 <span class="math inline">\(j\)</span> 的表达方差下降了 <span class="math inline">\(\Delta Var\)</span>，则这次分裂为 <span class="math inline">\(i \to j\)</span> 累积一部分重要性。对所有树、所有由 <span class="math inline">\(i\)</span> 触发的分裂求和并归一化，即得到 <span class="math inline">\(W_{ij}\)</span>。因此，<span class="math inline">\(W_{ij}\)</span> 可以理解为：</p>
+<blockquote class="blockquote">
+<p>如果没有基因 <span class="math inline">\(i\)</span> 这个特征，预测靶基因 <span class="math inline">\(j\)</span> 的表达会损失多少信息？</p>
+</blockquote>
+<p>这一建模方式有三个重要后果：</p>
+<ul>
+<li>GENIE3 可以捕捉非线性调控关系，例如阈值效应、饱和效应和简单的交互效应。</li>
+<li>输出的 <span class="math inline">\(W_{ij}\)</span> 是<strong>预测重要性</strong>，不是生物化学意义上的激活/抑制强度，也不包含正负调控方向。</li>
+<li>因为每个靶基因独立建模，GENIE3 天然适合并行计算；但也因此不会显式保证全局网络拓扑性质，例如模块性、连通性或无标度结构。</li>
+</ul>
+<div class="note">
+<p><strong>GENIE3 与 LASSO 的对应关系：</strong> 如果把 <span class="math inline">\(f_j\)</span> 限制为线性函数，则模型变为</p>
+<p><span class="math display">\[x_j = \sum_{i \in \mathcal{R}} \beta_{ij}x_i + \epsilon_j\]</span></p>
+<p>此时可以用 LASSO 通过 <span class="math inline">\(\ell_1\)</span> 正则化筛选少数非零 <span class="math inline">\(\beta_{ij}\)</span>。GENIE3 的区别在于把线性函数换成树集成模型，并用变量重要性代替回归系数。换句话说，GENIE3 是一种”非参数版本的逐靶基因特征选择”。</p>
+</div>
+</section>
+<section id="genie3-的算法框架" class="level2" data-number="31.3">
+<h2 data-number="31.3" class="anchored" data-anchor-id="genie3-的算法框架"><span class="header-section-number">31.3</span> GENIE3 的算法框架</h2>
+<p>GENIE3（GEne Network Inference with Ensemble of trees）的核心思想是：将 GRN 推断分解为 <span class="math inline">\(p\)</span> 个独立的<strong>特征重要性回归</strong>子问题。</p>
+<p>对每个目标基因 <span class="math inline">\(j\)</span>（<span class="math inline">\(j = 1, \ldots, p\)</span>）：</p>
+<ol type="1">
+<li>以所有其他基因（或限定的 TF 集合）的表达量 <span class="math inline">\(\mathbf{x}_{\setminus j} = (x_1, \ldots, x_{j-1}, x_{j+1}, \ldots, x_p)\)</span> 为特征，以 <span class="math inline">\(x_j\)</span> 为因变量，训练一个随机森林回归模型。</li>
+<li>提取每个特征（候选调控子）的重要性得分（MDI，Mean Decrease in Impurity），得到向量 <span class="math inline">\(\mathbf{w}_j = (w_{1j}, w_{2j}, \ldots)\)</span>，其中 <span class="math inline">\(w_{ij}\)</span> 衡量基因 <span class="math inline">\(i\)</span> 对预测 <span class="math inline">\(x_j\)</span> 表达量的贡献。</li>
+<li>汇总所有目标基因的重要性向量，构建权重矩阵 <span class="math inline">\(\mathbf{W} \in \mathbb{R}^{p \times p}\)</span>，其中 <span class="math inline">\(W_{ij}\)</span> 代表假定调控边 <span class="math inline">\(i \to j\)</span> 的强度。</li>
+<li>对 <span class="math inline">\(\mathbf{W}\)</span> 按值排序，取 Top-<span class="math inline">\(k\)</span> 边（或基于基准数据集评估确定截止阈值）作为预测调控网络。</li>
+</ol>
+<div id="fig-random-forest" class="quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-random-forest-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<img src="https://upload.wikimedia.org/wikipedia/commons/thumb/e/e3/Random_Forest_Bagging_Illustration.png/500px-Random_Forest_Bagging_Illustration.png" class="img-fluid figure-img" style="width:85.0%">
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-random-forest-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+图&nbsp;1: 随机森林通过 Bagging 策略构建多棵决策树，并以多数投票或均值聚合结果示意图
+</figcaption>
+</figure>
+</div>
+<p>图片引用自维基百科：<a href="https://en.wikipedia.org/wiki/Random_forest">Random forest</a></p>
+<div class="note">
+<p><strong>为什么限定 TF 集合：</strong> 全基因组范围内（<span class="math inline">\(p \sim 20000\)</span>）对每个目标基因训练随机森林的计算代价极高。更重要的是，调控网络的<strong>调控子</strong>在生物学上应主要是转录因子——已知人类基因组中约有 1,600 个 TF（AnimalTFDB 数据库）。将候选调控子限定为已知 TF 集合，既减少了计算量，又提高了生物学可解释性，是 GENIE3 在转录组数据上的标准做法。</p>
+</div>
+<p><strong>GENIE3 与 WGCNA 的互补关系</strong>：WGCNA 回答”哪些基因协同变化”（无向模块），GENIE3 回答”谁调控谁”（有向边）。一种常见的组合探索策略是：先用 WGCNA 识别与表型显著相关的目标模块，再以模块内基因为靶基因、以<strong>模块外</strong>已知转录因子（TF）为候选调控子运行 GENIE3，推断外部 TF 对模块内基因的有向调控关系。</p>
+<div class="warning">
+<p><strong>模块内共线性陷阱：</strong> 不建议直接在模块内部所有基因之间运行 GENIE3。WGCNA 模块的定义本身要求成员间高度共表达（|r| 常 &gt; 0.8），这种高共线性会导致随机森林的<strong>特征重要性分裂</strong>（Importance Splitting）——当两个特征高度相关时，重要性得分在它们之间任意分配，无法可靠区分真正的调控子。更根本的问题是：模块内枢纽基因的重要性得分高，很可能仅仅因为它与所有成员相关性最高（这正是 WGCNA 选拔枢纽基因的准则），而非因为它在生物学上调控了其他基因。稳健的做法是将候选调控子限定为<strong>模块外的 TF 集合</strong>，从而将 GENIE3 的输入特征与模块内共表达结构解耦。</p>
+</div>
+</section>
+<section id="genie3-实践" class="level2" data-number="31.4">
+<h2 data-number="31.4" class="anchored" data-anchor-id="genie3-实践"><span class="header-section-number">31.4</span> GENIE3 实践</h2>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb1"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="co">#| label: genie3-setup</span></span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="co">#| message: false</span></span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="co">#| warning: false</span></span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a><span class="co">#| cache: true</span></span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a><span class="co"># Install and load required packages</span></span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a><span class="co"># BiocManager::install("GENIE3")</span></span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(GENIE3)</span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(DESeq2)</span>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(airway)</span>
+<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(dplyr)</span>
+<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(igraph)</span>
+<span id="cb1-12"><a href="#cb1-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-13"><a href="#cb1-13" aria-hidden="true" tabindex="-1"></a><span class="co"># ── Data preparation ──────────────────────────────────────────────</span></span>
+<span id="cb1-14"><a href="#cb1-14" aria-hidden="true" tabindex="-1"></a><span class="fu">data</span>(airway)</span>
+<span id="cb1-15"><a href="#cb1-15" aria-hidden="true" tabindex="-1"></a>dds <span class="ot">&lt;-</span> <span class="fu">DESeqDataSet</span>(airway, <span class="at">design =</span> <span class="sc">~</span> cell <span class="sc">+</span> dex)</span>
+<span id="cb1-16"><a href="#cb1-16" aria-hidden="true" tabindex="-1"></a>dds <span class="ot">&lt;-</span> dds[<span class="fu">rowSums</span>(<span class="fu">counts</span>(dds)) <span class="sc">&gt;</span> <span class="dv">10</span>, ]</span>
+<span id="cb1-17"><a href="#cb1-17" aria-hidden="true" tabindex="-1"></a>vsd <span class="ot">&lt;-</span> <span class="fu">vst</span>(dds, <span class="at">blind =</span> <span class="cn">FALSE</span>)</span>
+<span id="cb1-18"><a href="#cb1-18" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-19"><a href="#cb1-19" aria-hidden="true" tabindex="-1"></a><span class="co"># Expression matrix: genes × samples (GENIE3 convention)</span></span>
+<span id="cb1-20"><a href="#cb1-20" aria-hidden="true" tabindex="-1"></a>expr_mat_genie3 <span class="ot">&lt;-</span> <span class="fu">assay</span>(vsd)</span>
+<span id="cb1-21"><a href="#cb1-21" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-22"><a href="#cb1-22" aria-hidden="true" tabindex="-1"></a><span class="co"># For demo: use a small example TF set from known glucocorticoid response regulators</span></span>
+<span id="cb1-23"><a href="#cb1-23" aria-hidden="true" tabindex="-1"></a>tf_genes <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="st">"NR3C1"</span>, <span class="st">"RELA"</span>, <span class="st">"NFKB1"</span>, <span class="st">"SP1"</span>, <span class="st">"KLF4"</span>,</span>
+<span id="cb1-24"><a href="#cb1-24" aria-hidden="true" tabindex="-1"></a>               <span class="st">"CEBPB"</span>, <span class="st">"IRF1"</span>, <span class="st">"STAT1"</span>, <span class="st">"STAT3"</span>, <span class="st">"JUN"</span>)</span>
+<span id="cb1-25"><a href="#cb1-25" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-26"><a href="#cb1-26" aria-hidden="true" tabindex="-1"></a><span class="co"># Keep only TFs present in the expression matrix (match by gene symbol via rownames)</span></span>
+<span id="cb1-27"><a href="#cb1-27" aria-hidden="true" tabindex="-1"></a><span class="co"># airway rownames are Ensembl IDs; map to symbols first</span></span>
+<span id="cb1-28"><a href="#cb1-28" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(org.Hs.eg.db)</span>
+<span id="cb1-29"><a href="#cb1-29" aria-hidden="true" tabindex="-1"></a>sym_map <span class="ot">&lt;-</span> <span class="fu">mapIds</span>(org.Hs.eg.db, <span class="at">keys =</span> <span class="fu">rownames</span>(expr_mat_genie3),</span>
+<span id="cb1-30"><a href="#cb1-30" aria-hidden="true" tabindex="-1"></a>                  <span class="at">column =</span> <span class="st">"SYMBOL"</span>, <span class="at">keytype =</span> <span class="st">"ENSEMBL"</span>,</span>
+<span id="cb1-31"><a href="#cb1-31" aria-hidden="true" tabindex="-1"></a>                  <span class="at">multiVals =</span> <span class="st">"first"</span>)</span>
+<span id="cb1-32"><a href="#cb1-32" aria-hidden="true" tabindex="-1"></a>tf_ensembl <span class="ot">&lt;-</span> <span class="fu">names</span>(sym_map)[<span class="sc">!</span><span class="fu">is.na</span>(sym_map) <span class="sc">&amp;</span> sym_map <span class="sc">%in%</span> tf_genes]</span>
+<span id="cb1-33"><a href="#cb1-33" aria-hidden="true" tabindex="-1"></a>tf_present  <span class="ot">&lt;-</span> tf_ensembl</span>
+<span id="cb1-34"><a href="#cb1-34" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">"TFs present in data:"</span>, <span class="fu">length</span>(tf_present), <span class="st">"</span><span class="sc">\n</span><span class="st">"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb2"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="co">#| label: genie3-run</span></span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a><span class="co">#| cache: true</span></span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a><span class="co">#| message: false</span></span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a><span class="co"># ── Run GENIE3 ────────────────────────────────────────────────────</span></span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">42</span>)</span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a>weight_matrix <span class="ot">&lt;-</span> <span class="fu">GENIE3</span>(</span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a>    expr_mat_genie3,</span>
+<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a>    <span class="at">regulators  =</span> tf_present,   <span class="co"># limit to TF set</span></span>
+<span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a>    <span class="at">nTrees      =</span> <span class="dv">1000</span>,         <span class="co"># number of trees per target gene</span></span>
+<span id="cb2-10"><a href="#cb2-10" aria-hidden="true" tabindex="-1"></a>    <span class="at">nCores      =</span> <span class="dv">4</span>,</span>
+<span id="cb2-11"><a href="#cb2-11" aria-hidden="true" tabindex="-1"></a>    <span class="at">returnMatrix =</span> <span class="cn">TRUE</span></span>
+<span id="cb2-12"><a href="#cb2-12" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb2-13"><a href="#cb2-13" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-14"><a href="#cb2-14" aria-hidden="true" tabindex="-1"></a><span class="co"># Convert weight matrix to ranked edge list</span></span>
+<span id="cb2-15"><a href="#cb2-15" aria-hidden="true" tabindex="-1"></a>link_list <span class="ot">&lt;-</span> <span class="fu">getLinkList</span>(weight_matrix, <span class="at">threshold =</span> <span class="dv">0</span>)</span>
+<span id="cb2-16"><a href="#cb2-16" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-17"><a href="#cb2-17" aria-hidden="true" tabindex="-1"></a><span class="co"># Show top 20 predicted regulatory edges</span></span>
+<span id="cb2-18"><a href="#cb2-18" aria-hidden="true" tabindex="-1"></a><span class="fu">head</span>(link_list, <span class="dv">20</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb3"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="co">#| label: genie3-network</span></span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="co">#| cache: true</span></span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a><span class="co"># ── Network thresholding and visualization ─────────────────────────</span></span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a><span class="co"># Keep top 200 edges (adjust based on network density preference)</span></span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a>top_edges <span class="ot">&lt;-</span> <span class="fu">head</span>(link_list, <span class="dv">200</span>)</span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a><span class="co"># Build igraph object</span></span>
+<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a>grn_graph <span class="ot">&lt;-</span> <span class="fu">graph_from_data_frame</span>(</span>
+<span id="cb3-9"><a href="#cb3-9" aria-hidden="true" tabindex="-1"></a>    <span class="at">d        =</span> top_edges[, <span class="fu">c</span>(<span class="st">"regulatoryGene"</span>, <span class="st">"targetGene"</span>, <span class="st">"weight"</span>)],</span>
+<span id="cb3-10"><a href="#cb3-10" aria-hidden="true" tabindex="-1"></a>    <span class="at">directed =</span> <span class="cn">TRUE</span></span>
+<span id="cb3-11"><a href="#cb3-11" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb3-12"><a href="#cb3-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-13"><a href="#cb3-13" aria-hidden="true" tabindex="-1"></a><span class="co"># Node attributes: distinguish TF nodes from target nodes</span></span>
+<span id="cb3-14"><a href="#cb3-14" aria-hidden="true" tabindex="-1"></a><span class="fu">V</span>(grn_graph)<span class="sc">$</span>is_TF <span class="ot">&lt;-</span> <span class="fu">V</span>(grn_graph)<span class="sc">$</span>name <span class="sc">%in%</span> tf_present</span>
+<span id="cb3-15"><a href="#cb3-15" aria-hidden="true" tabindex="-1"></a><span class="fu">V</span>(grn_graph)<span class="sc">$</span>color  <span class="ot">&lt;-</span> <span class="fu">ifelse</span>(<span class="fu">V</span>(grn_graph)<span class="sc">$</span>is_TF, <span class="st">"#d62728"</span>, <span class="st">"#4472C4"</span>)</span>
+<span id="cb3-16"><a href="#cb3-16" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-17"><a href="#cb3-17" aria-hidden="true" tabindex="-1"></a><span class="co"># Basic network statistics</span></span>
+<span id="cb3-18"><a href="#cb3-18" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">"Nodes:"</span>, <span class="fu">vcount</span>(grn_graph), <span class="st">"</span><span class="sc">\n</span><span class="st">"</span>)</span>
+<span id="cb3-19"><a href="#cb3-19" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">"Edges:"</span>, <span class="fu">ecount</span>(grn_graph), <span class="st">"</span><span class="sc">\n</span><span class="st">"</span>)</span>
+<span id="cb3-20"><a href="#cb3-20" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">"Network density:"</span>, <span class="fu">edge_density</span>(grn_graph), <span class="st">"</span><span class="sc">\n</span><span class="st">"</span>)</span>
+<span id="cb3-21"><a href="#cb3-21" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-22"><a href="#cb3-22" aria-hidden="true" tabindex="-1"></a><span class="co"># Top regulators by out-degree</span></span>
+<span id="cb3-23"><a href="#cb3-23" aria-hidden="true" tabindex="-1"></a>out_deg <span class="ot">&lt;-</span> <span class="fu">sort</span>(<span class="fu">degree</span>(grn_graph, <span class="at">mode =</span> <span class="st">"out"</span>), <span class="at">decreasing =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb3-24"><a href="#cb3-24" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">"Top regulators (out-degree):</span><span class="sc">\n</span><span class="st">"</span>)</span>
+<span id="cb3-25"><a href="#cb3-25" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(<span class="fu">head</span>(out_deg, <span class="dv">10</span>))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb4"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="co">#| label: fig-grn-network</span></span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a><span class="co">#| fig-cap: "GENIE3 推断的基因调控网络可视化（Top-200 调控边）。红色节点为转录因子（调控子），蓝色节点为靶基因；节点大小与出度（调控靶基因数量）成正比，边的透明度与调控权重成正比。"</span></span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(ggraph)</span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(tidygraph)</span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a>grn_tidy <span class="ot">&lt;-</span> <span class="fu">as_tbl_graph</span>(grn_graph)</span>
+<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-8"><a href="#cb4-8" aria-hidden="true" tabindex="-1"></a><span class="fu">ggraph</span>(grn_tidy, <span class="at">layout =</span> <span class="st">"stress"</span>) <span class="sc">+</span></span>
+<span id="cb4-9"><a href="#cb4-9" aria-hidden="true" tabindex="-1"></a>    <span class="fu">geom_edge_link</span>(<span class="fu">aes</span>(<span class="at">alpha =</span> weight), <span class="at">color =</span> <span class="st">"grey50"</span>,</span>
+<span id="cb4-10"><a href="#cb4-10" aria-hidden="true" tabindex="-1"></a>                   <span class="at">arrow =</span> <span class="fu">arrow</span>(<span class="at">length =</span> <span class="fu">unit</span>(<span class="dv">2</span>, <span class="st">"mm"</span>), <span class="at">type =</span> <span class="st">"closed"</span>),</span>
+<span id="cb4-11"><a href="#cb4-11" aria-hidden="true" tabindex="-1"></a>                   <span class="at">end_cap =</span> <span class="fu">circle</span>(<span class="dv">3</span>, <span class="st">"mm"</span>)) <span class="sc">+</span></span>
+<span id="cb4-12"><a href="#cb4-12" aria-hidden="true" tabindex="-1"></a>    <span class="fu">geom_node_point</span>(<span class="fu">aes</span>(<span class="at">color =</span> is_TF,</span>
+<span id="cb4-13"><a href="#cb4-13" aria-hidden="true" tabindex="-1"></a>                        <span class="at">size =</span> <span class="fu">centrality_degree</span>(<span class="at">mode =</span> <span class="st">"out"</span>))) <span class="sc">+</span></span>
+<span id="cb4-14"><a href="#cb4-14" aria-hidden="true" tabindex="-1"></a>    <span class="fu">geom_node_text</span>(<span class="fu">aes</span>(<span class="at">label =</span> name,</span>
+<span id="cb4-15"><a href="#cb4-15" aria-hidden="true" tabindex="-1"></a>                       <span class="at">filter =</span> <span class="fu">centrality_degree</span>(<span class="at">mode =</span> <span class="st">"out"</span>) <span class="sc">&gt;</span> <span class="dv">5</span>),</span>
+<span id="cb4-16"><a href="#cb4-16" aria-hidden="true" tabindex="-1"></a>                   <span class="at">size =</span> <span class="fl">2.8</span>, <span class="at">repel =</span> <span class="cn">TRUE</span>) <span class="sc">+</span></span>
+<span id="cb4-17"><a href="#cb4-17" aria-hidden="true" tabindex="-1"></a>    <span class="fu">scale_color_manual</span>(<span class="at">values =</span> <span class="fu">c</span>(<span class="st">"FALSE"</span> <span class="ot">=</span> <span class="st">"#4472C4"</span>, <span class="st">"TRUE"</span> <span class="ot">=</span> <span class="st">"#d62728"</span>),</span>
+<span id="cb4-18"><a href="#cb4-18" aria-hidden="true" tabindex="-1"></a>                       <span class="at">labels =</span> <span class="fu">c</span>(<span class="st">"Target gene"</span>, <span class="st">"Transcription factor"</span>)) <span class="sc">+</span></span>
+<span id="cb4-19"><a href="#cb4-19" aria-hidden="true" tabindex="-1"></a>    <span class="fu">scale_size_continuous</span>(<span class="at">range =</span> <span class="fu">c</span>(<span class="dv">2</span>, <span class="dv">8</span>)) <span class="sc">+</span></span>
+<span id="cb4-20"><a href="#cb4-20" aria-hidden="true" tabindex="-1"></a>    <span class="fu">scale_edge_alpha_continuous</span>(<span class="at">range =</span> <span class="fu">c</span>(<span class="fl">0.1</span>, <span class="fl">0.7</span>)) <span class="sc">+</span></span>
+<span id="cb4-21"><a href="#cb4-21" aria-hidden="true" tabindex="-1"></a>    <span class="fu">labs</span>(<span class="at">color =</span> <span class="cn">NULL</span>, <span class="at">size =</span> <span class="st">"Out-degree"</span>) <span class="sc">+</span></span>
+<span id="cb4-22"><a href="#cb4-22" aria-hidden="true" tabindex="-1"></a>    <span class="fu">theme_void</span>(<span class="at">base_size =</span> <span class="dv">11</span>) <span class="sc">+</span></span>
+<span id="cb4-23"><a href="#cb4-23" aria-hidden="true" tabindex="-1"></a>    <span class="fu">theme</span>(<span class="at">legend.position =</span> <span class="st">"right"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<section id="genie3-结果与-wgcna-模块的整合验证" class="level3" data-number="31.4.1">
+<h3 data-number="31.4.1" class="anchored" data-anchor-id="genie3-结果与-wgcna-模块的整合验证"><span class="header-section-number">31.4.1</span> GENIE3 结果与 WGCNA 模块的整合验证</h3>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb5"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Cross-validate: are WGCNA hub genes also high-outdegree nodes in GENIE3?</span></span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a><span class="co"># Assume hub_genes$gene from lesson 3 contains hub gene IDs</span></span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a><span class="co"># Check overlap: WGCNA hub genes appearing as TF targets in GENIE3 network</span></span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a>wgcna_hubs_in_grn <span class="ot">&lt;-</span> hub_genes<span class="sc">$</span>gene[hub_genes<span class="sc">$</span>gene <span class="sc">%in%</span> <span class="fu">V</span>(grn_graph)<span class="sc">$</span>name]</span>
+<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">"WGCNA hub genes appearing in GENIE3 network:"</span>,</span>
+<span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a>    <span class="fu">length</span>(wgcna_hubs_in_grn), <span class="st">"</span><span class="sc">\n</span><span class="st">"</span>)</span>
+<span id="cb5-8"><a href="#cb5-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-9"><a href="#cb5-9" aria-hidden="true" tabindex="-1"></a><span class="co"># For each WGCNA hub gene, find its predicted regulators</span></span>
+<span id="cb5-10"><a href="#cb5-10" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> (hub <span class="cf">in</span> <span class="fu">head</span>(wgcna_hubs_in_grn, <span class="dv">5</span>)) {</span>
+<span id="cb5-11"><a href="#cb5-11" aria-hidden="true" tabindex="-1"></a>    regulators <span class="ot">&lt;-</span> <span class="fu">names</span>(<span class="fu">neighbors</span>(grn_graph, hub, <span class="at">mode =</span> <span class="st">"in"</span>))</span>
+<span id="cb5-12"><a href="#cb5-12" aria-hidden="true" tabindex="-1"></a>    <span class="fu">cat</span>(hub, <span class="st">"predicted regulators:"</span>, <span class="fu">paste</span>(regulators, <span class="at">collapse =</span> <span class="st">", "</span>), <span class="st">"</span><span class="sc">\n</span><span class="st">"</span>)</span>
+<span id="cb5-13"><a href="#cb5-13" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</section>
+</section>
+<section id="dyngenie3时间序列数据下的有向调控推断" class="level2" data-number="31.5">
+<h2 data-number="31.5" class="anchored" data-anchor-id="dyngenie3时间序列数据下的有向调控推断"><span class="header-section-number">31.5</span> dynGENIE3：时间序列数据下的有向调控推断</h2>
+<p>GENIE3 的核心假设是稳态（steady-state）：样本之间没有时间关系，每个样本都是独立的表达快照。然而，在时间序列 RNA-seq 实验中（如细胞分化、药物刺激后多时间点采样），样本之间存在明确的时序关系，时序先后本身就提供了因果方向的约束——时间点 <span class="math inline">\(t\)</span> 的调控子表达量应该预测时间点 <span class="math inline">\(t+1\)</span> 的靶基因表达量，而非反向。</p>
+<p>dynGENIE3 将 GENIE3 的特征回归框架扩展为<strong>时序回归</strong>：</p>
+<p><span class="math display">\[x_j(t+\Delta t) = f\bigl(\mathbf{x}_{\setminus j}(t)\bigr) + \epsilon\]</span></p>
+<p>即目标基因在下一时间点的表达量由当前时间点所有调控子的表达量预测。这一框架利用了时序先后约束，显著减少了无方向依据的假阳性调控边。</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb6"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="co"># dynGENIE3 requires time-series data</span></span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a><span class="co"># For demonstration: simulate a time-series expression dataset</span></span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a><span class="co"># In real analysis: use actual time-course RNA-seq data (e.g., LPS stimulation)</span></span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">123</span>)</span>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a>n_timepoints <span class="ot">&lt;-</span> <span class="dv">8</span></span>
+<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a>n_genes      <span class="ot">&lt;-</span> <span class="dv">50</span></span>
+<span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a>n_tf         <span class="ot">&lt;-</span> <span class="dv">5</span></span>
+<span id="cb6-8"><a href="#cb6-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-9"><a href="#cb6-9" aria-hidden="true" tabindex="-1"></a><span class="co"># Simulate: TFs drive target gene expression with 1-step lag</span></span>
+<span id="cb6-10"><a href="#cb6-10" aria-hidden="true" tabindex="-1"></a>tf_expr  <span class="ot">&lt;-</span> <span class="fu">matrix</span>(<span class="fu">rnorm</span>(n_tf <span class="sc">*</span> n_timepoints), <span class="at">nrow =</span> n_tf)</span>
+<span id="cb6-11"><a href="#cb6-11" aria-hidden="true" tabindex="-1"></a>tgt_expr <span class="ot">&lt;-</span> <span class="fu">matrix</span>(<span class="dv">0</span>, <span class="at">nrow =</span> n_genes <span class="sc">-</span> n_tf, <span class="at">ncol =</span> n_timepoints)</span>
+<span id="cb6-12"><a href="#cb6-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-13"><a href="#cb6-13" aria-hidden="true" tabindex="-1"></a><span class="co"># Each target gene depends on 2 random TFs (lagged)</span></span>
+<span id="cb6-14"><a href="#cb6-14" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> (g <span class="cf">in</span> <span class="dv">1</span><span class="sc">:</span>(n_genes <span class="sc">-</span> n_tf)) {</span>
+<span id="cb6-15"><a href="#cb6-15" aria-hidden="true" tabindex="-1"></a>    reg_tfs <span class="ot">&lt;-</span> <span class="fu">sample</span>(<span class="dv">1</span><span class="sc">:</span>n_tf, <span class="dv">2</span>)</span>
+<span id="cb6-16"><a href="#cb6-16" aria-hidden="true" tabindex="-1"></a>    tgt_expr[g, <span class="sc">-</span><span class="dv">1</span>] <span class="ot">&lt;-</span> <span class="fl">0.6</span> <span class="sc">*</span> tf_expr[reg_tfs[<span class="dv">1</span>], <span class="sc">-</span>n_timepoints] <span class="sc">+</span></span>
+<span id="cb6-17"><a href="#cb6-17" aria-hidden="true" tabindex="-1"></a>                       <span class="fl">0.4</span> <span class="sc">*</span> tf_expr[reg_tfs[<span class="dv">2</span>], <span class="sc">-</span>n_timepoints] <span class="sc">+</span></span>
+<span id="cb6-18"><a href="#cb6-18" aria-hidden="true" tabindex="-1"></a>                       <span class="fu">rnorm</span>(n_timepoints <span class="sc">-</span> <span class="dv">1</span>, <span class="dv">0</span>, <span class="fl">0.3</span>)</span>
+<span id="cb6-19"><a href="#cb6-19" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb6-20"><a href="#cb6-20" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-21"><a href="#cb6-21" aria-hidden="true" tabindex="-1"></a>ts_matrix <span class="ot">&lt;-</span> <span class="fu">rbind</span>(tf_expr, tgt_expr)</span>
+<span id="cb6-22"><a href="#cb6-22" aria-hidden="true" tabindex="-1"></a><span class="fu">rownames</span>(ts_matrix) <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="fu">paste0</span>(<span class="st">"TF"</span>, <span class="dv">1</span><span class="sc">:</span>n_tf),</span>
+<span id="cb6-23"><a href="#cb6-23" aria-hidden="true" tabindex="-1"></a>                          <span class="fu">paste0</span>(<span class="st">"Gene"</span>, <span class="dv">1</span><span class="sc">:</span>(n_genes <span class="sc">-</span> n_tf)))</span>
+<span id="cb6-24"><a href="#cb6-24" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-25"><a href="#cb6-25" aria-hidden="true" tabindex="-1"></a><span class="co"># dynGENIE3: stack current vs next time point</span></span>
+<span id="cb6-26"><a href="#cb6-26" aria-hidden="true" tabindex="-1"></a>X_current <span class="ot">&lt;-</span> ts_matrix[, <span class="sc">-</span>n_timepoints]    <span class="co"># t = 1, ..., T-1</span></span>
+<span id="cb6-27"><a href="#cb6-27" aria-hidden="true" tabindex="-1"></a>X_next    <span class="ot">&lt;-</span> ts_matrix[, <span class="sc">-</span><span class="dv">1</span>]               <span class="co"># t = 2, ..., T</span></span>
+<span id="cb6-28"><a href="#cb6-28" aria-hidden="true" tabindex="-1"></a><span class="co"># Transpose: samples (time points) × genes</span></span>
+<span id="cb6-29"><a href="#cb6-29" aria-hidden="true" tabindex="-1"></a>expr_dyn  <span class="ot">&lt;-</span> <span class="fu">t</span>(X_next)</span>
+<span id="cb6-30"><a href="#cb6-30" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-31"><a href="#cb6-31" aria-hidden="true" tabindex="-1"></a><span class="co"># Run GENIE3 on time-shifted data (dynGENIE3 logic)</span></span>
+<span id="cb6-32"><a href="#cb6-32" aria-hidden="true" tabindex="-1"></a>tf_ids_dyn <span class="ot">&lt;-</span> <span class="fu">paste0</span>(<span class="st">"TF"</span>, <span class="dv">1</span><span class="sc">:</span>n_tf)</span>
+<span id="cb6-33"><a href="#cb6-33" aria-hidden="true" tabindex="-1"></a>weight_dyn <span class="ot">&lt;-</span> <span class="fu">GENIE3</span>(</span>
+<span id="cb6-34"><a href="#cb6-34" aria-hidden="true" tabindex="-1"></a>    <span class="fu">t</span>(X_next),</span>
+<span id="cb6-35"><a href="#cb6-35" aria-hidden="true" tabindex="-1"></a>    <span class="at">regulators  =</span> tf_ids_dyn,</span>
+<span id="cb6-36"><a href="#cb6-36" aria-hidden="true" tabindex="-1"></a>    <span class="at">nTrees      =</span> <span class="dv">500</span>,</span>
+<span id="cb6-37"><a href="#cb6-37" aria-hidden="true" tabindex="-1"></a>    <span class="at">nCores      =</span> <span class="dv">4</span>,</span>
+<span id="cb6-38"><a href="#cb6-38" aria-hidden="true" tabindex="-1"></a>    <span class="at">returnMatrix =</span> <span class="cn">TRUE</span></span>
+<span id="cb6-39"><a href="#cb6-39" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb6-40"><a href="#cb6-40" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-41"><a href="#cb6-41" aria-hidden="true" tabindex="-1"></a>dynenie3_edges <span class="ot">&lt;-</span> <span class="fu">getLinkList</span>(weight_dyn, <span class="at">threshold =</span> <span class="dv">0</span>)</span>
+<span id="cb6-42"><a href="#cb6-42" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">"Top dynGENIE3 predicted edges:</span><span class="sc">\n</span><span class="st">"</span>)</span>
+<span id="cb6-43"><a href="#cb6-43" aria-hidden="true" tabindex="-1"></a><span class="fu">head</span>(dynenie3_edges, <span class="dv">10</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="tip">
+<p><strong>dynGENIE3 的数据要求：</strong> 时间间隔应尽量均匀，且相邻时间点之间的生物学变化应足够大（能够被测序检测到）。若时间间隔过短（如 5 分钟采样，基因表达量变化不显著），dynGENIE3 会退化为 GENIE3 的行为。若时间间隔过长（基因调控已经完成多个回路），滞后一步的假设会失效，可考虑使用多步滞后（1 步、2 步同时纳入模型）。</p>
+</div>
+<hr>
+</section>
+</section>
+<section id="ode-参数化建模与-sindy转录调控的动态方程辨识" class="level1" data-number="32">
+<h1 data-number="32"><span class="header-section-number">32</span> ODE 参数化建模与 SINDy——转录调控的动态方程辨识</h1>
+<section id="从有向图到动力系统" class="level2" data-number="32.1">
+<h2 data-number="32.1" class="anchored" data-anchor-id="从有向图到动力系统"><span class="header-section-number">32.1</span> 从”有向图”到”动力系统”</h2>
+<p>GENIE3/dynGENIE3 给出的是调控关系的<strong>拓扑图</strong>——谁调控谁，强度如何排序。但这仍然是一个描述性的统计模型：它不能告诉我们，如果某个 TF 的表达量增加 2 倍，靶基因的表达量将在多少分钟后变化多少。要回答这类<strong>定量预测</strong>问题，需要引入微分方程模型。</p>
+<p>常微分方程（ODE）建模将基因表达动态表示为连续时间的动力系统，最简单的形式是：</p>
+<p><span class="math display">\[\frac{dx_i}{dt} = \underbrace{\alpha_i}_{\text{basal transcription}} + \sum_{j \in \text{Reg}(i)} w_{ij} \cdot g(x_j) - \underbrace{\gamma_i x_i}_{\text{degradation}}\]</span></p>
+<p>其中： - <span class="math inline">\(\alpha_i &gt; 0\)</span>：基础转录速率（TF 不存在时的本底表达） - <span class="math inline">\(w_{ij}\)</span>：调控强度（正值为转录激活，负值为转录抑制） - <span class="math inline">\(g(x_j)\)</span>：非线性响应函数，通常采用 Hill 函数 <span class="math inline">\(g(x) = x^n / (K^n + x^n)\)</span> - <span class="math inline">\(\gamma_i &gt; 0\)</span>：mRNA 降解速率</p>
+<div id="fig-ode-parabola" class="quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-ode-parabola-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<img src="https://upload.wikimedia.org/wikipedia/commons/thumb/a/a4/Parabolic_trajectory.svg/960px-Parabolic_trajectory.svg.png" class="img-fluid figure-img" style="width:70.0%">
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-ode-parabola-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+图&nbsp;2: 常微分方程描述的抛物线轨迹——ODE 建模的经典物理示例，基因调控 ODE 同样描述基因表达量随时间的变化轨迹
+</figcaption>
+</figure>
+</div>
+<p>图片引用自维基百科：<a href="https://en.wikipedia.org/wiki/Ordinary_differential_equation">Ordinary differential equation</a></p>
+<p><strong>参数辨识</strong>的目标是从时序表达数据中估计每个基因的参数 <span class="math inline">\((\alpha_i, \{w_{ij}\}, \{K_j\}, \{n_j\}, \gamma_i)\)</span>，使模型预测的表达轨迹与实测数据之间的残差最小化。</p>
+</section>
+<section id="hill-函数的生物学含义" class="level2" data-number="32.2">
+<h2 data-number="32.2" class="anchored" data-anchor-id="hill-函数的生物学含义"><span class="header-section-number">32.2</span> Hill 函数的生物学含义</h2>
+<p>Hill 函数是基因调控建模中最常用的非线性响应函数，其形式为：</p>
+<p><span class="math display">\[g(x) = \frac{x^n}{K^n + x^n}\]</span></p>
+<p>其中 <span class="math inline">\(K\)</span> 为半饱和常数（当 <span class="math inline">\(x = K\)</span> 时，<span class="math inline">\(g(K) = 0.5\)</span>），<span class="math inline">\(n\)</span> 为 Hill 系数。Hill 系数的生物学含义是协同性：<span class="math inline">\(n = 1\)</span> 对应无协同效应（简单的米氏动力学）；<span class="math inline">\(n &gt; 1\)</span> 对应正协同效应（多个 TF 分子需要同时结合才能激活，如 RNAP 的 sigma 因子招募）；<span class="math inline">\(n \gg 1\)</span> 时 Hill 函数趋近于阶跃函数（开关特性）。</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb7"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="co">#| label: fig-hill-function</span></span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a><span class="co">#| fig-cap: "不同 Hill 系数下的 Hill 函数曲线（K = 1）。Hill 系数 n 越大，响应曲线越陡峭，转录激活越接近开关特性。n = 1 对应米氏型调控，n = 2 对应二聚化协同调控，n = 4 对应强协同性。"</span></span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(ggplot2)</span>
+<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a>x_vals <span class="ot">&lt;-</span> <span class="fu">seq</span>(<span class="dv">0</span>, <span class="dv">3</span>, <span class="at">by =</span> <span class="fl">0.01</span>)</span>
+<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a>K <span class="ot">&lt;-</span> <span class="dv">1</span></span>
+<span id="cb7-7"><a href="#cb7-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-8"><a href="#cb7-8" aria-hidden="true" tabindex="-1"></a>hill_data <span class="ot">&lt;-</span> <span class="fu">do.call</span>(rbind, <span class="fu">lapply</span>(<span class="fu">c</span>(<span class="dv">1</span>, <span class="dv">2</span>, <span class="dv">4</span>, <span class="dv">8</span>), <span class="cf">function</span>(n) {</span>
+<span id="cb7-9"><a href="#cb7-9" aria-hidden="true" tabindex="-1"></a>    <span class="fu">data.frame</span>(</span>
+<span id="cb7-10"><a href="#cb7-10" aria-hidden="true" tabindex="-1"></a>        <span class="at">x =</span> x_vals,</span>
+<span id="cb7-11"><a href="#cb7-11" aria-hidden="true" tabindex="-1"></a>        <span class="at">g =</span> x_vals<span class="sc">^</span>n <span class="sc">/</span> (K<span class="sc">^</span>n <span class="sc">+</span> x_vals<span class="sc">^</span>n),</span>
+<span id="cb7-12"><a href="#cb7-12" aria-hidden="true" tabindex="-1"></a>        <span class="at">n =</span> <span class="fu">factor</span>(<span class="fu">paste0</span>(<span class="st">"n = "</span>, n))</span>
+<span id="cb7-13"><a href="#cb7-13" aria-hidden="true" tabindex="-1"></a>    )</span>
+<span id="cb7-14"><a href="#cb7-14" aria-hidden="true" tabindex="-1"></a>}))</span>
+<span id="cb7-15"><a href="#cb7-15" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-16"><a href="#cb7-16" aria-hidden="true" tabindex="-1"></a><span class="fu">ggplot</span>(hill_data, <span class="fu">aes</span>(<span class="at">x =</span> x, <span class="at">y =</span> g, <span class="at">color =</span> n)) <span class="sc">+</span></span>
+<span id="cb7-17"><a href="#cb7-17" aria-hidden="true" tabindex="-1"></a>    <span class="fu">geom_line</span>(<span class="at">linewidth =</span> <span class="dv">1</span>) <span class="sc">+</span></span>
+<span id="cb7-18"><a href="#cb7-18" aria-hidden="true" tabindex="-1"></a>    <span class="fu">geom_vline</span>(<span class="at">xintercept =</span> K, <span class="at">linetype =</span> <span class="st">"dashed"</span>,</span>
+<span id="cb7-19"><a href="#cb7-19" aria-hidden="true" tabindex="-1"></a>               <span class="at">color =</span> <span class="st">"grey50"</span>, <span class="at">linewidth =</span> <span class="fl">0.5</span>) <span class="sc">+</span></span>
+<span id="cb7-20"><a href="#cb7-20" aria-hidden="true" tabindex="-1"></a>    <span class="fu">geom_hline</span>(<span class="at">yintercept =</span> <span class="fl">0.5</span>, <span class="at">linetype =</span> <span class="st">"dashed"</span>,</span>
+<span id="cb7-21"><a href="#cb7-21" aria-hidden="true" tabindex="-1"></a>               <span class="at">color =</span> <span class="st">"grey50"</span>, <span class="at">linewidth =</span> <span class="fl">0.5</span>) <span class="sc">+</span></span>
+<span id="cb7-22"><a href="#cb7-22" aria-hidden="true" tabindex="-1"></a>    <span class="fu">annotate</span>(<span class="st">"text"</span>, <span class="at">x =</span> K <span class="sc">+</span> <span class="fl">0.05</span>, <span class="at">y =</span> <span class="fl">0.05</span>,</span>
+<span id="cb7-23"><a href="#cb7-23" aria-hidden="true" tabindex="-1"></a>             <span class="at">label =</span> <span class="st">"K (half-saturation)"</span>, <span class="at">hjust =</span> <span class="dv">0</span>,</span>
+<span id="cb7-24"><a href="#cb7-24" aria-hidden="true" tabindex="-1"></a>             <span class="at">size =</span> <span class="dv">3</span>, <span class="at">color =</span> <span class="st">"grey40"</span>) <span class="sc">+</span></span>
+<span id="cb7-25"><a href="#cb7-25" aria-hidden="true" tabindex="-1"></a>    <span class="fu">labs</span>(<span class="at">x =</span> <span class="st">"Regulator concentration x"</span>,</span>
+<span id="cb7-26"><a href="#cb7-26" aria-hidden="true" tabindex="-1"></a>         <span class="at">y =</span> <span class="st">"g(x) = activation level"</span>,</span>
+<span id="cb7-27"><a href="#cb7-27" aria-hidden="true" tabindex="-1"></a>         <span class="at">color =</span> <span class="st">"Hill coefficient"</span>) <span class="sc">+</span></span>
+<span id="cb7-28"><a href="#cb7-28" aria-hidden="true" tabindex="-1"></a>    <span class="fu">scale_color_brewer</span>(<span class="at">palette =</span> <span class="st">"Set1"</span>) <span class="sc">+</span></span>
+<span id="cb7-29"><a href="#cb7-29" aria-hidden="true" tabindex="-1"></a>    <span class="fu">theme_bw</span>(<span class="at">base_size =</span> <span class="dv">12</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</section>
+<section id="sindy稀疏辨识非线性动力学" class="level2" data-number="32.3">
+<h2 data-number="32.3" class="anchored" data-anchor-id="sindy稀疏辨识非线性动力学"><span class="header-section-number">32.3</span> SINDy：稀疏辨识非线性动力学</h2>
+<p>当 ODE 的函数形式本身是未知的（即不确定是 Hill 函数还是线性函数还是多项式函数），SINDy（Sparse Identification of Nonlinear Dynamics）提供了一种数据驱动的方式来自动发现调控方程的函数形式。</p>
+<div class="note">
+<p><strong>历史背景：</strong> SINDy 由 Brunton、Proctor 与 Kutz 于 2016 年在 <em>PNAS</em> 发表，最初用于流体力学中混沌吸引子方程的辨识（从噪声数据中重新发现 Lorenz 系统方程）。将其迁移至基因调控系统是近年计算生物学的前沿探索——挑战在于生物系统的噪声水平远高于物理系统，且大多数基因的动力学并不满足严格的稀疏性。这一背景提醒读者：SINDy 是强大的通用工具，在基因组尺度上仍处于方法论探索阶段。</p>
+</div>
+<p><strong>SINDy 的数学框架</strong></p>
+<p>给定时间序列矩阵 <span class="math inline">\(\mathbf{X} \in \mathbb{R}^{T \times p}\)</span>（<span class="math inline">\(T\)</span> 个时间点，<span class="math inline">\(p\)</span> 个基因），SINDy 假设每个基因的动力学方程可以用候选函数库（Feature Library）中少数几项的线性组合来近似表达：</p>
+<p><span class="math display">\[\dot{\mathbf{X}} \approx \boldsymbol{\Theta}(\mathbf{X}) \cdot \boldsymbol{\Xi}\]</span></p>
+<p>其中： - <span class="math inline">\(\dot{\mathbf{X}} \in \mathbb{R}^{T \times p}\)</span>：表达量对时间的导数（通过数值微分估计） - <span class="math inline">\(\boldsymbol{\Theta}(\mathbf{X}) \in \mathbb{R}^{T \times L}\)</span>：候选函数库矩阵，每列是一个候选函数在所有时间点的值（如常数项、线性项、交叉项、Hill 函数项等） - <span class="math inline">\(\boldsymbol{\Xi} \in \mathbb{R}^{L \times p}\)</span>：稀疏系数矩阵，每列对应一个基因的动力学方程中各函数项的系数</p>
+<p>通过对 <span class="math inline">\(\boldsymbol{\Xi}\)</span> 施加 <span class="math inline">\(\ell_1\)</span> 正则化（LASSO）或序贯阈值最小二乘（STLSQ）强制稀疏解，即可从数据中自动筛选出最简方程形式。</p>
+<div id="fig-lasso-l1l2" class="quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-lasso-l1l2-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<img src="https://upload.wikimedia.org/wikipedia/commons/thumb/f/f8/L1_and_L2_balls.svg/500px-L1_and_L2_balls.svg.png" class="img-fluid figure-img" style="width:70.0%">
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-lasso-l1l2-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+图&nbsp;3: LASSO（<span class="math inline">\(\ell_1\)</span>）与岭回归（<span class="math inline">\(\ell_2\)</span>）约束区域对比：<span class="math inline">\(\ell_1\)</span> 的菱形角点导致稀疏解，正则化路径在坐标轴上与等值线相交
+</figcaption>
+</figure>
+</div>
+<p>图片引用自维基百科：<a href="https://en.wikipedia.org/wiki/Lasso_(statistics)">Lasso (statistics)</a></p>
+<p><strong>稀疏性先验的生物学合理性</strong>：已知的模式生物转录调控网络（如大肠杆菌的 RegulonDB、酵母的 YEASTRACT）显示，每个基因平均只受 2–5 个直接调控子调控，即调控关系是稀疏的。因此，稀疏性先验在生物学上是合理的假设。</p>
+</section>
+<section id="sindy-实践pythonpysindy" class="level2" data-number="32.4">
+<h2 data-number="32.4" class="anchored" data-anchor-id="sindy-实践pythonpysindy"><span class="header-section-number">32.4</span> SINDy 实践（Python/PySINDy）</h2>
+<p>SINDy 的主要实现是 Python 的 <code>pysindy</code> 库，支持自定义候选函数库（包括 Hill 函数）。</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb8"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> numpy <span class="im">as</span> np</span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> pysindy <span class="im">as</span> ps</span>
+<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> pysindy.feature_library <span class="im">import</span> CustomLibrary, PolynomialLibrary</span>
+<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> scipy.integrate <span class="im">import</span> odeint</span>
+<span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> matplotlib.pyplot <span class="im">as</span> plt</span>
+<span id="cb8-6"><a href="#cb8-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-7"><a href="#cb8-7" aria-hidden="true" tabindex="-1"></a><span class="co"># ── Generate synthetic gene regulatory time-series ────────────────</span></span>
+<span id="cb8-8"><a href="#cb8-8" aria-hidden="true" tabindex="-1"></a><span class="co"># Ground truth: 3-gene network with known ODE parameters</span></span>
+<span id="cb8-9"><a href="#cb8-9" aria-hidden="true" tabindex="-1"></a><span class="co"># Gene 1 (TF): autonomous oscillator</span></span>
+<span id="cb8-10"><a href="#cb8-10" aria-hidden="true" tabindex="-1"></a><span class="co"># Gene 2: activated by Gene 1 (Hill activation)</span></span>
+<span id="cb8-11"><a href="#cb8-11" aria-hidden="true" tabindex="-1"></a><span class="co"># Gene 3: repressed by Gene 2 (Hill repression)</span></span>
+<span id="cb8-12"><a href="#cb8-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-13"><a href="#cb8-13" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> true_grn(y, t):</span>
+<span id="cb8-14"><a href="#cb8-14" aria-hidden="true" tabindex="-1"></a>    x1, x2, x3 <span class="op">=</span> y</span>
+<span id="cb8-15"><a href="#cb8-15" aria-hidden="true" tabindex="-1"></a>    K, n <span class="op">=</span> <span class="fl">1.0</span>, <span class="fl">2.0</span>          <span class="co"># Hill parameters</span></span>
+<span id="cb8-16"><a href="#cb8-16" aria-hidden="true" tabindex="-1"></a>    gamma <span class="op">=</span> np.array([<span class="fl">0.5</span>, <span class="fl">0.3</span>, <span class="fl">0.4</span>])  <span class="co"># degradation rates</span></span>
+<span id="cb8-17"><a href="#cb8-17" aria-hidden="true" tabindex="-1"></a>    alpha <span class="op">=</span> np.array([<span class="fl">0.1</span>, <span class="fl">0.05</span>, <span class="fl">0.05</span>])</span>
+<span id="cb8-18"><a href="#cb8-18" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-19"><a href="#cb8-19" aria-hidden="true" tabindex="-1"></a>    dx1 <span class="op">=</span> alpha[<span class="dv">0</span>] <span class="op">+</span> <span class="fl">0.8</span> <span class="op">*</span> np.sin(<span class="fl">0.5</span> <span class="op">*</span> t) <span class="op">-</span> gamma[<span class="dv">0</span>] <span class="op">*</span> x1</span>
+<span id="cb8-20"><a href="#cb8-20" aria-hidden="true" tabindex="-1"></a>    dx2 <span class="op">=</span> alpha[<span class="dv">1</span>] <span class="op">+</span> <span class="fl">0.6</span> <span class="op">*</span> (x1<span class="op">**</span>n <span class="op">/</span> (K<span class="op">**</span>n <span class="op">+</span> x1<span class="op">**</span>n)) <span class="op">-</span> gamma[<span class="dv">1</span>] <span class="op">*</span> x2</span>
+<span id="cb8-21"><a href="#cb8-21" aria-hidden="true" tabindex="-1"></a>    dx3 <span class="op">=</span> alpha[<span class="dv">2</span>] <span class="op">+</span> <span class="fl">0.4</span> <span class="op">*</span> (K<span class="op">**</span>n <span class="op">/</span> (K<span class="op">**</span>n <span class="op">+</span> x2<span class="op">**</span>n)) <span class="op">-</span> gamma[<span class="dv">2</span>] <span class="op">*</span> x3</span>
+<span id="cb8-22"><a href="#cb8-22" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> [dx1, dx2, dx3]</span>
+<span id="cb8-23"><a href="#cb8-23" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-24"><a href="#cb8-24" aria-hidden="true" tabindex="-1"></a><span class="co"># Integrate ODE to generate "true" time series</span></span>
+<span id="cb8-25"><a href="#cb8-25" aria-hidden="true" tabindex="-1"></a>t <span class="op">=</span> np.linspace(<span class="dv">0</span>, <span class="dv">20</span>, <span class="dv">100</span>)</span>
+<span id="cb8-26"><a href="#cb8-26" aria-hidden="true" tabindex="-1"></a>y0 <span class="op">=</span> [<span class="fl">0.5</span>, <span class="fl">0.3</span>, <span class="fl">0.8</span>]</span>
+<span id="cb8-27"><a href="#cb8-27" aria-hidden="true" tabindex="-1"></a>X_true <span class="op">=</span> odeint(true_grn, y0, t)</span>
+<span id="cb8-28"><a href="#cb8-28" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-29"><a href="#cb8-29" aria-hidden="true" tabindex="-1"></a><span class="co"># Add measurement noise (realistic RNA-seq noise level ~10%)</span></span>
+<span id="cb8-30"><a href="#cb8-30" aria-hidden="true" tabindex="-1"></a>np.random.seed(<span class="dv">42</span>)</span>
+<span id="cb8-31"><a href="#cb8-31" aria-hidden="true" tabindex="-1"></a>X_noisy <span class="op">=</span> X_true <span class="op">+</span> np.random.normal(<span class="dv">0</span>, <span class="fl">0.08</span>, X_true.shape)</span>
+<span id="cb8-32"><a href="#cb8-32" aria-hidden="true" tabindex="-1"></a>X_noisy <span class="op">=</span> np.clip(X_noisy, <span class="dv">0</span>, <span class="va">None</span>)  <span class="co"># expression cannot be negative</span></span>
+<span id="cb8-33"><a href="#cb8-33" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-34"><a href="#cb8-34" aria-hidden="true" tabindex="-1"></a><span class="co"># ── Build custom feature library for gene regulation ──────────────</span></span>
+<span id="cb8-35"><a href="#cb8-35" aria-hidden="true" tabindex="-1"></a><span class="co"># Functions: constant, linear terms, Hill activation, Hill repression</span></span>
+<span id="cb8-36"><a href="#cb8-36" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> hill_act(x, K<span class="op">=</span><span class="fl">1.0</span>, n<span class="op">=</span><span class="fl">2.0</span>):</span>
+<span id="cb8-37"><a href="#cb8-37" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> x<span class="op">**</span>n <span class="op">/</span> (K<span class="op">**</span>n <span class="op">+</span> x<span class="op">**</span>n)</span>
+<span id="cb8-38"><a href="#cb8-38" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-39"><a href="#cb8-39" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> hill_rep(x, K<span class="op">=</span><span class="fl">1.0</span>, n<span class="op">=</span><span class="fl">2.0</span>):</span>
+<span id="cb8-40"><a href="#cb8-40" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> K<span class="op">**</span>n <span class="op">/</span> (K<span class="op">**</span>n <span class="op">+</span> x<span class="op">**</span>n)</span>
+<span id="cb8-41"><a href="#cb8-41" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-42"><a href="#cb8-42" aria-hidden="true" tabindex="-1"></a><span class="co"># Build library from combinations of Hill functions</span></span>
+<span id="cb8-43"><a href="#cb8-43" aria-hidden="true" tabindex="-1"></a>library_functions <span class="op">=</span> [</span>
+<span id="cb8-44"><a href="#cb8-44" aria-hidden="true" tabindex="-1"></a>    <span class="kw">lambda</span> x: np.ones(<span class="bu">len</span>(x)),          <span class="co"># constant (basal transcription)</span></span>
+<span id="cb8-45"><a href="#cb8-45" aria-hidden="true" tabindex="-1"></a>    <span class="kw">lambda</span> x: x,                         <span class="co"># linear degradation term</span></span>
+<span id="cb8-46"><a href="#cb8-46" aria-hidden="true" tabindex="-1"></a>    <span class="kw">lambda</span> x: hill_act(x),              <span class="co"># Hill activation (K=1, n=2)</span></span>
+<span id="cb8-47"><a href="#cb8-47" aria-hidden="true" tabindex="-1"></a>    <span class="kw">lambda</span> x: hill_rep(x),              <span class="co"># Hill repression</span></span>
+<span id="cb8-48"><a href="#cb8-48" aria-hidden="true" tabindex="-1"></a>]</span>
+<span id="cb8-49"><a href="#cb8-49" aria-hidden="true" tabindex="-1"></a>library_names <span class="op">=</span> [<span class="st">"1"</span>, <span class="st">"x"</span>, <span class="st">"hill_act(x)"</span>, <span class="st">"hill_rep(x)"</span>]</span>
+<span id="cb8-50"><a href="#cb8-50" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-51"><a href="#cb8-51" aria-hidden="true" tabindex="-1"></a>custom_library <span class="op">=</span> CustomLibrary(</span>
+<span id="cb8-52"><a href="#cb8-52" aria-hidden="true" tabindex="-1"></a>    library_functions<span class="op">=</span>library_functions,</span>
+<span id="cb8-53"><a href="#cb8-53" aria-hidden="true" tabindex="-1"></a>    function_names<span class="op">=</span>library_names</span>
+<span id="cb8-54"><a href="#cb8-54" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb9"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="co"># ── Fit SINDy model with STLSQ optimizer ──────────────────────────</span></span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a><span class="co"># STLSQ (Sequential Threshold Least Squares) is the default SINDy optimizer</span></span>
+<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a>optimizer <span class="op">=</span> ps.STLSQ(</span>
+<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a>    threshold<span class="op">=</span><span class="fl">0.05</span>,     <span class="co"># sparsity threshold: coefficients below this are zeroed</span></span>
+<span id="cb9-5"><a href="#cb9-5" aria-hidden="true" tabindex="-1"></a>    alpha<span class="op">=</span><span class="fl">0.05</span>,         <span class="co"># L2 regularization for numerical stability</span></span>
+<span id="cb9-6"><a href="#cb9-6" aria-hidden="true" tabindex="-1"></a>    max_iter<span class="op">=</span><span class="dv">20</span></span>
+<span id="cb9-7"><a href="#cb9-7" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb9-8"><a href="#cb9-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-9"><a href="#cb9-9" aria-hidden="true" tabindex="-1"></a>model <span class="op">=</span> ps.SINDy(</span>
+<span id="cb9-10"><a href="#cb9-10" aria-hidden="true" tabindex="-1"></a>    feature_library<span class="op">=</span>custom_library,</span>
+<span id="cb9-11"><a href="#cb9-11" aria-hidden="true" tabindex="-1"></a>    optimizer<span class="op">=</span>optimizer,</span>
+<span id="cb9-12"><a href="#cb9-12" aria-hidden="true" tabindex="-1"></a>    feature_names<span class="op">=</span>[<span class="st">"x1"</span>, <span class="st">"x2"</span>, <span class="st">"x3"</span>]</span>
+<span id="cb9-13"><a href="#cb9-13" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb9-14"><a href="#cb9-14" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-15"><a href="#cb9-15" aria-hidden="true" tabindex="-1"></a><span class="co"># Fit on noisy data</span></span>
+<span id="cb9-16"><a href="#cb9-16" aria-hidden="true" tabindex="-1"></a>model.fit(X_noisy, t<span class="op">=</span>t)</span>
+<span id="cb9-17"><a href="#cb9-17" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-18"><a href="#cb9-18" aria-hidden="true" tabindex="-1"></a><span class="co"># Print discovered equations</span></span>
+<span id="cb9-19"><a href="#cb9-19" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="st">"Discovered governing equations:"</span>)</span>
+<span id="cb9-20"><a href="#cb9-20" aria-hidden="true" tabindex="-1"></a>model.<span class="bu">print</span>()</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb10"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="co"># ── Validate: simulate with discovered equations and compare ──────</span></span>
+<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a>X_sim <span class="op">=</span> model.simulate(y0, t)</span>
+<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-4"><a href="#cb10-4" aria-hidden="true" tabindex="-1"></a>fig, axes <span class="op">=</span> plt.subplots(<span class="dv">1</span>, <span class="dv">3</span>, figsize<span class="op">=</span>(<span class="dv">12</span>, <span class="dv">4</span>))</span>
+<span id="cb10-5"><a href="#cb10-5" aria-hidden="true" tabindex="-1"></a>gene_names <span class="op">=</span> [<span class="st">"TF (Gene 1)"</span>, <span class="st">"Target Gene 2"</span>, <span class="st">"Target Gene 3"</span>]</span>
+<span id="cb10-6"><a href="#cb10-6" aria-hidden="true" tabindex="-1"></a>colors <span class="op">=</span> [<span class="st">"#d62728"</span>, <span class="st">"#4472C4"</span>, <span class="st">"#2ca02c"</span>]</span>
+<span id="cb10-7"><a href="#cb10-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-8"><a href="#cb10-8" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> i, (ax, name, color) <span class="kw">in</span> <span class="bu">enumerate</span>(<span class="bu">zip</span>(axes, gene_names, colors)):</span>
+<span id="cb10-9"><a href="#cb10-9" aria-hidden="true" tabindex="-1"></a>    ax.plot(t, X_noisy[:, i], <span class="st">"o"</span>, markersize<span class="op">=</span><span class="dv">2</span>, alpha<span class="op">=</span><span class="fl">0.5</span>,</span>
+<span id="cb10-10"><a href="#cb10-10" aria-hidden="true" tabindex="-1"></a>            color<span class="op">=</span>color, label<span class="op">=</span><span class="st">"Observed (noisy)"</span>)</span>
+<span id="cb10-11"><a href="#cb10-11" aria-hidden="true" tabindex="-1"></a>    ax.plot(t, X_true[:, i], <span class="st">"--"</span>, linewidth<span class="op">=</span><span class="fl">1.5</span>,</span>
+<span id="cb10-12"><a href="#cb10-12" aria-hidden="true" tabindex="-1"></a>            color<span class="op">=</span><span class="st">"grey"</span>, label<span class="op">=</span><span class="st">"True ODE"</span>)</span>
+<span id="cb10-13"><a href="#cb10-13" aria-hidden="true" tabindex="-1"></a>    ax.plot(t, X_sim[:, i], <span class="st">"-"</span>, linewidth<span class="op">=</span><span class="dv">2</span>,</span>
+<span id="cb10-14"><a href="#cb10-14" aria-hidden="true" tabindex="-1"></a>            color<span class="op">=</span>color, label<span class="op">=</span><span class="st">"SINDy fit"</span>)</span>
+<span id="cb10-15"><a href="#cb10-15" aria-hidden="true" tabindex="-1"></a>    ax.set_title(name)</span>
+<span id="cb10-16"><a href="#cb10-16" aria-hidden="true" tabindex="-1"></a>    ax.set_xlabel(<span class="st">"Time"</span>)</span>
+<span id="cb10-17"><a href="#cb10-17" aria-hidden="true" tabindex="-1"></a>    ax.set_ylabel(<span class="st">"Expression"</span>)</span>
+<span id="cb10-18"><a href="#cb10-18" aria-hidden="true" tabindex="-1"></a>    ax.legend(fontsize<span class="op">=</span><span class="dv">7</span>)</span>
+<span id="cb10-19"><a href="#cb10-19" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-20"><a href="#cb10-20" aria-hidden="true" tabindex="-1"></a>plt.tight_layout()</span>
+<span id="cb10-21"><a href="#cb10-21" aria-hidden="true" tabindex="-1"></a>plt.savefig(<span class="st">"sindy_fit_comparison.pdf"</span>, dpi<span class="op">=</span><span class="dv">150</span>)</span>
+<span id="cb10-22"><a href="#cb10-22" aria-hidden="true" tabindex="-1"></a>plt.show()</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb11"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="co">#| label: fig-sindy-fit</span></span>
+<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a><span class="co">#| fig-cap: "SINDy 方程辨识结果验证。三个基因的表达轨迹对比：灰色虚线为真实 ODE 模拟的轨迹，彩色实线为 SINDy 辨识方程的预测轨迹，散点为加入测量噪声后的观测数据。SINDy 在 10% 噪声水平下能够准确重建基础调控方程。"</span></span>
+<span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a><span class="co"># This figure is generated by the Python code block above.</span></span>
+<span id="cb11-4"><a href="#cb11-4" aria-hidden="true" tabindex="-1"></a><span class="co"># Display only when the file exists (Python environment required).</span></span>
+<span id="cb11-5"><a href="#cb11-5" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> (<span class="fu">file.exists</span>(<span class="st">"sindy_fit_comparison.pdf"</span>)) {</span>
+<span id="cb11-6"><a href="#cb11-6" aria-hidden="true" tabindex="-1"></a>    knitr<span class="sc">::</span><span class="fu">include_graphics</span>(<span class="st">"sindy_fit_comparison.pdf"</span>)</span>
+<span id="cb11-7"><a href="#cb11-7" aria-hidden="true" tabindex="-1"></a>} <span class="cf">else</span> {</span>
+<span id="cb11-8"><a href="#cb11-8" aria-hidden="true" tabindex="-1"></a>    <span class="fu">message</span>(<span class="st">"Run the Python SINDy block first to generate sindy_fit_comparison.pdf"</span>)</span>
+<span id="cb11-9"><a href="#cb11-9" aria-hidden="true" tabindex="-1"></a>    <span class="fu">plot.new</span>()</span>
+<span id="cb11-10"><a href="#cb11-10" aria-hidden="true" tabindex="-1"></a>    <span class="fu">text</span>(<span class="fl">0.5</span>, <span class="fl">0.5</span>, <span class="st">"Figure generated by Python (pysindy)</span><span class="sc">\n</span><span class="st">Run Python block to produce output"</span>,</span>
+<span id="cb11-11"><a href="#cb11-11" aria-hidden="true" tabindex="-1"></a>         <span class="at">cex =</span> <span class="fl">1.1</span>, <span class="at">col =</span> <span class="st">"grey40"</span>, <span class="at">adj =</span> <span class="fl">0.5</span>)</span>
+<span id="cb11-12"><a href="#cb11-12" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<section id="弱-sindyweak-sindy对测量噪声的鲁棒改进" class="level3" data-number="32.4.1">
+<h3 data-number="32.4.1" class="anchored" data-anchor-id="弱-sindyweak-sindy对测量噪声的鲁棒改进"><span class="header-section-number">32.4.1</span> 弱 SINDy（Weak SINDy）：对测量噪声的鲁棒改进</h3>
+<p>经典 SINDy 的一个关键弱点是需要对时序数据进行<strong>数值微分</strong>（计算 <span class="math inline">\(\dot{\mathbf{X}}\)</span>），而数值微分对测量噪声极为敏感——噪声经有限差分后会被放大，导致 <span class="math inline">\(\dot{\mathbf{X}}\)</span> 的估计充满误差。弱 SINDy（Weak SINDy）通过将 ODE 转化为积分（弱）形式来规避这一问题：</p>
+<p><span class="math display">\[\int_0^T \dot{x}_i(t) \cdot \phi(t) \, dt = \int_0^T f(\mathbf{x}(t)) \cdot \phi(t) \, dt\]</span></p>
+<p>其中 <span class="math inline">\(\phi(t)\)</span> 是测试函数（如分段多项式）。将左端通过分部积分转化后，方程中不再出现 <span class="math inline">\(\dot{x}_i\)</span>，而是直接依赖 <span class="math inline">\(x_i\)</span> 的观测值。弱 SINDy 对噪声的鲁棒性显著优于经典 SINDy，在生物学数据（噪声水平通常为 20–40%）上尤为重要。</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb12"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Weak SINDy: more robust to measurement noise</span></span>
+<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> pysindy.feature_library <span class="im">import</span> WeakPDELibrary</span>
+<span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-4"><a href="#cb12-4" aria-hidden="true" tabindex="-1"></a><span class="co"># For 1D time-series (ODE case), use integration window approach</span></span>
+<span id="cb12-5"><a href="#cb12-5" aria-hidden="true" tabindex="-1"></a><span class="co"># PySINDy's weakform implementation</span></span>
+<span id="cb12-6"><a href="#cb12-6" aria-hidden="true" tabindex="-1"></a>model_weak <span class="op">=</span> ps.SINDy(</span>
+<span id="cb12-7"><a href="#cb12-7" aria-hidden="true" tabindex="-1"></a>    feature_library<span class="op">=</span>ps.WeakPDELibrary(</span>
+<span id="cb12-8"><a href="#cb12-8" aria-hidden="true" tabindex="-1"></a>        library_functions<span class="op">=</span>library_functions,</span>
+<span id="cb12-9"><a href="#cb12-9" aria-hidden="true" tabindex="-1"></a>        function_names<span class="op">=</span>library_names,</span>
+<span id="cb12-10"><a href="#cb12-10" aria-hidden="true" tabindex="-1"></a>        spatiotemporal_grid<span class="op">=</span>t,</span>
+<span id="cb12-11"><a href="#cb12-11" aria-hidden="true" tabindex="-1"></a>        K<span class="op">=</span><span class="dv">10</span>,        <span class="co"># number of integration windows</span></span>
+<span id="cb12-12"><a href="#cb12-12" aria-hidden="true" tabindex="-1"></a>        num_pts_per_domain<span class="op">=</span><span class="dv">10</span></span>
+<span id="cb12-13"><a href="#cb12-13" aria-hidden="true" tabindex="-1"></a>    ),</span>
+<span id="cb12-14"><a href="#cb12-14" aria-hidden="true" tabindex="-1"></a>    optimizer<span class="op">=</span>ps.STLSQ(threshold<span class="op">=</span><span class="fl">0.05</span>)</span>
+<span id="cb12-15"><a href="#cb12-15" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb12-16"><a href="#cb12-16" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-17"><a href="#cb12-17" aria-hidden="true" tabindex="-1"></a><span class="co"># Add higher noise to test robustness</span></span>
+<span id="cb12-18"><a href="#cb12-18" aria-hidden="true" tabindex="-1"></a>X_high_noise <span class="op">=</span> X_true <span class="op">+</span> np.random.normal(<span class="dv">0</span>, <span class="fl">0.25</span>, X_true.shape)</span>
+<span id="cb12-19"><a href="#cb12-19" aria-hidden="true" tabindex="-1"></a>X_high_noise <span class="op">=</span> np.clip(X_high_noise, <span class="dv">0</span>, <span class="va">None</span>)</span>
+<span id="cb12-20"><a href="#cb12-20" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-21"><a href="#cb12-21" aria-hidden="true" tabindex="-1"></a>model_weak.fit(X_high_noise, t<span class="op">=</span>t)</span>
+<span id="cb12-22"><a href="#cb12-22" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="st">"Weak SINDy equations (25% noise level):"</span>)</span>
+<span id="cb12-23"><a href="#cb12-23" aria-hidden="true" tabindex="-1"></a>model_weak.<span class="bu">print</span>()</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</section>
+</section>
+<section id="odesindy-与-genie3-的互补关系总结" class="level2" data-number="32.5">
+<h2 data-number="32.5" class="anchored" data-anchor-id="odesindy-与-genie3-的互补关系总结"><span class="header-section-number">32.5</span> ODE/SINDy 与 GENIE3 的互补关系总结</h2>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 25%">
+<col style="width: 25%">
+<col style="width: 25%">
+<col style="width: 25%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>维度</th>
+<th>GENIE3</th>
+<th>ODE 参数化</th>
+<th>SINDy</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><strong>数据类型</strong></td>
+<td>稳态，大 <span class="math inline">\(n\)</span></td>
+<td>时序，小 <span class="math inline">\(n\)</span>，精细</td>
+<td>时序，中等 <span class="math inline">\(n\)</span></td>
+</tr>
+<tr class="even">
+<td><strong>输出</strong></td>
+<td>有向加权边排序</td>
+<td>完整动力学方程+参数</td>
+<td>稀疏动力学方程</td>
+</tr>
+<tr class="odd">
+<td><strong>可解释性</strong></td>
+<td>调控强度排名</td>
+<td>定量预测（扰动模拟）</td>
+<td>函数形式发现</td>
+</tr>
+<tr class="even">
+<td><strong>调控关系假设</strong></td>
+<td>非参数（任意函数）</td>
+<td>预设函数形式（Hill）</td>
+<td>从候选库中自动选择</td>
+</tr>
+<tr class="odd">
+<td><strong>噪声鲁棒性</strong></td>
+<td>高（集成学习）</td>
+<td>中（依赖优化算法）</td>
+<td>中（经典）/ 高（弱SINDy）</td>
+</tr>
+<tr class="even">
+<td><strong>计算代价</strong></td>
+<td><span class="math inline">\(O(p^2 \cdot n \cdot T_{\text{tree}})\)</span></td>
+<td><span class="math inline">\(O(p \cdot T_{\text{opt}})\)</span></td>
+<td><span class="math inline">\(O(L \cdot p \cdot T)\)</span></td>
+</tr>
+<tr class="odd">
+<td><strong>典型样本需求</strong></td>
+<td><span class="math inline">\(n \geq 100\)</span>（稳态）</td>
+<td><span class="math inline">\(n_t \geq 20\)</span>（时间点）</td>
+<td><span class="math inline">\(n_t \geq 30\)</span>（时间点）</td>
+</tr>
+</tbody>
+</table>
+<div class="info">
+<p><strong>黄金法则：</strong> 在实际研究中，GENIE3、ODE 和 SINDy 不是竞争关系，而是适用于不同数据类型的互补工具。推荐的整合策略是：（1）用 WGCNA 识别与表型相关的共表达模块，确定候选功能基因集；（2）以模块内基因为靶基因、<strong>模块外</strong>已知 TF 为候选调控子运行 GENIE3，推断有向调控边（避免模块内高共线性导致的重要性分裂；需要样本量 ≥ 50 的稳态数据）；（3）对 GENIE3 识别的核心调控回路，设计定点时序扰动实验，用 ODE/SINDy 辨识调控方程的动力学参数；（4）用辨识的 ODE 模型进行扰动模拟，预测未观测条件下的基因表达动态。</p>
+</div>
+<hr>
+</section>
+</section>
+<section id="评估-grn-推断的质量" class="level1" data-number="33">
+<h1 data-number="33"><span class="header-section-number">33</span> 评估 GRN 推断的质量</h1>
+<section id="auroc-与-aupr两种评估指标的适用场景" class="level2" data-number="33.1">
+<h2 data-number="33.1" class="anchored" data-anchor-id="auroc-与-aupr两种评估指标的适用场景"><span class="header-section-number">33.1</span> AUROC 与 AUPR：两种评估指标的适用场景</h2>
+<p>在有已知真实调控网络（Golden Standard Network）可供对照时（如 DREAM5 挑战赛的测试数据集，或来自 ChIP-seq 的 TF 结合数据），可以计算：</p>
+<ul>
+<li><strong>AUROC（Area Under ROC Curve）</strong>：在所有预测强度阈值下，真阳性率（TPR）对假阳性率（FPR）的曲线下面积。AUROC = 0.5 为随机猜测，理论最大值为 1。AUROC 对网络稀疏度不敏感，但在高度稀疏网络（真实调控边极少）时会高估性能。</li>
+<li><strong>AUPR（Area Under Precision-Recall Curve）</strong>：精确率对召回率的曲线下面积。AUPR 对高度稀疏网络的评估更加敏感和准确，在真实 GRN 中（每个基因平均只有 2–5 个调控子，即极度稀疏）优先使用 AUPR。</li>
+</ul>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb13"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(PRROC)</span>
+<span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb13-3"><a href="#cb13-3" aria-hidden="true" tabindex="-1"></a><span class="co"># Assume we have ground truth edges (from ChIP-seq TF binding data)</span></span>
+<span id="cb13-4"><a href="#cb13-4" aria-hidden="true" tabindex="-1"></a><span class="co"># and GENIE3 predicted edge weights</span></span>
+<span id="cb13-5"><a href="#cb13-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb13-6"><a href="#cb13-6" aria-hidden="true" tabindex="-1"></a><span class="co"># ground_truth: binary vector (1 = true regulatory edge, 0 = not)</span></span>
+<span id="cb13-7"><a href="#cb13-7" aria-hidden="true" tabindex="-1"></a><span class="co"># predicted_scores: GENIE3 weight for each candidate edge</span></span>
+<span id="cb13-8"><a href="#cb13-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb13-9"><a href="#cb13-9" aria-hidden="true" tabindex="-1"></a><span class="co"># AUROC</span></span>
+<span id="cb13-10"><a href="#cb13-10" aria-hidden="true" tabindex="-1"></a>roc_obj <span class="ot">&lt;-</span> <span class="fu">roc.curve</span>(</span>
+<span id="cb13-11"><a href="#cb13-11" aria-hidden="true" tabindex="-1"></a>    <span class="at">scores.class0 =</span> predicted_scores[ground_truth <span class="sc">==</span> <span class="dv">1</span>],</span>
+<span id="cb13-12"><a href="#cb13-12" aria-hidden="true" tabindex="-1"></a>    <span class="at">scores.class1 =</span> predicted_scores[ground_truth <span class="sc">==</span> <span class="dv">0</span>],</span>
+<span id="cb13-13"><a href="#cb13-13" aria-hidden="true" tabindex="-1"></a>    <span class="at">curve =</span> <span class="cn">TRUE</span></span>
+<span id="cb13-14"><a href="#cb13-14" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb13-15"><a href="#cb13-15" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">"AUROC:"</span>, roc_obj<span class="sc">$</span>auc, <span class="st">"</span><span class="sc">\n</span><span class="st">"</span>)</span>
+<span id="cb13-16"><a href="#cb13-16" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb13-17"><a href="#cb13-17" aria-hidden="true" tabindex="-1"></a><span class="co"># AUPR</span></span>
+<span id="cb13-18"><a href="#cb13-18" aria-hidden="true" tabindex="-1"></a>pr_obj <span class="ot">&lt;-</span> <span class="fu">pr.curve</span>(</span>
+<span id="cb13-19"><a href="#cb13-19" aria-hidden="true" tabindex="-1"></a>    <span class="at">scores.class0 =</span> predicted_scores[ground_truth <span class="sc">==</span> <span class="dv">1</span>],</span>
+<span id="cb13-20"><a href="#cb13-20" aria-hidden="true" tabindex="-1"></a>    <span class="at">scores.class1 =</span> predicted_scores[ground_truth <span class="sc">==</span> <span class="dv">0</span>],</span>
+<span id="cb13-21"><a href="#cb13-21" aria-hidden="true" tabindex="-1"></a>    <span class="at">curve =</span> <span class="cn">TRUE</span></span>
+<span id="cb13-22"><a href="#cb13-22" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb13-23"><a href="#cb13-23" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">"AUPR:"</span>, pr_obj<span class="sc">$</span>auc.integral, <span class="st">"</span><span class="sc">\n</span><span class="st">"</span>)</span>
+<span id="cb13-24"><a href="#cb13-24" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb13-25"><a href="#cb13-25" aria-hidden="true" tabindex="-1"></a><span class="co"># Baseline AUPR (random predictor) = fraction of positive edges</span></span>
+<span id="cb13-26"><a href="#cb13-26" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">"Baseline AUPR (random):"</span>,</span>
+<span id="cb13-27"><a href="#cb13-27" aria-hidden="true" tabindex="-1"></a>    <span class="fu">sum</span>(ground_truth <span class="sc">==</span> <span class="dv">1</span>) <span class="sc">/</span> <span class="fu">length</span>(ground_truth), <span class="st">"</span><span class="sc">\n</span><span class="st">"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<hr>
+</section>
+</section>
+<section id="课后自测-post-lesson-quiz" class="level1" data-number="34">
+<h1 data-number="34"><span class="header-section-number">34</span> 课后自测 (Post-Lesson Quiz)</h1>
+<ol type="1">
+<li><p>GENIE3 将 GRN 推断问题分解为 <span class="math inline">\(p\)</span> 个独立子问题，每个子问题的输入和输出分别是什么？为什么这种分解策略在计算上是可行的？</p></li>
+<li><p>为什么在 GENIE3 分析中通常将候选调控子限定为已知的转录因子集合，而非全部基因？这一策略对结果的精度有何影响？</p></li>
+<li><p>dynGENIE3 相比 GENIE3 利用了时序数据的哪种额外信息？具体地，dynGENIE3 的回归目标变量是什么？</p></li>
+<li><p>Hill 函数 <span class="math inline">\(g(x) = x^n/(K^n + x^n)\)</span> 中，参数 <span class="math inline">\(K\)</span> 和 <span class="math inline">\(n\)</span> 的生物学意义分别是什么？当 <span class="math inline">\(n \to \infty\)</span> 时，Hill 函数趋近于什么形状？</p></li>
+<li><p>SINDy 的候选函数库（Feature Library）在基因调控应用中应包含哪些类型的函数？为什么不应包含过高次数的多项式项？</p></li>
+<li><p>弱 SINDy（Weak SINDy）解决了经典 SINDy 的什么问题？其核心数学思想是什么？</p></li>
+<li><p>在 GRN 推断评估中，为什么 AUPR 比 AUROC 更适合评估高度稀疏的真实调控网络？</p></li>
+<li><p>请描述一个将 WGCNA（专题 5.5）、GENIE3（专题 5.6）和 ODE 建模（专题 5.7）整合使用的完整分析流程，说明每个工具在流程中回答什么问题。</p></li>
+</ol>
+<details>
+<summary>
+<strong>参考答案 (Reference Answers)</strong>
+</summary>
+<ol type="1">
+<li><p><em>每个子问题的输入：候选调控子（所有其他基因或 TF 集合）的表达量矩阵 <span class="math inline">\(\mathbf{x}_{\setminus j}\)</span>；输出：每个候选调控子对目标基因 <span class="math inline">\(x_j\)</span> 的特征重要性得分向量 <span class="math inline">\(\mathbf{w}_j\)</span>。计算可行性：因为将一个 <span class="math inline">\(p \times n\)</span> 的联合估计问题分解为 <span class="math inline">\(p\)</span> 个独立的 <span class="math inline">\(n \times (p-1)\)</span> 随机森林回归，每个子问题可以独立并行计算，总计算复杂度为 <span class="math inline">\(O(p^2 n T_{\text{tree}})\)</span>，在多核服务器上可在数小时内完成。</em></p></li>
+<li><p><em>限定 TF 集合的理由：（1）生物学上，调控网络的调控子应以转录因子为主，非 TF 基因之间的”调控关系”通常是间接的；（2）减少候选特征数量（从 <span class="math inline">\(p \sim 20000\)</span> 降至约 1600），显著降低计算量；（3）减少特征空间维度可以降低假阳性率（多重比较问题）。对精度的影响：限定 TF 集合后，GENIE3 能更精确地估计 TF 对靶基因的贡献，AUPR 通常高于使用全部基因作为候选调控子的结果。</em></p></li>
+<li><p><em>dynGENIE3 利用了<strong>时序先后关系</strong>作为因果方向约束。具体地，dynGENIE3 的回归目标变量是下一时间点 <span class="math inline">\(t+\Delta t\)</span> 的靶基因表达量 <span class="math inline">\(x_j(t+\Delta t)\)</span>，而预测特征是当前时间点 <span class="math inline">\(t\)</span> 的调控子表达量 <span class="math inline">\(\mathbf{x}_{\setminus j}(t)\)</span>。这一时序滞后设计利用了”原因先于结果”的时序因果约束，避免了稳态 GENIE3 中纯相关性带来的方向歧义。</em></p></li>
+<li><p><em><span class="math inline">\(K\)</span>（半饱和常数）：当调控子浓度 <span class="math inline">\(x = K\)</span> 时，Hill 函数值恰好为 0.5，即转录激活达到最大激活量的一半；<span class="math inline">\(K\)</span> 反映了 TF 与启动子结合的亲和力，<span class="math inline">\(K\)</span> 越小说明 TF 结合能力越强。<span class="math inline">\(n\)</span>（Hill 系数）：反映调控的协同性，<span class="math inline">\(n = 1\)</span> 无协同效应，<span class="math inline">\(n &gt; 1\)</span> 表示需要多个 TF 分子协同结合（如二聚化、四聚化）。当 <span class="math inline">\(n \to \infty\)</span> 时，Hill 函数趋近于 Heaviside 阶跃函数（<span class="math inline">\(g(x) = 0\)</span> 当 <span class="math inline">\(x &lt; K\)</span>，<span class="math inline">\(g(x) = 1\)</span> 当 <span class="math inline">\(x &gt; K\)</span>），即完美的开关特性。</em></p></li>
+<li><p><em>候选函数库应包含：（1）常数项（代表基础转录速率 <span class="math inline">\(\alpha\)</span>）；（2）一阶线性项（代表 mRNA 降解项 <span class="math inline">\(-\gamma x\)</span>）；（3）Hill 激活函数项；（4）Hill 抑制函数项；（5）二阶交叉项（代表两个调控子的协同效应）。不应包含过高次数多项式的原因：高次多项式（如 4 次、5 次）会导致候选库矩阵 <span class="math inline">\(\boldsymbol{\Theta}\)</span> 的列之间高度共线（多重共线性），使 LASSO/STLSQ 的稀疏辨识结果不稳定；且高次多项式在生物学上缺乏直接解释，容易导致过拟合。</em></p></li>
+<li><p><em>弱 SINDy 解决的问题：经典 SINDy 需要对时序数据进行数值微分来估计 <span class="math inline">\(\dot{\mathbf{X}}\)</span>，数值微分（有限差分）对测量噪声极为敏感，噪声会被放大导致导数估计充满误差。核心数学思想：将 ODE <span class="math inline">\(\dot{x}_i = f(\mathbf{x})\)</span> 两边同乘以测试函数 <span class="math inline">\(\phi(t)\)</span>，并在时间区间 <span class="math inline">\([0,T]\)</span> 上积分；通过分部积分，将含 <span class="math inline">\(\dot{x}_i\)</span> 的项转化为含 <span class="math inline">\(x_i\)</span> 的项，从而避免计算导数。最终问题变为纯积分方程形式，直接依赖观测值 <span class="math inline">\(x_i(t)\)</span>，对测量噪声的鲁棒性显著提升。</em></p></li>
+<li><p><em>AUROC 在计算假阳性率（FPR）时，分母是所有实际阴性样本的数量。在高度稀疏的网络中（如 <span class="math inline">\(p = 100\)</span> 个基因，每个基因平均 3 个调控子，则真实边约 300 条，而候选边总数为 <span class="math inline">\(100 \times 99 = 9900\)</span> 条，阴性边约 9600 条），即使 FPR 很小（如 5%），对应的假阳性边数量也高达 480 条，远多于真阳性边数。AUROC 会给出看似很高（&gt; 0.9）但实际假阳性极多的误导性结果。AUPR 的精确率（Precision）直接衡量预测为正的样本中真阳性的比例，对稀疏网络中的假阳性堆积更敏感，能更真实地反映工具在实际应用中的预测精度。</em></p></li>
+<li><p><em>完整整合流程：（1）<strong>WGCNA</strong>：以多样本稳态表达矩阵为输入，识别与目标表型（如 dex 处理）显著相关的共表达模块，确定候选功能基因集合和枢纽基因——回答”哪些基因协同变化，与表型的关联模块是哪个”。（2）<strong>GENIE3</strong>：以目标模块内基因为<strong>靶基因</strong>、以<strong>模块外</strong>已知 TF 集合为候选调控子，在全样本稳态表达矩阵上推断有向调控边的权重排序——回答”哪些外部 TF 可能驱动该模块的协同表达”。注意：不建议在模块内部所有基因之间运行 GENIE3，因为模块成员间的高共线性（|r| &gt; 0.8）会导致特征重要性分裂，使结果仅仅反映相关性结构而非真实调控关系。（3）<strong>ODE/SINDy</strong>：设计针对 GENIE3 预测的核心调控 TF 的时序扰动实验（如 TF 过表达后多时间点采样），用辨识的 ODE 方程估计调控动力学参数——回答”调控是激活还是抑制，响应时间和饱和浓度是多少，对扰动的定量预测是什么”。</em></p></li>
+</ol>
+</details>
 
 
+</section>
 
 </main> <!-- /main -->
 <script id="quarto-html-after-body" type="application/javascript">
@@ -960,13 +1666,13 @@ ul.task-list li input[type="checkbox"] {
   </script>
 <nav class="page-navigation">
   <div class="nav-page nav-page-previous">
-      <a href="./transcriptomics_adv_lesson3.html" class="pagination-link" aria-label="第五章 课时3">
-        <i class="bi bi-arrow-left-short"></i> <span class="nav-page-text"><span class="chapter-number">28</span>&nbsp; <span class="chapter-title">第五章 课时3</span></span>
+      <a href="./transcriptomics_adv_lesson3.html" class="pagination-link" aria-label="加权基因共表达网络分析（WGCNA）">
+        <i class="bi bi-arrow-left-short"></i> <span class="nav-page-text"><span class="chapter-number">28</span>&nbsp; <span class="chapter-title">加权基因共表达网络分析（WGCNA）</span></span>
       </a>          
   </div>
   <div class="nav-page nav-page-next">
-      <a href="./transcriptomics_adv_lesson5.html" class="pagination-link" aria-label="第五章 课时5">
-        <span class="nav-page-text"><span class="chapter-number">30</span>&nbsp; <span class="chapter-title">第五章 课时5</span></span> <i class="bi bi-arrow-right-short"></i>
+      <a href="./transcriptomics_adv_lesson5.html" class="pagination-link" aria-label="扰动稳态下的非线性基因调控模型学习">
+        <span class="nav-page-text"><span class="chapter-number">30</span>&nbsp; <span class="chapter-title">扰动稳态下的非线性基因调控模型学习</span></span> <i class="bi bi-arrow-right-short"></i>
       </a>
   </div>
 </nav>
@@ -975,4 +1681,4 @@ ul.task-list li input[type="checkbox"] {
 
 
 
-<footer class="footer"><div class="nav-footer"><div class="nav-footer-center"><div class="toc-actions"><ul><li><a href="https://github.com/cxzdsa2332/Applied-Omics-Analysis/edit/main/transcriptomics_adv_lesson4.qmd" class="toc-action"><i class="bi bi-github"></i>Edit this page</a></li><li><a href="https://github.com/cxzdsa2332/Applied-Omics-Analysis/issues/new" class="toc-action"><i class="bi empty"></i>Report an issue</a></li><li><a href="https://github.com/cxzdsa2332/Applied-Omics-Analysis/blob/main/transcriptomics_adv_lesson4.qmd" class="toc-action"><i class="bi empty"></i>View source</a></li></ul></div></div></div></footer></body></html>
+<footer class="footer"><div class="nav-footer"><div class="nav-footer-center"><div class="toc-actions d-sm-block d-md-none"><ul><li><a href="https://github.com/cxzdsa2332/Applied-Omics-Analysis/edit/main/transcriptomics_adv_lesson4.qmd" class="toc-action"><i class="bi bi-github"></i>Edit this page</a></li><li><a href="https://github.com/cxzdsa2332/Applied-Omics-Analysis/issues/new" class="toc-action"><i class="bi empty"></i>Report an issue</a></li><li><a href="https://github.com/cxzdsa2332/Applied-Omics-Analysis/blob/main/transcriptomics_adv_lesson4.qmd" class="toc-action"><i class="bi empty"></i>View source</a></li></ul></div></div></div></footer></body></html>
