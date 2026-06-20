@@ -1,2 +1,222 @@
-# 第六章 课时3
+---
+title: "降维、聚类与细胞类型注释"
+date: today
+format:
+  html:
+    code-fold: false
+    toc: true
+    toc-depth: 3
+    number-sections: true
+    theme: cosmo
+crossref:
+  fig-title: 图
+  fig-prefix: 图
+  tbl-title: 表
+  tbl-prefix: 表
+  chapters: false
+---
 
+# 专题概述
+
+质控与归一化产出了一份干净的细胞×基因矩阵，但它仍是高维（数千个高变基因）、难以直接解读的。scRNA-seq 分析的核心目标——识别数据中存在哪些细胞类型——通过三步串联实现：先用 PCA 把高维表达压缩到几十个主成分以去噪，再在主成分空间构建近邻图并用图聚类算法将细胞划分为社区，最后用 UMAP 将结果嵌入二维以供可视化。聚类只给出"第几群"这样的匿名标签，还需通过标志基因把每个聚类对应到真实的细胞类型。本专题讲解这条从降维到注释的标准流程。
+
+**学习目标**：理解 PCA 在 scRNA-seq 中的去噪作用与主成分数量的选择；掌握 KNN 图构建与 Leiden 图聚类的逻辑及分辨率参数的影响；理解 UMAP 与 t-SNE 的特点与局限；掌握基于标志基因的手动注释与 SingleR 自动注释，并能交叉验证。
+
+---
+
+# 降维
+
+## PCA：去噪与压缩
+
+即使只保留 2000 个高变基因，表达空间依然高维且充满噪声——dropout、技术变异使任意两个细胞的距离都不可靠。主成分分析（Principal Component Analysis, PCA）通过线性变换找到数据中方差最大的若干正交方向（主成分），将数据投影到前 20–50 个主成分上。由于真实的生物学变异（细胞类型差异）通常贡献了最大的方差、而随机噪声分散在大量低方差方向上，保留前几十个主成分既压缩了维度，又起到了去噪的作用。
+
+{{Wiki:Principal_component_analysis}}
+
+需要强调，PCA 只用高变基因作为输入，而非全部基因——这样既减小计算量，又避免大量稳定表达基因稀释信号。
+
+```r
+library(Seurat)
+
+# PCA is run on the scaled highly variable genes from the preprocessing step
+pbmc <- RunPCA(pbmc, npcs = 50)
+```
+
+## 选择主成分数量
+
+保留多少个主成分是一个需要判断的参数。保留太少会丢失区分相近细胞类型的信号，太多则重新引入噪声。肘部图（ElbowPlot）将各主成分解释的方差（标准差）从大到小排列，曲线由陡变平的"肘部"提示了信号主成分与噪声主成分的大致分界。
+
+```r
+#| label: fig-elbow
+#| fig-cap: "PBMC 3k 数据的 PCA 肘部图（ElbowPlot）。横轴为主成分序号，纵轴为各主成分对应的标准差。曲线在前若干个主成分后迅速变平，'肘部'位置（约第 10–15 个主成分附近）提示信号主成分与噪声主成分的大致分界，可据此选择下游使用的主成分数量。"
+library(Seurat)
+
+ElbowPlot(pbmc, ndims = 50)
+```
+
+:::tip
+**主成分数量不必精确：** 肘部位置往往不唯一、略显模糊，不必为选 12 还是 15 个主成分纠结。实践中在合理范围（如 10–30）内多取几个值跑一遍，观察聚类结果是否稳定，比追求"最优单一值"更有意义。使用 SCTransform 归一化时，由于其更强的去噪能力，通常可以安全地保留更多主成分（如 30 个）。
+:::
+
+---
+
+# 聚类
+
+## KNN 图与图聚类
+
+在选定的主成分空间中，scRNA-seq 采用基于图的聚类，而非 K-means 等传统方法。原因是细胞类型的大小、密度差异巨大，图聚类对这种不均衡结构更稳健。流程分两步：先用 `FindNeighbors()` 为每个细胞找到其 K 个最近邻，构建 K-近邻图（KNN graph），相似的细胞由边相连；再用 `FindClusters()` 调用 Leiden（或 Louvain）算法，在图中寻找连接紧密的"社区"（community）作为聚类。
+
+```r
+library(Seurat)
+
+# Step 1: build the KNN graph in the chosen PC space (here, first 15 PCs)
+pbmc <- FindNeighbors(pbmc, dims = 1:15)
+
+# Step 2: graph-based community detection (Leiden algorithm = 4)
+pbmc <- FindClusters(pbmc, resolution = 0.5, algorithm = 4)
+```
+
+## 分辨率参数
+
+`resolution` 是聚类最关键的参数，控制划分的粒度：值越大，社区检测越倾向于切出更多、更小的聚类；值越小，聚类越少、越粗。常用范围为 0.3–1.0。它没有"正确值"——粒度的合适与否取决于研究问题：要区分主要细胞类型用低分辨率，要解析细胞亚型用高分辨率。
+
+:::warning
+**分辨率不是越高越好：** 调高分辨率总能切出更多聚类，但其中许多可能是同一细胞类型被人为拆分，或由技术变异（细胞周期、应激）驱动的虚假亚群。判断一个聚类是否"真实"，不能只看它能被分出来，而要看它是否具有特异、可解释的标志基因。盲目追求高分辨率会制造大量需要解释却无生物学意义的聚类。
+:::
+
+## UMAP 可视化
+
+聚类是在高维主成分空间完成的，但人需要二维图来观察。UMAP（Uniform Manifold Approximation and Projection）将高维结构非线性地嵌入二维平面，倾向于保留数据的局部与部分全局结构，是当前最常用的可视化方法。t-SNE 是另一种选择，更强调局部结构，但对全局结构和参数（perplexity）更敏感。
+
+{{Wiki:Nonlinear_dimensionality_reduction}}
+
+```r
+#| label: fig-umap-clusters
+#| fig-cap: "PBMC 3k 数据的 UMAP 嵌入，按 Leiden 聚类结果着色。每个点为一个细胞，颜色对应其所属聚类。UMAP 将高维主成分空间的细胞关系非线性地映射到二维平面，便于直观观察各聚类的分离程度与相对关系。"
+library(Seurat)
+
+pbmc <- RunUMAP(pbmc, dims = 1:15)
+DimPlot(pbmc, reduction = "umap", label = TRUE)
+```
+
+:::warning
+**UMAP 的距离不可定量解读：** UMAP 图上两个聚类之间的距离、聚类的大小、形状都**不具有定量意义**——它们是非线性嵌入的产物，会因参数与随机种子而变化。不能因为两群在 UMAP 上挨得近就断言它们"关系更近"，也不能由聚类面积推断细胞数量。UMAP 只用于定性展示分离结构，定量结论必须回到高维空间或基因表达本身。
+:::
+
+---
+
+# 细胞类型注释
+
+## 标志基因鉴定
+
+聚类给出的是匿名的 "0、1、2……" 标签，注释的任务是把它们对应到真实的细胞类型。第一步是为每个聚类找出其特异高表达的标志基因（Marker genes）：`FindAllMarkers()` 对每个聚类做与其余所有细胞的差异表达检验（默认 Wilcoxon 秩和检验），筛出该聚类显著上调的基因。
+
+```r
+library(Seurat)
+
+# Find positive markers for every cluster (one-vs-rest Wilcoxon test)
+markers <- FindAllMarkers(pbmc, only.pos = TRUE,
+                          min.pct = 0.25, logfc.threshold = 0.25)
+
+# Top marker genes per cluster guide manual cell-type assignment
+library(dplyr)
+markers |>
+    group_by(cluster) |>
+    slice_max(avg_log2FC, n = 5)
+```
+
+## 手动注释
+
+得到每个聚类的标志基因后，对照已知的细胞类型标志基因数据库（如 PanglaoDB、CellMarker）即可手动指派类型。@tbl-pbmc-markers 列出 PBMC 常见细胞类型的经典标志基因。
+
+| 细胞类型 | 经典标志基因 |
+|----------|--------------|
+| T 细胞（CD4+） | IL7R, CD3D, CD4 |
+| T 细胞（CD8+） | CD8A, CD3D, GZMK |
+| B 细胞 | MS4A1, CD79A |
+| NK 细胞 | GNLY, NKG7 |
+| 单核细胞（CD14+） | CD14, LYZ |
+| 单核细胞（FCGR3A+） | FCGR3A, MS4A7 |
+| 树突状细胞 | FCER1A, CST3 |
+| 血小板 | PPBP |
+
+: PBMC 常见细胞类型及其经典标志基因 {#tbl-pbmc-markers}
+
+```r
+# Visualize known markers to confirm cluster identities
+FeaturePlot(pbmc, features = c("CD3D", "MS4A1", "LYZ", "GNLY"))
+DotPlot(pbmc, features = c("IL7R", "CD8A", "MS4A1", "GNLY", "CD14", "FCGR3A")) +
+    Seurat::RotatedAxis()
+
+# Assign biological labels to clusters (example mapping)
+new_ids <- c("0" = "CD4 T", "1" = "CD14+ Mono", "2" = "B",
+             "3" = "CD8 T", "4" = "NK", "5" = "FCGR3A+ Mono")
+pbmc <- RenameIdents(pbmc, new_ids)
+```
+
+## 自动注释：SingleR
+
+手动注释依赖专家知识、耗时且主观。自动注释工具用带标签的参考数据集为查询细胞快速指派类型。SingleR 对每个查询细胞，计算其表达谱与参考数据集中各细胞类型表达谱的相关性，指派相关性最高的类型，并通过迭代微调（fine-tuning）提高分辨力（Aran et al., 2019）。
+
+```r
+library(SingleR)
+library(celldex)
+
+# Use a built-in reference (e.g. Human Primary Cell Atlas / ENCODE-based)
+ref <- celldex::HumanPrimaryCellAtlasData()
+
+# Correlation-based per-cell annotation against the reference
+sce <- as.SingleCellExperiment(pbmc)
+pred <- SingleR(test = sce, ref = ref, labels = ref$label.main)
+pbmc$SingleR_label <- pred$labels
+```
+
+:::info
+**黄金法则：** 手动注释与自动注释应相互印证，而非二选一。自动注释快速、客观，适合提供初步框架；手动注释精确、可解释，能纠正参考数据集缺失类型或物种/组织不匹配带来的错误。当二者一致时，注释可信；当二者矛盾时，正是发现新细胞状态或识别注释陷阱（如参考缺失该类型）的契机。任何最终注释都应能用一组特异标志基因解释。
+:::
+
+---
+
+# 方法总结与衔接说明
+
+本专题完成了 scRNA-seq 基础分析的核心闭环：PCA 降维去噪 → KNN 图 + Leiden 聚类 → UMAP 可视化 → 标志基因 + SingleR 双重注释。至此，模块 A 实现了从原始读段到带细胞类型标签的注释图谱的完整流程。这份注释图谱不仅是单细胞分析的终点，更是众多高级分析的起点——它是第7章拟时序、细胞通讯、调控网络推断以及空间解卷积的共同输入。模块 B（专题 6.4–6.5）将把分析方法迁移到保留空间坐标的 Visium 数据，展示单细胞与空间分析在方法论上的统一与差异。
+
+---
+
+# 课后自测 (Post-Lesson Quiz)
+
+1. 为什么在聚类之前要先做 PCA 降维？PCA 如何同时实现"压缩维度"与"去噪"两个目标？
+
+2. 为什么 PCA 只用高变基因而非全部基因作为输入？
+
+3. 肘部图（ElbowPlot）如何帮助选择主成分数量？为什么说主成分数量不必精确选取？
+
+4. scRNA-seq 为何采用基于图（KNN + Leiden）的聚类而非 K-means？`resolution` 参数控制什么？
+
+5. 为什么"调高分辨率总能切出更多聚类"并不意味着这些聚类都是真实的？判断一个聚类是否真实的标准是什么？
+
+6. 为什么不能根据 UMAP 图上两个聚类的距离远近、或聚类面积大小来下定量结论？
+
+7. `FindAllMarkers()` 用什么策略为每个聚类找标志基因？得到标志基因后如何完成手动注释？
+
+8. SingleR 自动注释的原理是什么？为什么说自动注释与手动注释应相互印证而非二选一？请举一个二者矛盾时反而有价值的情形。
+
+<details>
+<summary><strong>参考答案 (Reference Answers)</strong></summary>
+
+1. *因为即使只留高变基因，表达空间仍高维且充满 dropout 等噪声，使细胞间距离不可靠。PCA 找出方差最大的若干正交方向并投影到前几十个主成分上：真实生物学变异（细胞类型差异）贡献最大方差、集中在前几个主成分，而随机噪声分散在大量低方差方向，舍弃后者即同时压缩了维度并去除了噪声。*
+
+2. *因为大多数基因在细胞间表达稳定，对区分细胞类型无贡献，只会稀释信号并增加计算量。只用高变基因（携带细胞类型差异信号的基因）作为 PCA 输入，能让主成分聚焦于生物学变异，提高信噪比。*
+
+3. *肘部图把各主成分的方差（标准差）从大到小排列，曲线由陡变平的"肘部"提示信号主成分与噪声主成分的分界，据此选择保留的主成分数。不必精确是因为肘部位置往往模糊、不唯一，且在合理范围内取不同值聚类结果通常稳定；与其追求最优单值，不如多取几个值检验结果稳健性。*
+
+4. *因为细胞类型的大小与密度差异巨大，图聚类对这种不均衡结构比 K-means 更稳健（K-means 倾向于切出大小相近的球形簇）。流程是先建 KNN 图，再用 Leiden/Louvain 检测紧密连接的社区。`resolution` 控制聚类粒度：值越大切出的聚类越多越小，越小则越少越粗。*
+
+5. *因为提高分辨率总能把社区进一步细分，但细分出的可能是同一细胞类型被人为拆分，或由细胞周期、应激等技术变异驱动的虚假亚群。判断聚类是否真实的标准不是"能否被分出来"，而是它是否具有特异、可解释的标志基因——有则真实，无则可能是过度切分的产物。*
+
+6. *因为 UMAP 是非线性嵌入，聚类间距离、聚类面积与形状都不具定量意义，会随参数和随机种子变化。两群在 UMAP 上挨得近不代表生物学关系更近，聚类面积大也不代表细胞更多。UMAP 只用于定性展示分离结构，定量结论须回到高维空间或基因表达本身。*
+
+7. *`FindAllMarkers()` 对每个聚类做"一对其余"（one-vs-rest）的差异表达检验（默认 Wilcoxon 秩和检验），筛出该聚类显著上调的标志基因。手动注释是将每个聚类的标志基因对照已知细胞类型标志基因数据库（如 PanglaoDB、CellMarker），把匿名聚类指派为对应的真实细胞类型，并用 FeaturePlot/DotPlot 可视化经典标志基因加以确认。*
+
+8. *SingleR 对每个查询细胞计算其表达谱与参考数据集中各细胞类型表达谱的相关性，指派相关性最高的类型并迭代微调。二者应相互印证是因为自动注释快速客观但受参考数据集覆盖度限制、手动注释精确可解释但主观耗时；互补可提高可靠性。矛盾有价值的情形：当参考数据集缺失某种细胞类型时，SingleR 会把该类型误派为最相似的已有类型，而手动注释通过其独特标志基因发现这是参考未覆盖的新类型/新状态——矛盾正好揭示了潜在的新发现或注释陷阱。*
+
+</details>

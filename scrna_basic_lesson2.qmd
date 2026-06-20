@@ -1,2 +1,219 @@
-# 第六章 课时2
+---
+title: "单细胞数据质量控制与预处理"
+date: today
+format:
+  html:
+    code-fold: false
+    toc: true
+    toc-depth: 3
+    number-sections: true
+    theme: cosmo
+crossref:
+  fig-title: 图
+  fig-prefix: 图
+  tbl-title: 表
+  tbl-prefix: 表
+  chapters: false
+---
 
+# 专题概述
+
+上游处理输出的"细胞"仍然鱼龙混杂：其中既有完整健康的细胞，也有濒死的破膜细胞、被双重包裹的双细胞（Doublet），以及高背景污染的低质量条形码。若不加甄别地把它们全部投入下游分析，会产生虚假的细胞群、扭曲的差异表达和误导性的轨迹。本专题讲解 scRNA-seq 的质量控制（Quality Control, QC）逻辑——它与 Bulk RNA-seq 有本质区别，需要在**单个细胞**层面逐一评估质量——以及随后的归一化、高变基因选择与数据缩放等预处理步骤。
+
+**学习目标**：掌握 scRNA-seq 质控三项核心指标及其联合判读逻辑；理解基于 MAD 的自适应阈值相比固定阈值的优势；理解双细胞（Doublet）的成因、危害与检测方法；区分 LogNormalize 与 SCTransform 两种归一化策略；掌握高变基因选择与数据缩放的作用。
+
+---
+
+# 质量控制
+
+## 三项核心指标
+
+scRNA-seq 的质控与 Bulk RNA-seq 有本质区别：Bulk 在样本层面做整体评估，而 scRNA-seq 必须逐个细胞判断质量。三项指标联合构成判读的基础：
+
+- **每细胞基因数（`nFeature_RNA`）**：该细胞中检测到表达的基因数量。过低提示细胞破裂、RNA 大量流失或为空液滴；过高则可能是双细胞。
+- **每细胞 UMI 数（`nCount_RNA`）**：该细胞捕获的 mRNA 分子总数（去重后）。与基因数高度正相关，含义相近。
+- **线粒体基因比例（`percent.mt`）**：线粒体基因 UMI 占该细胞总 UMI 的百分比。当细胞膜破裂，胞质 mRNA 流失而线粒体（被双层膜包裹）相对保留，导致线粒体比例升高，因此高线粒体比例是细胞濒死/破膜的标志。
+
+{{Wiki:Quality_control}}
+
+## 联合判读的逻辑
+
+三项指标不应孤立设阈值，而要联合判读，因为单一指标的极端值有多种可能解释，见 @tbl-qc-interpretation。
+
+| nFeature | percent.mt | 最可能的解释 | 处理 |
+|----------|-----------|--------------|------|
+| 很低 | 高 | 破膜/濒死细胞 | 去除 |
+| 很低 | 正常 | 空液滴/极低质量 | 去除 |
+| 很高 | 正常 | 双细胞（Doublet） | 进一步用专门工具检测 |
+| 正常 | 正常 | 健康细胞 | 保留 |
+| 正常 | 偏高 | 代谢活跃细胞 or 轻度损伤 | 谨慎，结合细胞类型判断 |
+
+: scRNA-seq 质控指标的联合判读 {#tbl-qc-interpretation}
+
+:::warning
+**线粒体阈值并非放之四海皆准：** 常用的 `percent.mt < 10%` 或 `< 20%` 只是经验起点，不能盲目套用。心肌细胞、棕色脂肪、肝细胞等代谢极活跃的细胞类型，其正常线粒体比例本就很高（可达 30%–40%），用通用阈值会把健康细胞误删。设定阈值前应先观察本数据中线粒体比例的整体分布，并结合所研究的组织类型判断。
+:::
+
+```r
+library(Seurat)
+
+# Compute the mitochondrial gene percentage per cell (human genes start with "MT-")
+pbmc[["percent.mt"]] <- PercentageFeatureSet(pbmc, pattern = "^MT-")
+```
+
+```r
+#| label: fig-qc-violin
+#| fig-cap: "PBMC 3k 数据质控三指标的小提琴图。从左至右分别为每细胞基因数（nFeature_RNA）、每细胞 UMI 数（nCount_RNA）与线粒体基因比例（percent.mt）。小提琴形状展示各指标在所有细胞中的分布，据此可判断离群细胞的分布位置并指导阈值设定。"
+library(Seurat)
+
+VlnPlot(pbmc, features = c("nFeature_RNA", "nCount_RNA", "percent.mt"),
+        ncol = 3, pt.size = 0)
+```
+
+## 自适应阈值：基于 MAD
+
+固定阈值（如 `nFeature > 200`）简单但僵硬：它无视数据本身的分布，对不同测序深度、不同细胞类型的数据集需要反复手动调整。基于中位数绝对偏差（Median Absolute Deviation, MAD）的自适应阈值是更稳健的选择——它以数据的中位数为中心，将偏离中位数超过若干个 MAD 的细胞判为离群。MAD 对极端值不敏感（不像标准差会被离群值拉大），因此能在污染存在时仍给出可靠的离群边界。
+
+```r
+library(scuttle)
+
+# Adaptive outlier detection: flag cells deviating > 3 MADs from the median.
+# log-transform stabilizes the skewed count distributions before MAD is applied.
+qc_low_genes <- isOutlier(pbmc$nFeature_RNA, log = TRUE,
+                          nmads = 3, type = "lower")
+qc_high_mt   <- isOutlier(pbmc$percent.mt, nmads = 3, type = "higher")
+
+# Keep cells that fail neither criterion
+keep <- !(qc_low_genes | qc_high_mt)
+pbmc <- pbmc[, keep]
+cat("Cells retained:", sum(keep), "of", length(keep), "\n")
+```
+
+:::tip
+**`nmads = 3` 的含义与调节：** 偏离中位数 3 个 MAD 约对应正态分布下 1% 的尾部，是常用的折中。若数据质量整体较差、污染较多，可放宽到 `nmads = 5` 避免过度删除；若追求高纯度（如稀有细胞研究），可收紧到 `nmads = 2.5`。对计数类指标先取对数（`log = TRUE`）再做 MAD，可纠正其右偏分布。
+:::
+
+---
+
+# 双细胞检测
+
+## 双细胞的成因与危害
+
+双细胞（Doublet）指一个 GEM 中意外包裹了两个细胞，导致它们的转录组被合并、共享同一条形码。上样细胞浓度越高，双细胞率越高（10x 平台经验上约为每千细胞 0.8% 的线性关系）。
+
+双细胞的危害不仅是"多算了一个细胞"。当两个不同类型的细胞结合（如 T 细胞 + 单核细胞），其混合转录谱会落在两者之间，在 UMAP 上形成一个虚假的"中间态"细胞群，极易被误读为新的细胞类型或过渡状态，从而得出错误的生物学结论。仅靠 `nFeature` 偏高无法可靠识别双细胞（同类型双细胞的基因数未必异常），必须借助专门工具。
+
+## 检测方法
+
+主流双细胞检测工具的共同思路是：人工合成"模拟双细胞"，再看哪些真实细胞与模拟双细胞最相似。
+
+- **DoubletFinder**（R）：从真实细胞随机配对合成模拟双细胞，混入数据后做降维，对每个真实细胞统计其近邻中模拟双细胞的比例（pANN），比例高者判为双细胞。
+- **Scrublet**（Python）：思路类似，在 PCA 空间中为每个细胞计算"双细胞得分"，并基于得分的双峰分布自动确定阈值。
+
+```r
+library(DoubletFinder)
+
+# DoubletFinder requires a preprocessed object (PCA done). Expected doublet rate
+# scales with loaded cells (~0.8% per 1000 cells on 10x).
+n_exp <- round(0.039 * ncol(pbmc))     # e.g. ~3.9% for a ~5000-cell load
+pbmc <- doubletFinder(pbmc, PCs = 1:30, pN = 0.25, pK = 0.09,
+                      nExp = n_exp, sct = FALSE)
+```
+
+:::note
+**双细胞检测的时机：** 双细胞检测应在**每个样本内部独立**进行，而非合并多样本后统一检测——因为模拟双细胞需基于同一文库的细胞配对才有意义。检测顺序上，先做基础 QC（去除明显的破膜/空液滴细胞），再做双细胞检测，最后进入归一化，可避免低质量细胞干扰双细胞模型的估计。
+:::
+
+---
+
+# 归一化与预处理
+
+## 为什么需要专门的归一化
+
+不同细胞捕获到的 mRNA 总量（测序深度）差异巨大，直接比较原始计数无意义。但 scRNA-seq 数据高度稀疏、零值众多（dropout），Bulk RNA-seq 常用的 CPM/RPKM 归一化会放大低表达基因的技术噪声。因此 scRNA-seq 需要专门的归一化策略。
+
+- **LogNormalize**（`NormalizeData()`）：将每个细胞的计数除以其总 UMI（消除深度差异），乘以缩放因子（默认 10000），再取自然对数 `log1p`。简单快速，是经典做法，但隐含"所有细胞测序深度差异是纯技术性"的假设，在高度异质的数据上偏差较大。
+- **SCTransform**（`SCTransform()`）：用正则化负二项回归对每个基因建模其计数与测序深度的关系，输出皮尔逊残差作为归一化表达。它同时完成深度校正、方差稳定与高变基因选择，对技术噪声的处理更精细，是当前推荐方法（Hafemeister & Satija, 2019）。
+
+```r
+library(Seurat)
+
+# Option A: classic log-normalization
+pbmc <- NormalizeData(pbmc, normalization.method = "LogNormalize",
+                      scale.factor = 1e4)
+
+# Option B (recommended): SCTransform does normalization + variance stabilization
+# + HVG selection in one step, and can regress out confounders such as percent.mt
+pbmc <- SCTransform(pbmc, vars.to.regress = "percent.mt", verbose = FALSE)
+```
+
+## 高变基因选择
+
+数万个基因中，大多数在细胞间表达稳定，对区分细胞类型没有贡献，反而引入噪声。高变基因（Highly Variable Genes, HVGs）选择保留那些在细胞间变异显著高于其平均表达水平所预期的基因——这些基因最可能携带细胞类型差异的信号。通常选取 2000–3000 个 HVG 作为后续 PCA 的输入。
+
+```r
+# Select the top 2000 highly variable genes using the variance-stabilizing method
+# (skip this if SCTransform was used -- it already returns variable features)
+pbmc <- FindVariableFeatures(pbmc, selection.method = "vst", nfeatures = 2000)
+```
+
+## 数据缩放
+
+PCA 对各基因的数值尺度敏感：若不缩放，少数高表达基因会主导主成分。`ScaleData()` 对每个基因做 z-score 标准化（均值 0、方差 1），使所有基因在 PCA 中权重均等；同时可借线性回归从表达中"回归掉"已知的混淆变量（如总 UMI、线粒体比例），减少技术因素对降维的干扰。
+
+```r
+# Center and scale each gene; regress out technical confounders.
+# (When using SCTransform, scaling is already handled and this step is skipped.)
+pbmc <- ScaleData(pbmc, vars.to.regress = c("nCount_RNA", "percent.mt"))
+```
+
+:::info
+**黄金法则：** 质控的目标不是"删得越多越好"，而是在**去除技术伪影**与**保留真实生物学信号**之间求平衡。过松会让低质量细胞与双细胞污染下游、制造虚假细胞群；过严则可能误删真实的稀有细胞类型（它们往往 UMI 较低、易被当作低质量删除）。每一次过滤都应可视化前后分布、检查被删细胞的身份，确保删除的是噪声而非信号。
+:::
+
+---
+
+# 方法总结与衔接说明
+
+本专题构建了 scRNA-seq 从"上游原始细胞"到"可分析干净数据"的预处理链条：基于三项指标与 MAD 自适应阈值的质控、双细胞检测、SCTransform 归一化、高变基因选择与数据缩放。这些步骤的质量直接决定下游结果的可信度——垃圾进、垃圾出。专题 6.3 将在这份干净数据之上进行降维、聚类与细胞类型注释，回答 scRNA-seq 最核心的问题：这些细胞各是什么类型？
+
+---
+
+# 课后自测 (Post-Lesson Quiz)
+
+1. scRNA-seq 的质量控制为何必须在单个细胞层面进行，而非像 Bulk RNA-seq 那样在样本层面整体评估？
+
+2. 质控三项核心指标分别是什么？为什么高线粒体基因比例是细胞破膜/濒死的标志？
+
+3. 为什么三项质控指标需要联合判读？请举例说明"每细胞基因数很高"可能对应哪两种截然不同的情况。
+
+4. 基于 MAD 的自适应阈值相比固定阈值有何优势？为什么 MAD 在污染存在时仍能给出可靠的离群边界？
+
+5. 双细胞（Doublet）为何危害严重？为什么仅凭 `nFeature_RNA` 偏高不足以可靠识别双细胞？
+
+6. DoubletFinder 与 Scrublet 检测双细胞的共同核心思路是什么？为什么双细胞检测应在每个样本内部独立进行？
+
+7. LogNormalize 与 SCTransform 在归一化思路上有何区别？为什么说 SCTransform 对技术噪声的处理更精细？
+
+8. 一位研究者为追求数据纯净，将质控阈值设为 `nFeature > 1000` 且 `percent.mt < 5%`，结果发现某个预期存在的静息淋巴细胞群消失了。请解释原因，并提出改进建议。
+
+<details>
+<summary><strong>参考答案 (Reference Answers)</strong></summary>
+
+1. *因为 scRNA-seq 的每个观测单元是单个细胞，而上游输出的"细胞"中混有破膜细胞、双细胞、高背景条形码等多种质量问题，这些问题是逐细胞发生的。只有在单细胞层面逐一评估，才能甄别并剔除低质量细胞；样本层面的整体评估无法区分同一文库内好坏细胞的混杂。*
+
+2. *三项指标为每细胞基因数（nFeature_RNA）、每细胞 UMI 数（nCount_RNA）、线粒体基因比例（percent.mt）。高线粒体比例标志破膜/濒死是因为：细胞膜破裂时胞质 mRNA 大量流失，而线粒体被双层膜包裹相对保留，于是线粒体基因 UMI 占总 UMI 的比例升高。*
+
+3. *因为单一指标的极端值有多种解释，需结合其他指标定性。例如"每细胞基因数很高"：若同时线粒体比例正常，最可能是双细胞（两个细胞转录组合并）；但若是代谢/转录极活跃的大细胞，基因数偏高也可能是正常生物学现象。只有联合判读才能区分。*
+
+4. *固定阈值无视数据分布，需对不同深度/细胞类型反复手动调整；MAD 自适应阈值以中位数为中心、按偏离的 MAD 数判离群，自动适应数据分布。MAD 用中位数与绝对偏差，对极端值不敏感（不像标准差会被离群值拉大），因此即使数据含污染，离群边界仍稳健可靠。*
+
+5. *双细胞危害严重是因为两个不同类型细胞的混合转录谱落在两者之间，在 UMAP 上形成虚假的"中间态"细胞群，易被误读为新细胞类型或过渡状态，导致错误的生物学结论。仅凭 nFeature 偏高不足以识别，因为同类型细胞结合的双细胞基因数未必异常，必须用合成模拟双细胞的专门工具。*
+
+6. *共同思路是人工合成"模拟双细胞"（随机配对真实细胞），混入数据后看哪些真实细胞与模拟双细胞最相似（近邻比例/双细胞得分高者判为双细胞）。应在每个样本内部独立进行，因为模拟双细胞必须基于同一文库的细胞配对才有生物学意义；跨样本配对合成的双细胞不反映真实的共包裹过程。*
+
+7. *LogNormalize 把每个细胞计数除以其总 UMI、乘缩放因子再取对数，隐含"深度差异纯属技术性"的假设，简单但在异质数据上偏差大；SCTransform 用正则化负二项回归对每个基因建模计数与深度的关系、输出皮尔逊残差。SCTransform 更精细，因为它按基因分别建模均值-方差关系并做方差稳定，能更好地区分技术噪声与生物变异，还能同时回归掉混淆变量。*
+
+8. *该阈值过严。静息淋巴细胞（如静息 T/B 细胞）本身体积小、RNA 含量低、检出基因数天然偏低（常 < 1000），因此被 `nFeature > 1000` 整体误删；同时部分细胞类型正常线粒体比例也可能略高于 5%。改进：先可视化本数据各指标分布与被删细胞的身份，改用基于 MAD 的自适应下限而非固定的 1000，并结合组织类型放宽线粒体阈值，确保删除的是噪声而非真实的稀有/低 RNA 细胞群。*
+
+</details>
