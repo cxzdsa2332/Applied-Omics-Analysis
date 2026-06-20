@@ -4278,6 +4278,457 @@
     ]
   },
   {
+    "objectID": "scrna_basic_lesson1.html",
+    "href": "scrna_basic_lesson1.html",
+    "title": "32  10x Genomics 技术原理与上游处理",
+    "section": "",
+    "text": "33 专题概述\n单细胞 RNA-seq（scRNA-seq）的核心技术挑战在于：如何在数以千计的细胞中，为每个细胞的 mRNA 分子打上独一无二的”地址”，以便测序完成后将读段准确归属到正确的细胞。本专题讲解 10x Genomics Chromium 平台如何用液滴微流控（droplet microfluidics）解决这一问题，以及上游软件 Cell Ranger 与开源替代 STARsolo 如何将原始测序读段转化为可供下游分析的细胞×基因表达矩阵。理解上游处理的每一步——条形码解码、UMI 去重、空液滴过滤——是正确解读下游结果、排查异常的前提。\n学习目标：理解 10x Chromium 液滴微流控的技术原理与 GEM、Cell Barcode、UMI 三者的关系；掌握 Cell Ranger 上游处理的核心步骤；理解条形码纠错与 UMI 去重的逻辑；区分 EmptyDrops 与膝点法两种空液滴过滤策略；能解读 Cell Ranger Web Summary 的关键质量指标。",
+    "crumbs": [
+      "第二阶段：转录组与单细胞",
+      "<span class='chapter-number'>32</span>  <span class='chapter-title'>10x Genomics 技术原理与上游处理</span>"
+    ]
+  },
+  {
+    "objectID": "scrna_basic_lesson1.html#液滴微流控与-gem",
+    "href": "scrna_basic_lesson1.html#液滴微流控与-gem",
+    "title": "32  10x Genomics 技术原理与上游处理",
+    "section": "34.1 液滴微流控与 GEM",
+    "text": "34.1 液滴微流控与 GEM\n10x Genomics Chromium 平台的核心是把单个细胞与一个携带特异条形码的凝胶珠（gel bead）共同包裹进一滴油中，形成所谓的 GEM（Gel bead-in-EMulsion，凝胶珠乳液）。在微流控芯片上，细胞悬液、凝胶珠和逆转录试剂分别从不同通道流入，与油相在交汇处剪切形成数万个纳升级油滴；通过控制细胞浓度，使绝大多数油滴最多包裹一个细胞。\n{{Wiki:Microfluidics}}\n每个凝胶珠表面携带数十万条寡核苷酸捕获探针，它们共享同一段细胞条形码（Cell Barcode）——这是该 GEM 的”地址”，标记 mRNA 来自哪个细胞。每条探针还带有一段不同的分子条形码（Unique Molecular Identifier, UMI），用于标记单个 mRNA 分子，以及一段 poly-T 序列用于捕获带 poly-A 尾的 mRNA。油滴内完成逆转录后，所有 cDNA 都携带了”细胞地址 + 分子标签”的双重信息。",
+    "crumbs": [
+      "第二阶段：转录组与单细胞",
+      "<span class='chapter-number'>32</span>  <span class='chapter-title'>10x Genomics 技术原理与上游处理</span>"
+    ]
+  },
+  {
+    "objectID": "scrna_basic_lesson1.html#三个标签的分工",
+    "href": "scrna_basic_lesson1.html#三个标签的分工",
+    "title": "32  10x Genomics 技术原理与上游处理",
+    "section": "34.2 三个标签的分工",
+    "text": "34.2 三个标签的分工\n理解 scRNA-seq 数据，关键在于厘清三个标签的不同作用，见 表 1。\n\n\n\n表 1: 10x Chromium 文库中三类标签的作用\n\n\n\n\n\n标签\n长度（v3）\n作用\n类比\n\n\n\n\nCell Barcode\n16 bp\n标记 mRNA 来自哪个细胞\n收件人地址\n\n\nUMI\n12 bp\n标记单个 mRNA 分子，用于去除 PCR 重复\n包裹追踪号\n\n\npoly-T / 测序读段\n—\n捕获并测定 mRNA 序列本身\n包裹内容\n\n\n\n\n\n\n\n为什么需要 UMI： 文库制备包含 PCR 扩增，同一条原始 mRNA 会被复制成许多拷贝。若直接计数测序读段，高扩增效率的转录本会被严重高估。UMI 在逆转录时就标记了每个原始分子，因此测序后只需统计”不同 UMI 的数量”而非”读段数量”，即可还原真实的分子数，消除 PCR 扩增偏差。这是 scRNA-seq 定量准确性的基石。",
+    "crumbs": [
+      "第二阶段：转录组与单细胞",
+      "<span class='chapter-number'>32</span>  <span class='chapter-title'>10x Genomics 技术原理与上游处理</span>"
+    ]
+  },
+  {
+    "objectID": "scrna_basic_lesson1.html#从-bcl-到表达矩阵",
+    "href": "scrna_basic_lesson1.html#从-bcl-到表达矩阵",
+    "title": "32  10x Genomics 技术原理与上游处理",
+    "section": "35.1 从 BCL 到表达矩阵",
+    "text": "35.1 从 BCL 到表达矩阵\nCell Ranger 是 10x 官方的上游分析软件，把测序仪输出的原始数据转化为表达矩阵，核心分为两步：\n\ncellranger mkfastq：将测序仪的 BCL 原始文件按样本索引拆分为标准 FASTQ 文件。\ncellranger count：对单个样本的 FASTQ 执行条形码处理、比对、UMI 计数与细胞识别，输出表达矩阵。\n\n# Step 1: demultiplex raw BCL into per-sample FASTQ files\ncellranger mkfastq \\\n    --run=/path/to/bcl_run_folder \\\n    --csv=/path/to/sample_sheet.csv \\\n    --output-dir=/path/to/fastq_output\n\n# Step 2: align, deduplicate UMIs, and call cells for one sample (e.g. PBMC 3k)\ncellranger count \\\n    --id=pbmc3k \\\n    --transcriptome=/path/to/refdata-gex-GRCh38-2020-A \\\n    --fastqs=/path/to/fastq_output \\\n    --sample=pbmc3k \\\n    --localcores=8 \\\n    --localmem=64\ncellranger count 内部依次完成：条形码处理与纠错 → STAR 比对到参考转录组 → UMI 去重与计数 → 空液滴过滤识别真实细胞。",
+    "crumbs": [
+      "第二阶段：转录组与单细胞",
+      "<span class='chapter-number'>32</span>  <span class='chapter-title'>10x Genomics 技术原理与上游处理</span>"
+    ]
+  },
+  {
+    "objectID": "scrna_basic_lesson1.html#条形码纠错",
+    "href": "scrna_basic_lesson1.html#条形码纠错",
+    "title": "32  10x Genomics 技术原理与上游处理",
+    "section": "35.2 条形码纠错",
+    "text": "35.2 条形码纠错\n测序存在错误率，细胞条形码也可能被读错。Cell Ranger 持有一份合法条形码的白名单（whitelist）。对每个读到的条形码：若它精确匹配白名单，则直接接受；若它与某个白名单条形码仅差一个碱基，则根据该碱基的测序质量值与该候选条形码的丰度，按概率将其”纠正”到最可能的白名单条形码上。这一机制挽救了大量因单碱基测序错误而本会被丢弃的读段。",
+    "crumbs": [
+      "第二阶段：转录组与单细胞",
+      "<span class='chapter-number'>32</span>  <span class='chapter-title'>10x Genomics 技术原理与上游处理</span>"
+    ]
+  },
+  {
+    "objectID": "scrna_basic_lesson1.html#umi-去重",
+    "href": "scrna_basic_lesson1.html#umi-去重",
+    "title": "32  10x Genomics 技术原理与上游处理",
+    "section": "35.3 UMI 去重",
+    "text": "35.3 UMI 去重\n比对到同一基因、且携带相同细胞条形码与相同 UMI 的多条读段，被认为来自同一原始 mRNA 分子的 PCR 拷贝，应合并计为一次。Cell Ranger 采用基于有向网络（directional network）的去重策略：考虑到 UMI 本身也可能有测序错误，它将仅差一个碱基、且丰度呈悬殊关系的 UMI 合并，从而避免把”测错的 UMI”误计为新分子。\n\n--include-introns 参数： 默认情况下 Cell Ranger 只统计比对到外显子的读段。对于单核 RNA 测序（snRNA-seq），细胞核内富含未剪接的前体 mRNA（含内含子），此时应开启 --include-introns（新版本默认开启）以纳入内含子读段，否则会严重低估基因表达。判断依据是样本类型：完整细胞用默认设置，细胞核样本需纳入内含子。",
+    "crumbs": [
+      "第二阶段：转录组与单细胞",
+      "<span class='chapter-number'>32</span>  <span class='chapter-title'>10x Genomics 技术原理与上游处理</span>"
+    ]
+  },
+  {
+    "objectID": "scrna_basic_lesson1.html#空液滴过滤区分细胞与背景",
+    "href": "scrna_basic_lesson1.html#空液滴过滤区分细胞与背景",
+    "title": "32  10x Genomics 技术原理与上游处理",
+    "section": "35.4 空液滴过滤：区分细胞与背景",
+    "text": "35.4 空液滴过滤：区分细胞与背景\n并非每个 GEM 都包裹了真实细胞——大量油滴只含游离 RNA（来自破裂细胞的环境 RNA，称为 ambient RNA）。区分”真实细胞条形码”与”空液滴条形码”是上游处理最关键也最易出错的一步。\n两种主流策略：\n\n膝点法（Knee point）：将所有条形码按其总 UMI 数从高到低排序作图（barcode rank plot），真实细胞通常 UMI 数高、聚集在曲线左侧的”平台”，空液滴 UMI 数低、聚集在右侧；曲线急剧下降的”膝点/拐点”即为分界阈值。简单直观，但对细胞 RNA 含量差异大的样本不稳健。\nEmptyDrops：不依赖单一阈值，而是先用极低 UMI 的条形码估计 ambient RNA 的表达谱，再对每个条形码统计检验其表达谱是否显著偏离 ambient 背景。能挽救 UMI 较低但表达谱明确的真实小细胞（如静息淋巴细胞），是当前推荐方法。\n\n{{Wiki:Knee_of_a_curve}}\nCell Ranger 现代版本结合了两种思想：先用膝点确定一批高置信细胞，再用 EmptyDrops 式检验从其余条形码中挽救低 UMI 的真实细胞。",
+    "crumbs": [
+      "第二阶段：转录组与单细胞",
+      "<span class='chapter-number'>32</span>  <span class='chapter-title'>10x Genomics 技术原理与上游处理</span>"
+    ]
+  },
+  {
+    "objectID": "scrna_basic_lesson1.html#输出文件结构",
+    "href": "scrna_basic_lesson1.html#输出文件结构",
+    "title": "32  10x Genomics 技术原理与上游处理",
+    "section": "37.1 输出文件结构",
+    "text": "37.1 输出文件结构\nCell Ranger 与 STARsolo 均输出稀疏矩阵格式的三件套文件，构成下游分析的统一入口：\n\nbarcodes.tsv.gz：每个真实细胞的条形码列表（矩阵的列）\nfeatures.tsv.gz：检测到的基因列表（矩阵的行）\nmatrix.mtx.gz：稀疏格式的表达计数矩阵（Matrix Market 格式，仅存储非零值）\n\nlibrary(Seurat)\n\n# Load the 10x sparse matrix (three-file directory) into a Seurat object\npbmc_data &lt;- Read10X(data.dir = \"/path/to/pbmc3k/outs/filtered_feature_bc_matrix\")\npbmc &lt;- CreateSeuratObject(counts = pbmc_data, project = \"pbmc3k\",\n                           min.cells = 3, min.features = 200)\n\n# Quick sanity check: cells (columns) x genes (rows)\npbmc",
+    "crumbs": [
+      "第二阶段：转录组与单细胞",
+      "<span class='chapter-number'>32</span>  <span class='chapter-title'>10x Genomics 技术原理与上游处理</span>"
+    ]
+  },
+  {
+    "objectID": "scrna_basic_lesson1.html#web-summary-关键指标",
+    "href": "scrna_basic_lesson1.html#web-summary-关键指标",
+    "title": "32  10x Genomics 技术原理与上游处理",
+    "section": "37.2 Web Summary 关键指标",
+    "text": "37.2 Web Summary 关键指标\nCell Ranger 生成一份 HTML 格式的 Web Summary 报告，是判断实验成败的第一手依据。表 2 列出最需关注的指标。\n\n\n\n表 2: Cell Ranger Web Summary 核心质量指标\n\n\n\n\n\n\n\n\n\n\n指标\n含义\n健康范围（参考）\n\n\n\n\nEstimated Number of Cells\n识别出的真实细胞数\n接近上样预期\n\n\nValid Barcodes\n匹配白名单的条形码比例\n&gt; 75%\n\n\nMedian Genes per Cell\n每个细胞检出基因数的中位数\n视细胞类型，通常 &gt; 1000\n\n\nSequencing Saturation\n测序饱和度（重复 UMI 比例）\n视目标，过高说明测序冗余\n\n\nReads Mapped to Genome\n比对到基因组的读段比例\n&gt; 80%\n\n\nFraction Reads in Cells\n落在真实细胞内的读段比例\n&gt; 70%\n\n\n\n\n\n\n\nFraction Reads in Cells 偏低的诊断： 该指标若显著偏低（如 &lt; 60%），通常提示样本中游离 ambient RNA 过多，常见原因是细胞解离时损伤严重、活力低。这是一个早期预警信号——它意味着大量信号来自背景而非细胞，后续即使过滤也难以完全挽救，应在湿实验层面改进细胞制备。",
+    "crumbs": [
+      "第二阶段：转录组与单细胞",
+      "<span class='chapter-number'>32</span>  <span class='chapter-title'>10x Genomics 技术原理与上游处理</span>"
+    ]
+  },
+  {
+    "objectID": "scrna_basic_lesson2.html",
+    "href": "scrna_basic_lesson2.html",
+    "title": "33  单细胞数据质量控制与预处理",
+    "section": "",
+    "text": "34 专题概述\n上游处理输出的”细胞”仍然鱼龙混杂：其中既有完整健康的细胞，也有濒死的破膜细胞、被双重包裹的双细胞（Doublet），以及高背景污染的低质量条形码。若不加甄别地把它们全部投入下游分析，会产生虚假的细胞群、扭曲的差异表达和误导性的轨迹。本专题讲解 scRNA-seq 的质量控制（Quality Control, QC）逻辑——它与 Bulk RNA-seq 有本质区别，需要在单个细胞层面逐一评估质量——以及随后的归一化、高变基因选择与数据缩放等预处理步骤。\n学习目标：掌握 scRNA-seq 质控三项核心指标及其联合判读逻辑；理解基于 MAD 的自适应阈值相比固定阈值的优势；理解双细胞（Doublet）的成因、危害与检测方法；区分 LogNormalize 与 SCTransform 两种归一化策略；掌握高变基因选择与数据缩放的作用。",
+    "crumbs": [
+      "第二阶段：转录组与单细胞",
+      "<span class='chapter-number'>33</span>  <span class='chapter-title'>单细胞数据质量控制与预处理</span>"
+    ]
+  },
+  {
+    "objectID": "scrna_basic_lesson2.html#三项核心指标",
+    "href": "scrna_basic_lesson2.html#三项核心指标",
+    "title": "33  单细胞数据质量控制与预处理",
+    "section": "35.1 三项核心指标",
+    "text": "35.1 三项核心指标\nscRNA-seq 的质控与 Bulk RNA-seq 有本质区别：Bulk 在样本层面做整体评估，而 scRNA-seq 必须逐个细胞判断质量。三项指标联合构成判读的基础：\n\n每细胞基因数（nFeature_RNA）：该细胞中检测到表达的基因数量。过低提示细胞破裂、RNA 大量流失或为空液滴；过高则可能是双细胞。\n每细胞 UMI 数（nCount_RNA）：该细胞捕获的 mRNA 分子总数（去重后）。与基因数高度正相关，含义相近。\n线粒体基因比例（percent.mt）：线粒体基因 UMI 占该细胞总 UMI 的百分比。当细胞膜破裂，胞质 mRNA 流失而线粒体（被双层膜包裹）相对保留，导致线粒体比例升高，因此高线粒体比例是细胞濒死/破膜的标志。\n\n{{Wiki:Quality_control}}",
+    "crumbs": [
+      "第二阶段：转录组与单细胞",
+      "<span class='chapter-number'>33</span>  <span class='chapter-title'>单细胞数据质量控制与预处理</span>"
+    ]
+  },
+  {
+    "objectID": "scrna_basic_lesson2.html#联合判读的逻辑",
+    "href": "scrna_basic_lesson2.html#联合判读的逻辑",
+    "title": "33  单细胞数据质量控制与预处理",
+    "section": "35.2 联合判读的逻辑",
+    "text": "35.2 联合判读的逻辑\n三项指标不应孤立设阈值，而要联合判读，因为单一指标的极端值有多种可能解释，见 表 1。\n\n\n\n表 1: scRNA-seq 质控指标的联合判读\n\n\n\n\n\nnFeature\npercent.mt\n最可能的解释\n处理\n\n\n\n\n很低\n高\n破膜/濒死细胞\n去除\n\n\n很低\n正常\n空液滴/极低质量\n去除\n\n\n很高\n正常\n双细胞（Doublet）\n进一步用专门工具检测\n\n\n正常\n正常\n健康细胞\n保留\n\n\n正常\n偏高\n代谢活跃细胞 or 轻度损伤\n谨慎，结合细胞类型判断\n\n\n\n\n\n\n\n线粒体阈值并非放之四海皆准： 常用的 percent.mt &lt; 10% 或 &lt; 20% 只是经验起点，不能盲目套用。心肌细胞、棕色脂肪、肝细胞等代谢极活跃的细胞类型，其正常线粒体比例本就很高（可达 30%–40%），用通用阈值会把健康细胞误删。设定阈值前应先观察本数据中线粒体比例的整体分布，并结合所研究的组织类型判断。\n\nlibrary(Seurat)\n\n# Compute the mitochondrial gene percentage per cell (human genes start with \"MT-\")\npbmc[[\"percent.mt\"]] &lt;- PercentageFeatureSet(pbmc, pattern = \"^MT-\")\n#| label: fig-qc-violin\n#| fig-cap: \"PBMC 3k 数据质控三指标的小提琴图。从左至右分别为每细胞基因数（nFeature_RNA）、每细胞 UMI 数（nCount_RNA）与线粒体基因比例（percent.mt）。小提琴形状展示各指标在所有细胞中的分布，据此可判断离群细胞的分布位置并指导阈值设定。\"\nlibrary(Seurat)\n\nVlnPlot(pbmc, features = c(\"nFeature_RNA\", \"nCount_RNA\", \"percent.mt\"),\n        ncol = 3, pt.size = 0)",
+    "crumbs": [
+      "第二阶段：转录组与单细胞",
+      "<span class='chapter-number'>33</span>  <span class='chapter-title'>单细胞数据质量控制与预处理</span>"
+    ]
+  },
+  {
+    "objectID": "scrna_basic_lesson2.html#自适应阈值基于-mad",
+    "href": "scrna_basic_lesson2.html#自适应阈值基于-mad",
+    "title": "33  单细胞数据质量控制与预处理",
+    "section": "35.3 自适应阈值：基于 MAD",
+    "text": "35.3 自适应阈值：基于 MAD\n固定阈值（如 nFeature &gt; 200）简单但僵硬：它无视数据本身的分布，对不同测序深度、不同细胞类型的数据集需要反复手动调整。基于中位数绝对偏差（Median Absolute Deviation, MAD）的自适应阈值是更稳健的选择——它以数据的中位数为中心，将偏离中位数超过若干个 MAD 的细胞判为离群。MAD 对极端值不敏感（不像标准差会被离群值拉大），因此能在污染存在时仍给出可靠的离群边界。\nlibrary(scuttle)\n\n# Adaptive outlier detection: flag cells deviating &gt; 3 MADs from the median.\n# log-transform stabilizes the skewed count distributions before MAD is applied.\nqc_low_genes &lt;- isOutlier(pbmc$nFeature_RNA, log = TRUE,\n                          nmads = 3, type = \"lower\")\nqc_high_mt   &lt;- isOutlier(pbmc$percent.mt, nmads = 3, type = \"higher\")\n\n# Keep cells that fail neither criterion\nkeep &lt;- !(qc_low_genes | qc_high_mt)\npbmc &lt;- pbmc[, keep]\ncat(\"Cells retained:\", sum(keep), \"of\", length(keep), \"\\n\")\n\nnmads = 3 的含义与调节： 偏离中位数 3 个 MAD 约对应正态分布下 1% 的尾部，是常用的折中。若数据质量整体较差、污染较多，可放宽到 nmads = 5 避免过度删除；若追求高纯度（如稀有细胞研究），可收紧到 nmads = 2.5。对计数类指标先取对数（log = TRUE）再做 MAD，可纠正其右偏分布。",
+    "crumbs": [
+      "第二阶段：转录组与单细胞",
+      "<span class='chapter-number'>33</span>  <span class='chapter-title'>单细胞数据质量控制与预处理</span>"
+    ]
+  },
+  {
+    "objectID": "scrna_basic_lesson2.html#双细胞的成因与危害",
+    "href": "scrna_basic_lesson2.html#双细胞的成因与危害",
+    "title": "33  单细胞数据质量控制与预处理",
+    "section": "36.1 双细胞的成因与危害",
+    "text": "36.1 双细胞的成因与危害\n双细胞（Doublet）指一个 GEM 中意外包裹了两个细胞，导致它们的转录组被合并、共享同一条形码。上样细胞浓度越高，双细胞率越高（10x 平台经验上约为每千细胞 0.8% 的线性关系）。\n双细胞的危害不仅是”多算了一个细胞”。当两个不同类型的细胞结合（如 T 细胞 + 单核细胞），其混合转录谱会落在两者之间，在 UMAP 上形成一个虚假的”中间态”细胞群，极易被误读为新的细胞类型或过渡状态，从而得出错误的生物学结论。仅靠 nFeature 偏高无法可靠识别双细胞（同类型双细胞的基因数未必异常），必须借助专门工具。",
+    "crumbs": [
+      "第二阶段：转录组与单细胞",
+      "<span class='chapter-number'>33</span>  <span class='chapter-title'>单细胞数据质量控制与预处理</span>"
+    ]
+  },
+  {
+    "objectID": "scrna_basic_lesson2.html#检测方法",
+    "href": "scrna_basic_lesson2.html#检测方法",
+    "title": "33  单细胞数据质量控制与预处理",
+    "section": "36.2 检测方法",
+    "text": "36.2 检测方法\n主流双细胞检测工具的共同思路是：人工合成”模拟双细胞”，再看哪些真实细胞与模拟双细胞最相似。\n\nDoubletFinder（R）：从真实细胞随机配对合成模拟双细胞，混入数据后做降维，对每个真实细胞统计其近邻中模拟双细胞的比例（pANN），比例高者判为双细胞。\nScrublet（Python）：思路类似，在 PCA 空间中为每个细胞计算”双细胞得分”，并基于得分的双峰分布自动确定阈值。\n\nlibrary(DoubletFinder)\n\n# DoubletFinder requires a preprocessed object (PCA done). Expected doublet rate\n# scales with loaded cells (~0.8% per 1000 cells on 10x).\nn_exp &lt;- round(0.039 * ncol(pbmc))     # e.g. ~3.9% for a ~5000-cell load\npbmc &lt;- doubletFinder(pbmc, PCs = 1:30, pN = 0.25, pK = 0.09,\n                      nExp = n_exp, sct = FALSE)\n\n双细胞检测的时机： 双细胞检测应在每个样本内部独立进行，而非合并多样本后统一检测——因为模拟双细胞需基于同一文库的细胞配对才有意义。检测顺序上，先做基础 QC（去除明显的破膜/空液滴细胞），再做双细胞检测，最后进入归一化，可避免低质量细胞干扰双细胞模型的估计。",
+    "crumbs": [
+      "第二阶段：转录组与单细胞",
+      "<span class='chapter-number'>33</span>  <span class='chapter-title'>单细胞数据质量控制与预处理</span>"
+    ]
+  },
+  {
+    "objectID": "scrna_basic_lesson2.html#为什么需要专门的归一化",
+    "href": "scrna_basic_lesson2.html#为什么需要专门的归一化",
+    "title": "33  单细胞数据质量控制与预处理",
+    "section": "37.1 为什么需要专门的归一化",
+    "text": "37.1 为什么需要专门的归一化\n不同细胞捕获到的 mRNA 总量（测序深度）差异巨大，直接比较原始计数无意义。但 scRNA-seq 数据高度稀疏、零值众多（dropout），Bulk RNA-seq 常用的 CPM/RPKM 归一化会放大低表达基因的技术噪声。因此 scRNA-seq 需要专门的归一化策略。\n\nLogNormalize（NormalizeData()）：将每个细胞的计数除以其总 UMI（消除深度差异），乘以缩放因子（默认 10000），再取自然对数 log1p。简单快速，是经典做法，但隐含”所有细胞测序深度差异是纯技术性”的假设，在高度异质的数据上偏差较大。\nSCTransform（SCTransform()）：用正则化负二项回归对每个基因建模其计数与测序深度的关系，输出皮尔逊残差作为归一化表达。它同时完成深度校正、方差稳定与高变基因选择，对技术噪声的处理更精细，是当前推荐方法（Hafemeister & Satija, 2019）。\n\nlibrary(Seurat)\n\n# Option A: classic log-normalization\npbmc &lt;- NormalizeData(pbmc, normalization.method = \"LogNormalize\",\n                      scale.factor = 1e4)\n\n# Option B (recommended): SCTransform does normalization + variance stabilization\n# + HVG selection in one step, and can regress out confounders such as percent.mt\npbmc &lt;- SCTransform(pbmc, vars.to.regress = \"percent.mt\", verbose = FALSE)",
+    "crumbs": [
+      "第二阶段：转录组与单细胞",
+      "<span class='chapter-number'>33</span>  <span class='chapter-title'>单细胞数据质量控制与预处理</span>"
+    ]
+  },
+  {
+    "objectID": "scrna_basic_lesson2.html#高变基因选择",
+    "href": "scrna_basic_lesson2.html#高变基因选择",
+    "title": "33  单细胞数据质量控制与预处理",
+    "section": "37.2 高变基因选择",
+    "text": "37.2 高变基因选择\n数万个基因中，大多数在细胞间表达稳定，对区分细胞类型没有贡献，反而引入噪声。高变基因（Highly Variable Genes, HVGs）选择保留那些在细胞间变异显著高于其平均表达水平所预期的基因——这些基因最可能携带细胞类型差异的信号。通常选取 2000–3000 个 HVG 作为后续 PCA 的输入。\n# Select the top 2000 highly variable genes using the variance-stabilizing method\n# (skip this if SCTransform was used -- it already returns variable features)\npbmc &lt;- FindVariableFeatures(pbmc, selection.method = \"vst\", nfeatures = 2000)",
+    "crumbs": [
+      "第二阶段：转录组与单细胞",
+      "<span class='chapter-number'>33</span>  <span class='chapter-title'>单细胞数据质量控制与预处理</span>"
+    ]
+  },
+  {
+    "objectID": "scrna_basic_lesson2.html#数据缩放",
+    "href": "scrna_basic_lesson2.html#数据缩放",
+    "title": "33  单细胞数据质量控制与预处理",
+    "section": "37.3 数据缩放",
+    "text": "37.3 数据缩放\nPCA 对各基因的数值尺度敏感：若不缩放，少数高表达基因会主导主成分。ScaleData() 对每个基因做 z-score 标准化（均值 0、方差 1），使所有基因在 PCA 中权重均等；同时可借线性回归从表达中”回归掉”已知的混淆变量（如总 UMI、线粒体比例），减少技术因素对降维的干扰。\n# Center and scale each gene; regress out technical confounders.\n# (When using SCTransform, scaling is already handled and this step is skipped.)\npbmc &lt;- ScaleData(pbmc, vars.to.regress = c(\"nCount_RNA\", \"percent.mt\"))\n\n黄金法则： 质控的目标不是”删得越多越好”，而是在去除技术伪影与保留真实生物学信号之间求平衡。过松会让低质量细胞与双细胞污染下游、制造虚假细胞群；过严则可能误删真实的稀有细胞类型（它们往往 UMI 较低、易被当作低质量删除）。每一次过滤都应可视化前后分布、检查被删细胞的身份，确保删除的是噪声而非信号。",
+    "crumbs": [
+      "第二阶段：转录组与单细胞",
+      "<span class='chapter-number'>33</span>  <span class='chapter-title'>单细胞数据质量控制与预处理</span>"
+    ]
+  },
+  {
+    "objectID": "scrna_basic_lesson3.html",
+    "href": "scrna_basic_lesson3.html",
+    "title": "34  降维、聚类与细胞类型注释",
+    "section": "",
+    "text": "35 专题概述\n质控与归一化产出了一份干净的细胞×基因矩阵，但它仍是高维（数千个高变基因）、难以直接解读的。scRNA-seq 分析的核心目标——识别数据中存在哪些细胞类型——通过三步串联实现：先用 PCA 把高维表达压缩到几十个主成分以去噪，再在主成分空间构建近邻图并用图聚类算法将细胞划分为社区，最后用 UMAP 将结果嵌入二维以供可视化。聚类只给出”第几群”这样的匿名标签，还需通过标志基因把每个聚类对应到真实的细胞类型。本专题讲解这条从降维到注释的标准流程。\n学习目标：理解 PCA 在 scRNA-seq 中的去噪作用与主成分数量的选择；掌握 KNN 图构建与 Leiden 图聚类的逻辑及分辨率参数的影响；理解 UMAP 与 t-SNE 的特点与局限；掌握基于标志基因的手动注释与 SingleR 自动注释，并能交叉验证。",
+    "crumbs": [
+      "第二阶段：转录组与单细胞",
+      "<span class='chapter-number'>34</span>  <span class='chapter-title'>降维、聚类与细胞类型注释</span>"
+    ]
+  },
+  {
+    "objectID": "scrna_basic_lesson3.html#pca去噪与压缩",
+    "href": "scrna_basic_lesson3.html#pca去噪与压缩",
+    "title": "34  降维、聚类与细胞类型注释",
+    "section": "36.1 PCA：去噪与压缩",
+    "text": "36.1 PCA：去噪与压缩\n即使只保留 2000 个高变基因，表达空间依然高维且充满噪声——dropout、技术变异使任意两个细胞的距离都不可靠。主成分分析（Principal Component Analysis, PCA）通过线性变换找到数据中方差最大的若干正交方向（主成分），将数据投影到前 20–50 个主成分上。由于真实的生物学变异（细胞类型差异）通常贡献了最大的方差、而随机噪声分散在大量低方差方向上，保留前几十个主成分既压缩了维度，又起到了去噪的作用。\n{{Wiki:Principal_component_analysis}}\n需要强调，PCA 只用高变基因作为输入，而非全部基因——这样既减小计算量，又避免大量稳定表达基因稀释信号。\nlibrary(Seurat)\n\n# PCA is run on the scaled highly variable genes from the preprocessing step\npbmc &lt;- RunPCA(pbmc, npcs = 50)",
+    "crumbs": [
+      "第二阶段：转录组与单细胞",
+      "<span class='chapter-number'>34</span>  <span class='chapter-title'>降维、聚类与细胞类型注释</span>"
+    ]
+  },
+  {
+    "objectID": "scrna_basic_lesson3.html#选择主成分数量",
+    "href": "scrna_basic_lesson3.html#选择主成分数量",
+    "title": "34  降维、聚类与细胞类型注释",
+    "section": "36.2 选择主成分数量",
+    "text": "36.2 选择主成分数量\n保留多少个主成分是一个需要判断的参数。保留太少会丢失区分相近细胞类型的信号，太多则重新引入噪声。肘部图（ElbowPlot）将各主成分解释的方差（标准差）从大到小排列，曲线由陡变平的”肘部”提示了信号主成分与噪声主成分的大致分界。\n#| label: fig-elbow\n#| fig-cap: \"PBMC 3k 数据的 PCA 肘部图（ElbowPlot）。横轴为主成分序号，纵轴为各主成分对应的标准差。曲线在前若干个主成分后迅速变平，'肘部'位置（约第 10–15 个主成分附近）提示信号主成分与噪声主成分的大致分界，可据此选择下游使用的主成分数量。\"\nlibrary(Seurat)\n\nElbowPlot(pbmc, ndims = 50)\n\n主成分数量不必精确： 肘部位置往往不唯一、略显模糊，不必为选 12 还是 15 个主成分纠结。实践中在合理范围（如 10–30）内多取几个值跑一遍，观察聚类结果是否稳定，比追求”最优单一值”更有意义。使用 SCTransform 归一化时，由于其更强的去噪能力，通常可以安全地保留更多主成分（如 30 个）。",
+    "crumbs": [
+      "第二阶段：转录组与单细胞",
+      "<span class='chapter-number'>34</span>  <span class='chapter-title'>降维、聚类与细胞类型注释</span>"
+    ]
+  },
+  {
+    "objectID": "scrna_basic_lesson3.html#knn-图与图聚类",
+    "href": "scrna_basic_lesson3.html#knn-图与图聚类",
+    "title": "34  降维、聚类与细胞类型注释",
+    "section": "37.1 KNN 图与图聚类",
+    "text": "37.1 KNN 图与图聚类\n在选定的主成分空间中，scRNA-seq 采用基于图的聚类，而非 K-means 等传统方法。原因是细胞类型的大小、密度差异巨大，图聚类对这种不均衡结构更稳健。流程分两步：先用 FindNeighbors() 为每个细胞找到其 K 个最近邻，构建 K-近邻图（KNN graph），相似的细胞由边相连；再用 FindClusters() 调用 Leiden（或 Louvain）算法，在图中寻找连接紧密的”社区”（community）作为聚类。\nlibrary(Seurat)\n\n# Step 1: build the KNN graph in the chosen PC space (here, first 15 PCs)\npbmc &lt;- FindNeighbors(pbmc, dims = 1:15)\n\n# Step 2: graph-based community detection (Leiden algorithm = 4)\npbmc &lt;- FindClusters(pbmc, resolution = 0.5, algorithm = 4)",
+    "crumbs": [
+      "第二阶段：转录组与单细胞",
+      "<span class='chapter-number'>34</span>  <span class='chapter-title'>降维、聚类与细胞类型注释</span>"
+    ]
+  },
+  {
+    "objectID": "scrna_basic_lesson3.html#分辨率参数",
+    "href": "scrna_basic_lesson3.html#分辨率参数",
+    "title": "34  降维、聚类与细胞类型注释",
+    "section": "37.2 分辨率参数",
+    "text": "37.2 分辨率参数\nresolution 是聚类最关键的参数，控制划分的粒度：值越大，社区检测越倾向于切出更多、更小的聚类；值越小，聚类越少、越粗。常用范围为 0.3–1.0。它没有”正确值”——粒度的合适与否取决于研究问题：要区分主要细胞类型用低分辨率，要解析细胞亚型用高分辨率。\n\n分辨率不是越高越好： 调高分辨率总能切出更多聚类，但其中许多可能是同一细胞类型被人为拆分，或由技术变异（细胞周期、应激）驱动的虚假亚群。判断一个聚类是否”真实”，不能只看它能被分出来，而要看它是否具有特异、可解释的标志基因。盲目追求高分辨率会制造大量需要解释却无生物学意义的聚类。",
+    "crumbs": [
+      "第二阶段：转录组与单细胞",
+      "<span class='chapter-number'>34</span>  <span class='chapter-title'>降维、聚类与细胞类型注释</span>"
+    ]
+  },
+  {
+    "objectID": "scrna_basic_lesson3.html#umap-可视化",
+    "href": "scrna_basic_lesson3.html#umap-可视化",
+    "title": "34  降维、聚类与细胞类型注释",
+    "section": "37.3 UMAP 可视化",
+    "text": "37.3 UMAP 可视化\n聚类是在高维主成分空间完成的，但人需要二维图来观察。UMAP（Uniform Manifold Approximation and Projection）将高维结构非线性地嵌入二维平面，倾向于保留数据的局部与部分全局结构，是当前最常用的可视化方法。t-SNE 是另一种选择，更强调局部结构，但对全局结构和参数（perplexity）更敏感。\n{{Wiki:Nonlinear_dimensionality_reduction}}\n#| label: fig-umap-clusters\n#| fig-cap: \"PBMC 3k 数据的 UMAP 嵌入，按 Leiden 聚类结果着色。每个点为一个细胞，颜色对应其所属聚类。UMAP 将高维主成分空间的细胞关系非线性地映射到二维平面，便于直观观察各聚类的分离程度与相对关系。\"\nlibrary(Seurat)\n\npbmc &lt;- RunUMAP(pbmc, dims = 1:15)\nDimPlot(pbmc, reduction = \"umap\", label = TRUE)\n\nUMAP 的距离不可定量解读： UMAP 图上两个聚类之间的距离、聚类的大小、形状都不具有定量意义——它们是非线性嵌入的产物，会因参数与随机种子而变化。不能因为两群在 UMAP 上挨得近就断言它们”关系更近”，也不能由聚类面积推断细胞数量。UMAP 只用于定性展示分离结构，定量结论必须回到高维空间或基因表达本身。",
+    "crumbs": [
+      "第二阶段：转录组与单细胞",
+      "<span class='chapter-number'>34</span>  <span class='chapter-title'>降维、聚类与细胞类型注释</span>"
+    ]
+  },
+  {
+    "objectID": "scrna_basic_lesson3.html#标志基因鉴定",
+    "href": "scrna_basic_lesson3.html#标志基因鉴定",
+    "title": "34  降维、聚类与细胞类型注释",
+    "section": "38.1 标志基因鉴定",
+    "text": "38.1 标志基因鉴定\n聚类给出的是匿名的 “0、1、2……” 标签，注释的任务是把它们对应到真实的细胞类型。第一步是为每个聚类找出其特异高表达的标志基因（Marker genes）：FindAllMarkers() 对每个聚类做与其余所有细胞的差异表达检验（默认 Wilcoxon 秩和检验），筛出该聚类显著上调的基因。\nlibrary(Seurat)\n\n# Find positive markers for every cluster (one-vs-rest Wilcoxon test)\nmarkers &lt;- FindAllMarkers(pbmc, only.pos = TRUE,\n                          min.pct = 0.25, logfc.threshold = 0.25)\n\n# Top marker genes per cluster guide manual cell-type assignment\nlibrary(dplyr)\nmarkers |&gt;\n    group_by(cluster) |&gt;\n    slice_max(avg_log2FC, n = 5)",
+    "crumbs": [
+      "第二阶段：转录组与单细胞",
+      "<span class='chapter-number'>34</span>  <span class='chapter-title'>降维、聚类与细胞类型注释</span>"
+    ]
+  },
+  {
+    "objectID": "scrna_basic_lesson3.html#手动注释",
+    "href": "scrna_basic_lesson3.html#手动注释",
+    "title": "34  降维、聚类与细胞类型注释",
+    "section": "38.2 手动注释",
+    "text": "38.2 手动注释\n得到每个聚类的标志基因后，对照已知的细胞类型标志基因数据库（如 PanglaoDB、CellMarker）即可手动指派类型。表 1 列出 PBMC 常见细胞类型的经典标志基因。\n\n\n\n表 1: PBMC 常见细胞类型及其经典标志基因\n\n\n\n\n\n细胞类型\n经典标志基因\n\n\n\n\nT 细胞（CD4+）\nIL7R, CD3D, CD4\n\n\nT 细胞（CD8+）\nCD8A, CD3D, GZMK\n\n\nB 细胞\nMS4A1, CD79A\n\n\nNK 细胞\nGNLY, NKG7\n\n\n单核细胞（CD14+）\nCD14, LYZ\n\n\n单核细胞（FCGR3A+）\nFCGR3A, MS4A7\n\n\n树突状细胞\nFCER1A, CST3\n\n\n血小板\nPPBP\n\n\n\n\n\n\n# Visualize known markers to confirm cluster identities\nFeaturePlot(pbmc, features = c(\"CD3D\", \"MS4A1\", \"LYZ\", \"GNLY\"))\nDotPlot(pbmc, features = c(\"IL7R\", \"CD8A\", \"MS4A1\", \"GNLY\", \"CD14\", \"FCGR3A\")) +\n    Seurat::RotatedAxis()\n\n# Assign biological labels to clusters (example mapping)\nnew_ids &lt;- c(\"0\" = \"CD4 T\", \"1\" = \"CD14+ Mono\", \"2\" = \"B\",\n             \"3\" = \"CD8 T\", \"4\" = \"NK\", \"5\" = \"FCGR3A+ Mono\")\npbmc &lt;- RenameIdents(pbmc, new_ids)",
+    "crumbs": [
+      "第二阶段：转录组与单细胞",
+      "<span class='chapter-number'>34</span>  <span class='chapter-title'>降维、聚类与细胞类型注释</span>"
+    ]
+  },
+  {
+    "objectID": "scrna_basic_lesson3.html#自动注释singler",
+    "href": "scrna_basic_lesson3.html#自动注释singler",
+    "title": "34  降维、聚类与细胞类型注释",
+    "section": "38.3 自动注释：SingleR",
+    "text": "38.3 自动注释：SingleR\n手动注释依赖专家知识、耗时且主观。自动注释工具用带标签的参考数据集为查询细胞快速指派类型。SingleR 对每个查询细胞，计算其表达谱与参考数据集中各细胞类型表达谱的相关性，指派相关性最高的类型，并通过迭代微调（fine-tuning）提高分辨力（Aran et al., 2019）。\nlibrary(SingleR)\nlibrary(celldex)\n\n# Use a built-in reference (e.g. Human Primary Cell Atlas / ENCODE-based)\nref &lt;- celldex::HumanPrimaryCellAtlasData()\n\n# Correlation-based per-cell annotation against the reference\nsce &lt;- as.SingleCellExperiment(pbmc)\npred &lt;- SingleR(test = sce, ref = ref, labels = ref$label.main)\npbmc$SingleR_label &lt;- pred$labels\n\n黄金法则： 手动注释与自动注释应相互印证，而非二选一。自动注释快速、客观，适合提供初步框架；手动注释精确、可解释，能纠正参考数据集缺失类型或物种/组织不匹配带来的错误。当二者一致时，注释可信；当二者矛盾时，正是发现新细胞状态或识别注释陷阱（如参考缺失该类型）的契机。任何最终注释都应能用一组特异标志基因解释。",
+    "crumbs": [
+      "第二阶段：转录组与单细胞",
+      "<span class='chapter-number'>34</span>  <span class='chapter-title'>降维、聚类与细胞类型注释</span>"
+    ]
+  },
+  {
+    "objectID": "scrna_basic_lesson4.html",
+    "href": "scrna_basic_lesson4.html",
+    "title": "35  Visium 技术原理与上游处理",
+    "section": "",
+    "text": "36 专题概述\nscRNA-seq 在解离组织时丢失了细胞的空间位置信息——我们知道有哪些细胞类型，却不知道它们在组织中如何排布。空间转录组学（Spatial Transcriptomics）填补了这一空白：它在保留组织切片二维坐标的前提下测量基因表达，回答”基因在哪里表达”的问题。10x Genomics Visium 是目前应用最广的空间转录组平台之一。本专题讲解 Visium 的空间条形码阵列原理、Space Ranger 上游处理流程，以及空间数据的加载与初步可视化，并厘清 Visium 与 scRNA-seq 在数据结构上的关键异同。\n学习目标：理解 Visium 空间条形码捕获阵列的结构与 Spot 分辨率的局限；掌握 Space Ranger 上游处理流程与图像配准的作用；理解 Visium 数据格式与空间坐标信息的组织方式；能加载 Visium 数据并完成标志基因的空间表达可视化。",
+    "crumbs": [
+      "第二阶段：转录组与单细胞",
+      "<span class='chapter-number'>35</span>  <span class='chapter-title'>Visium 技术原理与上游处理</span>"
+    ]
+  },
+  {
+    "objectID": "scrna_basic_lesson4.html#空间条形码捕获阵列",
+    "href": "scrna_basic_lesson4.html#空间条形码捕获阵列",
+    "title": "35  Visium 技术原理与上游处理",
+    "section": "37.1 空间条形码捕获阵列",
+    "text": "37.1 空间条形码捕获阵列\nVisium 的核心是一张预先印刷了空间条形码捕获阵列的载玻片。阵列上排列着数千个捕获点（Spot），每个 Spot 直径 55 µm、中心间距 100 µm，呈六角形网格排布；每张标准切片约含 4992 个捕获 Spot。关键在于——同一 Spot 上的所有捕获探针共享一段该 Spot 特有的空间条形码，而不同 Spot 的条形码各不相同。因此条形码与载玻片上的物理坐标一一对应，构成了”分子地址簿”。\n{{Wiki:Spatial_transcriptomics}}\n实验流程：将组织切片铺在阵列上，固定、染色（苏木精-伊红 H&E）并拍摄高分辨率图像；随后透化处理使细胞内 mRNA 释放并扩散，被最近的 Spot 探针上的 poly-T 捕获；逆转录生成带空间条形码的 cDNA。测序后，依据空间条形码即可把每条读段定位回它在组织上的来源 Spot。",
+    "crumbs": [
+      "第二阶段：转录组与单细胞",
+      "<span class='chapter-number'>35</span>  <span class='chapter-title'>Visium 技术原理与上游处理</span>"
+    ]
+  },
+  {
+    "objectID": "scrna_basic_lesson4.html#spot-是混合信号而非单细胞",
+    "href": "scrna_basic_lesson4.html#spot-是混合信号而非单细胞",
+    "title": "35  Visium 技术原理与上游处理",
+    "section": "37.2 Spot 是混合信号，而非单细胞",
+    "text": "37.2 Spot 是混合信号，而非单细胞\nVisium 与 scRNA-seq 最本质的区别在于分辨率。55 µm 直径的 Spot 通常涵盖 1–10 个细胞（取决于组织的细胞密度），因此每个 Spot 的转录谱是其覆盖的多个细胞的混合信号，而非单细胞信号。这一点决定了 Visium 数据分析的诸多特殊性，见 表 1。\n\n\n\n表 1: Visium 与 scRNA-seq 的数据结构对比\n\n\n\n\n\n维度\nscRNA-seq\nVisium\n\n\n\n\n观测单元\n单个细胞\nSpot（1–10 个细胞混合）\n\n\n空间信息\n丢失\n保留二维坐标\n\n\n分辨率\n单细胞\n55 µm（亚组织级）\n\n\n细胞类型\n直接聚类识别\n需解卷积拆分（见第7章）\n\n\n典型对象\n细胞类型异质性\n组织空间结构/分区\n\n\n\n\n\n\n\n“空间域”不等于”细胞类型”： 直接对 Visium 的 Spot 聚类，得到的是转录特征相似且空间毗邻的组织区域，称为空间域（Spatial Domain），如脑的不同皮层、肿瘤的核心区与边缘区。它反映的是组织的功能分区，而非单一细胞类型。要从 Spot 中还原各细胞类型的比例，需要借助 scRNA-seq 参考做细胞解卷积（专题 7.5），这是 Visium 分析区别于 scRNA-seq 的核心环节。",
+    "crumbs": [
+      "第二阶段：转录组与单细胞",
+      "<span class='chapter-number'>35</span>  <span class='chapter-title'>Visium 技术原理与上游处理</span>"
+    ]
+  },
+  {
+    "objectID": "scrna_basic_lesson4.html#处理流程与图像配准",
+    "href": "scrna_basic_lesson4.html#处理流程与图像配准",
+    "title": "35  Visium 技术原理与上游处理",
+    "section": "38.1 处理流程与图像配准",
+    "text": "38.1 处理流程与图像配准\nSpace Ranger 是 Visium 数据的官方上游软件，其核心命令 spaceranger count 在 Cell Ranger 的条形码处理、比对、UMI 计数基础上，增加了一个关键环节——把测序数据与组织图像对齐。它读取 H&E 显微图像，借助载玻片四角的基准标记（Fiducial frame）确定阵列在图像中的精确位置，再将每个 Spot 的表达量与其在图像上的像素坐标关联起来。\n# Space Ranger: quantify a Visium slide and register it to the H&E image\nspaceranger count \\\n    --id=visium_brain \\\n    --transcriptome=/path/to/refdata-gex-mm10-2020-A \\\n    --fastqs=/path/to/visium_fastqs \\\n    --image=/path/to/tissue_HE_image.tif \\\n    --slide=V19L01-041 \\\n    --area=A1 \\\n    --localcores=8 \\\n    --localmem=64\n--slide 与 --area 指定所用载玻片的型号与捕获区，使 Space Ranger 能加载正确的 Spot 坐标布局。组织自动检测（tissue detection）会区分被组织覆盖的 Spot 与空白背景 Spot，仅保留前者。\n\n图像质量直接影响下游： H&E 图像的对焦、曝光与组织完整性会影响 Space Ranger 的组织检测与 Spot 配准精度。若自动组织检测出错（漏检或误检 Spot），可借助 10x 的 Loupe Browser 手动框选组织区域、调整 Spot 选择，再重新运行。务必在分析前用 Loupe Browser 目视核对配准结果，避免错位的坐标污染全部空间分析。",
+    "crumbs": [
+      "第二阶段：转录组与单细胞",
+      "<span class='chapter-number'>35</span>  <span class='chapter-title'>Visium 技术原理与上游处理</span>"
+    ]
+  },
+  {
+    "objectID": "scrna_basic_lesson4.html#输出与数据格式",
+    "href": "scrna_basic_lesson4.html#输出与数据格式",
+    "title": "35  Visium 技术原理与上游处理",
+    "section": "38.2 输出与数据格式",
+    "text": "38.2 输出与数据格式\nSpace Ranger 的输出在 Cell Ranger 三件套（表达矩阵）之外，额外包含一个 spatial/ 目录，存放空间相关信息：\n\ntissue_positions.csv：每个 Spot 的条形码、是否在组织内、阵列行列号、图像像素坐标\ntissue_hires_image.png / tissue_lowres_image.png：不同分辨率的组织图像\nscalefactors_json.json：图像像素与 Spot 实际尺寸的换算因子\n\n这一结构使 Visium 数据能被 Seurat 与 Scanpy/Squidpy 直接读取。",
+    "crumbs": [
+      "第二阶段：转录组与单细胞",
+      "<span class='chapter-number'>35</span>  <span class='chapter-title'>Visium 技术原理与上游处理</span>"
+    ]
+  },
+  {
+    "objectID": "scrna_basic_lesson4.html#加载-visium-数据",
+    "href": "scrna_basic_lesson4.html#加载-visium-数据",
+    "title": "35  Visium 技术原理与上游处理",
+    "section": "39.1 加载 Visium 数据",
+    "text": "39.1 加载 Visium 数据\n下面使用小鼠脑 Visium 数据（stxBrain，前脑切片）演示加载与可视化。Seurat 的空间对象同时持有表达矩阵与每个 Spot 的图像坐标，使表达可以直接绘制在组织背景上。\n\n运行环境说明： 本节依赖 R 包 Seurat（v5）与 SeuratData。stxBrain 数据集每个切片约 130 MB，含小鼠脑前/后切片。首次使用需 SeuratData::InstallData(\"stxBrain\")。Load10X_Spatial() 也可直接读取 Space Ranger 的输出目录。\n\nlibrary(Seurat)\nlibrary(SeuratData)\n\n# Load a Visium mouse brain (anterior) section as a spatial Seurat object\nbrain &lt;- LoadData(\"stxBrain\", type = \"anterior1\")\n\n# Spatial QC: in Visium the analog of percent.mt still applies per Spot\nbrain[[\"percent.mt\"]] &lt;- PercentageFeatureSet(brain, pattern = \"^mt-\")\nbrain",
+    "crumbs": [
+      "第二阶段：转录组与单细胞",
+      "<span class='chapter-number'>35</span>  <span class='chapter-title'>Visium 技术原理与上游处理</span>"
+    ]
+  },
+  {
+    "objectID": "scrna_basic_lesson4.html#标志基因的空间表达",
+    "href": "scrna_basic_lesson4.html#标志基因的空间表达",
+    "title": "35  Visium 技术原理与上游处理",
+    "section": "39.2 标志基因的空间表达",
+    "text": "39.2 标志基因的空间表达\nVisium 分析最直观的输出是把基因表达画在组织切片上。SpatialFeaturePlot() 将每个 Spot 按指定基因的表达量着色，叠加在 H&E 图像上，使空间表达模式一目了然。\n#| label: fig-spatial-marker\n#| fig-cap: \"小鼠脑前切片中经典脑区标志基因的空间表达（stxBrain Visium 数据）。每个 Spot 按基因表达量着色并叠加在组织切片图像上。海马区标志基因 Hpca 与皮层标志基因等呈现出与脑解剖结构高度吻合的空间分布，直观展示了空间转录组保留位置信息的优势。\"\nlibrary(Seurat)\n\n# Visualize where specific genes are expressed across the tissue section\nSpatialFeaturePlot(brain, features = c(\"Hpca\", \"Ttr\"))\n# Total counts also vary spatially -- visualize the per-Spot library size\nSpatialFeaturePlot(brain, features = \"nCount_Spatial\")\n\n黄金法则： 空间数据的最大价值在于把分子信息嵌入形态学背景——任何空间分析的结论都应回到组织图像上核验。一个看似显著的空间表达模式，若与已知的组织解剖结构（皮层分层、海马形态、肿瘤边界）不吻合，往往提示配准错误、组织折叠或技术伪影，而非真实生物学。始终把”分子模式”与”H&E 形态”并置检查，是空间分析可靠性的基本保障。",
+    "crumbs": [
+      "第二阶段：转录组与单细胞",
+      "<span class='chapter-number'>35</span>  <span class='chapter-title'>Visium 技术原理与上游处理</span>"
+    ]
+  },
+  {
+    "objectID": "scrna_basic_lesson5.html",
+    "href": "scrna_basic_lesson5.html",
+    "title": "36  空间数据质控、归一化与空间高变基因分析",
+    "section": "",
+    "text": "37 专题概述\n加载 Visium 数据之后，分析流程与 scRNA-seq 高度共享——质控、归一化、降维、聚类的逻辑一脉相承。但空间数据多了一个其他组学没有的维度：坐标。这使它既需要结合组织图像做空间质检，又催生了一类全新的核心分析——识别那些表达呈现非随机空间分布的基因。本专题讲解空间数据的质控与归一化要点，重点阐述空间高变基因（Spatially Variable Genes, SVG）的识别原理（Moran’s I 空间自相关）与空间聚类方法（普通聚类 vs 纳入空间坐标的 BayesSpace），完成 Visium 基础分析的闭环。\n学习目标：掌握空间数据质控相比 scRNA-seq 的额外考量；理解 SVG 的概念及 Moran’s I 空间自相关统计量的原理；能用 FindSpatiallyVariableFeatures() 识别并可视化 SVG；理解普通聚类与 BayesSpace 在是否利用空间坐标上的区别；能生成有生物学意义的空间域可视化。",
+    "crumbs": [
+      "第二阶段：转录组与单细胞",
+      "<span class='chapter-number'>36</span>  <span class='chapter-title'>空间数据质控、归一化与空间高变基因分析</span>"
+    ]
+  },
+  {
+    "objectID": "scrna_basic_lesson5.html#结合图像的空间质检",
+    "href": "scrna_basic_lesson5.html#结合图像的空间质检",
+    "title": "36  空间数据质控、归一化与空间高变基因分析",
+    "section": "38.1 结合图像的空间质检",
+    "text": "38.1 结合图像的空间质检\n空间数据的质控指标与 scRNA-seq 相同——每 Spot 检出基因数、每 Spot UMI 数、线粒体比例——但多了一层空间维度的判读。一个 Spot 即便表达量达标，若它位于组织边缘、脱落区域或折叠处，也应被剔除。因此空间质控必须结合 H&E 图像进行视觉检查，而非只看数值阈值。\nlibrary(Seurat)\n\n# Standard per-Spot QC metrics, same as scRNA-seq\nbrain[[\"percent.mt\"]] &lt;- PercentageFeatureSet(brain, pattern = \"^mt-\")\n\n# Inspect QC distributions spatially: low-count Spots often cluster at tissue edges\nSpatialFeaturePlot(brain, features = c(\"nCount_Spatial\", \"percent.mt\"))\n\n别用同一阈值无差别过滤所有 Spot： Visium 中每个 Spot 的 UMI 总数还反映了真实的生物学差异——细胞密度高的区域（如脑的细胞密集层）天然有更高的 UMI，细胞稀疏区域（如白质、纤维区）UMI 本就低。若用 scRNA-seq 式的统一下限过滤，会系统性地删除低细胞密度的组织区域，造成空间偏差。空间质控应把”低 UMI 是技术问题还是生物学真实”结合图像区分对待。",
+    "crumbs": [
+      "第二阶段：转录组与单细胞",
+      "<span class='chapter-number'>36</span>  <span class='chapter-title'>空间数据质控、归一化与空间高变基因分析</span>"
+    ]
+  },
+  {
+    "objectID": "scrna_basic_lesson5.html#归一化的空间考量",
+    "href": "scrna_basic_lesson5.html#归一化的空间考量",
+    "title": "36  空间数据质控、归一化与空间高变基因分析",
+    "section": "38.2 归一化的空间考量",
+    "text": "38.2 归一化的空间考量\n空间数据可沿用 scRNA-seq 的归一化策略，SCTransform() 同样适用且推荐。但需注意一个空间特有的混杂因素：Spot 的”测序深度”（总 UMI）不仅受技术捕获效率影响，还受该 Spot 覆盖的细胞数与细胞密度影响。SCTransform 的方差稳定能在一定程度上缓解，但在解读时应警惕——表达模式可能部分由细胞密度的空间梯度驱动，而非单纯的基因调控差异。\nlibrary(Seurat)\n\n# SCTransform for spatial data: note the assay is \"Spatial\", not \"RNA\"\nbrain &lt;- SCTransform(brain, assay = \"Spatial\", verbose = FALSE)",
+    "crumbs": [
+      "第二阶段：转录组与单细胞",
+      "<span class='chapter-number'>36</span>  <span class='chapter-title'>空间数据质控、归一化与空间高变基因分析</span>"
+    ]
+  },
+  {
+    "objectID": "scrna_basic_lesson5.html#什么是空间高变基因",
+    "href": "scrna_basic_lesson5.html#什么是空间高变基因",
+    "title": "36  空间数据质控、归一化与空间高变基因分析",
+    "section": "39.1 什么是空间高变基因",
+    "text": "39.1 什么是空间高变基因\nscRNA-seq 的高变基因（专题 6.2）衡量基因在细胞间的总体变异，但忽略了空间结构。空间高变基因（Spatially Variable Genes, SVG）则专门识别那些表达呈现显著空间自相关的基因——即在组织上相邻的 Spot 倾向于有相似表达、表达模式不是空间随机散布的。这类基因往往标志着功能特异的组织层、解剖区域或局部微环境，是空间转录组最具特色的发现。\n普通高变基因与 SVG 的区别在于：一个基因可以在细胞间高度变异（是 HVG），但其高低表达细胞在空间上随机分布（不是 SVG）；反之，一个总体变异不大的基因，若其表达在某个特定区域系统性升高，则是 SVG。",
+    "crumbs": [
+      "第二阶段：转录组与单细胞",
+      "<span class='chapter-number'>36</span>  <span class='chapter-title'>空间数据质控、归一化与空间高变基因分析</span>"
+    ]
+  },
+  {
+    "objectID": "scrna_basic_lesson5.html#morans-i-空间自相关",
+    "href": "scrna_basic_lesson5.html#morans-i-空间自相关",
+    "title": "36  空间数据质控、归一化与空间高变基因分析",
+    "section": "39.2 Moran’s I 空间自相关",
+    "text": "39.2 Moran’s I 空间自相关\n识别 SVG 最常用的统计量是 Moran’s I 空间自相关指数。它衡量”相邻位置的取值是否相似”：\n\\[I = \\frac{N}{\\sum_{i}\\sum_{j} w_{ij}} \\cdot \\frac{\\sum_{i}\\sum_{j} w_{ij}(x_i - \\bar{x})(x_j - \\bar{x})}{\\sum_{i}(x_i - \\bar{x})^2}\\]\n其中 \\(x_i\\) 为 Spot \\(i\\) 的表达量，\\(\\bar{x}\\) 为均值，\\(w_{ij}\\) 为空间权重矩阵（相邻 Spot 权重大、远处为 0），\\(N\\) 为 Spot 总数。Moran’s I 的取值与解释类似相关系数：\n\n\\(I &gt; 0\\)：正空间自相关——相邻 Spot 表达相似，呈现空间聚集模式（典型的 SVG）。\n\\(I \\approx 0\\)：无空间自相关——表达空间随机分布。\n\\(I &lt; 0\\)：负空间自相关——相邻 Spot 表达相反（罕见，如棋盘格模式）。\n\n{{Wiki:Spatial_analysis}}\n空间权重矩阵 \\(w_{ij}\\) 的构建是关键：对 Visium 的六角网格，通常以每个 Spot 的直接相邻 Spot（六个邻居）为权重非零项，也可用 k-近邻定义。\n#| label: fig-svg\n#| fig-cap: \"小鼠脑前切片识别出的空间高变基因（SVG）的空间表达（stxBrain Visium 数据）。展示 Moran's I 排名靠前的若干基因，每个 Spot 按表达量着色。这些基因呈现出与脑解剖结构吻合的清晰空间聚集模式（如特定皮层、海马区），印证了它们的高空间自相关性。\"\nlibrary(Seurat)\n\n# Identify spatially variable features using Moran's I autocorrelation\nbrain &lt;- FindSpatiallyVariableFeatures(\n    brain, assay = \"SCT\",\n    features = VariableFeatures(brain)[1:1000],\n    selection.method = \"moransi\"\n)\n\n# Visualize the top spatially variable genes on the tissue\ntop_svg &lt;- head(SpatiallyVariableFeatures(brain, selection.method = \"moransi\"), 6)\nSpatialFeaturePlot(brain, features = top_svg, ncol = 3)\n除基于 Moran’s I 的方法外，SpatialDE 提供了另一种思路：用高斯过程（Gaussian Process）回归把每个基因的空间表达分解为”空间结构成分”与”非空间噪声成分”，据此检验是否存在显著的空间表达模式（Svensson et al., 2018）。两类方法可相互验证。",
+    "crumbs": [
+      "第二阶段：转录组与单细胞",
+      "<span class='chapter-number'>36</span>  <span class='chapter-title'>空间数据质控、归一化与空间高变基因分析</span>"
+    ]
+  },
+  {
+    "objectID": "scrna_basic_lesson5.html#普通聚类-vs-空间感知聚类",
+    "href": "scrna_basic_lesson5.html#普通聚类-vs-空间感知聚类",
+    "title": "36  空间数据质控、归一化与空间高变基因分析",
+    "section": "40.1 普通聚类 vs 空间感知聚类",
+    "text": "40.1 普通聚类 vs 空间感知聚类\n识别组织的空间域有两种思路，区别在于是否利用 Spot 的坐标信息：\n\n普通聚类（忽略坐标）：完全沿用 scRNA-seq 流程——对 Spot 表达做 PCA、建 KNN 图、Leiden 聚类。它只用表达相似性，不考虑 Spot 是否空间相邻。优点是简单、与 scRNA-seq 一致；缺点是结果可能出现空间上不连贯的”碎片化”域（相邻 Spot 被分到不同簇）。\n空间感知聚类（纳入坐标）：BayesSpace 等方法在聚类时同时利用表达与空间坐标，通过马尔可夫随机场（Markov Random Field, MRF）先验，鼓励空间相邻的 Spot 归入同一域（Zhao et al., 2021）。它能产生更平滑、更符合解剖连续性的空间域，并支持亚 Spot 分辨率增强。\n\nlibrary(Seurat)\n\n# Approach A: ordinary clustering (ignores coordinates), reusing the scRNA pipeline\nbrain &lt;- RunPCA(brain, assay = \"SCT\") |&gt;\n    FindNeighbors(dims = 1:30) |&gt;\n    FindClusters(resolution = 0.5) |&gt;\n    RunUMAP(dims = 1:30)\n\n# Visualize the resulting spatial domains on the tissue section\nSpatialDimPlot(brain, label = TRUE, label.size = 3)",
+    "crumbs": [
+      "第二阶段：转录组与单细胞",
+      "<span class='chapter-number'>36</span>  <span class='chapter-title'>空间数据质控、归一化与空间高变基因分析</span>"
+    ]
+  },
+  {
+    "objectID": "scrna_basic_lesson5.html#bayesspace-的空间先验",
+    "href": "scrna_basic_lesson5.html#bayesspace-的空间先验",
+    "title": "36  空间数据质控、归一化与空间高变基因分析",
+    "section": "40.2 BayesSpace 的空间先验",
+    "text": "40.2 BayesSpace 的空间先验\nBayesSpace 的核心是 MRF 先验：它假设组织在空间上是连续的，因此一个 Spot 属于某空间域的概率，应受其邻居所属域的影响——相邻 Spot 更可能属于同一域。这一先验把”空间连续性”这一组织的基本生物学性质编码进了聚类模型，从而抑制孤立的、空间不连贯的聚类噪声。其关键超参数是域数量 q，需结合已知解剖结构（如小鼠脑的主要分区数）选定。\n\n何时需要空间感知聚类： 并非所有研究都需要 BayesSpace。若研究目标只是”组织里有哪些转录状态”，普通聚类已足够；若目标是精确划定空间域边界、研究组织的空间组织结构（如肿瘤微环境分区、发育中的形态发生场），则空间感知聚类的连续性约束更有价值。可先用普通聚类快速探索，再视需要用 BayesSpace 精细化。\n\n#| label: fig-spatial-domains\n#| fig-cap: \"小鼠脑前切片的空间域聚类结果叠加在组织切片上（stxBrain Visium 数据）。每个 Spot 按其所属空间域着色，绘制在真实组织坐标上。聚类得到的空间域与已知小鼠脑解剖分区（如皮层各层、海马、白质）对应，验证了空间聚类捕捉组织结构的能力。\"\nlibrary(Seurat)\n\n# Overlay clusters on tissue and compare against known mouse-brain anatomy\nSpatialDimPlot(brain, label = TRUE)\n\n黄金法则： 空间聚类的结果必须接受解剖学检验——把空间域叠加到 H&E 图像上，看它是否与已知的组织结构（皮层分层、海马形态、器官分区）吻合。吻合则说明聚类捕捉到了真实的组织组织结构；若空间域杂乱、与任何解剖结构都对不上，则要么是分辨率/参数不当，要么是质控未清除的技术伪影在作祟。解剖一致性是空间分析可信度的终极判据。",
+    "crumbs": [
+      "第二阶段：转录组与单细胞",
+      "<span class='chapter-number'>36</span>  <span class='chapter-title'>空间数据质控、归一化与空间高变基因分析</span>"
+    ]
+  },
+  {
     "objectID": "07-scrna-advanced.html",
     "href": "07-scrna-advanced.html",
     "title": "37  单细胞与空间转录组高级分析：多样本统计、动态推断、多组学与空间解析",
@@ -4831,7 +5282,7 @@
     "href": "references.html#图片来源",
     "title": "参考资料",
     "section": "",
-    "text": "章节\n图片描述\n来源\n\n\n\n\n第一节·数据库与格式\nDNA 分子结构与碱基对配对\n图片引用自维基百科：DNA\n\n\n第一节·数据库与格式\nPhred 质量分数系统与质量控制\n图片引用自维基百科：Phred quality score\n\n\n第一节·数据库与格式\nDNA 测序技术原理\n图片引用自维基百科：DNA sequencing\n\n\n第一节·数据库与格式\n基因组注释与基因结构\n图片引用自维基百科：Gene annotation\n\n\n第二节·高通量测序\n凝胶电泳装置\n图片引用自维基百科：Gel electrophoresis\n\n\n第二节·高通量测序\nSanger 链终止法原理图\n图片引用自维基百科：Sanger sequencing\n\n\n第二节·高通量测序\nPCR 循环示意图\n图片引用自维基百科：Polymerase chain reaction\n\n\n第二节·高通量测序\n基因组文库构建流程图\n图片引用自维基百科：Genomic library\n\n\n第二节·高通量测序\nIllumina 桥式扩增/簇生成图\n图片引用自维基百科：Illumina dye sequencing\n\n\n第二节·高通量测序\nPhred 质量分数与峰图\n图片引用自维基百科：Phred quality score\n\n\n第二节·高通量测序\nPacBio SMRT Cell\n图片引用自维基百科：Single-molecule real-time sequencing\n\n\n第二节·高通量测序\nNanopore 测序原理图\n图片引用自维基百科：Nanopore sequencing\n\n\n第三节·Linux\nLinux 吉祥物 Tux\n图片引用自维基百科：Linux\n\n\n第三节·Linux\nBash 命令行界面截图\n图片引用自维基百科：Command-line interface\n\n\n第三节·Linux\nUnix 创始人 Ken Thompson 与 Dennis Ritchie\n图片引用自维基百科：Unix philosophy\n\n\n第三节·Linux\nLinux 文件系统层级结构截图\n图片引用自维基百科：Filesystem Hierarchy Standard\n\n\n第三节·Linux\nUnix 管道示意图\n图片引用自维基百科：Pipeline (Unix)\n\n\n第三节·Linux\nSSH 数据包结构图\n图片引用自维基百科：Secure Shell\n\n\n第四节·R与Python\nPython 编程语言徽标\n图片引用自维基百科：Python (programming language)\n\n\n第四节·R与Python\nR 编程语言徽标\n图片引用自维基百科：R (programming language)\n\n\n第四节·R与Python\nJupyter 项目徽标\n图片引用自维基百科：Project Jupyter\n\n\n第四节·R与Python\nGit 版本控制系统徽标\n图片引用自维基百科：Git\n\n\n第四节·R与Python\nDocker 容器化工具截图\n图片引用自维基百科：Docker (software)\n\n\n第三节·变异检测·专题3\n全基因组关联分析曼哈顿图\n图片引用自维基百科：Genome-wide association study\n\n\n第三节·变异检测·专题3\n连锁不平衡热图（LD Heatmap）\n图片引用自维基百科：Linkage disequilibrium\n\n\n第三节·变异检测·专题3\n哈迪-温伯格平衡图解\n图片引用自维基百科：Hardy–Weinberg principle\n\n\n第三节·变异检测·专题3\n主成分分析示意图（用于群体分层控制）\n图片引用自维基百科：Principal component analysis\n\n\n第三节·变异检测·专题3\n非洲人群基因型 PCA 散点图（群体分层示意）\n图片引用自维基百科：Population stratification\n\n\n转录组学·专题4·功能富集分析\nGene Ontology 项目标志\n图片引用自维基百科：Gene ontology\n\n\n转录组学·专题4·功能富集分析\nGSEA 算法模块化流程示意图\n图片引用自维基百科：Gene set enrichment analysis\n\n\n转录组学·专题5·WGCNA\n层次聚类树状图（动态树切割）\n图片引用自维基百科：Hierarchical clustering\n\n\n转录组学·专题5·可变多腺苷酸化\n可变多腺苷酸化（APA）示意图\n图片引用自维基百科：Polyadenylation\n\n\n转录组学·专题5·可变多腺苷酸化\n尼罗河流量变化点检测示例\n图片引用自维基百科：Change detection\n\n\n单细胞高级·专题7.1·跨样本整合\n批次效应示意图\n图片引用自维基百科：Batch effect\n\n\n单细胞高级·专题7.1·差异丰度\n组成数据单纯形示意图\n图片引用自维基百科：Compositional data\n\n\n单细胞高级·专题7.2·拟时序\n细胞分化潜能（Cell potency）\n图片引用自维基百科：Cell potency\n\n\n单细胞高级·专题7.2·拟时序\n细胞分化层级示意图\n图片引用自维基百科：Cellular differentiation\n\n\n单细胞高级·专题7.2·RNA Velocity\nRNA 剪接过程示意图\n图片引用自维基百科：RNA splicing\n\n\n单细胞高级·专题7.2·RNA Velocity\nRNA velocity 速率流场示意\n图片引用自维基百科：RNA velocity\n\n\n单细胞高级·专题7.3·细胞通讯\n细胞信号转导示意图\n图片引用自维基百科：Cell signaling\n\n\n单细胞高级·专题7.3·基因调控网络\n基因调控网络示意图\n图片引用自维基百科：Gene regulatory network\n\n\n单细胞高级·专题7.4·CITE-seq\n单细胞测序技术示意图\n图片引用自维基百科：Single-cell sequencing\n\n\n单细胞高级·专题7.4·scATAC\nATAC-seq 转座酶插入原理图\n图片引用自维基百科：ATAC-seq\n\n\n单细胞高级·专题7.5·空间解卷积\n空间转录组学技术示意图\n图片引用自维基百科：Spatial transcriptomics\n\n\n单细胞高级·专题7.5·MERFISH\n荧光原位杂交（FISH）原理图\n图片引用自维基百科：Fluorescence in situ hybridization",
+    "text": "章节\n图片描述\n来源\n\n\n\n\n第一节·数据库与格式\nDNA 分子结构与碱基对配对\n图片引用自维基百科：DNA\n\n\n第一节·数据库与格式\nPhred 质量分数系统与质量控制\n图片引用自维基百科：Phred quality score\n\n\n第一节·数据库与格式\nDNA 测序技术原理\n图片引用自维基百科：DNA sequencing\n\n\n第一节·数据库与格式\n基因组注释与基因结构\n图片引用自维基百科：Gene annotation\n\n\n第二节·高通量测序\n凝胶电泳装置\n图片引用自维基百科：Gel electrophoresis\n\n\n第二节·高通量测序\nSanger 链终止法原理图\n图片引用自维基百科：Sanger sequencing\n\n\n第二节·高通量测序\nPCR 循环示意图\n图片引用自维基百科：Polymerase chain reaction\n\n\n第二节·高通量测序\n基因组文库构建流程图\n图片引用自维基百科：Genomic library\n\n\n第二节·高通量测序\nIllumina 桥式扩增/簇生成图\n图片引用自维基百科：Illumina dye sequencing\n\n\n第二节·高通量测序\nPhred 质量分数与峰图\n图片引用自维基百科：Phred quality score\n\n\n第二节·高通量测序\nPacBio SMRT Cell\n图片引用自维基百科：Single-molecule real-time sequencing\n\n\n第二节·高通量测序\nNanopore 测序原理图\n图片引用自维基百科：Nanopore sequencing\n\n\n第三节·Linux\nLinux 吉祥物 Tux\n图片引用自维基百科：Linux\n\n\n第三节·Linux\nBash 命令行界面截图\n图片引用自维基百科：Command-line interface\n\n\n第三节·Linux\nUnix 创始人 Ken Thompson 与 Dennis Ritchie\n图片引用自维基百科：Unix philosophy\n\n\n第三节·Linux\nLinux 文件系统层级结构截图\n图片引用自维基百科：Filesystem Hierarchy Standard\n\n\n第三节·Linux\nUnix 管道示意图\n图片引用自维基百科：Pipeline (Unix)\n\n\n第三节·Linux\nSSH 数据包结构图\n图片引用自维基百科：Secure Shell\n\n\n第四节·R与Python\nPython 编程语言徽标\n图片引用自维基百科：Python (programming language)\n\n\n第四节·R与Python\nR 编程语言徽标\n图片引用自维基百科：R (programming language)\n\n\n第四节·R与Python\nJupyter 项目徽标\n图片引用自维基百科：Project Jupyter\n\n\n第四节·R与Python\nGit 版本控制系统徽标\n图片引用自维基百科：Git\n\n\n第四节·R与Python\nDocker 容器化工具截图\n图片引用自维基百科：Docker (software)\n\n\n第三节·变异检测·专题3\n全基因组关联分析曼哈顿图\n图片引用自维基百科：Genome-wide association study\n\n\n第三节·变异检测·专题3\n连锁不平衡热图（LD Heatmap）\n图片引用自维基百科：Linkage disequilibrium\n\n\n第三节·变异检测·专题3\n哈迪-温伯格平衡图解\n图片引用自维基百科：Hardy–Weinberg principle\n\n\n第三节·变异检测·专题3\n主成分分析示意图（用于群体分层控制）\n图片引用自维基百科：Principal component analysis\n\n\n第三节·变异检测·专题3\n非洲人群基因型 PCA 散点图（群体分层示意）\n图片引用自维基百科：Population stratification\n\n\n转录组学·专题4·功能富集分析\nGene Ontology 项目标志\n图片引用自维基百科：Gene ontology\n\n\n转录组学·专题4·功能富集分析\nGSEA 算法模块化流程示意图\n图片引用自维基百科：Gene set enrichment analysis\n\n\n转录组学·专题5·WGCNA\n层次聚类树状图（动态树切割）\n图片引用自维基百科：Hierarchical clustering\n\n\n转录组学·专题5·可变多腺苷酸化\n可变多腺苷酸化（APA）示意图\n图片引用自维基百科：Polyadenylation\n\n\n转录组学·专题5·可变多腺苷酸化\n尼罗河流量变化点检测示例\n图片引用自维基百科：Change detection\n\n\n单细胞基础·专题6.1·10x 上游\n液滴微流控芯片示意图\n图片引用自维基百科：Microfluidics\n\n\n单细胞基础·专题6.1·空液滴过滤\n曲线膝点（拐点）示意图\n图片引用自维基百科：Knee of a curve\n\n\n单细胞基础·专题6.2·质量控制\n质量控制概念示意图\n图片引用自维基百科：Quality control\n\n\n单细胞基础·专题6.3·降维\n主成分分析示意图\n图片引用自维基百科：Principal component analysis\n\n\n单细胞基础·专题6.3·可视化\n非线性降维（UMAP/t-SNE）示意图\n图片引用自维基百科：Nonlinear dimensionality reduction\n\n\n单细胞基础·专题6.4·Visium\n空间转录组学技术示意图\n图片引用自维基百科：Spatial transcriptomics\n\n\n单细胞基础·专题6.5·空间分析\n空间自相关分析示意图\n图片引用自维基百科：Spatial analysis\n\n\n单细胞高级·专题7.1·跨样本整合\n批次效应示意图\n图片引用自维基百科：Batch effect\n\n\n单细胞高级·专题7.1·差异丰度\n组成数据单纯形示意图\n图片引用自维基百科：Compositional data\n\n\n单细胞高级·专题7.2·拟时序\n细胞分化潜能（Cell potency）\n图片引用自维基百科：Cell potency\n\n\n单细胞高级·专题7.2·拟时序\n细胞分化层级示意图\n图片引用自维基百科：Cellular differentiation\n\n\n单细胞高级·专题7.2·RNA Velocity\nRNA 剪接过程示意图\n图片引用自维基百科：RNA splicing\n\n\n单细胞高级·专题7.2·RNA Velocity\nRNA velocity 速率流场示意\n图片引用自维基百科：RNA velocity\n\n\n单细胞高级·专题7.3·细胞通讯\n细胞信号转导示意图\n图片引用自维基百科：Cell signaling\n\n\n单细胞高级·专题7.3·基因调控网络\n基因调控网络示意图\n图片引用自维基百科：Gene regulatory network\n\n\n单细胞高级·专题7.4·CITE-seq\n单细胞测序技术示意图\n图片引用自维基百科：Single-cell sequencing\n\n\n单细胞高级·专题7.4·scATAC\nATAC-seq 转座酶插入原理图\n图片引用自维基百科：ATAC-seq\n\n\n单细胞高级·专题7.5·空间解卷积\n空间转录组学技术示意图\n图片引用自维基百科：Spatial transcriptomics\n\n\n单细胞高级·专题7.5·MERFISH\n荧光原位杂交（FISH）原理图\n图片引用自维基百科：Fluorescence in situ hybridization",
     "crumbs": [
       "参考资料"
     ]
@@ -4841,7 +5292,7 @@
     "href": "references.html#参考文献",
     "title": "参考资料",
     "section": "参考文献",
-    "text": "参考文献\nAibar, S., González-Blas, C. B., Moerman, T., Huynh-Thu, V. A., Imrichova, H., Hulselmans, G., et al. (2017). SCENIC: Single-cell regulatory network inference and clustering. Nature Methods, 14(11), 1083–1086. https://doi.org/10.1038/nmeth.4463\nBergen, V., Lange, M., Peidli, S., Wolf, F. A., & Theis, F. J. (2020). Generalizing RNA velocity to transient cell states through dynamical modeling. Nature Biotechnology, 38(12), 1408–1414. https://doi.org/10.1038/s41587-020-0591-3\nCable, D. M., Murray, E., Zou, L. S., Goeva, A., Macosko, E. Z., Chen, F., & Irizarry, R. A. (2022). Robust decomposition of cell type mixtures in spatial transcriptomics. Nature Biotechnology, 40(4), 517–526. https://doi.org/10.1038/s41587-021-00830-w\nChen, K. H., Boettiger, A. N., Moffitt, J. R., Wang, S., & Zhuang, X. (2015). Spatially resolved, highly multiplexed RNA profiling in single cells. Science, 348(6233), aaa6090. https://doi.org/10.1126/science.aaa6090\nCrowell, H. L., Soneson, C., Germain, P.-L., Calini, D., Collin, L., Raposo, C., et al. (2020). muscat detects subpopulation-specific state transitions from multi-sample multi-condition single-cell transcriptomics data. Nature Communications, 11, 6077. https://doi.org/10.1038/s41467-020-19894-4\nDann, E., Henderson, N. C., Teichmann, S. A., Morgan, M. D., & Marioni, J. C. (2022). Differential abundance testing on single-cell data using k-nearest neighbor graphs. Nature Biotechnology, 40(2), 245–253. https://doi.org/10.1038/s41587-021-01033-z\nHao, Y., Hao, S., Andersen-Nissen, E., Mauck, W. M., Zheng, S., Butler, A., et al. (2021). Integrated analysis of multimodal single-cell data. Cell, 184(13), 3573–3587. https://doi.org/10.1016/j.cell.2021.04.048\nHuynh-Thu, V. A., & Geurts, P. (2018). dynGENIE3: Dynamical GENIE3 for the inference of gene networks from time series expression data. Scientific Reports, 8, 3384. https://doi.org/10.1038/s41598-018-21715-0\nJin, S., Guerrero-Juarez, C. F., Zhang, L., Chang, I., Ramos, R., Kuan, C.-H., et al. (2021). Inference and analysis of cell-cell communication using CellChat. Nature Communications, 12, 1088. https://doi.org/10.1038/s41467-021-21246-9\nKang, H. M., Subramaniam, M., Targ, S., Nguyen, M., Maliskova, L., McCarthy, E., et al. (2018). Multiplexed droplet single-cell RNA-sequencing using natural genetic variation. Nature Biotechnology, 36(1), 89–94. https://doi.org/10.1038/nbt.4042\nKleshchevnikov, V., Shmatko, A., Dann, E., Aivazidis, A., King, H. W., Li, T., et al. (2022). Cell2location maps fine-grained cell types in spatial transcriptomics. Nature Biotechnology, 40(5), 661–671. https://doi.org/10.1038/s41587-021-01139-4\nKorsunsky, I., Millard, N., Fan, J., Slowikowski, K., Zhang, F., Wei, K., et al. (2019). Fast, sensitive and accurate integration of single-cell data with Harmony. Nature Methods, 16(12), 1289–1296. https://doi.org/10.1038/s41592-019-0619-0\nLa Manno, G., Soldatov, R., Zeisel, A., Braun, E., Hochgerner, H., Petukhov, V., et al. (2018). RNA velocity of single cells. Nature, 560(7719), 494–498. https://doi.org/10.1038/s41586-018-0414-6\nLopez, R., Regier, J., Cole, M. B., Jordan, M. I., & Yosef, N. (2018). Deep generative modeling for single-cell transcriptomics. Nature Methods, 15(12), 1053–1058. https://doi.org/10.1038/s41592-018-0229-2\nMeister, A., Li, Y. H., Choi, B., & Wong, W. H. (2013). Learning a nonlinear dynamical system model of gene regulation: A perturbed steady-state approach. The Annals of Applied Statistics, 7(3), 1311–1333. https://doi.org/10.1214/13-AOAS645\nSchep, A. N., Wu, B., Buenrostro, J. D., & Greenleaf, W. J. (2017). chromVAR: Inferring transcription-factor-associated accessibility from single-cell epigenomic data. Nature Methods, 14(10), 975–978. https://doi.org/10.1038/nmeth.4401\nSquair, J. W., Gautier, M., Kathe, C., Anderson, M. A., James, N. D., Hutson, T. H., et al. (2021). Confronting false discoveries in single-cell differential expression. Nature Communications, 12, 5692. https://doi.org/10.1038/s41467-021-25960-2\nStoeckius, M., Hafemeister, C., Stephenson, W., Houck-Loomis, B., Chattopadhyay, P. K., Swerdlow, H., et al. (2017). Simultaneous epitope and transcriptome measurement in single cells. Nature Methods, 14(9), 865–868. https://doi.org/10.1038/nmeth.4380\nStringer, C., Wang, T., Michaelos, M., & Pachitariu, M. (2021). Cellpose: A generalist algorithm for cellular segmentation. Nature Methods, 18(1), 100–106. https://doi.org/10.1038/s41592-020-01018-x\nStuart, T., Srivastava, A., Madad, S., Lareau, C. A., & Satija, R. (2021). Single-cell chromatin state analysis with Signac. Nature Methods, 18(11), 1333–1341. https://doi.org/10.1038/s41592-021-01282-5\nVan de Sande, B., Flerin, C., Davie, K., De Waegeneer, M., Hulselmans, G., Aibar, S., et al. (2020). A scalable SCENIC workflow for single-cell gene regulatory network analysis. Nature Protocols, 15(7), 2247–2276. https://doi.org/10.1038/s41596-020-0336-2",
+    "text": "参考文献\nAibar, S., González-Blas, C. B., Moerman, T., Huynh-Thu, V. A., Imrichova, H., Hulselmans, G., et al. (2017). SCENIC: Single-cell regulatory network inference and clustering. Nature Methods, 14(11), 1083–1086. https://doi.org/10.1038/nmeth.4463\nAran, D., Looney, A. P., Liu, L., Wu, E., Fong, V., Hsu, A., et al. (2019). Reference-based analysis of lung single-cell sequencing reveals a transitional profibrotic macrophage. Nature Immunology, 20(2), 163–172. https://doi.org/10.1038/s41590-018-0276-y\nBergen, V., Lange, M., Peidli, S., Wolf, F. A., & Theis, F. J. (2020). Generalizing RNA velocity to transient cell states through dynamical modeling. Nature Biotechnology, 38(12), 1408–1414. https://doi.org/10.1038/s41587-020-0591-3\nCable, D. M., Murray, E., Zou, L. S., Goeva, A., Macosko, E. Z., Chen, F., & Irizarry, R. A. (2022). Robust decomposition of cell type mixtures in spatial transcriptomics. Nature Biotechnology, 40(4), 517–526. https://doi.org/10.1038/s41587-021-00830-w\nChen, K. H., Boettiger, A. N., Moffitt, J. R., Wang, S., & Zhuang, X. (2015). Spatially resolved, highly multiplexed RNA profiling in single cells. Science, 348(6233), aaa6090. https://doi.org/10.1126/science.aaa6090\nCrowell, H. L., Soneson, C., Germain, P.-L., Calini, D., Collin, L., Raposo, C., et al. (2020). muscat detects subpopulation-specific state transitions from multi-sample multi-condition single-cell transcriptomics data. Nature Communications, 11, 6077. https://doi.org/10.1038/s41467-020-19894-4\nDann, E., Henderson, N. C., Teichmann, S. A., Morgan, M. D., & Marioni, J. C. (2022). Differential abundance testing on single-cell data using k-nearest neighbor graphs. Nature Biotechnology, 40(2), 245–253. https://doi.org/10.1038/s41587-021-01033-z\nHafemeister, C., & Satija, R. (2019). Normalization and variance stabilization of single-cell RNA-seq data using regularized negative binomial regression. Genome Biology, 20, 296. https://doi.org/10.1186/s13059-019-1874-1\nHao, Y., Hao, S., Andersen-Nissen, E., Mauck, W. M., Zheng, S., Butler, A., et al. (2021). Integrated analysis of multimodal single-cell data. Cell, 184(13), 3573–3587. https://doi.org/10.1016/j.cell.2021.04.048\nHuynh-Thu, V. A., & Geurts, P. (2018). dynGENIE3: Dynamical GENIE3 for the inference of gene networks from time series expression data. Scientific Reports, 8, 3384. https://doi.org/10.1038/s41598-018-21715-0\nJin, S., Guerrero-Juarez, C. F., Zhang, L., Chang, I., Ramos, R., Kuan, C.-H., et al. (2021). Inference and analysis of cell-cell communication using CellChat. Nature Communications, 12, 1088. https://doi.org/10.1038/s41467-021-21246-9\nKang, H. M., Subramaniam, M., Targ, S., Nguyen, M., Maliskova, L., McCarthy, E., et al. (2018). Multiplexed droplet single-cell RNA-sequencing using natural genetic variation. Nature Biotechnology, 36(1), 89–94. https://doi.org/10.1038/nbt.4042\nKleshchevnikov, V., Shmatko, A., Dann, E., Aivazidis, A., King, H. W., Li, T., et al. (2022). Cell2location maps fine-grained cell types in spatial transcriptomics. Nature Biotechnology, 40(5), 661–671. https://doi.org/10.1038/s41587-021-01139-4\nKorsunsky, I., Millard, N., Fan, J., Slowikowski, K., Zhang, F., Wei, K., et al. (2019). Fast, sensitive and accurate integration of single-cell data with Harmony. Nature Methods, 16(12), 1289–1296. https://doi.org/10.1038/s41592-019-0619-0\nLa Manno, G., Soldatov, R., Zeisel, A., Braun, E., Hochgerner, H., Petukhov, V., et al. (2018). RNA velocity of single cells. Nature, 560(7719), 494–498. https://doi.org/10.1038/s41586-018-0414-6\nLopez, R., Regier, J., Cole, M. B., Jordan, M. I., & Yosef, N. (2018). Deep generative modeling for single-cell transcriptomics. Nature Methods, 15(12), 1053–1058. https://doi.org/10.1038/s41592-018-0229-2\nMeister, A., Li, Y. H., Choi, B., & Wong, W. H. (2013). Learning a nonlinear dynamical system model of gene regulation: A perturbed steady-state approach. The Annals of Applied Statistics, 7(3), 1311–1333. https://doi.org/10.1214/13-AOAS645\nSchep, A. N., Wu, B., Buenrostro, J. D., & Greenleaf, W. J. (2017). chromVAR: Inferring transcription-factor-associated accessibility from single-cell epigenomic data. Nature Methods, 14(10), 975–978. https://doi.org/10.1038/nmeth.4401\nSquair, J. W., Gautier, M., Kathe, C., Anderson, M. A., James, N. D., Hutson, T. H., et al. (2021). Confronting false discoveries in single-cell differential expression. Nature Communications, 12, 5692. https://doi.org/10.1038/s41467-021-25960-2\nStoeckius, M., Hafemeister, C., Stephenson, W., Houck-Loomis, B., Chattopadhyay, P. K., Swerdlow, H., et al. (2017). Simultaneous epitope and transcriptome measurement in single cells. Nature Methods, 14(9), 865–868. https://doi.org/10.1038/nmeth.4380\nStringer, C., Wang, T., Michaelos, M., & Pachitariu, M. (2021). Cellpose: A generalist algorithm for cellular segmentation. Nature Methods, 18(1), 100–106. https://doi.org/10.1038/s41592-020-01018-x\nStuart, T., Srivastava, A., Madad, S., Lareau, C. A., & Satija, R. (2021). Single-cell chromatin state analysis with Signac. Nature Methods, 18(11), 1333–1341. https://doi.org/10.1038/s41592-021-01282-5\nSvensson, V., Teichmann, S. A., & Stegle, O. (2018). SpatialDE: Identification of spatially variable genes. Nature Methods, 15(5), 343–346. https://doi.org/10.1038/nmeth.4636\nVan de Sande, B., Flerin, C., Davie, K., De Waegeneer, M., Hulselmans, G., Aibar, S., et al. (2020). A scalable SCENIC workflow for single-cell gene regulatory network analysis. Nature Protocols, 15(7), 2247–2276. https://doi.org/10.1038/s41596-020-0336-2\nZhao, E., Stone, M. R., Ren, X., Guenthoer, J., Smythe, K. S., Pulliam, T., et al. (2021). Spatial transcriptomics at subspot resolution with BayesSpace. Nature Biotechnology, 39(11), 1375–1384. https://doi.org/10.1038/s41587-021-00935-2",
     "crumbs": [
       "参考资料"
     ]
