@@ -6,7 +6,7 @@
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
-<meta name="dcterms.date" content="2026-06-15">
+<meta name="dcterms.date" content="2026-06-20">
 
 <title>29&nbsp; 基因调控网络推断——从随机森林到动力系统 – Introduction to Applied High-throughput Biological Data Analysis</title>
 <style>
@@ -417,37 +417,37 @@ window.Quarto = {
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./07-scrna-advanced.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">37</span>&nbsp; <span class="chapter-title">单细胞与空间转录组高级分析：动态推断、多组学与空间解析</span></span></a>
+ <span class="menu-text"><span class="chapter-number">37</span>&nbsp; <span class="chapter-title">单细胞与空间转录组高级分析：多样本统计、动态推断、多组学与空间解析</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./scrna_adv_lesson1.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">38</span>&nbsp; <span class="chapter-title">第七章 课时1</span></span></a>
+ <span class="menu-text"><span class="chapter-number">38</span>&nbsp; <span class="chapter-title">跨样本整合、批次校正与多样本差异分析</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./scrna_adv_lesson2.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">39</span>&nbsp; <span class="chapter-title">第七章 课时2</span></span></a>
+ <span class="menu-text"><span class="chapter-number">39</span>&nbsp; <span class="chapter-title">拟时序分析与 RNA Velocity</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./scrna_adv_lesson3.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">40</span>&nbsp; <span class="chapter-title">第七章 课时3</span></span></a>
+ <span class="menu-text"><span class="chapter-number">40</span>&nbsp; <span class="chapter-title">细胞通讯分析与基因调控网络推断</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./scrna_adv_lesson4.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">41</span>&nbsp; <span class="chapter-title">第七章 课时4</span></span></a>
+ <span class="menu-text"><span class="chapter-number">41</span>&nbsp; <span class="chapter-title">单细胞多组学：CITE-seq 与 10x Multiome 联合分析</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./scrna_adv_lesson5.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">42</span>&nbsp; <span class="chapter-title">第七章 课时5</span></span></a>
+ <span class="menu-text"><span class="chapter-number">42</span>&nbsp; <span class="chapter-title">空间转录组高级分析：细胞解卷积与成像型空间转录组</span></span></a>
   </div>
 </li>
       </ul>
@@ -609,7 +609,10 @@ window.Quarto = {
   <ul class="collapse">
   <li><a href="#genie3-结果与-wgcna-模块的整合验证" id="toc-genie3-结果与-wgcna-模块的整合验证" class="nav-link" data-scroll-target="#genie3-结果与-wgcna-模块的整合验证"><span class="header-section-number">31.4.1</span> GENIE3 结果与 WGCNA 模块的整合验证</a></li>
   </ul></li>
-  <li><a href="#dyngenie3时间序列数据下的有向调控推断" id="toc-dyngenie3时间序列数据下的有向调控推断" class="nav-link" data-scroll-target="#dyngenie3时间序列数据下的有向调控推断"><span class="header-section-number">31.5</span> dynGENIE3：时间序列数据下的有向调控推断</a></li>
+  <li><a href="#dyngenie3时间序列数据下的有向调控推断" id="toc-dyngenie3时间序列数据下的有向调控推断" class="nav-link" data-scroll-target="#dyngenie3时间序列数据下的有向调控推断"><span class="header-section-number">31.5</span> dynGENIE3：时间序列数据下的有向调控推断</a>
+  <ul class="collapse">
+  <li><a href="#第一步估计降解速率-alpha_j" id="toc-第一步估计降解速率-alpha_j" class="nav-link" data-scroll-target="#第一步估计降解速率-alpha_j"><span class="header-section-number">31.5.1</span> 第一步：估计降解速率 <span class="math inline">\(\alpha_j\)</span></a></li>
+  </ul></li>
   </ul></li>
   <li><a href="#ode-参数化建模与-sindy转录调控的动态方程辨识" id="toc-ode-参数化建模与-sindy转录调控的动态方程辨识" class="nav-link" data-scroll-target="#ode-参数化建模与-sindy转录调控的动态方程辨识"><span class="header-section-number">32</span> ODE 参数化建模与 SINDy——转录调控的动态方程辨识</a>
   <ul class="collapse">
@@ -646,7 +649,7 @@ window.Quarto = {
     <div>
     <div class="quarto-title-meta-heading">Published</div>
     <div class="quarto-title-meta-contents">
-      <p class="date">June 15, 2026</p>
+      <p class="date">June 20, 2026</p>
     </div>
   </div>
   
@@ -732,40 +735,49 @@ window.Quarto = {
 </section>
 <section id="genie3-实践" class="level2" data-number="31.4">
 <h2 data-number="31.4" class="anchored" data-anchor-id="genie3-实践"><span class="header-section-number">31.4</span> GENIE3 实践</h2>
+<div class="note">
+<p><strong>并行运行依赖：</strong> GENIE3 在 <code>nCores &gt; 1</code> 时会通过 <code>foreach</code> 后端进行并行计算，并需要 <code>doRNG</code> 保证随机森林在并行环境中的可复现性。若本机尚未安装 <code>doRNG</code>，下面的示例会自动退回单核运行；安装 <code>doRNG</code> 后即可启用多核计算。</p>
+</div>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb1"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="co">#| label: genie3-setup</span></span>
 <span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="co">#| message: false</span></span>
 <span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="co">#| warning: false</span></span>
 <span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a><span class="co">#| cache: true</span></span>
 <span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a><span class="co"># Install and load required packages</span></span>
 <span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a><span class="co"># BiocManager::install("GENIE3")</span></span>
-<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(GENIE3)</span>
-<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(DESeq2)</span>
-<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(airway)</span>
-<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(dplyr)</span>
-<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(igraph)</span>
-<span id="cb1-12"><a href="#cb1-12" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-13"><a href="#cb1-13" aria-hidden="true" tabindex="-1"></a><span class="co"># ── Data preparation ──────────────────────────────────────────────</span></span>
-<span id="cb1-14"><a href="#cb1-14" aria-hidden="true" tabindex="-1"></a><span class="fu">data</span>(airway)</span>
-<span id="cb1-15"><a href="#cb1-15" aria-hidden="true" tabindex="-1"></a>dds <span class="ot">&lt;-</span> <span class="fu">DESeqDataSet</span>(airway, <span class="at">design =</span> <span class="sc">~</span> cell <span class="sc">+</span> dex)</span>
-<span id="cb1-16"><a href="#cb1-16" aria-hidden="true" tabindex="-1"></a>dds <span class="ot">&lt;-</span> dds[<span class="fu">rowSums</span>(<span class="fu">counts</span>(dds)) <span class="sc">&gt;</span> <span class="dv">10</span>, ]</span>
-<span id="cb1-17"><a href="#cb1-17" aria-hidden="true" tabindex="-1"></a>vsd <span class="ot">&lt;-</span> <span class="fu">vst</span>(dds, <span class="at">blind =</span> <span class="cn">FALSE</span>)</span>
-<span id="cb1-18"><a href="#cb1-18" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-19"><a href="#cb1-19" aria-hidden="true" tabindex="-1"></a><span class="co"># Expression matrix: genes × samples (GENIE3 convention)</span></span>
-<span id="cb1-20"><a href="#cb1-20" aria-hidden="true" tabindex="-1"></a>expr_mat_genie3 <span class="ot">&lt;-</span> <span class="fu">assay</span>(vsd)</span>
-<span id="cb1-21"><a href="#cb1-21" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-22"><a href="#cb1-22" aria-hidden="true" tabindex="-1"></a><span class="co"># For demo: use a small example TF set from known glucocorticoid response regulators</span></span>
-<span id="cb1-23"><a href="#cb1-23" aria-hidden="true" tabindex="-1"></a>tf_genes <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="st">"NR3C1"</span>, <span class="st">"RELA"</span>, <span class="st">"NFKB1"</span>, <span class="st">"SP1"</span>, <span class="st">"KLF4"</span>,</span>
-<span id="cb1-24"><a href="#cb1-24" aria-hidden="true" tabindex="-1"></a>               <span class="st">"CEBPB"</span>, <span class="st">"IRF1"</span>, <span class="st">"STAT1"</span>, <span class="st">"STAT3"</span>, <span class="st">"JUN"</span>)</span>
-<span id="cb1-25"><a href="#cb1-25" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-26"><a href="#cb1-26" aria-hidden="true" tabindex="-1"></a><span class="co"># Keep only TFs present in the expression matrix (match by gene symbol via rownames)</span></span>
-<span id="cb1-27"><a href="#cb1-27" aria-hidden="true" tabindex="-1"></a><span class="co"># airway rownames are Ensembl IDs; map to symbols first</span></span>
-<span id="cb1-28"><a href="#cb1-28" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(org.Hs.eg.db)</span>
-<span id="cb1-29"><a href="#cb1-29" aria-hidden="true" tabindex="-1"></a>sym_map <span class="ot">&lt;-</span> <span class="fu">mapIds</span>(org.Hs.eg.db, <span class="at">keys =</span> <span class="fu">rownames</span>(expr_mat_genie3),</span>
-<span id="cb1-30"><a href="#cb1-30" aria-hidden="true" tabindex="-1"></a>                  <span class="at">column =</span> <span class="st">"SYMBOL"</span>, <span class="at">keytype =</span> <span class="st">"ENSEMBL"</span>,</span>
-<span id="cb1-31"><a href="#cb1-31" aria-hidden="true" tabindex="-1"></a>                  <span class="at">multiVals =</span> <span class="st">"first"</span>)</span>
-<span id="cb1-32"><a href="#cb1-32" aria-hidden="true" tabindex="-1"></a>tf_ensembl <span class="ot">&lt;-</span> <span class="fu">names</span>(sym_map)[<span class="sc">!</span><span class="fu">is.na</span>(sym_map) <span class="sc">&amp;</span> sym_map <span class="sc">%in%</span> tf_genes]</span>
-<span id="cb1-33"><a href="#cb1-33" aria-hidden="true" tabindex="-1"></a>tf_present  <span class="ot">&lt;-</span> tf_ensembl</span>
-<span id="cb1-34"><a href="#cb1-34" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">"TFs present in data:"</span>, <span class="fu">length</span>(tf_present), <span class="st">"</span><span class="sc">\n</span><span class="st">"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a><span class="co"># BiocManager::install("doRNG")  # required only for parallel GENIE3 runs</span></span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(GENIE3)</span>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(DESeq2)</span>
+<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(airway)</span>
+<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(dplyr)</span>
+<span id="cb1-12"><a href="#cb1-12" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(igraph)</span>
+<span id="cb1-13"><a href="#cb1-13" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-14"><a href="#cb1-14" aria-hidden="true" tabindex="-1"></a><span class="co"># ── Data preparation ──────────────────────────────────────────────</span></span>
+<span id="cb1-15"><a href="#cb1-15" aria-hidden="true" tabindex="-1"></a><span class="fu">data</span>(airway)</span>
+<span id="cb1-16"><a href="#cb1-16" aria-hidden="true" tabindex="-1"></a>dds <span class="ot">&lt;-</span> <span class="fu">DESeqDataSet</span>(airway, <span class="at">design =</span> <span class="sc">~</span> cell <span class="sc">+</span> dex)</span>
+<span id="cb1-17"><a href="#cb1-17" aria-hidden="true" tabindex="-1"></a>dds <span class="ot">&lt;-</span> dds[<span class="fu">rowSums</span>(<span class="fu">counts</span>(dds)) <span class="sc">&gt;</span> <span class="dv">10</span>, ]</span>
+<span id="cb1-18"><a href="#cb1-18" aria-hidden="true" tabindex="-1"></a>vsd <span class="ot">&lt;-</span> <span class="fu">vst</span>(dds, <span class="at">blind =</span> <span class="cn">FALSE</span>)</span>
+<span id="cb1-19"><a href="#cb1-19" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-20"><a href="#cb1-20" aria-hidden="true" tabindex="-1"></a><span class="co"># Expression matrix: genes × samples (GENIE3 convention)</span></span>
+<span id="cb1-21"><a href="#cb1-21" aria-hidden="true" tabindex="-1"></a>expr_mat_genie3 <span class="ot">&lt;-</span> <span class="fu">assay</span>(vsd)</span>
+<span id="cb1-22"><a href="#cb1-22" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-23"><a href="#cb1-23" aria-hidden="true" tabindex="-1"></a><span class="co"># For demo: use a small example TF set from known glucocorticoid response regulators</span></span>
+<span id="cb1-24"><a href="#cb1-24" aria-hidden="true" tabindex="-1"></a>tf_genes <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="st">"NR3C1"</span>, <span class="st">"RELA"</span>, <span class="st">"NFKB1"</span>, <span class="st">"SP1"</span>, <span class="st">"KLF4"</span>,</span>
+<span id="cb1-25"><a href="#cb1-25" aria-hidden="true" tabindex="-1"></a>               <span class="st">"CEBPB"</span>, <span class="st">"IRF1"</span>, <span class="st">"STAT1"</span>, <span class="st">"STAT3"</span>, <span class="st">"JUN"</span>)</span>
+<span id="cb1-26"><a href="#cb1-26" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-27"><a href="#cb1-27" aria-hidden="true" tabindex="-1"></a><span class="co"># Keep only TFs present in the expression matrix (match by gene symbol via rownames)</span></span>
+<span id="cb1-28"><a href="#cb1-28" aria-hidden="true" tabindex="-1"></a><span class="co"># airway rownames are Ensembl IDs; map to symbols first</span></span>
+<span id="cb1-29"><a href="#cb1-29" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(org.Hs.eg.db)</span>
+<span id="cb1-30"><a href="#cb1-30" aria-hidden="true" tabindex="-1"></a>sym_map <span class="ot">&lt;-</span> <span class="fu">mapIds</span>(org.Hs.eg.db, <span class="at">keys =</span> <span class="fu">rownames</span>(expr_mat_genie3),</span>
+<span id="cb1-31"><a href="#cb1-31" aria-hidden="true" tabindex="-1"></a>                  <span class="at">column =</span> <span class="st">"SYMBOL"</span>, <span class="at">keytype =</span> <span class="st">"ENSEMBL"</span>,</span>
+<span id="cb1-32"><a href="#cb1-32" aria-hidden="true" tabindex="-1"></a>                  <span class="at">multiVals =</span> <span class="st">"first"</span>)</span>
+<span id="cb1-33"><a href="#cb1-33" aria-hidden="true" tabindex="-1"></a>tf_ensembl <span class="ot">&lt;-</span> <span class="fu">names</span>(sym_map)[<span class="sc">!</span><span class="fu">is.na</span>(sym_map) <span class="sc">&amp;</span> sym_map <span class="sc">%in%</span> tf_genes]</span>
+<span id="cb1-34"><a href="#cb1-34" aria-hidden="true" tabindex="-1"></a>tf_present  <span class="ot">&lt;-</span> tf_ensembl</span>
+<span id="cb1-35"><a href="#cb1-35" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">"TFs present in data:"</span>, <span class="fu">length</span>(tf_present), <span class="st">"</span><span class="sc">\n</span><span class="st">"</span>)</span>
+<span id="cb1-36"><a href="#cb1-36" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-37"><a href="#cb1-37" aria-hidden="true" tabindex="-1"></a><span class="co"># Use one core by default so the example remains runnable without doRNG.</span></span>
+<span id="cb1-38"><a href="#cb1-38" aria-hidden="true" tabindex="-1"></a><span class="co"># Install doRNG to enable reproducible parallel execution.</span></span>
+<span id="cb1-39"><a href="#cb1-39" aria-hidden="true" tabindex="-1"></a>genie3_ncores <span class="ot">&lt;-</span> <span class="cf">if</span> (<span class="fu">requireNamespace</span>(<span class="st">"doRNG"</span>, <span class="at">quietly =</span> <span class="cn">TRUE</span>)) <span class="dv">4</span> <span class="cf">else</span> <span class="dv">1</span></span>
+<span id="cb1-40"><a href="#cb1-40" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">"GENIE3 cores:"</span>, genie3_ncores, <span class="st">"</span><span class="sc">\n</span><span class="st">"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb2"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="co">#| label: genie3-run</span></span>
 <span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a><span class="co">#| cache: true</span></span>
 <span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a><span class="co">#| message: false</span></span>
@@ -775,7 +787,7 @@ window.Quarto = {
 <span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a>    expr_mat_genie3,</span>
 <span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a>    <span class="at">regulators  =</span> tf_present,   <span class="co"># limit to TF set</span></span>
 <span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a>    <span class="at">nTrees      =</span> <span class="dv">1000</span>,         <span class="co"># number of trees per target gene</span></span>
-<span id="cb2-10"><a href="#cb2-10" aria-hidden="true" tabindex="-1"></a>    <span class="at">nCores      =</span> <span class="dv">4</span>,</span>
+<span id="cb2-10"><a href="#cb2-10" aria-hidden="true" tabindex="-1"></a>    <span class="at">nCores      =</span> genie3_ncores,</span>
 <span id="cb2-11"><a href="#cb2-11" aria-hidden="true" tabindex="-1"></a>    <span class="at">returnMatrix =</span> <span class="cn">TRUE</span></span>
 <span id="cb2-12"><a href="#cb2-12" aria-hidden="true" tabindex="-1"></a>)</span>
 <span id="cb2-13"><a href="#cb2-13" aria-hidden="true" tabindex="-1"></a></span>
@@ -852,56 +864,86 @@ window.Quarto = {
 <section id="dyngenie3时间序列数据下的有向调控推断" class="level2" data-number="31.5">
 <h2 data-number="31.5" class="anchored" data-anchor-id="dyngenie3时间序列数据下的有向调控推断"><span class="header-section-number">31.5</span> dynGENIE3：时间序列数据下的有向调控推断</h2>
 <p>GENIE3 的核心假设是稳态（steady-state）：样本之间没有时间关系，每个样本都是独立的表达快照。然而，在时间序列 RNA-seq 实验中（如细胞分化、药物刺激后多时间点采样），样本之间存在明确的时序关系，时序先后本身就提供了因果方向的约束——时间点 <span class="math inline">\(t\)</span> 的调控子表达量应该预测时间点 <span class="math inline">\(t+1\)</span> 的靶基因表达量，而非反向。</p>
-<p>dynGENIE3 将 GENIE3 的特征回归框架扩展为<strong>时序回归</strong>：</p>
-<p><span class="math display">\[x_j(t+\Delta t) = f\bigl(\mathbf{x}_{\setminus j}(t)\bigr) + \epsilon\]</span></p>
-<p>即目标基因在下一时间点的表达量由当前时间点所有调控子的表达量预测。这一框架利用了时序先后约束，显著减少了无方向依据的假阳性调控边。</p>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb6"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="co"># dynGENIE3 requires time-series data</span></span>
-<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a><span class="co"># For demonstration: simulate a time-series expression dataset</span></span>
-<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a><span class="co"># In real analysis: use actual time-course RNA-seq data (e.g., LPS stimulation)</span></span>
-<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">123</span>)</span>
-<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a>n_timepoints <span class="ot">&lt;-</span> <span class="dv">8</span></span>
-<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a>n_genes      <span class="ot">&lt;-</span> <span class="dv">50</span></span>
-<span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a>n_tf         <span class="ot">&lt;-</span> <span class="dv">5</span></span>
-<span id="cb6-8"><a href="#cb6-8" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb6-9"><a href="#cb6-9" aria-hidden="true" tabindex="-1"></a><span class="co"># Simulate: TFs drive target gene expression with 1-step lag</span></span>
-<span id="cb6-10"><a href="#cb6-10" aria-hidden="true" tabindex="-1"></a>tf_expr  <span class="ot">&lt;-</span> <span class="fu">matrix</span>(<span class="fu">rnorm</span>(n_tf <span class="sc">*</span> n_timepoints), <span class="at">nrow =</span> n_tf)</span>
-<span id="cb6-11"><a href="#cb6-11" aria-hidden="true" tabindex="-1"></a>tgt_expr <span class="ot">&lt;-</span> <span class="fu">matrix</span>(<span class="dv">0</span>, <span class="at">nrow =</span> n_genes <span class="sc">-</span> n_tf, <span class="at">ncol =</span> n_timepoints)</span>
-<span id="cb6-12"><a href="#cb6-12" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb6-13"><a href="#cb6-13" aria-hidden="true" tabindex="-1"></a><span class="co"># Each target gene depends on 2 random TFs (lagged)</span></span>
-<span id="cb6-14"><a href="#cb6-14" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> (g <span class="cf">in</span> <span class="dv">1</span><span class="sc">:</span>(n_genes <span class="sc">-</span> n_tf)) {</span>
-<span id="cb6-15"><a href="#cb6-15" aria-hidden="true" tabindex="-1"></a>    reg_tfs <span class="ot">&lt;-</span> <span class="fu">sample</span>(<span class="dv">1</span><span class="sc">:</span>n_tf, <span class="dv">2</span>)</span>
-<span id="cb6-16"><a href="#cb6-16" aria-hidden="true" tabindex="-1"></a>    tgt_expr[g, <span class="sc">-</span><span class="dv">1</span>] <span class="ot">&lt;-</span> <span class="fl">0.6</span> <span class="sc">*</span> tf_expr[reg_tfs[<span class="dv">1</span>], <span class="sc">-</span>n_timepoints] <span class="sc">+</span></span>
-<span id="cb6-17"><a href="#cb6-17" aria-hidden="true" tabindex="-1"></a>                       <span class="fl">0.4</span> <span class="sc">*</span> tf_expr[reg_tfs[<span class="dv">2</span>], <span class="sc">-</span>n_timepoints] <span class="sc">+</span></span>
-<span id="cb6-18"><a href="#cb6-18" aria-hidden="true" tabindex="-1"></a>                       <span class="fu">rnorm</span>(n_timepoints <span class="sc">-</span> <span class="dv">1</span>, <span class="dv">0</span>, <span class="fl">0.3</span>)</span>
-<span id="cb6-19"><a href="#cb6-19" aria-hidden="true" tabindex="-1"></a>}</span>
-<span id="cb6-20"><a href="#cb6-20" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb6-21"><a href="#cb6-21" aria-hidden="true" tabindex="-1"></a>ts_matrix <span class="ot">&lt;-</span> <span class="fu">rbind</span>(tf_expr, tgt_expr)</span>
-<span id="cb6-22"><a href="#cb6-22" aria-hidden="true" tabindex="-1"></a><span class="fu">rownames</span>(ts_matrix) <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="fu">paste0</span>(<span class="st">"TF"</span>, <span class="dv">1</span><span class="sc">:</span>n_tf),</span>
-<span id="cb6-23"><a href="#cb6-23" aria-hidden="true" tabindex="-1"></a>                          <span class="fu">paste0</span>(<span class="st">"Gene"</span>, <span class="dv">1</span><span class="sc">:</span>(n_genes <span class="sc">-</span> n_tf)))</span>
+<p>dynGENIE3 并非把 GENIE3 简单地”错位一格”，而是将 GRN 推断建模为一个<strong>常微分方程（ODE）系统</strong>：每个基因 <span class="math inline">\(j\)</span> 的表达变化率由当前时刻所有调控子的表达量与自身的一阶降解项共同决定：</p>
+<p><span class="math display">\[\frac{dx_j(t)}{dt} = -\alpha_j\, x_j(t) + f_j\bigl(\mathbf{x}(t)\bigr) + \epsilon\]</span></p>
+<p>其中 <span class="math inline">\(\alpha_j\)</span> 是基因 <span class="math inline">\(j\)</span> 的 mRNA 降解速率，<span class="math inline">\(f_j(\cdot)\)</span> 为调控函数。dynGENIE3 用有限差分近似导数，构造学习样本：以当前时间点的表达向量 <span class="math inline">\(\mathbf{x}(t_k)\)</span> 为输入特征，以 <span class="math inline">\(\dfrac{x_j(t_{k+1}) - x_j(t_k)}{t_{k+1}-t_k} + \alpha_j\, x_j(t_k)\)</span> 为回归目标，再用树集成拟合 <span class="math inline">\(f_j\)</span>，并以变量重要性作为有向边权。这一框架利用了”原因先于结果”的时序约束与降解动力学，显著减少了无方向依据的假阳性调控边（Huynh-Thu &amp; Geurts, 2018）。</p>
+<div class="warning">
+<p><strong>R 中没有现成的 dynGENIE3 包：</strong> CRAN 与 Bioconductor 均未收录 dynGENIE3——Bioconductor 的 <code>GENIE3</code> 包只实现<strong>稳态</strong> GENIE3，不含上述时序 ODE 算法。官方 dynGENIE3 实现（<a href="https://github.com/vahuynh/dynGENIE3">vahuynh/dynGENIE3</a>）以 Python、MATLAB、R 源码形式发布，其中 R 版需手动编译 C 代码。本节因此改用官方 <strong>Python</strong> 实现进行演示。</p>
+</div>
+<section id="第一步估计降解速率-alpha_j" class="level3" data-number="31.5.1">
+<h3 data-number="31.5.1" class="anchored" data-anchor-id="第一步估计降解速率-alpha_j"><span class="header-section-number">31.5.1</span> 第一步：估计降解速率 <span class="math inline">\(\alpha_j\)</span></h3>
+<p>ODE 模型 <span class="math inline">\(\dfrac{dx_j}{dt} = -\alpha_j\, x_j + f_j(\mathbf{x})\)</span> 中，回归目标 <span class="math inline">\(\dfrac{x_j(t_{k+1})-x_j(t_k)}{t_{k+1}-t_k} + \alpha_j\, x_j(t_k)\)</span> 显式依赖于降解速率 <span class="math inline">\(\alpha_j\)</span>。因此<strong>必须先确定每个基因的 <span class="math inline">\(\alpha_j\)</span>，才能构造学习样本并拟合调控函数</strong> <span class="math inline">\(f_j\)</span>。dynGENIE3 提供三种指定 <span class="math inline">\(\alpha_j\)</span> 的方式：</p>
+<ul>
+<li><p><strong>从数据估计（<code>alpha="from_data"</code>，默认）</strong>：假设基因在达到表达峰值后近似按一阶动力学指数衰减 <span class="math inline">\(x(t) \approx A\,e^{-\alpha t} + C_{\min}\)</span>，据此从观测轨迹反推 <span class="math inline">\(\alpha_j\)</span>。具体地，对每个基因在每条时间序列中找到表达量的最大值 <span class="math inline">\(x_{\max}\)</span>（时间 <span class="math inline">\(t_{\max}\)</span>）与最小值 <span class="math inline">\(x_{\min}\)</span>（时间 <span class="math inline">\(t_{\min}\)</span>），按指数衰减关系估计：</p>
+<p><span class="math display">\[\hat{\alpha}_j = \frac{\ln x_{\max} - \ln x_{\min}}{\lvert t_{\max} - t_{\min}\rvert}\]</span></p>
+<p>当存在多条时间序列实验时，对每个基因取各实验估计值的<strong>最大值</strong>，作为降解速率的保守上界。这是无外部先验时的推荐做法。</p></li>
+<li><p><strong>统一常数（传入单个 <code>float</code>）</strong>：为所有基因设定相同的 <span class="math inline">\(\alpha_j\)</span>。当时间点过少、<code>from_data</code> 估计不稳定时，可用此法（例如取所有基因估计值的中位数）降低方差。</p></li>
+<li><p><strong>逐基因指定（传入长度等于基因数的向量）</strong>：若已有 mRNA 半衰期的实验测定值（如 SLAM-seq、4sU 标记数据），可由 <span class="math inline">\(\alpha_j = \ln 2 / t_{1/2}\)</span> 换算后直接提供，这是最可靠的方式。</p></li>
+</ul>
+<div class="note">
+<p><strong>运行环境说明：</strong> 下面的代码使用官方 Python 实现。dynGENIE3 未发布到 PyPI，需先从 GitHub 获取源码（<code>git clone https://github.com/vahuynh/dynGENIE3.git</code>），并将 <code>dynGENIE3_python/</code> 目录加入 <code>PYTHONPATH</code>。其依赖为 <code>numpy</code> 与 <code>scikit-learn</code>。本示例用模拟时间序列<strong>演示输入数据的组织格式与 API 调用方式</strong>——本书暂无规范时序 RNA-seq 数据集；实际分析中应替换为真实的时程数据（如 LPS 刺激后多时间点采样），且时间点数通常需 ≥ 10 才能稳定估计降解速率 <span class="math inline">\(\alpha_j\)</span>。</p>
+</div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb6"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> numpy <span class="im">as</span> np</span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> dynGENIE3 <span class="im">import</span> dynGENIE3, get_link_list</span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a><span class="co"># --- Simulate one time-series experiment (illustrates the required input format) ---</span></span>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a><span class="co"># In real analysis: load an actual time-course RNA-seq matrix instead.</span></span>
+<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a>rng <span class="op">=</span> np.random.default_rng(<span class="dv">123</span>)</span>
+<span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a>n_timepoints <span class="op">=</span> <span class="dv">12</span></span>
+<span id="cb6-8"><a href="#cb6-8" aria-hidden="true" tabindex="-1"></a>n_tf <span class="op">=</span> <span class="dv">5</span></span>
+<span id="cb6-9"><a href="#cb6-9" aria-hidden="true" tabindex="-1"></a>n_target <span class="op">=</span> <span class="dv">45</span></span>
+<span id="cb6-10"><a href="#cb6-10" aria-hidden="true" tabindex="-1"></a>n_genes <span class="op">=</span> n_tf <span class="op">+</span> n_target</span>
+<span id="cb6-11"><a href="#cb6-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-12"><a href="#cb6-12" aria-hidden="true" tabindex="-1"></a>gene_names <span class="op">=</span> [<span class="ss">f"TF</span><span class="sc">{</span>i <span class="op">+</span> <span class="dv">1</span><span class="sc">}</span><span class="ss">"</span> <span class="cf">for</span> i <span class="kw">in</span> <span class="bu">range</span>(n_tf)] <span class="op">+</span> <span class="op">\</span></span>
+<span id="cb6-13"><a href="#cb6-13" aria-hidden="true" tabindex="-1"></a>             [<span class="ss">f"Gene</span><span class="sc">{</span>i <span class="op">+</span> <span class="dv">1</span><span class="sc">}</span><span class="ss">"</span> <span class="cf">for</span> i <span class="kw">in</span> <span class="bu">range</span>(n_target)]</span>
+<span id="cb6-14"><a href="#cb6-14" aria-hidden="true" tabindex="-1"></a>regulators <span class="op">=</span> [<span class="ss">f"TF</span><span class="sc">{</span>i <span class="op">+</span> <span class="dv">1</span><span class="sc">}</span><span class="ss">"</span> <span class="cf">for</span> i <span class="kw">in</span> <span class="bu">range</span>(n_tf)]   <span class="co"># candidate regulators = TFs only</span></span>
+<span id="cb6-15"><a href="#cb6-15" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-16"><a href="#cb6-16" aria-hidden="true" tabindex="-1"></a><span class="co"># TF trajectories; each target follows 2 TFs with a one-step lag (ground truth)</span></span>
+<span id="cb6-17"><a href="#cb6-17" aria-hidden="true" tabindex="-1"></a>tf_traj <span class="op">=</span> rng.standard_normal((n_timepoints, n_tf))</span>
+<span id="cb6-18"><a href="#cb6-18" aria-hidden="true" tabindex="-1"></a>target_traj <span class="op">=</span> np.zeros((n_timepoints, n_target))</span>
+<span id="cb6-19"><a href="#cb6-19" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> g <span class="kw">in</span> <span class="bu">range</span>(n_target):</span>
+<span id="cb6-20"><a href="#cb6-20" aria-hidden="true" tabindex="-1"></a>    reg <span class="op">=</span> rng.choice(n_tf, size<span class="op">=</span><span class="dv">2</span>, replace<span class="op">=</span><span class="va">False</span>)</span>
+<span id="cb6-21"><a href="#cb6-21" aria-hidden="true" tabindex="-1"></a>    target_traj[<span class="dv">1</span>:, g] <span class="op">=</span> (<span class="fl">0.6</span> <span class="op">*</span> tf_traj[:<span class="op">-</span><span class="dv">1</span>, reg[<span class="dv">0</span>]] <span class="op">+</span></span>
+<span id="cb6-22"><a href="#cb6-22" aria-hidden="true" tabindex="-1"></a>                          <span class="fl">0.4</span> <span class="op">*</span> tf_traj[:<span class="op">-</span><span class="dv">1</span>, reg[<span class="dv">1</span>]] <span class="op">+</span></span>
+<span id="cb6-23"><a href="#cb6-23" aria-hidden="true" tabindex="-1"></a>                          rng.normal(<span class="dv">0</span>, <span class="fl">0.3</span>, n_timepoints <span class="op">-</span> <span class="dv">1</span>))</span>
 <span id="cb6-24"><a href="#cb6-24" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb6-25"><a href="#cb6-25" aria-hidden="true" tabindex="-1"></a><span class="co"># dynGENIE3: stack current vs next time point</span></span>
-<span id="cb6-26"><a href="#cb6-26" aria-hidden="true" tabindex="-1"></a>X_current <span class="ot">&lt;-</span> ts_matrix[, <span class="sc">-</span>n_timepoints]    <span class="co"># t = 1, ..., T-1</span></span>
-<span id="cb6-27"><a href="#cb6-27" aria-hidden="true" tabindex="-1"></a>X_next    <span class="ot">&lt;-</span> ts_matrix[, <span class="sc">-</span><span class="dv">1</span>]               <span class="co"># t = 2, ..., T</span></span>
-<span id="cb6-28"><a href="#cb6-28" aria-hidden="true" tabindex="-1"></a><span class="co"># Transpose: samples (time points) × genes</span></span>
-<span id="cb6-29"><a href="#cb6-29" aria-hidden="true" tabindex="-1"></a>expr_dyn  <span class="ot">&lt;-</span> <span class="fu">t</span>(X_next)</span>
-<span id="cb6-30"><a href="#cb6-30" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb6-31"><a href="#cb6-31" aria-hidden="true" tabindex="-1"></a><span class="co"># Run GENIE3 on time-shifted data (dynGENIE3 logic)</span></span>
-<span id="cb6-32"><a href="#cb6-32" aria-hidden="true" tabindex="-1"></a>tf_ids_dyn <span class="ot">&lt;-</span> <span class="fu">paste0</span>(<span class="st">"TF"</span>, <span class="dv">1</span><span class="sc">:</span>n_tf)</span>
-<span id="cb6-33"><a href="#cb6-33" aria-hidden="true" tabindex="-1"></a>weight_dyn <span class="ot">&lt;-</span> <span class="fu">GENIE3</span>(</span>
-<span id="cb6-34"><a href="#cb6-34" aria-hidden="true" tabindex="-1"></a>    <span class="fu">t</span>(X_next),</span>
-<span id="cb6-35"><a href="#cb6-35" aria-hidden="true" tabindex="-1"></a>    <span class="at">regulators  =</span> tf_ids_dyn,</span>
-<span id="cb6-36"><a href="#cb6-36" aria-hidden="true" tabindex="-1"></a>    <span class="at">nTrees      =</span> <span class="dv">500</span>,</span>
-<span id="cb6-37"><a href="#cb6-37" aria-hidden="true" tabindex="-1"></a>    <span class="at">nCores      =</span> <span class="dv">4</span>,</span>
-<span id="cb6-38"><a href="#cb6-38" aria-hidden="true" tabindex="-1"></a>    <span class="at">returnMatrix =</span> <span class="cn">TRUE</span></span>
-<span id="cb6-39"><a href="#cb6-39" aria-hidden="true" tabindex="-1"></a>)</span>
-<span id="cb6-40"><a href="#cb6-40" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb6-41"><a href="#cb6-41" aria-hidden="true" tabindex="-1"></a>dynenie3_edges <span class="ot">&lt;-</span> <span class="fu">getLinkList</span>(weight_dyn, <span class="at">threshold =</span> <span class="dv">0</span>)</span>
-<span id="cb6-42"><a href="#cb6-42" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">"Top dynGENIE3 predicted edges:</span><span class="sc">\n</span><span class="st">"</span>)</span>
-<span id="cb6-43"><a href="#cb6-43" aria-hidden="true" tabindex="-1"></a><span class="fu">head</span>(dynenie3_edges, <span class="dv">10</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<span id="cb6-25"><a href="#cb6-25" aria-hidden="true" tabindex="-1"></a><span class="co"># dynGENIE3 input convention:</span></span>
+<span id="cb6-26"><a href="#cb6-26" aria-hidden="true" tabindex="-1"></a><span class="co">#   TS_data     = list of arrays, each (n_timepoints x n_genes)</span></span>
+<span id="cb6-27"><a href="#cb6-27" aria-hidden="true" tabindex="-1"></a><span class="co">#   time_points = list of 1-D arrays giving the sampling times of each series</span></span>
+<span id="cb6-28"><a href="#cb6-28" aria-hidden="true" tabindex="-1"></a>expr_ts <span class="op">=</span> np.hstack([tf_traj, target_traj])          <span class="co"># shape: time x genes</span></span>
+<span id="cb6-29"><a href="#cb6-29" aria-hidden="true" tabindex="-1"></a>TS_data <span class="op">=</span> [expr_ts]</span>
+<span id="cb6-30"><a href="#cb6-30" aria-hidden="true" tabindex="-1"></a>time_points <span class="op">=</span> [np.arange(n_timepoints, dtype<span class="op">=</span><span class="bu">float</span>)]</span>
+<span id="cb6-31"><a href="#cb6-31" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-32"><a href="#cb6-32" aria-hidden="true" tabindex="-1"></a><span class="co"># --- Run dynGENIE3 ---</span></span>
+<span id="cb6-33"><a href="#cb6-33" aria-hidden="true" tabindex="-1"></a><span class="co"># Step 1 (internal): per-gene decay rates alpha are estimated from the data and</span></span>
+<span id="cb6-34"><a href="#cb6-34" aria-hidden="true" tabindex="-1"></a><span class="co"># returned alongside VIM. To supply known rates instead, pass either a single</span></span>
+<span id="cb6-35"><a href="#cb6-35" aria-hidden="true" tabindex="-1"></a><span class="co"># float (same rate for all genes) or a vector of length n_genes, e.g.:</span></span>
+<span id="cb6-36"><a href="#cb6-36" aria-hidden="true" tabindex="-1"></a><span class="co">#   alpha = np.log(2) / half_lives        # half_lives: per-gene mRNA half-life</span></span>
+<span id="cb6-37"><a href="#cb6-37" aria-hidden="true" tabindex="-1"></a>VIM, alphas, _, _, _ <span class="op">=</span> dynGENIE3(</span>
+<span id="cb6-38"><a href="#cb6-38" aria-hidden="true" tabindex="-1"></a>    TS_data,</span>
+<span id="cb6-39"><a href="#cb6-39" aria-hidden="true" tabindex="-1"></a>    time_points,</span>
+<span id="cb6-40"><a href="#cb6-40" aria-hidden="true" tabindex="-1"></a>    alpha<span class="op">=</span><span class="st">"from_data"</span>,      <span class="co"># estimate per-gene mRNA decay rate from the time series</span></span>
+<span id="cb6-41"><a href="#cb6-41" aria-hidden="true" tabindex="-1"></a>    gene_names<span class="op">=</span>gene_names,</span>
+<span id="cb6-42"><a href="#cb6-42" aria-hidden="true" tabindex="-1"></a>    regulators<span class="op">=</span>regulators,  <span class="co"># restrict regulators to the TF set</span></span>
+<span id="cb6-43"><a href="#cb6-43" aria-hidden="true" tabindex="-1"></a>    tree_method<span class="op">=</span><span class="st">"RF"</span>,</span>
+<span id="cb6-44"><a href="#cb6-44" aria-hidden="true" tabindex="-1"></a>    ntrees<span class="op">=</span><span class="dv">1000</span>,</span>
+<span id="cb6-45"><a href="#cb6-45" aria-hidden="true" tabindex="-1"></a>    nthreads<span class="op">=</span><span class="dv">4</span>,</span>
+<span id="cb6-46"><a href="#cb6-46" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb6-47"><a href="#cb6-47" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-48"><a href="#cb6-48" aria-hidden="true" tabindex="-1"></a><span class="co"># Inspect the estimated degradation rates before trusting the network</span></span>
+<span id="cb6-49"><a href="#cb6-49" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="st">"Estimated decay rates (alpha) summary:"</span>)</span>
+<span id="cb6-50"><a href="#cb6-50" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"  min=</span><span class="sc">{</span>alphas<span class="sc">.</span><span class="bu">min</span>()<span class="sc">:.3f}</span><span class="ss">  median=</span><span class="sc">{</span>np<span class="sc">.</span>median(alphas)<span class="sc">:.3f}</span><span class="ss">  max=</span><span class="sc">{</span>alphas<span class="sc">.</span><span class="bu">max</span>()<span class="sc">:.3f}</span><span class="ss">"</span>)</span>
+<span id="cb6-51"><a href="#cb6-51" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-52"><a href="#cb6-52" aria-hidden="true" tabindex="-1"></a><span class="co"># Ranked directed edges (regulator -&gt; target), strongest first</span></span>
+<span id="cb6-53"><a href="#cb6-53" aria-hidden="true" tabindex="-1"></a>link_list <span class="op">=</span> get_link_list(VIM, gene_names<span class="op">=</span>gene_names,</span>
+<span id="cb6-54"><a href="#cb6-54" aria-hidden="true" tabindex="-1"></a>                          regulators<span class="op">=</span>regulators, maxcount<span class="op">=</span><span class="dv">10</span>)</span>
+<span id="cb6-55"><a href="#cb6-55" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="st">"Top dynGENIE3 predicted edges:"</span>)</span>
+<span id="cb6-56"><a href="#cb6-56" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(link_list)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="tip">
 <p><strong>dynGENIE3 的数据要求：</strong> 时间间隔应尽量均匀，且相邻时间点之间的生物学变化应足够大（能够被测序检测到）。若时间间隔过短（如 5 分钟采样，基因表达量变化不显著），dynGENIE3 会退化为 GENIE3 的行为。若时间间隔过长（基因调控已经完成多个回路），滞后一步的假设会失效，可考虑使用多步滞后（1 步、2 步同时纳入模型）。</p>
 </div>
 <hr>
+</section>
 </section>
 </section>
 <section id="ode-参数化建模与-sindy转录调控的动态方程辨识" class="level1" data-number="32">
