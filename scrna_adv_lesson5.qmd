@@ -1,2 +1,223 @@
-# 第七章 课时5
+---
+title: "空间转录组高级分析：细胞解卷积与成像型空间转录组"
+date: today
+format:
+  html:
+    code-fold: false
+    toc: true
+    toc-depth: 3
+    number-sections: true
+    theme: cosmo
+crossref:
+  fig-title: 图
+  fig-prefix: 图
+  tbl-title: 表
+  tbl-prefix: 表
+  chapters: false
+---
 
+# 专题概述
+
+空间转录组学存在一对根本性的技术权衡。基于测序的 Visium 平台覆盖全转录组，但分辨率受限——每个 Spot 直径 55 µm，混合了多个细胞的信号；基于成像的 MERFISH 平台达到亚细胞分辨率，却只能检测有限的基因 panel。本专题分别针对这两条路线的核心计算问题。对于 Visium，**细胞解卷积**（Cell Type Deconvolution）利用 scRNA-seq 参考图谱，将每个 Spot 的混合信号拆分为各细胞类型的丰度估计，从而在低分辨率数据上恢复细胞类型的空间分布。对于 MERFISH，关键步骤前移到 RNA 检测之前的**图像处理与细胞分割**。两类分析都依赖前几个专题产出的注释 scRNA-seq 图谱作为参考。
+
+**学习目标**：理解细胞解卷积的方法论谱系与适用场景；掌握 cell2location 两阶段贝叶斯框架与 RCTD 的实操逻辑；能解读解卷积的空间丰度结果；理解 MERFISH 的编码与误差纠正原理；了解细胞分割在成像型空间数据分析中的关键作用。
+
+---
+
+# 细胞解卷积
+
+## 为什么需要解卷积
+
+Visium Spot 的直径（55 µm）通常涵盖 1–10 个细胞，因此每个 Spot 的转录谱是多种细胞类型的混合信号。直接对 Spot 聚类只能得到"空间域"（spatial domain，转录特征相似的组织区域），却无法回答"这个区域里有哪些细胞类型、各占多少比例"。细胞解卷积的目标正是后者：借助已知细胞类型转录特征的 scRNA-seq 参考，把每个 Spot 的混合信号反解为各细胞类型的丰度向量。
+
+{{Wiki:Spatial_transcriptomics}}
+
+解卷积本质是一个有约束的混合模型反演问题：已知混合信号（Spot 表达）与各成分的特征谱（细胞类型签名），求各成分的混合比例。其成败高度依赖参考图谱的质量——参考必须覆盖目标组织中实际存在的所有细胞类型，否则缺失的类型会被错误地"分摊"到其他类型上。
+
+## 方法谱系
+
+细胞解卷积工具按统计复杂度可分为三代：
+
+- **基于线性回归（RCTD、SPOTlight）**：假设 Spot 表达是各细胞类型签名的线性加权和，用（带稳健性处理的）回归求解权重。RCTD（Robust Cell Type Decomposition）用泊松/负二项最大似然建模，并提供 `doublet_mode`，假设每个 Spot 至多由两种主要细胞类型构成（适合分辨率较高、细胞数较少的平台）（Cable et al., 2022）。
+- **基于概率生成模型（cell2location）**：用层次贝叶斯模型，显式建模技术批次、捕获效率与细胞类型丰度的空间结构，精度高且能给出不确定性估计（Kleshchevnikov et al., 2022）。
+- **基于深度学习（Tangram）**：用深度学习把单细胞直接"映射"到空间位置，灵活但可解释性较弱。
+
+| 方法 | 统计框架 | 不确定性估计 | 计算需求 | 适用场景 |
+|------|----------|--------------|----------|----------|
+| RCTD | 泊松/NB 最大似然回归 | 有限 | 中（CPU） | 中高分辨率、细胞数少的 Spot |
+| cell2location | 层次贝叶斯生成模型 | 完整后验 | 高（建议 GPU） | 大规模 Visium、需校正批次 |
+| Tangram | 深度学习映射 | 无 | 高（GPU） | 需把单细胞投射到空间 |
+
+: 主流细胞解卷积方法对比 {#tbl-deconv-methods}
+
+## cell2location 两阶段框架
+
+cell2location 把解卷积分解为两个独立训练的阶段，这一设计兼顾了准确性与可迁移性：
+
+1. **第一阶段：学习细胞类型签名**。在带注释的 scRNA-seq 参考上，用负二项回归估计每种细胞类型每个基因的参考表达水平（签名矩阵），并把实验批次作为协变量纳入，以消除参考数据自身的技术差异。这一阶段只依赖 scRNA 参考，与具体空间数据无关，因此签名矩阵可复用于同组织的多个空间切片。
+2. **第二阶段：估计空间丰度**。固定第一阶段的签名矩阵，用层次贝叶斯模型推断每个 Spot 中各细胞类型的绝对丰度。模型显式建模了每个 Spot 的总 RNA 捕获效率与技术背景，从而把"细胞类型丰度"与"捕获效率"两个混杂因素分离开。
+
+## cell2location 实操
+
+下面使用 Visium 小鼠脑数据（`stxBrain`）与一个注释好的小鼠脑 scRNA-seq 参考演示解卷积。
+
+:::note
+**运行环境说明：** cell2location 是 Python 包（`pip install cell2location`），基于 scvi-tools 与 PyTorch，**强烈建议在 GPU 环境运行**；CPU 上训练可能需要数小时。输入为 AnnData 格式的 scRNA 参考（`sc_ref.h5ad`，含 `cell_type` 注释）与 Visium 数据（`visium.h5ad`）。本示例展示核心 API，省略了完整的训练超参数调优。
+:::
+
+```python
+import cell2location
+import scanpy as sc
+from cell2location.models import RegressionModel, Cell2location
+
+# ---- Stage 1: estimate per-cell-type reference signatures from scRNA-seq ----
+adata_ref = sc.read_h5ad("sc_ref.h5ad")
+RegressionModel.setup_anndata(adata_ref, batch_key="batch", labels_key="cell_type")
+ref_model = RegressionModel(adata_ref)
+ref_model.train(max_epochs=250)
+adata_ref = ref_model.export_posterior(adata_ref)
+
+# Reference signature matrix: mean expression per gene per cell type
+inf_signatures = adata_ref.varm["means_per_cluster_mu_fg"]
+```
+
+```python
+# ---- Stage 2: estimate per-spot cell-type abundances on the Visium data ----
+adata_vis = sc.read_h5ad("visium.h5ad")
+Cell2location.setup_anndata(adata_vis, batch_key="sample")
+
+# N_cells_per_location and detection_alpha are the two key priors:
+#   - N_cells_per_location: expected cells per spot (tissue-dependent, ~e.g. 8 for brain)
+#   - detection_alpha: regularization of per-spot detection efficiency
+mod = Cell2location(
+    adata_vis,
+    cell_state_df = inf_signatures,
+    N_cells_per_location = 8,
+    detection_alpha = 20,
+)
+mod.train(max_epochs=30000)
+adata_vis = mod.export_posterior(adata_vis)
+```
+
+```python
+#| label: fig-cell2location-abundance
+#| fig-cap: "cell2location 推断的细胞类型空间丰度（stxBrain Visium 小鼠脑）。每个子图为一种细胞类型的后验丰度空间热图，颜色越亮表示该 Spot 中该细胞类型的估计丰度越高。兴奋性神经元、抑制性神经元与星形胶质细胞呈现与已知脑区解剖结构一致的分层分布，验证了解卷积结果的生物学可靠性。"
+import scanpy as sc
+
+# Map a few cell types' posterior abundances back onto tissue coordinates
+sc.pl.spatial(
+    adata_vis,
+    color=["Excitatory_neurons", "Inhibitory_neurons", "Astrocytes"],
+    ncols=3,
+    save="_cell2location_abundance.png",
+)
+```
+
+R 用户可使用 `spacexr` 包的 RCTD 作为等价方案，其流程为：构建参考（`Reference()`）→ 构建空间数据（`SpatialRNA()`）→ 运行解卷积（`create.RCTD()` + `run.RCTD()`），输出每个 Spot 的细胞类型权重矩阵。
+
+:::warning
+**参考图谱不匹配是解卷积最大的失败来源：** 若参考 scRNA-seq 缺少目标组织中实际存在的某种细胞类型，解卷积无法"凭空"识别它，只会把它的信号错误地分摊给签名最相似的已有类型，产生系统性偏差。因此参考必须来自同种、同组织（最好同发育阶段/病理状态），且覆盖所有预期细胞类型，每种类型至少有数十个细胞以稳定估计签名。盲目套用不匹配的公共参考会得到看似合理实则错误的空间分布。
+:::
+
+---
+
+# 成像型空间转录组：MERFISH
+
+## 编码与误差纠正原理
+
+以 MERFISH（Multiplexed Error-Robust Fluorescence In Situ Hybridization）为代表的成像型技术，不经过测序，而是通过多轮荧光原位杂交（FISH）直接在原位读取 RNA 分子（Chen et al., 2015）。其分辨率可达亚细胞水平，但通量受限于探针设计——单次实验通常只能检测数百至数千个预先选定的基因。
+
+{{Wiki:Fluorescence_in_situ_hybridization}}
+
+MERFISH 的核心创新是**纠错编码**。每个目标基因被分配一个二进制条形码（如 16 位中恰有 4 位为 1 的码字），通过多轮杂交逐位读出：第 $k$ 轮该基因对应位为 1 则荧光"亮"、为 0 则"灭"。关键在于码字的设计遵循汉明距离约束——任意两个有效码字的汉明距离 ≥ 4。这意味着即使某一轮杂交出错（一位翻转），观测到的错误码字与真实码字的距离仍为 1、与其他任何有效码字的距离至少为 3，从而可以唯一地纠正回真实码字。正是这种"误差稳健"（Error-Robust）的编码，使 MERFISH 在数千个基因的高度复用下仍保持低误判率。
+
+## 细胞分割：成像型分析的关键前置步骤
+
+测序型数据的"细胞"由微流控或条形码阵列天然定义，而成像型数据得到的是一张布满 RNA 分子点的图像——必须先确定每个细胞的边界，才能把 RNA 点分配给细胞、构建表达矩阵。这一步称为细胞分割（Cell Segmentation），是成像型分析特有的、且决定下游一切结果质量的关键环节。
+
+分割通常基于 DAPI（细胞核染色）或 poly-T/膜染色信号，划定细胞核与细胞质边界。传统的分水岭算法对密集、形态不规则的细胞效果有限，当前主流是深度学习分割工具如 Cellpose——它用在大量人工标注图像上预训练的神经网络，对各类细胞形态有良好的泛化能力（Stringer et al., 2021）。分割错误（如把两个相邻细胞合并、或把一个细胞拆成两个）会直接污染表达矩阵，产生类似 scRNA 中"双胞"的假象。
+
+## MERFISH 数据分析实操
+
+分割完成、得到细胞×基因表达矩阵后，MERFISH 数据的下游分析（归一化、聚类、注释）与 scRNA 高度相似，可纳入 Seurat/Scanpy 标准流程，并额外利用其空间坐标。
+
+:::note
+**运行环境说明：** 本节使用 R 包 `Seurat`（v5 起支持成像型空间数据）与 `SeuratData` 的 `vizgen.brain`（Vizgen MERSCOPE 小鼠脑 MERFISH 数据）。该数据已完成细胞分割，提供细胞级表达矩阵与空间坐标，约 500 MB。原始图像的分割（Cellpose 等）属于更上游、计算更重的步骤，此处不展开。
+:::
+
+```r
+library(Seurat)
+library(SeuratData)
+
+# Load a segmented MERFISH dataset (cell x gene matrix + spatial coordinates)
+merfish <- LoadData("vizgen.brain")
+
+# Imaging-based panels are small (hundreds of genes); use SCT then standard pipeline
+merfish <- SCTransform(merfish, assay = "Vizgen", clip.range = c(-10, 10))
+merfish <- RunPCA(merfish, npcs = 30) |>
+    RunUMAP(dims = 1:30) |>
+    FindNeighbors(dims = 1:30) |>
+    FindClusters(resolution = 0.3)
+```
+
+```r
+#| label: fig-merfish-spatial
+#| fig-cap: "MERFISH 小鼠脑切片的空间聚类（vizgen.brain 数据集）。每个点为一个经分割的单细胞，按转录组聚类着色并绘制在其原位空间坐标上。由于 MERFISH 的亚细胞分辨率，聚类结果直接呈现出与脑区解剖结构吻合的清晰分层，无需解卷积即可定位单个细胞的类型。"
+library(Seurat)
+
+# Plot cluster identity in true spatial coordinates (no deconvolution needed)
+ImageDimPlot(merfish, fov = "centroids", cols = "polychrome", size = 0.5)
+```
+
+成像型数据可通过标签传递（`FindTransferAnchors()`，方法同专题 7.4）借助 scRNA 参考获得精细的细胞类型注释；其亚细胞分辨率还支持研究 RNA 在细胞内（核周 vs 胞质）的分布，这是测序型平台无法提供的信息维度。
+
+:::tip
+**成像型与测序型的互补，而非替代：** MERFISH（高分辨率、有限基因、可做细胞分割与亚细胞定位）与 Visium（低分辨率、全转录组、需解卷积）各有所长。理想的空间研究常将二者结合：用 Visium 做全转录组的无偏发现、锁定关键基因与区域，再用 MERFISH 对这些基因在单细胞分辨率下精确定位。两类数据可通过共同的 scRNA 参考图谱（本章模块 A、B 产出）相互锚定与验证。
+:::
+
+---
+
+# 方法总结与衔接说明
+
+本专题围绕空间转录组的分辨率-通量权衡，讲解了两条技术路线的核心计算方法：对低分辨率的 Visium 用 cell2location/RCTD 做细胞解卷积、恢复细胞类型的空间分布；对高分辨率的 MERFISH 用细胞分割与纠错编码、在亚细胞尺度直接定位单个细胞。两类分析都以本章模块 A、B 产出的注释 scRNA-seq 图谱为参考，体现了"单细胞图谱 → 空间映射"的方法论闭环。至此，第7章完成了从多样本统计、动态推断、调控与多组学到空间解析的高级分析体系；这些方法与第6章的基础流程一起，构成了单细胞与空间转录组数据分析的完整工具箱。
+
+---
+
+# 课后自测 (Post-Lesson Quiz)
+
+1. 为什么 Visium 数据需要细胞解卷积，而 MERFISH 数据通常不需要？这一差异的技术根源是什么？
+
+2. 细胞解卷积本质上是什么类型的数学问题？为什么说它的成败高度依赖参考图谱的质量？
+
+3. RCTD、cell2location 与 Tangram 三类解卷积方法在统计框架上有何区别？在需要校正技术批次、且数据规模大时应优先考虑哪个？
+
+4. cell2location 为什么把解卷积分为"学习签名"与"估计丰度"两个独立阶段？这种分解带来了什么实际好处？
+
+5. 若 scRNA-seq 参考缺少目标组织中实际存在的某种细胞类型，解卷积会发生什么？应如何选择参考以避免这一问题？
+
+6. MERFISH 如何通过条形码设计实现误差纠正？为什么有效码字之间的汉明距离 ≥ 4 能够纠正一位读取错误？
+
+7. 为什么细胞分割（Cell Segmentation）是成像型空间转录组分析的关键前置步骤？分割错误会导致什么后果？
+
+8. 一个研究团队既有同一小鼠脑区的 Visium 数据，又有 MERFISH 数据。请设计一个结合两者优势的分析方案，说明各自承担什么角色、如何相互验证。
+
+<details>
+<summary><strong>参考答案 (Reference Answers)</strong></summary>
+
+1. *Visium 的 Spot 直径 55 µm，混合了 1–10 个细胞的信号，故需解卷积把混合信号拆分为细胞类型丰度；MERFISH 达到亚细胞分辨率，每个测量单元就是单个细胞，聚类即可直接得到细胞类型，无需解卷积。技术根源在于二者分辨率不同：测序型受捕获 Spot 尺寸限制，成像型直接在原位以光学分辨率读取分子。*
+
+2. *它是一个有约束的混合模型反演问题：已知混合信号（Spot 表达）与各成分特征谱（细胞类型签名），求各成分的混合比例。依赖参考质量是因为参考提供了"成分特征谱"——若参考的签名不准或缺类型，反演的比例就系统性出错，缺失的类型会被错误分摊到其他类型。*
+
+3. *RCTD 用泊松/负二项最大似然回归（线性混合假设，提供 doublet_mode）；cell2location 用层次贝叶斯生成模型，显式建模批次、捕获效率并给出完整后验；Tangram 用深度学习映射，灵活但可解释性弱。需要校正批次且规模大时应优先 cell2location（建议 GPU）。*
+
+4. *因为第一阶段（学习签名）只依赖 scRNA 参考、与具体空间数据无关，第二阶段（估计丰度）固定签名再推断空间丰度。好处是签名矩阵可复用于同组织的多个空间切片，避免每张切片都重新训练参考，提高效率与一致性；同时把参考自身的批次效应在第一阶段就消除。*
+
+5. *解卷积无法凭空识别缺失的细胞类型，会把它的信号错误分摊给签名最相似的已有类型，产生系统性偏差，得到看似合理实则错误的空间分布。避免方法：参考应来自同种、同组织（最好同发育阶段/病理状态），覆盖所有预期细胞类型，且每种类型至少有数十个细胞以稳定估计签名。*
+
+6. *每个基因分配一个满足汉明距离约束的二进制码字，通过多轮杂交逐位读出（亮=1，灭=0）。当任意两个有效码字的汉明距离 ≥ 4 时，若某一轮出错（一位翻转），观测码字与真实码字距离为 1、与其他任何有效码字距离至少为 3，因此最近的有效码字唯一且就是真实码字，从而可纠正这一位错误。*
+
+7. *因为成像型数据得到的是布满 RNA 分子点的图像，必须先确定每个细胞的边界，才能把 RNA 点分配给细胞、构建表达矩阵；分割定义了"细胞"这一基本分析单元。分割错误（合并相邻细胞或拆分单个细胞）会直接污染表达矩阵，产生类似 scRNA 中"双胞"的假象或人为的细胞碎片，污染下游所有聚类与注释结果。*
+
+8. *方案：用 Visium 做全转录组的无偏发现，识别差异表达基因、空间域与候选关键基因/区域（承担"广度"角色）；再用 MERFISH（针对 Visium 发现的关键基因设计 panel）在单细胞分辨率下精确定位这些基因的表达细胞与亚细胞分布（承担"精度"角色）。相互验证：两类数据通过共同的注释 scRNA 参考图谱锚定——Visium 经 cell2location 解卷积得到的细胞类型空间分布，可与 MERFISH 经分割+聚类直接得到的单细胞空间分布在同一脑区比对，若二者在细胞类型的空间定位上一致，则结论稳健。*
+
+</details>

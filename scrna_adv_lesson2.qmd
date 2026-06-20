@@ -1,2 +1,233 @@
-# 第七章 课时2
+---
+title: "拟时序分析与 RNA Velocity"
+date: today
+format:
+  html:
+    code-fold: false
+    toc: true
+    toc-depth: 3
+    number-sections: true
+    theme: cosmo
+crossref:
+  fig-title: 图
+  fig-prefix: 图
+  tbl-title: 表
+  tbl-prefix: 表
+  chapters: false
+---
 
+# 专题概述
+
+细胞分化是一个连续的动态过程，但 scRNA-seq 对每个细胞只产生一次"快照"。如何从静态的横断面数据重建动态的分化路径？拟时序分析（Trajectory Inference, TI）的核心假设是：转录组相似的细胞处于相近的分化状态，因此细胞间的转录组距离编码了分化的连续性。基于此，可以为每个细胞赋予一个"伪时间"（Pseudotime）坐标，刻画其在分化轨迹上的相对位置。但拟时序本身没有方向——它只能说"这些细胞在一条路径上"，却无法判断分化是从 A 到 B 还是从 B 到 A。RNA Velocity 通过未剪接 pre-mRNA 与成熟 mRNA 的丰度比值推断转录的瞬时变化方向，为轨迹注入真实的时间箭头。本专题讲解拟时序的算法逻辑与 Monocle 3 实操，以及 RNA Velocity 的 ODE 动力学模型与 scVelo 实操。
+
+**学习目标**：理解拟时序推断的核心假设与方法演进；掌握 Monocle 3 学习图策略与 `graph_test()` 拟时序差异检验；理解 RNA Velocity 的 ODE 模型与稳态/动力学两种估计模式；能用 scVelo 计算速率并叠加流场可视化；了解两类方法的适用边界与失效情形。
+
+---
+
+# 拟时序分析
+
+## 从快照到轨迹：核心假设
+
+scRNA-seq 在解离组织时杀死了细胞，因此无法追踪同一个细胞随时间的变化。拟时序分析绕过这一限制的关键洞见是：在一个正在分化的细胞群体中，不同细胞恰好"凝固"在分化过程的不同阶段。如果在高维表达空间中，分化是渐进、连续的，那么处于相邻分化阶段的细胞在转录组上也彼此相邻。于是，大量细胞的横断面数据共同勾勒出一条连续的"轨迹"，沿轨迹的位置就是伪时间。
+
+{{Wiki:Cellular_differentiation}}
+
+需要强调，伪时间是一个**相对的、无单位的**坐标，它衡量细胞沿分化路径走了多远，而非真实的物理时间（小时或天）。两个伪时间相差 0.5 的细胞，其真实分化时间差并不固定。
+
+## 拟时序方法的演进
+
+拟时序工具的发展反映了对轨迹复杂度建模能力的提升：
+
+- **DDRTree（Monocle 2）**：将细胞嵌入到一棵反向图嵌入（reversed graph embedding）学习出的树结构上，支持分叉但对参数敏感。
+- **学习图（Learned Graph，Monocle 3）**：在 UMAP 降维空间中学习一个主图（principal graph），可表示更复杂的拓扑（多分叉、收敛、甚至环），是当前 Monocle 的主流方法。
+- **主曲线（Slingshot）**：在已有的聚类与降维基础上拟合分支主曲线，对多谱系分化稳健，且能与任意降维嵌入兼容。
+- **最优传输（WaddingtonOT）**：当有多个真实时间点采样时，用最优传输理论推断时间点之间的细胞状态转移概率，最接近真实动力学。
+
+方法选择的实用原则：结构简单的线性/单分叉分化优先用 Slingshot（稳健、轻量）；拓扑复杂或需要拟时序差异基因检验时用 Monocle 3；有真实时间序列采样时考虑 WaddingtonOT。
+
+## Monocle 3 实操
+
+下面使用 PBMC 3k 数据演示 Monocle 3 的拟时序分析。需要说明的是，PBMC 是一个相对成熟、分化路径不强的细胞群，此处仅用于演示流程；真正适合拟时序的是具有明确连续分化的系统（如造血、胚胎发育、上皮再生）。
+
+:::note
+**运行环境说明：** 本节依赖 R 包 `monocle3` 与 `SeuratWrappers`（用于从 Seurat 对象转换）。`monocle3` 的安装较为复杂，需先安装一系列 Bioconductor 依赖，详见其官方文档。本示例假设已有第6章产出的注释 Seurat 对象 `pbmc`。
+:::
+
+```r
+library(monocle3)
+library(SeuratWrappers)
+library(Seurat)
+
+# Convert an annotated Seurat object (from Chapter 6) into a Monocle 3 cell_data_set
+cds <- as.cell_data_set(pbmc)
+cds <- cluster_cells(cds, reduction_method = "UMAP")
+
+# Learn the principal graph (the trajectory backbone) over the UMAP embedding
+cds <- learn_graph(cds, use_partition = TRUE)
+```
+
+```r
+#| label: fig-monocle-pseudotime
+#| fig-cap: "Monocle 3 学习图与伪时间着色（PBMC 3k 演示数据）。黑色实线为在 UMAP 空间中学习到的主图（principal graph），圆圈节点为分支点与端点；细胞按伪时间着色，颜色由根节点（深色）向分化终末（浅色）渐变。本图仅用于演示 Monocle 3 流程，PBMC 的分化结构较弱。"
+library(monocle3)
+
+# Choose a root: here, programmatically pick the node enriched for a progenitor
+# marker. In practice, the root is chosen from prior biological knowledge.
+cds <- order_cells(cds, root_pr_nodes = get_earliest_principal_node(cds))
+
+plot_cells(cds,
+           color_cells_by = "pseudotime",
+           label_groups_by_cluster = FALSE,
+           label_leaves = FALSE,
+           label_branch_points = FALSE)
+```
+
+得到伪时间后，`graph_test()` 可识别表达随伪时间显著变化的基因——这些基因往往是驱动或标志分化的关键因子。其统计基础是 Moran's I 空间自相关检验：在 UMAP 图上，若一个基因的表达呈现非随机的空间（即沿轨迹）聚集模式，则它与拟时序结构相关。
+
+```r
+# Identify genes whose expression varies significantly along the trajectory
+# (Moran's I autocorrelation test on the principal graph)
+traj_genes <- graph_test(cds, neighbor_graph = "principal_graph", cores = 4)
+
+# Rank by Moran's I; high morans_I + low q_value = strong trajectory-dependent gene
+traj_genes <- traj_genes[order(-traj_genes$morans_I), ]
+head(subset(traj_genes, q_value < 0.05)[, c("gene_short_name", "morans_I", "q_value")], 10)
+```
+
+:::warning
+**根节点的选择是主观的：** Monocle 3 无法自行判断分化的起点，根节点（root）必须由分析者根据先验生物学知识指定（如已知的祖细胞标志基因）。根节点选错，整条伪时间的方向就会颠倒。这正是 RNA Velocity 的价值所在——它能从数据本身提供方向证据，减少对人工指定根节点的依赖。
+:::
+
+---
+
+# RNA Velocity
+
+## 剪接动力学的基本思想
+
+RNA Velocity 的核心观察是：在标准 scRNA-seq 文库中，除了成熟的、已剪接的 mRNA（spliced, $s$），还能捕获到含内含子的、未剪接的 pre-mRNA（unspliced, $u$）。新转录的基因会先积累未剪接 RNA，随后才转化为成熟 mRNA。因此，**未剪接与已剪接 RNA 的相对丰度，编码了该基因表达正在上升还是下降的信息**：若 $u$ 相对 $s$ 偏高，说明转录正在增强（基因即将上调）；反之则正在减弱。
+
+{{Wiki:RNA_splicing}}
+
+## ODE 动力学模型
+
+La Manno 等人将这一思想形式化为一对常微分方程，描述单个基因的未剪接量 $u(t)$ 与已剪接量 $s(t)$ 随时间的变化（La Manno et al., 2018）：
+
+$$\frac{du}{dt} = \alpha(t) - \beta u$$
+
+$$\frac{ds}{dt} = \beta u - \gamma s$$
+
+其中 $\alpha$ 为转录速率，$\beta$ 为剪接速率，$\gamma$ 为降解速率。第一式表示未剪接 RNA 以速率 $\alpha$ 产生、以速率 $\beta$ 被剪接消耗；第二式表示已剪接 RNA 由剪接产生（$\beta u$）、由降解消耗（$\gamma s$）。
+
+**RNA velocity 的定义**就是已剪接 RNA 的变化率 $\frac{ds}{dt} = \beta u - \gamma s$。其符号给出方向：当 $\beta u > \gamma s$（未剪接 RNA 过剩）时 velocity 为正，基因表达上升；当 $\beta u < \gamma s$ 时为负，表达下降。把所有基因的 velocity 组合成一个高维向量，再投影到 UMAP 上，就得到每个细胞"将要去往何处"的方向箭头。
+
+## 稳态模型与动力学模型
+
+估计 velocity 的关键是确定降解-剪接速率比 $\gamma/\beta$，scVelo 提供两种模式（Bergen et al., 2020）：
+
+- **稳态模型（Steady-state / deterministic）**：假设每个基因在转录极高与极低的细胞中达到稳态（$\frac{ds}{dt}=0$，即 $u = (\gamma/\beta)\, s$），用这些稳态细胞拟合一条直线，斜率即 $\gamma/\beta$。简单快速，但稳态假设在瞬变系统中常被违反。
+- **动力学模型（Dynamical）**：不假设稳态，而是通过期望最大化（EM）同时估计每个基因的全套动力学参数（$\alpha, \beta, \gamma$）及每个细胞的潜在时间（latent time），并区分基因的诱导（induction）与抑制（repression）相位。更准确、更稳健，是当前推荐做法，但计算量更大。
+
+## scVelo 实操
+
+RNA Velocity 分析需要分别量化未剪接与已剪接 reads，这一步通常由 `velocyto` 或 `kb-python`（kallisto|bustools）在比对阶段完成，输出含 `spliced`/`unspliced` 两个层的 loom 或 AnnData 文件，再交由 Python 包 scVelo 处理。
+
+:::note
+**运行环境说明：** 本节代码使用 Python（scVelo 基于 AnnData/Scanpy 生态，无成熟的等价 R 实现）。依赖 `scvelo`、`scanpy`、`anndata`，可通过 `pip install scvelo` 安装。输入 `pbmc3k_velocyto.h5ad` 需预先由 velocyto/kb-python 生成（含 spliced 与 unspliced 计数层），此处假设已准备好。
+:::
+
+```python
+import scvelo as scv
+import scanpy as sc
+
+# Load an AnnData that already contains 'spliced' and 'unspliced' count layers
+adata = scv.read("pbmc3k_velocyto.h5ad")
+
+# Standard preprocessing: filter genes, normalize, and compute moments
+# (moments = smoothed first/second-order statistics over the kNN graph)
+scv.pp.filter_and_normalize(adata, min_shared_counts=20, n_top_genes=2000)
+scv.pp.moments(adata, n_pcs=30, n_neighbors=30)
+
+# Estimate velocity with the dynamical model (recommended)
+scv.tl.recover_dynamics(adata, n_jobs=4)        # EM estimation of alpha/beta/gamma
+scv.tl.velocity(adata, mode="dynamical")
+scv.tl.velocity_graph(adata)
+```
+
+```python
+# Project velocities onto the UMAP embedding as a streamline field
+scv.pl.velocity_embedding_stream(
+    adata,
+    basis="umap",
+    color="cell_type",
+    title="RNA velocity stream (dynamical model)",
+    save="velocity_stream.png",
+)
+
+# latent_time orders cells by the inferred internal clock of the dynamical model
+scv.tl.latent_time(adata)
+scv.pl.scatter(adata, color="latent_time", color_map="gnuplot", save="latent_time.png")
+```
+
+速率流场的典型形态是：箭头从分化起点指向终末，为拟时序轨迹提供了独立的方向证据。将速率流场叠加在 UMAP 嵌入上，可直观判断分化方向，并与拟时序伪时间相互印证。
+
+{{Wiki:RNA_velocity}}
+
+## 方法的局限与陷阱
+
+RNA Velocity 虽然强大，但其结论高度依赖底层假设，使用时需警惕以下情形：
+
+- **稳态假设失效**：稳态模型在快速瞬变或多次诱导-抑制循环的系统中会给出错误方向。
+- **基因特异的动力学差异**：不同基因的剪接/降解速率差异巨大，若主要由少数动力学异常基因主导，流场方向可能误导。
+- **成熟系统无净方向**：在已分化完成、无活跃转录变化的稳态细胞群（如静息 PBMC）中，velocity 信号微弱且方向随机，强行解读会过度诠释噪声。
+- **捕获偏差**：3' 端测序对内含子的捕获效率受基因长度、polyA 信号影响，未剪接比例的估计存在系统偏差。
+
+:::info
+**黄金法则：** 拟时序提供"路径"，RNA Velocity 提供"方向"，二者应相互验证而非单独采信。当 Monocle 3 伪时间梯度与 scVelo 速率流场方向一致时，分化方向的结论才稳健；若二者矛盾，需回到生物学先验（已知的标志基因表达顺序）仲裁，切忌仅凭单一方法下定论。
+:::
+
+---
+
+# 方法总结与衔接说明
+
+本专题从静态快照中重建了细胞分化的动态过程：拟时序分析（Monocle 3）赋予细胞连续的伪时间坐标并识别轨迹依赖基因，RNA Velocity（scVelo）通过剪接动力学为轨迹提供方向。二者均建立在专题 7.1 产出的整合、注释图谱之上——只有先消除批次效应，轨迹才不会被技术变异扭曲。下一专题（7.3）将进一步追问：驱动这些分化与状态转变的，是哪些细胞间信号与转录因子调控网络？
+
+---
+
+# 课后自测 (Post-Lesson Quiz)
+
+1. 拟时序分析如何从无法追踪单个细胞的横断面 scRNA-seq 数据中重建动态分化路径？其核心假设是什么？
+
+2. "伪时间"（Pseudotime）与真实的物理时间有何区别？为什么说伪时间是相对的、无单位的？
+
+3. Monocle 3 的 `graph_test()` 用什么统计量识别拟时序差异基因？该统计量衡量的是什么？
+
+4. 为什么 Monocle 3 需要人工指定根节点（root）？指定错误会导致什么后果？RNA Velocity 如何缓解这一问题？
+
+5. 请写出 RNA Velocity 的一对 ODE，并解释 $\alpha$、$\beta$、$\gamma$ 三个参数的含义。RNA velocity 本身对应哪个量？其符号如何指示基因表达的上升或下降？
+
+6. scVelo 的稳态模型（steady-state）与动力学模型（dynamical）在假设和估计方式上有何区别？为什么动力学模型通常更稳健？
+
+7. 在静息 PBMC 这类已分化成熟、无活跃转录变化的细胞群上运行 RNA Velocity，结果会如何？为什么不应过度解读？
+
+8. 某研究者用 Monocle 3 得到的伪时间方向与 scVelo 速率流场方向相反。应如何处理这一矛盾？可以仅凭其中一个方法下结论吗？
+
+<details>
+<summary><strong>参考答案 (Reference Answers)</strong></summary>
+
+1. *在一个正在分化的细胞群中，不同细胞凝固在分化过程的不同阶段。其核心假设是分化在高维表达空间中是渐进、连续的，因此处于相邻分化阶段的细胞在转录组上也彼此相邻。于是大量细胞的横断面数据共同勾勒出一条连续轨迹，沿轨迹的位置即伪时间，从而把"静态快照"组织成"动态路径"。*
+
+2. *伪时间衡量细胞沿分化路径走了多远，是相对的、无单位的坐标，而非真实的物理时间（小时/天）。因为转录变化速率沿路径并不均匀，两个伪时间相差固定值的细胞，其真实分化时间差并不固定，所以伪时间只能比较"先后/远近"，不能换算为绝对时间。*
+
+3. *`graph_test()` 使用 Moran's I 空间自相关统计量。它衡量一个基因的表达在 UMAP 主图上是否呈现非随机的空间（沿轨迹）聚集模式：Moran's I 高且 q 值低，说明该基因表达与拟时序结构显著相关，即随分化轨迹系统性变化。*
+
+4. *因为拟时序只能确定细胞在一条路径上的相对位置，无法判断分化的起点与方向，方向信息不包含在转录组距离中。根节点指定错误会使整条伪时间方向颠倒，导致对分化早晚、基因表达先后的判断完全错误。RNA Velocity 通过未剪接/已剪接比值从数据本身提供方向证据，减少对人工指定根节点的依赖。*
+
+5. *ODE 为 $\frac{du}{dt}=\alpha-\beta u$ 与 $\frac{ds}{dt}=\beta u-\gamma s$。$\alpha$ 为转录速率，$\beta$ 为剪接速率，$\gamma$ 为降解速率。RNA velocity 对应已剪接 RNA 的变化率 $\frac{ds}{dt}=\beta u-\gamma s$：当 $\beta u>\gamma s$（未剪接 RNA 过剩）时为正，表达上升；当 $\beta u<\gamma s$ 时为负，表达下降。*
+
+6. *稳态模型假设基因在转录极高/极低的细胞中达到稳态（$ds/dt=0$，即 $u=(\gamma/\beta)s$），用这些稳态细胞拟合直线斜率得 $\gamma/\beta$，简单快速但稳态假设常被违反。动力学模型不假设稳态，用 EM 同时估计每个基因的 $\alpha,\beta,\gamma$ 与每个细胞的潜在时间，并区分诱导/抑制相位，因此在瞬变系统中更准确、更稳健。*
+
+7. *静息 PBMC 没有活跃的转录变化，未剪接与已剪接 RNA 接近稳态平衡，velocity 信号微弱且方向随机。此时流场反映的主要是噪声而非真实分化方向，强行解读会把随机波动误读为生物学轨迹，属于过度诠释。*
+
+8. *应将矛盾视为方向证据不充分的信号，回到生物学先验（已知标志基因的表达先后顺序）来仲裁，并检查各自的前提：Monocle 3 的根节点是否选对、scVelo 的稳态假设是否被违反、数据是否本就缺乏净方向。不能仅凭单一方法下结论——拟时序提供路径、velocity 提供方向，只有二者一致时方向结论才稳健。*
+
+</details>

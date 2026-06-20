@@ -309,19 +309,37 @@ vsd_st <- vst(dds_st, blind = FALSE)
 expr_demo <- t(assay(vsd_st))
 
 sample_tree_demo <- hclust(dist(expr_demo), method = "average")
+
+# Cut threshold derived from the tree's own scale (same rule used downstream)
+cut_height_demo <- 0.5 * max(sample_tree_demo$height)
 plot(sample_tree_demo,
      main = "Sample clustering to detect outliers",
      sub = "", xlab = "", cex.lab = 1.2, cex.axis = 1.0, cex.main = 1.2,
      labels = paste0(colData(airway)$cell, "_", colData(airway)$dex))
-abline(h = 40, col = "red", lty = 2)
+abline(h = cut_height_demo, col = "red", lty = 2)
 ```
 
 ```r
-# Remove outliers if any (based on visual inspection of the dendrogram)
-clust <- cutreeStatic(sample_tree, cutHeight = 15, minSize = 2)
-keep_samples <- (clust == 1)
+# Remove outlier samples. cutreeStatic groups samples that merge below cutHeight;
+# samples joining only above it are flagged as outliers. The threshold MUST match
+# the distance scale of the data: VST euclidean distances over tens of thousands of
+# genes are typically in the tens-to-hundreds range, so a fixed small value such as
+# 15 would isolate every sample and discard the whole matrix. Derive the threshold
+# from the tree's own height instead.
+cut_height <- 0.5 * max(sample_tree$height)
+clust <- cutreeStatic(sample_tree, cutHeight = cut_height, minSize = 2)
+
+# Keep the largest retained cluster; fall back to all samples if the cut leaves
+# none (this guards against the "Too few genes with valid expression levels"
+# error that blockwiseModules raises on an empty/near-empty sample set).
+if (all(clust == 0)) {
+    keep_samples <- rep(TRUE, nrow(expr_mat))
+} else {
+    largest_cluster <- as.integer(names(which.max(table(clust[clust != 0]))))
+    keep_samples <- (clust == largest_cluster)
+}
 expr_mat_clean <- expr_mat[keep_samples, ]
-cat("Samples retained:", sum(keep_samples), "\n")
+cat("Samples retained:", sum(keep_samples), "of", nrow(expr_mat), "\n")
 ```
 
 ## 软阈值选择
@@ -343,7 +361,19 @@ if (is.na(selected_beta)) {
 
 模块识别遵循前文确立的逻辑链条（**TOM → 层次聚类 → 动态树切割 → 模块合并**，参见"层次聚类与动态树切割"一节及 @fig-dynamic-treecut）。在实际分析中，`blockwiseModules()` 一步封装了上述全部环节：它内部完成邻接矩阵与 TOM 的计算、层次聚类、动态树切割识别模块，并按 `mergeCutHeight` 自动合并冗余模块。
 
+:::warning
+**函数屏蔽陷阱（cor masking）：** WGCNA 重载了 `cor()` 以支持加权相关等扩展参数（`weights.x`、`weights.y`、`cosine`）。若在 `library(WGCNA)` 之后再加载 `DESeq2`、`airway` 等包，它们会用 `stats::cor()` 屏蔽 `WGCNA::cor()`，导致 `blockwiseModules()` 报错：`unused arguments (weights.x = NULL, weights.y = NULL, cosine = FALSE)`。解决方法是在调用前显式执行 `cor <- WGCNA::cor`，分析完成后再 `cor <- stats::cor` 还原。亦可将 `library(WGCNA)` 置于所有包加载的最后，以避免被屏蔽。
+:::
+
 ```r
+# IMPORTANT: WGCNA's internal cor() takes weights.x / weights.y / cosine
+# arguments that stats::cor() does not. When DESeq2/airway (or their
+# dependencies) are loaded after WGCNA, they mask WGCNA::cor with stats::cor,
+# causing blockwiseModules() to fail with:
+#   "unused arguments (weights.x = NULL, weights.y = NULL, cosine = FALSE)"
+# Force cor to resolve to WGCNA's version, then restore it afterwards.
+cor <- WGCNA::cor
+
 # Construct network and identify modules (requires WGCNA)
 net <- blockwiseModules(
     expr_mat_clean,
@@ -366,6 +396,9 @@ module_colors <- net$colors
 module_table <- table(module_colors)
 cat("Number of modules:", length(unique(module_colors[module_colors != "grey"])), "\n")
 print(sort(module_table, decreasing = TRUE))
+
+# Restore the standard cor() to avoid surprising downstream code
+cor <- stats::cor
 ```
 
 `blockwiseModules()` 返回的 `net$dendrograms` 与 `net$colors` 可直接传入 `plotDendroAndColors()`，得到与 @fig-dynamic-treecut 相同形式的"树状图 + 模块颜色条"可视化，用于检查模块划分是否与树状图分支结构吻合。
