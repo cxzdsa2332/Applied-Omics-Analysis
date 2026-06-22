@@ -346,8 +346,15 @@ cat("Samples retained:", sum(keep_samples), "of", nrow(expr_mat), "\n")
 
 ```r
 # Select soft threshold (choose smallest beta where R^2 >= 0.85)
-selected_beta <- sft$powerEstimate
-cat("Selected soft threshold (beta):", selected_beta, "\n")
+powers = c(c(1:10), seq(from = 12, to=20, by=2))
+sft = pickSoftThreshold(expr_demo, powerVector = powers, verbose = 5)
+plot(sft$fitIndices[,1], -sign(sft$fitIndices[,3])*sft$fitIndices[,2],
+     xlab="Soft Threshold (power)",ylab="Scale Free Topology Model Fit,signed R^2",type="n")
+text(sft$fitIndices[,1], -sign(sft$fitIndices[,3])*sft$fitIndices[,2],
+     labels=powers,cex=0.9,col="red")
+abline(h=0.85,col="red")  #查看位于0.85以上的点，可以改变高度值
+
+selected_beta = sft$powerEstimate
 
 # If automatic selection fails (R^2 never reaches 0.85):
 # For signed networks with < 15 samples, beta = 12-18 is typically reasonable
@@ -420,21 +427,11 @@ ME_cor <- cor(MEs, use = "p")
 
 ```r
 #| label: fig-me-tree
-#| fig-cap: "模块特征基因（ME）的相关矩阵热图（模拟示意）。颜色代表 ME 间的皮尔逊相关系数，高度相关的模块（r > 0.75）在实际分析中将被 mergeCutHeight 参数合并。"
+#| fig-cap: "模块特征基因（ME）的相关矩阵热图。直接绘制前述 blockwiseModules() 在 expr_mat_clean 上识别出的模块所计算的 ME_cor（沿用前文分析结果，非模拟数据）。颜色代表 ME 间的皮尔逊相关系数，高度相关的模块（r > 0.75）在实际分析中将被 mergeCutHeight 参数合并。"
 library(ggplot2)
 
-# Simulated ME correlation matrix (5 modules)
-set.seed(7)
-me_names <- c("MEturquoise", "MEblue", "MEbrown", "MEyellow", "MEgreen")
-me_cor_sim <- matrix(c(
-     1.00,  0.72, -0.30, -0.15,  0.10,
-     0.72,  1.00, -0.25, -0.20,  0.05,
-    -0.30, -0.25,  1.00,  0.68, -0.40,
-    -0.15, -0.20,  0.68,  1.00, -0.35,
-     0.10,  0.05, -0.40, -0.35,  1.00
-), nrow = 5, dimnames = list(me_names, me_names))
-
-me_df <- as.data.frame(as.table(me_cor_sim))
+# Reshape the real ME correlation matrix (ME_cor) computed in the previous chunk
+me_df <- as.data.frame(as.table(ME_cor))
 names(me_df) <- c("ME1", "ME2", "Correlation")
 
 ggplot(me_df, aes(x = ME1, y = ME2, fill = Correlation)) +
@@ -465,34 +462,15 @@ module_trait_pvalue <- corPvalueStudent(module_trait_cor, nSamples)
 
 ```r
 #| label: fig-module-trait-heatmap
-#| fig-cap: "模块-表型关联热图（模拟数据示意）。每个格子显示模块特征基因与表型变量的皮尔逊相关系数及 P 值。红色代表正相关，蓝色代表负相关，颜色深浅反映相关系数绝对值大小。turquoise 模块与 dex 处理高度正相关，brown 模块与 dex 处理负相关。"
+#| fig-cap: "模块-表型关联热图。直接绘制前述计算的真实 module_trait_cor 与 module_trait_pvalue（沿用前文分析结果，非模拟数据）。每个格子显示模块特征基因与表型变量的皮尔逊相关系数及 P 值。红色代表正相关，蓝色代表负相关，颜色深浅反映相关系数绝对值大小；与 dex 处理显著关联的模块即为后续枢纽基因分析的目标模块。"
 library(ggplot2)
 
-# Simulated module-trait correlation matrix
-me_names <- c("MEturquoise", "MEblue", "MEbrown", "MEyellow", "MEgreen")
-traits    <- c("dex_treated", "cell_N61311", "cell_N052611", "cell_N080611")
-
-cor_vals <- matrix(c(
-     0.87, -0.15,  0.10, -0.05,
-     0.62, -0.08,  0.20, -0.12,
-    -0.79,  0.22, -0.18,  0.09,
-    -0.41,  0.55, -0.33,  0.18,
-     0.12, -0.45,  0.61, -0.28
-), nrow = 5, byrow = TRUE,
-dimnames = list(me_names, traits))
-
-pval_vals <- matrix(c(
-    2e-3, 0.68, 0.78, 0.90,
-    0.09, 0.83, 0.58, 0.75,
-    4e-3, 0.55, 0.63, 0.81,
-    0.27, 0.13, 0.37, 0.63,
-    0.75, 0.21, 0.09, 0.45
-), nrow = 5, byrow = TRUE)
-
-df_ht <- as.data.frame(as.table(cor_vals))
+# Reshape the real module-trait correlation matrix computed in the previous chunk.
+# as.table() and as.vector() both iterate column-major, so labels stay aligned.
+df_ht <- as.data.frame(as.table(module_trait_cor))
 names(df_ht) <- c("Module", "Trait", "Correlation")
-df_ht$label <- paste0(round(cor_vals, 2), "\n(p=",
-                       formatC(as.vector(pval_vals), format = "e", digits = 1), ")")
+df_ht$label <- paste0(round(as.vector(module_trait_cor), 2), "\n(p=",
+                       formatC(as.vector(module_trait_pvalue), format = "e", digits = 1), ")")
 
 ggplot(df_ht, aes(x = Trait, y = Module, fill = Correlation)) +
     geom_tile(color = "white", linewidth = 0.5) +
@@ -528,25 +506,15 @@ hub_genes <- hub_df |> filter(abs(kME) > 0.8, abs(GS) > 0.5)
 
 ```r
 #| label: fig-kme-gs-scatter
-#| fig-cap: "模块成员度（kME）与基因显著性（GS）的散点图（模拟数据示意）。每个点代表 turquoise 模块内的一个基因，红色点为满足枢纽基因标准（|kME| > 0.8 且 |GS| > 0.5）的候选枢纽基因。两个指标的正相关关系验证了该模块与 dex 处理状态的真实关联。"
+#| fig-cap: "模块成员度（kME）与基因显著性（GS）的散点图。直接绘制前述计算的真实 hub_df（沿用前文分析结果，非模拟数据）。每个点代表目标模块内的一个基因，红色点为满足枢纽基因标准（|kME| > 0.8 且 |GS| > 0.5）的候选枢纽基因。两个指标的正相关关系印证了该模块与 dex 处理状态的关联。"
 library(ggplot2)
 library(dplyr)
-set.seed(99)
-n_mod <- 250
-# Simulate kME-GS relationship with realistic correlation structure
-kme_sim <- rnorm(n_mod, 0, 0.4)
-gs_sim  <- 0.7 * kme_sim + rnorm(n_mod, 0, 0.25)
-# Add a cluster of hub genes with high kME and GS
-kme_hubs <- runif(25, 0.82, 0.97)
-gs_hubs  <- runif(25, 0.52, 0.88)
-hub_sim_df <- data.frame(
-    kME = c(kme_sim, kme_hubs),
-    GS  = c(gs_sim, gs_hubs)
-) |> mutate(is_hub = abs(kME) > 0.8 & abs(GS) > 0.5)
 
-target_module <- "turquoise"
+# Flag hub-gene candidates on the real kME-GS table (hub_df) computed above.
+# target_module is also reused from the previous chunk.
+hub_plot_df <- hub_df |> mutate(is_hub = abs(kME) > 0.8 & abs(GS) > 0.5)
 
-ggplot(hub_sim_df, aes(x = kME, y = GS, color = is_hub)) +
+ggplot(hub_plot_df, aes(x = kME, y = GS, color = is_hub)) +
     geom_point(alpha = 0.6, size = 1.5) +
     scale_color_manual(values = c("grey70", "#d62728"),
                        labels = c("Non-hub", "Hub gene candidate")) +
@@ -601,6 +569,23 @@ if (!is.null(go_demo) && nrow(go_demo@result) > 0) {
             title = "GO BP: airway DEGs (illustrative hub-gene enrichment format)")
 }
 ```
+
+## 富集结果的生物学解读
+
+上述富集得到的数百条 GO 生物过程（BP）条目，并非彼此独立的发现，而应**先归并为若干主题再解读**。本演示输入的是 airway 数据中地塞米松（dexamethasone, dex）处理 vs 对照的差异表达基因，dex 是一种合成糖皮质激素（glucocorticoid），其已知的多效性药理作用恰好与富集结果中的主要主题高度吻合：
+
+- **细胞外基质与骨重塑**：排名最前的 `extracellular matrix organization`、`extracellular structure organization` 以及成簇出现的 `ossification`、`regulation of osteoclast differentiation`、`bone mineralization`、`cartilage development` 等，对应糖皮质激素对结缔组织与骨代谢的调控——这与临床上长期使用糖皮质激素导致骨重塑失衡（糖皮质激素性骨质疏松）的现象一致。
+- **免疫与炎症调控**：`regulation of leukocyte migration`、`leukocyte chemotaxis`、`(negative) regulation of myeloid leukocyte differentiation`、`regulation of leukocyte activation/proliferation` 等条目，反映糖皮质激素经典的抗炎与免疫抑制作用——抑制白细胞的迁移、趋化、分化与活化。
+- **糖与脂代谢**：`glucose metabolic process`、`D-glucose transmembrane transport`、`regulation of gluconeogenesis`、`fatty acid transport`、`regulation of fatty acid oxidation` 等，对应糖皮质激素提升糖异生、升高血糖并重塑脂代谢的代谢效应。
+- **金属离子应激与其他组织发育主题**：`response to metal ion`、`detoxification of copper ion`、`response to zinc ion` 等提示金属硫蛋白（metallothionein）家族的诱导；而神经投射（`axonogenesis`、`axon guidance`）与心肌/骨骼肌形态发生等主题，则更多反映输入基因集与细胞骨架、细胞外基质程序在 GO 注释上的功能重叠，解读时应结合所研究的组织背景审慎对待。
+
+:::warning
+**富集条目的冗余性：** GO 是有向无环图（DAG），父子项与语义相近项会同时显著——例如 `extracellular matrix organization`、`extracellular structure organization`、`external encapsulating structure organization` 实为高度重叠的近义条目。切勿把数百条结果当作数百个独立发现而逐条罗列。应使用 `clusterProfiler::simplify()`（基于语义相似度去冗余）或 REVIGO、`enrichplot::emapplot()`（富集图谱聚类）将条目归并为少数主题后再解读，并始终结合差异基因的表达方向（上调/下调）判断每个主题是被激活还是被抑制。
+:::
+
+:::info
+**黄金法则：** 富集分析的价值在于"从基因列表到生物学主题"的归纳，而非条目数量。一份可信的解读应能用三五个连贯的功能主题概括核心结果，并能与实验的生物学背景（此处为糖皮质激素对气道平滑肌的作用）相互印证；若富集结果与已知生物学完全无法对应，则需回头检查输入基因集、背景基因集（universe）与物种注释是否设置正确。
+:::
 
 ---
 

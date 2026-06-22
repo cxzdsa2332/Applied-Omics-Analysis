@@ -6,8 +6,9 @@
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
+<meta name="dcterms.date" content="2026-06-22">
 
-<title>36&nbsp; 第六章 课时5 – Introduction to Applied High-throughput Biological Data Analysis</title>
+<title>36&nbsp; 空间数据质控、归一化与空间高变基因分析 – Introduction to Applied High-throughput Biological Data Analysis</title>
 <style>
 /* Default styles provided by pandoc.
 ** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
@@ -22,6 +23,41 @@ ul.task-list li input[type="checkbox"] {
   width: 0.8em;
   margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
   vertical-align: middle;
+}
+/* CSS for syntax highlighting */
+html { -webkit-text-size-adjust: 100%; }
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
 }
 </style>
 
@@ -44,7 +80,7 @@ ul.task-list li input[type="checkbox"] {
 <link href="site_libs/quarto-html/quarto-syntax-highlighting-845c23b38eaddc0f92fda52bfe77a8c8.css" rel="stylesheet" id="quarto-text-highlighting-styles">
 <script src="site_libs/bootstrap/bootstrap.min.js"></script>
 <link href="site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
-<link href="site_libs/bootstrap/bootstrap-b9eaee60a963b5d74e9d33cc267de6a6.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
+<link href="site_libs/bootstrap/bootstrap-5ccb035bea26c1e21f80f44cf7c27909.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
 <script id="quarto-search-options" type="application/json">{
   "location": "sidebar",
   "copy-button": false,
@@ -73,6 +109,35 @@ ul.task-list li input[type="checkbox"] {
   }
 }</script>
 
+  <script src="https://cdnjs.cloudflare.com/polyfill/v3/polyfill.min.js?features=es6"></script>
+  <script defer="" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js" type="text/javascript"></script>
+
+<script type="text/javascript">
+const typesetMath = (el) => {
+  if (window.MathJax) {
+    // MathJax Typeset
+    window.MathJax.typeset([el]);
+  } else if (window.katex) {
+    // KaTeX Render
+    var mathElements = el.getElementsByClassName("math");
+    var macros = [];
+    for (var i = 0; i < mathElements.length; i++) {
+      var texText = mathElements[i].firstChild;
+      if (mathElements[i].tagName == "SPAN" && texText && texText.data) {
+        window.katex.render(texText.data, mathElements[i], {
+          displayMode: mathElements[i].classList.contains('display'),
+          throwOnError: false,
+          macros: macros,
+          fleqn: false
+        });
+      }
+    }
+  }
+}
+window.Quarto = {
+  typesetMath
+};
+</script>
 
 </head>
 
@@ -85,7 +150,7 @@ ul.task-list li input[type="checkbox"] {
       <button type="button" class="quarto-btn-toggle btn" data-bs-toggle="collapse" role="button" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
         <i class="bi bi-layout-text-sidebar-reverse"></i>
       </button>
-        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="./04-transcriptomics-basic.html">第二阶段：转录组与单细胞</a></li><li class="breadcrumb-item"><a href="./scrna_basic_lesson5.html"><span class="chapter-number">36</span>&nbsp; <span class="chapter-title">第六章 课时5</span></a></li></ol></nav>
+        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="./04-transcriptomics-basic.html">第二阶段：转录组与单细胞</a></li><li class="breadcrumb-item"><a href="./scrna_basic_lesson5.html"><span class="chapter-number">36</span>&nbsp; <span class="chapter-title">空间数据质控、归一化与空间高变基因分析</span></a></li></ol></nav>
         <a class="flex-grow-1" role="navigation" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">      
         </a>
       <button type="button" class="btn quarto-search-button" aria-label="Search" onclick="window.quartoOpenSearch();">
@@ -322,67 +387,67 @@ ul.task-list li input[type="checkbox"] {
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./scrna_basic_lesson1.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">32</span>&nbsp; <span class="chapter-title">第六章 课时1</span></span></a>
+ <span class="menu-text"><span class="chapter-number">32</span>&nbsp; <span class="chapter-title">10x Genomics 技术原理与上游处理</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./scrna_basic_lesson2.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">33</span>&nbsp; <span class="chapter-title">第六章 课时2</span></span></a>
+ <span class="menu-text"><span class="chapter-number">33</span>&nbsp; <span class="chapter-title">单细胞数据质量控制与预处理</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./scrna_basic_lesson3.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">34</span>&nbsp; <span class="chapter-title">第六章 课时3</span></span></a>
+ <span class="menu-text"><span class="chapter-number">34</span>&nbsp; <span class="chapter-title">降维、聚类与细胞类型注释</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./scrna_basic_lesson4.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">35</span>&nbsp; <span class="chapter-title">第六章 课时4</span></span></a>
+ <span class="menu-text"><span class="chapter-number">35</span>&nbsp; <span class="chapter-title">Visium 技术原理与上游处理</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./scrna_basic_lesson5.html" class="sidebar-item-text sidebar-link active">
- <span class="menu-text"><span class="chapter-number">36</span>&nbsp; <span class="chapter-title">第六章 课时5</span></span></a>
+ <span class="menu-text"><span class="chapter-number">36</span>&nbsp; <span class="chapter-title">空间数据质控、归一化与空间高变基因分析</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./07-scrna-advanced.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">37</span>&nbsp; <span class="chapter-title">单细胞与空间转录组高级分析：动态推断、多组学与空间解析</span></span></a>
+ <span class="menu-text"><span class="chapter-number">37</span>&nbsp; <span class="chapter-title">单细胞与空间转录组高级分析：多样本统计、动态推断、多组学与空间解析</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./scrna_adv_lesson1.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">38</span>&nbsp; <span class="chapter-title">第七章 课时1</span></span></a>
+ <span class="menu-text"><span class="chapter-number">38</span>&nbsp; <span class="chapter-title">跨样本整合、批次校正与多样本差异分析</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./scrna_adv_lesson2.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">39</span>&nbsp; <span class="chapter-title">第七章 课时2</span></span></a>
+ <span class="menu-text"><span class="chapter-number">39</span>&nbsp; <span class="chapter-title">拟时序分析与 RNA Velocity</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./scrna_adv_lesson3.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">40</span>&nbsp; <span class="chapter-title">第七章 课时3</span></span></a>
+ <span class="menu-text"><span class="chapter-number">40</span>&nbsp; <span class="chapter-title">细胞通讯分析与基因调控网络推断</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./scrna_adv_lesson4.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">41</span>&nbsp; <span class="chapter-title">第七章 课时4</span></span></a>
+ <span class="menu-text"><span class="chapter-number">41</span>&nbsp; <span class="chapter-title">单细胞多组学：CITE-seq 与 10x Multiome 联合分析</span></span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./scrna_adv_lesson5.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text"><span class="chapter-number">42</span>&nbsp; <span class="chapter-title">第七章 课时5</span></span></a>
+ <span class="menu-text"><span class="chapter-number">42</span>&nbsp; <span class="chapter-title">空间转录组高级分析：细胞解卷积与成像型空间转录组</span></span></a>
   </div>
 </li>
       </ul>
@@ -529,15 +594,38 @@ ul.task-list li input[type="checkbox"] {
 </nav>
 <div id="quarto-sidebar-glass" class="quarto-sidebar-collapse-item" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item"></div>
 <!-- margin-sidebar -->
-    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar zindex-bottom">
-        
+    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+        <nav id="TOC" role="doc-toc" class="toc-active">
+    <h2 id="toc-title">Table of contents</h2>
+   
+  <ul>
+  <li><a href="#专题概述" id="toc-专题概述" class="nav-link active" data-scroll-target="#专题概述"><span class="header-section-number">37</span> 专题概述</a></li>
+  <li><a href="#空间数据质控与归一化" id="toc-空间数据质控与归一化" class="nav-link" data-scroll-target="#空间数据质控与归一化"><span class="header-section-number">38</span> 空间数据质控与归一化</a>
+  <ul class="collapse">
+  <li><a href="#结合图像的空间质检" id="toc-结合图像的空间质检" class="nav-link" data-scroll-target="#结合图像的空间质检"><span class="header-section-number">38.1</span> 结合图像的空间质检</a></li>
+  <li><a href="#归一化的空间考量" id="toc-归一化的空间考量" class="nav-link" data-scroll-target="#归一化的空间考量"><span class="header-section-number">38.2</span> 归一化的空间考量</a></li>
+  </ul></li>
+  <li><a href="#空间高变基因分析" id="toc-空间高变基因分析" class="nav-link" data-scroll-target="#空间高变基因分析"><span class="header-section-number">39</span> 空间高变基因分析</a>
+  <ul class="collapse">
+  <li><a href="#什么是空间高变基因" id="toc-什么是空间高变基因" class="nav-link" data-scroll-target="#什么是空间高变基因"><span class="header-section-number">39.1</span> 什么是空间高变基因</a></li>
+  <li><a href="#morans-i-空间自相关" id="toc-morans-i-空间自相关" class="nav-link" data-scroll-target="#morans-i-空间自相关"><span class="header-section-number">39.2</span> Moran’s I 空间自相关</a></li>
+  </ul></li>
+  <li><a href="#空间聚类" id="toc-空间聚类" class="nav-link" data-scroll-target="#空间聚类"><span class="header-section-number">40</span> 空间聚类</a>
+  <ul class="collapse">
+  <li><a href="#普通聚类-vs-空间感知聚类" id="toc-普通聚类-vs-空间感知聚类" class="nav-link" data-scroll-target="#普通聚类-vs-空间感知聚类"><span class="header-section-number">40.1</span> 普通聚类 vs 空间感知聚类</a></li>
+  <li><a href="#bayesspace-的空间先验" id="toc-bayesspace-的空间先验" class="nav-link" data-scroll-target="#bayesspace-的空间先验"><span class="header-section-number">40.2</span> BayesSpace 的空间先验</a></li>
+  </ul></li>
+  <li><a href="#方法总结与衔接说明" id="toc-方法总结与衔接说明" class="nav-link" data-scroll-target="#方法总结与衔接说明"><span class="header-section-number">41</span> 方法总结与衔接说明</a></li>
+  <li><a href="#课后自测-post-lesson-quiz" id="toc-课后自测-post-lesson-quiz" class="nav-link" data-scroll-target="#课后自测-post-lesson-quiz"><span class="header-section-number">42</span> 课后自测 (Post-Lesson Quiz)</a></li>
+  </ul>
+<div class="toc-actions"><ul><li><a href="https://github.com/cxzdsa2332/Applied-Omics-Analysis/edit/main/scrna_basic_lesson5.qmd" class="toc-action"><i class="bi bi-github"></i>Edit this page</a></li><li><a href="https://github.com/cxzdsa2332/Applied-Omics-Analysis/issues/new" class="toc-action"><i class="bi empty"></i>Report an issue</a></li><li><a href="https://github.com/cxzdsa2332/Applied-Omics-Analysis/blob/main/scrna_basic_lesson5.qmd" class="toc-action"><i class="bi empty"></i>View source</a></li></ul></div></nav>
     </div>
 <!-- main -->
 <main class="content" id="quarto-document-content">
 
-<header id="title-block-header" class="quarto-title-block default"><nav class="quarto-page-breadcrumbs quarto-title-breadcrumbs d-none d-lg-block" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="./04-transcriptomics-basic.html">第二阶段：转录组与单细胞</a></li><li class="breadcrumb-item"><a href="./scrna_basic_lesson5.html"><span class="chapter-number">36</span>&nbsp; <span class="chapter-title">第六章 课时5</span></a></li></ol></nav>
+<header id="title-block-header" class="quarto-title-block default"><nav class="quarto-page-breadcrumbs quarto-title-breadcrumbs d-none d-lg-block" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="./04-transcriptomics-basic.html">第二阶段：转录组与单细胞</a></li><li class="breadcrumb-item"><a href="./scrna_basic_lesson5.html"><span class="chapter-number">36</span>&nbsp; <span class="chapter-title">空间数据质控、归一化与空间高变基因分析</span></a></li></ol></nav>
 <div class="quarto-title">
-<h1 class="title"><span class="chapter-number">36</span>&nbsp; <span class="chapter-title">第六章 课时5</span></h1>
+<h1 class="title"><span class="chapter-number">36</span>&nbsp; <span class="chapter-title">空间数据质控、归一化与空间高变基因分析</span></h1>
 </div>
 
 
@@ -545,6 +633,12 @@ ul.task-list li input[type="checkbox"] {
 <div class="quarto-title-meta">
 
     
+    <div>
+    <div class="quarto-title-meta-heading">Published</div>
+    <div class="quarto-title-meta-contents">
+      <p class="date">June 22, 2026</p>
+    </div>
+  </div>
   
     
   </div>
@@ -554,8 +648,148 @@ ul.task-list li input[type="checkbox"] {
 </header>
 
 
+<section id="专题概述" class="level1" data-number="37">
+<h1 data-number="37"><span class="header-section-number">37</span> 专题概述</h1>
+<p>加载 Visium 数据之后，分析流程与 scRNA-seq 高度共享——质控、归一化、降维、聚类的逻辑一脉相承。但空间数据多了一个其他组学没有的维度：坐标。这使它既需要结合组织图像做空间质检，又催生了一类全新的核心分析——识别那些表达呈现非随机空间分布的基因。本专题讲解空间数据的质控与归一化要点，重点阐述空间高变基因（Spatially Variable Genes, SVG）的识别原理（Moran’s I 空间自相关）与空间聚类方法（普通聚类 vs 纳入空间坐标的 BayesSpace），完成 Visium 基础分析的闭环。</p>
+<p><strong>学习目标</strong>：掌握空间数据质控相比 scRNA-seq 的额外考量；理解 SVG 的概念及 Moran’s I 空间自相关统计量的原理；能用 <code>FindSpatiallyVariableFeatures()</code> 识别并可视化 SVG；理解普通聚类与 BayesSpace 在是否利用空间坐标上的区别；能生成有生物学意义的空间域可视化。</p>
+<hr>
+</section>
+<section id="空间数据质控与归一化" class="level1" data-number="38">
+<h1 data-number="38"><span class="header-section-number">38</span> 空间数据质控与归一化</h1>
+<section id="结合图像的空间质检" class="level2" data-number="38.1">
+<h2 data-number="38.1" class="anchored" data-anchor-id="结合图像的空间质检"><span class="header-section-number">38.1</span> 结合图像的空间质检</h2>
+<p>空间数据的质控指标与 scRNA-seq 相同——每 Spot 检出基因数、每 Spot UMI 数、线粒体比例——但多了一层空间维度的判读。一个 Spot 即便表达量达标，若它位于组织边缘、脱落区域或折叠处，也应被剔除。因此空间质控必须<strong>结合 H&amp;E 图像进行视觉检查</strong>，而非只看数值阈值。</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb1"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(Seurat)</span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="co"># Standard per-Spot QC metrics, same as scRNA-seq</span></span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a>brain[[<span class="st">"percent.mt"</span>]] <span class="ot">&lt;-</span> <span class="fu">PercentageFeatureSet</span>(brain, <span class="at">pattern =</span> <span class="st">"^mt-"</span>)</span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a><span class="co"># Inspect QC distributions spatially: low-count Spots often cluster at tissue edges</span></span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a><span class="fu">SpatialFeaturePlot</span>(brain, <span class="at">features =</span> <span class="fu">c</span>(<span class="st">"nCount_Spatial"</span>, <span class="st">"percent.mt"</span>))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="warning">
+<p><strong>别用同一阈值无差别过滤所有 Spot：</strong> Visium 中每个 Spot 的 UMI 总数还反映了真实的生物学差异——细胞密度高的区域（如脑的细胞密集层）天然有更高的 UMI，细胞稀疏区域（如白质、纤维区）UMI 本就低。若用 scRNA-seq 式的统一下限过滤，会系统性地删除低细胞密度的组织区域，造成空间偏差。空间质控应把”低 UMI 是技术问题还是生物学真实”结合图像区分对待。</p>
+</div>
+</section>
+<section id="归一化的空间考量" class="level2" data-number="38.2">
+<h2 data-number="38.2" class="anchored" data-anchor-id="归一化的空间考量"><span class="header-section-number">38.2</span> 归一化的空间考量</h2>
+<p>空间数据可沿用 scRNA-seq 的归一化策略，<code>SCTransform()</code> 同样适用且推荐。但需注意一个空间特有的混杂因素：Spot 的”测序深度”（总 UMI）不仅受技术捕获效率影响，还受该 Spot 覆盖的细胞数与细胞密度影响。SCTransform 的方差稳定能在一定程度上缓解，但在解读时应警惕——表达模式可能部分由细胞密度的空间梯度驱动，而非单纯的基因调控差异。</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb2"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(Seurat)</span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a><span class="co"># SCTransform for spatial data: note the assay is "Spatial", not "RNA"</span></span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a>brain <span class="ot">&lt;-</span> <span class="fu">SCTransform</span>(brain, <span class="at">assay =</span> <span class="st">"Spatial"</span>, <span class="at">verbose =</span> <span class="cn">FALSE</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<hr>
+</section>
+</section>
+<section id="空间高变基因分析" class="level1" data-number="39">
+<h1 data-number="39"><span class="header-section-number">39</span> 空间高变基因分析</h1>
+<section id="什么是空间高变基因" class="level2" data-number="39.1">
+<h2 data-number="39.1" class="anchored" data-anchor-id="什么是空间高变基因"><span class="header-section-number">39.1</span> 什么是空间高变基因</h2>
+<p>scRNA-seq 的高变基因（专题 6.2）衡量基因在细胞间的总体变异，但忽略了空间结构。空间高变基因（Spatially Variable Genes, SVG）则专门识别那些表达呈现<strong>显著空间自相关</strong>的基因——即在组织上相邻的 Spot 倾向于有相似表达、表达模式不是空间随机散布的。这类基因往往标志着功能特异的组织层、解剖区域或局部微环境，是空间转录组最具特色的发现。</p>
+<p>普通高变基因与 SVG 的区别在于：一个基因可以在细胞间高度变异（是 HVG），但其高低表达细胞在空间上随机分布（不是 SVG）；反之，一个总体变异不大的基因，若其表达在某个特定区域系统性升高，则是 SVG。</p>
+</section>
+<section id="morans-i-空间自相关" class="level2" data-number="39.2">
+<h2 data-number="39.2" class="anchored" data-anchor-id="morans-i-空间自相关"><span class="header-section-number">39.2</span> Moran’s I 空间自相关</h2>
+<p>识别 SVG 最常用的统计量是 Moran’s I 空间自相关指数。它衡量”相邻位置的取值是否相似”：</p>
+<p><span class="math display">\[I = \frac{N}{\sum_{i}\sum_{j} w_{ij}} \cdot \frac{\sum_{i}\sum_{j} w_{ij}(x_i - \bar{x})(x_j - \bar{x})}{\sum_{i}(x_i - \bar{x})^2}\]</span></p>
+<p>其中 <span class="math inline">\(x_i\)</span> 为 Spot <span class="math inline">\(i\)</span> 的表达量，<span class="math inline">\(\bar{x}\)</span> 为均值，<span class="math inline">\(w_{ij}\)</span> 为空间权重矩阵（相邻 Spot 权重大、远处为 0），<span class="math inline">\(N\)</span> 为 Spot 总数。Moran’s I 的取值与解释类似相关系数：</p>
+<ul>
+<li><span class="math inline">\(I &gt; 0\)</span>：正空间自相关——相邻 Spot 表达相似，呈现空间聚集模式（典型的 SVG）。</li>
+<li><span class="math inline">\(I \approx 0\)</span>：无空间自相关——表达空间随机分布。</li>
+<li><span class="math inline">\(I &lt; 0\)</span>：负空间自相关——相邻 Spot 表达相反（罕见，如棋盘格模式）。</li>
+</ul>
+<p>{{Wiki:Spatial_analysis}}</p>
+<p>空间权重矩阵 <span class="math inline">\(w_{ij}\)</span> 的构建是关键：对 Visium 的六角网格，通常以每个 Spot 的直接相邻 Spot（六个邻居）为权重非零项，也可用 k-近邻定义。</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb3"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="co">#| label: fig-svg</span></span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="co">#| fig-cap: "小鼠脑前切片识别出的空间高变基因（SVG）的空间表达（stxBrain Visium 数据）。展示 Moran's I 排名靠前的若干基因，每个 Spot 按表达量着色。这些基因呈现出与脑解剖结构吻合的清晰空间聚集模式（如特定皮层、海马区），印证了它们的高空间自相关性。"</span></span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(Seurat)</span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a><span class="co"># Identify spatially variable features using Moran's I autocorrelation</span></span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a>brain <span class="ot">&lt;-</span> <span class="fu">FindSpatiallyVariableFeatures</span>(</span>
+<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a>    brain, <span class="at">assay =</span> <span class="st">"SCT"</span>,</span>
+<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a>    <span class="at">features =</span> <span class="fu">VariableFeatures</span>(brain)[<span class="dv">1</span><span class="sc">:</span><span class="dv">1000</span>],</span>
+<span id="cb3-9"><a href="#cb3-9" aria-hidden="true" tabindex="-1"></a>    <span class="at">selection.method =</span> <span class="st">"moransi"</span></span>
+<span id="cb3-10"><a href="#cb3-10" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb3-11"><a href="#cb3-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-12"><a href="#cb3-12" aria-hidden="true" tabindex="-1"></a><span class="co"># Visualize the top spatially variable genes on the tissue</span></span>
+<span id="cb3-13"><a href="#cb3-13" aria-hidden="true" tabindex="-1"></a>top_svg <span class="ot">&lt;-</span> <span class="fu">head</span>(<span class="fu">SpatiallyVariableFeatures</span>(brain, <span class="at">selection.method =</span> <span class="st">"moransi"</span>), <span class="dv">6</span>)</span>
+<span id="cb3-14"><a href="#cb3-14" aria-hidden="true" tabindex="-1"></a><span class="fu">SpatialFeaturePlot</span>(brain, <span class="at">features =</span> top_svg, <span class="at">ncol =</span> <span class="dv">3</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>除基于 Moran’s I 的方法外，<strong>SpatialDE</strong> 提供了另一种思路：用高斯过程（Gaussian Process）回归把每个基因的空间表达分解为”空间结构成分”与”非空间噪声成分”，据此检验是否存在显著的空间表达模式（Svensson et al., 2018）。两类方法可相互验证。</p>
+<hr>
+</section>
+</section>
+<section id="空间聚类" class="level1" data-number="40">
+<h1 data-number="40"><span class="header-section-number">40</span> 空间聚类</h1>
+<section id="普通聚类-vs-空间感知聚类" class="level2" data-number="40.1">
+<h2 data-number="40.1" class="anchored" data-anchor-id="普通聚类-vs-空间感知聚类"><span class="header-section-number">40.1</span> 普通聚类 vs 空间感知聚类</h2>
+<p>识别组织的空间域有两种思路，区别在于是否利用 Spot 的坐标信息：</p>
+<ul>
+<li><strong>普通聚类（忽略坐标）</strong>：完全沿用 scRNA-seq 流程——对 Spot 表达做 PCA、建 KNN 图、Leiden 聚类。它只用表达相似性，不考虑 Spot 是否空间相邻。优点是简单、与 scRNA-seq 一致；缺点是结果可能出现空间上不连贯的”碎片化”域（相邻 Spot 被分到不同簇）。</li>
+<li><strong>空间感知聚类（纳入坐标）</strong>：BayesSpace 等方法在聚类时同时利用表达与空间坐标，通过马尔可夫随机场（Markov Random Field, MRF）先验，鼓励空间相邻的 Spot 归入同一域（Zhao et al., 2021）。它能产生更平滑、更符合解剖连续性的空间域，并支持亚 Spot 分辨率增强。</li>
+</ul>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb4"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(Seurat)</span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a><span class="co"># Approach A: ordinary clustering (ignores coordinates), reusing the scRNA pipeline</span></span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a>brain <span class="ot">&lt;-</span> <span class="fu">RunPCA</span>(brain, <span class="at">assay =</span> <span class="st">"SCT"</span>) <span class="sc">|&gt;</span></span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a>    <span class="fu">FindNeighbors</span>(<span class="at">dims =</span> <span class="dv">1</span><span class="sc">:</span><span class="dv">30</span>) <span class="sc">|&gt;</span></span>
+<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a>    <span class="fu">FindClusters</span>(<span class="at">resolution =</span> <span class="fl">0.5</span>) <span class="sc">|&gt;</span></span>
+<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a>    <span class="fu">RunUMAP</span>(<span class="at">dims =</span> <span class="dv">1</span><span class="sc">:</span><span class="dv">30</span>)</span>
+<span id="cb4-8"><a href="#cb4-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-9"><a href="#cb4-9" aria-hidden="true" tabindex="-1"></a><span class="co"># Visualize the resulting spatial domains on the tissue section</span></span>
+<span id="cb4-10"><a href="#cb4-10" aria-hidden="true" tabindex="-1"></a><span class="fu">SpatialDimPlot</span>(brain, <span class="at">label =</span> <span class="cn">TRUE</span>, <span class="at">label.size =</span> <span class="dv">3</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</section>
+<section id="bayesspace-的空间先验" class="level2" data-number="40.2">
+<h2 data-number="40.2" class="anchored" data-anchor-id="bayesspace-的空间先验"><span class="header-section-number">40.2</span> BayesSpace 的空间先验</h2>
+<p>BayesSpace 的核心是 MRF 先验：它假设组织在空间上是连续的，因此一个 Spot 属于某空间域的概率，应受其邻居所属域的影响——相邻 Spot 更可能属于同一域。这一先验把”空间连续性”这一组织的基本生物学性质编码进了聚类模型，从而抑制孤立的、空间不连贯的聚类噪声。其关键超参数是域数量 <code>q</code>，需结合已知解剖结构（如小鼠脑的主要分区数）选定。</p>
+<div class="note">
+<p><strong>何时需要空间感知聚类：</strong> 并非所有研究都需要 BayesSpace。若研究目标只是”组织里有哪些转录状态”，普通聚类已足够；若目标是精确划定空间域边界、研究组织的空间组织结构（如肿瘤微环境分区、发育中的形态发生场），则空间感知聚类的连续性约束更有价值。可先用普通聚类快速探索，再视需要用 BayesSpace 精细化。</p>
+</div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb5"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="co">#| label: fig-spatial-domains</span></span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a><span class="co">#| fig-cap: "小鼠脑前切片的空间域聚类结果叠加在组织切片上（stxBrain Visium 数据）。每个 Spot 按其所属空间域着色，绘制在真实组织坐标上。聚类得到的空间域与已知小鼠脑解剖分区（如皮层各层、海马、白质）对应，验证了空间聚类捕捉组织结构的能力。"</span></span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(Seurat)</span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a><span class="co"># Overlay clusters on tissue and compare against known mouse-brain anatomy</span></span>
+<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a><span class="fu">SpatialDimPlot</span>(brain, <span class="at">label =</span> <span class="cn">TRUE</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="info">
+<p><strong>黄金法则：</strong> 空间聚类的结果必须接受解剖学检验——把空间域叠加到 H&amp;E 图像上，看它是否与已知的组织结构（皮层分层、海马形态、器官分区）吻合。吻合则说明聚类捕捉到了真实的组织组织结构；若空间域杂乱、与任何解剖结构都对不上，则要么是分辨率/参数不当，要么是质控未清除的技术伪影在作祟。解剖一致性是空间分析可信度的终极判据。</p>
+</div>
+<hr>
+</section>
+</section>
+<section id="方法总结与衔接说明" class="level1" data-number="41">
+<h1 data-number="41"><span class="header-section-number">41</span> 方法总结与衔接说明</h1>
+<p>本专题完成了 Visium 空间转录组的基础分析闭环：结合图像的空间质控、SCTransform 归一化、基于 Moran’s I 的空间高变基因识别，以及普通聚类与 BayesSpace 空间感知聚类。这些方法与模块 A 的 scRNA-seq 流程在质控、归一化、聚类逻辑上高度统一，差异集中在”空间坐标”这一额外维度。至此，第6章建立了单细胞与空间转录组的基础分析能力。但 Visium 分析仍有一个核心问题悬而未决——每个 Spot 的混合信号究竟由哪些细胞类型、以何种比例构成？这一细胞解卷积问题，连同拟时序、细胞通讯、多组学等高级专题，将在第7章系统展开。</p>
+<hr>
+</section>
+<section id="课后自测-post-lesson-quiz" class="level1" data-number="42">
+<h1 data-number="42"><span class="header-section-number">42</span> 课后自测 (Post-Lesson Quiz)</h1>
+<ol type="1">
+<li><p>空间数据的质控相比 scRNA-seq 多了哪一层判读？为什么即便表达量达标的 Spot 也可能需要剔除？</p></li>
+<li><p>为什么不能用 scRNA-seq 式的统一 UMI 下限无差别过滤所有 Visium Spot？这样做会造成什么空间偏差？</p></li>
+<li><p>什么是空间高变基因（SVG）？它与普通高变基因（HVG）的概念区别是什么？请举例说明一个基因可以是 HVG 却不是 SVG。</p></li>
+<li><p>Moran’s I 空间自相关指数衡量什么？<span class="math inline">\(I &gt; 0\)</span>、<span class="math inline">\(I \approx 0\)</span>、<span class="math inline">\(I &lt; 0\)</span> 分别对应什么样的空间表达模式？</p></li>
+<li><p>在 Moran’s I 计算中，空间权重矩阵 <span class="math inline">\(w_{ij}\)</span> 起什么作用？对 Visium 的六角网格通常如何定义它？</p></li>
+<li><p>普通聚类与 BayesSpace 空间感知聚类在是否利用空间坐标上有何区别？为什么普通聚类可能产生空间上”碎片化”的域？</p></li>
+<li><p>BayesSpace 的马尔可夫随机场（MRF）先验编码了组织的什么基本性质？它如何抑制空间不连贯的聚类噪声？</p></li>
+<li><p>一位研究者用普通聚类得到的某个空间域在组织上呈零散点状分布、与任何已知解剖结构都不吻合。请说明应如何判断这是真实的生物学信号还是技术问题，并提出处理思路。</p></li>
+</ol>
+<details>
+<summary>
+<strong>参考答案 (Reference Answers)</strong>
+</summary>
+<ol type="1">
+<li><p><em>多了结合 H&amp;E 图像的空间维度判读。因为一个 Spot 即便表达量（基因数/UMI）达标，若它位于组织边缘、脱落区域或折叠处，其信号也不可靠或不代表完整组织，应被剔除。这类问题只能通过结合图像的视觉检查发现，而非单看数值阈值。</em></p></li>
+<li><p><em>因为 Visium 中 Spot 的 UMI 总数还反映真实生物学差异——细胞密集区天然高 UMI、细胞稀疏区（白质、纤维区）天然低 UMI。用统一下限过滤会系统性删除低细胞密度的组织区域，造成空间偏差，使分析偏向高密度区域。应结合图像区分”低 UMI 是技术问题还是生物学真实”。</em></p></li>
+<li><p><em>SVG 是表达呈现显著空间自相关（相邻 Spot 表达相似、非空间随机）的基因，标志功能特异的组织层/区域。它与 HVG 的区别在于 HVG 只衡量细胞/Spot 间的总体变异、不考虑空间结构。例子：一个基因在 Spot 间高度变异（是 HVG），但其高低表达 Spot 在空间上随机散布、无聚集模式，则它不是 SVG。</em></p></li>
+<li><p><em>Moran’s I 衡量相邻位置取值是否相似（空间自相关）。<span class="math inline">\(I&gt;0\)</span> 为正空间自相关，相邻 Spot 表达相似、呈空间聚集（典型 SVG）；<span class="math inline">\(I\approx 0\)</span> 为无空间自相关，表达空间随机分布；<span class="math inline">\(I&lt;0\)</span> 为负空间自相关，相邻 Spot 表达相反（如棋盘格模式，罕见）。</em></p></li>
+<li><p><em>空间权重矩阵 <span class="math inline">\(w_{ij}\)</span> 定义了哪些 Spot 算”相邻”以及相邻的程度——相邻 Spot 权重大、远处为 0，从而把”空间邻近”信息引入统计量。对 Visium 六角网格，通常以每个 Spot 的六个直接相邻 Spot 为权重非零项，或用 k-近邻定义邻域。</em></p></li>
+<li><p><em>普通聚类只用表达相似性、忽略坐标（PCA + KNN + Leiden）；BayesSpace 在聚类时同时利用表达与空间坐标，通过 MRF 先验鼓励相邻 Spot 归入同一域。普通聚类可能碎片化，是因为它不考虑空间连续性，表达上略有差异的相邻 Spot 可能被分到不同簇，产生空间上不连贯的零散域。</em></p></li>
+<li><p><em>MRF 先验编码了”组织在空间上是连续的”这一基本性质：一个 Spot 属于某空间域的概率受其邻居所属域影响，相邻 Spot 更可能属于同一域。它通过让孤立 Spot 的归属向其邻居靠拢，抑制了空间不连贯的、孤立的聚类噪声，产生更平滑、更符合解剖连续性的空间域。</em></p></li>
+<li><p><em>零散点状、不吻合任何解剖结构，提示可能是技术问题或过度切分而非真实空间域。判断与处理：（1）把该域叠加到 H&amp;E 图像，检查这些 Spot 是否对应组织折叠、边缘或损伤；（2）检查这些 Spot 的 QC 指标（UMI、基因数、线粒体比例）是否异常，若异常则为质控残留的低质量 Spot；（3）尝试降低聚类分辨率或改用 BayesSpace 的空间连续性约束，看该域是否消失或并入相邻域。若确认为伪影或技术噪声，应在质控中剔除相关 Spot 后重新聚类。</em></p></li>
+</ol>
+</details>
 
 
+</section>
 
 </main> <!-- /main -->
 <script id="quarto-html-after-body" type="application/javascript">
@@ -960,13 +1194,13 @@ ul.task-list li input[type="checkbox"] {
   </script>
 <nav class="page-navigation">
   <div class="nav-page nav-page-previous">
-      <a href="./scrna_basic_lesson4.html" class="pagination-link" aria-label="第六章 课时4">
-        <i class="bi bi-arrow-left-short"></i> <span class="nav-page-text"><span class="chapter-number">35</span>&nbsp; <span class="chapter-title">第六章 课时4</span></span>
+      <a href="./scrna_basic_lesson4.html" class="pagination-link" aria-label="Visium 技术原理与上游处理">
+        <i class="bi bi-arrow-left-short"></i> <span class="nav-page-text"><span class="chapter-number">35</span>&nbsp; <span class="chapter-title">Visium 技术原理与上游处理</span></span>
       </a>          
   </div>
   <div class="nav-page nav-page-next">
-      <a href="./07-scrna-advanced.html" class="pagination-link" aria-label="单细胞与空间转录组高级分析：动态推断、多组学与空间解析">
-        <span class="nav-page-text"><span class="chapter-number">37</span>&nbsp; <span class="chapter-title">单细胞与空间转录组高级分析：动态推断、多组学与空间解析</span></span> <i class="bi bi-arrow-right-short"></i>
+      <a href="./07-scrna-advanced.html" class="pagination-link" aria-label="单细胞与空间转录组高级分析：多样本统计、动态推断、多组学与空间解析">
+        <span class="nav-page-text"><span class="chapter-number">37</span>&nbsp; <span class="chapter-title">单细胞与空间转录组高级分析：多样本统计、动态推断、多组学与空间解析</span></span> <i class="bi bi-arrow-right-short"></i>
       </a>
   </div>
 </nav>
@@ -975,4 +1209,4 @@ ul.task-list li input[type="checkbox"] {
 
 
 
-<footer class="footer"><div class="nav-footer"><div class="nav-footer-center"><div class="toc-actions"><ul><li><a href="https://github.com/cxzdsa2332/Applied-Omics-Analysis/edit/main/scrna_basic_lesson5.qmd" class="toc-action"><i class="bi bi-github"></i>Edit this page</a></li><li><a href="https://github.com/cxzdsa2332/Applied-Omics-Analysis/issues/new" class="toc-action"><i class="bi empty"></i>Report an issue</a></li><li><a href="https://github.com/cxzdsa2332/Applied-Omics-Analysis/blob/main/scrna_basic_lesson5.qmd" class="toc-action"><i class="bi empty"></i>View source</a></li></ul></div></div></div></footer></body></html>
+<footer class="footer"><div class="nav-footer"><div class="nav-footer-center"><div class="toc-actions d-sm-block d-md-none"><ul><li><a href="https://github.com/cxzdsa2332/Applied-Omics-Analysis/edit/main/scrna_basic_lesson5.qmd" class="toc-action"><i class="bi bi-github"></i>Edit this page</a></li><li><a href="https://github.com/cxzdsa2332/Applied-Omics-Analysis/issues/new" class="toc-action"><i class="bi empty"></i>Report an issue</a></li><li><a href="https://github.com/cxzdsa2332/Applied-Omics-Analysis/blob/main/scrna_basic_lesson5.qmd" class="toc-action"><i class="bi empty"></i>View source</a></li></ul></div></div></div></footer></body></html>
