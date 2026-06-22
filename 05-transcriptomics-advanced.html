@@ -6,7 +6,7 @@
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
-<meta name="dcterms.date" content="2026-06-20">
+<meta name="dcterms.date" content="2026-06-22">
 
 <title>25&nbsp; Bulk 转录组高级分析：转录本结构与调控网络 – Introduction to Applied High-throughput Biological Data Analysis</title>
 <style>
@@ -593,7 +593,7 @@ window.Quarto = {
     <div>
     <div class="quarto-title-meta-heading">Published</div>
     <div class="quarto-title-meta-contents">
-      <p class="date">June 20, 2026</p>
+      <p class="date">June 22, 2026</p>
     </div>
   </div>
   
@@ -637,7 +637,8 @@ window.Quarto = {
         │
         └── 专题 5.5  扰动稳态下的非线性调控模型学习
                     过表达 / 敲低 / 敲除 → 新稳态表达谱
-                    热力学 ODE 模型 → 稳态线性化 → LASSO 稀疏项选择</code></pre>
+                    热力学 ODE 模型 → 稳态线性化 → LASSO 稀疏项选择
+                    补充：Regulon 思想（共表达 + motif 证据 → 直接调控）</code></pre>
 <p>模块 A 主要使用第4章产生的 BAM 文件或原始 FASTQ，关注单个基因内部的转录本结构变化。模块 B 主要使用归一化表达矩阵，关注基因之间的协同表达、调控方向与动态机制。两类分析互为补充：结构分析解释”同一基因产生了什么转录本”，网络分析解释”多个基因如何共同响应实验条件”。</p>
 <hr>
 </section>
@@ -698,7 +699,7 @@ window.Quarto = {
 </section>
 <section id="专题-5.5扰动稳态下的非线性基因调控模型学习" class="level3" data-number="28.0.5">
 <h3 data-number="28.0.5" class="anchored" data-anchor-id="专题-5.5扰动稳态下的非线性基因调控模型学习"><span class="header-section-number">28.0.5</span> 专题 5.5：扰动稳态下的非线性基因调控模型学习</h3>
-<p>本专题基于 Meister 等人提出的扰动稳态方法，讨论如何在没有密集时间序列的情况下学习一个非线性基因调控动力系统。该方法从 Bintu 型热力学转录模型出发，将 RNA 聚合酶结合概率写成有理函数；再利用扰动后稳态条件，把原本非线性的 ODE 参数估计问题转化为对参数线性的约束优化问题。其核心价值在于把实验设计、可解释模型和稀疏参数选择连接在一起。</p>
+<p>本专题基于 Meister 等人提出的扰动稳态方法，讨论如何在没有密集时间序列的情况下学习一个非线性基因调控动力系统。该方法从 Bintu 型热力学转录模型出发，将 RNA 聚合酶结合概率写成有理函数；再利用扰动后稳态条件，把原本非线性的 ODE 参数估计问题转化为对参数线性的约束优化问题。其核心价值在于把实验设计、可解释模型和稀疏参数选择连接在一起。专题最后以 SCENIC 的 Regulon 思想作为通用补充，说明如何用顺式调控 motif 这一独立的机制证据，把共表达网络中的统计关联精炼为候选的直接调控关系（仅讨论通用思想，不涉及单细胞特有处理）。</p>
 <p><strong>核心概念</strong>：</p>
 <ul>
 <li>扰动稳态（Perturbed Steady-State）：过表达、敲低或敲除后系统重新达到的表达平衡</li>
@@ -707,8 +708,9 @@ window.Quarto = {
 <li>带约束 LASSO：<span class="math inline">\(0\leq b_i\leq c_i\)</span>、<span class="math inline">\(c_i(0)=1\)</span> 与稀疏项选择</li>
 <li>非可辨识性：仅用稳态数据时自调控项可能存在等价方程，需要额外动态信息打破平局</li>
 <li>与 GENIE3/SINDy 的关系：稳态扰动数据、时间序列数据和纯表达矩阵的建模差异</li>
+<li>Regulon 思想（SCENIC）：共表达候选 + motif 富集过滤 + 靶基因群活性打分；用正交机制证据剔除间接边</li>
 </ul>
-<p><strong>实践内容</strong>：围绕论文提出的扰动稳态框架推导关键方程；用小型模拟数据演示如何把候选非线性调控项转化为线性设计矩阵，并用简化 LASSO 恢复主要调控项；讨论该方法在真实 RNA-seq 或 Perturb-seq 实验中的设计要求与局限。</p>
+<p><strong>实践内容</strong>：围绕论文提出的扰动稳态框架推导关键方程；用小型模拟数据演示如何把候选非线性调控项转化为线性设计矩阵，并用简化 LASSO 恢复主要调控项；讨论该方法在真实 RNA-seq 或 Perturb-seq 实验中的设计要求与局限；并以 Regulon 思想说明 motif 证据如何精炼共表达网络。</p>
 
 
 </section>

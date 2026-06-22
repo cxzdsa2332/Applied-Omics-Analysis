@@ -6,7 +6,7 @@
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
-<meta name="dcterms.date" content="2026-06-20">
+<meta name="dcterms.date" content="2026-06-22">
 
 <title>28&nbsp; 加权基因共表达网络分析（WGCNA） – Introduction to Applied High-throughput Biological Data Analysis</title>
 <style>
@@ -616,6 +616,7 @@ window.Quarto = {
   <li><a href="#模块-表型关联分析" id="toc-模块-表型关联分析" class="nav-link" data-scroll-target="#模块-表型关联分析"><span class="header-section-number">31.5</span> 模块-表型关联分析</a></li>
   <li><a href="#枢纽基因识别" id="toc-枢纽基因识别" class="nav-link" data-scroll-target="#枢纽基因识别"><span class="header-section-number">31.6</span> 枢纽基因识别</a></li>
   <li><a href="#枢纽基因的-go-功能富集验证" id="toc-枢纽基因的-go-功能富集验证" class="nav-link" data-scroll-target="#枢纽基因的-go-功能富集验证"><span class="header-section-number">31.7</span> 枢纽基因的 GO 功能富集验证</a></li>
+  <li><a href="#富集结果的生物学解读" id="toc-富集结果的生物学解读" class="nav-link" data-scroll-target="#富集结果的生物学解读"><span class="header-section-number">31.8</span> 富集结果的生物学解读</a></li>
   </ul></li>
   <li><a href="#wgcna-与-dea-结果的整合" id="toc-wgcna-与-dea-结果的整合" class="nav-link" data-scroll-target="#wgcna-与-dea-结果的整合"><span class="header-section-number">32</span> WGCNA 与 DEA 结果的整合</a></li>
   <li><a href="#wgcna-的局限性与注意事项" id="toc-wgcna-的局限性与注意事项" class="nav-link" data-scroll-target="#wgcna-的局限性与注意事项"><span class="header-section-number">33</span> WGCNA 的局限性与注意事项</a></li>
@@ -639,7 +640,7 @@ window.Quarto = {
     <div>
     <div class="quarto-title-meta-heading">Published</div>
     <div class="quarto-title-meta-contents">
-      <p class="date">June 20, 2026</p>
+      <p class="date">June 22, 2026</p>
     </div>
   </div>
   
@@ -942,15 +943,22 @@ window.Quarto = {
 <section id="软阈值选择" class="level2" data-number="31.2">
 <h2 data-number="31.2" class="anchored" data-anchor-id="软阈值选择"><span class="header-section-number">31.2</span> 软阈值选择</h2>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb10"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Select soft threshold (choose smallest beta where R^2 &gt;= 0.85)</span></span>
-<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a>selected_beta <span class="ot">&lt;-</span> sft<span class="sc">$</span>powerEstimate</span>
-<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">"Selected soft threshold (beta):"</span>, selected_beta, <span class="st">"</span><span class="sc">\n</span><span class="st">"</span>)</span>
-<span id="cb10-4"><a href="#cb10-4" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb10-5"><a href="#cb10-5" aria-hidden="true" tabindex="-1"></a><span class="co"># If automatic selection fails (R^2 never reaches 0.85):</span></span>
-<span id="cb10-6"><a href="#cb10-6" aria-hidden="true" tabindex="-1"></a><span class="co"># For signed networks with &lt; 15 samples, beta = 12-18 is typically reasonable</span></span>
-<span id="cb10-7"><a href="#cb10-7" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> (<span class="fu">is.na</span>(selected_beta)) {</span>
-<span id="cb10-8"><a href="#cb10-8" aria-hidden="true" tabindex="-1"></a>    selected_beta <span class="ot">&lt;-</span> <span class="dv">12</span></span>
-<span id="cb10-9"><a href="#cb10-9" aria-hidden="true" tabindex="-1"></a>    <span class="fu">message</span>(<span class="st">"Auto-selection failed; using beta = 12 as default for small dataset"</span>)</span>
-<span id="cb10-10"><a href="#cb10-10" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a>powers <span class="ot">=</span> <span class="fu">c</span>(<span class="fu">c</span>(<span class="dv">1</span><span class="sc">:</span><span class="dv">10</span>), <span class="fu">seq</span>(<span class="at">from =</span> <span class="dv">12</span>, <span class="at">to=</span><span class="dv">20</span>, <span class="at">by=</span><span class="dv">2</span>))</span>
+<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a>sft <span class="ot">=</span> <span class="fu">pickSoftThreshold</span>(expr_demo, <span class="at">powerVector =</span> powers, <span class="at">verbose =</span> <span class="dv">5</span>)</span>
+<span id="cb10-4"><a href="#cb10-4" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(sft<span class="sc">$</span>fitIndices[,<span class="dv">1</span>], <span class="sc">-</span><span class="fu">sign</span>(sft<span class="sc">$</span>fitIndices[,<span class="dv">3</span>])<span class="sc">*</span>sft<span class="sc">$</span>fitIndices[,<span class="dv">2</span>],</span>
+<span id="cb10-5"><a href="#cb10-5" aria-hidden="true" tabindex="-1"></a>     <span class="at">xlab=</span><span class="st">"Soft Threshold (power)"</span>,<span class="at">ylab=</span><span class="st">"Scale Free Topology Model Fit,signed R^2"</span>,<span class="at">type=</span><span class="st">"n"</span>)</span>
+<span id="cb10-6"><a href="#cb10-6" aria-hidden="true" tabindex="-1"></a><span class="fu">text</span>(sft<span class="sc">$</span>fitIndices[,<span class="dv">1</span>], <span class="sc">-</span><span class="fu">sign</span>(sft<span class="sc">$</span>fitIndices[,<span class="dv">3</span>])<span class="sc">*</span>sft<span class="sc">$</span>fitIndices[,<span class="dv">2</span>],</span>
+<span id="cb10-7"><a href="#cb10-7" aria-hidden="true" tabindex="-1"></a>     <span class="at">labels=</span>powers,<span class="at">cex=</span><span class="fl">0.9</span>,<span class="at">col=</span><span class="st">"red"</span>)</span>
+<span id="cb10-8"><a href="#cb10-8" aria-hidden="true" tabindex="-1"></a><span class="fu">abline</span>(<span class="at">h=</span><span class="fl">0.85</span>,<span class="at">col=</span><span class="st">"red"</span>)  <span class="co">#查看位于0.85以上的点，可以改变高度值</span></span>
+<span id="cb10-9"><a href="#cb10-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-10"><a href="#cb10-10" aria-hidden="true" tabindex="-1"></a>selected_beta <span class="ot">=</span> sft<span class="sc">$</span>powerEstimate</span>
+<span id="cb10-11"><a href="#cb10-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-12"><a href="#cb10-12" aria-hidden="true" tabindex="-1"></a><span class="co"># If automatic selection fails (R^2 never reaches 0.85):</span></span>
+<span id="cb10-13"><a href="#cb10-13" aria-hidden="true" tabindex="-1"></a><span class="co"># For signed networks with &lt; 15 samples, beta = 12-18 is typically reasonable</span></span>
+<span id="cb10-14"><a href="#cb10-14" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> (<span class="fu">is.na</span>(selected_beta)) {</span>
+<span id="cb10-15"><a href="#cb10-15" aria-hidden="true" tabindex="-1"></a>    selected_beta <span class="ot">&lt;-</span> <span class="dv">12</span></span>
+<span id="cb10-16"><a href="#cb10-16" aria-hidden="true" tabindex="-1"></a>    <span class="fu">message</span>(<span class="st">"Auto-selection failed; using beta = 12 as default for small dataset"</span>)</span>
+<span id="cb10-17"><a href="#cb10-17" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </section>
 <section id="网络构建与模块识别" class="level2" data-number="31.3">
 <h2 data-number="31.3" class="anchored" data-anchor-id="网络构建与模块识别"><span class="header-section-number">31.3</span> 网络构建与模块识别</h2>
@@ -1004,31 +1012,21 @@ window.Quarto = {
 <span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a>MEs <span class="ot">&lt;-</span> <span class="fu">orderMEs</span>(ME_list<span class="sc">$</span>eigengenes)</span>
 <span id="cb12-4"><a href="#cb12-4" aria-hidden="true" tabindex="-1"></a>ME_cor <span class="ot">&lt;-</span> <span class="fu">cor</span>(MEs, <span class="at">use =</span> <span class="st">"p"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb13"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a><span class="co">#| label: fig-me-tree</span></span>
-<span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a><span class="co">#| fig-cap: "模块特征基因（ME）的相关矩阵热图（模拟示意）。颜色代表 ME 间的皮尔逊相关系数，高度相关的模块（r &gt; 0.75）在实际分析中将被 mergeCutHeight 参数合并。"</span></span>
+<span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a><span class="co">#| fig-cap: "模块特征基因（ME）的相关矩阵热图。直接绘制前述 blockwiseModules() 在 expr_mat_clean 上识别出的模块所计算的 ME_cor（沿用前文分析结果，非模拟数据）。颜色代表 ME 间的皮尔逊相关系数，高度相关的模块（r &gt; 0.75）在实际分析中将被 mergeCutHeight 参数合并。"</span></span>
 <span id="cb13-3"><a href="#cb13-3" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(ggplot2)</span>
 <span id="cb13-4"><a href="#cb13-4" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb13-5"><a href="#cb13-5" aria-hidden="true" tabindex="-1"></a><span class="co"># Simulated ME correlation matrix (5 modules)</span></span>
-<span id="cb13-6"><a href="#cb13-6" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">7</span>)</span>
-<span id="cb13-7"><a href="#cb13-7" aria-hidden="true" tabindex="-1"></a>me_names <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="st">"MEturquoise"</span>, <span class="st">"MEblue"</span>, <span class="st">"MEbrown"</span>, <span class="st">"MEyellow"</span>, <span class="st">"MEgreen"</span>)</span>
-<span id="cb13-8"><a href="#cb13-8" aria-hidden="true" tabindex="-1"></a>me_cor_sim <span class="ot">&lt;-</span> <span class="fu">matrix</span>(<span class="fu">c</span>(</span>
-<span id="cb13-9"><a href="#cb13-9" aria-hidden="true" tabindex="-1"></a>     <span class="fl">1.00</span>,  <span class="fl">0.72</span>, <span class="sc">-</span><span class="fl">0.30</span>, <span class="sc">-</span><span class="fl">0.15</span>,  <span class="fl">0.10</span>,</span>
-<span id="cb13-10"><a href="#cb13-10" aria-hidden="true" tabindex="-1"></a>     <span class="fl">0.72</span>,  <span class="fl">1.00</span>, <span class="sc">-</span><span class="fl">0.25</span>, <span class="sc">-</span><span class="fl">0.20</span>,  <span class="fl">0.05</span>,</span>
-<span id="cb13-11"><a href="#cb13-11" aria-hidden="true" tabindex="-1"></a>    <span class="sc">-</span><span class="fl">0.30</span>, <span class="sc">-</span><span class="fl">0.25</span>,  <span class="fl">1.00</span>,  <span class="fl">0.68</span>, <span class="sc">-</span><span class="fl">0.40</span>,</span>
-<span id="cb13-12"><a href="#cb13-12" aria-hidden="true" tabindex="-1"></a>    <span class="sc">-</span><span class="fl">0.15</span>, <span class="sc">-</span><span class="fl">0.20</span>,  <span class="fl">0.68</span>,  <span class="fl">1.00</span>, <span class="sc">-</span><span class="fl">0.35</span>,</span>
-<span id="cb13-13"><a href="#cb13-13" aria-hidden="true" tabindex="-1"></a>     <span class="fl">0.10</span>,  <span class="fl">0.05</span>, <span class="sc">-</span><span class="fl">0.40</span>, <span class="sc">-</span><span class="fl">0.35</span>,  <span class="fl">1.00</span></span>
-<span id="cb13-14"><a href="#cb13-14" aria-hidden="true" tabindex="-1"></a>), <span class="at">nrow =</span> <span class="dv">5</span>, <span class="at">dimnames =</span> <span class="fu">list</span>(me_names, me_names))</span>
-<span id="cb13-15"><a href="#cb13-15" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb13-16"><a href="#cb13-16" aria-hidden="true" tabindex="-1"></a>me_df <span class="ot">&lt;-</span> <span class="fu">as.data.frame</span>(<span class="fu">as.table</span>(me_cor_sim))</span>
-<span id="cb13-17"><a href="#cb13-17" aria-hidden="true" tabindex="-1"></a><span class="fu">names</span>(me_df) <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="st">"ME1"</span>, <span class="st">"ME2"</span>, <span class="st">"Correlation"</span>)</span>
-<span id="cb13-18"><a href="#cb13-18" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb13-19"><a href="#cb13-19" aria-hidden="true" tabindex="-1"></a><span class="fu">ggplot</span>(me_df, <span class="fu">aes</span>(<span class="at">x =</span> ME1, <span class="at">y =</span> ME2, <span class="at">fill =</span> Correlation)) <span class="sc">+</span></span>
-<span id="cb13-20"><a href="#cb13-20" aria-hidden="true" tabindex="-1"></a>    <span class="fu">geom_tile</span>(<span class="at">color =</span> <span class="st">"white"</span>) <span class="sc">+</span></span>
-<span id="cb13-21"><a href="#cb13-21" aria-hidden="true" tabindex="-1"></a>    <span class="fu">geom_text</span>(<span class="fu">aes</span>(<span class="at">label =</span> <span class="fu">round</span>(Correlation, <span class="dv">2</span>)), <span class="at">size =</span> <span class="dv">3</span>) <span class="sc">+</span></span>
-<span id="cb13-22"><a href="#cb13-22" aria-hidden="true" tabindex="-1"></a>    <span class="fu">scale_fill_gradient2</span>(<span class="at">low =</span> <span class="st">"#2166ac"</span>, <span class="at">mid =</span> <span class="st">"white"</span>, <span class="at">high =</span> <span class="st">"#d73027"</span>,</span>
-<span id="cb13-23"><a href="#cb13-23" aria-hidden="true" tabindex="-1"></a>                         <span class="at">midpoint =</span> <span class="dv">0</span>, <span class="at">limits =</span> <span class="fu">c</span>(<span class="sc">-</span><span class="dv">1</span>, <span class="dv">1</span>)) <span class="sc">+</span></span>
-<span id="cb13-24"><a href="#cb13-24" aria-hidden="true" tabindex="-1"></a>    <span class="fu">labs</span>(<span class="at">x =</span> <span class="cn">NULL</span>, <span class="at">y =</span> <span class="cn">NULL</span>, <span class="at">title =</span> <span class="st">"Module Eigengene correlation matrix"</span>) <span class="sc">+</span></span>
-<span id="cb13-25"><a href="#cb13-25" aria-hidden="true" tabindex="-1"></a>    <span class="fu">theme_bw</span>(<span class="at">base_size =</span> <span class="dv">11</span>) <span class="sc">+</span></span>
-<span id="cb13-26"><a href="#cb13-26" aria-hidden="true" tabindex="-1"></a>    <span class="fu">theme</span>(<span class="at">axis.text.x =</span> <span class="fu">element_text</span>(<span class="at">angle =</span> <span class="dv">30</span>, <span class="at">hjust =</span> <span class="dv">1</span>))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<span id="cb13-5"><a href="#cb13-5" aria-hidden="true" tabindex="-1"></a><span class="co"># Reshape the real ME correlation matrix (ME_cor) computed in the previous chunk</span></span>
+<span id="cb13-6"><a href="#cb13-6" aria-hidden="true" tabindex="-1"></a>me_df <span class="ot">&lt;-</span> <span class="fu">as.data.frame</span>(<span class="fu">as.table</span>(ME_cor))</span>
+<span id="cb13-7"><a href="#cb13-7" aria-hidden="true" tabindex="-1"></a><span class="fu">names</span>(me_df) <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="st">"ME1"</span>, <span class="st">"ME2"</span>, <span class="st">"Correlation"</span>)</span>
+<span id="cb13-8"><a href="#cb13-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb13-9"><a href="#cb13-9" aria-hidden="true" tabindex="-1"></a><span class="fu">ggplot</span>(me_df, <span class="fu">aes</span>(<span class="at">x =</span> ME1, <span class="at">y =</span> ME2, <span class="at">fill =</span> Correlation)) <span class="sc">+</span></span>
+<span id="cb13-10"><a href="#cb13-10" aria-hidden="true" tabindex="-1"></a>    <span class="fu">geom_tile</span>(<span class="at">color =</span> <span class="st">"white"</span>) <span class="sc">+</span></span>
+<span id="cb13-11"><a href="#cb13-11" aria-hidden="true" tabindex="-1"></a>    <span class="fu">geom_text</span>(<span class="fu">aes</span>(<span class="at">label =</span> <span class="fu">round</span>(Correlation, <span class="dv">2</span>)), <span class="at">size =</span> <span class="dv">3</span>) <span class="sc">+</span></span>
+<span id="cb13-12"><a href="#cb13-12" aria-hidden="true" tabindex="-1"></a>    <span class="fu">scale_fill_gradient2</span>(<span class="at">low =</span> <span class="st">"#2166ac"</span>, <span class="at">mid =</span> <span class="st">"white"</span>, <span class="at">high =</span> <span class="st">"#d73027"</span>,</span>
+<span id="cb13-13"><a href="#cb13-13" aria-hidden="true" tabindex="-1"></a>                         <span class="at">midpoint =</span> <span class="dv">0</span>, <span class="at">limits =</span> <span class="fu">c</span>(<span class="sc">-</span><span class="dv">1</span>, <span class="dv">1</span>)) <span class="sc">+</span></span>
+<span id="cb13-14"><a href="#cb13-14" aria-hidden="true" tabindex="-1"></a>    <span class="fu">labs</span>(<span class="at">x =</span> <span class="cn">NULL</span>, <span class="at">y =</span> <span class="cn">NULL</span>, <span class="at">title =</span> <span class="st">"Module Eigengene correlation matrix"</span>) <span class="sc">+</span></span>
+<span id="cb13-15"><a href="#cb13-15" aria-hidden="true" tabindex="-1"></a>    <span class="fu">theme_bw</span>(<span class="at">base_size =</span> <span class="dv">11</span>) <span class="sc">+</span></span>
+<span id="cb13-16"><a href="#cb13-16" aria-hidden="true" tabindex="-1"></a>    <span class="fu">theme</span>(<span class="at">axis.text.x =</span> <span class="fu">element_text</span>(<span class="at">angle =</span> <span class="dv">30</span>, <span class="at">hjust =</span> <span class="dv">1</span>))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </section>
 <section id="模块-表型关联分析" class="level2" data-number="31.5">
 <h2 data-number="31.5" class="anchored" data-anchor-id="模块-表型关联分析"><span class="header-section-number">31.5</span> 模块-表型关联分析</h2>
@@ -1044,43 +1042,24 @@ window.Quarto = {
 <span id="cb14-10"><a href="#cb14-10" aria-hidden="true" tabindex="-1"></a>module_trait_cor    <span class="ot">&lt;-</span> <span class="fu">cor</span>(MEs, trait_data, <span class="at">use =</span> <span class="st">"p"</span>)</span>
 <span id="cb14-11"><a href="#cb14-11" aria-hidden="true" tabindex="-1"></a>module_trait_pvalue <span class="ot">&lt;-</span> <span class="fu">corPvalueStudent</span>(module_trait_cor, nSamples)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb15"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a><span class="co">#| label: fig-module-trait-heatmap</span></span>
-<span id="cb15-2"><a href="#cb15-2" aria-hidden="true" tabindex="-1"></a><span class="co">#| fig-cap: "模块-表型关联热图（模拟数据示意）。每个格子显示模块特征基因与表型变量的皮尔逊相关系数及 P 值。红色代表正相关，蓝色代表负相关，颜色深浅反映相关系数绝对值大小。turquoise 模块与 dex 处理高度正相关，brown 模块与 dex 处理负相关。"</span></span>
+<span id="cb15-2"><a href="#cb15-2" aria-hidden="true" tabindex="-1"></a><span class="co">#| fig-cap: "模块-表型关联热图。直接绘制前述计算的真实 module_trait_cor 与 module_trait_pvalue（沿用前文分析结果，非模拟数据）。每个格子显示模块特征基因与表型变量的皮尔逊相关系数及 P 值。红色代表正相关，蓝色代表负相关，颜色深浅反映相关系数绝对值大小；与 dex 处理显著关联的模块即为后续枢纽基因分析的目标模块。"</span></span>
 <span id="cb15-3"><a href="#cb15-3" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(ggplot2)</span>
 <span id="cb15-4"><a href="#cb15-4" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb15-5"><a href="#cb15-5" aria-hidden="true" tabindex="-1"></a><span class="co"># Simulated module-trait correlation matrix</span></span>
-<span id="cb15-6"><a href="#cb15-6" aria-hidden="true" tabindex="-1"></a>me_names <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="st">"MEturquoise"</span>, <span class="st">"MEblue"</span>, <span class="st">"MEbrown"</span>, <span class="st">"MEyellow"</span>, <span class="st">"MEgreen"</span>)</span>
-<span id="cb15-7"><a href="#cb15-7" aria-hidden="true" tabindex="-1"></a>traits    <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="st">"dex_treated"</span>, <span class="st">"cell_N61311"</span>, <span class="st">"cell_N052611"</span>, <span class="st">"cell_N080611"</span>)</span>
-<span id="cb15-8"><a href="#cb15-8" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb15-9"><a href="#cb15-9" aria-hidden="true" tabindex="-1"></a>cor_vals <span class="ot">&lt;-</span> <span class="fu">matrix</span>(<span class="fu">c</span>(</span>
-<span id="cb15-10"><a href="#cb15-10" aria-hidden="true" tabindex="-1"></a>     <span class="fl">0.87</span>, <span class="sc">-</span><span class="fl">0.15</span>,  <span class="fl">0.10</span>, <span class="sc">-</span><span class="fl">0.05</span>,</span>
-<span id="cb15-11"><a href="#cb15-11" aria-hidden="true" tabindex="-1"></a>     <span class="fl">0.62</span>, <span class="sc">-</span><span class="fl">0.08</span>,  <span class="fl">0.20</span>, <span class="sc">-</span><span class="fl">0.12</span>,</span>
-<span id="cb15-12"><a href="#cb15-12" aria-hidden="true" tabindex="-1"></a>    <span class="sc">-</span><span class="fl">0.79</span>,  <span class="fl">0.22</span>, <span class="sc">-</span><span class="fl">0.18</span>,  <span class="fl">0.09</span>,</span>
-<span id="cb15-13"><a href="#cb15-13" aria-hidden="true" tabindex="-1"></a>    <span class="sc">-</span><span class="fl">0.41</span>,  <span class="fl">0.55</span>, <span class="sc">-</span><span class="fl">0.33</span>,  <span class="fl">0.18</span>,</span>
-<span id="cb15-14"><a href="#cb15-14" aria-hidden="true" tabindex="-1"></a>     <span class="fl">0.12</span>, <span class="sc">-</span><span class="fl">0.45</span>,  <span class="fl">0.61</span>, <span class="sc">-</span><span class="fl">0.28</span></span>
-<span id="cb15-15"><a href="#cb15-15" aria-hidden="true" tabindex="-1"></a>), <span class="at">nrow =</span> <span class="dv">5</span>, <span class="at">byrow =</span> <span class="cn">TRUE</span>,</span>
-<span id="cb15-16"><a href="#cb15-16" aria-hidden="true" tabindex="-1"></a><span class="at">dimnames =</span> <span class="fu">list</span>(me_names, traits))</span>
-<span id="cb15-17"><a href="#cb15-17" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb15-18"><a href="#cb15-18" aria-hidden="true" tabindex="-1"></a>pval_vals <span class="ot">&lt;-</span> <span class="fu">matrix</span>(<span class="fu">c</span>(</span>
-<span id="cb15-19"><a href="#cb15-19" aria-hidden="true" tabindex="-1"></a>    <span class="fl">2e-3</span>, <span class="fl">0.68</span>, <span class="fl">0.78</span>, <span class="fl">0.90</span>,</span>
-<span id="cb15-20"><a href="#cb15-20" aria-hidden="true" tabindex="-1"></a>    <span class="fl">0.09</span>, <span class="fl">0.83</span>, <span class="fl">0.58</span>, <span class="fl">0.75</span>,</span>
-<span id="cb15-21"><a href="#cb15-21" aria-hidden="true" tabindex="-1"></a>    <span class="fl">4e-3</span>, <span class="fl">0.55</span>, <span class="fl">0.63</span>, <span class="fl">0.81</span>,</span>
-<span id="cb15-22"><a href="#cb15-22" aria-hidden="true" tabindex="-1"></a>    <span class="fl">0.27</span>, <span class="fl">0.13</span>, <span class="fl">0.37</span>, <span class="fl">0.63</span>,</span>
-<span id="cb15-23"><a href="#cb15-23" aria-hidden="true" tabindex="-1"></a>    <span class="fl">0.75</span>, <span class="fl">0.21</span>, <span class="fl">0.09</span>, <span class="fl">0.45</span></span>
-<span id="cb15-24"><a href="#cb15-24" aria-hidden="true" tabindex="-1"></a>), <span class="at">nrow =</span> <span class="dv">5</span>, <span class="at">byrow =</span> <span class="cn">TRUE</span>)</span>
-<span id="cb15-25"><a href="#cb15-25" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb15-26"><a href="#cb15-26" aria-hidden="true" tabindex="-1"></a>df_ht <span class="ot">&lt;-</span> <span class="fu">as.data.frame</span>(<span class="fu">as.table</span>(cor_vals))</span>
-<span id="cb15-27"><a href="#cb15-27" aria-hidden="true" tabindex="-1"></a><span class="fu">names</span>(df_ht) <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="st">"Module"</span>, <span class="st">"Trait"</span>, <span class="st">"Correlation"</span>)</span>
-<span id="cb15-28"><a href="#cb15-28" aria-hidden="true" tabindex="-1"></a>df_ht<span class="sc">$</span>label <span class="ot">&lt;-</span> <span class="fu">paste0</span>(<span class="fu">round</span>(cor_vals, <span class="dv">2</span>), <span class="st">"</span><span class="sc">\n</span><span class="st">(p="</span>,</span>
-<span id="cb15-29"><a href="#cb15-29" aria-hidden="true" tabindex="-1"></a>                       <span class="fu">formatC</span>(<span class="fu">as.vector</span>(pval_vals), <span class="at">format =</span> <span class="st">"e"</span>, <span class="at">digits =</span> <span class="dv">1</span>), <span class="st">")"</span>)</span>
-<span id="cb15-30"><a href="#cb15-30" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb15-31"><a href="#cb15-31" aria-hidden="true" tabindex="-1"></a><span class="fu">ggplot</span>(df_ht, <span class="fu">aes</span>(<span class="at">x =</span> Trait, <span class="at">y =</span> Module, <span class="at">fill =</span> Correlation)) <span class="sc">+</span></span>
-<span id="cb15-32"><a href="#cb15-32" aria-hidden="true" tabindex="-1"></a>    <span class="fu">geom_tile</span>(<span class="at">color =</span> <span class="st">"white"</span>, <span class="at">linewidth =</span> <span class="fl">0.5</span>) <span class="sc">+</span></span>
-<span id="cb15-33"><a href="#cb15-33" aria-hidden="true" tabindex="-1"></a>    <span class="fu">geom_text</span>(<span class="fu">aes</span>(<span class="at">label =</span> label), <span class="at">size =</span> <span class="fl">2.5</span>, <span class="at">lineheight =</span> <span class="fl">0.9</span>) <span class="sc">+</span></span>
-<span id="cb15-34"><a href="#cb15-34" aria-hidden="true" tabindex="-1"></a>    <span class="fu">scale_fill_gradient2</span>(<span class="at">low =</span> <span class="st">"#2166ac"</span>, <span class="at">mid =</span> <span class="st">"white"</span>, <span class="at">high =</span> <span class="st">"#d73027"</span>,</span>
-<span id="cb15-35"><a href="#cb15-35" aria-hidden="true" tabindex="-1"></a>                         <span class="at">midpoint =</span> <span class="dv">0</span>, <span class="at">limits =</span> <span class="fu">c</span>(<span class="sc">-</span><span class="dv">1</span>, <span class="dv">1</span>), <span class="at">name =</span> <span class="st">"r"</span>) <span class="sc">+</span></span>
-<span id="cb15-36"><a href="#cb15-36" aria-hidden="true" tabindex="-1"></a>    <span class="fu">labs</span>(<span class="at">x =</span> <span class="st">"Sample Traits"</span>, <span class="at">y =</span> <span class="st">"Module Eigengenes"</span>) <span class="sc">+</span></span>
-<span id="cb15-37"><a href="#cb15-37" aria-hidden="true" tabindex="-1"></a>    <span class="fu">theme_bw</span>(<span class="at">base_size =</span> <span class="dv">11</span>) <span class="sc">+</span></span>
-<span id="cb15-38"><a href="#cb15-38" aria-hidden="true" tabindex="-1"></a>    <span class="fu">theme</span>(<span class="at">axis.text.x =</span> <span class="fu">element_text</span>(<span class="at">angle =</span> <span class="dv">20</span>, <span class="at">hjust =</span> <span class="dv">1</span>))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<span id="cb15-5"><a href="#cb15-5" aria-hidden="true" tabindex="-1"></a><span class="co"># Reshape the real module-trait correlation matrix computed in the previous chunk.</span></span>
+<span id="cb15-6"><a href="#cb15-6" aria-hidden="true" tabindex="-1"></a><span class="co"># as.table() and as.vector() both iterate column-major, so labels stay aligned.</span></span>
+<span id="cb15-7"><a href="#cb15-7" aria-hidden="true" tabindex="-1"></a>df_ht <span class="ot">&lt;-</span> <span class="fu">as.data.frame</span>(<span class="fu">as.table</span>(module_trait_cor))</span>
+<span id="cb15-8"><a href="#cb15-8" aria-hidden="true" tabindex="-1"></a><span class="fu">names</span>(df_ht) <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="st">"Module"</span>, <span class="st">"Trait"</span>, <span class="st">"Correlation"</span>)</span>
+<span id="cb15-9"><a href="#cb15-9" aria-hidden="true" tabindex="-1"></a>df_ht<span class="sc">$</span>label <span class="ot">&lt;-</span> <span class="fu">paste0</span>(<span class="fu">round</span>(<span class="fu">as.vector</span>(module_trait_cor), <span class="dv">2</span>), <span class="st">"</span><span class="sc">\n</span><span class="st">(p="</span>,</span>
+<span id="cb15-10"><a href="#cb15-10" aria-hidden="true" tabindex="-1"></a>                       <span class="fu">formatC</span>(<span class="fu">as.vector</span>(module_trait_pvalue), <span class="at">format =</span> <span class="st">"e"</span>, <span class="at">digits =</span> <span class="dv">1</span>), <span class="st">")"</span>)</span>
+<span id="cb15-11"><a href="#cb15-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-12"><a href="#cb15-12" aria-hidden="true" tabindex="-1"></a><span class="fu">ggplot</span>(df_ht, <span class="fu">aes</span>(<span class="at">x =</span> Trait, <span class="at">y =</span> Module, <span class="at">fill =</span> Correlation)) <span class="sc">+</span></span>
+<span id="cb15-13"><a href="#cb15-13" aria-hidden="true" tabindex="-1"></a>    <span class="fu">geom_tile</span>(<span class="at">color =</span> <span class="st">"white"</span>, <span class="at">linewidth =</span> <span class="fl">0.5</span>) <span class="sc">+</span></span>
+<span id="cb15-14"><a href="#cb15-14" aria-hidden="true" tabindex="-1"></a>    <span class="fu">geom_text</span>(<span class="fu">aes</span>(<span class="at">label =</span> label), <span class="at">size =</span> <span class="fl">2.5</span>, <span class="at">lineheight =</span> <span class="fl">0.9</span>) <span class="sc">+</span></span>
+<span id="cb15-15"><a href="#cb15-15" aria-hidden="true" tabindex="-1"></a>    <span class="fu">scale_fill_gradient2</span>(<span class="at">low =</span> <span class="st">"#2166ac"</span>, <span class="at">mid =</span> <span class="st">"white"</span>, <span class="at">high =</span> <span class="st">"#d73027"</span>,</span>
+<span id="cb15-16"><a href="#cb15-16" aria-hidden="true" tabindex="-1"></a>                         <span class="at">midpoint =</span> <span class="dv">0</span>, <span class="at">limits =</span> <span class="fu">c</span>(<span class="sc">-</span><span class="dv">1</span>, <span class="dv">1</span>), <span class="at">name =</span> <span class="st">"r"</span>) <span class="sc">+</span></span>
+<span id="cb15-17"><a href="#cb15-17" aria-hidden="true" tabindex="-1"></a>    <span class="fu">labs</span>(<span class="at">x =</span> <span class="st">"Sample Traits"</span>, <span class="at">y =</span> <span class="st">"Module Eigengenes"</span>) <span class="sc">+</span></span>
+<span id="cb15-18"><a href="#cb15-18" aria-hidden="true" tabindex="-1"></a>    <span class="fu">theme_bw</span>(<span class="at">base_size =</span> <span class="dv">11</span>) <span class="sc">+</span></span>
+<span id="cb15-19"><a href="#cb15-19" aria-hidden="true" tabindex="-1"></a>    <span class="fu">theme</span>(<span class="at">axis.text.x =</span> <span class="fu">element_text</span>(<span class="at">angle =</span> <span class="dv">20</span>, <span class="at">hjust =</span> <span class="dv">1</span>))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </section>
 <section id="枢纽基因识别" class="level2" data-number="31.6">
 <h2 data-number="31.6" class="anchored" data-anchor-id="枢纽基因识别"><span class="header-section-number">31.6</span> 枢纽基因识别</h2>
@@ -1101,37 +1080,27 @@ window.Quarto = {
 <span id="cb16-9"><a href="#cb16-9" aria-hidden="true" tabindex="-1"></a>hub_df    <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(<span class="at">gene =</span> module_genes, <span class="at">kME =</span> kME, <span class="at">GS =</span> GS)</span>
 <span id="cb16-10"><a href="#cb16-10" aria-hidden="true" tabindex="-1"></a>hub_genes <span class="ot">&lt;-</span> hub_df <span class="sc">|&gt;</span> <span class="fu">filter</span>(<span class="fu">abs</span>(kME) <span class="sc">&gt;</span> <span class="fl">0.8</span>, <span class="fu">abs</span>(GS) <span class="sc">&gt;</span> <span class="fl">0.5</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb17"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a><span class="co">#| label: fig-kme-gs-scatter</span></span>
-<span id="cb17-2"><a href="#cb17-2" aria-hidden="true" tabindex="-1"></a><span class="co">#| fig-cap: "模块成员度（kME）与基因显著性（GS）的散点图（模拟数据示意）。每个点代表 turquoise 模块内的一个基因，红色点为满足枢纽基因标准（|kME| &gt; 0.8 且 |GS| &gt; 0.5）的候选枢纽基因。两个指标的正相关关系验证了该模块与 dex 处理状态的真实关联。"</span></span>
+<span id="cb17-2"><a href="#cb17-2" aria-hidden="true" tabindex="-1"></a><span class="co">#| fig-cap: "模块成员度（kME）与基因显著性（GS）的散点图。直接绘制前述计算的真实 hub_df（沿用前文分析结果，非模拟数据）。每个点代表目标模块内的一个基因，红色点为满足枢纽基因标准（|kME| &gt; 0.8 且 |GS| &gt; 0.5）的候选枢纽基因。两个指标的正相关关系印证了该模块与 dex 处理状态的关联。"</span></span>
 <span id="cb17-3"><a href="#cb17-3" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(ggplot2)</span>
 <span id="cb17-4"><a href="#cb17-4" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(dplyr)</span>
-<span id="cb17-5"><a href="#cb17-5" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">99</span>)</span>
-<span id="cb17-6"><a href="#cb17-6" aria-hidden="true" tabindex="-1"></a>n_mod <span class="ot">&lt;-</span> <span class="dv">250</span></span>
-<span id="cb17-7"><a href="#cb17-7" aria-hidden="true" tabindex="-1"></a><span class="co"># Simulate kME-GS relationship with realistic correlation structure</span></span>
-<span id="cb17-8"><a href="#cb17-8" aria-hidden="true" tabindex="-1"></a>kme_sim <span class="ot">&lt;-</span> <span class="fu">rnorm</span>(n_mod, <span class="dv">0</span>, <span class="fl">0.4</span>)</span>
-<span id="cb17-9"><a href="#cb17-9" aria-hidden="true" tabindex="-1"></a>gs_sim  <span class="ot">&lt;-</span> <span class="fl">0.7</span> <span class="sc">*</span> kme_sim <span class="sc">+</span> <span class="fu">rnorm</span>(n_mod, <span class="dv">0</span>, <span class="fl">0.25</span>)</span>
-<span id="cb17-10"><a href="#cb17-10" aria-hidden="true" tabindex="-1"></a><span class="co"># Add a cluster of hub genes with high kME and GS</span></span>
-<span id="cb17-11"><a href="#cb17-11" aria-hidden="true" tabindex="-1"></a>kme_hubs <span class="ot">&lt;-</span> <span class="fu">runif</span>(<span class="dv">25</span>, <span class="fl">0.82</span>, <span class="fl">0.97</span>)</span>
-<span id="cb17-12"><a href="#cb17-12" aria-hidden="true" tabindex="-1"></a>gs_hubs  <span class="ot">&lt;-</span> <span class="fu">runif</span>(<span class="dv">25</span>, <span class="fl">0.52</span>, <span class="fl">0.88</span>)</span>
-<span id="cb17-13"><a href="#cb17-13" aria-hidden="true" tabindex="-1"></a>hub_sim_df <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(</span>
-<span id="cb17-14"><a href="#cb17-14" aria-hidden="true" tabindex="-1"></a>    <span class="at">kME =</span> <span class="fu">c</span>(kme_sim, kme_hubs),</span>
-<span id="cb17-15"><a href="#cb17-15" aria-hidden="true" tabindex="-1"></a>    <span class="at">GS  =</span> <span class="fu">c</span>(gs_sim, gs_hubs)</span>
-<span id="cb17-16"><a href="#cb17-16" aria-hidden="true" tabindex="-1"></a>) <span class="sc">|&gt;</span> <span class="fu">mutate</span>(<span class="at">is_hub =</span> <span class="fu">abs</span>(kME) <span class="sc">&gt;</span> <span class="fl">0.8</span> <span class="sc">&amp;</span> <span class="fu">abs</span>(GS) <span class="sc">&gt;</span> <span class="fl">0.5</span>)</span>
-<span id="cb17-17"><a href="#cb17-17" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb17-18"><a href="#cb17-18" aria-hidden="true" tabindex="-1"></a>target_module <span class="ot">&lt;-</span> <span class="st">"turquoise"</span></span>
-<span id="cb17-19"><a href="#cb17-19" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb17-20"><a href="#cb17-20" aria-hidden="true" tabindex="-1"></a><span class="fu">ggplot</span>(hub_sim_df, <span class="fu">aes</span>(<span class="at">x =</span> kME, <span class="at">y =</span> GS, <span class="at">color =</span> is_hub)) <span class="sc">+</span></span>
-<span id="cb17-21"><a href="#cb17-21" aria-hidden="true" tabindex="-1"></a>    <span class="fu">geom_point</span>(<span class="at">alpha =</span> <span class="fl">0.6</span>, <span class="at">size =</span> <span class="fl">1.5</span>) <span class="sc">+</span></span>
-<span id="cb17-22"><a href="#cb17-22" aria-hidden="true" tabindex="-1"></a>    <span class="fu">scale_color_manual</span>(<span class="at">values =</span> <span class="fu">c</span>(<span class="st">"grey70"</span>, <span class="st">"#d62728"</span>),</span>
-<span id="cb17-23"><a href="#cb17-23" aria-hidden="true" tabindex="-1"></a>                       <span class="at">labels =</span> <span class="fu">c</span>(<span class="st">"Non-hub"</span>, <span class="st">"Hub gene candidate"</span>)) <span class="sc">+</span></span>
-<span id="cb17-24"><a href="#cb17-24" aria-hidden="true" tabindex="-1"></a>    <span class="fu">geom_vline</span>(<span class="at">xintercept =</span> <span class="fu">c</span>(<span class="sc">-</span><span class="fl">0.8</span>, <span class="fl">0.8</span>), <span class="at">linetype =</span> <span class="st">"dashed"</span>,</span>
-<span id="cb17-25"><a href="#cb17-25" aria-hidden="true" tabindex="-1"></a>               <span class="at">color =</span> <span class="st">"grey40"</span>, <span class="at">linewidth =</span> <span class="fl">0.4</span>) <span class="sc">+</span></span>
-<span id="cb17-26"><a href="#cb17-26" aria-hidden="true" tabindex="-1"></a>    <span class="fu">geom_hline</span>(<span class="at">yintercept =</span> <span class="fu">c</span>(<span class="sc">-</span><span class="fl">0.5</span>, <span class="fl">0.5</span>), <span class="at">linetype =</span> <span class="st">"dashed"</span>,</span>
-<span id="cb17-27"><a href="#cb17-27" aria-hidden="true" tabindex="-1"></a>               <span class="at">color =</span> <span class="st">"grey40"</span>, <span class="at">linewidth =</span> <span class="fl">0.4</span>) <span class="sc">+</span></span>
-<span id="cb17-28"><a href="#cb17-28" aria-hidden="true" tabindex="-1"></a>    <span class="fu">labs</span>(<span class="at">x =</span> <span class="fu">paste0</span>(<span class="st">"Module Membership (kME, "</span>, target_module, <span class="st">" module)"</span>),</span>
-<span id="cb17-29"><a href="#cb17-29" aria-hidden="true" tabindex="-1"></a>         <span class="at">y =</span> <span class="st">"Gene Significance (GS, dex treatment)"</span>,</span>
-<span id="cb17-30"><a href="#cb17-30" aria-hidden="true" tabindex="-1"></a>         <span class="at">color =</span> <span class="cn">NULL</span>) <span class="sc">+</span></span>
-<span id="cb17-31"><a href="#cb17-31" aria-hidden="true" tabindex="-1"></a>    <span class="fu">theme_bw</span>(<span class="at">base_size =</span> <span class="dv">12</span>) <span class="sc">+</span></span>
-<span id="cb17-32"><a href="#cb17-32" aria-hidden="true" tabindex="-1"></a>    <span class="fu">theme</span>(<span class="at">legend.position =</span> <span class="st">"top"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<span id="cb17-5"><a href="#cb17-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb17-6"><a href="#cb17-6" aria-hidden="true" tabindex="-1"></a><span class="co"># Flag hub-gene candidates on the real kME-GS table (hub_df) computed above.</span></span>
+<span id="cb17-7"><a href="#cb17-7" aria-hidden="true" tabindex="-1"></a><span class="co"># target_module is also reused from the previous chunk.</span></span>
+<span id="cb17-8"><a href="#cb17-8" aria-hidden="true" tabindex="-1"></a>hub_plot_df <span class="ot">&lt;-</span> hub_df <span class="sc">|&gt;</span> <span class="fu">mutate</span>(<span class="at">is_hub =</span> <span class="fu">abs</span>(kME) <span class="sc">&gt;</span> <span class="fl">0.8</span> <span class="sc">&amp;</span> <span class="fu">abs</span>(GS) <span class="sc">&gt;</span> <span class="fl">0.5</span>)</span>
+<span id="cb17-9"><a href="#cb17-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb17-10"><a href="#cb17-10" aria-hidden="true" tabindex="-1"></a><span class="fu">ggplot</span>(hub_plot_df, <span class="fu">aes</span>(<span class="at">x =</span> kME, <span class="at">y =</span> GS, <span class="at">color =</span> is_hub)) <span class="sc">+</span></span>
+<span id="cb17-11"><a href="#cb17-11" aria-hidden="true" tabindex="-1"></a>    <span class="fu">geom_point</span>(<span class="at">alpha =</span> <span class="fl">0.6</span>, <span class="at">size =</span> <span class="fl">1.5</span>) <span class="sc">+</span></span>
+<span id="cb17-12"><a href="#cb17-12" aria-hidden="true" tabindex="-1"></a>    <span class="fu">scale_color_manual</span>(<span class="at">values =</span> <span class="fu">c</span>(<span class="st">"grey70"</span>, <span class="st">"#d62728"</span>),</span>
+<span id="cb17-13"><a href="#cb17-13" aria-hidden="true" tabindex="-1"></a>                       <span class="at">labels =</span> <span class="fu">c</span>(<span class="st">"Non-hub"</span>, <span class="st">"Hub gene candidate"</span>)) <span class="sc">+</span></span>
+<span id="cb17-14"><a href="#cb17-14" aria-hidden="true" tabindex="-1"></a>    <span class="fu">geom_vline</span>(<span class="at">xintercept =</span> <span class="fu">c</span>(<span class="sc">-</span><span class="fl">0.8</span>, <span class="fl">0.8</span>), <span class="at">linetype =</span> <span class="st">"dashed"</span>,</span>
+<span id="cb17-15"><a href="#cb17-15" aria-hidden="true" tabindex="-1"></a>               <span class="at">color =</span> <span class="st">"grey40"</span>, <span class="at">linewidth =</span> <span class="fl">0.4</span>) <span class="sc">+</span></span>
+<span id="cb17-16"><a href="#cb17-16" aria-hidden="true" tabindex="-1"></a>    <span class="fu">geom_hline</span>(<span class="at">yintercept =</span> <span class="fu">c</span>(<span class="sc">-</span><span class="fl">0.5</span>, <span class="fl">0.5</span>), <span class="at">linetype =</span> <span class="st">"dashed"</span>,</span>
+<span id="cb17-17"><a href="#cb17-17" aria-hidden="true" tabindex="-1"></a>               <span class="at">color =</span> <span class="st">"grey40"</span>, <span class="at">linewidth =</span> <span class="fl">0.4</span>) <span class="sc">+</span></span>
+<span id="cb17-18"><a href="#cb17-18" aria-hidden="true" tabindex="-1"></a>    <span class="fu">labs</span>(<span class="at">x =</span> <span class="fu">paste0</span>(<span class="st">"Module Membership (kME, "</span>, target_module, <span class="st">" module)"</span>),</span>
+<span id="cb17-19"><a href="#cb17-19" aria-hidden="true" tabindex="-1"></a>         <span class="at">y =</span> <span class="st">"Gene Significance (GS, dex treatment)"</span>,</span>
+<span id="cb17-20"><a href="#cb17-20" aria-hidden="true" tabindex="-1"></a>         <span class="at">color =</span> <span class="cn">NULL</span>) <span class="sc">+</span></span>
+<span id="cb17-21"><a href="#cb17-21" aria-hidden="true" tabindex="-1"></a>    <span class="fu">theme_bw</span>(<span class="at">base_size =</span> <span class="dv">12</span>) <span class="sc">+</span></span>
+<span id="cb17-22"><a href="#cb17-22" aria-hidden="true" tabindex="-1"></a>    <span class="fu">theme</span>(<span class="at">legend.position =</span> <span class="st">"top"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </section>
 <section id="枢纽基因的-go-功能富集验证" class="level2" data-number="31.7">
 <h2 data-number="31.7" class="anchored" data-anchor-id="枢纽基因的-go-功能富集验证"><span class="header-section-number">31.7</span> 枢纽基因的 GO 功能富集验证</h2>
@@ -1168,6 +1137,22 @@ window.Quarto = {
 <span id="cb19-23"><a href="#cb19-23" aria-hidden="true" tabindex="-1"></a>    <span class="fu">dotplot</span>(go_demo, <span class="at">showCategory =</span> <span class="dv">12</span>,</span>
 <span id="cb19-24"><a href="#cb19-24" aria-hidden="true" tabindex="-1"></a>            <span class="at">title =</span> <span class="st">"GO BP: airway DEGs (illustrative hub-gene enrichment format)"</span>)</span>
 <span id="cb19-25"><a href="#cb19-25" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</section>
+<section id="富集结果的生物学解读" class="level2" data-number="31.8">
+<h2 data-number="31.8" class="anchored" data-anchor-id="富集结果的生物学解读"><span class="header-section-number">31.8</span> 富集结果的生物学解读</h2>
+<p>上述富集得到的数百条 GO 生物过程（BP）条目，并非彼此独立的发现，而应<strong>先归并为若干主题再解读</strong>。本演示输入的是 airway 数据中地塞米松（dexamethasone, dex）处理 vs 对照的差异表达基因，dex 是一种合成糖皮质激素（glucocorticoid），其已知的多效性药理作用恰好与富集结果中的主要主题高度吻合：</p>
+<ul>
+<li><strong>细胞外基质与骨重塑</strong>：排名最前的 <code>extracellular matrix organization</code>、<code>extracellular structure organization</code> 以及成簇出现的 <code>ossification</code>、<code>regulation of osteoclast differentiation</code>、<code>bone mineralization</code>、<code>cartilage development</code> 等，对应糖皮质激素对结缔组织与骨代谢的调控——这与临床上长期使用糖皮质激素导致骨重塑失衡（糖皮质激素性骨质疏松）的现象一致。</li>
+<li><strong>免疫与炎症调控</strong>：<code>regulation of leukocyte migration</code>、<code>leukocyte chemotaxis</code>、<code>(negative) regulation of myeloid leukocyte differentiation</code>、<code>regulation of leukocyte activation/proliferation</code> 等条目，反映糖皮质激素经典的抗炎与免疫抑制作用——抑制白细胞的迁移、趋化、分化与活化。</li>
+<li><strong>糖与脂代谢</strong>：<code>glucose metabolic process</code>、<code>D-glucose transmembrane transport</code>、<code>regulation of gluconeogenesis</code>、<code>fatty acid transport</code>、<code>regulation of fatty acid oxidation</code> 等，对应糖皮质激素提升糖异生、升高血糖并重塑脂代谢的代谢效应。</li>
+<li><strong>金属离子应激与其他组织发育主题</strong>：<code>response to metal ion</code>、<code>detoxification of copper ion</code>、<code>response to zinc ion</code> 等提示金属硫蛋白（metallothionein）家族的诱导；而神经投射（<code>axonogenesis</code>、<code>axon guidance</code>）与心肌/骨骼肌形态发生等主题，则更多反映输入基因集与细胞骨架、细胞外基质程序在 GO 注释上的功能重叠，解读时应结合所研究的组织背景审慎对待。</li>
+</ul>
+<div class="warning">
+<p><strong>富集条目的冗余性：</strong> GO 是有向无环图（DAG），父子项与语义相近项会同时显著——例如 <code>extracellular matrix organization</code>、<code>extracellular structure organization</code>、<code>external encapsulating structure organization</code> 实为高度重叠的近义条目。切勿把数百条结果当作数百个独立发现而逐条罗列。应使用 <code>clusterProfiler::simplify()</code>（基于语义相似度去冗余）或 REVIGO、<code>enrichplot::emapplot()</code>（富集图谱聚类）将条目归并为少数主题后再解读，并始终结合差异基因的表达方向（上调/下调）判断每个主题是被激活还是被抑制。</p>
+</div>
+<div class="info">
+<p><strong>黄金法则：</strong> 富集分析的价值在于”从基因列表到生物学主题”的归纳，而非条目数量。一份可信的解读应能用三五个连贯的功能主题概括核心结果，并能与实验的生物学背景（此处为糖皮质激素对气道平滑肌的作用）相互印证；若富集结果与已知生物学完全无法对应，则需回头检查输入基因集、背景基因集（universe）与物种注释是否设置正确。</p>
+</div>
 <hr>
 </section>
 </section>
