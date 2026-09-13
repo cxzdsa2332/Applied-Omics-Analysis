@@ -4,7 +4,7 @@
     "href": "index.html",
     "title": "Introduction to Applied High-throughput Biological Data Analysis",
     "section": "",
-    "text": "Course Introduction\nNext-Generation Sequencing (NGS) has become the cornerstone of modern biology. This course is designed for applied high-throughput biological data analysis, covering RNA-seq, 16S/ITS amplicon sequencing, single-cell RNA-seq, spatial transcriptomics, and beyond. For each data modality, the processes of data acquisition and preprocessing are introduced in detail. The curriculum covers routine analytical methods, such as PCA and Differential Expression Gene (DEG) analysis, alongside advanced techniques like WGCNA and SCENIC. To emphasize hands-on practice, R and Python scripts are provided for half of the course modules to guide students through each workflow. Finally, beyond traditional methodologies, the concluding section introduces novel computational approaches, including ODE-based network modeling.",
+    "text": "Course Introduction\nNext-Generation Sequencing (NGS) has become the cornerstone of modern biology. This course is designed for applied high-throughput biological data analysis, covering genome assembly and variant calling, bulk RNA-seq, single-cell RNA-seq, spatial transcriptomics, 16S/ITS amplicon and shotgun metagenomics, epigenomics, proteomics and metabolomics. For each data modality, the processes of data acquisition and preprocessing are introduced in detail. The curriculum covers routine analytical methods, such as PCA and Differential Expression Gene (DEG) analysis, alongside advanced techniques like WGCNA and SCENIC. To emphasize hands-on practice, R and Python scripts are provided for half of the course modules to guide students through each workflow. Finally, beyond traditional methodologies, the concluding section introduces novel computational approaches, including ODE-based network modeling.",
     "crumbs": [
       "<span class='chapter-number'>1</span>  <span class='chapter-title'>Course Introduction</span>"
     ]
@@ -817,7 +817,7 @@
     "href": "02-genomics-qc.html#专题-2.4主流组装工具实战",
     "title": "8  基因组数据分析：质量控制、从头组装与变异检测",
     "section": "12.2 专题 2.4：主流组装工具实战",
-    "text": "12.2 专题 2.4：主流组装工具实战\n对应文件：genomics_qc_lesson3.qmd （SPAdes 实践与组装图可视化）\n\n工具选择原则： 根据测序技术和基因组大小选择组装工具。短读优先 SPAdes；长读优先 Flye 或 Hifiasm（HiFi 数据）；混合策略在长读组装骨架基础上用短读纠错。\n\n不同测序技术的读长特性决定了组装工具的选择逻辑。短读（Illumina）具有高准确率但读长仅 150 bp，适合 DBG 算法；长读（Nanopore/PacBio）读长可达数十 kb，能跨越重复区域，但原始错误率更高。本专题系统比较三类主流组装器，并提供面向不同场景的完整命令行流程。\n核心概念：\n\nSPAdes：面向短读的多 k-mer 迭代 DBG 组装器；--careful 模式；细菌与宏基因组（--meta）场景\nFlye：面向长读（Nanopore / PacBio CLR）的 repeat graph 策略组装器；--genome-size 参数\nHifiasm：面向 PacBio HiFi（CCS）的高精度组装器；单倍型分型（Hi-C 辅助）\n混合组装策略：长读骨架 + 短读纠错（Unicycler 用于细菌完整基因组）\n组装输出文件解读：contigs.fasta、assembly_graph.gfa、assembly_info.txt\n\n计划实践内容：\n# SPAdes: short-read assembly\nspades.py -1 R1_clean.fastq.gz -2 R2_clean.fastq.gz \\\n  -o spades_output/ -t 8 --careful -k 21,33,55,77\n\n# Flye: long-read assembly (Nanopore)\nflye --nano-raw reads.fastq.gz \\\n  --genome-size 5m --out-dir flye_output/ --threads 8\n\n# Hifiasm: HiFi assembly\nhifiasm -o ecoli.asm -t 8 hifi_reads.fastq.gz",
+    "text": "12.2 专题 2.4：主流组装工具实战\n对应文件：genomics_qc_lesson3.qmd （SPAdes 实践与组装图可视化）\n\n工具选择原则： 根据测序技术和基因组大小选择组装工具。短读优先 SPAdes；长读优先 Flye 或 Hifiasm（HiFi 数据）；混合策略在长读组装骨架基础上用短读纠错。\n\n不同测序技术的读长特性决定了组装工具的选择逻辑。短读（Illumina）具有高准确率但读长仅 150 bp，适合 DBG 算法；长读（Nanopore/PacBio）读长可达数十 kb，能跨越重复区域，但原始错误率更高。本专题系统比较三类主流组装器，并提供面向不同场景的完整命令行流程。\n核心概念：\n\nSPAdes：面向短读的多 k-mer 迭代 DBG 组装器；--careful 模式；细菌与宏基因组（--meta）场景（宏基因组组装与分箱详见第 8 章）\nFlye：面向长读（Nanopore / PacBio CLR）的 repeat graph 策略组装器；--genome-size 参数\nHifiasm：面向 PacBio HiFi（CCS）的高精度组装器；单倍型分型（Hi-C 辅助）\n混合组装策略：长读骨架 + 短读纠错（Unicycler 用于细菌完整基因组）\n组装输出文件解读：contigs.fasta、assembly_graph.gfa、assembly_info.txt\n\n计划实践内容：\n# SPAdes: short-read assembly\nspades.py -1 R1_clean.fastq.gz -2 R2_clean.fastq.gz \\\n  -o spades_output/ -t 8 --careful -k 21,33,55,77\n\n# Flye: long-read assembly (Nanopore)\nflye --nano-raw reads.fastq.gz \\\n  --genome-size 5m --out-dir flye_output/ --threads 8\n\n# Hifiasm: HiFi assembly\nhifiasm -o ecoli.asm -t 8 hifi_reads.fastq.gz",
     "crumbs": [
       "第一阶段：基础与基因组",
       "<span class='chapter-number'>8</span>  <span class='chapter-title'>基因组数据分析：质量控制、从头组装与变异检测</span>"
@@ -5331,6 +5331,72 @@
     "crumbs": [
       "第二阶段：转录组与单细胞",
       "<span class='chapter-number'>42</span>  <span class='chapter-title'>空间转录组高级分析：细胞解卷积与成像型空间转录组</span>"
+    ]
+  },
+  {
+    "objectID": "08-metagenomics.html",
+    "href": "08-metagenomics.html",
+    "title": "43  宏基因组与微生物组：扩增子、鸟枪法、群落统计与宏转录组",
+    "section": "",
+    "text": "44 整体概述\n前七章的分析对象始终是单一物种：一份样本对应一个参考基因组，一次比对得到一套确定的坐标。微生物组研究打破了这一前提——一份粪便、土壤或海水样本中往往混合着数百至数千个物种，其中绝大多数无法在实验室培养，也没有可用的参考基因组。这一根本差异重塑了整条分析链：物种身份本身成为待估计的量，“定量”变成了相对丰度而非绝对表达量，而样本间比较则受制于组成数据（Compositional Data）的数学约束。本章围绕两条技术路线展开：扩增子测序（Amplicon Sequencing）以 16S rRNA、ITS 等标记基因给出低成本的群落组成概览；鸟枪法宏基因组（Shotgun Metagenomics）对全部 DNA 随机测序，同时给出物种组成与功能潜能，并可通过组装与分箱重建未培养物种的基因组。最后，本章引入宏转录组（Metatranscriptomics），将”群落里有谁、能做什么”推进到”此刻谁在做什么”。\n学习目标：理解扩增子与鸟枪法在信息量、成本与偏倚上的权衡，能据此设计微生物组实验；掌握 DADA2/QIIME 2 的 ASV 推断流程与去噪逻辑；理解 alpha/beta 多样性的统计含义并能正确使用 PERMANOVA 检验组间差异；认识组成数据的约束及 CLR 变换、ANCOM-BC 等差异丰度方法的必要性；掌握 Kraken2/Bracken 分类学定量与 HUMAnN 功能谱构建；能完成宏基因组组装、分箱与 MAG 质量评估；了解宏转录组的特有问题及其与宿主组学的联合分析思路。",
+    "crumbs": [
+      "第三阶段：进阶与整合",
+      "<span class='chapter-number'>43</span>  <span class='chapter-title'>宏基因组与微生物组：扩增子、鸟枪法、群落统计与宏转录组</span>"
+    ]
+  },
+  {
+    "objectID": "08-metagenomics.html#专题-8.1微生物组研究范式与实验设计",
+    "href": "08-metagenomics.html#专题-8.1微生物组研究范式与实验设计",
+    "title": "43  宏基因组与微生物组：扩增子、鸟枪法、群落统计与宏转录组",
+    "section": "46.1 专题 8.1：微生物组研究范式与实验设计",
+    "text": "46.1 专题 8.1：微生物组研究范式与实验设计\n微生物组学的方法论起点与前七章截然不同：研究对象是一个由未知物种构成的群落，而非单一个体。本专题建立这一新范式下的基本概念框架，区分”微生物区系”（Microbiota，群落中有哪些成员）与”微生物组”（Microbiome，群落及其基因、代谢产物与环境的总和），并说明为何培养组学的局限（绝大多数环境微生物无法纯培养）使得测序成为唯一可行的普查手段。在此基础上，本专题对比扩增子与鸟枪法两条技术路线在分辨率、成本、宿主污染耐受度上的差异，并强调微生物组实验中极易被忽视却决定结论可信度的环节：采样一致性、DNA 提取方法的物种偏倚、以及阴性对照对低生物量样本中试剂污染（Kitome）的识别作用（参见第 1 章的样本处理讨论）。\n{{Wiki:Microbiota}}\n核心概念：\n\nMicrobiota、Microbiome、Metagenome 的概念边界与常见误用\n培养组学的局限与”大平板计数异常”（Great Plate Count Anomaly）\n两条技术路线对比：扩增子（低成本、属/种级分辨率、可耐受高宿主背景）vs 鸟枪法（高成本、株水平分辨率、提供功能信息）\n标记基因的选择：细菌 16S rRNA 可变区（V3-V4、V4）、真菌 ITS1/ITS2、真核 18S\n16S 基因的结构：保守区与九个可变区交替排列；引物设计与扩增偏倚的来源\n实验设计要素：生物学重复数、分组平衡、批次与提取批次的混杂控制\n低生物量样本的污染问题：Kitome 与 Splashome；阴性对照与 decontam 的必要性\n绝对定量的缺失：测序给出的是相对丰度；spike-in 与 qPCR 校正的补充作用\n\n实践内容：（待撰写）以典型人体肠道与环境样本数据集为例，梳理元数据表结构与实验设计的完整性检查清单；演示引物区段选择对可分辨分类层级的影响。",
+    "crumbs": [
+      "第三阶段：进阶与整合",
+      "<span class='chapter-number'>43</span>  <span class='chapter-title'>宏基因组与微生物组：扩增子、鸟枪法、群落统计与宏转录组</span>"
+    ]
+  },
+  {
+    "objectID": "08-metagenomics.html#专题-8.2扩增子数据处理与-asv-推断",
+    "href": "08-metagenomics.html#专题-8.2扩增子数据处理与-asv-推断",
+    "title": "43  宏基因组与微生物组：扩增子、鸟枪法、群落统计与宏转录组",
+    "section": "46.2 专题 8.2：扩增子数据处理与 ASV 推断",
+    "text": "46.2 专题 8.2：扩增子数据处理与 ASV 推断\n扩增子分析在过去十年经历了一次方法论转折：以 97% 相似度聚类生成 OTU（Operational Taxonomic Unit）的传统做法，正被基于错误模型的精确序列变体（Amplicon Sequence Variant, ASV）推断所取代。这一转变的核心动机在于，OTU 聚类用一个人为设定的相似度阈值同时完成”去噪”和”归并”两件事，既掩盖了真实的单碱基差异，又使不同研究的 OTU 无法直接比对；而 DADA2 通过从数据本身学习测序错误模型，把测序错误产生的变体归并回真实序列，从而给出可跨研究复用的精确序列。本专题完整讲解从原始 FASTQ 到带物种注释的 ASV 特征表的流程，并说明 QIIME 2 的插件式架构如何以 Artifact 机制保证分析的可复现性。\n{{Wiki:16S_ribosomal_RNA}}\n核心概念：\n\nOTU 与 ASV 的本质差异：相似度聚类 vs 错误模型去噪；ASV 的跨研究可比性\nDADA2 流程：质量剖面检查 → 截断（filterAndTrim）→ 错误模型学习（learnErrors）→ 去重 → 去噪（dada）→ 双端合并 → 嵌合体去除\n截断位点的选择原则：保证双端有足够重叠（≥ 20 bp）与保证质量的权衡\n嵌合体（Chimera）的成因与 removeBimeraDenovo 的识别逻辑\n物种注释：朴素贝叶斯分类器；参考数据库 SILVA（细菌/古菌）、UNITE（真菌）、GTDB（基因组分类法）\n16S 拷贝数变异对丰度估计的系统偏倚\n系统发育树构建（MAFFT + FastTree）及其在 UniFrac 距离中的必要性\nQIIME 2 的 Artifact（.qza）与 Visualization（.qzv）机制；出处追踪（Provenance）\nphyloseq / TreeSummarizedExperiment 对象：特征表、分类表、元数据与进化树的统一容器\n\n实践内容：（待撰写）DADA2 完整流程从 FASTQ 到 ASV 表；SILVA 注释；构建 phyloseq 对象并输出质控汇总。",
+    "crumbs": [
+      "第三阶段：进阶与整合",
+      "<span class='chapter-number'>43</span>  <span class='chapter-title'>宏基因组与微生物组：扩增子、鸟枪法、群落统计与宏转录组</span>"
+    ]
+  },
+  {
+    "objectID": "08-metagenomics.html#专题-8.3群落多样性排序分析与差异丰度检验",
+    "href": "08-metagenomics.html#专题-8.3群落多样性排序分析与差异丰度检验",
+    "title": "43  宏基因组与微生物组：扩增子、鸟枪法、群落统计与宏转录组",
+    "section": "46.3 专题 8.3：群落多样性、排序分析与差异丰度检验",
+    "text": "46.3 专题 8.3：群落多样性、排序分析与差异丰度检验\n得到特征表之后，微生物组研究的统计问题与常规组学显著不同：数据高度稀疏、零值大量存在，且由于测序深度固定，各物种的相对丰度之和恒为 1——这使得数据落在一个单纯形（Simplex）上而非欧氏空间，任一物种丰度上升必然导致其余物种表观下降。忽视这一组成性约束而直接套用 t 检验或 DESeq2，会产生大量虚假的差异物种。本专题系统讲解微生物组的三层统计分析：群落内部的 alpha 多样性、群落之间的 beta 多样性与排序检验、以及单个物种的差异丰度检验，并贯穿强调稀释（Rarefaction）与中心对数比（CLR）变换这两条主流的归一化路线各自的适用条件与争议。\n{{Wiki:Diversity_index}} {{Wiki:Compositional_data}}\n核心概念：\n\nalpha 多样性：Observed richness、Shannon、Simpson、Faith’s PD；对测序深度的依赖与稀释曲线\n稀释（Rarefaction）的争议：信息丢失 vs 深度可比性；何时仍应使用\nbeta 多样性距离：Bray-Curtis、Jaccard、加权/非加权 UniFrac；系统发育信息的加入\n排序方法：PCoA（主坐标分析）与 NMDS；与 PCA 的关系和差异（参见第 3 章）\n组间差异检验：PERMANOVA（adonis2）的置换原理；ANOSIM；离散度混杂与 betadisper 前置检验\n组成数据的数学约束：单纯形空间、伪负相关；Aitchison 几何与 CLR/ILR 变换\n零值处理：伪计数与零膨胀模型的影响\n差异丰度方法谱系：ALDEx2（Dirichlet-Multinomial 蒙特卡洛）、ANCOM-BC（偏倚校正对数线性模型）、LEfSe（LDA effect size）\n方法选择与假阳性控制：为何直接使用 DESeq2/edgeR 在微生物组数据上需谨慎\n\n实践内容：（待撰写）phyloseq 对象的 alpha 多样性计算与组间检验；Bray-Curtis/UniFrac PCoA 可视化；adonis2 PERMANOVA 与 betadisper 检验；ANCOM-BC 差异丰度分析与结果解读。",
+    "crumbs": [
+      "第三阶段：进阶与整合",
+      "<span class='chapter-number'>43</span>  <span class='chapter-title'>宏基因组与微生物组：扩增子、鸟枪法、群落统计与宏转录组</span>"
+    ]
+  },
+  {
+    "objectID": "08-metagenomics.html#专题-8.4鸟枪法宏基因组分类学定量功能谱与-mag-重建",
+    "href": "08-metagenomics.html#专题-8.4鸟枪法宏基因组分类学定量功能谱与-mag-重建",
+    "title": "43  宏基因组与微生物组：扩增子、鸟枪法、群落统计与宏转录组",
+    "section": "47.1 专题 8.4：鸟枪法宏基因组：分类学定量、功能谱与 MAG 重建",
+    "text": "47.1 专题 8.4：鸟枪法宏基因组：分类学定量、功能谱与 MAG 重建\n鸟枪法宏基因组对样本中全部 DNA 随机测序，因而同时携带”有谁”与”能做什么”两类信息，代价是更高的测序成本与更重的计算负担。本专题沿两条并行的分析路线展开：免组装路线直接对 reads 做分类学归属与功能注释，Kraken2 以 k-mer 最小公共祖先策略实现极高吞吐的物种归类，Bracken 再用贝叶斯方法把高层级的归类重新分配到种水平以校正丰度；组装路线则通过 metaSPAdes 将 reads 拼成 contig，再依据覆盖度与四核苷酸频率将 contig 分箱（Binning）为代表单一物种的基因组草图，即宏基因组组装基因组（Metagenome-Assembled Genome, MAG）。MAG 路线的价值在于，它让研究者能够获得从未被培养过的物种的完整基因组，这正是近十年微生物生态学最重要的技术推动力。本专题的组装算法基础承接第 2 章（参见第 2 章），此处聚焦其在不均匀覆盖度与菌株混杂条件下的特殊挑战。\n{{Wiki:Metagenomics}}\n核心概念：\n\n宿主序列去除：人源/宿主基因组比对过滤；低生物量样本中宿主占比的影响\nKraken2 的 k-mer LCA 算法：最小化器（Minimizer）索引；置信度阈值与误分类的权衡\nBracken 的贝叶斯丰度重估计：为何 Kraken2 的原始读数计数不能直接作为物种丰度\n其他分类器：MetaPhlAn（clade-specific marker gene）、Kaiju（蛋白质水平比对）的适用差异\n功能谱构建：HUMAnN 的分层策略（先 MetaPhlAn 定物种，再对 pangenome 比对）；UniRef90、MetaCyc 通路、KEGG Ortholog\n功能丰度的归一化：RPK 与 CPM；分层输出（stratified output）对”哪个物种贡献了该功能”的解析\n宏基因组组装的特殊困难：覆盖度极不均匀、近缘菌株导致的图分叉；metaSPAdes 的应对策略\n分箱原理：四核苷酸频率（TNF）+ 跨样本覆盖度共变；MetaBAT2、MaxBin2、以及 DAS Tool 的整合去冗余\nMAG 质量评估：CheckM 的单拷贝标记基因完整度与污染度；MIMAG 标准（高质量 MAG：完整度 &gt; 90%、污染度 &lt; 5%）\nMAG 的下游应用：物种系统发育定位（GTDB-Tk）、基因功能注释（Prokka）、比较基因组学\n\n实践内容：（待撰写）Kraken2 + Bracken 物种定量与 Krona/堆叠柱状图可视化；HUMAnN 功能通路谱构建与分层解析；metaSPAdes 组装 → MetaBAT2 分箱 → CheckM 质量评估的完整 MAG 流程。",
+    "crumbs": [
+      "第三阶段：进阶与整合",
+      "<span class='chapter-number'>43</span>  <span class='chapter-title'>宏基因组与微生物组：扩增子、鸟枪法、群落统计与宏转录组</span>"
+    ]
+  },
+  {
+    "objectID": "08-metagenomics.html#专题-8.5宏转录组与微生物组多组学联动",
+    "href": "08-metagenomics.html#专题-8.5宏转录组与微生物组多组学联动",
+    "title": "43  宏基因组与微生物组：扩增子、鸟枪法、群落统计与宏转录组",
+    "section": "48.1 专题 8.5：宏转录组与微生物组多组学联动",
+    "text": "48.1 专题 8.5：宏转录组与微生物组多组学联动\n宏基因组回答的是群落的功能潜能（Potential）：某条代谢通路的基因存在于群落之中。但基因的存在不等于基因在表达——同一群落在不同宿主状态或环境扰动下，其活跃的代谢路径可能截然不同。宏转录组（Metatranscriptomics）对群落总 RNA 测序，度量的是当下的功能活性（Activity）。本专题讲解宏转录组的特有技术问题：微生物 mRNA 不具备 poly(A) 尾因而无法用常规富集策略，必须依赖 rRNA 去除（rRNA depletion），且 RNA 极易降解使得采样保存条件成为成败关键。分析层面的核心思路是解耦：把表达量除以同一样本宏基因组中对应基因的丰度，得到不受物种数量变化干扰的”单位基因表达”，从而区分”某功能上升是因为携带它的物种变多了，还是因为每个细胞都更卖力地表达它”。本专题最后将微生物组与宿主转录组、代谢组的联合分析作为桥梁，为第 11 章的多组学整合方法做铺垫（参见第 11 章）。\n核心概念：\n\n宏转录组 vs 宏基因组：功能潜能与功能活性的区别；二者不一致时的生物学解读\n实验特有难点：原核 mRNA 无 poly(A)、半衰期以分钟计；RNAlater/液氮保存；rRNA 占总 RNA 的比例\nrRNA 去除策略：探针杂交法（Ribo-Zero 类）与计算法（SortMeRNA）\n参考的选择：比对至同一样本的 MAG / 基因目录，而非通用数据库，以降低比对丢失\n表达量归一化与解耦：RNA/DNA 比值；零膨胀与低丰度物种的表达估计不确定性\n微生物组–宿主联合分析：菌群与宿主基因表达的相关分析；中介分析（Mediation）识别”菌群→代谢物→宿主表型”链条\n代谢物层面的联动：短链脂肪酸、胆汁酸等关键代谢物与菌群功能谱的对应（承接第 10 章代谢组内容）\n相关性分析的陷阱：组成数据下的伪相关；SparCC、SpiecEasi 等针对性方法\n因果推断的边界：观察性微生物组关联研究的局限；无菌小鼠定植实验与孟德尔随机化的验证作用\n\n实践内容：（待撰写）宏转录组 rRNA 去除与比对至 MAG 基因目录；RNA/DNA 比值计算与活性通路识别；菌群–宿主表达–代谢物三层关联分析框架演示。",
+    "crumbs": [
+      "第三阶段：进阶与整合",
+      "<span class='chapter-number'>43</span>  <span class='chapter-title'>宏基因组与微生物组：扩增子、鸟枪法、群落统计与宏转录组</span>"
     ]
   },
   {
