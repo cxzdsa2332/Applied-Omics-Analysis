@@ -1,0 +1,389 @@
+---
+title: "空间数据质控、归一化与空间高变基因识别"
+date: today
+format:
+  html:
+    code-fold: false
+    toc: true
+    toc-depth: 3
+    number-sections: true
+    theme: cosmo
+crossref:
+  fig-title: 图
+  fig-prefix: 图
+  tbl-title: 表
+  tbl-prefix: 表
+  chapters: false
+---
+
+# 专题概述
+
+加载 Visium 数据之后，分析流程与 scRNA-seq 高度共享——质控、归一化、降维的逻辑一脉相承（参见第 6 章）。但空间数据多了一个其他组学没有的维度：坐标。这带来两个后果。其一，质控不能只看数值：一个 Spot 即便 UMI 达标，若位于组织边缘或折叠处也不可信；反之低 UMI 未必是技术问题，也可能真实反映白质等细胞稀疏区域。其二，坐标催生了一类全新的核心分析——识别那些表达呈现非随机空间分布的基因，即空间高变基因（Spatially Variable Genes, SVG）。本专题讲解结合图像的空间质控与归一化要点，随后系统展开 SVG 识别：从 Moran's I 空间自相关的数学定义出发，延伸到 Geary's C、SpatialDE、SPARK-X 与 nnSVG，并说明各方法在统计假设与适用规模上的差异。
+
+**学习目标**：掌握空间质控相比 scRNA-seq 的额外考量，能识别组织边缘与折叠伪影；理解空间数据归一化的特有混杂因素；能构建空间权重矩阵并理解其对结果的影响；掌握 Moran's I 与 Geary's C 的定义、解释与实现；能用 `FindSpatiallyVariableFeatures()` 识别并可视化 SVG；理解 SpatialDE、SPARK-X、nnSVG 三类方法的统计思路与适用场景；能把 SVG 按空间模式归类为表达模块并解读其解剖学对应。
+
+---
+
+# 空间数据质控与归一化
+
+## 结合图像的空间质检
+
+空间数据的质控指标与 scRNA-seq 相同——每 Spot 检出基因数、每 Spot UMI 数、线粒体比例——但多了一层空间维度的判读。一个 Spot 即便表达量达标，若它位于组织边缘、脱落区域或折叠处，也应被剔除。因此空间质控必须**结合 H&E 图像进行视觉检查**，而非只看数值阈值。
+
+```r
+library(Seurat)
+library(SeuratData)
+
+brain <- LoadData("stxBrain", type = "anterior1")
+
+# Standard per-Spot QC metrics, same as scRNA-seq
+brain[["percent.mt"]] <- PercentageFeatureSet(brain, pattern = "^mt-")
+
+# Distributions first: violin plots tell you the overall range
+VlnPlot(
+    brain,
+    features = c("nCount_Spatial", "nFeature_Spatial", "percent.mt"),
+    pt.size = 0.1, ncol = 3
+) & theme(legend.position = "none")
+```
+
+数值分布只是第一步。空间质控的关键动作是把同样的指标**画回组织上**——低质量 Spot 在空间上通常不是随机散布的，而是成片聚集在组织边缘或损伤区域，这一模式在小提琴图上完全看不出来。
+
+```r
+#| label: fig-spatial-qc
+#| fig-cap: "小鼠脑前切片的质控指标空间分布（stxBrain Visium 数据）。左图为每个 Spot 的总 UMI 数，右图为线粒体基因比例，均按数值着色绘制在组织坐标上。可以看到 UMI 数在组织内部呈现与细胞密度相关的结构化分布，而非随机噪声；组织边缘的 Spot 则普遍表现为低 UMI 伴随较高线粒体比例，提示为边缘损伤而非真实的低表达区域。"
+library(Seurat)
+
+# Inspect QC distributions spatially: low-count Spots often cluster at tissue edges
+SpatialFeaturePlot(brain, features = c("nCount_Spatial", "percent.mt"))
+```
+
+:::warning
+**别用同一阈值无差别过滤所有 Spot：** Visium 中每个 Spot 的 UMI 总数还反映了真实的生物学差异——细胞密度高的区域（如脑的细胞密集层）天然有更高的 UMI，细胞稀疏区域（如白质、纤维区）UMI 本就低。若用 scRNA-seq 式的统一下限过滤，会系统性地删除低细胞密度的组织区域，造成空间偏差：被删掉的不是"坏数据"，而是"某一类组织"。空间质控应把"低 UMI 是技术问题还是生物学真实"结合图像区分对待。
+:::
+
+## 区分边缘效应与真实的低密度区域
+
+上述警告提出了一个实际操作问题：怎么区分这两种低 UMI？一个可行的判据是看**低 UMI 是否伴随其他质量异常**。技术性的边缘损伤通常同时表现为低 UMI、低基因数和偏高的线粒体比例（细胞破损、胞质 RNA 流失）；而真实的低细胞密度区域只是 UMI 和基因数偏低，线粒体比例正常。
+
+```r
+library(Seurat)
+
+# Flag spots that are low-count AND high-mitochondrial: likely damaged, not sparse
+qc <- brain[[c("nCount_Spatial", "nFeature_Spatial", "percent.mt")]]
+low_count <- qc$nCount_Spatial < quantile(qc$nCount_Spatial, 0.05)
+high_mt   <- qc$percent.mt > quantile(qc$percent.mt, 0.95)
+
+brain$qc_flag <- dplyr::case_when(
+    low_count & high_mt  ~ "damaged",
+    low_count & !high_mt ~ "sparse_tissue",
+    TRUE                 ~ "pass"
+)
+table(brain$qc_flag)
+```
+
+```r
+#| label: fig-qc-flag
+#| fig-cap: "基于联合判据的 Spot 质量分类空间分布（stxBrain Visium 数据）。每个 Spot 按质量类别着色：damaged（低 UMI 且高线粒体比例，提示组织损伤）、sparse_tissue（低 UMI 但线粒体比例正常，提示真实的低细胞密度区域）、pass（通过质控）。damaged 类 Spot 集中分布于组织边缘，验证了边缘损伤的空间聚集特征；sparse_tissue 则分布于白质等纤维区域，说明不应将其与损伤 Spot 一并剔除。"
+library(Seurat)
+
+# Where do the two kinds of low-count spots actually sit on the tissue?
+SpatialDimPlot(brain, group.by = "qc_flag")
+```
+
+这一分类不应被当作机械规则——它的作用是把判断的依据显式化，最终仍需结合 H&E 图像确认。若 `damaged` 类 Spot 确实集中在组织边缘，则可放心剔除；若它们散布在组织内部，则更可能是真实的生物学信号（如坏死区域），此时删除反而丢失了关键信息。
+
+```r
+library(Seurat)
+
+# Remove only the spots judged to be technically damaged
+brain <- subset(brain, subset = qc_flag != "damaged")
+```
+
+## 归一化的空间考量
+
+空间数据可沿用 scRNA-seq 的归一化策略，`SCTransform()` 同样适用且推荐。但需注意一个空间特有的混杂因素：Spot 的"测序深度"（总 UMI）不仅受技术捕获效率影响，还受该 Spot 覆盖的细胞数与细胞密度影响。SCTransform 的方差稳定能在一定程度上缓解，但在解读时应警惕——表达模式可能部分由细胞密度的空间梯度驱动，而非单纯的基因调控差异。
+
+```r
+library(Seurat)
+
+# SCTransform for spatial data: note the assay is "Spatial", not "RNA"
+brain <- SCTransform(brain, assay = "Spatial", verbose = FALSE)
+
+# Compare raw counts and normalised values for the same gene
+p1 <- SpatialFeaturePlot(brain, features = "Ttr", slot = "counts") +
+    ggplot2::ggtitle("Raw counts")
+p2 <- SpatialFeaturePlot(brain, features = "Ttr") +
+    ggplot2::ggtitle("SCTransform normalised")
+p1 + p2
+```
+
+:::note
+**一个实用的诊断：** 若怀疑某个"空间表达模式"其实是细胞密度梯度的产物，可以做一个简单检验——把该基因的表达与 `nCount_Spatial` 做空间相关性比较。若两者的空间分布高度吻合，则该模式很可能只是密度效应的映射，而非该基因的特异调控。真正有意义的 SVG 应当在归一化之后仍保持其空间结构，并且其模式与总 UMI 的分布**不**一致。
+:::
+
+---
+
+# 空间高变基因分析
+
+## 什么是空间高变基因
+
+scRNA-seq 的高变基因（参见第 6 章）衡量基因在细胞间的总体变异，但忽略了空间结构。空间高变基因（Spatially Variable Genes, SVG）则专门识别那些表达呈现**显著空间自相关**的基因——即在组织上相邻的 Spot 倾向于有相似表达、表达模式不是空间随机散布的。这类基因往往标志着功能特异的组织层、解剖区域或局部微环境，是空间转录组最具特色的发现。
+
+普通高变基因与 SVG 的区别在于：一个基因可以在细胞间高度变异（是 HVG），但其高低表达细胞在空间上随机分布（不是 SVG）；反之，一个总体变异不大的基因，若其表达在某个特定区域系统性升高，则是 SVG。二者的关系可以用 @tbl-hvg-svg 概括。
+
+| | 空间随机分布 | 空间聚集分布 |
+|---|---|---|
+| **总体变异大** | HVG 但非 SVG（如受细胞周期驱动的基因） | HVG 且 SVG（最典型的区域标志基因） |
+| **总体变异小** | 既非 HVG 也非 SVG（管家基因） | SVG 但非 HVG（弱但结构化的区域信号） |
+
+: 高变基因（HVG）与空间高变基因（SVG）的关系 {#tbl-hvg-svg}
+
+右下角的"SVG 但非 HVG"是空间分析独有的收获：这类基因表达幅度变化不大，会被常规 HVG 筛选完全漏掉，但其表达严格局限于某一解剖结构，往往是该结构的精确标志。
+
+## 空间权重矩阵：把"相邻"写成数学
+
+所有空间自相关统计量都建立在同一个前提之上——必须先定义"哪些位置算相邻"。这就是**空间权重矩阵** $W = \{w_{ij}\}$：$w_{ij}$ 越大表示位置 $i$ 与 $j$ 的空间关联越强，通常自身权重 $w_{ii} = 0$。
+
+常见的构建方式有三种：
+
+- **直接邻居**：Visium 的六角网格中每个 Spot 有六个直接相邻 Spot，令这六个的权重为 1、其余为 0。最贴合阵列的物理结构。
+- **k-近邻**：取距离最近的 $k$ 个 Spot 权重为 1。适用于 Slide-seq 等不规则排布的平台。
+- **距离衰减核**：$w_{ij} = \exp(-d_{ij}^2 / 2\sigma^2)$，权重随距离连续衰减。$\sigma$ 控制空间尺度——小 $\sigma$ 侧重局部模式、大 $\sigma$ 侧重大范围梯度。
+
+```r
+library(Seurat)
+
+# Build a spatial weight matrix from Visium coordinates (k-nearest neighbours)
+coords <- as.matrix(GetTissueCoordinates(brain)[, c("imagerow", "imagecol")])
+
+build_knn_weights <- function(coords, k = 6) {
+    d <- as.matrix(dist(coords))
+    diag(d) <- Inf
+    W <- matrix(0, nrow(d), ncol(d), dimnames = dimnames(d))
+    for (i in seq_len(nrow(d))) {
+        W[i, order(d[i, ])[seq_len(k)]] <- 1
+    }
+    # Symmetrise: i and j are neighbours if either lists the other
+    W <- pmax(W, t(W))
+    W
+}
+
+W <- build_knn_weights(coords, k = 6)
+cat("Mean number of neighbours per spot:", round(mean(rowSums(W)), 2), "\n")
+```
+
+:::warning
+**权重矩阵的选择会改变结论：** 空间自相关统计量对 $W$ 的定义并不稳健。同一批数据，用六邻居和用 $k = 20$ 近邻，得到的 SVG 排名可能有实质差异——前者只能检出局部的、边界清晰的模式，后者更容易检出大尺度的梯度。这不是缺陷，而是"空间尺度"本身就是需要研究者指定的参数。因此报告 SVG 结果时**必须同时报告权重矩阵的构建方式与参数**，否则结果无法复现。若不确定合适的尺度，应在多个 $k$ 值下重跑并关注稳定出现的基因。
+:::
+
+## Moran's I 空间自相关
+
+识别 SVG 最常用的统计量是 Moran's I 空间自相关指数。它衡量"相邻位置的取值是否相似"：
+
+$$I = \frac{N}{\sum_{i}\sum_{j} w_{ij}} \cdot \frac{\sum_{i}\sum_{j} w_{ij}(x_i - \bar{x})(x_j - \bar{x})}{\sum_{i}(x_i - \bar{x})^2}$$
+
+其中 $x_i$ 为 Spot $i$ 的表达量，$\bar{x}$ 为均值，$w_{ij}$ 为空间权重矩阵，$N$ 为 Spot 总数。这个式子的结构值得拆开看：分子是"相邻 Spot 的离均差乘积"的加权和——若相邻 Spot 同时高于均值或同时低于均值，乘积为正；一高一低则为负。分母是总方差，起标准化作用。因此 Moran's I 本质上是**空间滞后版本的相关系数**。
+
+{{Wiki:Moran%27s_I}}
+
+其取值与解释类似相关系数：
+
+- $I > 0$：正空间自相关——相邻 Spot 表达相似，呈现空间聚集模式（典型的 SVG）。
+- $I \approx 0$：无空间自相关——表达空间随机分布。
+- $I < 0$：负空间自相关——相邻 Spot 表达相反（罕见，如棋盘格模式）。
+
+注意在零假设（空间随机）下 Moran's I 的期望不是 0 而是 $E[I] = -1/(N-1)$，在 Spot 数很大时才近似为 0。
+
+下面用一段代码手工实现 Moran's I，以建立对该统计量的直观理解。实际分析中应使用成熟实现，但亲手算一遍有助于理解权重矩阵为何如此重要。
+
+```r
+library(Seurat)
+
+# Manual Moran's I -- for building intuition, not for production use
+morans_i <- function(x, W) {
+    n <- length(x)
+    z <- x - mean(x)
+    num <- sum(W * outer(z, z))
+    den <- sum(z^2)
+    (n / sum(W)) * (num / den)
+}
+
+expr <- GetAssayData(brain, assay = "SCT", layer = "data")
+
+# A known region-specific gene versus a housekeeping gene
+for (g in c("Ttr", "Hpca", "Actb")) {
+    i_val <- morans_i(as.numeric(expr[g, ]), W)
+    cat(sprintf("%-6s Moran's I = %6.3f\n", g, i_val))
+}
+```
+
+区域特异基因（`Ttr`、`Hpca`）应得到明显为正的 Moran's I，而管家基因 `Actb` 虽然表达量高，其空间自相关却接近于零——这正是 SVG 与 HVG 的区别在数值上的体现。
+
+## Geary's C：对局部差异更敏感的互补统计量
+
+Moran's I 关注的是"相邻位置是否同时偏离全局均值"，因此它对**全局性的大尺度模式**最敏感。Geary's C 则直接度量相邻位置的差值：
+
+$$C = \frac{(N-1)}{2\sum_{i}\sum_{j} w_{ij}} \cdot \frac{\sum_{i}\sum_{j} w_{ij}(x_i - x_j)^2}{\sum_{i}(x_i - \bar{x})^2}$$
+
+其取值方向与 Moran's I 相反：$C < 1$ 表示正空间自相关（相邻值接近），$C \approx 1$ 表示空间随机，$C > 1$ 表示负空间自相关。由于分子直接用平方差，Geary's C 对**局部的、小尺度的**空间变化更敏感。两者常一起使用：若某基因 Moran's I 高而 Geary's C 也接近 1，提示它有大尺度梯度但局部噪声也大。
+
+```r
+library(Seurat)
+
+# Geary's C: sensitive to local differences rather than global clustering
+gearys_c <- function(x, W) {
+    n <- length(x)
+    z <- x - mean(x)
+    num <- sum(W * outer(x, x, function(a, b) (a - b)^2))
+    den <- sum(z^2)
+    ((n - 1) / (2 * sum(W))) * (num / den)
+}
+
+for (g in c("Ttr", "Hpca", "Actb")) {
+    cat(sprintf("%-6s Geary's C = %6.3f\n", g, gearys_c(as.numeric(expr[g, ]), W)))
+}
+```
+
+## 在 Seurat 中识别 SVG
+
+Seurat 的 `FindSpatiallyVariableFeatures()` 封装了 Moran's I 的计算与检验。为控制运行时间，通常先用常规 HVG 筛出候选基因再计算空间统计量。
+
+```r
+#| label: fig-svg
+#| fig-cap: "小鼠脑前切片识别出的空间高变基因（SVG）的空间表达（stxBrain Visium 数据）。展示 Moran's I 排名靠前的六个基因，每个 Spot 按表达量着色。这些基因呈现出与脑解剖结构吻合的清晰空间聚集模式（如特定皮层分层、海马区、脉络丛），印证了它们的高空间自相关性。"
+library(Seurat)
+
+# Identify spatially variable features using Moran's I autocorrelation
+brain <- FindSpatiallyVariableFeatures(
+    brain, assay = "SCT",
+    features = VariableFeatures(brain)[1:1000],
+    selection.method = "moransi"
+)
+
+# Visualize the top spatially variable genes on the tissue
+top_svg <- head(SpatiallyVariableFeatures(brain, selection.method = "moransi"), 6)
+SpatialFeaturePlot(brain, features = top_svg, ncol = 3)
+```
+
+:::tip
+**先筛 HVG 再算 SVG 是一个折中，不是定论：** 用 HVG 预筛能把计算量降低一到两个数量级，但它恰好会漏掉 @tbl-hvg-svg 右下角那类"SVG 但非 HVG"的基因——表达幅度不大却严格局限于某一解剖结构的精确标志基因。若研究目标正是寻找此类精细标志，应跳过 HVG 预筛，改用 SPARK-X 等为全基因组扫描设计的高效方法。
+:::
+
+## 其他 SVG 识别方法
+
+基于 Moran's I 的方法计算简单、解释直观，但它把表达量当作普通连续变量，忽略了计数数据的噪声结构，也无法给出"空间变异的尺度有多大"。学界因此发展了若干统计上更完备的方法，@tbl-svg-methods 做了对比。
+
+| 方法 | 统计框架 | 主要优势 | 主要限制 |
+|------|----------|----------|----------|
+| Moran's I | 空间自相关统计量 | 快速、直观、易解释 | 忽略计数噪声；依赖权重矩阵设定 |
+| SpatialDE | 高斯过程回归，方差分解 | 给出空间/非空间方差比例与长度尺度 | 计算量大，不适合大规模数据 |
+| SPARK-X | 无参核矩阵检验 | 近线性复杂度，可全基因组扫描 | 只做检验，不估计模式参数 |
+| nnSVG | 最近邻高斯过程 + 计数模型 | 估计每基因的空间变异尺度，考虑计数噪声 | 计算量中等偏高 |
+
+: 主流空间高变基因识别方法的对比 {#tbl-svg-methods}
+
+**SpatialDE** 用高斯过程（Gaussian Process）回归把每个基因的空间表达分解为"空间结构成分"与"非空间噪声成分"，据此检验是否存在显著的空间表达模式，并顺带估计该模式的特征长度尺度（Svensson et al., 2018）。它的输出比 Moran's I 更丰富，但计算成本随 Spot 数的三次方增长，在大规模数据上难以直接使用。
+
+**SPARK-X** 针对这一瓶颈设计：它把问题转化为两个核矩阵之间的关联检验，避开了高斯过程的矩阵求逆，复杂度接近线性，因而可在数分钟内完成数万 Spot、全基因组的扫描（Zhu et al., 2021）。代价是它只给出显著性，不估计空间模式的参数。
+
+**nnSVG** 则用最近邻高斯过程近似完整的高斯过程，在保留"估计每个基因空间变异长度尺度"这一能力的同时大幅降低计算量，并直接在计数模型上建模（Weber et al., 2023）。当研究需要比较不同基因的空间模式尺度（例如区分"锐利的分层边界"与"缓慢的梯度"）时，nnSVG 是合适的选择。
+
+:::note
+**运行环境说明：** SpatialDE 与 SPARK-X 分别为 Python 与 R 包，nnSVG 为 Bioconductor R 包，均需单独安装且不随 Seurat 提供。下面的代码演示 SPARK-X 的调用方式，需先 `install.packages("SPARK")` 或从其 GitHub 仓库安装。在缺少这些依赖的环境中，本节代码仅作阅读用途，本专题的其余分析可继续用 Seurat 的 Moran's I 完成。
+:::
+
+```r
+library(SPARK)
+library(Seurat)
+
+# SPARK-X: non-parametric test scalable to whole-transcriptome screening
+counts <- GetAssayData(brain, assay = "Spatial", layer = "counts")
+loc <- as.matrix(GetTissueCoordinates(brain)[, c("imagerow", "imagecol")])
+
+sparkx_res <- sparkx(counts, loc, numCores = 4, option = "mixture")
+
+# Combined p-values across kernels, ranked
+head(sparkx_res$res_mtest[order(sparkx_res$res_mtest$adjustedPval), ], 10)
+```
+
+## 从单个基因到空间表达模块
+
+单独看每个 SVG 的空间图意义有限——真正有信息量的是它们**呈现出哪几类空间模式**。把所有 SVG 按其空间表达轮廓聚类，可以得到若干"空间表达模块"，每个模块对应一个解剖或功能结构，模块内的基因共享同一空间分布。
+
+```r
+#| label: fig-svg-modules
+#| fig-cap: "空间高变基因按表达模式聚类得到的空间表达模块（stxBrain Visium 数据）。将 Moran's I 排名前列的 SVG 按其跨 Spot 的表达轮廓聚为若干模块后，绘制每个模块的平均表达空间分布。各模块分别对应皮层分层、海马、白质与脉络丛等不同解剖结构，说明 SVG 并非彼此独立，而是聚集为少数几类共享空间分布的基因集合。"
+library(Seurat)
+
+# Cluster SVGs by their spatial expression profile into modules
+svg_genes <- head(SpatiallyVariableFeatures(brain, selection.method = "moransi"), 100)
+svg_expr <- as.matrix(GetAssayData(brain, assay = "SCT", layer = "scale.data")[svg_genes, ])
+
+gene_clusters <- cutree(hclust(as.dist(1 - cor(t(svg_expr)))), k = 4)
+
+# Average expression of each module, mapped back onto the tissue
+for (m in sort(unique(gene_clusters))) {
+    brain[[paste0("module_", m)]] <- colMeans(svg_expr[gene_clusters == m, , drop = FALSE])
+}
+
+SpatialFeaturePlot(brain, features = paste0("module_", 1:4), ncol = 2)
+```
+
+```r
+# Which genes define each module? These are the candidate region markers
+split(names(gene_clusters), gene_clusters) |> lapply(head, 8)
+```
+
+:::info
+**黄金法则：** SVG 分析的输出不是一张基因列表，而是一组空间假设。任何一个被判为显著的 SVG，都必须能在组织图像上指认出它对应的解剖结构——说不出"这个基因标志的是哪一层、哪个区域"，就说明这个结果还没有被真正解读。统计显著性只是筛选工具，解剖学归属才是结论。当一个高 Moran's I 的基因在图上呈现的是组织边缘的环状分布或与总 UMI 高度一致的梯度时，它几乎一定是技术伪影，而非区域标志。
+:::
+
+---
+
+# 方法总结与衔接说明
+
+本专题完成了 Visium 数据从原始对象到空间假设的转化。质控层面，核心是把 scRNA-seq 的数值阈值升级为"数值 + 图像"的联合判读，并用线粒体比例这一独立指标区分技术性边缘损伤与真实的低细胞密度区域。归一化层面，`SCTransform` 可直接沿用，但需警惕细胞密度梯度伪装成表达模式。SVG 层面，本专题从空间权重矩阵这一共同基础出发，讲解了 Moran's I 与 Geary's C 两个经典统计量的定义与互补性，对比了 SpatialDE、SPARK-X、nnSVG 三类现代方法的取舍，并强调了把 SVG 聚类为空间表达模块这一关键的解读步骤。
+
+至此我们拥有了一组带空间模式的基因，但还没有把组织本身划分成结构单元。专题 8.4 将完成这一步：用聚类把 Spot 划分为空间域，比较普通聚类与纳入空间坐标的 BayesSpace，并把划分结果与组织解剖结构相互印证，形成可解读的组织结构图谱。
+
+---
+
+# 课后自测 (Post-Lesson Quiz)
+
+1. 空间数据的质控相比 scRNA-seq 多了哪一层判读？为什么把 QC 指标"画回组织上"比只看小提琴图更重要？
+
+2. 为什么不能用 scRNA-seq 式的统一 UMI 下限无差别过滤所有 Visium Spot？这样做会造成什么空间偏差？
+
+3. 如何区分"技术性的边缘损伤"与"真实的低细胞密度区域"？请说明所依据的判据及其生物学理由。
+
+4. 什么是空间高变基因（SVG）？请用 HVG 与 SVG 的二维关系说明，为什么"SVG 但非 HVG"这一类基因是空间分析独有的收获。
+
+5. 空间权重矩阵 $w_{ij}$ 有哪三种常见构建方式？为什么说权重矩阵的选择会实质改变 SVG 的结论，报告结果时必须一并说明？
+
+6. Moran's I 的分子部分在数学上表达了什么含义？为什么说它本质上是"空间滞后版本的相关系数"？在零假设下它的期望值是多少？
+
+7. Geary's C 与 Moran's I 在敏感性上有何差异？若某基因 Moran's I 很高但 Geary's C 也接近 1，这提示什么？
+
+8. 一位研究者用 `FindSpatiallyVariableFeatures()` 得到一批 SVG，其中排名很高的某个基因在组织上呈现均匀的环状分布，恰好沿着组织边缘一圈。请判断这是否为真实的生物学信号，说明理由与核验方法。
+
+<details>
+<summary><strong>参考答案 (Reference Answers)</strong></summary>
+
+1. *多了结合 H&E 图像与空间坐标的判读。因为低质量 Spot 在空间上通常不是随机散布的，而是成片聚集在组织边缘、折叠或损伤区域——这种空间聚集模式在小提琴图上完全看不出来，只有把指标画回组织坐标上才能发现。此外，位于边缘或脱落区的 Spot 即便数值达标也不可信，这只能通过结合图像的视觉检查识别。*
+
+2. *因为 Visium 中 Spot 的 UMI 总数还反映真实生物学差异——细胞密集区天然高 UMI、细胞稀疏区（白质、纤维区）天然低 UMI。用统一下限过滤会系统性删除低细胞密度的组织区域，造成空间偏差：被删掉的不是"坏数据"而是"某一类组织"，使后续分析只覆盖高密度区域，结论无法推广到整张切片。*
+
+3. *判据是看低 UMI 是否伴随其他质量异常。技术性边缘损伤通常同时表现为低 UMI、低基因数和偏高的线粒体比例；真实的低细胞密度区域只是 UMI 和基因数偏低，线粒体比例正常。生物学理由：细胞破损时胞质 mRNA 流失而线粒体被双层膜包裹相对保留，故线粒体比例升高；而细胞稀疏只是细胞数少，每个细胞本身是完整的，线粒体比例不受影响。判定后仍需结合 H&E 图像确认——若"damaged"类 Spot 集中在边缘可放心剔除，若散布在组织内部则可能是坏死区等真实信号。*
+
+4. *SVG 是表达呈现显著空间自相关（相邻 Spot 表达相似、非空间随机）的基因。HVG 衡量总体变异、SVG 衡量空间结构化变异，二者正交，可组合为四类。"SVG 但非 HVG"指总体表达幅度变化不大、会被常规 HVG 筛选完全漏掉，但表达严格局限于某一解剖结构的基因——它们往往是该结构的精确标志。这类基因只有通过空间统计量才能发现，是空间分析独有的收获。*
+
+5. *三种方式：直接邻居（Visium 六角网格的六个相邻 Spot）、k-近邻（最近的 k 个 Spot，适用于不规则排布平台）、距离衰减核（权重随距离连续衰减，由 σ 控制尺度）。选择会实质改变结论，是因为不同的权重定义对应不同的空间尺度：六邻居只能检出局部、边界清晰的模式，大 k 值或大 σ 更容易检出大尺度梯度，同一数据下 SVG 排名可能有实质差异。因此必须报告权重矩阵的构建方式与参数，否则结果不可复现；不确定时应在多个参数下重跑并关注稳定出现的基因。*
+
+6. *分子是相邻 Spot 离均差乘积的加权和：若相邻 Spot 同时高于均值或同时低于均值，乘积为正；一高一低则为负。因此它度量的是"空间上相邻的位置是否同向偏离全局均值"。分母是总方差，起标准化作用，使统计量落在类似相关系数的尺度上——所以说 Moran's I 本质是把普通相关系数中的"另一个变量"换成了"该变量的空间滞后"。零假设（空间随机）下期望为 $E[I] = -1/(N-1)$，只有当 Spot 数很大时才近似为 0。*
+
+7. *Moran's I 用离均差乘积，度量"是否同时偏离全局均值"，对全局性的大尺度模式最敏感；Geary's C 直接用相邻位置的平方差，对局部的、小尺度的空间变化更敏感，且取值方向相反（C < 1 为正空间自相关）。若某基因 Moran's I 很高但 Geary's C 接近 1，提示它存在大尺度的整体梯度（使全局自相关显著），但局部相邻 Spot 之间的差异仍然很大——即该基因有大范围趋势但叠加了较强的局部噪声。*
+
+8. *几乎可以断定不是真实生物学信号。理由：沿组织边缘一圈的均匀环状分布是典型的技术伪影模式——组织边缘的 Spot 普遍存在细胞损伤、透化不均与捕获效率差异，这些技术因素本身就具有很强的空间自相关性（边缘 Spot 彼此相邻），因此会产生很高的 Moran's I，但它反映的是"边缘效应"而非该基因的区域特异表达。核验方法：（1）检查该基因表达与 `nCount_Spatial` 及 `percent.mt` 的空间分布是否高度一致，若一致则为技术效应；（2）查看这些边缘 Spot 在本专题的 qc_flag 分类中是否被标为 damaged；（3）剔除边缘 Spot 后重新计算该基因的 Moran's I，若显著性大幅下降则确认为伪影；（4）在 H&E 图像上确认该环状区域是否对应组织边缘而非任何真实解剖结构。*
+
+</details>

@@ -4,7 +4,7 @@
     "href": "index.html",
     "title": "Introduction to Applied High-throughput Biological Data Analysis",
     "section": "",
-    "text": "Course Introduction\nNext-Generation Sequencing (NGS) has become the cornerstone of modern biology. This course is designed for applied high-throughput biological data analysis, covering RNA-seq, 16S/ITS amplicon sequencing, single-cell RNA-seq, spatial transcriptomics, and beyond. For each data modality, the processes of data acquisition and preprocessing are introduced in detail. The curriculum covers routine analytical methods, such as PCA and Differential Expression Gene (DEG) analysis, alongside advanced techniques like WGCNA and SCENIC. To emphasize hands-on practice, R and Python scripts are provided for half of the course modules to guide students through each workflow. Finally, beyond traditional methodologies, the concluding section introduces novel computational approaches, including ODE-based network modeling.",
+    "text": "Course Introduction\nNext-Generation Sequencing (NGS) has become the cornerstone of modern biology. This course is designed for applied high-throughput biological data analysis, covering genome assembly and variant calling, bulk RNA-seq, single-cell RNA-seq, spatial transcriptomics, 16S/ITS amplicon and shotgun metagenomics, epigenomics, proteomics and metabolomics. For each data modality, the processes of data acquisition and preprocessing are introduced in detail. The curriculum covers routine analytical methods, such as PCA and Differential Expression Gene (DEG) analysis, alongside advanced techniques like WGCNA and SCENIC. To emphasize hands-on practice, R and Python scripts are provided for half of the course modules to guide students through each workflow. Finally, beyond traditional methodologies, the concluding section introduces novel computational approaches, including ODE-based network modeling.",
     "crumbs": [
       "<span class='chapter-number'>1</span>  <span class='chapter-title'>Course Introduction</span>"
     ]
@@ -817,7 +817,7 @@
     "href": "02-genomics-qc.html#专题-2.4主流组装工具实战",
     "title": "8  基因组数据分析：质量控制、从头组装与变异检测",
     "section": "12.2 专题 2.4：主流组装工具实战",
-    "text": "12.2 专题 2.4：主流组装工具实战\n对应文件：genomics_qc_lesson3.qmd （SPAdes 实践与组装图可视化）\n\n工具选择原则： 根据测序技术和基因组大小选择组装工具。短读优先 SPAdes；长读优先 Flye 或 Hifiasm（HiFi 数据）；混合策略在长读组装骨架基础上用短读纠错。\n\n不同测序技术的读长特性决定了组装工具的选择逻辑。短读（Illumina）具有高准确率但读长仅 150 bp，适合 DBG 算法；长读（Nanopore/PacBio）读长可达数十 kb，能跨越重复区域，但原始错误率更高。本专题系统比较三类主流组装器，并提供面向不同场景的完整命令行流程。\n核心概念：\n\nSPAdes：面向短读的多 k-mer 迭代 DBG 组装器；--careful 模式；细菌与宏基因组（--meta）场景\nFlye：面向长读（Nanopore / PacBio CLR）的 repeat graph 策略组装器；--genome-size 参数\nHifiasm：面向 PacBio HiFi（CCS）的高精度组装器；单倍型分型（Hi-C 辅助）\n混合组装策略：长读骨架 + 短读纠错（Unicycler 用于细菌完整基因组）\n组装输出文件解读：contigs.fasta、assembly_graph.gfa、assembly_info.txt\n\n计划实践内容：\n# SPAdes: short-read assembly\nspades.py -1 R1_clean.fastq.gz -2 R2_clean.fastq.gz \\\n  -o spades_output/ -t 8 --careful -k 21,33,55,77\n\n# Flye: long-read assembly (Nanopore)\nflye --nano-raw reads.fastq.gz \\\n  --genome-size 5m --out-dir flye_output/ --threads 8\n\n# Hifiasm: HiFi assembly\nhifiasm -o ecoli.asm -t 8 hifi_reads.fastq.gz",
+    "text": "12.2 专题 2.4：主流组装工具实战\n对应文件：genomics_qc_lesson3.qmd （SPAdes 实践与组装图可视化）\n\n工具选择原则： 根据测序技术和基因组大小选择组装工具。短读优先 SPAdes；长读优先 Flye 或 Hifiasm（HiFi 数据）；混合策略在长读组装骨架基础上用短读纠错。\n\n不同测序技术的读长特性决定了组装工具的选择逻辑。短读（Illumina）具有高准确率但读长仅 150 bp，适合 DBG 算法；长读（Nanopore/PacBio）读长可达数十 kb，能跨越重复区域，但原始错误率更高。本专题系统比较三类主流组装器，并提供面向不同场景的完整命令行流程。\n核心概念：\n\nSPAdes：面向短读的多 k-mer 迭代 DBG 组装器；--careful 模式；细菌与宏基因组（--meta）场景（宏基因组组装与分箱详见第 8 章）\nFlye：面向长读（Nanopore / PacBio CLR）的 repeat graph 策略组装器；--genome-size 参数\nHifiasm：面向 PacBio HiFi（CCS）的高精度组装器；单倍型分型（Hi-C 辅助）\n混合组装策略：长读骨架 + 短读纠错（Unicycler 用于细菌完整基因组）\n组装输出文件解读：contigs.fasta、assembly_graph.gfa、assembly_info.txt\n\n计划实践内容：\n# SPAdes: short-read assembly\nspades.py -1 R1_clean.fastq.gz -2 R2_clean.fastq.gz \\\n  -o spades_output/ -t 8 --careful -k 21,33,55,77\n\n# Flye: long-read assembly (Nanopore)\nflye --nano-raw reads.fastq.gz \\\n  --genome-size 5m --out-dir flye_output/ --threads 8\n\n# Hifiasm: HiFi assembly\nhifiasm -o ecoli.asm -t 8 hifi_reads.fastq.gz",
     "crumbs": [
       "第一阶段：基础与基因组",
       "<span class='chapter-number'>8</span>  <span class='chapter-title'>基因组数据分析：质量控制、从头组装与变异检测</span>"
@@ -4214,12 +4214,12 @@
   {
     "objectID": "06-scrna-basic.html",
     "href": "06-scrna-basic.html",
-    "title": "31  单细胞与空间转录组基础：上游处理、标准分析流程与 Visium 基础",
+    "title": "31  单细胞转录组基础：上游处理、质量控制与标准分析流程",
     "section": "",
-    "text": "32 整体概述\n单细胞 RNA-seq（scRNA-seq）和空间转录组学（Spatial Transcriptomics）的出现，根本性地改变了转录组研究的分辨率边界。Bulk RNA-seq 提供的是细胞群体的平均转录谱，无法区分组织内不同细胞类型的个体贡献；scRNA-seq 将分辨率推进至单个细胞，揭示了细胞类型的异质性、稀有细胞群的存在以及细胞状态的连续性；空间转录组学则在保留组织切片空间坐标的前提下测量基因表达，将转录图谱嵌入形态学背景，回答基因表达”在哪里”的问题。尽管两项技术分析框架各有侧重，但它们在数据结构、质量控制逻辑和降维聚类方法上存在深度共性，因此本章将二者的基础分析流程并列讲解，强调方法论上的统一性与各自的技术特殊性。\n学习目标：理解 10x Genomics Chromium 液滴微流控与 Visium 空间条形码阵列的技术原理；掌握 Cell Ranger、Space Ranger 的上游处理流程；能独立运行 Seurat 标准单细胞分析流程（QC → 归一化 → 降维 → 聚类 → 细胞类型注释）；掌握 Visium 数据的空间高变基因（SVG）分析与空间聚类基本方法。",
+    "text": "32 整体概述\n单细胞 RNA-seq（scRNA-seq）的出现根本性地改变了转录组研究的分辨率边界。Bulk RNA-seq 提供的是细胞群体的平均转录谱，它把一份组织里成千上万个细胞的表达混合成一条曲线，无法区分不同细胞类型的个体贡献——两个平均表达相同的样本，其细胞组成可能截然不同。scRNA-seq 将分辨率推进至单个细胞，使细胞类型的异质性、稀有细胞群的存在以及细胞状态的连续变化第一次成为可直接观测的对象。但这一分辨率的获得有其代价：单细胞数据极度稀疏、技术噪声大，且解离过程会丢失细胞原本的空间位置。本章建立 scRNA-seq 的完整基础分析能力，从 10x Genomics 液滴微流控的技术原理与 Cell Ranger 上游处理讲起，依次展开质量控制与预处理、降维聚类与细胞类型注释，形成从原始 FASTQ 到带生物学标签的细胞图谱的闭环。解离所丢失的空间维度将由第 8 章的空间转录组补回（参见第 8 章）。\n学习目标：理解 10x Genomics Chromium 液滴微流控的技术原理与细胞条形码、UMI 的设计逻辑；掌握 Cell Ranger/STARsolo 上游处理流程与空液滴识别；能对 scRNA-seq 数据执行系统性质量控制，理解三项核心指标的联合判读与双细胞检测；区分 LogNormalize 与 SCTransform 两种归一化策略的适用场景；独立完成 PCA、KNN 图构建、Leiden 聚类与 UMAP 可视化，并结合 Marker 基因与自动注释工具完成细胞类型标注。\n\n\n\n33 结构导览\n本章分为一个贯通的分析主线，共三个专题，沿单细胞数据从原始读段到细胞图谱的加工链组织：\nscRNA-seq FASTQ（10x Chromium）\n  │\n  ↓ 专题 6.1　上游处理\n  │   Cell Ranger / STARsolo：条形码纠错 → 比对 → UMI 去重\n  │   空液滴识别（EmptyDrops）→ 稀疏表达矩阵（cell × gene）\n  │\n  ↓ 专题 6.2　质量控制与预处理\n  │   三项指标联合判读（nFeature / nCount / percent.mt）\n  │   双细胞检测 → 归一化（LogNormalize / SCTransform）\n  │   高变基因选择 → 数据缩放\n  │\n  ↓ 专题 6.3　降维、聚类与注释\n      PCA → KNN 图 → Leiden 聚类 → UMAP\n      FindAllMarkers → 手动注释 + SingleR 自动注释\n      ↓\n  带细胞类型标签的 Seurat 对象\n      → 第 7 章：多样本整合、轨迹、通讯、多组学\n      → 第 9 章：作为空间解卷积的参考图谱\n三个专题构成严格的流水线依赖，每一步的产物都是下一步的输入。本章产出的注释细胞图谱不仅是第 7 章全部高级分析的起点，也是第 9 章细胞解卷积不可或缺的参考——空间数据能否还原细胞类型，取决于这里的注释质量。\n\n\n\n34 各专题简介\n\n34.0.1 专题 6.1：10x Genomics 技术原理与上游处理\n单细胞 RNA-seq 的核心技术挑战在于：如何在数以千计的细胞中为每个细胞的 mRNA 分子打上独一无二的”地址”，以便在测序完成后将读段归属到正确的细胞。10x Genomics Chromium 平台通过液滴微流控（droplet microfluidics）优雅地解决了这一问题：每个凝胶珠（gel bead）表面携带数十万个具有相同细胞条形码（Cell Barcode）但不同分子条形码（UMI）的寡核苷酸，在微流控芯片中与单个细胞和逆转录试剂共同被包裹进油滴（GEM），完成细胞特异性的 cDNA 合成。Cell Ranger（官方流程）和 STARsolo（开源替代）负责将测序读段通过 Barcode 解码、UMI 去重，最终生成稀疏格式的细胞×基因表达矩阵。\n{{Wiki:Microfluidics}}\n核心概念：\n\n10x Chromium 液滴微流控：GEM（凝胶珠乳液，Gel bead-in-EMulsion）形成原理；Barcode + UMI + poly-T 捕获探针的结构\nCell Ranger 核心步骤：cellranger mkfastq（BCL → FASTQ）→ cellranger count（Barcode 白名单过滤 → STAR 比对 → UMI 计数 → 空细胞过滤）\nBarcode 纠错：1 个碱基错误的 Barcode 向白名单序列的校正逻辑\nUMI 去重：基于图的 UMI 去重（directional network）；--include-introns 参数对核 RNA（snRNA-seq）的影响\n空细胞过滤：EmptyDrops 算法；膝点（Knee point）启发式方法；两者的适用场景对比\nSTARsolo 作为 Cell Ranger 的开源替代：参数映射关系；输出格式兼容性\n输出格式：barcodes.tsv.gz / features.tsv.gz / matrix.mtx.gz 稀疏矩阵三文件结构；read10x() 加载\n\n实践内容：使用 Cell Ranger 处理 PBMC 3k 数据（SeuratData::InstallData(\"pbmc3k\")）；解读 Cell Ranger Web Summary 报告中的关键指标（Valid Barcodes、Median Genes per Cell、Saturation）；用 STARsolo 复现并比较结果。\n\n\n\n34.0.2 专题 6.2：单细胞数据质量控制与预处理\nscRNA-seq 数据的质量控制与 Bulk RNA-seq 有本质区别：前者需要在细胞层面逐一判断质量，而非在样本层面做整体评估。低质量细胞（dying cells、破膜细胞）表现为基因检出数极少或线粒体基因比例异常高；多细胞复合体（Doublets）表现为基因检出数异常高，会在后续分析中产生虚假的”中间态”细胞群。此外，稀疏的零值矩阵要求特殊的归一化策略，普通的 CPM/RPKM 归一化会放大技术噪声。SCTransform 通过正则化负二项回归模型，同时完成测序深度校正、技术变异建模和高变基因选择，是目前最受推荐的 scRNA-seq 归一化方法。\n核心概念：\n\nscRNA-seq 质控三指标：每细胞基因数（nFeature_RNA）、每细胞 UMI 数（nCount_RNA）、线粒体基因比例（percent.mt）；三者联合判读的逻辑\n基于 MAD 的自适应阈值设定（isOutlier() from scuttle）：相比固定阈值的优势\nDoublet 检测方法：DoubletFinder（模拟 Doublet + KNN 评分）；Scrublet（PCA 空间中的双细胞得分）\n归一化策略对比：LogNormalize（NormalizeData()，简单但偏差大）vs SCTransform（正则化负二项回归，推荐）\n高变基因（HVGs）选择：FindVariableFeatures() 的 VST 方法；选取 2000–3000 个 HVG 的惯例与依据\n数据缩放（Scaling）：ScaleData() 的线性回归去除混淆变量（nCount、percent.mt）\n\n实践内容：PBMC 3k 数据的质控可视化（小提琴图 + 散点图）；MAD 阈值 vs 固定阈值的细胞过滤比较；SCTransform 归一化；Scrublet Doublet 检测；HVG 选择与表达量分布可视化。\n\n\n\n34.0.3 专题 6.3：降维、聚类与细胞类型注释\n在质控和归一化完成后，scRNA-seq 分析的核心目标是识别细胞类型。这一过程依赖于降维和聚类两步操作的组合：PCA 将高维基因表达空间压缩至 20–50 个主成分，去除技术噪声的同时保留主要生物学变异；在 PCA 空间中构建 k-近邻图（KNN graph），再通过图聚类算法（Leiden / Louvain）识别细胞社区；最后以 UMAP 或 t-SNE 生成二维嵌入，用于可视化。细胞类型注释通过差异表达分析（FindAllMarkers()）识别每个聚类的特征基因，结合已知的细胞类型 Marker 基因数据库（PanglaoDB、CellMarker）或自动注释工具（SingleR、CellTypist）完成。\n{{Wiki:UMAP}}\n核心概念：\n\nPCA 在 scRNA-seq 中的作用：消除基因空间的冗余；ElbowPlot() 选择主成分数量；HVG 仅用于 PCA 输入而非全基因组\nKNN 图构建：FindNeighbors() 中 dims 参数（使用的 PC 数）和 k.param（邻居数）的影响\nLeiden 聚类（FindClusters()）：分辨率（resolution）参数对聚类粒度的控制；0.3–0.8 为常用范围\nUMAP vs t-SNE：UMAP 保留全局结构的优势；t-SNE 参数（perplexity）对局部结构的影响；两者均不保留定量距离意义\nMarker 基因鉴定：FindAllMarkers() 的 Wilcoxon 秩和检验；min.pct 和 logfc.threshold 参数\n自动细胞类型注释：SingleR 的参考数据库匹配策略（ENCODE, HCA）；CellTypist 的机器学习分类器\n注释验证：FeaturePlot() 可视化已知 Marker；DotPlot() 展示跨聚类 Marker 表达模式\n\n实践内容：PBMC 3k 数据完整运行 PCA → KNN → Leiden 聚类 → UMAP；FindAllMarkers() 识别各聚类 Marker；结合 PanglaoDB 手动注释；运行 SingleR（ENCODE 参考）自动注释；对比手动与自动注释的一致性。",
     "crumbs": [
-      "第二阶段：转录组与单细胞",
-      "<span class='chapter-number'>31</span>  <span class='chapter-title'>单细胞与空间转录组基础：上游处理、标准分析流程与 Visium 基础</span>"
+      "第二阶段：转录组、单细胞与空间组学",
+      "<span class='chapter-number'>31</span>  <span class='chapter-title'>单细胞转录组基础：上游处理、质量控制与标准分析流程</span>"
     ]
   },
   {
@@ -4930,7 +4930,7 @@
     "section": "",
     "text": "33 专题概述\n单细胞 RNA-seq（scRNA-seq）的核心技术挑战在于：如何在数以千计的细胞中，为每个细胞的 mRNA 分子打上独一无二的”地址”，以便测序完成后将读段准确归属到正确的细胞。本专题讲解 10x Genomics Chromium 平台如何用液滴微流控（droplet microfluidics）解决这一问题，以及上游软件 Cell Ranger 与开源替代 STARsolo 如何将原始测序读段转化为可供下游分析的细胞×基因表达矩阵。理解上游处理的每一步——条形码解码、UMI 去重、空液滴过滤——是正确解读下游结果、排查异常的前提。\n学习目标：理解 10x Chromium 液滴微流控的技术原理与 GEM、Cell Barcode、UMI 三者的关系；掌握 Cell Ranger 上游处理的核心步骤；理解条形码纠错与 UMI 去重的逻辑；区分 EmptyDrops 与膝点法两种空液滴过滤策略；能解读 Cell Ranger Web Summary 的关键质量指标。",
     "crumbs": [
-      "第二阶段：转录组与单细胞",
+      "第二阶段：转录组、单细胞与空间组学",
       "<span class='chapter-number'>32</span>  <span class='chapter-title'>10x Genomics 技术原理与上游处理</span>"
     ]
   },
@@ -4941,7 +4941,7 @@
     "section": "34.1 液滴微流控与 GEM",
     "text": "34.1 液滴微流控与 GEM\n10x Genomics Chromium 平台的核心是把单个细胞与一个携带特异条形码的凝胶珠（gel bead）共同包裹进一滴油中，形成所谓的 GEM（Gel bead-in-EMulsion，凝胶珠乳液）。在微流控芯片上，细胞悬液、凝胶珠和逆转录试剂分别从不同通道流入，与油相在交汇处剪切形成数万个纳升级油滴；通过控制细胞浓度，使绝大多数油滴最多包裹一个细胞。\n{{Wiki:Microfluidics}}\n每个凝胶珠表面携带数十万条寡核苷酸捕获探针，它们共享同一段细胞条形码（Cell Barcode）——这是该 GEM 的”地址”，标记 mRNA 来自哪个细胞。每条探针还带有一段不同的分子条形码（Unique Molecular Identifier, UMI），用于标记单个 mRNA 分子，以及一段 poly-T 序列用于捕获带 poly-A 尾的 mRNA。油滴内完成逆转录后，所有 cDNA 都携带了”细胞地址 + 分子标签”的双重信息。",
     "crumbs": [
-      "第二阶段：转录组与单细胞",
+      "第二阶段：转录组、单细胞与空间组学",
       "<span class='chapter-number'>32</span>  <span class='chapter-title'>10x Genomics 技术原理与上游处理</span>"
     ]
   },
@@ -4952,7 +4952,7 @@
     "section": "34.2 三个标签的分工",
     "text": "34.2 三个标签的分工\n理解 scRNA-seq 数据，关键在于厘清三个标签的不同作用，见 表 1。\n\n\n\n表 1: 10x Chromium 文库中三类标签的作用\n\n\n\n\n\n标签\n长度（v3）\n作用\n类比\n\n\n\n\nCell Barcode\n16 bp\n标记 mRNA 来自哪个细胞\n收件人地址\n\n\nUMI\n12 bp\n标记单个 mRNA 分子，用于去除 PCR 重复\n包裹追踪号\n\n\npoly-T / 测序读段\n—\n捕获并测定 mRNA 序列本身\n包裹内容\n\n\n\n\n\n\n\n为什么需要 UMI： 文库制备包含 PCR 扩增，同一条原始 mRNA 会被复制成许多拷贝。若直接计数测序读段，高扩增效率的转录本会被严重高估。UMI 在逆转录时就标记了每个原始分子，因此测序后只需统计”不同 UMI 的数量”而非”读段数量”，即可还原真实的分子数，消除 PCR 扩增偏差。这是 scRNA-seq 定量准确性的基石。",
     "crumbs": [
-      "第二阶段：转录组与单细胞",
+      "第二阶段：转录组、单细胞与空间组学",
       "<span class='chapter-number'>32</span>  <span class='chapter-title'>10x Genomics 技术原理与上游处理</span>"
     ]
   },
@@ -4963,7 +4963,7 @@
     "section": "35.1 从 BCL 到表达矩阵",
     "text": "35.1 从 BCL 到表达矩阵\nCell Ranger 是 10x 官方的上游分析软件，把测序仪输出的原始数据转化为表达矩阵，核心分为两步：\n\ncellranger mkfastq：将测序仪的 BCL 原始文件按样本索引拆分为标准 FASTQ 文件。\ncellranger count：对单个样本的 FASTQ 执行条形码处理、比对、UMI 计数与细胞识别，输出表达矩阵。\n\n# Step 1: demultiplex raw BCL into per-sample FASTQ files\ncellranger mkfastq \\\n    --run=/path/to/bcl_run_folder \\\n    --csv=/path/to/sample_sheet.csv \\\n    --output-dir=/path/to/fastq_output\n\n# Step 2: align, deduplicate UMIs, and call cells for one sample (e.g. PBMC 3k)\ncellranger count \\\n    --id=pbmc3k \\\n    --transcriptome=/path/to/refdata-gex-GRCh38-2020-A \\\n    --fastqs=/path/to/fastq_output \\\n    --sample=pbmc3k \\\n    --localcores=8 \\\n    --localmem=64\ncellranger count 内部依次完成：条形码处理与纠错 → STAR 比对到参考转录组 → UMI 去重与计数 → 空液滴过滤识别真实细胞。",
     "crumbs": [
-      "第二阶段：转录组与单细胞",
+      "第二阶段：转录组、单细胞与空间组学",
       "<span class='chapter-number'>32</span>  <span class='chapter-title'>10x Genomics 技术原理与上游处理</span>"
     ]
   },
@@ -4974,7 +4974,7 @@
     "section": "35.2 条形码纠错",
     "text": "35.2 条形码纠错\n测序存在错误率，细胞条形码也可能被读错。Cell Ranger 持有一份合法条形码的白名单（whitelist）。对每个读到的条形码：若它精确匹配白名单，则直接接受；若它与某个白名单条形码仅差一个碱基，则根据该碱基的测序质量值与该候选条形码的丰度，按概率将其”纠正”到最可能的白名单条形码上。这一机制挽救了大量因单碱基测序错误而本会被丢弃的读段。",
     "crumbs": [
-      "第二阶段：转录组与单细胞",
+      "第二阶段：转录组、单细胞与空间组学",
       "<span class='chapter-number'>32</span>  <span class='chapter-title'>10x Genomics 技术原理与上游处理</span>"
     ]
   },
@@ -4985,7 +4985,7 @@
     "section": "35.3 UMI 去重",
     "text": "35.3 UMI 去重\n比对到同一基因、且携带相同细胞条形码与相同 UMI 的多条读段，被认为来自同一原始 mRNA 分子的 PCR 拷贝，应合并计为一次。Cell Ranger 采用基于有向网络（directional network）的去重策略：考虑到 UMI 本身也可能有测序错误，它将仅差一个碱基、且丰度呈悬殊关系的 UMI 合并，从而避免把”测错的 UMI”误计为新分子。\n\n--include-introns 参数： 默认情况下 Cell Ranger 只统计比对到外显子的读段。对于单核 RNA 测序（snRNA-seq），细胞核内富含未剪接的前体 mRNA（含内含子），此时应开启 --include-introns（新版本默认开启）以纳入内含子读段，否则会严重低估基因表达。判断依据是样本类型：完整细胞用默认设置，细胞核样本需纳入内含子。",
     "crumbs": [
-      "第二阶段：转录组与单细胞",
+      "第二阶段：转录组、单细胞与空间组学",
       "<span class='chapter-number'>32</span>  <span class='chapter-title'>10x Genomics 技术原理与上游处理</span>"
     ]
   },
@@ -4996,7 +4996,7 @@
     "section": "35.4 空液滴过滤：区分细胞与背景",
     "text": "35.4 空液滴过滤：区分细胞与背景\n并非每个 GEM 都包裹了真实细胞——大量油滴只含游离 RNA（来自破裂细胞的环境 RNA，称为 ambient RNA）。区分”真实细胞条形码”与”空液滴条形码”是上游处理最关键也最易出错的一步。\n两种主流策略：\n\n膝点法（Knee point）：将所有条形码按其总 UMI 数从高到低排序作图（barcode rank plot），真实细胞通常 UMI 数高、聚集在曲线左侧的”平台”，空液滴 UMI 数低、聚集在右侧；曲线急剧下降的”膝点/拐点”即为分界阈值。简单直观，但对细胞 RNA 含量差异大的样本不稳健。\nEmptyDrops：不依赖单一阈值，而是先用极低 UMI 的条形码估计 ambient RNA 的表达谱，再对每个条形码统计检验其表达谱是否显著偏离 ambient 背景。能挽救 UMI 较低但表达谱明确的真实小细胞（如静息淋巴细胞），是当前推荐方法。\n\n{{Wiki:Knee_of_a_curve}}\nCell Ranger 现代版本结合了两种思想：先用膝点确定一批高置信细胞，再用 EmptyDrops 式检验从其余条形码中挽救低 UMI 的真实细胞。",
     "crumbs": [
-      "第二阶段：转录组与单细胞",
+      "第二阶段：转录组、单细胞与空间组学",
       "<span class='chapter-number'>32</span>  <span class='chapter-title'>10x Genomics 技术原理与上游处理</span>"
     ]
   },
@@ -5007,7 +5007,7 @@
     "section": "37.1 输出文件结构",
     "text": "37.1 输出文件结构\nCell Ranger 与 STARsolo 均输出稀疏矩阵格式的三件套文件，构成下游分析的统一入口：\n\nbarcodes.tsv.gz：每个真实细胞的条形码列表（矩阵的列）\nfeatures.tsv.gz：检测到的基因列表（矩阵的行）\nmatrix.mtx.gz：稀疏格式的表达计数矩阵（Matrix Market 格式，仅存储非零值）\n\nlibrary(Seurat)\n\n# Load the 10x sparse matrix (three-file directory) into a Seurat object\npbmc_data &lt;- Read10X(data.dir = \"/path/to/pbmc3k/outs/filtered_feature_bc_matrix\")\npbmc &lt;- CreateSeuratObject(counts = pbmc_data, project = \"pbmc3k\",\n                           min.cells = 3, min.features = 200)\n\n# Quick sanity check: cells (columns) x genes (rows)\npbmc",
     "crumbs": [
-      "第二阶段：转录组与单细胞",
+      "第二阶段：转录组、单细胞与空间组学",
       "<span class='chapter-number'>32</span>  <span class='chapter-title'>10x Genomics 技术原理与上游处理</span>"
     ]
   },
@@ -5018,7 +5018,7 @@
     "section": "37.2 Web Summary 关键指标",
     "text": "37.2 Web Summary 关键指标\nCell Ranger 生成一份 HTML 格式的 Web Summary 报告，是判断实验成败的第一手依据。表 2 列出最需关注的指标。\n\n\n\n表 2: Cell Ranger Web Summary 核心质量指标\n\n\n\n\n\n\n\n\n\n\n指标\n含义\n健康范围（参考）\n\n\n\n\nEstimated Number of Cells\n识别出的真实细胞数\n接近上样预期\n\n\nValid Barcodes\n匹配白名单的条形码比例\n&gt; 75%\n\n\nMedian Genes per Cell\n每个细胞检出基因数的中位数\n视细胞类型，通常 &gt; 1000\n\n\nSequencing Saturation\n测序饱和度（重复 UMI 比例）\n视目标，过高说明测序冗余\n\n\nReads Mapped to Genome\n比对到基因组的读段比例\n&gt; 80%\n\n\nFraction Reads in Cells\n落在真实细胞内的读段比例\n&gt; 70%\n\n\n\n\n\n\n\nFraction Reads in Cells 偏低的诊断： 该指标若显著偏低（如 &lt; 60%），通常提示样本中游离 ambient RNA 过多，常见原因是细胞解离时损伤严重、活力低。这是一个早期预警信号——它意味着大量信号来自背景而非细胞，后续即使过滤也难以完全挽救，应在湿实验层面改进细胞制备。",
     "crumbs": [
-      "第二阶段：转录组与单细胞",
+      "第二阶段：转录组、单细胞与空间组学",
       "<span class='chapter-number'>32</span>  <span class='chapter-title'>10x Genomics 技术原理与上游处理</span>"
     ]
   },
@@ -5251,6 +5251,171 @@
     "crumbs": [
       "第二阶段：转录组与单细胞",
       "<span class='chapter-number'>29</span>  <span class='chapter-title'>基因调控网络推断——从随机森林到动力系统</span>"
+    ]
+  },
+  {
+    "objectID": "08-metagenomics.html",
+    "href": "08-metagenomics.html",
+    "title": "43  宏基因组与微生物组：扩增子、鸟枪法、群落统计与宏转录组",
+    "section": "",
+    "text": "44 整体概述\n前七章的分析对象始终是单一物种：一份样本对应一个参考基因组，一次比对得到一套确定的坐标。微生物组研究打破了这一前提——一份粪便、土壤或海水样本中往往混合着数百至数千个物种，其中绝大多数无法在实验室培养，也没有可用的参考基因组。这一根本差异重塑了整条分析链：物种身份本身成为待估计的量，“定量”变成了相对丰度而非绝对表达量，而样本间比较则受制于组成数据（Compositional Data）的数学约束。本章围绕两条技术路线展开：扩增子测序（Amplicon Sequencing）以 16S rRNA、ITS 等标记基因给出低成本的群落组成概览；鸟枪法宏基因组（Shotgun Metagenomics）对全部 DNA 随机测序，同时给出物种组成与功能潜能，并可通过组装与分箱重建未培养物种的基因组。最后，本章引入宏转录组（Metatranscriptomics），将”群落里有谁、能做什么”推进到”此刻谁在做什么”。\n学习目标：理解扩增子与鸟枪法在信息量、成本与偏倚上的权衡，能据此设计微生物组实验；掌握 DADA2/QIIME 2 的 ASV 推断流程与去噪逻辑；理解 alpha/beta 多样性的统计含义并能正确使用 PERMANOVA 检验组间差异；认识组成数据的约束及 CLR 变换、ANCOM-BC 等差异丰度方法的必要性；掌握 Kraken2/Bracken 分类学定量与 HUMAnN 功能谱构建；能完成宏基因组组装、分箱与 MAG 质量评估；了解宏转录组的特有问题及其与宿主组学的联合分析思路。",
+    "crumbs": [
+      "第三阶段：进阶与整合",
+      "<span class='chapter-number'>43</span>  <span class='chapter-title'>宏基因组与微生物组：扩增子、鸟枪法、群落统计与宏转录组</span>"
+    ]
+  },
+  {
+    "objectID": "08-metagenomics.html#专题-8.1微生物组研究范式与实验设计",
+    "href": "08-metagenomics.html#专题-8.1微生物组研究范式与实验设计",
+    "title": "43  宏基因组与微生物组：扩增子、鸟枪法、群落统计与宏转录组",
+    "section": "46.1 专题 8.1：微生物组研究范式与实验设计",
+    "text": "46.1 专题 8.1：微生物组研究范式与实验设计\n微生物组学的方法论起点与前七章截然不同：研究对象是一个由未知物种构成的群落，而非单一个体。本专题建立这一新范式下的基本概念框架，区分”微生物区系”（Microbiota，群落中有哪些成员）与”微生物组”（Microbiome，群落及其基因、代谢产物与环境的总和），并说明为何培养组学的局限（绝大多数环境微生物无法纯培养）使得测序成为唯一可行的普查手段。在此基础上，本专题对比扩增子与鸟枪法两条技术路线在分辨率、成本、宿主污染耐受度上的差异，并强调微生物组实验中极易被忽视却决定结论可信度的环节：采样一致性、DNA 提取方法的物种偏倚、以及阴性对照对低生物量样本中试剂污染（Kitome）的识别作用（参见第 1 章的样本处理讨论）。\n{{Wiki:Microbiota}}\n核心概念：\n\nMicrobiota、Microbiome、Metagenome 的概念边界与常见误用\n培养组学的局限与”大平板计数异常”（Great Plate Count Anomaly）\n两条技术路线对比：扩增子（低成本、属/种级分辨率、可耐受高宿主背景）vs 鸟枪法（高成本、株水平分辨率、提供功能信息）\n标记基因的选择：细菌 16S rRNA 可变区（V3-V4、V4）、真菌 ITS1/ITS2、真核 18S\n16S 基因的结构：保守区与九个可变区交替排列；引物设计与扩增偏倚的来源\n实验设计要素：生物学重复数、分组平衡、批次与提取批次的混杂控制\n低生物量样本的污染问题：Kitome 与 Splashome；阴性对照与 decontam 的必要性\n绝对定量的缺失：测序给出的是相对丰度；spike-in 与 qPCR 校正的补充作用\n\n实践内容：（待撰写）以典型人体肠道与环境样本数据集为例，梳理元数据表结构与实验设计的完整性检查清单；演示引物区段选择对可分辨分类层级的影响。",
+    "crumbs": [
+      "第三阶段：进阶与整合",
+      "<span class='chapter-number'>43</span>  <span class='chapter-title'>宏基因组与微生物组：扩增子、鸟枪法、群落统计与宏转录组</span>"
+    ]
+  },
+  {
+    "objectID": "08-metagenomics.html#专题-8.2扩增子数据处理与-asv-推断",
+    "href": "08-metagenomics.html#专题-8.2扩增子数据处理与-asv-推断",
+    "title": "43  宏基因组与微生物组：扩增子、鸟枪法、群落统计与宏转录组",
+    "section": "46.2 专题 8.2：扩增子数据处理与 ASV 推断",
+    "text": "46.2 专题 8.2：扩增子数据处理与 ASV 推断\n扩增子分析在过去十年经历了一次方法论转折：以 97% 相似度聚类生成 OTU（Operational Taxonomic Unit）的传统做法，正被基于错误模型的精确序列变体（Amplicon Sequence Variant, ASV）推断所取代。这一转变的核心动机在于，OTU 聚类用一个人为设定的相似度阈值同时完成”去噪”和”归并”两件事，既掩盖了真实的单碱基差异，又使不同研究的 OTU 无法直接比对；而 DADA2 通过从数据本身学习测序错误模型，把测序错误产生的变体归并回真实序列，从而给出可跨研究复用的精确序列。本专题完整讲解从原始 FASTQ 到带物种注释的 ASV 特征表的流程，并说明 QIIME 2 的插件式架构如何以 Artifact 机制保证分析的可复现性。\n{{Wiki:16S_ribosomal_RNA}}\n核心概念：\n\nOTU 与 ASV 的本质差异：相似度聚类 vs 错误模型去噪；ASV 的跨研究可比性\nDADA2 流程：质量剖面检查 → 截断（filterAndTrim）→ 错误模型学习（learnErrors）→ 去重 → 去噪（dada）→ 双端合并 → 嵌合体去除\n截断位点的选择原则：保证双端有足够重叠（≥ 20 bp）与保证质量的权衡\n嵌合体（Chimera）的成因与 removeBimeraDenovo 的识别逻辑\n物种注释：朴素贝叶斯分类器；参考数据库 SILVA（细菌/古菌）、UNITE（真菌）、GTDB（基因组分类法）\n16S 拷贝数变异对丰度估计的系统偏倚\n系统发育树构建（MAFFT + FastTree）及其在 UniFrac 距离中的必要性\nQIIME 2 的 Artifact（.qza）与 Visualization（.qzv）机制；出处追踪（Provenance）\nphyloseq / TreeSummarizedExperiment 对象：特征表、分类表、元数据与进化树的统一容器\n\n实践内容：（待撰写）DADA2 完整流程从 FASTQ 到 ASV 表；SILVA 注释；构建 phyloseq 对象并输出质控汇总。",
+    "crumbs": [
+      "第三阶段：进阶与整合",
+      "<span class='chapter-number'>43</span>  <span class='chapter-title'>宏基因组与微生物组：扩增子、鸟枪法、群落统计与宏转录组</span>"
+    ]
+  },
+  {
+    "objectID": "08-metagenomics.html#专题-8.3群落多样性排序分析与差异丰度检验",
+    "href": "08-metagenomics.html#专题-8.3群落多样性排序分析与差异丰度检验",
+    "title": "43  宏基因组与微生物组：扩增子、鸟枪法、群落统计与宏转录组",
+    "section": "46.3 专题 8.3：群落多样性、排序分析与差异丰度检验",
+    "text": "46.3 专题 8.3：群落多样性、排序分析与差异丰度检验\n得到特征表之后，微生物组研究的统计问题与常规组学显著不同：数据高度稀疏、零值大量存在，且由于测序深度固定，各物种的相对丰度之和恒为 1——这使得数据落在一个单纯形（Simplex）上而非欧氏空间，任一物种丰度上升必然导致其余物种表观下降。忽视这一组成性约束而直接套用 t 检验或 DESeq2，会产生大量虚假的差异物种。本专题系统讲解微生物组的三层统计分析：群落内部的 alpha 多样性、群落之间的 beta 多样性与排序检验、以及单个物种的差异丰度检验，并贯穿强调稀释（Rarefaction）与中心对数比（CLR）变换这两条主流的归一化路线各自的适用条件与争议。\n{{Wiki:Diversity_index}} {{Wiki:Compositional_data}}\n核心概念：\n\nalpha 多样性：Observed richness、Shannon、Simpson、Faith’s PD；对测序深度的依赖与稀释曲线\n稀释（Rarefaction）的争议：信息丢失 vs 深度可比性；何时仍应使用\nbeta 多样性距离：Bray-Curtis、Jaccard、加权/非加权 UniFrac；系统发育信息的加入\n排序方法：PCoA（主坐标分析）与 NMDS；与 PCA 的关系和差异（参见第 3 章）\n组间差异检验：PERMANOVA（adonis2）的置换原理；ANOSIM；离散度混杂与 betadisper 前置检验\n组成数据的数学约束：单纯形空间、伪负相关；Aitchison 几何与 CLR/ILR 变换\n零值处理：伪计数与零膨胀模型的影响\n差异丰度方法谱系：ALDEx2（Dirichlet-Multinomial 蒙特卡洛）、ANCOM-BC（偏倚校正对数线性模型）、LEfSe（LDA effect size）\n方法选择与假阳性控制：为何直接使用 DESeq2/edgeR 在微生物组数据上需谨慎\n\n实践内容：（待撰写）phyloseq 对象的 alpha 多样性计算与组间检验；Bray-Curtis/UniFrac PCoA 可视化；adonis2 PERMANOVA 与 betadisper 检验；ANCOM-BC 差异丰度分析与结果解读。",
+    "crumbs": [
+      "第三阶段：进阶与整合",
+      "<span class='chapter-number'>43</span>  <span class='chapter-title'>宏基因组与微生物组：扩增子、鸟枪法、群落统计与宏转录组</span>"
+    ]
+  },
+  {
+    "objectID": "08-metagenomics.html#专题-8.4鸟枪法宏基因组分类学定量功能谱与-mag-重建",
+    "href": "08-metagenomics.html#专题-8.4鸟枪法宏基因组分类学定量功能谱与-mag-重建",
+    "title": "43  宏基因组与微生物组：扩增子、鸟枪法、群落统计与宏转录组",
+    "section": "47.1 专题 8.4：鸟枪法宏基因组：分类学定量、功能谱与 MAG 重建",
+    "text": "47.1 专题 8.4：鸟枪法宏基因组：分类学定量、功能谱与 MAG 重建\n鸟枪法宏基因组对样本中全部 DNA 随机测序，因而同时携带”有谁”与”能做什么”两类信息，代价是更高的测序成本与更重的计算负担。本专题沿两条并行的分析路线展开：免组装路线直接对 reads 做分类学归属与功能注释，Kraken2 以 k-mer 最小公共祖先策略实现极高吞吐的物种归类，Bracken 再用贝叶斯方法把高层级的归类重新分配到种水平以校正丰度；组装路线则通过 metaSPAdes 将 reads 拼成 contig，再依据覆盖度与四核苷酸频率将 contig 分箱（Binning）为代表单一物种的基因组草图，即宏基因组组装基因组（Metagenome-Assembled Genome, MAG）。MAG 路线的价值在于，它让研究者能够获得从未被培养过的物种的完整基因组，这正是近十年微生物生态学最重要的技术推动力。本专题的组装算法基础承接第 2 章（参见第 2 章），此处聚焦其在不均匀覆盖度与菌株混杂条件下的特殊挑战。\n{{Wiki:Metagenomics}}\n核心概念：\n\n宿主序列去除：人源/宿主基因组比对过滤；低生物量样本中宿主占比的影响\nKraken2 的 k-mer LCA 算法：最小化器（Minimizer）索引；置信度阈值与误分类的权衡\nBracken 的贝叶斯丰度重估计：为何 Kraken2 的原始读数计数不能直接作为物种丰度\n其他分类器：MetaPhlAn（clade-specific marker gene）、Kaiju（蛋白质水平比对）的适用差异\n功能谱构建：HUMAnN 的分层策略（先 MetaPhlAn 定物种，再对 pangenome 比对）；UniRef90、MetaCyc 通路、KEGG Ortholog\n功能丰度的归一化：RPK 与 CPM；分层输出（stratified output）对”哪个物种贡献了该功能”的解析\n宏基因组组装的特殊困难：覆盖度极不均匀、近缘菌株导致的图分叉；metaSPAdes 的应对策略\n分箱原理：四核苷酸频率（TNF）+ 跨样本覆盖度共变；MetaBAT2、MaxBin2、以及 DAS Tool 的整合去冗余\nMAG 质量评估：CheckM 的单拷贝标记基因完整度与污染度；MIMAG 标准（高质量 MAG：完整度 &gt; 90%、污染度 &lt; 5%）\nMAG 的下游应用：物种系统发育定位（GTDB-Tk）、基因功能注释（Prokka）、比较基因组学\n\n实践内容：（待撰写）Kraken2 + Bracken 物种定量与 Krona/堆叠柱状图可视化；HUMAnN 功能通路谱构建与分层解析；metaSPAdes 组装 → MetaBAT2 分箱 → CheckM 质量评估的完整 MAG 流程。",
+    "crumbs": [
+      "第三阶段：进阶与整合",
+      "<span class='chapter-number'>43</span>  <span class='chapter-title'>宏基因组与微生物组：扩增子、鸟枪法、群落统计与宏转录组</span>"
+    ]
+  },
+  {
+    "objectID": "08-metagenomics.html#专题-8.5宏转录组与微生物组多组学联动",
+    "href": "08-metagenomics.html#专题-8.5宏转录组与微生物组多组学联动",
+    "title": "43  宏基因组与微生物组：扩增子、鸟枪法、群落统计与宏转录组",
+    "section": "48.1 专题 8.5：宏转录组与微生物组多组学联动",
+    "text": "48.1 专题 8.5：宏转录组与微生物组多组学联动\n宏基因组回答的是群落的功能潜能（Potential）：某条代谢通路的基因存在于群落之中。但基因的存在不等于基因在表达——同一群落在不同宿主状态或环境扰动下，其活跃的代谢路径可能截然不同。宏转录组（Metatranscriptomics）对群落总 RNA 测序，度量的是当下的功能活性（Activity）。本专题讲解宏转录组的特有技术问题：微生物 mRNA 不具备 poly(A) 尾因而无法用常规富集策略，必须依赖 rRNA 去除（rRNA depletion），且 RNA 极易降解使得采样保存条件成为成败关键。分析层面的核心思路是解耦：把表达量除以同一样本宏基因组中对应基因的丰度，得到不受物种数量变化干扰的”单位基因表达”，从而区分”某功能上升是因为携带它的物种变多了，还是因为每个细胞都更卖力地表达它”。本专题最后将微生物组与宿主转录组、代谢组的联合分析作为桥梁，为第 11 章的多组学整合方法做铺垫（参见第 11 章）。\n核心概念：\n\n宏转录组 vs 宏基因组：功能潜能与功能活性的区别；二者不一致时的生物学解读\n实验特有难点：原核 mRNA 无 poly(A)、半衰期以分钟计；RNAlater/液氮保存；rRNA 占总 RNA 的比例\nrRNA 去除策略：探针杂交法（Ribo-Zero 类）与计算法（SortMeRNA）\n参考的选择：比对至同一样本的 MAG / 基因目录，而非通用数据库，以降低比对丢失\n表达量归一化与解耦：RNA/DNA 比值；零膨胀与低丰度物种的表达估计不确定性\n微生物组–宿主联合分析：菌群与宿主基因表达的相关分析；中介分析（Mediation）识别”菌群→代谢物→宿主表型”链条\n代谢物层面的联动：短链脂肪酸、胆汁酸等关键代谢物与菌群功能谱的对应（承接第 10 章代谢组内容）\n相关性分析的陷阱：组成数据下的伪相关；SparCC、SpiecEasi 等针对性方法\n因果推断的边界：观察性微生物组关联研究的局限；无菌小鼠定植实验与孟德尔随机化的验证作用\n\n实践内容：（待撰写）宏转录组 rRNA 去除与比对至 MAG 基因目录；RNA/DNA 比值计算与活性通路识别；菌群–宿主表达–代谢物三层关联分析框架演示。",
+    "crumbs": [
+      "第三阶段：进阶与整合",
+      "<span class='chapter-number'>43</span>  <span class='chapter-title'>宏基因组与微生物组：扩增子、鸟枪法、群落统计与宏转录组</span>"
+    ]
+  },
+  {
+    "objectID": "scrna_basic_lesson2.html",
+    "href": "scrna_basic_lesson2.html",
+    "title": "33  单细胞数据质量控制与预处理",
+    "section": "",
+    "text": "34 专题概述\n上游处理输出的”细胞”仍然鱼龙混杂：其中既有完整健康的细胞，也有濒死的破膜细胞、被双重包裹的双细胞（Doublet），以及高背景污染的低质量条形码。若不加甄别地把它们全部投入下游分析，会产生虚假的细胞群、扭曲的差异表达和误导性的轨迹。本专题讲解 scRNA-seq 的质量控制（Quality Control, QC）逻辑——它与 Bulk RNA-seq 有本质区别，需要在单个细胞层面逐一评估质量——以及随后的归一化、高变基因选择与数据缩放等预处理步骤。\n学习目标：掌握 scRNA-seq 质控三项核心指标及其联合判读逻辑；理解基于 MAD 的自适应阈值相比固定阈值的优势；理解双细胞（Doublet）的成因、危害与检测方法；区分 LogNormalize 与 SCTransform 两种归一化策略；掌握高变基因选择与数据缩放的作用。",
+    "crumbs": [
+      "第二阶段：转录组与单细胞",
+      "<span class='chapter-number'>33</span>  <span class='chapter-title'>单细胞数据质量控制与预处理</span>"
+    ]
+  },
+  {
+    "objectID": "scrna_basic_lesson2.html#三项核心指标",
+    "href": "scrna_basic_lesson2.html#三项核心指标",
+    "title": "33  单细胞数据质量控制与预处理",
+    "section": "35.1 三项核心指标",
+    "text": "35.1 三项核心指标\nscRNA-seq 的质控与 Bulk RNA-seq 有本质区别：Bulk 在样本层面做整体评估，而 scRNA-seq 必须逐个细胞判断质量。三项指标联合构成判读的基础：\n\n每细胞基因数（nFeature_RNA）：该细胞中检测到表达的基因数量。过低提示细胞破裂、RNA 大量流失或为空液滴；过高则可能是双细胞。\n每细胞 UMI 数（nCount_RNA）：该细胞捕获的 mRNA 分子总数（去重后）。与基因数高度正相关，含义相近。\n线粒体基因比例（percent.mt）：线粒体基因 UMI 占该细胞总 UMI 的百分比。当细胞膜破裂，胞质 mRNA 流失而线粒体（被双层膜包裹）相对保留，导致线粒体比例升高，因此高线粒体比例是细胞濒死/破膜的标志。\n\n{{Wiki:Quality_control}}",
+    "crumbs": [
+      "第二阶段：转录组与单细胞",
+      "<span class='chapter-number'>33</span>  <span class='chapter-title'>单细胞数据质量控制与预处理</span>"
+    ]
+  },
+  {
+    "objectID": "scrna_basic_lesson2.html#联合判读的逻辑",
+    "href": "scrna_basic_lesson2.html#联合判读的逻辑",
+    "title": "33  单细胞数据质量控制与预处理",
+    "section": "35.2 联合判读的逻辑",
+    "text": "35.2 联合判读的逻辑\n三项指标不应孤立设阈值，而要联合判读，因为单一指标的极端值有多种可能解释，见 表 1。\n\n\n\n表 1: scRNA-seq 质控指标的联合判读\n\n\n\n\n\nnFeature\npercent.mt\n最可能的解释\n处理\n\n\n\n\n很低\n高\n破膜/濒死细胞\n去除\n\n\n很低\n正常\n空液滴/极低质量\n去除\n\n\n很高\n正常\n双细胞（Doublet）\n进一步用专门工具检测\n\n\n正常\n正常\n健康细胞\n保留\n\n\n正常\n偏高\n代谢活跃细胞 or 轻度损伤\n谨慎，结合细胞类型判断\n\n\n\n\n\n\n\n线粒体阈值并非放之四海皆准： 常用的 percent.mt &lt; 10% 或 &lt; 20% 只是经验起点，不能盲目套用。心肌细胞、棕色脂肪、肝细胞等代谢极活跃的细胞类型，其正常线粒体比例本就很高（可达 30%–40%），用通用阈值会把健康细胞误删。设定阈值前应先观察本数据中线粒体比例的整体分布，并结合所研究的组织类型判断。\n\nlibrary(Seurat)\n\n# Compute the mitochondrial gene percentage per cell (human genes start with \"MT-\")\npbmc[[\"percent.mt\"]] &lt;- PercentageFeatureSet(pbmc, pattern = \"^MT-\")\n#| label: fig-qc-violin\n#| fig-cap: \"PBMC 3k 数据质控三指标的小提琴图。从左至右分别为每细胞基因数（nFeature_RNA）、每细胞 UMI 数（nCount_RNA）与线粒体基因比例（percent.mt）。小提琴形状展示各指标在所有细胞中的分布，据此可判断离群细胞的分布位置并指导阈值设定。\"\nlibrary(Seurat)\n\nVlnPlot(pbmc, features = c(\"nFeature_RNA\", \"nCount_RNA\", \"percent.mt\"),\n        ncol = 3, pt.size = 0)",
+    "crumbs": [
+      "第二阶段：转录组与单细胞",
+      "<span class='chapter-number'>33</span>  <span class='chapter-title'>单细胞数据质量控制与预处理</span>"
+    ]
+  },
+  {
+    "objectID": "scrna_basic_lesson2.html#自适应阈值基于-mad",
+    "href": "scrna_basic_lesson2.html#自适应阈值基于-mad",
+    "title": "33  单细胞数据质量控制与预处理",
+    "section": "35.3 自适应阈值：基于 MAD",
+    "text": "35.3 自适应阈值：基于 MAD\n固定阈值（如 nFeature &gt; 200）简单但僵硬：它无视数据本身的分布，对不同测序深度、不同细胞类型的数据集需要反复手动调整。基于中位数绝对偏差（Median Absolute Deviation, MAD）的自适应阈值是更稳健的选择——它以数据的中位数为中心，将偏离中位数超过若干个 MAD 的细胞判为离群。MAD 对极端值不敏感（不像标准差会被离群值拉大），因此能在污染存在时仍给出可靠的离群边界。\nlibrary(scuttle)\n\n# Adaptive outlier detection: flag cells deviating &gt; 3 MADs from the median.\n# log-transform stabilizes the skewed count distributions before MAD is applied.\nqc_low_genes &lt;- isOutlier(pbmc$nFeature_RNA, log = TRUE,\n                          nmads = 3, type = \"lower\")\nqc_high_mt   &lt;- isOutlier(pbmc$percent.mt, nmads = 3, type = \"higher\")\n\n# Keep cells that fail neither criterion\nkeep &lt;- !(qc_low_genes | qc_high_mt)\npbmc &lt;- pbmc[, keep]\ncat(\"Cells retained:\", sum(keep), \"of\", length(keep), \"\\n\")\n\nnmads = 3 的含义与调节： 偏离中位数 3 个 MAD 约对应正态分布下 1% 的尾部，是常用的折中。若数据质量整体较差、污染较多，可放宽到 nmads = 5 避免过度删除；若追求高纯度（如稀有细胞研究），可收紧到 nmads = 2.5。对计数类指标先取对数（log = TRUE）再做 MAD，可纠正其右偏分布。",
+    "crumbs": [
+      "第二阶段：转录组与单细胞",
+      "<span class='chapter-number'>33</span>  <span class='chapter-title'>单细胞数据质量控制与预处理</span>"
+    ]
+  },
+  {
+    "objectID": "scrna_basic_lesson2.html#双细胞的成因与危害",
+    "href": "scrna_basic_lesson2.html#双细胞的成因与危害",
+    "title": "33  单细胞数据质量控制与预处理",
+    "section": "36.1 双细胞的成因与危害",
+    "text": "36.1 双细胞的成因与危害\n双细胞（Doublet）指一个 GEM 中意外包裹了两个细胞，导致它们的转录组被合并、共享同一条形码。上样细胞浓度越高，双细胞率越高（10x 平台经验上约为每千细胞 0.8% 的线性关系）。\n双细胞的危害不仅是”多算了一个细胞”。当两个不同类型的细胞结合（如 T 细胞 + 单核细胞），其混合转录谱会落在两者之间，在 UMAP 上形成一个虚假的”中间态”细胞群，极易被误读为新的细胞类型或过渡状态，从而得出错误的生物学结论。仅靠 nFeature 偏高无法可靠识别双细胞（同类型双细胞的基因数未必异常），必须借助专门工具。",
+    "crumbs": [
+      "第二阶段：转录组与单细胞",
+      "<span class='chapter-number'>33</span>  <span class='chapter-title'>单细胞数据质量控制与预处理</span>"
+    ]
+  },
+  {
+    "objectID": "scrna_basic_lesson2.html#检测方法",
+    "href": "scrna_basic_lesson2.html#检测方法",
+    "title": "33  单细胞数据质量控制与预处理",
+    "section": "36.2 检测方法",
+    "text": "36.2 检测方法\n主流双细胞检测工具的共同思路是：人工合成”模拟双细胞”，再看哪些真实细胞与模拟双细胞最相似。\n\nDoubletFinder（R）：从真实细胞随机配对合成模拟双细胞，混入数据后做降维，对每个真实细胞统计其近邻中模拟双细胞的比例（pANN），比例高者判为双细胞。\nScrublet（Python）：思路类似，在 PCA 空间中为每个细胞计算”双细胞得分”，并基于得分的双峰分布自动确定阈值。\n\nlibrary(DoubletFinder)\n\n# DoubletFinder requires a preprocessed object (PCA done). Expected doublet rate\n# scales with loaded cells (~0.8% per 1000 cells on 10x).\nn_exp &lt;- round(0.039 * ncol(pbmc))     # e.g. ~3.9% for a ~5000-cell load\npbmc &lt;- doubletFinder(pbmc, PCs = 1:30, pN = 0.25, pK = 0.09,\n                      nExp = n_exp, sct = FALSE)\n\n双细胞检测的时机： 双细胞检测应在每个样本内部独立进行，而非合并多样本后统一检测——因为模拟双细胞需基于同一文库的细胞配对才有意义。检测顺序上，先做基础 QC（去除明显的破膜/空液滴细胞），再做双细胞检测，最后进入归一化，可避免低质量细胞干扰双细胞模型的估计。",
+    "crumbs": [
+      "第二阶段：转录组与单细胞",
+      "<span class='chapter-number'>33</span>  <span class='chapter-title'>单细胞数据质量控制与预处理</span>"
+    ]
+  },
+  {
+    "objectID": "scrna_basic_lesson2.html#为什么需要专门的归一化",
+    "href": "scrna_basic_lesson2.html#为什么需要专门的归一化",
+    "title": "33  单细胞数据质量控制与预处理",
+    "section": "37.1 为什么需要专门的归一化",
+    "text": "37.1 为什么需要专门的归一化\n不同细胞捕获到的 mRNA 总量（测序深度）差异巨大，直接比较原始计数无意义。但 scRNA-seq 数据高度稀疏、零值众多（dropout），Bulk RNA-seq 常用的 CPM/RPKM 归一化会放大低表达基因的技术噪声。因此 scRNA-seq 需要专门的归一化策略。\n\nLogNormalize（NormalizeData()）：将每个细胞的计数除以其总 UMI（消除深度差异），乘以缩放因子（默认 10000），再取自然对数 log1p。简单快速，是经典做法，但隐含”所有细胞测序深度差异是纯技术性”的假设，在高度异质的数据上偏差较大。\nSCTransform（SCTransform()）：用正则化负二项回归对每个基因建模其计数与测序深度的关系，输出皮尔逊残差作为归一化表达。它同时完成深度校正、方差稳定与高变基因选择，对技术噪声的处理更精细，是当前推荐方法（Hafemeister & Satija, 2019）。\n\nlibrary(Seurat)\n\n# Option A: classic log-normalization\npbmc &lt;- NormalizeData(pbmc, normalization.method = \"LogNormalize\",\n                      scale.factor = 1e4)\n\n# Option B (recommended): SCTransform does normalization + variance stabilization\n# + HVG selection in one step, and can regress out confounders such as percent.mt\npbmc &lt;- SCTransform(pbmc, vars.to.regress = \"percent.mt\", verbose = FALSE)",
+    "crumbs": [
+      "第二阶段：转录组与单细胞",
+      "<span class='chapter-number'>33</span>  <span class='chapter-title'>单细胞数据质量控制与预处理</span>"
+    ]
+  },
+  {
+    "objectID": "scrna_basic_lesson2.html#高变基因选择",
+    "href": "scrna_basic_lesson2.html#高变基因选择",
+    "title": "33  单细胞数据质量控制与预处理",
+    "section": "37.2 高变基因选择",
+    "text": "37.2 高变基因选择\n数万个基因中，大多数在细胞间表达稳定，对区分细胞类型没有贡献，反而引入噪声。高变基因（Highly Variable Genes, HVGs）选择保留那些在细胞间变异显著高于其平均表达水平所预期的基因——这些基因最可能携带细胞类型差异的信号。通常选取 2000–3000 个 HVG 作为后续 PCA 的输入。\n# Select the top 2000 highly variable genes using the variance-stabilizing method\n# (skip this if SCTransform was used -- it already returns variable features)\npbmc &lt;- FindVariableFeatures(pbmc, selection.method = \"vst\", nfeatures = 2000)",
+    "crumbs": [
+      "第二阶段：转录组与单细胞",
+      "<span class='chapter-number'>33</span>  <span class='chapter-title'>单细胞数据质量控制与预处理</span>"
+    ]
+  },
+  {
+    "objectID": "scrna_basic_lesson2.html#数据缩放",
+    "href": "scrna_basic_lesson2.html#数据缩放",
+    "title": "33  单细胞数据质量控制与预处理",
+    "section": "37.3 数据缩放",
+    "text": "37.3 数据缩放\nPCA 对各基因的数值尺度敏感：若不缩放，少数高表达基因会主导主成分。ScaleData() 对每个基因做 z-score 标准化（均值 0、方差 1），使所有基因在 PCA 中权重均等；同时可借线性回归从表达中”回归掉”已知的混淆变量（如总 UMI、线粒体比例），减少技术因素对降维的干扰。\n# Center and scale each gene; regress out technical confounders.\n# (When using SCTransform, scaling is already handled and this step is skipped.)\npbmc &lt;- ScaleData(pbmc, vars.to.regress = c(\"nCount_RNA\", \"percent.mt\"))\n\n黄金法则： 质控的目标不是”删得越多越好”，而是在去除技术伪影与保留真实生物学信号之间求平衡。过松会让低质量细胞与双细胞污染下游、制造虚假细胞群；过严则可能误删真实的稀有细胞类型（它们往往 UMI 较低、易被当作低质量删除）。每一次过滤都应可视化前后分布、检查被删细胞的身份，确保删除的是噪声而非信号。",
+    "crumbs": [
+      "第二阶段：转录组与单细胞",
+      "<span class='chapter-number'>33</span>  <span class='chapter-title'>单细胞数据质量控制与预处理</span>"
     ]
   }
 ]

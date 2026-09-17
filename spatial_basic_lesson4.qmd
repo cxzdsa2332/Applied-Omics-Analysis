@@ -1,0 +1,358 @@
+---
+title: "空间域识别与组织结构注释"
+date: today
+format:
+  html:
+    code-fold: false
+    toc: true
+    toc-depth: 3
+    number-sections: true
+    theme: cosmo
+crossref:
+  fig-title: 图
+  fig-prefix: 图
+  tbl-title: 表
+  tbl-prefix: 表
+  chapters: false
+---
+
+# 专题概述
+
+专题 8.3 找出了一批具有空间结构的基因，但还没有把组织本身划分成结构单元。本专题完成这一步：把 Spot 聚类为**空间域**（Spatial Domain）——转录特征相似且空间毗邻的组织区域，如脑的皮层分层、肿瘤的核心区与浸润边缘、肾脏的皮质与髓质。识别空间域有两条思路，区别只在于是否让坐标进入模型：普通聚类完全沿用 scRNA-seq 流程，实现简单但可能产出空间上碎片化的域；空间感知聚类则把"组织在空间上是连续的"这一基本生物学性质编码进模型，BayesSpace 通过马尔可夫随机场先验让相邻 Spot 更可能归入同一域。本专题对比两条路线，并完成从聚类到注释的闭环——划定域之后，如何赋予它生物学身份，以及如何用组织解剖结构做终极检验。
+
+**学习目标**：理解空间域的定义及其与细胞类型、细胞状态的概念层级关系；能用普通聚类流程划分空间域并识别其碎片化问题；能量化空间连贯性以客观比较不同方法；理解 BayesSpace 的 MRF 先验如何编码空间连续性，掌握域数量 `q` 的选择依据；能通过域间差异表达提取标志基因并完成空间域注释；理解空间域差异表达中的伪重复风险；能用解剖学一致性判断结果可靠性。
+
+---
+
+# 空间域：一个介于细胞类型与组织之间的层级
+
+## 概念层级的澄清
+
+空间转录组分析中最常见的概念混淆，是把空间域当成细胞类型。二者处在不同的层级上：
+
+- **细胞类型（Cell Type）**：由细胞自身的转录程序定义，如星形胶质细胞、CD8 T 细胞。它是细胞的身份。
+- **空间域（Spatial Domain）**：由一片区域的**整体转录特征**定义，反映的是该区域内多种细胞类型的组合及其状态。它是组织的功能分区。
+- **细胞状态（Cell State）**：同一细胞类型在不同条件下的表型变化，如活化 vs 静息的 T 细胞。
+
+一个空间域通常由多种细胞类型按特定比例构成。例如"肿瘤浸润边缘"这一空间域，可能同时包含肿瘤细胞、成纤维细胞、巨噬细胞与 T 细胞——正是这个特定的细胞组合，而非任何单一细胞类型，定义了该区域的身份。因此在 Visium 上做聚类，得到的必然是空间域；要拆解出其中的细胞类型比例，必须做解卷积（参见第 9 章）。
+
+:::note
+**为什么空间域在组织学上是一个古老的概念：** 病理学家对着 H&E 切片划分"肿瘤区/间质区/坏死区"，做的正是空间域识别——只不过依据的是细胞形态与染色特征，而非转录组。空间转录组带来的不是一个全新概念，而是把这项一直依赖经验与目视的工作变成了可量化、可重复的数据分析。这也意味着，空间域的结果天然有一个外部检验标准：**它应该在很大程度上与病理学家的判读一致**。当算法划出的域与形态学分区严重冲突时，先怀疑算法而非怀疑病理学。
+:::
+
+## 两条路线
+
+@tbl-domain-methods 概括了本专题要对比的两条路线。
+
+| 维度 | 普通聚类 | 空间感知聚类（BayesSpace） |
+|------|----------|---------------------------|
+| 是否用坐标 | 否 | 是 |
+| 模型 | PCA + KNN 图 + Leiden | 贝叶斯混合模型 + MRF 先验 |
+| 空间连贯性 | 无约束，可能碎片化 | 由先验强制，平滑 |
+| 计算成本 | 低（秒级） | 高（MCMC，分钟至小时级） |
+| 额外能力 | 与 scRNA 流程完全一致 | 支持亚 Spot 分辨率增强 |
+| 适用场景 | 快速探索、转录状态盘点 | 精确划定域边界、组织结构研究 |
+
+: 普通聚类与空间感知聚类的对比 {#tbl-domain-methods}
+
+---
+
+# 普通聚类路线
+
+## 完全复用 scRNA-seq 流程
+
+最直接的做法是把每个 Spot 当作一个"细胞"，套用第 6 章的标准流程：PCA 降维、构建 KNN 图、Leiden 聚类。它只用表达相似性，完全不考虑 Spot 是否空间相邻。
+
+```r
+library(Seurat)
+library(SeuratData)
+
+brain <- LoadData("stxBrain", type = "anterior1")
+brain <- SCTransform(brain, assay = "Spatial", verbose = FALSE)
+
+# Approach A: ordinary clustering (ignores coordinates), reusing the scRNA pipeline
+brain <- RunPCA(brain, assay = "SCT", verbose = FALSE) |>
+    FindNeighbors(dims = 1:30) |>
+    FindClusters(resolution = 0.5, verbose = FALSE) |>
+    RunUMAP(dims = 1:30, verbose = FALSE)
+
+table(brain$seurat_clusters)
+```
+
+关键在于**同时看两张图**：UMAP 展示 Spot 在转录空间中的关系，`SpatialDimPlot()` 把同样的聚类标签画回组织上。只有后者能告诉我们这些簇在组织中是否构成连贯的区域。
+
+```r
+#| label: fig-ordinary-clustering
+#| fig-cap: "普通聚类得到的空间域在转录空间与组织空间中的对照（stxBrain Visium 数据）。左图为 UMAP 嵌入，每个点为一个 Spot，按聚类标签着色；右图为同一批标签绘制在真实组织坐标上。多数聚类在组织上形成了连贯的区块并与脑区解剖结构对应，说明表达相似性本身已携带了强烈的空间信息；但部分聚类在组织上呈零散分布，体现了忽略坐标信息带来的碎片化问题。"
+library(Seurat)
+library(patchwork)
+
+p1 <- DimPlot(brain, reduction = "umap", label = TRUE) + ggplot2::ggtitle("Transcriptomic space")
+p2 <- SpatialDimPlot(brain, label = TRUE, label.size = 3) + ggplot2::ggtitle("Tissue space")
+p1 + p2
+```
+
+一个常被忽视的观察：即便完全不用坐标，普通聚类的结果在组织上通常**已经相当连贯**。这并非巧合——空间相邻的 Spot 本来就倾向于包含相似的细胞组合，因此表达相似性本身就编码了大量空间信息。这提示空间感知方法带来的增量是有限而具体的：它主要改善边界的锐利度与孤立 Spot 的归属，而非从根本上改变域的划分。
+
+## 碎片化问题及其量化
+
+普通聚类的弱点在于，噪声导致的表达扰动在空间上是独立的，而真实的组织结构在空间上是连续的。因此个别 Spot 可能因随机噪声被分到与所有邻居都不同的簇，产生空间上零散、不连贯的"碎片"。
+
+与其凭目视判断，不如量化。一个简单有效的指标是**空间连贯性**：对每个 Spot，计算其邻居中与它属于同一簇的比例，再取全局平均。这一指标在文献中有若干变体（如 PAS、CHAOS），核心思想相同。
+
+```r
+library(Seurat)
+
+# Spatial coherence: what fraction of a spot's neighbours share its cluster label?
+spatial_coherence <- function(obj, labels, k = 6) {
+    coords <- as.matrix(GetTissueCoordinates(obj)[, c("imagerow", "imagecol")])
+    d <- as.matrix(dist(coords))
+    diag(d) <- Inf
+    labels <- as.character(labels)
+    same <- vapply(seq_len(nrow(d)), function(i) {
+        nb <- order(d[i, ])[seq_len(k)]
+        mean(labels[nb] == labels[i])
+    }, numeric(1))
+    mean(same)
+}
+
+coh_ordinary <- spatial_coherence(brain, brain$seurat_clusters)
+cat("Ordinary clustering spatial coherence:", round(coh_ordinary, 3), "\n")
+```
+
+该指标取值在 0 到 1 之间：1 表示每个 Spot 的所有邻居都与它同簇（完全连贯），接近 $1/K$（$K$ 为簇数）则表示标签在空间上近乎随机。它将在下一节用于客观比较两条路线。
+
+:::warning
+**空间连贯性不是越高越好：** 把所有 Spot 归为一个簇，连贯性达到完美的 1.0，但毫无信息量。这个指标只能在**簇数相近**的前提下横向比较不同方法，不能作为独立的优化目标。同样地，过度追求平滑会抹平真实存在的锐利边界——肿瘤的浸润前沿、皮层的分层界限在生物学上本就是突变而非渐变。连贯性指标衡量的是"结果有多平滑"，而不是"结果有多正确"。
+:::
+
+---
+
+# 空间感知聚类：BayesSpace
+
+## MRF 先验如何编码空间连续性
+
+BayesSpace 的核心是把空间连续性写进先验。它假设组织在空间上是连续的，因此一个 Spot 属于某空间域的概率，应受其邻居所属域的影响——相邻 Spot 更可能属于同一域（Zhao et al., 2021）。
+
+这一约束通过马尔可夫随机场（Markov Random Field, MRF）实现。具体地，BayesSpace 在 Potts 模型下为聚类标签 $\mathbf{z}$ 指定先验：
+
+$$p(\mathbf{z}) \propto \exp\left(\gamma \sum_{i}\sum_{j \in N(i)} \mathbb{I}(z_i = z_j)\right)$$
+
+其中 $N(i)$ 是 Spot $i$ 的邻域，$\mathbb{I}(\cdot)$ 是示性函数，$\gamma > 0$ 是平滑参数。这个式子的含义很直白：相邻 Spot 标签相同的对数越多，这组标签的先验概率越高。$\gamma$ 控制空间先验的强度——$\gamma = 0$ 时退化为普通的混合模型聚类，$\gamma$ 越大则空间平滑越强。
+
+{{Wiki:Markov_random_field}}
+
+表达层面，BayesSpace 用多元 $t$ 分布对 PCA 降维后的表示建模，相比高斯分布对离群 Spot 更稳健。模型通过马尔可夫链蒙特卡洛（MCMC）采样估计后验。
+
+:::note
+**运行环境说明：** BayesSpace 为 Bioconductor R 包（`BiocManager::install("BayesSpace")`），基于 `SingleCellExperiment` 对象工作，需要从 Seurat 对象转换。MCMC 采样默认 50000 次迭代，在一张 Visium 切片上通常需要数分钟到半小时，属于本章计算量最大的步骤。若只做快速探索，普通聚类已足够，不必等待 MCMC 完成。
+:::
+
+```r
+library(BayesSpace)
+library(SingleCellExperiment)
+library(Seurat)
+
+# Convert the Seurat spatial object into a SingleCellExperiment for BayesSpace
+coords <- GetTissueCoordinates(brain)
+sce <- SingleCellExperiment(
+    assays = list(counts = GetAssayData(brain, assay = "Spatial", layer = "counts")),
+    colData = data.frame(
+        row = coords$row,
+        col = coords$col,
+        row.names = colnames(brain)
+    )
+)
+
+# Log-normalise and run PCA within the BayesSpace preprocessing helper
+sce <- spatialPreprocess(sce, platform = "Visium", n.PCs = 15, n.HVGs = 2000, log.normalize = TRUE)
+```
+
+## 选择域数量 q
+
+`q`（域数量）是 BayesSpace 最重要的超参数，且必须由使用者指定。有两条互补的依据：
+
+- **统计依据**：`qTune()` 在一系列 `q` 值上运行模型并计算对数似然，通过拐点判断合适的取值。这提供了数据驱动的参考，但拐点常常并不明确。
+- **生物学依据**：已知的解剖结构数。分析小鼠脑前切片时，主要分区（皮层各层、海马、丘脑、白质、脑室）大致给出 `q` 的量级。
+
+实践中应以生物学依据为主、统计依据为辅，并在几个候选 `q` 值上分别运行、比较哪个结果与解剖结构最吻合。
+
+```r
+library(BayesSpace)
+
+# Statistical guidance: log-likelihood across a range of q values
+sce <- qTune(sce, qs = seq(4, 12), platform = "Visium", d = 15)
+qPlot(sce)
+```
+
+```r
+library(BayesSpace)
+
+# Run the spatial clustering; q chosen from anatomy plus the qTune elbow
+set.seed(42)
+sce <- spatialCluster(
+    sce,
+    q = 8,              # number of spatial domains
+    platform = "Visium",
+    d = 15,             # number of PCs used
+    init.method = "mclust",
+    model = "t",        # multivariate t for robustness to outlier spots
+    gamma = 3,          # MRF smoothing strength
+    nrep = 10000
+)
+
+# Carry the BayesSpace labels back onto the Seurat object for joint plotting
+brain$bayesspace <- factor(sce$spatial.cluster[colnames(brain)])
+```
+
+## 两条路线的对比
+
+现在可以用前面定义的空间连贯性指标做客观比较——注意必须在簇数相近的前提下比较。
+
+```r
+#| label: fig-domain-comparison
+#| fig-cap: "普通聚类与 BayesSpace 空间感知聚类的空间域划分对比（stxBrain Visium 数据）。左图为普通聚类结果，右图为 BayesSpace 在相同域数下的结果，均绘制在真实组织坐标上。BayesSpace 的马尔可夫随机场先验消除了普通聚类中零散分布的孤立 Spot，域边界更为平滑连续，且与小鼠脑的皮层分层结构对应更为清晰。"
+library(Seurat)
+library(patchwork)
+
+p1 <- SpatialDimPlot(brain, group.by = "seurat_clusters") + ggplot2::ggtitle("Ordinary clustering")
+p2 <- SpatialDimPlot(brain, group.by = "bayesspace") + ggplot2::ggtitle("BayesSpace (MRF prior)")
+p1 + p2
+```
+
+```r
+library(Seurat)
+
+# Compare like with like: coherence is only meaningful at similar cluster counts
+cat("Ordinary  : k =", nlevels(brain$seurat_clusters),
+    " coherence =", round(spatial_coherence(brain, brain$seurat_clusters), 3), "\n")
+cat("BayesSpace: k =", nlevels(brain$bayesspace),
+    " coherence =", round(spatial_coherence(brain, brain$bayesspace), 3), "\n")
+
+# How much do the two partitions actually agree?
+cat("Adjusted Rand index:",
+    round(mclust::adjustedRandIndex(brain$seurat_clusters, brain$bayesspace), 3), "\n")
+```
+
+调整兰德指数（Adjusted Rand Index, ARI）衡量两种划分的一致程度。在典型数据上它通常不低——这再次印证了前文的观察：空间先验主要改善的是边界与孤立点，而非推翻整体划分。
+
+:::note
+**何时需要空间感知聚类：** 并非所有研究都需要 BayesSpace。若研究目标只是"组织里有哪些转录状态"，普通聚类已足够；若目标是精确划定空间域边界、研究组织的空间组织结构（如肿瘤微环境分区、发育中的形态发生场），则空间感知聚类的连续性约束更有价值。合理的工作流是：先用普通聚类快速探索并确定大致的域数量，再视需要用 BayesSpace 精细化。
+:::
+
+---
+
+# 空间域的注释与验证
+
+## 从域到标志基因
+
+聚类只给出编号，注释才赋予其生物学身份。做法与 scRNA-seq 的细胞类型注释同构（参见第 6 章）：对每个空间域做差异表达，提取其特异高表达的基因，再依据这些基因的已知功能与定位判断该域对应什么解剖结构。
+
+```r
+library(Seurat)
+
+Idents(brain) <- "bayesspace"
+
+# Differential expression per spatial domain, exactly as for cell types
+domain_markers <- FindAllMarkers(
+    brain, assay = "SCT",
+    only.pos = TRUE, min.pct = 0.25, logfc.threshold = 0.25
+)
+
+# Top markers defining each domain
+domain_markers |>
+    dplyr::group_by(cluster) |>
+    dplyr::slice_max(avg_log2FC, n = 5) |>
+    dplyr::select(cluster, gene, avg_log2FC, p_val_adj)
+```
+
+```r
+#| label: fig-domain-markers
+#| fig-cap: "各空间域标志基因的空间表达（stxBrain Visium 数据）。每个子图展示一个空间域的代表性标志基因在组织上的表达分布。标志基因的高表达区域与对应空间域的位置高度重合，且分别对应已知的脑解剖结构——例如 Mbp 标记富含髓鞘的白质区、Ttr 标记脉络丛、Hpca 标记海马，从而为各空间域提供了生物学身份的依据。"
+library(Seurat)
+
+# Do the domain markers land where the domains are?
+SpatialFeaturePlot(brain, features = c("Mbp", "Ttr", "Hpca", "Cux2"), ncol = 2)
+```
+
+:::warning
+**空间域的差异表达存在严重的伪重复风险：** `FindAllMarkers()` 把每个 Spot 当作一个独立观测，在**单张切片内部**比较不同域时这是可接受的——此时比较的是同一张切片上不同位置的表达差异，结论限定在这张切片内。但如果研究问题是"疾病组与对照组的某个空间域是否存在差异表达"，把两组所有切片的 Spot 混在一起做检验就是典型的伪重复：Spot 数以千计，任何微小差异都会得到极小的 p 值，而真正的重复单位是切片/个体，通常只有几个。正确做法与第 7 章的拟bulk策略一致——先把每张切片每个域的 Spot 计数加和为一个"拟bulk样本"，再以切片为单位做 DESeq2 检验。
+:::
+
+## 注释与解剖学核验
+
+最后一步是把每个域映射到已知的解剖结构。对小鼠脑，可对照 Allen Brain Atlas 的参考图谱；对肿瘤样本，应请病理学家在 H&E 图像上标注。
+
+```r
+library(Seurat)
+
+# Assign anatomical names once markers and morphology agree
+domain_names <- c(
+    "1" = "Cortex_L2-3",
+    "2" = "Cortex_L4-5",
+    "3" = "Cortex_L6",
+    "4" = "White_matter",
+    "5" = "Hippocampus",
+    "6" = "Thalamus",
+    "7" = "Choroid_plexus",
+    "8" = "Ventricle"
+)
+
+brain$domain_annotated <- domain_names[as.character(brain$bayesspace)]
+SpatialDimPlot(brain, group.by = "domain_annotated", label = FALSE)
+```
+
+上面的名称仅为演示流程所用的占位示例——实际注释必须逐个域依据其标志基因与形态学证据确定，绝不能照抄。
+
+:::info
+**黄金法则：** 空间聚类的结果必须接受解剖学检验——把空间域叠加到 H&E 图像上，看它是否与已知的组织结构（皮层分层、海马形态、器官分区）吻合。吻合则说明聚类捕捉到了真实的组织结构；若空间域杂乱、与任何解剖结构都对不上，则要么是分辨率/参数不当，要么是质控未清除的技术伪影在作祟。解剖一致性是空间分析可信度的终极判据，也是唯一一个不依赖于算法自身假设的独立验证——这正是它不可替代的原因。
+:::
+
+---
+
+# 方法总结与衔接说明
+
+本专题完成了 Visium 空间转录组的基础分析闭环。概念层面，厘清了空间域与细胞类型、细胞状态的层级关系——空间域由多种细胞类型的特定组合定义，是组织的功能分区，这也解释了为何 Visium 聚类不可能直接给出细胞类型。方法层面，对比了普通聚类与 BayesSpace 两条路线：前者完全复用 scRNA-seq 流程、快速但可能碎片化，后者用 MRF 先验编码空间连续性、平滑但计算昂贵；并引入空间连贯性指标与 ARI 做客观比较，得出的结论是空间先验主要改善边界与孤立点而非推翻整体划分。注释层面，通过域间差异表达提取标志基因、映射到解剖结构，并强调了跨样本比较时必须采用拟bulk策略以避免伪重复。
+
+至此第 8 章建立了空间转录组的完整基础能力：平台选型、上游处理、质控归一化、SVG 识别与空间域划分。但一个核心问题仍然悬置——每个 Spot 的混合信号究竟由哪些细胞类型、以何种比例构成？这一细胞解卷积问题，连同图深度学习空间域识别、空间细胞通讯、成像型平台的细胞分割与跨切片三维重建，将在第 9 章系统展开（参见第 9 章）。
+
+---
+
+# 课后自测 (Post-Lesson Quiz)
+
+1. 空间域、细胞类型与细胞状态分别由什么定义？请用"肿瘤浸润边缘"这一例子说明为什么空间域不等于任何单一细胞类型。
+
+2. 为什么说病理学家划分"肿瘤区/间质区/坏死区"做的就是空间域识别？这一类比给空间域分析带来了什么外部检验标准？
+
+3. 即便完全不使用空间坐标，普通聚类的结果在组织上通常已经相当连贯。请解释这一现象的原因，以及它对评估空间感知方法价值的启示。
+
+4. 什么是空间连贯性指标？为什么说它"不是越高越好"，只能在簇数相近的前提下横向比较？
+
+5. 请写出 BayesSpace 的 Potts 模型先验并解释其含义。参数 $\gamma$ 起什么作用？$\gamma = 0$ 时模型退化为什么？
+
+6. BayesSpace 用多元 $t$ 分布而非高斯分布对 PCA 表示建模，这一选择的动机是什么？
+
+7. 域数量 `q` 有哪两条选择依据？为什么说应以生物学依据为主、统计依据为辅？
+
+8. 某研究者要比较肿瘤组与正常组中"血管周围域"的基因表达差异，他把两组共 6 张切片中所有属于该域的 Spot（合计约 3000 个）混在一起做 Wilcoxon 检验，得到上千个 p 值小于 0.001 的基因。请指出这一做法的统计问题，并给出正确的分析方案。
+
+<details>
+<summary><strong>参考答案 (Reference Answers)</strong></summary>
+
+1. *细胞类型由细胞自身的转录程序定义（如星形胶质细胞、CD8 T 细胞），是细胞的身份；空间域由一片区域的整体转录特征定义，反映该区域内多种细胞类型的组合及其状态，是组织的功能分区；细胞状态是同一细胞类型在不同条件下的表型变化（如活化 vs 静息 T 细胞）。"肿瘤浸润边缘"可能同时包含肿瘤细胞、成纤维细胞、巨噬细胞与 T 细胞——正是这个特定的细胞组合而非任何单一细胞类型定义了该区域的身份，因此它是空间域而非细胞类型。*
+
+2. *因为病理学家依据细胞形态与染色特征把切片划分为功能不同的区域，其目标（识别组织的功能分区）与空间域识别完全一致，只是依据的数据从转录组换成了形态学。这一类比带来的外部检验标准是：算法划出的空间域应在很大程度上与病理学家的形态学判读一致。当二者严重冲突时，应优先怀疑算法（参数不当、伪影未清除）而非怀疑病理学——因为形态学判读是独立于转录组数据的证据。*
+
+3. *原因是空间相邻的 Spot 本来就倾向于包含相似的细胞组合，因此表达相似性本身已经编码了大量空间信息，不需要显式使用坐标就能产生空间连贯的划分。启示是：空间感知方法带来的增量是有限而具体的——它主要改善域边界的锐利度与孤立 Spot 的归属，而非从根本上改变域的划分。因此在评估这类方法时，应该问"它在边界处改善了多少"，而不是期待它给出完全不同的结果；这也解释了为何两种方法的 ARI 通常不低。*
+
+4. *空间连贯性指对每个 Spot 计算其邻居中与它属于同一簇的比例，再取全局平均，取值在 0 到 1 之间。它不是越高越好，因为把所有 Spot 归为一个簇会使连贯性达到完美的 1.0 却毫无信息量——该指标衡量的是"结果有多平滑"而非"结果有多正确"。同理，过度追求平滑会抹平真实存在的锐利边界（如肿瘤浸润前沿、皮层分层界限，它们在生物学上本就是突变而非渐变）。因此只能在簇数相近的前提下横向比较不同方法，不能作为独立的优化目标。*
+
+5. *先验为 $p(\mathbf{z}) \propto \exp\left(\gamma \sum_{i}\sum_{j \in N(i)} \mathbb{I}(z_i = z_j)\right)$，其中 $N(i)$ 是 Spot $i$ 的邻域，$\mathbb{I}(\cdot)$ 为示性函数。含义是：相邻 Spot 标签相同的对数越多，这组标签的先验概率越高，从而把"组织在空间上连续"编码为对标签配置的偏好。$\gamma > 0$ 是平滑参数，控制空间先验的强度，$\gamma$ 越大空间平滑越强。$\gamma = 0$ 时指数项恒为 1，先验变为均匀分布，模型退化为不使用空间信息的普通混合模型聚类。*
+
+6. *动机是对离群 Spot 更稳健。多元 $t$ 分布比高斯分布有更重的尾部，因此个别表达异常的 Spot（如残留的低质量 Spot、组织折叠处的 Spot、或真实存在的罕见区域）对模型参数估计的影响更小，不会把整个簇的中心拉偏。在空间数据中这尤其重要，因为质控很难完全清除边缘与损伤区域的异常 Spot。*
+
+7. *两条依据：统计依据是 `qTune()` 在一系列 q 值上运行模型并计算对数似然，通过拐点判断；生物学依据是已知的解剖结构数（如小鼠脑前切片的皮层各层、海马、丘脑、白质、脑室）。应以生物学依据为主，是因为对数似然的拐点常常并不明确——似然通常随 q 单调上升，拐点判断带有主观性；而解剖结构数是独立于数据的外部先验知识，更可靠。实践中应在几个候选 q 值上分别运行，比较哪个结果与解剖结构最吻合。*
+
+8. *统计问题是典型的伪重复（pseudo-replication）：把 3000 个 Spot 当作 3000 个独立观测，但真正的生物学重复单位是切片/个体，只有 6 个。同一张切片内的 Spot 高度相关（共享该个体的遗传背景、处理批次、切片制备条件），并非独立样本。后果是方差被严重低估、检验自由度被人为放大，导致任何微小差异都得到极小的 p 值，上千个"显著"基因中绝大多数是假阳性。正确方案：采用拟bulk（pseudobulk）策略——先把每张切片中属于"血管周围域"的所有 Spot 的原始计数加和，得到每张切片一个拟bulk样本（共 6 个），再用 DESeq2 或 edgeR 以切片为单位做组间检验。这样重复单位与实验设计一致，方差估计才正确。若条件允许，还应在模型中纳入批次等协变量。*
+
+</details>

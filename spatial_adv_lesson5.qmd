@@ -1,0 +1,349 @@
+---
+title: "跨切片整合、三维重建与空间多组学"
+date: today
+format:
+  html:
+    code-fold: false
+    toc: true
+    toc-depth: 3
+    number-sections: true
+    theme: cosmo
+crossref:
+  fig-title: 图
+  fig-prefix: 图
+  tbl-title: 表
+  tbl-prefix: 表
+  chapters: false
+---
+
+# 专题概述
+
+到目前为止，本章的全部分析都在一张切片上进行。但单张切片只是三维器官的一个二维截面，而一个严谨的研究也几乎不可能建立在单一样本之上。本专题把视角从一张切片扩展到三个方向：**空间上**，如何把连续切片配准并堆叠为三维图谱；**统计上**，多样本空间研究如何处理批次效应与重复单位；**模态上**，如何在同一张切片上同时测量转录组之外的信息。三者共享一个方法论主题——第 7 章处理 scRNA-seq 多样本整合时建立的统计原则（参见第 7 章），在空间背景下依然成立，只是多了一层必须先解决的几何问题：不同切片之间既有真实的生物学差异，又有切片制备引入的形变，算法必须在二者之间做出区分。
+
+**学习目标**：理解切片配准中刚性与非刚性形变的区别及其处理方式；掌握 PASTE 最优传输对齐的原理与实操；了解三维重建的完整流程与共识切片的用途；理解多样本空间研究的批次效应来源与诊断方法；掌握以切片为重复单位的空间差异表达统计策略；了解空间多组学的主要技术路线与分析框架；能对快速演化中的空间工具链做出审慎的方法选择。
+
+---
+
+# 跨切片配准
+
+## 两类形变
+
+把两张相邻切片放在一起时，它们的坐标系并不一致。差异来自两个完全不同的来源，必须分开处理：
+
+- **刚性形变（Rigid）**：旋转与平移。来自切片在载玻片上摆放的角度与位置差异，是纯粹的技术偏差，与生物学无关，应当被完全消除。
+- **非刚性形变（Non-rigid）**：局部的拉伸、压缩、撕裂与褶皱。来自切片制备过程中组织的物理变形，同样是技术性的，但空间上不均匀，无法用单一的仿射变换消除。
+
+难点在于，还有第三类差异**不应该**被消除：
+
+- **真实的生物学差异**：相邻切片本就取自器官的不同深度，其解剖结构确实在变化。海马在连续切片中的形状变化是真实的，不是形变。
+
+配准算法必须在"消除技术形变"与"保留生物学变化"之间取得平衡。过度配准会把不同深度的结构强行对齐，抹掉真实的三维形态；配准不足则技术偏差残留，使后续的三维重建扭曲。
+
+:::note
+**这个问题在医学影像学中已有数十年历史：** 图像配准（Image Registration）是放射学的核心技术之一——把同一患者不同时间、不同模态（CT/MRI/PET）的影像对齐，才能做纵向比较与多模态融合。空间转录组面对的是同一个数学问题，但有一个独特的优势：除了几何信息，每个位置还带有一个高维的表达向量。这意味着配准不必只依赖形态，还可以依据"这两个位置的转录特征是否相似"来判断它们是否对应——这正是 PASTE 等方法的出发点，也是空间转录组配准相比纯影像配准的额外抓手。
+:::
+
+## PASTE：最优传输视角的配准
+
+PASTE 把切片配准表述为最优传输问题（Zeira et al., 2022）。给定两张切片的 Spot 集合，目标是找到一个传输方案 $\Pi$（一个 Spot 对之间的概率匹配矩阵），使得下面的代价最小：
+
+$$\min_{\Pi} \sum_{i,j} \Pi_{ij}\, c(\mathbf{y}_i, \mathbf{y}'_j) + \lambda \sum_{i,j,k,l} \Pi_{ij}\Pi_{kl} \left| d(\mathbf{z}_i, \mathbf{z}_k) - d(\mathbf{z}'_j, \mathbf{z}'_l) \right|^2$$
+
+这个式子的两项恰好对应上一节的两类信息：
+
+- **第一项（表达代价）**：$c(\mathbf{y}_i, \mathbf{y}'_j)$ 衡量两个 Spot 的表达差异。它鼓励把转录特征相似的 Spot 匹配起来。
+- **第二项（几何一致性）**：它要求匹配保持空间结构——若切片一中 $i$ 与 $k$ 相距很远，则它们的匹配对象 $j$ 与 $l$ 也应相距很远。这一项使配准不会把空间上打乱的点强行匹配。
+
+$\lambda$ 平衡两者。这一形式在最优传输理论中称为 Fused Gromov-Wasserstein 问题——"Fused"指同时使用了特征与几何两类信息。
+
+:::note
+**运行环境说明：** PASTE 为 Python 包（`pip install paste-bio`），基于 AnnData 与 POT（Python Optimal Transport）。配准的计算复杂度随 Spot 数的平方增长，两张标准 Visium 切片在 CPU 上通常数分钟完成；GPU 可加速但非必需。本节代码使用 `stxBrain` 的前脑与后脑切片——需注意二者并非严格意义上的连续切片，此处仅用于演示配准流程的调用方式，真实的三维重建应使用同一器官的连续切片序列。
+:::
+
+```python
+import paste as pst
+import scanpy as sc
+import numpy as np
+
+# Two sections to be aligned; each carries obsm["spatial"] coordinates
+slice1 = sc.read_h5ad("brain_anterior.h5ad")
+slice2 = sc.read_h5ad("brain_posterior.h5ad")
+
+# Pairwise alignment: returns a probabilistic matching matrix between spots
+# alpha balances expression cost (0) against geometric consistency (1)
+pi12 = pst.pairwise_align(slice1, slice2, alpha=0.1)
+
+print("Transport plan shape:", pi12.shape)
+```
+
+```python
+# Use the transport plan to bring both slices into a common coordinate system
+new_slices = pst.stack_slices_pairwise([slice1, slice2], [pi12])
+
+for s in new_slices:
+    print(s.obsm["spatial"].shape)
+```
+
+```python
+#| label: fig-paste-alignment
+#| fig-cap: "PASTE 跨切片配准前后的坐标叠加对比（stxBrain Visium 小鼠脑）。上排为配准前两张切片在各自原始坐标系中的位置，可见存在明显的旋转与平移偏差；下排为经最优传输对齐后两张切片在共同坐标系中的叠加，对应的解剖结构在空间上重合。配准同时利用了表达相似性与几何一致性两类信息，因此既消除了摆放角度造成的刚性形变，又避免了把空间结构打乱的错误匹配。"
+import matplotlib.pyplot as plt
+
+fig, axes = plt.subplots(2, 1, figsize=(6, 10))
+
+for ax, slices, title in zip(
+    axes, [[slice1, slice2], new_slices], ["Before alignment", "After PASTE alignment"]
+):
+    for s, colour in zip(slices, ["#4878CF", "#EE854A"]):
+        xy = s.obsm["spatial"]
+        ax.scatter(xy[:, 0], xy[:, 1], s=2, c=colour, alpha=0.6)
+    ax.set_title(title)
+    ax.set_aspect("equal")
+    ax.axis("off")
+
+plt.tight_layout()
+plt.savefig("paste_alignment.png", dpi=150)
+```
+
+## PASTE2 与部分重叠
+
+原始 PASTE 假设两张切片覆盖同一块组织区域。实际中这一假设常不成立：切片可能视野不同、部分组织脱落、或本就取自略有偏移的位置。PASTE2 引入了**部分最优传输**，允许只有一部分 Spot 被匹配，其余被视为"无对应"，从而处理部分重叠的情形。
+
+```python
+import paste as pst
+
+# s controls the fraction of mass to be transported; use when overlap is incomplete
+pi_partial = pst.partial_pairwise_align(slice1, slice2, s=0.7, alpha=0.1)
+```
+
+`s` 参数需要根据两张切片的实际重叠比例估计。它是一个需要人工判断的参数，通常通过目视比较两张切片的组织形态来设定。
+
+## 三维重建与共识切片
+
+有了成对配准，三维重建的流程就清晰了：
+
+```text
+连续切片 S1, S2, ..., Sn
+  │
+  ├── 逐对配准：S1↔S2, S2↔S3, ..., S(n-1)↔Sn
+  │
+  ├── 链式传播：以 S1 为参考，把所有切片映射到统一坐标系
+  │     （注意：误差会沿链累积，切片多时需要全局优化）
+  │
+  ├── 加入 z 轴坐标（切片厚度 × 切片序号）
+  │
+  └── 三维可视化 / 体素化 → 三维空间表达图谱
+```
+
+:::warning
+**链式配准的误差累积：** 逐对配准再链式传播是最直接的做法，但每一次配准都有残差，误差会沿链累积——第 20 张切片相对第 1 张的偏差可能已经很大。对较长的切片序列，应使用全局优化：同时求解所有切片到共同坐标系的映射，而非逐对串联。PASTE 提供的**共识切片**（center slice）机制正是为此设计——它先估计一个代表所有切片共性的"中心切片"，再把每张切片分别对齐到它，从而避免误差沿链传递。
+:::
+
+```python
+import paste as pst
+
+# Center alignment: all slices are aligned to a learned consensus, not to each other
+slices = [slice1, slice2, slice3, slice4]
+initial = slices[0].copy()
+
+center_slice, pis = pst.center_align(
+    initial, slices, lmbda=[1 / len(slices)] * len(slices), alpha=0.1
+)
+
+aligned = pst.stack_slices_center(center_slice, slices, pis)
+```
+
+---
+
+# 多样本空间研究的统计
+
+## 批次效应的来源
+
+多张切片之间的技术变异来源，与 scRNA-seq 的批次效应部分重合，但也有空间特有的成分，@tbl-spatial-batch 做了归纳。
+
+| 来源 | 表现 | 处理方式 |
+|------|------|----------|
+| 捕获效率差异 | 切片间总 UMI 水平系统性不同 | 归一化；纳入模型作为协变量 |
+| 透化时间差异 | 影响信号强度与空间弥散程度 | 实验端统一；难以事后校正 |
+| 切片深度差异 | 解剖结构组成不同 | 不是批次效应，不应校正 |
+| 玻片/试剂批次 | 整体表达谱偏移 | 设计时平衡分组；建模时作为协变量 |
+| 图像与配准质量 | 坐标精度差异 | 逐切片核验，剔除配准失败的切片 |
+
+: 多样本空间研究中的变异来源与处理方式 {#tbl-spatial-batch}
+
+第三行值得特别注意：**切片深度造成的结构组成差异不是批次效应**。如果把它当作批次效应校正掉，就抹去了研究真正想观察的空间变化。这与 scRNA-seq 中"不要把生物学差异当批次校正"是同一条原则，只是在空间数据中更容易犯错——因为不同深度的切片在低维嵌入中确实会分开，看起来很像批次效应。
+
+```r
+library(Seurat)
+
+# Diagnose batch structure across sections before deciding to correct anything
+merged <- merge(brain_s1, y = list(brain_s2, brain_s3, brain_s4))
+merged$section <- rep(c("s1", "s2", "s3", "s4"),
+                      times = c(ncol(brain_s1), ncol(brain_s2),
+                                ncol(brain_s3), ncol(brain_s4)))
+
+# Technical indicator: does library size differ systematically between sections?
+tapply(merged$nCount_Spatial, merged$section, median)
+```
+
+```r
+library(Seurat)
+
+# Look before you correct: do sections separate because of batch or because of anatomy?
+merged <- SCTransform(merged, assay = "Spatial", verbose = FALSE) |>
+    RunPCA(verbose = FALSE) |>
+    RunUMAP(dims = 1:30, verbose = FALSE)
+
+DimPlot(merged, group.by = "section") |
+    DimPlot(merged, group.by = "domain_annotated")
+```
+
+若按切片分开的同时、各切片内的空间域仍彼此对应，通常说明是可校正的批次效应；若不同切片包含的空间域本身就不同，那反映的是解剖差异，应保留。
+
+## 重复单位：一条必须重申的原则
+
+第 7 章强调的统计原则在空间数据中同样适用，而且更容易被违反：**统计重复的单位是切片/个体，不是 Spot**。
+
+一张 Visium 切片有数千个 Spot，把它们当作独立观测会使任何组间比较都得到极小的 p 值。但同一张切片上的 Spot 共享该个体的遗传背景、该次实验的批次条件、该张切片的制备质量——它们远非独立。
+
+正确的做法与第 7 章的拟bulk策略完全一致：先把每张切片每个空间域的 Spot 计数加和为一个拟bulk样本，再以切片为单位做检验。
+
+```r
+library(Seurat)
+library(DESeq2)
+
+# Step 1: aggregate spots into one pseudobulk profile per (section, domain)
+pb <- AggregateExpression(
+    merged,
+    assays = "Spatial",
+    group.by = c("section", "domain_annotated"),
+    return.seurat = FALSE
+)$Spatial
+```
+
+```r
+library(DESeq2)
+
+# Step 2: test one domain at a time, with sections as the replicate unit
+domain_of_interest <- "Hippocampus"
+keep <- grep(domain_of_interest, colnames(pb))
+counts <- round(pb[, keep])
+
+meta <- data.frame(
+    section = sub("_.*", "", colnames(counts)),
+    group   = c("control", "control", "treated", "treated"),
+    row.names = colnames(counts)
+)
+
+dds <- DESeqDataSetFromMatrix(counts, colData = meta, design = ~ group)
+dds <- DESeq(dds)
+res <- results(dds, contrast = c("group", "treated", "control"))
+head(res[order(res$padj), ])
+```
+
+:::warning
+**样本量才是空间研究最常见的短板：** 空间实验成本高，因此每组两到三张切片是常态。这意味着拟bulk之后的检验只有极少的自由度，统计功效非常有限——很多研究实际上无法可靠地检出中等效应量的差异。正确的应对不是退回到 Spot 级检验以"制造"显著性，而是：（1）在实验设计阶段就把样本量当作首要约束，宁可减少每个样本的测序深度也要增加生物学重复；（2）把单样本或小样本的空间研究定位为**假设生成**而非假设检验；（3）在论文中如实报告重复数与功效限制，而非用数千个 Spot 的 p 值掩盖它。
+:::
+
+---
+
+# 空间多组学
+
+## 技术路线
+
+在同一张切片上测量转录组之外的模态，是当前空间组学最活跃的方向。@tbl-spatial-multiomics 归纳了几条主要路线。
+
+| 技术 | 测量模态 | 原理 | 分析框架 |
+|------|----------|------|----------|
+| spatial-ATAC-seq | 染色质可及性 | 原位 Tn5 转座 + 空间条形码 | 类比 scATAC（参见第 7 章） |
+| Slide-tags | 转录组 + 单细胞多模态 | 空间条形码标记细胞核后常规单细胞建库 | 常规单细胞流程 + 回填坐标 |
+| CODEX / PhenoCycler | 蛋白（数十种） | 多轮抗体染色与成像 | 类比流式/成像分析 |
+| CosMx SMI | RNA + 蛋白 | 同一切片双模态检测 | 多模态整合（WNN 类方法） |
+| Visium + 免疫荧光 | 转录组 + 少数蛋白 | 染色通道替代 H&E | 图像特征 + 表达联合 |
+
+: 主要空间多组学技术路线 {#tbl-spatial-multiomics}
+
+其中 **Slide-tags** 的思路值得单独说明：它不改变下游建库方式，而是在组织切片上先给细胞核打上位置条形码，然后把细胞核解离、走常规的单细胞多组学流程。这样得到的是带空间坐标的标准单细胞数据——既有单细胞分辨率与全转录组覆盖，又保留了位置信息。这一"先标位置、再解离"的思路绕开了原位测量的诸多技术限制，是一个巧妙的设计。
+
+## 分析框架的延续性
+
+空间多组学的分析方法基本是已有方法在空间背景下的推广，而非全新体系：
+
+- 多模态整合可沿用 WNN 等方法（参见第 7 章），额外把空间邻接作为约束加入。
+- 空间 ATAC 的 peak 矩阵处理、LSI 降维、Gene Activity Score 计算，与 scATAC 完全一致。
+- 蛋白模态的 CLR 归一化与 CITE-seq 同源。
+
+这一延续性是好消息：掌握了前面章节的方法，进入空间多组学的门槛主要在数据格式与工具链，而非概念。
+
+:::warning
+**这是一个仍在剧烈演化的领域：** 与 Visium 这类已相对成熟的技术不同，空间多组学的平台、数据格式与分析工具都在快速变动，很多工具发布不足两年、缺乏独立的第三方基准评测，跨平台的数据标准尚未确立。这意味着：（1）不要把任何单一工具的结果当作定论，应尽可能用两种原理不同的方法交叉验证；（2）预留充足的时间处理数据格式与工具兼容问题，这往往比分析本身更耗时；（3）在方法部分详细记录所用工具的**版本号与参数**——在快速迭代的工具链中，版本差异造成结果不可复现是常态而非例外。
+:::
+
+## 数据规模的现实约束
+
+最后是一个工程问题。三维与多模态数据的规模远超单张切片：一套 50 张切片的三维 Visium 数据有约 25 万个 Spot；Stereo-seq 单张切片的原始捕获点可达数亿。在这个规模上，常规的内存内分析会直接失败。
+
+实用的应对策略包括：使用稀疏矩阵表示（`Matrix` 包的 `dgCMatrix`、`scipy.sparse`）；采用基于磁盘的后端（如 `HDF5Array`、AnnData 的 backed 模式）；在分析早期就做合理的 binning 或降采样；以及把计算密集的步骤（配准、深度学习模型）放到有充足内存与 GPU 的计算节点上。
+
+```r
+library(Seurat)
+
+# Check the memory footprint before attempting a merge of many sections
+format(object.size(brain_s1), units = "MB")
+
+# Sparse representation is essential; verify the matrix class
+class(GetAssayData(brain_s1, assay = "Spatial", layer = "counts"))
+```
+
+:::info
+**黄金法则：** 把分析从单张切片扩展到多切片、多模态时，真正的难点很少在算法上——配准、整合、多模态融合的方法都已相对成熟。难点在于**保持统计的诚实**：不要把切片深度差异当批次效应校正掉，不要把 Spot 当作生物学重复，不要在样本量只有二对二时用数千个 Spot 的 p 值制造统计显著性。规模的扩大放大了数据量，却不会自动提高证据强度；证据强度只由独立生物学重复的数量决定。一项有 20 万个 Spot 但只有两个样本的研究，其统计功效与只有两个样本的任何研究完全相同。
+:::
+
+---
+
+# 方法总结与衔接说明
+
+本专题把空间分析从单张切片扩展到三个方向。几何上，切片配准必须区分三类差异——应被消除的刚性形变、同样技术性但空间不均匀的非刚性形变、以及不应被消除的真实解剖变化；PASTE 通过 Fused Gromov-Wasserstein 最优传输同时利用表达相似性与几何一致性求解匹配，PASTE2 的部分传输处理不完全重叠，而长切片序列应使用共识切片机制避免链式误差累积。统计上，多样本空间研究的变异来源需要逐项甄别，其中切片深度造成的结构差异不是批次效应；重复单位必须是切片/个体而非 Spot，正确做法是拟bulk聚合后再做组间检验，而空间研究普遍偏小的样本量意味着多数此类研究应定位为假设生成。模态上，空间多组学的分析框架基本是已有方法的空间化推广，门槛在工具链而非概念，但该领域仍在剧烈演化，需要交叉验证与严格的版本记录。
+
+至此第 9 章完成了空间转录组的高级分析体系：从解卷积还原细胞类型，到图神经网络刻画空间域，到空间约束下的通讯与生态位推断，到成像型平台的分割与亚细胞分析，再到跨切片的三维整合与多模态扩展。这些方法与第 8 章的基础流程一起，构成了空间转录组数据分析的完整工具箱。而空间数据与其他组学层次的联合分析——如何把空间转录组与表观组、蛋白组、代谢组放在统一框架下解读——将在第 13 章的多组学整合中展开（参见第 13 章）。
+
+---
+
+# 课后自测 (Post-Lesson Quiz)
+
+1. 相邻切片之间存在哪三类差异？其中哪两类应当被配准算法消除，哪一类不应被消除？为什么区分它们很重要？
+
+2. 相比纯影像配准，空间转录组的切片配准有什么额外的信息可用？这一优势体现在 PASTE 的目标函数的哪一项上？
+
+3. 请写出 PASTE 的目标函数并解释其两项分别对应什么信息。参数 $\lambda$ 起什么作用？
+
+4. PASTE2 相比原始 PASTE 解决了什么问题？参数 `s` 应如何设定？
+
+5. 为什么长切片序列不应使用"逐对配准 + 链式传播"？PASTE 的共识切片（center slice）机制如何解决这一问题？
+
+6. 在多样本空间研究中，"切片深度造成的结构组成差异"为什么不是批次效应？把它当批次效应校正会有什么后果？如何在实践中区分二者？
+
+7. 为什么说空间研究中"样本量才是最常见的短板"？面对每组只有两三张切片的现实，正确的应对方式是什么？
+
+8. 某团队收集了 8 张肿瘤 Visium 切片（4 例响应免疫治疗、4 例不响应），想比较两组在"肿瘤-间质界面"这一空间域中的基因表达差异。请设计完整的分析方案，说明每一步的方法选择与统计考量，并指出最容易出错的环节。
+
+<details>
+<summary><strong>参考答案 (Reference Answers)</strong></summary>
+
+1. *三类差异：（1）刚性形变——旋转与平移，来自切片摆放的角度与位置差异，纯技术性；（2）非刚性形变——局部拉伸、压缩、撕裂与褶皱，来自制备过程的物理变形，同样技术性但空间不均匀；（3）真实的生物学差异——相邻切片取自器官不同深度，解剖结构确实在变化。前两类应被消除，第三类不应被消除。区分很重要，是因为过度配准会把不同深度的结构强行对齐、抹掉真实的三维形态，使三维重建失去意义；配准不足则技术偏差残留、使重建扭曲。*
+
+2. *额外可用的是每个位置的高维表达向量。纯影像配准只能依据形态（像素灰度、纹理）判断两个位置是否对应，而空间转录组还可以依据"这两个位置的转录特征是否相似"来判断。这一优势体现在 PASTE 目标函数的第一项——表达代价 $c(\mathbf{y}_i, \mathbf{y}'_j)$，它衡量两个 Spot 的表达差异并鼓励把转录特征相似的 Spot 匹配起来，是纯几何配准所没有的信息来源。*
+
+3. *目标函数为 $\min_{\Pi} \sum_{i,j} \Pi_{ij} c(\mathbf{y}_i, \mathbf{y}'_j) + \lambda \sum_{i,j,k,l} \Pi_{ij}\Pi_{kl} |d(\mathbf{z}_i, \mathbf{z}_k) - d(\mathbf{z}'_j, \mathbf{z}'_l)|^2$。第一项是表达代价，利用转录特征相似性；第二项是几何一致性，要求匹配保持空间结构——若切片一中 $i$ 与 $k$ 相距很远，它们的匹配对象 $j$ 与 $l$ 也应相距很远，从而防止把空间上打乱的点强行匹配。$\lambda$ 平衡两项的相对权重：$\lambda$ 大则更重视几何结构保持，$\lambda$ 小则更依赖表达相似性。这一形式在最优传输理论中称为 Fused Gromov-Wasserstein 问题。*
+
+4. *原始 PASTE 假设两张切片覆盖同一块组织区域，实际中常不成立——切片可能视野不同、部分组织脱落、或取自略有偏移的位置。PASTE2 引入部分最优传输，允许只有一部分 Spot 被匹配、其余视为"无对应"，从而处理部分重叠情形。参数 `s` 控制被传输的质量比例，应根据两张切片的实际重叠比例估计，通常通过目视比较两张切片的组织形态来判断，是一个需要人工介入的参数。*
+
+5. *因为每一次成对配准都有残差，逐对串联会使误差沿链累积——第 20 张切片相对第 1 张的偏差可能已经很大，导致三维重建在序列末端严重扭曲。共识切片机制的解决办法是：先估计一个代表所有切片共性的"中心切片"，再把每一张切片分别对齐到这个共同参考，而不是彼此串联。这样每张切片的配准误差都只有一次，不会传递给其他切片，本质上是用全局优化替代了链式局部优化。*
+
+6. *因为它反映的是真实的解剖变化——不同深度的切片本就包含不同的组织结构，这正是三维空间研究想要观察的信号。把它当批次效应校正掉，会抹去研究真正关心的空间变化，使不同深度的切片在校正后看起来结构相同，三维重建随之失去意义。实践中区分二者的方法：观察低维嵌入中各切片是否分开的同时，各切片内的空间域是否仍彼此对应——若对应，说明是可校正的技术批次效应；若不同切片包含的空间域本身就不同（如一张有海马、另一张没有），则反映解剖差异，应保留。此外可检查技术指标（如各切片总 UMI 中位数）是否有系统性差异，以辅助判断。*
+
+7. *因为空间实验成本高（玻片、测序、切片制备、透化优化），每组两到三张切片是常态；而拟bulk聚合后重复单位是切片，检验的自由度极少，统计功效非常有限，多数研究实际上无法可靠检出中等效应量的差异。正确应对：（1）实验设计阶段就把样本量当作首要约束，宁可减少每个样本的测序深度也要增加生物学重复；（2）把单样本或小样本的空间研究明确定位为假设生成而非假设检验；（3）在论文中如实报告重复数与功效限制。错误的应对是退回到 Spot 级检验——用数千个 Spot 制造出的显著性是伪重复的产物，并不代表真实证据。*
+
+8. *分析方案：（1）逐切片质控与配准核验——检查每张切片的 QC 指标空间分布、剔除组织折叠与边缘损伤 Spot，核验图像配准（参见专题 8.2、8.3），剔除配准失败的切片；（2）归一化与批次诊断——各切片 SCTransform，合并后检查是否存在技术批次效应，注意区分技术偏差与肿瘤本身的个体异质性，后者不应被校正；（3）空间域识别与跨切片对齐——在每张切片上识别空间域（专题 8.4），关键在于把不同切片中的"肿瘤-间质界面"域对应起来，需借助标志基因（肿瘤标志与间质标志同时中等表达、位于两者交界）与形态学核验，必要时请病理学家标注；（4）可选的细胞解卷积——若需要解读界面区的细胞组成变化，用同病理状态的 scRNA 参考做解卷积（专题 9.1）并做标志基因一致性验证；（5）拟bulk差异表达——把每张切片界面域的 Spot 计数加和为一个拟bulk样本（共 8 个），用 DESeq2 以切片为重复单位、以响应状态为分组做检验，必要时纳入批次或临床协变量；（6）结果解读与验证——结合效应量而非仅看 p 值，并在独立队列或免疫组化中验证关键基因。最容易出错的环节是第（3）步与第（5）步：第（3）步中不同切片的空间域是独立聚类得到的，编号不通用，若不做跨切片的域对应就直接按编号合并，会把不同的结构混为一谈；第（5）步则是伪重复的高发点——8 张切片约有数万个 Spot，直接做 Spot 级 Wilcoxon 检验会得到大量假阳性，必须坚持以切片为重复单位。此外还应注意样本量仅为 4 对 4，统计功效有限，应如实报告这一限制。*
+
+</details>

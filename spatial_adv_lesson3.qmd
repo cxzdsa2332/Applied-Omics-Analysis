@@ -1,0 +1,361 @@
+---
+title: "空间细胞通讯与微环境生态位分析"
+date: today
+format:
+  html:
+    code-fold: false
+    toc: true
+    toc-depth: 3
+    number-sections: true
+    theme: cosmo
+crossref:
+  fig-title: 图
+  fig-prefix: 图
+  tbl-title: 表
+  tbl-prefix: 表
+  chapters: false
+---
+
+# 专题概述
+
+第 7 章的细胞通讯分析（参见第 7 章）建立在一个不得不接受的强假设之上：只要细胞类型 A 表达配体、B 表达受体，就推断存在 A→B 通讯。这个假设在 scRNA-seq 中别无选择——解离已经抹去了位置信息。但它在生物学上是站不住的：绝大多数配体-受体作用是短程的，需要细胞在物理上邻近或至少处于扩散可达范围内。一个在组织两端、相隔数毫米的细胞对，无论表达谱多么互补，都不可能通过膜结合配体发生相互作用。空间转录组第一次让"谁与谁相邻"成为可测量的数据，从而把通讯推断从纯表达共现升级为**空间约束下的推断**。本专题讲解这一升级的两类实现，并延伸到更宏观的组织学问题——把反复出现的细胞类型组合模式识别为生态位（Niche）。
+
+**学习目标**：理解空间约束为何能实质提升细胞通讯推断的可信度；掌握四类通讯模式的空间尺度差异及其对分析参数的影响；能构建空间邻接图并做细胞类型邻域富集检验；理解 SpatialDM 的二元 Moran's I 原理与置换检验的零模型构造；了解 COMMOT 的最优传输框架；掌握生态位识别的分析流程与生物学解读；能准确界定空间关联证据的解释边界。
+
+---
+
+# 为什么需要空间约束
+
+## 一个尺度问题
+
+细胞间信号传递的有效距离跨越了四个数量级，@tbl-signaling-range 列出了四类模式。
+
+| 通讯模式 | 作用距离 | 典型分子 | 空间转录组能否分辨 |
+|----------|----------|----------|-------------------|
+| 近分泌（Juxtacrine） | 细胞直接接触（< 1 µm） | Notch-Delta、整合素 | 需单细胞分辨率平台 |
+| 自分泌（Autocrine） | 细胞自身 | 多种生长因子 | 需单细胞分辨率平台 |
+| 旁分泌（Paracrine） | 数十至数百 µm | 多数细胞因子、趋化因子 | Visium 可分辨 |
+| 内分泌（Endocrine） | 全身 | 激素 | 空间信息无关 |
+
+: 细胞通讯模式的空间尺度与可分辨性 {#tbl-signaling-range}
+
+这张表给出了两个重要推论。其一，**空间约束对旁分泌通讯最有价值**——它的作用尺度恰好与 Visium 的 Spot 间距同量级，因此空间数据能有效区分"在作用范围内"与"不在作用范围内"。其二，**近分泌与自分泌需要单细胞分辨率**：在 55 µm 的 Spot 内部，我们无法知道两个细胞是否真的接触，因此 Visium 上做 Notch-Delta 这类接触依赖信号的推断，本质上仍是猜测。
+
+:::note
+**一个来自发育生物学的提醒：** 形态发生素（Morphogen）梯度是旁分泌信号最经典的例子——Wolpert 的"法国国旗模型"设想细胞根据自己所处位置的信号浓度决定命运，而浓度由扩散源的距离决定。这一思想提出于 1969 年，此后半个世纪里，验证它主要依赖对少数几个分子做原位杂交与免疫荧光。空间转录组的出现，第一次让研究者能在全转录组尺度上同时观察"信号源在哪里"与"响应基因在哪里表达"，从而把梯度假说从少数模式分子推广到整个转录组。这也解释了为什么发育生物学是空间转录组应用最活跃的领域之一。
+:::
+
+## 空间约束改变了什么
+
+具体地说，把空间纳入通讯推断有三种不同强度的做法：
+
+1. **事后过滤**：先用 CellChat 等方法做常规推断，再剔除空间上从不相邻的细胞类型对。最简单，但它只能减少假阳性，无法改进打分本身。
+2. **加权推断**：在计算通讯强度时，按细胞对的空间距离加权，距离越远权重越低。COMMOT 属于这一类。
+3. **空间统计检验**：直接检验配体与受体的表达是否在空间上呈现显著的协同分布。SpatialDM 属于这一类，它问的不是"A 和 B 是否都表达"，而是"配体高的地方，受体是否也高"。
+
+第三种做法在统计上最自洽，因为它把问题重新表述为一个可检验的空间假设，而不是在表达共现的基础上打补丁。
+
+---
+
+# 细胞类型共定位分析
+
+## 从丰度到邻接
+
+在做配体-受体推断之前，通常先回答一个更基础的问题：**哪些细胞类型倾向于出现在一起？** 这就是共定位（Co-localization）或邻域富集（Neighborhood Enrichment）分析。它的输入正是专题 9.1 解卷积产出的细胞类型丰度矩阵。
+
+分析逻辑是：对每一对细胞类型 $(A, B)$，统计它们在空间上相邻的频率，再与随机情况下的期望频率比较。若显著高于期望，说明二者倾向共定位。
+
+```r
+library(Seurat)
+
+# Input: spot x cell-type abundance matrix from deconvolution (专题 9.1)
+# props: rows = spots, cols = cell types, values = proportions
+
+coords <- as.matrix(GetTissueCoordinates(brain)[, c("imagerow", "imagecol")])
+
+build_knn <- function(coords, k = 6) {
+    d <- as.matrix(dist(coords)); diag(d) <- Inf
+    A <- matrix(0, nrow(d), ncol(d))
+    for (i in seq_len(nrow(d))) A[i, order(d[i, ])[seq_len(k)]] <- 1
+    pmax(A, t(A))
+}
+
+A <- build_knn(coords, k = 6)
+
+# Observed co-localisation: abundance of type i at a spot vs type j at its neighbours
+observed <- t(props) %*% A %*% props
+```
+
+```r
+# Permutation null: shuffle spot labels but keep the graph fixed
+set.seed(1)
+n_perm <- 200
+null_vals <- array(0, dim = c(ncol(props), ncol(props), n_perm))
+
+for (p in seq_len(n_perm)) {
+    shuffled <- props[sample(nrow(props)), , drop = FALSE]
+    null_vals[, , p] <- t(shuffled) %*% A %*% shuffled
+}
+
+# z-score: how far is the observed value from the permutation null?
+null_mean <- apply(null_vals, c(1, 2), mean)
+null_sd   <- apply(null_vals, c(1, 2), sd)
+zscore <- (observed - null_mean) / null_sd
+dimnames(zscore) <- list(colnames(props), colnames(props))
+```
+
+```r
+#| label: fig-colocalization
+#| fig-cap: "细胞类型空间共定位的邻域富集 z 分数热图（stxBrain Visium 小鼠脑）。行与列均为解卷积得到的细胞类型，颜色表示该类型对在空间上相邻的频率相对于随机置换零分布的 z 分数：红色表示显著共定位，蓝色表示显著空间分离。对角线附近的高值反映同类型细胞的空间聚集；已知在解剖上共处同一脑区的细胞类型对呈现显著正值，而分属不同脑区的类型对呈现负值。"
+library(pheatmap)
+
+# Symmetric heatmap of spatial co-localisation strength
+pheatmap(
+    zscore,
+    color = colorRampPalette(c("#2166AC", "white", "#B2182B"))(50),
+    breaks = seq(-max(abs(zscore)), max(abs(zscore)), length.out = 51),
+    clustering_method = "average",
+    main = "Neighbourhood enrichment (z-score)"
+)
+```
+
+:::warning
+**置换零模型的构造决定了检验在问什么：** 上面的代码打乱的是 Spot 的位置标签，保持邻接图不变——这检验的零假设是"细胞类型组成与空间位置无关"。若改为打乱邻接图的边而保持标签不变，检验的就是另一个问题。更微妙的是，打乱位置会同时破坏所有空间结构，包括组织的整体形状——因此在形状高度不规则的组织上，这一零模型可能过于宽松，几乎所有类型对都会显著。更严格的做法是在保持局部密度结构的约束下做受限置换（如只在同一空间域内打乱）。选择哪个零模型不是技术细节，它直接决定了 p 值的含义。
+:::
+
+## Python 生态：Squidpy
+
+Python 用户可用 Squidpy，它提供了封装好的空间邻接图构建与邻域富集检验，且与 Scanpy 生态无缝衔接。
+
+:::note
+**运行环境说明：** Squidpy 为 Python 包（`pip install squidpy`），基于 Scanpy 与 AnnData。`nhood_enrichment` 在数千 Spot 的 Visium 数据上于 CPU 通常一两分钟完成，不需要 GPU。下面的代码假设 `adata.obs["cell_type"]` 已由解卷积的主导类型或空间域标签填入。
+:::
+
+```python
+import squidpy as sq
+import scanpy as sc
+
+adata = sc.read_h5ad("visium_brain_deconvolved.h5ad")
+
+# Build the spatial graph; for Visium the hexagonal layout gives 6 neighbours
+sq.gr.spatial_neighbors(adata, coord_type="grid", n_neighs=6)
+
+# Permutation-based neighbourhood enrichment between annotated groups
+sq.gr.nhood_enrichment(adata, cluster_key="cell_type")
+sq.pl.nhood_enrichment(adata, cluster_key="cell_type", method="average")
+```
+
+```python
+# Complementary view: which cell types tend to physically co-occur in the same spot?
+sq.gr.co_occurrence(adata, cluster_key="cell_type")
+sq.pl.co_occurrence(adata, cluster_key="cell_type", clusters="Astrocytes")
+```
+
+---
+
+# 空间约束的配体-受体推断
+
+## SpatialDM：二元 Moran's I
+
+SpatialDM 把配体-受体分析重新表述为一个空间统计问题（Li et al., 2023）。回顾专题 8.3 的 Moran's I，它衡量**同一个变量**在空间上的自相关。SpatialDM 使用的是它的推广形式——**二元 Moran's I**（Bivariate Moran's I），衡量**两个不同变量**的空间交叉相关：
+
+$$I_{LR} = \frac{N}{\sum_i\sum_j w_{ij}} \cdot \frac{\sum_i \sum_j w_{ij}\, \tilde{L}_i\, \tilde{R}_j}{\sqrt{\sum_i \tilde{L}_i^2}\sqrt{\sum_i \tilde{R}_i^2}}$$
+
+其中 $\tilde{L}_i$ 是配体在位置 $i$ 的标准化表达，$\tilde{R}_j$ 是受体在位置 $j$ 的标准化表达，$w_{ij}$ 是空间权重。这个统计量问的是：**配体高表达的位置，其空间邻域中受体是否也高表达？**
+
+这一表述相比"A 表达配体且 B 表达受体"有三个实质改进：
+
+- 它是一个有明确零假设的统计检验，可以给出 p 值，而不只是一个排序分数。
+- 它自动纳入了距离信息——权重矩阵 $w_{ij}$ 编码了"多远算邻近"。
+- 它可以定位到具体位置：除全局的 $I_{LR}$ 外，还可计算每个位置的局部统计量，从而在组织上标出"通讯热点"。
+
+:::note
+**运行环境说明：** SpatialDM 为 Python 包（`pip install SpatialDM`），基于 AnnData。它内置了 CellChatDB 等配体-受体数据库。在标准 Visium 切片上 CPU 运行通常数分钟。置换检验的次数（`n_perm`）在结果不稳定时应适当增加。
+:::
+
+```python
+import spatialdm as sdm
+import scanpy as sc
+
+adata = sc.read_h5ad("visium_brain.h5ad")
+
+# Weight matrix: l is the length scale of the diffusion kernel, in coordinate units
+# Choose l to match the biological range of paracrine signalling (tens of microns)
+sdm.weight_matrix(adata, l=1.2, cutoff=0.2, single_cell=False)
+
+# Load a ligand-receptor database and keep pairs actually expressed in this dataset
+sdm.extract_lr(adata, species="mouse", min_cell=3)
+```
+
+```python
+# Global test: which ligand-receptor pairs show spatial co-expression overall?
+sdm.spatialdm_global(adata, n_perm=1000, specified_ind=None,
+                     method="z-score", nproc=4)
+sdm.sig_pairs(adata, method="z-score", fdr=True, threshold=0.1)
+
+print(adata.uns["global_res"].sort_values("z_pval").head(10))
+```
+
+```python
+#| label: fig-spatialdm-hotspot
+#| fig-cap: "SpatialDM 识别的配体-受体通讯热点空间分布（stxBrain Visium 小鼠脑）。每个 Spot 按某一显著配体-受体对的局部二元 Moran's I 统计量着色，颜色越深表示该位置及其邻域中配体与受体的空间协同表达越强。通讯热点并非均匀分布，而是集中于特定的解剖界面区域，提示该信号通路在这些结构交界处发挥局部调控作用。"
+import spatialdm.plottings as pl
+
+# Local test: where on the tissue does each significant pair actually interact?
+sdm.spatialdm_local(adata, n_perm=1000, method="z-score", nproc=4)
+sdm.sig_spots(adata, method="z-score", fdr=False, threshold=0.1)
+
+pl.plot_pairs(adata, pairs_to_plot=adata.uns["global_res"].index[:2], marker="s")
+```
+
+## COMMOT：最优传输视角
+
+COMMOT 从完全不同的角度建模（Cang et al., 2023）。它把通讯看作一个**资源分配问题**：组织中某些位置"供给"配体，另一些位置"需求"受体，信号如何从供给方流向需求方？这正是最优传输（Optimal Transport）的标准形式——在满足供需约束的前提下，求使总传输代价最小的方案，其中代价由空间距离决定。
+
+这一框架的优势在于它天然处理了三件事：多个配体源竞争同一受体位点的分配问题、信号传输的距离衰减、以及配体总量的守恒约束。它的输出是一个"通讯流场"，可以直观地画出信号在组织上的流动方向。
+
+@tbl-spatial-ccc 对比了三类方法。
+
+| 方法 | 核心思想 | 输出 | 空间尺度参数 |
+|------|----------|------|--------------|
+| CellChat + 事后过滤 | 表达共现 + 剔除不相邻类型对 | 类型对通讯强度 | 无（仅二元过滤） |
+| SpatialDM | 二元 Moran's I 空间统计检验 | 全局 p 值 + 局部热点 | 权重矩阵长度尺度 $l$ |
+| COMMOT | 最优传输的供需分配 | 通讯流场（方向性） | 距离代价函数 |
+
+: 空间约束的细胞通讯推断方法对比 {#tbl-spatial-ccc}
+
+:::warning
+**空间尺度参数必须有生物学依据：** SpatialDM 的 $l$ 与 COMMOT 的距离代价函数都在设定"多远算能通讯"。这个参数不应靠调参选取，而应来自目标信号的生物学性质：膜结合配体（如 Notch）应设得极小、可溶性趋化因子可设到数十微米、而基质结合的生长因子介于两者之间。用一个统一的大尺度跑完所有配体-受体对，等于假设所有信号的作用范围相同——这在生物学上是错的，且会系统性地高估短程信号的作用范围。
+:::
+
+---
+
+# 从共定位到生态位
+
+## 生态位的定义
+
+共定位分析给出的是全局的类型对关系（"星形胶质细胞与神经元倾向相邻"），但组织的实际组织方式往往更结构化：某些**特定的细胞类型组合**会在组织中反复出现，构成可辨识的功能单元。这样的重复出现的局部细胞组成模式，称为**生态位**（Niche）或**细胞邻域**（Cellular Neighborhood, CN）。
+
+识别生态位的方法出奇地简单：对每个位置，取它的空间邻域，统计邻域内各细胞类型的组成，得到一个组成向量；然后对所有位置的组成向量做聚类。每个聚类就是一个生态位——一类具有相似邻域细胞组成的位置。
+
+```r
+library(Seurat)
+
+# Step 1: for each spot, compute the cell-type composition of its neighbourhood
+A_self <- A
+diag(A_self) <- 1                       # include the spot itself
+nbhd_comp <- (A_self %*% props)
+nbhd_comp <- sweep(nbhd_comp, 1, rowSums(nbhd_comp), "/")
+
+# Step 2: cluster spots by their neighbourhood composition, not their own expression
+set.seed(1)
+niche_km <- kmeans(nbhd_comp, centers = 6, nstart = 25)
+brain$niche <- factor(niche_km$cluster)
+
+table(brain$niche)
+```
+
+```r
+#| label: fig-niche-map
+#| fig-cap: "基于邻域细胞类型组成识别的空间生态位（stxBrain Visium 小鼠脑）。左图为各 Spot 所属生态位在组织坐标上的分布，右图为各生态位的平均细胞类型组成热图。与按自身表达聚类得到的空间域不同，生态位刻画的是局部细胞类型的组合模式，因此同一生态位可能出现在解剖上不相连的多个区域——只要那里的细胞组成模式相同。"
+library(Seurat)
+library(pheatmap)
+library(patchwork)
+
+p1 <- SpatialDimPlot(brain, group.by = "niche") + ggplot2::ggtitle("Niche map")
+
+niche_profile <- t(niche_km$centers)
+colnames(niche_profile) <- paste0("Niche", seq_len(ncol(niche_profile)))
+
+pheatmap(niche_profile, cluster_cols = FALSE, scale = "row",
+         main = "Cell-type composition per niche")
+p1
+```
+
+## 生态位与空间域的区别
+
+这里需要澄清一个容易混淆之处：生态位与第 8 章的空间域在算法上都是聚类，但聚类的**对象**不同：
+
+- **空间域**：对 Spot 的**自身表达**聚类。得到的域在空间上通常是连通的区块。
+- **生态位**：对 Spot 的**邻域细胞组成**聚类。得到的生态位可能出现在解剖上互不相连的多个位置——只要那里的细胞组合模式相同。
+
+这一差别有实际意义。例如"血管周围免疫龛"这一生态位，在组织中会随血管分布散落各处，不构成连通区块，因此空间域分析会把它们分割到不同的域里，而生态位分析能把它们识别为同一类。
+
+## 在肿瘤免疫中的应用
+
+生态位分析在肿瘤免疫学中产生了重要影响。一个代表性的发现是，结直肠癌中免疫细胞的**组织方式**比其数量更能预测预后——同样数量的 T 细胞，若组织成有序的免疫聚集结构则预后好，若弥散分布则预后差。这类结论只有通过生态位分析才能获得，因为它关注的恰恰是细胞的空间组合模式而非总量。
+
+由此衍生出两个在临床上被广泛讨论的表型：
+
+- **免疫浸润型（Immune-inflamed）**：T 细胞分布于肿瘤实质内部，与肿瘤细胞形成共定位生态位。
+- **免疫排斥型（Immune-excluded）**：T 细胞被阻挡在肿瘤边缘的间质中，与肿瘤细胞形成互斥的邻接生态位。
+
+两者的 T 细胞总量可能相近，但对免疫治疗的响应截然不同。区分它们需要的正是空间信息。
+
+---
+
+# 解释的边界
+
+## 相邻不等于相互作用
+
+最后必须明确本专题所有方法的共同局限。空间共定位与配体-受体空间协同表达，提供的都是**观察性的关联证据**，它们与"确实发生了相互作用"之间存在若干逻辑缺口：
+
+- **表达不等于功能**：配体 mRNA 的存在不保证蛋白被翻译、被正确修饰、被分泌。受体同理。
+- **共定位可能有共同原因**：两种细胞类型都富集在某个区域，可能只是因为它们都响应同一个局部环境（如缺氧），而彼此并无直接作用。
+- **Spot 级数据的分辨率限制**：在 55 µm 内推断的"相邻"，实际可能是两个相距 50 µm、并不接触的细胞。
+- **方向性难以确定**：统计上的空间相关是对称的，而信号传递是有方向的。COMMOT 的流场给出了方向性，但那是模型假设的产物而非观测。
+
+:::info
+**黄金法则：** 空间通讯分析的产出是**有空间位置的假设**，不是结论。它的真正价值在于把"组织里可能有上千个配体-受体对在起作用"这个无从下手的问题，压缩为"在这个特定区域、这几对分子最值得验证"——从而让后续的实验验证成为可能。因此一份严谨的空间通讯分析，其终点应当是一个可实验检验的清单：哪几对分子、在哪个区域、预期用什么实验（免疫荧光共染、受体阻断、类器官共培养）验证。停留在"我们发现了 200 个显著的配体-受体对"的分析，实际上什么都没有发现。
+:::
+
+---
+
+# 方法总结与衔接说明
+
+本专题把空间信息引入了细胞关系的推断。起点是一个尺度论证：多数配体-受体作用是短程的，而 scRNA-seq 的通讯推断只能依赖表达共现，必然包含大量空间上不可能发生的假阳性；空间数据使"在作用范围内"成为可检验的条件。方法上，共定位分析用邻域富集检验回答"哪些细胞类型倾向共处"，其关键在于置换零模型的构造决定了检验的含义；配体-受体推断则有三条路线，其中 SpatialDM 的二元 Moran's I 在统计上最自洽，COMMOT 的最优传输框架则提供了方向性的通讯流场。生态位分析把视角从类型对提升到组合模式，通过对邻域组成向量聚类识别反复出现的功能单元——它与空间域的区别在于聚类对象是邻域组成而非自身表达，因而能识别空间上不连通的同类结构，这在肿瘤免疫的浸润型与排斥型表型区分中尤为关键。
+
+最后本专题强调了解释边界：所有这些方法给出的都是观察性关联，其价值在于把无从下手的假设空间压缩为可实验验证的短清单。
+
+模块 B 至此完成。接下来的模块 C 转向两个尚未处理的问题：专题 9.4 处理成像型平台的细胞分割——当分辨率本身就达到单细胞级时，计算难点前移到图像处理；专题 9.5 则把视角从单张切片扩展到三维器官与多模态测量。
+
+---
+
+# 课后自测 (Post-Lesson Quiz)
+
+1. scRNA-seq 的细胞通讯推断建立在什么假设之上？为什么说这一假设在生物学上站不住？
+
+2. 四类通讯模式（近分泌、自分泌、旁分泌、内分泌）的空间尺度如何？为什么说"空间约束对旁分泌通讯最有价值"，而 Visium 上做 Notch-Delta 推断本质上仍是猜测？
+
+3. 把空间纳入通讯推断有哪三种不同强度的做法？为什么说"空间统计检验"这一类在统计上最自洽？
+
+4. 邻域富集检验中，置换零模型的构造为什么"决定了检验在问什么"？打乱 Spot 位置标签与打乱邻接图的边，分别对应什么零假设？
+
+5. 请写出二元 Moran's I 的形式并说明它在问什么问题。相比"A 表达配体且 B 表达受体"，它有哪三个实质改进？
+
+6. COMMOT 把细胞通讯建模为最优传输问题。这一框架天然处理了哪三件事？
+
+7. 生态位（Niche）与空间域（Spatial Domain）在算法上都是聚类，区别在哪里？请用"血管周围免疫龛"说明为什么这一区别有实际意义。
+
+8. 某研究者用 SpatialDM 分析肿瘤 Visium 数据，得到 200 余对 FDR 显著的配体-受体对，并在论文中列出全部结果作为"肿瘤微环境通讯图谱"。请评价这一做法，并提出改进方案。
+
+<details>
+<summary><strong>参考答案 (Reference Answers)</strong></summary>
+
+1. *假设是：只要细胞类型 A 表达配体、B 表达受体，就推断存在 A→B 通讯，即把表达共现等同于相互作用。这一假设在生物学上站不住，因为绝大多数配体-受体作用是短程的，需要细胞在物理上邻近或处于扩散可达范围内；一个在组织两端、相隔数毫米的细胞对，无论表达谱多么互补，都不可能通过膜结合配体发生相互作用。scRNA-seq 接受这一假设并非因为它合理，而是因为解离已抹去位置信息，别无选择。*
+
+2. *近分泌需细胞直接接触（< 1 µm）；自分泌作用于细胞自身；旁分泌为数十至数百 µm；内分泌为全身。空间约束对旁分泌最有价值，是因为其作用尺度恰好与 Visium 的 Spot 间距（100 µm）同量级，因此空间数据能有效区分"在作用范围内"与"不在范围内"。Visium 上做 Notch-Delta 推断仍是猜测，是因为该信号需要细胞直接接触，而在 55 µm 的 Spot 内部我们无法知道两个细胞是否真的接触——Spot 分辨率低于该信号的作用尺度，数据中根本不包含回答这个问题所需的信息。*
+
+3. *三种做法：（1）事后过滤——先做常规推断再剔除空间上从不相邻的类型对；（2）加权推断——按空间距离对通讯强度加权，COMMOT 属此类；（3）空间统计检验——直接检验配体与受体表达是否在空间上显著协同分布，SpatialDM 属此类。第三类最自洽，是因为它把问题重新表述为一个有明确零假设、可给出 p 值的空间统计假设，而不是在"表达共现"这一有缺陷的基础打分上事后打补丁——前两类的底层打分仍然来自非空间的表达共现逻辑。*
+
+4. *因为置换过程决定了"随机情况下应该是什么样"这一参照系，而 p 值衡量的正是观测值相对该参照系的极端程度。打乱 Spot 位置标签、保持邻接图不变，对应的零假设是"细胞类型组成与空间位置无关"；打乱邻接图的边、保持标签不变，对应的则是关于图结构本身的另一个零假设。此外打乱位置会同时破坏所有空间结构（包括组织整体形状），在形状高度不规则的组织上这一零模型可能过于宽松，导致几乎所有类型对都显著；更严格的做法是受限置换，如只在同一空间域内打乱，以保持局部密度结构。*
+
+5. *形式为 $I_{LR} = \frac{N}{\sum_i\sum_j w_{ij}} \cdot \frac{\sum_i \sum_j w_{ij} \tilde{L}_i \tilde{R}_j}{\sqrt{\sum_i \tilde{L}_i^2}\sqrt{\sum_i \tilde{R}_i^2}}$，问的是"配体高表达的位置，其空间邻域中受体是否也高表达"。三个改进：（1）它是有明确零假设的统计检验，给出 p 值而非仅仅一个排序分数；（2）自动纳入距离信息，权重矩阵 $w_{ij}$ 显式编码了"多远算邻近"；（3）除全局统计量外还可计算每个位置的局部统计量，从而在组织上定位出具体的通讯热点，而非只给出类型对层面的汇总。*
+
+6. *三件事：（1）多个配体源竞争同一受体位点时的分配问题——最优传输的供需约束自然处理了有限配体在多个需求点间的分配；（2）信号传输的距离衰减——通过把空间距离编码进传输代价函数实现；（3）配体总量的守恒约束——传输方案必须满足供给侧的总量限制，避免某个源"无限供应"。其输出是通讯流场，可直观画出信号在组织上的流动方向。*
+
+7. *二者算法上都是聚类，但聚类对象不同：空间域对 Spot 的自身表达聚类，得到的域在空间上通常是连通区块；生态位对 Spot 的邻域细胞类型组成向量聚类，得到的生态位可能出现在解剖上互不相连的多个位置，只要那里的细胞组合模式相同。以"血管周围免疫龛"为例：它随血管分布散落组织各处、不构成连通区块，空间域分析会把这些位置分割到不同的域里（因为它们被其他组织隔开），而生态位分析能把它们识别为同一类功能单元——这正是研究者真正关心的生物学实体。*
+
+8. *这一做法价值有限。核心问题是它停留在"列出所有显著结果"，而没有完成分析真正的任务——把庞大的假设空间压缩为可验证的短清单。200 余对结果对读者而言与"什么都没说"相差不大：无法判断哪些重要、哪些是统计显著但效应微弱、哪些可能是共同原因导致的伪关联。此外还有几个具体问题：（1）若所有配体-受体对都用同一个空间尺度参数 $l$，则等于假设膜结合配体与可溶因子的作用范围相同，会系统性高估短程信号的范围；（2）未区分全局显著与局部热点，无法说明通讯发生在肿瘤的哪个区域；（3）未做任何独立验证。改进方案：（1）按配体的生物学性质分组，对膜结合、基质结合、可溶性配体分别设定合适的空间尺度参数重跑；（2）用局部统计量把每个显著对定位到具体区域，优先关注集中于肿瘤-间质界面等关键结构的通路；（3）结合效应量而非仅用 p 值排序，并与已知的肿瘤免疫通路知识交叉筛选；（4）把结果收敛为一份可实验检验的清单——明确哪几对分子、在哪个区域、用什么实验（免疫荧光共染验证蛋白层面的共定位、受体阻断实验验证功能依赖、类器官共培养重建该相互作用）验证；（5）若有多个样本，应检验这些通讯对是否在样本间可重复，而非基于单张切片下结论。*
+
+</details>

@@ -1,0 +1,365 @@
+---
+title: "空间图神经网络与空间域识别进阶"
+date: today
+format:
+  html:
+    code-fold: false
+    toc: true
+    toc-depth: 3
+    number-sections: true
+    theme: cosmo
+crossref:
+  fig-title: 图
+  fig-prefix: 图
+  tbl-title: 表
+  tbl-prefix: 表
+  chapters: false
+---
+
+# 专题概述
+
+第 8 章的 BayesSpace 用一个固定的邻域势能项表达"空间连续性"，简洁但刚性：它假设所有位置的空间平滑强度相同。真实组织却并非如此——肿瘤的浸润前沿是锐利的突变，皮层的分层过渡是缓慢的渐变，二者往往出现在同一张切片上。用单一的平滑强度去拟合，不是把边界抹糊，就是让平滑区域残留噪声。图神经网络提供了更灵活的替代方案：把每个 Spot 视为图的节点、空间邻接视为边，通过消息传递让每个节点的表示融合其邻域信息，而**平滑的强度由数据学习而非预先设定**。本专题讲解这一思路的三类代表性实现，并用同等篇幅讨论一个容易被技术热度掩盖的问题：在缺乏金标准的空间域任务上，我们凭什么判断一个更复杂的方法确实更好。
+
+**学习目标**：理解从 MRF 先验到图神经网络的方法论演进动机；掌握空间邻接图的三种构建方式及其对结果的影响；理解图卷积的消息传递机制与过平滑问题；掌握 SpaGCN 的三模态融合与 STAGATE 的图注意力机制；能运行 STAGATE 并与第 8 章的方法做三方对比；掌握空间域评估的常用指标与其局限；能通过多随机种子重跑检验结果稳定性，并对复杂方法的实际增量做出审慎判断。
+
+---
+
+# 从固定先验到可学习的邻域
+
+## MRF 先验的刚性
+
+回顾 BayesSpace 的 Potts 先验（参见第 8 章）：
+
+$$p(\mathbf{z}) \propto \exp\left(\gamma \sum_{i}\sum_{j \in N(i)} \mathbb{I}(z_i = z_j)\right)$$
+
+这里 $\gamma$ 是一个**全局常数**：切片上每一个位置、每一条边，都用同样的强度鼓励标签一致。这一设定的问题在真实组织上很明显——设想一张同时包含肿瘤核心区与浸润前沿的切片：核心区内部高度均质，需要强平滑；浸润前沿则是肿瘤与正常组织的交界，边界两侧本应分属不同域，强平滑会把这条界线抹糊。单一的 $\gamma$ 无法同时满足两种需求。
+
+一个自然的改进方向是：让平滑强度**因边而异**，并且这个强度不是人为指定，而是从数据中学出来。这正是图神经网络在空间转录组中的核心价值。
+
+## 图的视角
+
+把空间数据表示为图 $G = (V, E)$ 是一个直观的抽象：节点 $V$ 是 Spot（或细胞），每个节点携带其表达向量作为特征；边 $E$ 连接空间上相邻的节点。于是"利用空间信息"就被翻译为"在图上做计算"，可以直接调用图机器学习的全部工具。
+
+{{Wiki:Graph_neural_network}}
+
+@tbl-mrf-vs-gnn 对比了两条路线的核心差异。
+
+| 维度 | MRF 先验（BayesSpace） | 图神经网络 |
+|------|----------------------|-----------|
+| 空间信息的形式 | 标签层面的先验概率 | 特征层面的邻域聚合 |
+| 平滑强度 | 全局常数 $\gamma$，人为设定 | 逐边可学习（注意力机制） |
+| 作用对象 | 聚类标签 | 节点表示（嵌入） |
+| 可否融合图像 | 否 | 可（SpaGCN） |
+| 推断方式 | MCMC 采样 | 梯度下降训练 |
+| 可解释性 | 高（模型结构透明） | 较低（表示是学出来的） |
+| 计算环境 | R / CPU | Python / GPU |
+
+: MRF 先验与图神经网络在空间域识别中的对比 {#tbl-mrf-vs-gnn}
+
+---
+
+# 空间邻接图的构建
+
+## 三种方式与它们的取舍
+
+图神经网络的一切都建立在邻接图之上，因此建图方式的影响不亚于模型选择本身。三种常用方式与专题 8.3 的空间权重矩阵同源：
+
+- **k-近邻（kNN）**：每个节点连接最近的 $k$ 个节点。简单通用，但在细胞密度不均的组织中，稀疏区域的"最近邻"可能实际上很远。
+- **半径邻域**：连接距离小于 $r$ 的所有节点。保证了边的物理意义一致（都在 $r$ 微米内），但密集区域的节点度数会很高。
+- **Delaunay 三角剖分**：基于计算几何构造，自适应密度且不需要指定参数。它给出的邻接关系在几何上最"自然"，常用于细胞级数据（如成像型平台）。
+
+```r
+library(Seurat)
+library(SeuratData)
+
+brain <- LoadData("stxBrain", type = "anterior1")
+coords <- as.matrix(GetTissueCoordinates(brain)[, c("imagerow", "imagecol")])
+
+# Three ways to define "neighbours", side by side
+build_knn <- function(coords, k = 6) {
+    d <- as.matrix(dist(coords)); diag(d) <- Inf
+    A <- matrix(0, nrow(d), ncol(d))
+    for (i in seq_len(nrow(d))) A[i, order(d[i, ])[seq_len(k)]] <- 1
+    pmax(A, t(A))
+}
+
+build_radius <- function(coords, r) {
+    d <- as.matrix(dist(coords)); diag(d) <- Inf
+    (d < r) * 1
+}
+
+A_knn <- build_knn(coords, k = 6)
+# For Visium the centre-to-centre spacing is ~100 um; pick r just above that
+A_rad <- build_radius(coords, r = quantile(as.matrix(dist(coords)), 0.002))
+
+cat("kNN   : mean degree =", round(mean(rowSums(A_knn)), 2), "\n")
+cat("radius: mean degree =", round(mean(rowSums(A_rad)), 2),
+    " (sd =", round(sd(rowSums(A_rad)), 2), ")\n")
+```
+
+注意两者的度数分布差异：kNN 的度数几乎恒定，半径邻域的度数则随局部密度波动——后者的标准差正反映了组织中细胞密度的不均匀性。
+
+```r
+#| label: fig-spatial-graph
+#| fig-cap: "基于 Visium 坐标构建的空间邻接图（stxBrain 小鼠脑前切片，局部放大）。每个点为一个 Spot，线段表示 k 近邻图中的邻接关系。六角网格的规则排布使得每个内部 Spot 与其六个直接相邻 Spot 相连，形成规则的蜂窝状拓扑；组织边缘的 Spot 因缺少部分邻居而度数较低。这一图结构是所有图神经网络方法进行邻域信息聚合的基础。"
+library(ggplot2)
+
+# Draw a zoomed-in patch of the graph so individual edges stay visible
+sel <- which(coords[, 1] < quantile(coords[, 1], 0.15) &
+             coords[, 2] < quantile(coords[, 2], 0.15))
+edges <- which(A_knn[sel, sel] == 1, arr.ind = TRUE)
+
+seg <- data.frame(
+    x    = coords[sel, 2][edges[, 1]], y    = coords[sel, 1][edges[, 1]],
+    xend = coords[sel, 2][edges[, 2]], yend = coords[sel, 1][edges[, 2]]
+)
+pts <- data.frame(x = coords[sel, 2], y = coords[sel, 1])
+
+ggplot() +
+    geom_segment(data = seg, aes(x, y, xend = xend, yend = yend),
+                 colour = "grey70", linewidth = 0.3) +
+    geom_point(data = pts, aes(x, y), size = 1.2, colour = "steelblue") +
+    coord_equal() +
+    theme_void()
+```
+
+:::warning
+**建图参数是一个隐藏的超参数：** 很多论文只报告"使用 STAGATE 进行空间域识别"，却不写建图时用了 kNN 还是半径邻域、$k$ 或 $r$ 取多少。这使得结果无法复现——同一份数据，$k = 6$ 与 $k = 18$ 得到的空间域可能有实质差异，因为 $k$ 实际上决定了模型能看到多大范围的空间上下文。建图参数应当与模型超参数同等对待：明确报告、并做敏感性检验。
+:::
+
+---
+
+# 三类图神经网络方法
+
+## 图卷积与消息传递
+
+图卷积网络（Graph Convolutional Network, GCN）的基本操作是**消息传递**：每一层，每个节点把自己和邻居的特征做加权平均，得到新的表示。形式上，第 $l+1$ 层的表示为：
+
+$$H^{(l+1)} = \sigma\left(\tilde{D}^{-1/2}\tilde{A}\tilde{D}^{-1/2} H^{(l)} W^{(l)}\right)$$
+
+其中 $\tilde{A} = A + I$ 是加了自环的邻接矩阵，$\tilde{D}$ 是其度矩阵，$W^{(l)}$ 是可学习的权重，$\sigma$ 是激活函数。归一化项 $\tilde{D}^{-1/2}\tilde{A}\tilde{D}^{-1/2}$ 的作用是防止高度数节点的表示被放大。
+
+直观地说，每过一层，每个 Spot 的表示就融合一圈邻居的信息：一层看到直接邻居，两层看到邻居的邻居，以此类推。这正是"空间平滑"在特征层面的实现——但与 MRF 不同，这里平滑的是**表示**而非标签，且权重 $W^{(l)}$ 是学出来的。
+
+:::warning
+**过平滑（Over-smoothing）是 GCN 的固有陷阱：** 层数越多，每个节点看到的邻域越大，但表示也越趋同——在极限情况下所有节点的表示收敛到同一个值，所有空间结构信息被完全抹平。这与"深度网络越深越好"的直觉相反。实践中空间转录组的 GCN 通常只用 2–3 层；若发现聚类结果随层数增加而变得越来越均匀、域的数量减少，那正是过平滑的典型表现。这也是 STAGATE 等方法引入注意力机制的动机之一——让模型自己决定哪些邻居该被聚合、哪些不该。
+:::
+
+## SpaGCN：融合组织图像
+
+SpaGCN 的独特之处在于它不止用表达和坐标，还把**组织图像**纳入建图（Hu et al., 2021）。具体做法是：从 H&E 图像中提取每个 Spot 位置的 RGB 值，将其转换为一个"虚拟的第三维坐标"，与二维空间坐标一起计算 Spot 间距离，据此构建加权邻接矩阵。
+
+这一设计的生物学动机很直接：H&E 染色反映组织形态，形态不同的区域即便空间相邻也不应被过度平滑。例如白质与灰质在 H&E 上颜色明显不同，加入 RGB 信息后，跨越白质-灰质边界的边权重会自动降低，从而保护这条边界。
+
+## STAGATE：让模型学习邻居权重
+
+图注意力网络（Graph Attention Network, GAT）不再用固定的归一化权重，而是为**每条边学习一个注意力系数**：
+
+$$\alpha_{ij} = \frac{\exp\left(\text{LeakyReLU}\left(\mathbf{a}^\top [W\mathbf{h}_i \Vert W\mathbf{h}_j]\right)\right)}{\sum_{k \in N(i)}\exp\left(\text{LeakyReLU}\left(\mathbf{a}^\top [W\mathbf{h}_i \Vert W\mathbf{h}_k]\right)\right)}$$
+
+$\alpha_{ij}$ 表示节点 $i$ 聚合邻居 $j$ 时的权重，由两个节点的表示共同决定。关键后果是：**当两个相邻 Spot 的表达差异很大时，注意力系数会自动降低**——这恰好就是"在边界处减弱平滑"的机制，且完全由数据驱动。
+
+STAGATE 把 GAT 嵌入一个自编码器框架：编码器用图注意力把表达压缩为低维空间表示，解码器从该表示重构原始表达，训练目标是重构误差最小（Dong & Zhang, 2022）。这是一种自监督学习——不需要任何标签，模型通过"能否重构自己"来学习有意义的表示。
+
+## GraphST：引入对比学习
+
+GraphST 在自编码器基础上加入对比学习：除了重构损失，还构造"损坏图"（把节点特征随机打乱）作为负样本，训练模型区分真实的邻域结构与损坏的结构。这一额外的判别性目标使学到的表示更具区分度。
+
+@tbl-gnn-methods 汇总三类方法。
+
+| 方法 | 核心机制 | 额外输入 | 主要优势 |
+|------|----------|----------|----------|
+| SpaGCN | 图卷积 + 图像 RGB 融合 | H&E 图像 | 利用形态学信息保护边界 |
+| STAGATE | 图注意力自编码器 | 无 | 逐边自适应平滑，边界锐利 |
+| GraphST | 图自编码器 + 对比学习 | 无 | 表示判别性更强 |
+
+: 三类空间图神经网络方法的对比 {#tbl-gnn-methods}
+
+---
+
+# STAGATE 实操与三方对比
+
+:::note
+**运行环境说明：** STAGATE 为 Python 包，依赖 PyTorch（GPU 版本 `STAGATE_pyG`，基于 PyTorch Geometric）与 Scanpy，需单独安装且**建议在 GPU 环境运行**；CPU 上一张 Visium 切片的训练约需十余分钟。R 用户若不具备 Python 环境，可跳过本节代码，直接阅读后面的对比与评估部分——第 8 章的 BayesSpace 已能满足多数研究需求。本节输入为 AnnData 格式的 Visium 数据。
+:::
+
+```python
+import scanpy as sc
+import STAGATE_pyG as STAGATE
+
+adata = sc.read_h5ad("visium_brain.h5ad")
+
+# Standard preprocessing before the graph model
+sc.pp.highly_variable_genes(adata, flavor="seurat_v3", n_top_genes=3000)
+sc.pp.normalize_total(adata, target_sum=1e4)
+sc.pp.log1p(adata)
+
+# Build the spatial neighbour graph; rad_cutoff is in the same units as obsm["spatial"]
+# For Visium, a cutoff just above the 100 um centre-to-centre spacing gives ~6 neighbours
+STAGATE.Cal_Spatial_Net(adata, rad_cutoff=150)
+STAGATE.Stats_Spatial_Net(adata)
+```
+
+```python
+# Train the graph attention autoencoder; the learned embedding lands in obsm["STAGATE"]
+adata = STAGATE.train_STAGATE(adata, alpha=0, n_epochs=1000, random_seed=0)
+
+# Cluster the learned representation with the usual Leiden pipeline
+sc.pp.neighbors(adata, use_rep="STAGATE")
+sc.tl.umap(adata)
+sc.tl.leiden(adata, resolution=0.6, key_added="STAGATE_domain")
+```
+
+```python
+#| label: fig-stagate-domains
+#| fig-cap: "STAGATE 图注意力自编码器识别的空间域（stxBrain Visium 小鼠脑）。每个 Spot 按其所属空间域着色并绘制在真实组织坐标上。相比不使用空间信息的普通聚类，图注意力机制通过逐边自适应的邻域聚合，产生了边界更锐利、内部更连贯的空间域划分，皮层各层的分层结构尤为清晰。"
+import scanpy as sc
+
+sc.pl.spatial(adata, color="STAGATE_domain", size=1.3,
+              save="_stagate_domains.png")
+```
+
+## 与第 8 章方法的三方对比
+
+把 STAGATE 的结果与第 8 章的普通聚类、BayesSpace 放在一起比较，才能判断增加的复杂度是否值得。沿用专题 8.4 定义的空间连贯性指标，并补充与解剖标注的一致性。
+
+```r
+library(Seurat)
+
+# Assume the three sets of labels have been collected onto one Seurat object:
+#   brain$seurat_clusters  (ordinary)
+#   brain$bayesspace       (MRF prior)
+#   brain$stagate_domain   (graph attention, imported from Python)
+
+methods <- c("seurat_clusters", "bayesspace", "stagate_domain")
+
+for (m in methods) {
+    lab <- brain[[m]][, 1]
+    cat(sprintf("%-16s k = %2d  coherence = %.3f\n",
+                m, length(unique(lab)), spatial_coherence(brain, lab)))
+}
+```
+
+```r
+library(mclust)
+
+# Agreement with an external anatomical annotation, when one is available
+# brain$manual_anatomy: region labels curated against a reference atlas
+for (m in methods) {
+    ari <- adjustedRandIndex(brain[[m]][, 1], brain$manual_anatomy)
+    cat(sprintf("%-16s ARI vs anatomy = %.3f\n", m, ari))
+}
+```
+
+---
+
+# 评估的困境与应对
+
+## 没有金标准
+
+空间域识别有一个使其区别于多数机器学习任务的特点：**没有客观的真值**。细胞类型注释还可以用流式分选或标志基因验证，但"这片组织应该划成几个域、边界在哪里"本身就带有尺度选择的主观性——把皮层看作一个域和看作六层，都不能说错。
+
+因此评估只能依靠三类间接证据，@tbl-domain-eval 汇总了它们各自的适用性与局限。
+
+| 评估方式 | 做法 | 局限 |
+|----------|------|------|
+| 解剖标注一致性（ARI） | 与病理/图谱标注比较 | 依赖标注质量；标注本身有主观性 |
+| 空间连贯性（PAS、CHAOS） | 度量标签的空间平滑度 | 越平滑越高，可被"少分几个域"刷高 |
+| 标志基因特异性 | 各域是否有清晰的特异标志基因 | 与聚类过程非完全独立 |
+| 结果稳定性 | 多随机种子/参数重跑的一致性 | 稳定不等于正确 |
+
+: 空间域识别方法的评估方式与局限 {#tbl-domain-eval}
+
+:::warning
+**当心用"更好看"代替"更正确"：** 图神经网络产出的空间域通常在视觉上更平滑、边界更整齐，这很容易被当作方法更优的证据。但平滑本身正是模型的归纳偏置，它必然让结果看起来更整齐——这是设计使然，不是发现。判断一个方法是否真的更好，必须依靠与外部证据（解剖标注、标志基因）的一致性，而不是结果的视觉美观度。同样要警惕的是在同一份数据上反复调参直到"图看起来对了"，这实质上是把研究者的先验当成了结论。
+:::
+
+## 稳定性检验
+
+深度学习方法对随机种子、初始化与超参数的敏感性远高于传统方法。一个最低限度的审慎做法是：用多个随机种子重跑，看结果是否一致。
+
+```python
+import scanpy as sc
+import STAGATE_pyG as STAGATE
+from sklearn.metrics import adjusted_rand_score
+import itertools
+
+labels = {}
+for seed in [0, 1, 2, 3, 4]:
+    ad = adata.copy()
+    ad = STAGATE.train_STAGATE(ad, alpha=0, n_epochs=1000, random_seed=seed)
+    sc.pp.neighbors(ad, use_rep="STAGATE")
+    sc.tl.leiden(ad, resolution=0.6, key_added="dom")
+    labels[seed] = ad.obs["dom"].values
+
+# Pairwise agreement across seeds: low ARI means the result is not reproducible
+for a, b in itertools.combinations(labels, 2):
+    print(f"seed {a} vs {b}: ARI = {adjusted_rand_score(labels[a], labels[b]):.3f}")
+```
+
+若不同种子之间的 ARI 明显偏低，说明模型未能稳定收敛，或数据的信息量不足以支撑当前设定的域粒度——此时报告任何单次运行的结果都是不负责任的。
+
+## 一个务实的工作流
+
+综合以上讨论，给出一条可操作的方法选择路径：
+
+1. **先跑普通聚类**（第 8 章）。它几秒完成，且如前所述，结果通常已相当连贯。用它确定大致的域数量与主要结构。
+2. **评估是否需要更强的空间约束**。如果普通聚类的碎片化已经影响解读（孤立 Spot 干扰边界判断），再引入空间方法。
+3. **优先尝试 BayesSpace**。它模型透明、参数少、无需 GPU，且在多数组织上已足够。
+4. **仅当有明确理由时才上图神经网络**。典型理由包括：组织中同时存在锐利边界与渐变过渡、需要融合 H&E 图像信息、或数据规模大到 MCMC 不可行。
+5. **无论用哪种，都做稳定性检验与外部证据核验**。
+
+:::info
+**黄金法则：** 方法的复杂度必须由问题的需求来证成，而不是由方法的新颖性来证成。在空间域识别这类缺乏金标准的任务上，一个复杂方法若不能在**独立于其自身假设的外部证据**（解剖标注、标志基因特异性、跨种子稳定性）上显示出优势，就没有理由取代简单方法。反过来说，当简单方法已经能给出与解剖一致、标志基因清晰、结果稳定的划分时，换用图神经网络带来的往往只是更长的运行时间与更难复现的结果。
+:::
+
+---
+
+# 方法总结与衔接说明
+
+本专题沿着"让空间平滑强度可学习"这一主线，讲解了图神经网络在空间域识别中的应用。方法论上，从 MRF 的全局固定 $\gamma$ 出发，指出其在同时存在锐利边界与渐变过渡的组织上的局限；随后把空间数据抽象为图，介绍了三种建图方式及其取舍，说明建图参数本身就是一个必须报告的超参数。模型层面，GCN 的消息传递实现了特征层面的平滑但有过平滑陷阱；SpaGCN 通过融合 H&E 图像的 RGB 信息保护形态学边界；STAGATE 的图注意力机制为每条边学习权重，使边界处的平滑自动减弱；GraphST 则用对比学习增强表示的判别性。
+
+但本专题用了同样多的篇幅讨论评估：空间域识别没有金标准，图神经网络产出的"更整齐"的结果是其归纳偏置的必然产物而非发现本身，因此必须依靠解剖一致性、标志基因特异性与跨种子稳定性这些外部证据来判断。最终给出的工作流是渐进式的——从普通聚类起步，只在有明确理由时才升级方法复杂度。
+
+至此本章模块 A 完成：解卷积回答了"每个位置有哪些细胞类型"，空间域识别回答了"组织如何分区"。专题 9.3 将利用这两项成果，转向空间数据独有的第三类问题——"谁与谁相邻，以及相邻意味着什么"。
+
+---
+
+# 课后自测 (Post-Lesson Quiz)
+
+1. BayesSpace 的 MRF 先验中，$\gamma$ 是一个全局常数。请用一张同时包含肿瘤核心区与浸润前沿的切片说明这一设定的局限。
+
+2. 空间邻接图有哪三种常见构建方式？kNN 与半径邻域在度数分布上有何差异，这一差异反映了什么？
+
+3. 为什么说"建图参数是一个隐藏的超参数"？不报告它会造成什么后果？
+
+4. 请写出图卷积的消息传递公式并解释归一化项 $\tilde{D}^{-1/2}\tilde{A}\tilde{D}^{-1/2}$ 的作用。什么是过平滑，它如何表现在聚类结果上？
+
+5. SpaGCN 如何把 H&E 图像信息纳入建图？这一设计的生物学动机是什么？请以白质-灰质边界为例说明。
+
+6. 图注意力机制中，注意力系数 $\alpha_{ij}$ 由什么决定？为什么说它天然实现了"在边界处减弱平滑"？
+
+7. 空间域识别为什么没有客观真值？这一特点对评估方法带来了什么困难？空间连贯性指标为什么不能单独作为评判依据？
+
+8. 某研究者比较了 BayesSpace 与 STAGATE 在同一批数据上的结果，发现 STAGATE 的空间域"看起来明显更整齐、边界更平滑"，据此在论文中主张 STAGATE 更优。请评估这一论证，并给出你认为严谨的比较方案。
+
+<details>
+<summary><strong>参考答案 (Reference Answers)</strong></summary>
+
+1. *$\gamma$ 是全局常数意味着切片上每一条边都用同样的强度鼓励标签一致。在同时包含肿瘤核心区与浸润前沿的切片上，核心区内部高度均质、需要强平滑以抑制噪声；而浸润前沿是肿瘤与正常组织的交界，边界两侧本应分属不同域，强平滑会把这条界线抹糊。单一的 $\gamma$ 无法同时满足两种需求：调大则丢失边界，调小则核心区碎片化。*
+
+2. *三种方式：k-近邻（每个节点连接最近的 k 个节点）、半径邻域（连接距离小于 r 的所有节点）、Delaunay 三角剖分（基于计算几何，自适应密度且无需参数）。度数分布上，kNN 的度数几乎恒定（每个节点都是 k），半径邻域的度数则随局部密度波动、标准差较大。这一差异反映了组织中细胞密度的不均匀性——密集区域在半径 r 内有更多邻居，稀疏区域更少；而 kNN 会强行给稀疏区域的节点也配上 k 个邻居，尽管它们实际距离可能很远。*
+
+3. *因为建图参数（用 kNN 还是半径邻域、k 或 r 取多少）实际决定了模型能看到多大范围的空间上下文，对结果的影响不亚于模型选择本身——同一份数据 k = 6 与 k = 18 得到的空间域可能有实质差异。不报告它的后果是结果无法复现：读者即便使用同样的软件和模型超参数，也无法重建出相同的图，因而无法得到相同的结论。建图参数应与模型超参数同等对待，明确报告并做敏感性检验。*
+
+4. *公式为 $H^{(l+1)} = \sigma(\tilde{D}^{-1/2}\tilde{A}\tilde{D}^{-1/2} H^{(l)} W^{(l)})$，其中 $\tilde{A} = A + I$ 是加自环的邻接矩阵、$\tilde{D}$ 为其度矩阵。归一化项的作用是防止高度数节点的表示被放大——若不归一化，邻居多的节点聚合后数值会系统性偏大，破坏表示的可比性。过平滑指层数越多、每个节点看到的邻域越大，但表示也越趋同，极限情况下所有节点表示收敛到同一值、空间结构信息被完全抹平。在聚类结果上表现为：随层数增加，域变得越来越均匀、数量减少、边界消失。*
+
+5. *SpaGCN 从 H&E 图像中提取每个 Spot 位置的 RGB 值，将其转换为一个"虚拟的第三维坐标"，与二维空间坐标一起计算 Spot 间距离，据此构建加权邻接矩阵。生物学动机是 H&E 染色反映组织形态，形态不同的区域即便空间相邻也不应被过度平滑。以白质-灰质边界为例：两者在 H&E 上颜色明显不同（白质富含髓鞘、染色较浅），加入 RGB 信息后，跨越该边界的两个 Spot 在"三维坐标"中的距离会显著增大，对应边的权重自动降低，从而保护这条真实存在的解剖边界不被平滑掉。*
+
+6. *$\alpha_{ij}$ 由节点 $i$ 与 $j$ 的表示 $W\mathbf{h}_i$ 和 $W\mathbf{h}_j$ 共同决定（拼接后经可学习向量 $\mathbf{a}$ 与 LeakyReLU，再在邻域内 softmax 归一化）。它天然实现边界处减弱平滑，是因为当两个相邻 Spot 的表达差异很大时——这正是边界的特征——二者表示的拼接会产生较低的注意力打分，$\alpha_{ij}$ 随之降低，聚合时该邻居的贡献被自动削弱。于是模型在均质区域强聚合、在边界处弱聚合，且这一行为完全由数据驱动而非人为设定。*
+
+7. *因为"这片组织应该划成几个域、边界在哪里"本身带有尺度选择的主观性——把皮层看作一个域和看作六层都不能说错，取决于研究关心的粒度。这与细胞类型注释不同（后者可用流式分选或标志基因独立验证）。困难在于只能依靠间接证据评估：解剖标注一致性依赖标注质量且标注本身主观；标志基因特异性与聚类过程非完全独立；稳定性只说明可复现不说明正确。空间连贯性不能单独作为依据，是因为它衡量的是"结果有多平滑"而非"多正确"——把所有 Spot 归为一个域连贯性达到 1.0 却毫无信息量，因此它可以被"少分几个域"轻易刷高，只能在域数相近时横向比较。*
+
+8. *这一论证不成立。核心问题是：平滑正是图神经网络（以及所有空间感知方法）的归纳偏置，产出更整齐的结果是模型设计使然，而不是一项发现。用"看起来更平滑"论证"方法更优"，等于用模型的假设去证明模型的正确性，属于循环论证。此外视觉整齐度还可能来自过度平滑，即抹掉了真实存在的锐利边界。严谨的比较方案：（1）在域数量相近的前提下比较，避免用少分域刷高连贯性；（2）以独立于两个模型假设的外部证据为判据——与病理学家标注或参考图谱的 ARI、各域标志基因的特异性与已知解剖标志的吻合度；（3）做多随机种子与多参数的稳定性检验，报告跨种子 ARI；（4）若可能，在多个不同组织的数据集上重复比较，避免结论只在单一数据上成立；（5）明确报告两种方法的建图参数与全部超参数，并说明是否经过针对该数据的调参——若只对 STAGATE 精细调参而 BayesSpace 用默认值，比较本身就不公平。*
+
+</details>

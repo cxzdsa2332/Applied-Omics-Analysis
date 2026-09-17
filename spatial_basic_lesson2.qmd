@@ -1,0 +1,378 @@
+---
+title: "Visium 技术原理与 Space Ranger 上游处理"
+date: today
+format:
+  html:
+    code-fold: false
+    toc: true
+    toc-depth: 3
+    number-sections: true
+    theme: cosmo
+crossref:
+  fig-title: 图
+  fig-prefix: 图
+  tbl-title: 表
+  tbl-prefix: 表
+  chapters: false
+---
+
+# 专题概述
+
+在专题 8.1 建立的平台全景中，10x Genomics Visium 占据着"全转录组 + 组织分区级分辨率 + 成熟生态"这一最实用的位置，也因此成为目前应用最广的空间转录组平台。本专题深入 Visium 的技术内核：空间条形码捕获阵列如何把表达量与组织坐标绑定、实验流程中哪些环节决定数据质量、Space Ranger 相比 Cell Ranger 多做了什么、以及输出数据的组织方式。贯穿本专题的一条关键认识是——55 µm 的 Spot 通常涵盖 1–10 个细胞，因此每个 Spot 是**混合信号**，对其聚类得到的是空间域而非细胞类型。这一事实决定了后续所有 Visium 分析的逻辑边界。
+
+**学习目标**：理解 Visium 空间条形码捕获阵列的结构与"分子地址簿"机制；掌握从切片到测序的完整实验流程及各环节的质量控制点；理解 Spot 分辨率的本质局限与"空间域 ≠ 细胞类型"的概念区分；掌握 `spaceranger count` 的参数体系与图像配准原理；能读懂 Space Ranger 输出目录结构与坐标系统；能加载 Visium 数据、剖析空间对象结构并完成初步可视化与配准核验。
+
+---
+
+# Visium 技术原理
+
+## 一个来自斯德哥尔摩的想法
+
+Visium 的技术源头是 2016 年瑞典皇家理工学院（KTH）的一项工作：研究者把带有位置特异条形码的逆转录引物阵列印在载玻片上，让组织切片直接贴在阵列上原位释放 mRNA，从而在测序读段里同时读出"是什么基因"和"来自哪个位置"（Ståhl et al., 2016）。这一方法被直接命名为"Spatial Transcriptomics"，后来 10x Genomics 收购了该技术并商业化为 Visium。
+
+:::note
+**一个容易混淆的命名：** 因为最初的方法就叫"Spatial Transcriptomics"（首字母缩写 ST），早期文献中的"ST 数据"常特指这一种条形码阵列技术，而非泛指整个空间转录组领域。阅读 2016–2019 年前后的文献时需要留意这一歧义——当时的"ST platform"通常指 Visium 的前身，其 Spot 直径为 100 µm、间距 200 µm，分辨率比今天的 Visium 更粗。今天"空间转录组学"已成为涵盖所有技术路线的学科名称。
+
+其原始版本的一个细节也值得一提：为了让条形码阵列与组织图像对齐，研究者在玻片四角印上了基准标记——这个看似琐碎的工程设计，正是今天 Space Ranger 自动配准的基础。
+:::
+
+## 空间条形码捕获阵列
+
+Visium 的核心是一张预先印刷了空间条形码捕获阵列的载玻片。阵列上排列着数千个捕获点（Spot），每个 Spot 直径 55 µm、中心间距 100 µm，呈六角形网格排布；每张标准捕获区约含 4992 个捕获 Spot。关键在于——**同一 Spot 上的所有捕获探针共享一段该 Spot 特有的空间条形码**，而不同 Spot 的条形码各不相同。因此条形码与载玻片上的物理坐标一一对应，构成了"分子地址簿"。
+
+{{Wiki:Spatial_transcriptomics}}
+
+每条捕获探针从 5′ 到 3′ 依次包含：测序接头、空间条形码（标识 Spot 位置）、UMI（标识独立的 mRNA 分子）、以及 poly-T 序列（捕获 mRNA 的 poly-A 尾）。这一结构与 10x 单细胞探针几乎完全同构，差别只在于：单细胞平台的条形码标识"哪个液滴/细胞"，而 Visium 的条形码标识"哪个位置"。理解这一同构关系，就能明白为什么两类数据的上游处理与下游分析可以高度共享。
+
+## 实验流程与关键质控点
+
+完整的 Visium 实验流程包含六个步骤，每一步都有对应的质量控制点：
+
+1. **切片贴附**：10 µm 厚的组织切片贴在捕获区上。质控点：切片必须完整平铺，任何折叠、气泡或撕裂都会造成该区域数据不可用。
+2. **固定与 H&E 染色**：甲醇固定后做苏木精-伊红染色。质控点：染色质量直接影响后续的形态学判读。
+3. **明场成像**：拍摄高分辨率组织图像。质控点：对焦、曝光与基准标记的清晰度——基准标记模糊会导致自动配准失败。
+4. **透化**：酶解使细胞内 mRNA 释放。质控点：透化时间必须针对组织类型预先优化（参见专题 8.1），这是整个流程中最关键的可调参数。
+5. **捕获与逆转录**：释放的 mRNA 被就近 Spot 的 poly-T 探针捕获，原位逆转录为带空间条形码的 cDNA。
+6. **建库与测序**：后续流程与常规 3′ RNA-seq 一致。
+
+:::warning
+**透化时间决定了"空间分辨率"的实际值：** 标称 55 µm 的分辨率只在 mRNA 不发生横向扩散的理想情况下成立。透化过度时，mRNA 在被捕获前已经扩散到邻近 Spot，实际分辨率显著劣化——组织上一个锐利的表达边界会在数据中呈现为渐变的过渡带。这种弥散与真实的生物学梯度在数据上难以区分，因此不能指望在分析阶段识别并校正它。唯一的防线是实验前的透化优化（Tissue Optimization）实验：用荧光标记的 cDNA 成像，选择信号最强且空间最锐利的时间点。
+:::
+
+## Spot 是混合信号，而非单细胞
+
+Visium 与 scRNA-seq 最本质的区别在于分辨率。55 µm 直径的 Spot 通常涵盖 1–10 个细胞（取决于组织的细胞密度），因此**每个 Spot 的转录谱是其覆盖的多个细胞的混合信号**，而非单细胞信号。这一点决定了 Visium 数据分析的诸多特殊性，见 @tbl-visium-vs-scrna。
+
+| 维度 | scRNA-seq | Visium |
+|------|-----------|--------|
+| 观测单元 | 单个细胞 | Spot（1–10 个细胞混合） |
+| 空间信息 | 丢失 | 保留二维坐标 |
+| 分辨率 | 单细胞 | 55 µm（亚组织级） |
+| 组织覆盖 | 解离后全部细胞 | 稀疏采样（Spot 间有间隙） |
+| 细胞类型 | 直接聚类识别 | 需解卷积拆分（参见第 9 章） |
+| 典型研究对象 | 细胞类型异质性 | 组织空间结构/分区 |
+| 每单元 UMI 量级 | $10^3$–$10^4$ | $10^3$–$10^5$（多细胞叠加） |
+
+: Visium 与 scRNA-seq 的数据结构对比 {#tbl-visium-vs-scrna}
+
+:::note
+**"空间域"不等于"细胞类型"：** 直接对 Visium 的 Spot 聚类，得到的是转录特征相似且空间毗邻的组织区域，称为空间域（Spatial Domain），如脑的不同皮层、肿瘤的核心区与边缘区。它反映的是组织的功能分区，而非单一细胞类型。要从 Spot 中还原各细胞类型的比例，需要借助 scRNA-seq 参考做细胞解卷积（专题 9.1），这是 Visium 分析区别于 scRNA-seq 的核心环节。本章后续凡提到"聚类结果"，默认都指空间域。
+:::
+
+## 新鲜冷冻与 FFPE 两条捕获路线
+
+上述 poly-T 捕获方案要求 mRNA 的 poly-A 尾完整，因此只适用于新鲜冷冻（FF）样本。但临床研究中绝大多数存档样本是 FFPE 的，其 RNA 已高度片段化且发生交联，poly-A 捕获几乎完全失效。为此 10x 推出了**探针捕获**（Probe-based）方案：设计一组覆盖全转录组的成对探针，每对探针杂交到目标转录本的相邻区域后被连接酶连接，连接产物再被阵列上的探针捕获。由于每对探针只需要约 50 nt 的完整模板，该方案对片段化 RNA 的耐受度远高于 poly-A 捕获。
+
+@tbl-ff-vs-ffpe 总结了两条路线的差异。这一选择在实验设计阶段就必须确定，因为它决定了使用哪种试剂盒与哪套 Space Ranger 参考。
+
+| 维度 | 新鲜冷冻（poly-A 捕获） | FFPE（探针捕获） |
+|------|------------------------|------------------|
+| 捕获机制 | poly-T 捕获 poly-A 尾 | 成对探针杂交 + 连接 |
+| RNA 完整性要求 | RIN ≥ 7 | DV200 ≥ 50%（更宽松） |
+| 基因覆盖 | 全转录组，无偏 | 受探针 panel 限制（近全转录组） |
+| 可检测非编码 RNA | 是（有 poly-A 的） | 仅探针覆盖的 |
+| 典型应用 | 动物模型、前瞻性研究 | 临床存档样本、回顾性研究 |
+
+: Visium 新鲜冷冻与 FFPE 两种捕获方案的对比 {#tbl-ff-vs-ffpe}
+
+---
+
+# Space Ranger 上游处理
+
+## 处理流程与图像配准
+
+Space Ranger 是 Visium 数据的官方上游软件，其核心命令 `spaceranger count` 在 Cell Ranger 的条形码处理、比对、UMI 计数基础上，增加了一个关键环节——**把测序数据与组织图像对齐**。它读取 H&E 显微图像，借助载玻片四角的基准标记（Fiducial frame）确定阵列在图像中的精确位置，再将每个 Spot 的表达量与其在图像上的像素坐标关联起来。
+
+整个流程可以概括为两条并行的数据流最终在 Spot 条形码上汇合：
+
+```text
+测序数据流                          图像数据流
+FASTQ                              H&E TIFF
+  ↓ 提取空间条形码 + UMI              ↓ 基准标记检测
+  ↓ 条形码纠错（对照已知白名单）        ↓ 阵列坐标系配准
+  ↓ STAR 比对到参考转录组             ↓ 组织自动检测（tissue detection）
+  ↓ UMI 去重                        ↓ 保留组织覆盖的 Spot
+  └──────────┬──────────────────────┘
+             ↓ 按空间条形码合并
+       Spot × Gene 表达矩阵 + 每 Spot 像素坐标
+```
+
+```bash
+# Space Ranger: quantify a Visium slide and register it to the H&E image
+spaceranger count \
+    --id=visium_brain \
+    --transcriptome=/path/to/refdata-gex-mm10-2020-A \
+    --fastqs=/path/to/visium_fastqs \
+    --image=/path/to/tissue_HE_image.tif \
+    --slide=V19L01-041 \
+    --area=A1 \
+    --localcores=8 \
+    --localmem=64
+```
+
+`--slide` 与 `--area` 指定所用载玻片的型号与捕获区，使 Space Ranger 能加载正确的 Spot 坐标布局——每张玻片出厂时都有唯一编号，对应一份记录了该玻片实际 Spot 排布的布局文件（`.gpr`）。若实验室处于离线环境，需要提前下载该文件并用 `--slidefile` 指定，否则 Space Ranger 无法确定阵列几何。
+
+FFPE 样本的处理命令略有不同，需要额外指定探针集文件：
+
+```bash
+# FFPE probe-based Visium: the probe set must be given explicitly
+spaceranger count \
+    --id=visium_ffpe_tumor \
+    --transcriptome=/path/to/refdata-gex-GRCh38-2020-A \
+    --probe-set=/path/to/Visium_Human_Transcriptome_Probe_Set_v2.0.csv \
+    --fastqs=/path/to/ffpe_fastqs \
+    --image=/path/to/tissue_HE_image.tif \
+    --slide=V42A20-353 \
+    --area=B1 \
+    --localcores=8 \
+    --localmem=64
+```
+
+## 组织自动检测与手动校正
+
+组织自动检测（tissue detection）会区分被组织覆盖的 Spot 与空白背景 Spot，仅保留前者进入表达矩阵。其算法依据的是 H&E 图像的颜色与纹理特征，在染色均匀、背景干净的切片上通常表现良好，但在以下情形容易出错：
+
+- 组织染色很浅（如脂肪组织、疏松结缔组织），被误判为背景而漏检
+- 玻片上有染色残留、气泡或碎屑，被误判为组织而误检
+- 组织边缘不规则或有撕裂，边界判定不稳定
+
+:::tip
+**图像质量直接影响下游：** H&E 图像的对焦、曝光与组织完整性会影响 Space Ranger 的组织检测与 Spot 配准精度。若自动组织检测出错（漏检或误检 Spot），可借助 10x 的 Loupe Browser 手动框选组织区域、调整 Spot 选择，导出 `alignment.json` 后用 `--loupe-alignment` 参数重新运行。务必在分析前用 Loupe Browser 目视核对配准结果，避免错位的坐标污染全部空间分析——这一步只需几分钟，却能避免整个项目建立在错误坐标上。
+:::
+
+```bash
+# Re-run with a manual alignment exported from Loupe Browser
+spaceranger count \
+    --id=visium_brain_realigned \
+    --transcriptome=/path/to/refdata-gex-mm10-2020-A \
+    --fastqs=/path/to/visium_fastqs \
+    --image=/path/to/tissue_HE_image.tif \
+    --loupe-alignment=/path/to/manual_alignment.json \
+    --slide=V19L01-041 \
+    --area=A1 \
+    --localcores=8 \
+    --localmem=64
+```
+
+## 输出与坐标系统
+
+Space Ranger 的输出在 Cell Ranger 三件套（表达矩阵）之外，额外包含一个 `spatial/` 目录，存放空间相关信息：
+
+- `tissue_positions.csv`：每个 Spot 的条形码、是否在组织内、阵列行列号、图像像素坐标
+- `tissue_hires_image.png` / `tissue_lowres_image.png`：不同分辨率的组织图像
+- `scalefactors_json.json`：图像像素与 Spot 实际尺寸的换算因子
+- `aligned_fiducials.jpg` / `detected_tissue_image.jpg`：配准与组织检测的诊断图，用于目视核验
+
+理解这里的**三套坐标系统**很重要，它们是空间分析中最常见的困惑来源：
+
+1. **阵列坐标（array row/col）**：Spot 在六角网格中的整数行列号，反映拓扑邻接关系，用于构建空间邻接图。
+2. **全分辨率像素坐标（pxl_row/col_in_fullres）**：Spot 中心在原始全分辨率 H&E 图像上的像素位置。
+3. **缩略图像素坐标**：把上一项乘以 `scalefactors_json.json` 中的 `tissue_hires_scalef` 或 `tissue_lowres_scalef`，得到在缩略图上的位置——这是实际绘图时使用的坐标。
+
+```bash
+# Inspect the spatial output of a Space Ranger run
+ls -1 /path/to/visium_brain/outs/spatial/
+
+# The positions file: barcode, in_tissue, array_row, array_col, pxl_row, pxl_col
+head -3 /path/to/visium_brain/outs/spatial/tissue_positions.csv
+
+# Scale factors translate full-resolution pixels to the downsampled images
+cat /path/to/visium_brain/outs/spatial/scalefactors_json.json
+```
+
+`scalefactors_json.json` 中还有一项 `spot_diameter_fullres`——Spot 直径在全分辨率图像上对应的像素数。由于 Spot 的物理直径固定为 55 µm，这个值实际上给出了图像的**物理尺度换算**：用它可以把任意像素距离换算为微米，这在计算细胞间实际距离（专题 9.3）时是必需的。
+
+---
+
+# 加载与初步可视化
+
+## 加载 Visium 数据
+
+下面使用小鼠脑 Visium 数据（`stxBrain`，前脑切片）演示加载与可视化。Seurat 的空间对象同时持有表达矩阵与每个 Spot 的图像坐标，使表达可以直接绘制在组织背景上。
+
+:::note
+**运行环境说明：** 本节依赖 R 包 `Seurat`（v5）与 `SeuratData`。`stxBrain` 数据集每个切片约 130 MB，含小鼠脑前/后切片。首次使用需 `SeuratData::InstallData("stxBrain")`。若分析自有数据，`Load10X_Spatial()` 可直接读取 Space Ranger 的 `outs/` 输出目录，参数为该目录路径。
+:::
+
+```r
+library(Seurat)
+library(SeuratData)
+
+# Load a Visium mouse brain (anterior) section as a spatial Seurat object
+brain <- LoadData("stxBrain", type = "anterior1")
+
+# Spatial QC: in Visium the analog of percent.mt still applies per Spot
+brain[["percent.mt"]] <- PercentageFeatureSet(brain, pattern = "^mt-")
+brain
+```
+
+```r
+# Equivalent call for your own Space Ranger output directory
+# brain <- Load10X_Spatial(data.dir = "/path/to/visium_brain/outs")
+```
+
+## 剖析空间对象的结构
+
+理解 Seurat 空间对象的内部结构，有助于在遇到问题时定位原因。与普通 Seurat 对象相比，它多了一个 `images` 槽，其中存放每张切片的图像与坐标信息。
+
+```r
+library(Seurat)
+
+# The assay is called "Spatial" (not "RNA") -- this matters for later function calls
+Assays(brain)
+DefaultAssay(brain)
+
+# Image slots: one entry per tissue section
+Images(brain)
+
+# Per-Spot coordinates: array row/col plus pixel positions
+coords <- GetTissueCoordinates(brain)
+head(coords)
+
+# Scale factors used to map full-resolution pixels onto the stored thumbnail
+ScaleFactors(brain[["anterior1"]])
+```
+
+一个实用的推论：既然 `spot_diameter_fullres` 给出了 55 µm 对应的像素数，就可以据此把 Spot 之间的像素距离换算为微米，从而验证阵列的几何是否正常。
+
+```r
+library(Seurat)
+
+# Convert pixel distances to micrometres using the known 55 um spot diameter
+sf <- ScaleFactors(brain[["anterior1"]])
+um_per_pixel <- 55 / sf$spot
+
+coords <- GetTissueCoordinates(brain)
+# Nearest-neighbour distance between spot centres should be close to 100 um
+d <- as.matrix(dist(coords[1:500, c("imagerow", "imagecol")]))
+diag(d) <- NA
+nn_pixels <- apply(d, 1, min, na.rm = TRUE)
+
+cat("Median centre-to-centre spacing:",
+    round(median(nn_pixels) * um_per_pixel, 1), "um\n")
+```
+
+若这一数值明显偏离 100 µm，说明坐标或缩放因子存在问题，应回到 Space Ranger 输出核查配准。
+
+## 标志基因的空间表达
+
+Visium 分析最直观的输出是把基因表达画在组织切片上。`SpatialFeaturePlot()` 将每个 Spot 按指定基因的表达量着色，叠加在 H&E 图像上，使空间表达模式一目了然。
+
+```r
+#| label: fig-spatial-marker
+#| fig-cap: "小鼠脑前切片中经典脑区标志基因的空间表达（stxBrain Visium 数据）。每个 Spot 按基因表达量着色并叠加在组织切片图像上。海马区标志基因 Hpca 与脉络丛标志基因 Ttr 呈现出与脑解剖结构高度吻合的空间分布，直观展示了空间转录组保留位置信息的优势。"
+library(Seurat)
+
+# Visualize where specific genes are expressed across the tissue section
+SpatialFeaturePlot(brain, features = c("Hpca", "Ttr"))
+```
+
+```r
+# Total counts also vary spatially -- visualize the per-Spot library size
+SpatialFeaturePlot(brain, features = c("nCount_Spatial", "nFeature_Spatial"))
+```
+
+`SpatialFeaturePlot()` 的几个参数在实际使用中经常需要调整：`pt.size.factor` 控制绘制的 Spot 大小（默认值在高密度组织上常常过大导致重叠），`alpha` 控制透明度以便同时看清底层 H&E 形态，`image.alpha` 则控制背景图像的深浅。
+
+```r
+# Tune point size and transparency so the underlying H&E stays visible
+SpatialFeaturePlot(
+    brain,
+    features = "Hpca",
+    pt.size.factor = 1.4,
+    alpha = c(0.2, 1),
+    image.alpha = 0.6
+)
+```
+
+## 配准核验：一个必做的检查
+
+在进入任何定量分析之前，应先做一次配准核验。最有效的方法是选择几个**空间模式已知**的标志基因，看它们的表达是否落在预期的解剖结构上。若已知在海马表达的基因在数据中显示于皮层，则配准必然出了问题。
+
+```r
+library(Seurat)
+
+# Sanity check: genes with well-known anatomy should land where they belong
+# Hpca  -> hippocampus;  Ttr -> choroid plexus;  Mbp -> white matter (myelin)
+SpatialFeaturePlot(brain, features = c("Hpca", "Ttr", "Mbp"), ncol = 3)
+```
+
+```r
+# Inspect the Space Ranger diagnostic images before trusting any coordinates
+# (view these files directly; they are produced by spaceranger count)
+# outs/spatial/aligned_fiducials.jpg     -- were the fiducial markers detected?
+# outs/spatial/detected_tissue_image.jpg -- was the tissue boundary correct?
+```
+
+:::info
+**黄金法则：** 空间数据的最大价值在于把分子信息嵌入形态学背景——任何空间分析的结论都应回到组织图像上核验。一个看似显著的空间表达模式，若与已知的组织解剖结构（皮层分层、海马形态、肿瘤边界）不吻合，往往提示配准错误、组织折叠或技术伪影，而非真实生物学。始终把"分子模式"与"H&E 形态"并置检查，是空间分析可靠性的基本保障。这条法则在本章与第 9 章会被反复使用，它是空间分析中唯一不依赖算法的独立验证手段。
+:::
+
+---
+
+# 方法总结与衔接说明
+
+本专题介绍了 Visium 空间转录组的技术原理与上游处理：空间条形码阵列如何把表达量与组织坐标绑定、实验流程各环节的质控点、新鲜冷冻与 FFPE 两条捕获路线的差异、Space Ranger 如何完成图像配准、输出的三套坐标系统如何相互换算，以及空间数据的加载、结构剖析与配准核验。理解 Visium 的核心特性——Spot 是多细胞混合信号、聚类得到的是空间域而非细胞类型——是后续一切分析的前提。
+
+专题 8.3 将进入空间数据的质控与归一化，并展开空间转录组特有的核心分析：空间高变基因识别；专题 8.4 则完成空间域的划分与注释。而从 Spot 混合信号中还原细胞类型比例的细胞解卷积，将在第 9 章展开（参见第 9 章）。
+
+---
+
+# 课后自测 (Post-Lesson Quiz)
+
+1. Visium 的空间条形码捕获阵列如何把基因表达量与组织上的物理坐标关联起来？同一 Spot 上的探针条形码有何特点？
+
+2. Visium 捕获探针与 10x 单细胞捕获探针在结构上几乎同构，唯一的差别是什么？这一同构关系带来了什么分析上的便利？
+
+3. Visium 的 Spot 直径为 55 µm，这一尺度对数据的本质意味着什么？为什么说 Spot 是"混合信号而非单细胞信号"？
+
+4. 为什么说"透化时间决定了空间分辨率的实际值"？透化过度造成的信号弥散为什么无法在分析阶段校正？
+
+5. FFPE 样本为什么不能使用 poly-T 捕获方案？探针捕获（Probe-based）方案通过什么机制解决了这一问题？
+
+6. Space Ranger 输出中存在哪三套坐标系统？它们分别用于什么场景？`spot_diameter_fullres` 这个参数有什么额外的实用价值？
+
+7. Space Ranger 的组织自动检测在哪些情形下容易出错？发现出错后应如何处理？
+
+8. 某研究者在 Visium 脑切片上发现某基因呈现一个清晰的高表达区块，但该区块与 H&E 图像上的任何已知解剖结构都不吻合，且边界笔直。请推测可能的原因，并说明应如何核验。
+
+<details>
+<summary><strong>参考答案 (Reference Answers)</strong></summary>
+
+1. *阵列上每个 Spot 的所有捕获探针共享一段该 Spot 特有的空间条形码，不同 Spot 条形码各不相同，因此条形码与载玻片上的物理坐标一一对应。组织 mRNA 被最近 Spot 的探针捕获并逆转录为带空间条形码的 cDNA，测序后依据条形码即可把读段定位回其来源 Spot 的坐标，从而把表达量与组织位置关联。*
+
+2. *两者的探针都包含测序接头、条形码、UMI 与 poly-T，唯一差别是条形码的含义：单细胞平台的条形码标识"哪个液滴/细胞"，Visium 的条形码标识"哪个位置"。这一同构意味着两类数据的上游处理（条形码纠错、比对、UMI 去重）与下游分析（质控、归一化、降维、聚类）可以高度共享同一套方法与软件，学习成本与工具链都可直接迁移。*
+
+3. *55 µm 通常涵盖 1–10 个细胞（取决于组织密度），因此每个 Spot 测到的是其覆盖的多个细胞的混合转录谱，而非单个细胞。这意味着 Visium 的观测单元是亚组织级而非单细胞级，无法直接通过聚类得到单一细胞类型，需要借助 scRNA-seq 参考做细胞解卷积才能还原细胞类型比例。此外由于中心间距 100 µm 大于直径 55 µm，Visium 还是对组织的稀疏采样，Spot 间隙中的细胞完全未被采样。*
+
+4. *因为标称的 55 µm 分辨率只在 mRNA 不发生横向扩散时成立。透化过度时 mRNA 在被捕获前已扩散到邻近 Spot，一个锐利的表达边界会在数据中呈现为渐变过渡带，实际分辨率显著劣化。它无法在分析阶段校正，是因为这种技术性弥散与真实的生物学表达梯度在数据上形态相同、无法区分——没有独立信息可用来把两者分开。唯一的防线是实验前用 Tissue Optimization 实验标定最佳透化时间。*
+
+5. *poly-T 捕获要求 mRNA 的 poly-A 尾完整，而 FFPE 样本的 RNA 已高度片段化且发生交联，poly-A 尾多已断裂或不可及，因此捕获几乎完全失效。探针捕获方案改用一组覆盖全转录组的成对探针，每对探针杂交到目标转录本的相邻区域后被连接酶连接，连接产物再被阵列捕获；由于每对探针只需约 50 nt 的完整模板，对片段化 RNA 的耐受度远高于 poly-A 捕获。*
+
+6. *三套坐标系统：（1）阵列坐标（array row/col），Spot 在六角网格中的整数行列号，反映拓扑邻接，用于构建空间邻接图；（2）全分辨率像素坐标，Spot 中心在原始 H&E 图像上的像素位置；（3）缩略图像素坐标，由前者乘以 `scalefactors_json.json` 中的缩放因子得到，是实际绘图使用的坐标。`spot_diameter_fullres` 给出 55 µm 对应的像素数，因而提供了图像的物理尺度换算——可把任意像素距离换算为微米，这在计算细胞间实际距离时是必需的。*
+
+7. *容易出错的情形：组织染色很浅（如脂肪、疏松结缔组织）被误判为背景而漏检；玻片上有染色残留、气泡或碎屑被误判为组织而误检；组织边缘不规则或撕裂导致边界判定不稳定。处理方法：用 Loupe Browser 手动框选正确的组织区域、调整 Spot 选择，导出 `alignment.json` 后用 `--loupe-alignment` 参数重新运行 `spaceranger count`。分析前还应查看 `aligned_fiducials.jpg` 与 `detected_tissue_image.jpg` 两张诊断图做目视核验。*
+
+8. *边界笔直、且不吻合任何解剖结构，强烈提示技术伪影而非生物学信号——可能原因包括：组织折叠/褶皱、捕获阵列局部缺陷、图像配准错位导致某区块 Spot 坐标整体偏移，或透化/捕获效率的空间不均匀。核验方法：（1）查看 `aligned_fiducials.jpg` 与 `detected_tissue_image.jpg` 确认基准标记检测与组织边界是否正确；（2）在 H&E 图像上叠加该区块、检查是否对应组织折叠或损伤；（3）用几个空间模式已知的标志基因（如 Hpca 对应海马、Mbp 对应白质）核验整体配准是否正确；（4）查看该区块的总 UMI、基因数、线粒体比例等 QC 指标是否异常。确认为伪影后应在质控中剔除相关 Spot；若为整体配准错位，则须用 Loupe Browser 手动校正后重跑 Space Ranger。*
+
+</details>

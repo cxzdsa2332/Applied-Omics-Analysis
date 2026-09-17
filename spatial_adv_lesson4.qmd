@@ -1,0 +1,384 @@
+---
+title: "成像型空间转录组与细胞分割"
+date: today
+format:
+  html:
+    code-fold: false
+    toc: true
+    toc-depth: 3
+    number-sections: true
+    theme: cosmo
+crossref:
+  fig-title: 图
+  fig-prefix: 图
+  tbl-title: 表
+  tbl-prefix: 表
+  chapters: false
+---
+
+# 专题概述
+
+成像型平台走了一条与测序完全不同的路：不建库、不测序，而是通过多轮荧光原位杂交在组织原位逐位读出每个 RNA 分子的身份编码。这条路线带来了亚细胞分辨率，也带来了一个测序型平台完全没有的前置难题。测序型的"细胞"由微流控液滴或条形码阵列天然定义——一个条形码就是一个测量单元；而成像型得到的原始数据是一张布满 RNA 分子点的图像，必须先划定每个细胞的边界，才能把分子分配给细胞、构建表达矩阵。这一步就是**细胞分割**（Cell Segmentation）。它决定了下游一切结果的质量上限，且分割错误会制造出与 scRNA-seq 中"双胞"同源的假象——区别在于，双胞可以用 DoubletFinder 事后检测，而分割错误几乎无法在表达矩阵层面被识别和修正。本专题讲解纠错编码的原理、分割的方法谱系与质量评估，以及分割之后的标准分析流程。
+
+**学习目标**：理解 MERFISH 纠错编码的汉明距离约束及其纠错能力；掌握空白条形码作为假阳性内部对照的用法；了解 MERSCOPE、Xenium、CosMx 三个平台的差异；理解细胞分割为何是成像型分析的质量瓶颈；掌握 Cellpose 与 Baysor 两条分割路线的原理差异；能诊断分割质量并识别典型错误；能完成分割后的归一化、聚类、标签传递与亚细胞分析；理解成像型与测序型平台的互补关系。
+
+---
+
+# 纠错编码：在噪声中读出身份
+
+## 复用的困境
+
+多重荧光原位杂交的基本困难是：荧光通道只有四到五个，而要检测的基因有上千个。最朴素的方案是分上千轮、每轮测一个基因，这退化成了 Allen Brain Atlas 式的低通量做法（参见第 8 章）。
+
+MERFISH 的解决方案是**组合编码**：给每个基因分配一个多位二进制码字，通过 $N$ 轮杂交逐位读出——第 $k$ 轮该基因对应位为 1 则荧光"亮"、为 0 则"灭"。理论上 $N$ 轮可编码 $2^N$ 个基因，16 轮即可覆盖六万多个，通量问题迎刃而解。
+
+但这带来了新问题：**任何一轮的读取错误都会导致整个基因身份被误判**。在组织成像这种噪声环境中，探针未结合、光漂白、荧光串扰都会造成位翻转，而 $2^N$ 的完全编码空间中任意码字都是有效的，一位错误就会把 A 基因读成 B 基因，且无从察觉。
+
+## 汉明距离约束
+
+MERFISH 的核心创新正在于此：它**故意不用满编码空间**，而是只挑选一个满足距离约束的子集作为有效码字（Chen et al., 2015）。
+
+{{Wiki:Hamming_distance}}
+
+具体约束是：任意两个有效码字的汉明距离 $\geq 4$。这一约束的纠错逻辑可以精确地推演：
+
+- 设真实码字为 $c$，某一轮出错导致观测码字为 $c'$，则 $d(c, c') = 1$。
+- 对任意其他有效码字 $c''$，由三角不等式 $d(c', c'') \geq d(c, c'') - d(c, c') \geq 4 - 1 = 3$。
+- 因此 $c'$ 距离真实码字只有 1，距离所有其他有效码字至少 3——最近的有效码字唯一，且必然就是 $c$。
+
+于是一位错误可被唯一纠正。若观测码字与所有有效码字的距离都 $\geq 2$，则说明发生了两位以上的错误，该分子被直接丢弃而非勉强归类。
+
+实践中常用的是 MHD4 编码（Modified Hamming Distance 4）：16 位中恰有 4 位为 1，且两两汉明距离 $\geq 4$。这样的码字共有约 140 个可用——远少于 $2^{16}$，正是用编码空间换取了纠错能力。
+
+```python
+# Why "exactly 4 ones out of 16" -- generating an MHD4-style codebook
+from itertools import combinations
+import numpy as np
+
+def hamming(a, b):
+    return np.sum(a != b)
+
+# Candidate words: 16-bit vectors with exactly four 1s (constant weight code)
+candidates = []
+for ones in combinations(range(16), 4):
+    w = np.zeros(16, dtype=int)
+    w[list(ones)] = 1
+    candidates.append(w)
+
+# Greedily keep words that stay at least Hamming distance 4 from all kept words
+codebook = []
+for w in candidates:
+    if all(hamming(w, k) >= 4 for k in codebook):
+        codebook.append(w)
+
+print(f"Candidates with weight 4: {len(candidates)}")
+print(f"Usable codewords at min distance 4: {len(codebook)}")
+```
+
+这段代码说明了编码设计的取舍：数千个候选码字里，只有很小一部分能同时满足距离约束——被牺牲掉的编码容量，换来的正是在噪声环境中的可靠读出。
+
+:::note
+**这是信息论在生物学中的一次直接应用：** 汉明距离与纠错码由 Richard Hamming 在 1940 年代提出，动机是当时的穿孔卡片计算机一旦读错一位就会中止整个计算任务，而机器往往在无人值守的周末运行。他的解决办法——通过增加冗余位使错误可被检测甚至自动纠正——成为了现代通信与存储的基础。MERFISH 面对的问题在结构上完全相同：噪声信道中的可靠传输，只不过"信道"是组织切片，"消息"是 RNA 分子的身份。这类跨领域的方法迁移在计算生物学中并不罕见，但少有像 MERFISH 这样直接而优雅的例子。
+:::
+
+## 空白条形码：内部的假阳性对照
+
+编码设计还留了一手：在有效码字中保留一部分**不分配给任何基因**的码字，称为空白条形码（Blank Barcode）。由于没有任何真实 RNA 对应它们，任何被读为空白条形码的信号必然是假阳性。
+
+这提供了一个优雅的内部对照——用空白条形码的检出频率直接估计整体的假阳性率：
+
+$$\text{FDR} \approx \frac{\text{空白码字平均检出数}}{\text{基因码字平均检出数}}$$
+
+质控时应检查这一比率，并剔除那些检出数与空白条形码相当的基因——它们的信号基本都是噪声。
+
+## 平台差异
+
+@tbl-imaging-platforms 对比了三个主流成像型平台。它们的编码与解码思路相近，差异主要在化学方案、panel 规模与仪器通量上。
+
+| 平台 | 厂商 | 化学原理 | panel 规模 | 特点 |
+|------|------|----------|-----------|------|
+| MERSCOPE | Vizgen | 多轮组合 FISH（MERFISH） | 数百至上千 | 学术起源，编码方案公开透明 |
+| Xenium | 10x Genomics | 连接探针 + 滚环扩增 | 数百 | 检测灵敏度高，支持 FFPE |
+| CosMx SMI | NanoString | 多轮杂交 + 报告探针循环 | 约一千 | 支持 RNA 与蛋白共检测 |
+
+: 主流成像型空间转录组平台的对比 {#tbl-imaging-platforms}
+
+---
+
+# 细胞分割：成像型分析的质量瓶颈
+
+## 为什么这一步决定一切
+
+分割定义了"细胞"这一基本分析单元。它的输出——每个分子归属于哪个细胞——直接决定了表达矩阵的每一个数值。分割错误有两种，后果都很严重：
+
+- **欠分割（Under-segmentation）**：把两个相邻细胞合并为一个。该"细胞"的表达谱是两个细胞的混合，在下游表现为具有多种细胞类型标志基因的"双胞"，可能被误判为新的过渡态细胞类型。
+- **过分割（Over-segmentation）**：把一个细胞拆成两个或多个。产生低表达量的细胞碎片，在质控时可能被当作低质量细胞剔除（尚可接受），也可能形成虚假的小细胞群。
+
+:::warning
+**分割错误无法在下游被检出和修正：** scRNA-seq 的双胞可以用 DoubletFinder、Scrublet 等工具事后检测，因为双胞在表达空间中有可识别的特征（位于两个细胞类型之间、UMI 异常高）。成像型数据的欠分割看似类似，但有一个关键差别：在密集组织中，相邻细胞本就常常是不同类型，欠分割产生的混合谱与真实存在的过渡态细胞在表达矩阵上无法区分——除非回到原始图像去看边界。因此在成像型分析中，**分割质量必须在进入下游之前就确认好**，而不能寄望于下游的质控步骤。
+:::
+
+## 从分水岭到深度学习
+
+分割的输入通常是 DAPI 核染色，有时辅以 poly-T 或细胞膜染色。方法的演进有三个阶段：
+
+**阈值 + 分水岭（Watershed）**：经典图像处理方案。先用阈值分离前景，再用分水岭算法切分粘连的对象。它在细胞稀疏、形态规则的样本上可用，但在密集组织中表现很差——分水岭倾向于沿亮度低谷切分，而密集排列的细胞核之间往往没有清晰的亮度低谷。
+
+**Cellpose：通用深度学习分割**：Cellpose 的核心思路是不直接预测掩膜，而是预测一个**流场**（flow）——图像中每个像素指向其所属细胞中心的方向向量。分割时从每个像素沿流场"爬坡"，汇聚到同一中心的像素即构成一个细胞（Stringer et al., 2021）。这一表示方式使模型能处理任意形状的细胞，且在大量人工标注的多样图像上预训练后具有很好的跨数据集泛化能力。
+
+**Baysor：从图像转向分子**：Baysor 采取了一个不同的视角——既然最终目标是把转录本分配给细胞，为什么一定要先从图像划出边界？它直接对**转录本的空间分布**做概率聚类：空间上聚集且表达模式一致的分子应属于同一细胞（Petukhov et al., 2022）。核染色若可用则作为先验纳入，但并非必需。这一思路在核染色质量差或细胞形态不规则（如神经元的长突起）时优势明显。
+
+@tbl-segmentation 对比三种路线。
+
+| 方法 | 输入 | 核心思想 | 优势 | 局限 |
+|------|------|----------|------|------|
+| 阈值 + 分水岭 | 核染色图像 | 亮度低谷处切分 | 快速、无需训练 | 密集组织中失效 |
+| Cellpose | 核/膜染色图像 | 预测指向细胞中心的流场 | 形状泛化好，预训练模型可直接用 | 依赖染色质量；不用分子信息 |
+| Baysor | 转录本坐标（+可选核染色） | 对分子做空间+表达联合聚类 | 不依赖染色；适应不规则形态 | 计算量大；低密度区域不稳定 |
+
+: 成像型空间数据细胞分割方法的对比 {#tbl-segmentation}
+
+:::note
+**运行环境说明：** Cellpose 为 Python 包（`pip install cellpose`），GPU 可显著加速但 CPU 亦可运行；Baysor 用 Julia 编写，提供命令行接口。二者都作用于**原始图像与分子坐标**，属于比表达矩阵更上游的处理环节，通常由厂商流程或专门的图像分析管线完成。本专题后续的分析代码假设分割已完成，直接从细胞×基因矩阵出发。
+:::
+
+```python
+# Cellpose: nucleus segmentation from a DAPI channel
+from cellpose import models
+import numpy as np
+
+# img: 2D DAPI image as a numpy array
+model = models.Cellpose(gpu=True, model_type="nuclei")
+
+# diameter=None lets Cellpose estimate the typical cell size from the image itself
+masks, flows, styles, diams = model.eval(
+    img, diameter=None, channels=[0, 0], flow_threshold=0.4
+)
+
+print(f"Estimated diameter: {diams:.1f} px")
+print(f"Number of segmented objects: {masks.max()}")
+```
+
+```bash
+# Baysor: molecule-level segmentation driven by transcript positions
+# transcripts.csv must carry x, y and gene columns
+baysor run \
+    --x-column=x --y-column=y --gene-column=gene \
+    --min-molecules-per-cell=30 \
+    --scale=10 \
+    --prior-segmentation-confidence=0.5 \
+    -o ./baysor_output \
+    transcripts.csv :cell_id
+```
+
+`--scale` 是 Baysor 最关键的参数，表示典型细胞的半径（单位与坐标一致）。它应根据目标组织的细胞大小设定，而非默认值——填错会系统性地过分割或欠分割。
+
+---
+
+# 分割质量诊断
+
+## 三项可计算的指标
+
+分割完成后、进入下游之前，必须做一次质量诊断。以下三项指标不需要金标准即可计算，足以发现多数严重问题。
+
+```r
+library(Seurat)
+library(SeuratData)
+
+# vizgen.brain ships already segmented: cell x gene matrix plus coordinates
+merfish <- LoadData("vizgen.brain")
+
+# Indicator 1: transcripts per cell -- a bimodal or heavily left-shifted
+# distribution suggests over-segmentation producing cell fragments
+counts_per_cell <- merfish$nCount_Vizgen
+summary(counts_per_cell)
+
+# Indicator 2: cell area (when available) -- unusually large cells suggest
+# under-segmentation, i.e. two or more cells merged into one
+# Indicator 3: number of genes detected per cell
+genes_per_cell <- merfish$nFeature_Vizgen
+```
+
+```r
+#| label: fig-segmentation-qc
+#| fig-cap: "MERFISH 数据的细胞分割质量诊断（vizgen.brain 数据集）。左图为每个细胞检出的转录本数量分布，右图为每个细胞检出的基因数量分布。健康的分割结果应呈现单峰、右偏的分布；若出现明显的双峰或大量集中于极低值的细胞，则提示过分割产生了细胞碎片；而分布右尾出现异常高值的细胞群则提示欠分割导致多个细胞被合并。"
+library(Seurat)
+library(patchwork)
+
+p1 <- VlnPlot(merfish, features = "nCount_Vizgen", pt.size = 0) + ggplot2::ggtitle("Transcripts per cell")
+p2 <- VlnPlot(merfish, features = "nFeature_Vizgen", pt.size = 0) + ggplot2::ggtitle("Genes per cell")
+p1 + p2
+```
+
+## 一个更有力的诊断：混合标志基因
+
+最能直接暴露欠分割的诊断，是检查**互斥标志基因的共表达**。若某个"细胞"同时高表达神经元标志与少突胶质细胞标志，它极可能是两个细胞被错误合并的产物。
+
+```r
+library(Seurat)
+
+# Under-segmentation check: do "cells" co-express mutually exclusive markers?
+# Replace with marker pairs appropriate to your tissue and panel
+marker_a <- "Slc17a7"   # excitatory neurons
+marker_b <- "Mbp"       # oligodendrocytes
+
+expr <- GetAssayData(merfish, assay = "Vizgen", layer = "counts")
+co_expressing <- which(expr[marker_a, ] > 2 & expr[marker_b, ] > 2)
+
+cat("Cells co-expressing mutually exclusive markers:",
+    length(co_expressing), "/", ncol(merfish),
+    sprintf("(%.1f%%)", 100 * length(co_expressing) / ncol(merfish)), "\n")
+```
+
+这一比例应当很低（通常远低于 5%）。若明显偏高，应回到分割步骤调整参数，而不是继续往下分析。
+
+---
+
+# 分割后的标准流程
+
+## 小 panel 带来的分析差异
+
+分割完成、得到细胞×基因表达矩阵后，MERFISH 数据的下游分析（归一化、聚类、注释）与 scRNA 高度相似，可纳入 Seurat/Scanpy 标准流程，并额外利用其空间坐标。但有两点差异值得注意：
+
+1. **基因数只有数百**，因此高变基因选择基本失去意义——panel 中的基因本就是精心挑选的标志基因，应全部用于降维。
+2. **检测效率高但基因覆盖窄**，每个基因的计数通常比 10x 数据更高、零值更少，但无法发现 panel 之外的细胞类型。
+
+```r
+library(Seurat)
+library(SeuratData)
+
+merfish <- LoadData("vizgen.brain")
+
+# Imaging-based panels are small (hundreds of genes); use SCT then standard pipeline
+# clip.range guards against the high counts typical of imaging platforms
+merfish <- SCTransform(merfish, assay = "Vizgen", clip.range = c(-10, 10))
+
+# With only a few hundred genes, use all of them rather than selecting HVGs
+merfish <- RunPCA(merfish, npcs = 30, features = rownames(merfish)) |>
+    RunUMAP(dims = 1:30) |>
+    FindNeighbors(dims = 1:30) |>
+    FindClusters(resolution = 0.3)
+```
+
+```r
+#| label: fig-merfish-spatial
+#| fig-cap: "MERFISH 小鼠脑切片的空间聚类（vizgen.brain 数据集）。每个点为一个经分割的单细胞，按转录组聚类着色并绘制在其原位空间坐标上。由于 MERFISH 达到亚细胞分辨率，聚类结果直接呈现出与脑区解剖结构吻合的清晰分层，无需经过细胞解卷积即可定位单个细胞的类型——这是成像型平台相对测序型平台的核心优势。"
+library(Seurat)
+
+# Plot cluster identity in true spatial coordinates (no deconvolution needed)
+ImageDimPlot(merfish, fov = "centroids", cols = "polychrome", size = 0.5)
+```
+
+## 借助 scRNA 参考做注释
+
+数百个基因的 panel 往往不足以支撑精细的细胞亚型注释。通用的解决方案是标签传递——用一份全转录组的 scRNA-seq 参考，通过共有基因把注释迁移过来。方法与第 7 章的跨模态整合同源（参见第 7 章）。
+
+```r
+library(Seurat)
+
+# Transfer fine-grained annotations from a whole-transcriptome scRNA reference
+anchors <- FindTransferAnchors(
+    reference = sc_ref, query = merfish,
+    normalization.method = "SCT",
+    reference.reduction = "pca",
+    dims = 1:30
+)
+
+predictions <- TransferData(
+    anchorset = anchors,
+    refdata = sc_ref$cell_type,
+    dims = 1:30
+)
+merfish <- AddMetaData(merfish, metadata = predictions)
+
+# Always inspect the confidence scores; low-score cells should not be over-interpreted
+summary(merfish$prediction.score.max)
+table(merfish$predicted.id[merfish$prediction.score.max > 0.5])
+```
+
+```r
+library(Seurat)
+
+# Plot transferred labels in tissue space
+ImageDimPlot(merfish, fov = "centroids", group.by = "predicted.id",
+             cols = "polychrome", size = 0.5)
+```
+
+## 亚细胞分析：测序型无法提供的维度
+
+成像型数据保留了每个转录本的精确坐标，因而支持一类测序型平台完全无法进行的分析：RNA 在细胞内部的分布。核内 vs 胞质的比例反映转录与输出的动态，而某些 mRNA 在细胞突起中的定位则与局部翻译相关。
+
+```r
+library(Seurat)
+
+# Molecule-level coordinates are retained in the FOV object
+# This is what makes sub-cellular analysis possible at all
+fov <- merfish[["centroids"]]
+
+# Visualise individual transcripts of selected genes in situ
+ImageDimPlot(
+    merfish, fov = "centroids",
+    molecules = c("Slc17a7", "Gad1"),
+    mols.size = 0.3, nmols = 20000,
+    group.by = "predicted.id", cols = "polychrome"
+)
+```
+
+:::tip
+**成像型与测序型的互补，而非替代：** MERFISH（高分辨率、有限基因、可做细胞分割与亚细胞定位）与 Visium（低分辨率、全转录组、需解卷积）各有所长。理想的空间研究常将二者结合：用 Visium 做全转录组的无偏发现、锁定关键基因与区域，再用成像型平台针对这些基因设计 panel，在单细胞分辨率下精确定位。两类数据可通过共同的 scRNA 参考图谱相互锚定与验证——Visium 经解卷积得到的细胞类型空间分布，应与成像型经分割+聚类直接得到的分布在同一区域相互吻合。若二者矛盾，通常提示解卷积的参考存在问题（参见专题 9.1）。
+:::
+
+:::info
+**黄金法则：** 在成像型空间转录组中，**分割质量是分析质量的上限**，而这个上限在数据进入表达矩阵的那一刻就已经确定了。因此正确的工作顺序是：先看图像、再看矩阵。一个只在表达矩阵层面做质控就直接进入聚类的成像型分析流程，等于默认了分割是完美的——而这个假设在密集组织中几乎从不成立。任何异常的细胞群，在被解释为新的细胞状态之前，都应当先回到原始图像检查它们的分割边界。
+:::
+
+---
+
+# 方法总结与衔接说明
+
+本专题围绕成像型平台的两个核心计算问题展开。编码层面，多重 FISH 面临"通道少而基因多"的复用困境，MERFISH 用组合编码解决通量问题，再用汉明距离 $\geq 4$ 的约束换取一位纠错能力——这是信息论纠错码在生物测量中的直接应用；空白条形码则提供了内部的假阳性率估计。分割层面，本专题强调了一个容易被低估的事实：分割定义了"细胞"这一基本分析单元，其错误无法在下游被检出和修正，因为欠分割产生的混合表达谱与真实的过渡态细胞在矩阵层面无法区分。方法上从阈值分水岭到 Cellpose 的流场表示，再到 Baysor 直接对分子做联合聚类，三条路线各有适用场景；本专题给出了三项无需金标准的诊断指标，以及用互斥标志基因共表达率检出欠分割的实用方法。
+
+分割之后的流程与 scRNA-seq 高度一致，差异主要来自小 panel——不做高变基因选择、依赖标签传递做精细注释；而保留的分子坐标则支持亚细胞定位这一测序型平台完全无法提供的分析维度。
+
+至此本章已覆盖单张切片上的全部主要分析。专题 9.5 将把视角扩展到更大的尺度：如何把连续切片配准堆叠为三维器官图谱，多样本空间研究的统计问题，以及空间多组学的技术现状。
+
+---
+
+# 课后自测 (Post-Lesson Quiz)
+
+1. 多重荧光原位杂交面临的"复用困境"是什么？组合编码如何解决通量问题，又带来了什么新问题？
+
+2. 请推演为什么"任意两个有效码字的汉明距离 ≥ 4"能够唯一纠正一位读取错误。当观测码字与所有有效码字的距离都 ≥ 2 时应如何处理？
+
+3. MHD4 编码在 16 位中只使用约 140 个码字，而编码空间有 $2^{16}$ 个。这一巨大的"浪费"换来了什么？
+
+4. 什么是空白条形码（Blank Barcode）？它如何提供假阳性率的估计？质控时应据此做什么？
+
+5. 欠分割与过分割分别会产生什么后果？为什么说"分割错误无法在下游被检出和修正"，这与 scRNA-seq 的双胞有何本质差别？
+
+6. Cellpose 与 Baysor 在分割思路上有何根本差异？在核染色质量差或细胞形态不规则（如神经元长突起）时，为什么 Baysor 更有优势？
+
+7. 成像型数据的下游分析与 scRNA-seq 高度相似，但有哪两点差异？为什么小 panel 数据不应做高变基因选择？
+
+8. 某研究者在 MERFISH 小鼠脑数据中发现一个新的细胞群，其特点是同时中等表达兴奋性神经元标志 Slc17a7 与少突胶质细胞标志 Mbp，他准备把它报告为一类新的"神经-胶质过渡态细胞"。请评估这一结论，并给出完整的核验方案。
+
+<details>
+<summary><strong>参考答案 (Reference Answers)</strong></summary>
+
+1. *复用困境是：荧光通道只有四到五个，而待检测的基因有上千个，无法一一对应。组合编码给每个基因分配一个多位二进制码字，通过 N 轮杂交逐位读出（该位为 1 则亮、为 0 则灭），理论上 N 轮可编码 $2^N$ 个基因，从而解决通量问题。新问题是：任何一轮的读取错误都会导致整个基因身份被误判，而在 $2^N$ 的完全编码空间中任意码字都有效，一位翻转会把 A 基因读成 B 基因且无从察觉——组织成像中探针未结合、光漂白、荧光串扰都会造成这类位翻转。*
+
+2. *设真实码字为 $c$、观测码字为 $c'$，一位错误意味着 $d(c, c') = 1$。对任意其他有效码字 $c''$，由三角不等式有 $d(c', c'') \geq d(c, c'') - d(c, c') \geq 4 - 1 = 3$。因此 $c'$ 到真实码字的距离为 1、到所有其他有效码字的距离至少为 3，最近的有效码字唯一且必然是 $c$，从而可唯一纠正。若观测码字与所有有效码字的距离都 ≥ 2，说明发生了两位以上的错误，无法可靠纠正，该分子应被直接丢弃而非勉强归类。*
+
+3. *换来的是在噪声环境中可靠读出的能力，即一位纠错。使用满编码空间时任意码字都有效，一位错误即造成无法察觉的误判；只保留满足汉明距离 ≥ 4 约束的稀疏子集后，任何一位错误都会落到"不是任何有效码字"的位置，从而可被检出并唯一纠正。这是编码容量与可靠性之间的经典权衡——牺牲通量换取低误判率，使 MERFISH 在数百至上千基因的高度复用下仍能保持可接受的准确度。*
+
+4. *空白条形码是在有效码字中保留的、不分配给任何基因的码字。由于没有任何真实 RNA 对应它们，任何被读为空白条形码的信号必然是假阳性，因此可用其检出频率估计整体假阳性率：FDR ≈ 空白码字平均检出数 / 基因码字平均检出数。质控时应计算这一比率评估数据整体质量，并剔除那些检出数与空白条形码相当的基因——这些基因的信号基本都是噪声，保留它们会污染下游的聚类与注释。*
+
+5. *欠分割把两个相邻细胞合并为一个，产生具有多种细胞类型标志基因的混合表达谱，可能被误判为新的过渡态细胞类型；过分割把一个细胞拆成多个，产生低表达量的细胞碎片，可能被质控剔除或形成虚假的小细胞群。说它无法在下游被检出和修正，是因为在密集组织中相邻细胞本就常常属于不同类型，欠分割产生的混合谱与真实存在的过渡态细胞在表达矩阵层面完全无法区分——除非回到原始图像检查边界。这与 scRNA-seq 双胞的本质差别在于：双胞有可识别的表达特征（位于两个类型之间且 UMI 异常高），可用 DoubletFinder 等工具事后检测；而分割错误在矩阵中不留下可供统计识别的独立特征。*
+
+6. *Cellpose 从图像出发，预测每个像素指向其所属细胞中心的流场，再通过沿流场汇聚形成细胞掩膜，本质上仍是图像分割；Baysor 从分子出发，直接对转录本的空间坐标与表达模式做概率聚类——空间聚集且表达一致的分子归为同一细胞，核染色只作为可选先验。在核染色质量差时，Cellpose 缺少可靠输入而失效，Baysor 则可完全依赖分子分布工作；在神经元长突起这类不规则形态下，核染色只标出胞体、无法勾勒突起，Cellpose 的掩膜会漏掉突起中的转录本，而 Baysor 依据分子的空间连续性与表达一致性，能把突起中的分子正确归属到同一细胞。*
+
+7. *两点差异：（1）基因数只有数百，高变基因选择基本失去意义——panel 中的基因本就是精心挑选的标志基因；（2）检测效率高但覆盖窄，每个基因计数通常更高、零值更少，但无法发现 panel 之外的细胞类型。小 panel 不应做 HVG 选择，是因为 HVG 的目的是从两万个基因中筛出信息量大的子集以降噪提效，而 panel 基因已经全部是经过筛选的标志基因、几乎不含无信息基因；再做筛选只会丢失有用信息并使降维不稳定。应直接用全部基因做 PCA。*
+
+8. *这一结论很可能是分割伪影而非真实发现。Slc17a7（兴奋性神经元）与 Mbp（少突胶质细胞）是互斥标志基因，同时中等表达是欠分割的典型征象——两个相邻的不同类型细胞被错误合并，各自的标志基因都被稀释为中等水平，恰好产生"过渡态"的假象。而且在脑组织中神经元与少突胶质细胞本就紧密毗邻，正是欠分割的高发情形。核验方案：（1）回到原始图像，检查这些细胞的分割边界——这是最直接也最有决定性的证据，若边界明显包含两个细胞核即可确认为欠分割；（2）检查这些细胞的转录本总数与细胞面积是否显著高于其他细胞（欠分割细胞通常偏大、分子数偏多）；（3）计算全数据集中互斥标志基因共表达细胞的比例，若整体偏高说明分割参数有系统性问题；（4）检查这些细胞内两类标志基因的转录本是否在空间上分处两个亚区域而非均匀混合——真实的过渡态细胞应当均匀表达，欠分割则会呈现空间上分离的两簇；（5）调整分割参数（如 Cellpose 的 diameter 或 Baysor 的 scale）后重新分割，观察该细胞群是否消失；（6）若在重新分割后该群仍稳定存在且分子空间分布均匀，再考虑用独立方法验证——如在 scRNA-seq 数据中寻找对应的细胞状态，或用免疫荧光共染在蛋白层面确认同一细胞内两种标志共存。*
+
+</details>
