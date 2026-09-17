@@ -1,0 +1,1235 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.10.18">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+<meta name="dcterms.date" content="2026-09-17">
+
+<title>51&nbsp; 宏基因组与微生物组：扩增子、鸟枪法、群落统计与宏转录组 – Introduction to Applied High-throughput Biological Data Analysis</title>
+<style>
+/* Default styles provided by pandoc.
+** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
+*/
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: 1.5em;}
+div.column{flex: auto;}
+@media screen {
+div.columns{gap: min(4vw, 1.5em);}
+div.column{overflow-x: auto;}
+}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+</style>
+
+
+<script src="site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="site_libs/quarto-nav/headroom.min.js"></script>
+<script src="site_libs/clipboard/clipboard.min.js"></script>
+<script src="site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="site_libs/quarto-search/fuse.min.js"></script>
+<script src="site_libs/quarto-search/quarto-search.js"></script>
+<meta name="quarto:offset" content="./">
+<link href="./metagenomics_lesson1.html" rel="next">
+<link href="./spatial_adv_lesson5.html" rel="prev">
+<script src="site_libs/quarto-html/quarto.js" type="module"></script>
+<script src="site_libs/quarto-html/tabsets/tabsets.js" type="module"></script>
+<script src="site_libs/quarto-html/popper.min.js"></script>
+<script src="site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="site_libs/quarto-html/anchor.min.js"></script>
+<link href="site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="site_libs/quarto-html/quarto-syntax-highlighting-64a204ab8560d761af7679ceaba22944.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="site_libs/bootstrap/bootstrap-ed7344add5f1663e434276306a2aa159.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
+<script id="quarto-search-options" type="application/json">{
+  "location": "sidebar",
+  "copy-button": false,
+  "collapse-after": 3,
+  "panel-placement": "start",
+  "type": "textbox",
+  "limit": 50,
+  "keyboard-shortcut": [
+    "f",
+    "/",
+    "s"
+  ],
+  "show-item-context": false,
+  "language": {
+    "search-no-results-text": "No results",
+    "search-matching-documents-text": "matching documents",
+    "search-copy-link-title": "Copy link to search",
+    "search-hide-matches-text": "Hide additional matches",
+    "search-more-match-text": "more match in this document",
+    "search-more-matches-text": "more matches in this document",
+    "search-clear-button-title": "Clear",
+    "search-text-placeholder": "",
+    "search-detached-cancel-button-title": "Cancel",
+    "search-submit-button-title": "Submit",
+    "search-label": "Search"
+  }
+}</script>
+
+
+</head>
+
+<body class="nav-sidebar floating quarto-light">
+
+<div id="quarto-search-results"></div>
+  <header id="quarto-header" class="headroom fixed-top">
+  <nav class="quarto-secondary-nav">
+    <div class="container-fluid d-flex">
+      <button type="button" class="quarto-btn-toggle btn" data-bs-toggle="collapse" role="button" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+        <i class="bi bi-layout-text-sidebar-reverse"></i>
+      </button>
+        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="./10-metagenomics.html">第三阶段：进阶与整合</a></li><li class="breadcrumb-item"><a href="./10-metagenomics.html"><span class="chapter-number">51</span>&nbsp; <span class="chapter-title">宏基因组与微生物组：扩增子、鸟枪法、群落统计与宏转录组</span></a></li></ol></nav>
+        <a class="flex-grow-1" role="navigation" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">      
+        </a>
+      <button type="button" class="btn quarto-search-button" aria-label="Search" onclick="window.quartoOpenSearch();">
+        <i class="bi bi-search"></i>
+      </button>
+    </div>
+  </nav>
+</header>
+<!-- content -->
+<div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article">
+<!-- sidebar -->
+  <nav id="quarto-sidebar" class="sidebar collapse collapse-horizontal quarto-sidebar-collapse-item sidebar-navigation floating overflow-auto">
+    <div class="pt-lg-2 mt-2 text-left sidebar-header">
+    <div class="sidebar-title mb-0 py-0">
+      <a href="./">Introduction to Applied High-throughput Biological Data Analysis</a> 
+        <div class="sidebar-tools-main">
+    <a href="https://github.com/cxzdsa2332/Applied-Omics-Analysis" title="Source Code" class="quarto-navigation-tool px-1" aria-label="Source Code"><i class="bi bi-github"></i></a>
+</div>
+    </div>
+      </div>
+        <div class="mt-2 flex-shrink-0 align-items-center">
+        <div class="sidebar-search">
+        <div id="quarto-search" class="" title="Search"></div>
+        </div>
+        </div>
+    <div class="sidebar-menu-container"> 
+    <ul class="list-unstyled mt-1">
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./index.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">1</span>&nbsp; <span class="chapter-title">Course Introduction</span></span></a>
+  </div>
+</li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-1" role="navigation" aria-expanded="true">
+ <span class="menu-text">第一阶段：基础与基因组</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-1" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-1" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./01-intro.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">2</span>&nbsp; <span class="chapter-title">生物信息学入门：从分子到数据</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./intro_lesson1.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">3</span>&nbsp; <span class="chapter-title">分子生物学基础与高通量概念启蒙</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./intro_lesson2.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">4</span>&nbsp; <span class="chapter-title">高通量测序原理与生物数据生命周期</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./intro_lesson3.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">5</span>&nbsp; <span class="chapter-title">拥抱命令行——Linux 操作系统与开源精神导论</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./intro_lesson4.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">6</span>&nbsp; <span class="chapter-title">生物信息学双擎——R 与 Python 核心环境配置及AI辅助</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./intro_lesson5.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">7</span>&nbsp; <span class="chapter-title">探索生物大数据的基石：数据库网络与核心文件格式</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./02-genomics-qc.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">8</span>&nbsp; <span class="chapter-title">基因组数据分析：质量控制、从头组装与变异检测</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./genomics_qc_lesson1.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">9</span>&nbsp; <span class="chapter-title">原始下机数据的数字表现</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./genomics_qc_lesson2.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">10</span>&nbsp; <span class="chapter-title">数据预处理与参考基因组比对</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./genomics_qc_lesson3.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">11</span>&nbsp; <span class="chapter-title">从头基因组组装：当没有参考基因组时</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./genomics_qc_lesson4.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">12</span>&nbsp; <span class="chapter-title">变异检测算法与 VCF 通用格式</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./genomics_qc_lesson5.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">13</span>&nbsp; <span class="chapter-title">功能注释、GATK 最佳实践与群体遗传学基础</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./03-genomics-variant.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">14</span>&nbsp; <span class="chapter-title">基因组学 —— 从经典分子标记到 GWAS 群体分析</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./genomics_variant_lesson1.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">15</span>&nbsp; <span class="chapter-title">经典分子标记、遗传图谱与 QTL 定位</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./genomics_variant_lesson2.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">16</span>&nbsp; <span class="chapter-title">全基因组 SNP 鉴定、连锁不平衡图谱与基因型数据处理</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./genomics_variant_lesson3.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">17</span>&nbsp; <span class="chapter-title">GWAS 统计模型</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./genomics_variant_lesson4.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">18</span>&nbsp; <span class="chapter-title">GWAS 结果可视化、多重检验与候选位点解析</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./genomics_variant_lesson5.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">19</span>&nbsp; <span class="chapter-title">精细定位、功能注释、因果推断与更多</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-2" role="navigation" aria-expanded="true">
+ <span class="menu-text">第二阶段：转录组、单细胞与空间组学</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-2" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-2" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./04-transcriptomics-basic.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">20</span>&nbsp; <span class="chapter-title">Bulk 转录组分析基础：质量控制、定量与差异表达</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./transcriptomics_basic_lesson1.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">21</span>&nbsp; <span class="chapter-title">测序原理、文库特性与原始数据质量控制</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./transcriptomics_basic_lesson2.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">22</span>&nbsp; <span class="chapter-title">Splice-Aware 比对与表达量定量</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./transcriptomics_basic_lesson3.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">23</span>&nbsp; <span class="chapter-title">差异表达分析</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./transcriptomics_basic_lesson4.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">24</span>&nbsp; <span class="chapter-title">功能富集分析</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./05-transcriptomics-advanced.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">25</span>&nbsp; <span class="chapter-title">Bulk 转录组高级分析：转录本结构与调控网络</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./transcriptomics_adv_lesson1.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">26</span>&nbsp; <span class="chapter-title">可变剪接差异分析与基因融合鉴定</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./transcriptomics_adv_lesson2.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">27</span>&nbsp; <span class="chapter-title">可变多腺苷酸化分析与长读长转录组展望</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./transcriptomics_adv_lesson3.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">28</span>&nbsp; <span class="chapter-title">加权基因共表达网络分析（WGCNA）</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./transcriptomics_adv_lesson4.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">29</span>&nbsp; <span class="chapter-title">基因调控网络推断——从随机森林到动力系统</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./transcriptomics_adv_lesson5.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">30</span>&nbsp; <span class="chapter-title">扰动稳态下的非线性基因调控模型学习</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./06-scrna-basic.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">31</span>&nbsp; <span class="chapter-title">单细胞转录组基础：上游处理、质量控制与标准分析流程</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./scrna_basic_lesson1.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">32</span>&nbsp; <span class="chapter-title">10x Genomics 技术原理与上游处理</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./scrna_basic_lesson2.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">33</span>&nbsp; <span class="chapter-title">单细胞数据质量控制与预处理</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./scrna_basic_lesson3.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">34</span>&nbsp; <span class="chapter-title">降维、聚类与细胞类型注释</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./07-scrna-advanced.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">35</span>&nbsp; <span class="chapter-title">单细胞转录组进阶：多样本统计、动态推断、细胞通讯与多组学</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./scrna_adv_lesson1.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">36</span>&nbsp; <span class="chapter-title">跨样本整合、批次校正与多样本差异分析</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./scrna_adv_lesson2.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">37</span>&nbsp; <span class="chapter-title">拟时序分析与 RNA Velocity</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./scrna_adv_lesson3.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">38</span>&nbsp; <span class="chapter-title">细胞通讯分析与基因调控网络推断</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./scrna_adv_lesson4.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">39</span>&nbsp; <span class="chapter-title">单细胞多组学：CITE-seq 与 10x Multiome 联合分析</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./08-spatial-basic.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">40</span>&nbsp; <span class="chapter-title">空间转录组基础：技术平台、上游处理与标准分析流程</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./spatial_basic_lesson1.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">41</span>&nbsp; <span class="chapter-title">空间转录组技术全景与平台选型</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./spatial_basic_lesson2.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">42</span>&nbsp; <span class="chapter-title">Visium 技术原理与 Space Ranger 上游处理</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./spatial_basic_lesson3.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">43</span>&nbsp; <span class="chapter-title">空间数据质控、归一化与空间高变基因识别</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./spatial_basic_lesson4.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">44</span>&nbsp; <span class="chapter-title">空间域识别与组织结构注释</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./09-spatial-advanced.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">45</span>&nbsp; <span class="chapter-title">空间转录组进阶：解卷积、图深度学习、空间通讯与跨切片整合</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./spatial_adv_lesson1.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">46</span>&nbsp; <span class="chapter-title">细胞解卷积：从 Spot 混合信号还原细胞类型</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./spatial_adv_lesson2.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">47</span>&nbsp; <span class="chapter-title">空间图神经网络与空间域识别进阶</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./spatial_adv_lesson3.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">48</span>&nbsp; <span class="chapter-title">空间细胞通讯与微环境生态位分析</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./spatial_adv_lesson4.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">49</span>&nbsp; <span class="chapter-title">成像型空间转录组与细胞分割</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./spatial_adv_lesson5.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">50</span>&nbsp; <span class="chapter-title">跨切片整合、三维重建与空间多组学</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-3" role="navigation" aria-expanded="true">
+ <span class="menu-text">第三阶段：进阶与整合</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-3" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-3" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./10-metagenomics.html" class="sidebar-item-text sidebar-link active">
+ <span class="menu-text"><span class="chapter-number">51</span>&nbsp; <span class="chapter-title">宏基因组与微生物组：扩增子、鸟枪法、群落统计与宏转录组</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./metagenomics_lesson1.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">52</span>&nbsp; <span class="chapter-title">专题 10.1（待撰写）</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./metagenomics_lesson2.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">53</span>&nbsp; <span class="chapter-title">专题 10.2（待撰写）</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./metagenomics_lesson3.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">54</span>&nbsp; <span class="chapter-title">专题 10.3（待撰写）</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./metagenomics_lesson4.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">55</span>&nbsp; <span class="chapter-title">专题 10.4（待撰写）</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./metagenomics_lesson5.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">56</span>&nbsp; <span class="chapter-title">专题 10.5（待撰写）</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./11-epigenomics.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">57</span>&nbsp; <span class="chapter-title">11-epigenomics.html</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./epigenomics_lesson1.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">58</span>&nbsp; <span class="chapter-title">专题 11.1（待撰写）</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./epigenomics_lesson2.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">59</span>&nbsp; <span class="chapter-title">专题 11.2（待撰写）</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./epigenomics_lesson3.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">60</span>&nbsp; <span class="chapter-title">专题 11.3（待撰写）</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./epigenomics_lesson4.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">61</span>&nbsp; <span class="chapter-title">专题 11.4（待撰写）</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./epigenomics_lesson5.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">62</span>&nbsp; <span class="chapter-title">专题 11.5（待撰写）</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./12-proteometab.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">63</span>&nbsp; <span class="chapter-title">12-proteometab.html</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./proteometab_lesson1.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">64</span>&nbsp; <span class="chapter-title">专题 12.1（待撰写）</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./proteometab_lesson2.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">65</span>&nbsp; <span class="chapter-title">专题 12.2（待撰写）</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./proteometab_lesson3.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">66</span>&nbsp; <span class="chapter-title">专题 12.3（待撰写）</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./proteometab_lesson4.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">67</span>&nbsp; <span class="chapter-title">专题 12.4（待撰写）</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./proteometab_lesson5.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">68</span>&nbsp; <span class="chapter-title">专题 12.5（待撰写）</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./13-integration.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">69</span>&nbsp; <span class="chapter-title">13-integration.html</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./integration_lesson1.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">70</span>&nbsp; <span class="chapter-title">专题 13.1（待撰写）</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./integration_lesson2.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">71</span>&nbsp; <span class="chapter-title">专题 13.2（待撰写）</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./integration_lesson3.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">72</span>&nbsp; <span class="chapter-title">专题 13.3（待撰写）</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./integration_lesson4.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">73</span>&nbsp; <span class="chapter-title">专题 13.4（待撰写）</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./integration_lesson5.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">74</span>&nbsp; <span class="chapter-title">专题 13.5（待撰写）</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./14-summary.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">75</span>&nbsp; <span class="chapter-title">14-summary.html</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./summary_lesson1.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">76</span>&nbsp; <span class="chapter-title">专题 14.1（待撰写）</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./references.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">参考资料</span></a>
+  </div>
+</li>
+    </ul>
+    </div>
+</nav>
+<div id="quarto-sidebar-glass" class="quarto-sidebar-collapse-item" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item"></div>
+<!-- margin-sidebar -->
+    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+        <nav id="TOC" role="doc-toc" class="toc-active">
+    <h2 id="toc-title">Table of contents</h2>
+   
+  <ul>
+  <li><a href="#整体概述" id="toc-整体概述" class="nav-link active" data-scroll-target="#整体概述"><span class="header-section-number">52</span> 整体概述</a></li>
+  <li><a href="#结构导览" id="toc-结构导览" class="nav-link" data-scroll-target="#结构导览"><span class="header-section-number">53</span> 结构导览</a></li>
+  <li><a href="#模块-a扩增子测序与群落统计" id="toc-模块-a扩增子测序与群落统计" class="nav-link" data-scroll-target="#模块-a扩增子测序与群落统计"><span class="header-section-number">54</span> 模块 A：扩增子测序与群落统计</a>
+  <ul class="collapse">
+  <li><a href="#专题-8.1微生物组研究范式与实验设计" id="toc-专题-8.1微生物组研究范式与实验设计" class="nav-link" data-scroll-target="#专题-8.1微生物组研究范式与实验设计"><span class="header-section-number">54.1</span> 专题 8.1：微生物组研究范式与实验设计</a></li>
+  <li><a href="#专题-8.2扩增子数据处理与-asv-推断" id="toc-专题-8.2扩增子数据处理与-asv-推断" class="nav-link" data-scroll-target="#专题-8.2扩增子数据处理与-asv-推断"><span class="header-section-number">54.2</span> 专题 8.2：扩增子数据处理与 ASV 推断</a></li>
+  <li><a href="#专题-8.3群落多样性排序分析与差异丰度检验" id="toc-专题-8.3群落多样性排序分析与差异丰度检验" class="nav-link" data-scroll-target="#专题-8.3群落多样性排序分析与差异丰度检验"><span class="header-section-number">54.3</span> 专题 8.3：群落多样性、排序分析与差异丰度检验</a></li>
+  </ul></li>
+  <li><a href="#模块-b鸟枪法宏基因组" id="toc-模块-b鸟枪法宏基因组" class="nav-link" data-scroll-target="#模块-b鸟枪法宏基因组"><span class="header-section-number">55</span> 模块 B：鸟枪法宏基因组</a>
+  <ul class="collapse">
+  <li><a href="#专题-8.4鸟枪法宏基因组分类学定量功能谱与-mag-重建" id="toc-专题-8.4鸟枪法宏基因组分类学定量功能谱与-mag-重建" class="nav-link" data-scroll-target="#专题-8.4鸟枪法宏基因组分类学定量功能谱与-mag-重建"><span class="header-section-number">55.1</span> 专题 8.4：鸟枪法宏基因组：分类学定量、功能谱与 MAG 重建</a></li>
+  </ul></li>
+  <li><a href="#模块-c功能活性与跨组学联动" id="toc-模块-c功能活性与跨组学联动" class="nav-link" data-scroll-target="#模块-c功能活性与跨组学联动"><span class="header-section-number">56</span> 模块 C：功能活性与跨组学联动</a>
+  <ul class="collapse">
+  <li><a href="#专题-8.5宏转录组与微生物组多组学联动" id="toc-专题-8.5宏转录组与微生物组多组学联动" class="nav-link" data-scroll-target="#专题-8.5宏转录组与微生物组多组学联动"><span class="header-section-number">56.1</span> 专题 8.5：宏转录组与微生物组多组学联动</a></li>
+  </ul></li>
+  </ul>
+<div class="toc-actions"><ul><li><a href="https://github.com/cxzdsa2332/Applied-Omics-Analysis/edit/main/10-metagenomics.qmd" class="toc-action"><i class="bi bi-github"></i>Edit this page</a></li><li><a href="https://github.com/cxzdsa2332/Applied-Omics-Analysis/issues/new" class="toc-action"><i class="bi empty"></i>Report an issue</a></li><li><a href="https://github.com/cxzdsa2332/Applied-Omics-Analysis/blob/main/10-metagenomics.qmd" class="toc-action"><i class="bi empty"></i>View source</a></li></ul></div></nav>
+    </div>
+<!-- main -->
+<main class="content" id="quarto-document-content">
+
+<header id="title-block-header" class="quarto-title-block default"><nav class="quarto-page-breadcrumbs quarto-title-breadcrumbs d-none d-lg-block" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="./10-metagenomics.html">第三阶段：进阶与整合</a></li><li class="breadcrumb-item"><a href="./10-metagenomics.html"><span class="chapter-number">51</span>&nbsp; <span class="chapter-title">宏基因组与微生物组：扩增子、鸟枪法、群落统计与宏转录组</span></a></li></ol></nav>
+<div class="quarto-title">
+<h1 class="title"><span class="chapter-number">51</span>&nbsp; <span class="chapter-title">宏基因组与微生物组：扩增子、鸟枪法、群落统计与宏转录组</span></h1>
+</div>
+
+
+
+<div class="quarto-title-meta">
+
+    
+    <div>
+    <div class="quarto-title-meta-heading">Published</div>
+    <div class="quarto-title-meta-contents">
+      <p class="date">September 17, 2026</p>
+    </div>
+  </div>
+  
+    
+  </div>
+  
+
+
+</header>
+
+
+<section id="整体概述" class="level1" data-number="52">
+<h1 data-number="52"><span class="header-section-number">52</span> 整体概述</h1>
+<p>前七章的分析对象始终是<strong>单一物种</strong>：一份样本对应一个参考基因组，一次比对得到一套确定的坐标。微生物组研究打破了这一前提——一份粪便、土壤或海水样本中往往混合着数百至数千个物种，其中绝大多数无法在实验室培养，也没有可用的参考基因组。这一根本差异重塑了整条分析链：物种身份本身成为待估计的量，“定量”变成了相对丰度而非绝对表达量，而样本间比较则受制于组成数据（Compositional Data）的数学约束。本章围绕两条技术路线展开：扩增子测序（Amplicon Sequencing）以 16S rRNA、ITS 等标记基因给出低成本的群落组成概览；鸟枪法宏基因组（Shotgun Metagenomics）对全部 DNA 随机测序，同时给出物种组成与功能潜能，并可通过组装与分箱重建未培养物种的基因组。最后，本章引入宏转录组（Metatranscriptomics），将”群落里有谁、能做什么”推进到”此刻谁在做什么”。</p>
+<p><strong>学习目标</strong>：理解扩增子与鸟枪法在信息量、成本与偏倚上的权衡，能据此设计微生物组实验；掌握 DADA2/QIIME 2 的 ASV 推断流程与去噪逻辑；理解 alpha/beta 多样性的统计含义并能正确使用 PERMANOVA 检验组间差异；认识组成数据的约束及 CLR 变换、ANCOM-BC 等差异丰度方法的必要性；掌握 Kraken2/Bracken 分类学定量与 HUMAnN 功能谱构建；能完成宏基因组组装、分箱与 MAG 质量评估；了解宏转录组的特有问题及其与宿主组学的联合分析思路。</p>
+<hr>
+</section>
+<section id="结构导览" class="level1" data-number="53">
+<h1 data-number="53"><span class="header-section-number">53</span> 结构导览</h1>
+<p>本章分为三个模块，共五个专题，从低成本的标记基因概览逐步推进到基因组级重建与功能活性推断：</p>
+<pre class="text"><code>样本 DNA / RNA
+  │
+  ├── 模块 A：扩增子路线（专题 8.1–8.3）
+  │     ↓ 实验设计与标记基因选择（16S V3-V4 / ITS）
+  │     ↓ DADA2 去噪 → ASV 特征表（替代传统 OTU）
+  │     ↓ 物种注释（SILVA / UNITE）
+  │     ↓ alpha 多样性 / beta 多样性 + PERMANOVA
+  │     ↓ 组成数据校正（CLR）→ 差异丰度（ANCOM-BC）
+  │
+  ├── 模块 B：鸟枪法路线（专题 8.4）
+  │     ↓ 宿主序列去除 + 质控
+  │     ↓ 分类学定量（Kraken2 → Bracken）
+  │     ↓ 功能谱（HUMAnN：UniRef90 / MetaCyc 通路）
+  │     ↓ 组装（metaSPAdes）→ 分箱（MetaBAT2）→ MAG 质量评估（CheckM）
+  │
+  └── 模块 C：功能活性与跨组学（专题 8.5）
+        ↓ 宏转录组：rRNA 去除、比对至 MAG / 基因目录
+        ↓ 表达量归一化与"活性 vs 丰度"解耦
+        ↓ 与宿主转录组、代谢组的联合分析（承接第 11 章）</code></pre>
+<p>三个模块在成本与信息量上递进。模块 A 是绝大多数微生物组研究的入口，其统计框架（多样性指标、组成数据处理）同样适用于模块 B 产出的丰度表，因此<strong>专题 8.3 的统计方法是全章的公共基础</strong>，不应被视为仅属于扩增子路线。模块 C 依赖模块 B 产出的基因目录或 MAG 作为比对参考，建议在完成专题 8.4 后学习。</p>
+<hr>
+</section>
+<section id="模块-a扩增子测序与群落统计" class="level1" data-number="54">
+<h1 data-number="54"><span class="header-section-number">54</span> 模块 A：扩增子测序与群落统计</h1>
+<div class="note">
+<p><strong>模块目标：</strong> 理解标记基因测序的原理与固有偏倚；掌握 DADA2 的 ASV 推断流程；能正确选择并解读多样性指标；理解组成数据约束对差异丰度检验的影响。</p>
+</div>
+<section id="专题-8.1微生物组研究范式与实验设计" class="level2" data-number="54.1">
+<h2 data-number="54.1" class="anchored" data-anchor-id="专题-8.1微生物组研究范式与实验设计"><span class="header-section-number">54.1</span> 专题 8.1：微生物组研究范式与实验设计</h2>
+<p>微生物组学的方法论起点与前七章截然不同：研究对象是一个由未知物种构成的群落，而非单一个体。本专题建立这一新范式下的基本概念框架，区分”微生物区系”（Microbiota，群落中有哪些成员）与”微生物组”（Microbiome，群落及其基因、代谢产物与环境的总和），并说明为何培养组学的局限（绝大多数环境微生物无法纯培养）使得测序成为唯一可行的普查手段。在此基础上，本专题对比扩增子与鸟枪法两条技术路线在分辨率、成本、宿主污染耐受度上的差异，并强调微生物组实验中极易被忽视却决定结论可信度的环节：采样一致性、DNA 提取方法的物种偏倚、以及阴性对照对低生物量样本中试剂污染（Kitome）的识别作用（参见第 1 章的样本处理讨论）。</p>
+<p>{{Wiki:Microbiota}}</p>
+<p><strong>核心概念</strong>：</p>
+<ul>
+<li>Microbiota、Microbiome、Metagenome 的概念边界与常见误用</li>
+<li>培养组学的局限与”大平板计数异常”（Great Plate Count Anomaly）</li>
+<li>两条技术路线对比：扩增子（低成本、属/种级分辨率、可耐受高宿主背景）vs 鸟枪法（高成本、株水平分辨率、提供功能信息）</li>
+<li>标记基因的选择：细菌 16S rRNA 可变区（V3-V4、V4）、真菌 ITS1/ITS2、真核 18S</li>
+<li>16S 基因的结构：保守区与九个可变区交替排列；引物设计与扩增偏倚的来源</li>
+<li>实验设计要素：生物学重复数、分组平衡、批次与提取批次的混杂控制</li>
+<li>低生物量样本的污染问题：Kitome 与 Splashome；阴性对照与 decontam 的必要性</li>
+<li>绝对定量的缺失：测序给出的是相对丰度；spike-in 与 qPCR 校正的补充作用</li>
+</ul>
+<p><strong>实践内容</strong>：（待撰写）以典型人体肠道与环境样本数据集为例，梳理元数据表结构与实验设计的完整性检查清单；演示引物区段选择对可分辨分类层级的影响。</p>
+<hr>
+</section>
+<section id="专题-8.2扩增子数据处理与-asv-推断" class="level2" data-number="54.2">
+<h2 data-number="54.2" class="anchored" data-anchor-id="专题-8.2扩增子数据处理与-asv-推断"><span class="header-section-number">54.2</span> 专题 8.2：扩增子数据处理与 ASV 推断</h2>
+<p>扩增子分析在过去十年经历了一次方法论转折：以 97% 相似度聚类生成 OTU（Operational Taxonomic Unit）的传统做法，正被基于错误模型的精确序列变体（Amplicon Sequence Variant, ASV）推断所取代。这一转变的核心动机在于，OTU 聚类用一个人为设定的相似度阈值同时完成”去噪”和”归并”两件事，既掩盖了真实的单碱基差异，又使不同研究的 OTU 无法直接比对；而 DADA2 通过从数据本身学习测序错误模型，把测序错误产生的变体归并回真实序列，从而给出可跨研究复用的精确序列。本专题完整讲解从原始 FASTQ 到带物种注释的 ASV 特征表的流程，并说明 QIIME 2 的插件式架构如何以 Artifact 机制保证分析的可复现性。</p>
+<p>{{Wiki:16S_ribosomal_RNA}}</p>
+<p><strong>核心概念</strong>：</p>
+<ul>
+<li>OTU 与 ASV 的本质差异：相似度聚类 vs 错误模型去噪；ASV 的跨研究可比性</li>
+<li>DADA2 流程：质量剖面检查 → 截断（<code>filterAndTrim</code>）→ 错误模型学习（<code>learnErrors</code>）→ 去重 → 去噪（<code>dada</code>）→ 双端合并 → 嵌合体去除</li>
+<li>截断位点的选择原则：保证双端有足够重叠（≥ 20 bp）与保证质量的权衡</li>
+<li>嵌合体（Chimera）的成因与 <code>removeBimeraDenovo</code> 的识别逻辑</li>
+<li>物种注释：朴素贝叶斯分类器；参考数据库 SILVA（细菌/古菌）、UNITE（真菌）、GTDB（基因组分类法）</li>
+<li>16S 拷贝数变异对丰度估计的系统偏倚</li>
+<li>系统发育树构建（MAFFT + FastTree）及其在 UniFrac 距离中的必要性</li>
+<li>QIIME 2 的 Artifact（<code>.qza</code>）与 Visualization（<code>.qzv</code>）机制；出处追踪（Provenance）</li>
+<li>phyloseq / TreeSummarizedExperiment 对象：特征表、分类表、元数据与进化树的统一容器</li>
+</ul>
+<p><strong>实践内容</strong>：（待撰写）DADA2 完整流程从 FASTQ 到 ASV 表；SILVA 注释；构建 phyloseq 对象并输出质控汇总。</p>
+<hr>
+</section>
+<section id="专题-8.3群落多样性排序分析与差异丰度检验" class="level2" data-number="54.3">
+<h2 data-number="54.3" class="anchored" data-anchor-id="专题-8.3群落多样性排序分析与差异丰度检验"><span class="header-section-number">54.3</span> 专题 8.3：群落多样性、排序分析与差异丰度检验</h2>
+<p>得到特征表之后，微生物组研究的统计问题与常规组学显著不同：数据高度稀疏、零值大量存在，且由于测序深度固定，各物种的相对丰度之和恒为 1——这使得数据落在一个单纯形（Simplex）上而非欧氏空间，任一物种丰度上升必然导致其余物种表观下降。忽视这一<strong>组成性约束</strong>而直接套用 t 检验或 DESeq2，会产生大量虚假的差异物种。本专题系统讲解微生物组的三层统计分析：群落内部的 alpha 多样性、群落之间的 beta 多样性与排序检验、以及单个物种的差异丰度检验，并贯穿强调稀释（Rarefaction）与中心对数比（CLR）变换这两条主流的归一化路线各自的适用条件与争议。</p>
+<p>{{Wiki:Diversity_index}} {{Wiki:Compositional_data}}</p>
+<p><strong>核心概念</strong>：</p>
+<ul>
+<li>alpha 多样性：Observed richness、Shannon、Simpson、Faith’s PD；对测序深度的依赖与稀释曲线</li>
+<li>稀释（Rarefaction）的争议：信息丢失 vs 深度可比性；何时仍应使用</li>
+<li>beta 多样性距离：Bray-Curtis、Jaccard、加权/非加权 UniFrac；系统发育信息的加入</li>
+<li>排序方法：PCoA（主坐标分析）与 NMDS；与 PCA 的关系和差异（参见第 3 章）</li>
+<li>组间差异检验：PERMANOVA（<code>adonis2</code>）的置换原理；ANOSIM；离散度混杂与 <code>betadisper</code> 前置检验</li>
+<li>组成数据的数学约束：单纯形空间、伪负相关；Aitchison 几何与 CLR/ILR 变换</li>
+<li>零值处理：伪计数与零膨胀模型的影响</li>
+<li>差异丰度方法谱系：ALDEx2（Dirichlet-Multinomial 蒙特卡洛）、ANCOM-BC（偏倚校正对数线性模型）、LEfSe（LDA effect size）</li>
+<li>方法选择与假阳性控制：为何直接使用 DESeq2/edgeR 在微生物组数据上需谨慎</li>
+</ul>
+<p><strong>实践内容</strong>：（待撰写）phyloseq 对象的 alpha 多样性计算与组间检验；Bray-Curtis/UniFrac PCoA 可视化；<code>adonis2</code> PERMANOVA 与 <code>betadisper</code> 检验；ANCOM-BC 差异丰度分析与结果解读。</p>
+<hr>
+</section>
+</section>
+<section id="模块-b鸟枪法宏基因组" class="level1" data-number="55">
+<h1 data-number="55"><span class="header-section-number">55</span> 模块 B：鸟枪法宏基因组</h1>
+<div class="note">
+<p><strong>模块目标：</strong> 掌握宿主去污与分类学定量流程；理解 k-mer 分类与丰度重估计的原理；能完成宏基因组组装、分箱与 MAG 质量评估，并解读功能通路谱。</p>
+</div>
+<section id="专题-8.4鸟枪法宏基因组分类学定量功能谱与-mag-重建" class="level2" data-number="55.1">
+<h2 data-number="55.1" class="anchored" data-anchor-id="专题-8.4鸟枪法宏基因组分类学定量功能谱与-mag-重建"><span class="header-section-number">55.1</span> 专题 8.4：鸟枪法宏基因组：分类学定量、功能谱与 MAG 重建</h2>
+<p>鸟枪法宏基因组对样本中全部 DNA 随机测序，因而同时携带”有谁”与”能做什么”两类信息，代价是更高的测序成本与更重的计算负担。本专题沿两条并行的分析路线展开：<strong>免组装路线</strong>直接对 reads 做分类学归属与功能注释，Kraken2 以 k-mer 最小公共祖先策略实现极高吞吐的物种归类，Bracken 再用贝叶斯方法把高层级的归类重新分配到种水平以校正丰度；<strong>组装路线</strong>则通过 metaSPAdes 将 reads 拼成 contig，再依据覆盖度与四核苷酸频率将 contig 分箱（Binning）为代表单一物种的基因组草图，即宏基因组组装基因组（Metagenome-Assembled Genome, MAG）。MAG 路线的价值在于，它让研究者能够获得从未被培养过的物种的完整基因组，这正是近十年微生物生态学最重要的技术推动力。本专题的组装算法基础承接第 2 章（参见第 2 章），此处聚焦其在不均匀覆盖度与菌株混杂条件下的特殊挑战。</p>
+<p>{{Wiki:Metagenomics}}</p>
+<p><strong>核心概念</strong>：</p>
+<ul>
+<li>宿主序列去除：人源/宿主基因组比对过滤；低生物量样本中宿主占比的影响</li>
+<li>Kraken2 的 k-mer LCA 算法：最小化器（Minimizer）索引；置信度阈值与误分类的权衡</li>
+<li>Bracken 的贝叶斯丰度重估计：为何 Kraken2 的原始读数计数不能直接作为物种丰度</li>
+<li>其他分类器：MetaPhlAn（clade-specific marker gene）、Kaiju（蛋白质水平比对）的适用差异</li>
+<li>功能谱构建：HUMAnN 的分层策略（先 MetaPhlAn 定物种，再对 pangenome 比对）；UniRef90、MetaCyc 通路、KEGG Ortholog</li>
+<li>功能丰度的归一化：RPK 与 CPM；分层输出（stratified output）对”哪个物种贡献了该功能”的解析</li>
+<li>宏基因组组装的特殊困难：覆盖度极不均匀、近缘菌株导致的图分叉；metaSPAdes 的应对策略</li>
+<li>分箱原理：四核苷酸频率（TNF）+ 跨样本覆盖度共变；MetaBAT2、MaxBin2、以及 DAS Tool 的整合去冗余</li>
+<li>MAG 质量评估：CheckM 的单拷贝标记基因完整度与污染度；MIMAG 标准（高质量 MAG：完整度 &gt; 90%、污染度 &lt; 5%）</li>
+<li>MAG 的下游应用：物种系统发育定位（GTDB-Tk）、基因功能注释（Prokka）、比较基因组学</li>
+</ul>
+<p><strong>实践内容</strong>：（待撰写）Kraken2 + Bracken 物种定量与 Krona/堆叠柱状图可视化；HUMAnN 功能通路谱构建与分层解析；metaSPAdes 组装 → MetaBAT2 分箱 → CheckM 质量评估的完整 MAG 流程。</p>
+<hr>
+</section>
+</section>
+<section id="模块-c功能活性与跨组学联动" class="level1" data-number="56">
+<h1 data-number="56"><span class="header-section-number">56</span> 模块 C：功能活性与跨组学联动</h1>
+<div class="note">
+<p><strong>模块目标：</strong> 理解宏转录组相对宏基因组的增量信息与特有技术难点；掌握”表达/丰度”解耦的分析思路；建立微生物组与宿主组学联合分析的框架认识。</p>
+</div>
+<section id="专题-8.5宏转录组与微生物组多组学联动" class="level2" data-number="56.1">
+<h2 data-number="56.1" class="anchored" data-anchor-id="专题-8.5宏转录组与微生物组多组学联动"><span class="header-section-number">56.1</span> 专题 8.5：宏转录组与微生物组多组学联动</h2>
+<p>宏基因组回答的是群落的<strong>功能潜能</strong>（Potential）：某条代谢通路的基因存在于群落之中。但基因的存在不等于基因在表达——同一群落在不同宿主状态或环境扰动下，其活跃的代谢路径可能截然不同。宏转录组（Metatranscriptomics）对群落总 RNA 测序，度量的是<strong>当下的功能活性</strong>（Activity）。本专题讲解宏转录组的特有技术问题：微生物 mRNA 不具备 poly(A) 尾因而无法用常规富集策略，必须依赖 rRNA 去除（rRNA depletion），且 RNA 极易降解使得采样保存条件成为成败关键。分析层面的核心思路是<strong>解耦</strong>：把表达量除以同一样本宏基因组中对应基因的丰度，得到不受物种数量变化干扰的”单位基因表达”，从而区分”某功能上升是因为携带它的物种变多了，还是因为每个细胞都更卖力地表达它”。本专题最后将微生物组与宿主转录组、代谢组的联合分析作为桥梁，为第 11 章的多组学整合方法做铺垫（参见第 11 章）。</p>
+<p><strong>核心概念</strong>：</p>
+<ul>
+<li>宏转录组 vs 宏基因组：功能潜能与功能活性的区别；二者不一致时的生物学解读</li>
+<li>实验特有难点：原核 mRNA 无 poly(A)、半衰期以分钟计；RNAlater/液氮保存；rRNA 占总 RNA 的比例</li>
+<li>rRNA 去除策略：探针杂交法（Ribo-Zero 类）与计算法（SortMeRNA）</li>
+<li>参考的选择：比对至同一样本的 MAG / 基因目录，而非通用数据库，以降低比对丢失</li>
+<li>表达量归一化与解耦：RNA/DNA 比值；零膨胀与低丰度物种的表达估计不确定性</li>
+<li>微生物组–宿主联合分析：菌群与宿主基因表达的相关分析；中介分析（Mediation）识别”菌群→代谢物→宿主表型”链条</li>
+<li>代谢物层面的联动：短链脂肪酸、胆汁酸等关键代谢物与菌群功能谱的对应（承接第 10 章代谢组内容）</li>
+<li>相关性分析的陷阱：组成数据下的伪相关；SparCC、SpiecEasi 等针对性方法</li>
+<li>因果推断的边界：观察性微生物组关联研究的局限；无菌小鼠定植实验与孟德尔随机化的验证作用</li>
+</ul>
+<p><strong>实践内容</strong>：（待撰写）宏转录组 rRNA 去除与比对至 MAG 基因目录；RNA/DNA 比值计算与活性通路识别；菌群–宿主表达–代谢物三层关联分析框架演示。</p>
+
+
+</section>
+</section>
+
+</main> <!-- /main -->
+<script id="quarto-html-after-body" type="application/javascript">
+  window.document.addEventListener("DOMContentLoaded", function (event) {
+    const icon = "";
+    const anchorJS = new window.AnchorJS();
+    anchorJS.options = {
+      placement: 'right',
+      icon: icon
+    };
+    anchorJS.add('.anchored');
+    const isCodeAnnotation = (el) => {
+      for (const clz of el.classList) {
+        if (clz.startsWith('code-annotation-')) {                     
+          return true;
+        }
+      }
+      return false;
+    }
+    const onCopySuccess = function(e) {
+      // button target
+      const button = e.trigger;
+      // don't keep focus
+      button.blur();
+      // flash "checked"
+      button.classList.add('code-copy-button-checked');
+      var currentTitle = button.getAttribute("title");
+      button.setAttribute("title", "Copied!");
+      let tooltip;
+      if (window.bootstrap) {
+        button.setAttribute("data-bs-toggle", "tooltip");
+        button.setAttribute("data-bs-placement", "left");
+        button.setAttribute("data-bs-title", "Copied!");
+        tooltip = new bootstrap.Tooltip(button, 
+          { trigger: "manual", 
+            customClass: "code-copy-button-tooltip",
+            offset: [0, -8]});
+        tooltip.show();    
+      }
+      setTimeout(function() {
+        if (tooltip) {
+          tooltip.hide();
+          button.removeAttribute("data-bs-title");
+          button.removeAttribute("data-bs-toggle");
+          button.removeAttribute("data-bs-placement");
+        }
+        button.setAttribute("title", currentTitle);
+        button.classList.remove('code-copy-button-checked');
+      }, 1000);
+      // clear code selection
+      e.clearSelection();
+    }
+    const getTextToCopy = function(trigger) {
+      const outerScaffold = trigger.parentElement.cloneNode(true);
+      const codeEl = outerScaffold.querySelector('code');
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+    }
+    const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+      text: getTextToCopy
+    });
+    clipboard.on('success', onCopySuccess);
+    if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+      const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+        text: getTextToCopy,
+        container: window.document.getElementById('quarto-embedded-source-code-modal')
+      });
+      clipboardModal.on('success', onCopySuccess);
+    }
+      var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+      var mailtoRegex = new RegExp(/^mailto:/);
+        var filterRegex = new RegExp('/' + window.location.host + '/');
+      var isInternal = (href) => {
+          return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+      }
+      // Inspect non-navigation links and adorn them if external
+     var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+      for (var i=0; i<links.length; i++) {
+        const link = links[i];
+        if (!isInternal(link.href)) {
+          // undo the damage that might have been done by quarto-nav.js in the case of
+          // links that we want to consider external
+          if (link.dataset.originalHref !== undefined) {
+            link.href = link.dataset.originalHref;
+          }
+        }
+      }
+    function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+      const config = {
+        allowHTML: true,
+        maxWidth: 500,
+        delay: 100,
+        arrow: false,
+        appendTo: function(el) {
+            return el.parentElement;
+        },
+        interactive: true,
+        interactiveBorder: 10,
+        theme: 'quarto',
+        placement: 'bottom-start',
+      };
+      if (contentFn) {
+        config.content = contentFn;
+      }
+      if (onTriggerFn) {
+        config.onTrigger = onTriggerFn;
+      }
+      if (onUntriggerFn) {
+        config.onUntrigger = onUntriggerFn;
+      }
+      window.tippy(el, config); 
+    }
+    const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+    for (var i=0; i<noterefs.length; i++) {
+      const ref = noterefs[i];
+      tippyHover(ref, function() {
+        // use id or data attribute instead here
+        let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+        try { href = new URL(href).hash; } catch {}
+        const id = href.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note) {
+          return note.innerHTML;
+        } else {
+          return "";
+        }
+      });
+    }
+    const xrefs = window.document.querySelectorAll('a.quarto-xref');
+    const processXRef = (id, note) => {
+      // Strip column container classes
+      const stripColumnClz = (el) => {
+        el.classList.remove("page-full", "page-columns");
+        if (el.children) {
+          for (const child of el.children) {
+            stripColumnClz(child);
+          }
+        }
+      }
+      stripColumnClz(note)
+      if (id === null || id.startsWith('sec-')) {
+        // Special case sections, only their first couple elements
+        const container = document.createElement("div");
+        if (note.children && note.children.length > 2) {
+          container.appendChild(note.children[0].cloneNode(true));
+          for (let i = 1; i < note.children.length; i++) {
+            const child = note.children[i];
+            if (child.tagName === "P" && child.innerText === "") {
+              continue;
+            } else {
+              container.appendChild(child.cloneNode(true));
+              break;
+            }
+          }
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(container);
+          }
+          return container.innerHTML
+        } else {
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(note);
+          }
+          return note.innerHTML;
+        }
+      } else {
+        // Remove any anchor links if they are present
+        const anchorLink = note.querySelector('a.anchorjs-link');
+        if (anchorLink) {
+          anchorLink.remove();
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        if (note.classList.contains("callout")) {
+          return note.outerHTML;
+        } else {
+          return note.innerHTML;
+        }
+      }
+    }
+    for (var i=0; i<xrefs.length; i++) {
+      const xref = xrefs[i];
+      tippyHover(xref, undefined, function(instance) {
+        instance.disable();
+        let url = xref.getAttribute('href');
+        let hash = undefined; 
+        if (url.startsWith('#')) {
+          hash = url;
+        } else {
+          try { hash = new URL(url).hash; } catch {}
+        }
+        if (hash) {
+          const id = hash.replace(/^#\/?/, "");
+          const note = window.document.getElementById(id);
+          if (note !== null) {
+            try {
+              const html = processXRef(id, note.cloneNode(true));
+              instance.setContent(html);
+            } finally {
+              instance.enable();
+              instance.show();
+            }
+          } else {
+            // See if we can fetch this
+            fetch(url.split('#')[0])
+            .then(res => res.text())
+            .then(html => {
+              const parser = new DOMParser();
+              const htmlDoc = parser.parseFromString(html, "text/html");
+              const note = htmlDoc.getElementById(id);
+              if (note !== null) {
+                const html = processXRef(id, note);
+                instance.setContent(html);
+              } 
+            }).finally(() => {
+              instance.enable();
+              instance.show();
+            });
+          }
+        } else {
+          // See if we can fetch a full url (with no hash to target)
+          // This is a special case and we should probably do some content thinning / targeting
+          fetch(url)
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.querySelector('main.content');
+            if (note !== null) {
+              // This should only happen for chapter cross references
+              // (since there is no id in the URL)
+              // remove the first header
+              if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+                note.children[0].remove();
+              }
+              const html = processXRef(null, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      }, function(instance) {
+      });
+    }
+        let selectedAnnoteEl;
+        const selectorForAnnotation = ( cell, annotation) => {
+          let cellAttr = 'data-code-cell="' + cell + '"';
+          let lineAttr = 'data-code-annotation="' +  annotation + '"';
+          const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+          return selector;
+        }
+        const selectCodeLines = (annoteEl) => {
+          const doc = window.document;
+          const targetCell = annoteEl.getAttribute("data-target-cell");
+          const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+          const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+          const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+          const lineIds = lines.map((line) => {
+            return targetCell + "-" + line;
+          })
+          let top = null;
+          let height = null;
+          let parent = null;
+          if (lineIds.length > 0) {
+              //compute the position of the single el (top and bottom and make a div)
+              const el = window.document.getElementById(lineIds[0]);
+              top = el.offsetTop;
+              height = el.offsetHeight;
+              parent = el.parentElement.parentElement;
+            if (lineIds.length > 1) {
+              const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+              const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+              height = bottom - top;
+            }
+            if (top !== null && height !== null && parent !== null) {
+              // cook up a div (if necessary) and position it 
+              let div = window.document.getElementById("code-annotation-line-highlight");
+              if (div === null) {
+                div = window.document.createElement("div");
+                div.setAttribute("id", "code-annotation-line-highlight");
+                div.style.position = 'absolute';
+                parent.appendChild(div);
+              }
+              div.style.top = top - 2 + "px";
+              div.style.height = height + 4 + "px";
+              div.style.left = 0;
+              let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+              if (gutterDiv === null) {
+                gutterDiv = window.document.createElement("div");
+                gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+                gutterDiv.style.position = 'absolute';
+                const codeCell = window.document.getElementById(targetCell);
+                const gutter = codeCell.querySelector('.code-annotation-gutter');
+                gutter.appendChild(gutterDiv);
+              }
+              gutterDiv.style.top = top - 2 + "px";
+              gutterDiv.style.height = height + 4 + "px";
+            }
+            selectedAnnoteEl = annoteEl;
+          }
+        };
+        const unselectCodeLines = () => {
+          const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+          elementsIds.forEach((elId) => {
+            const div = window.document.getElementById(elId);
+            if (div) {
+              div.remove();
+            }
+          });
+          selectedAnnoteEl = undefined;
+        };
+          // Handle positioning of the toggle
+      window.addEventListener(
+        "resize",
+        throttle(() => {
+          elRect = undefined;
+          if (selectedAnnoteEl) {
+            selectCodeLines(selectedAnnoteEl);
+          }
+        }, 10)
+      );
+      function throttle(fn, ms) {
+      let throttle = false;
+      let timer;
+        return (...args) => {
+          if(!throttle) { // first call gets through
+              fn.apply(this, args);
+              throttle = true;
+          } else { // all the others get throttled
+              if(timer) clearTimeout(timer); // cancel #2
+              timer = setTimeout(() => {
+                fn.apply(this, args);
+                timer = throttle = false;
+              }, ms);
+          }
+        };
+      }
+        // Attach click handler to the DT
+        const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+        for (const annoteDlNode of annoteDls) {
+          annoteDlNode.addEventListener('click', (event) => {
+            const clickedEl = event.target;
+            if (clickedEl !== selectedAnnoteEl) {
+              unselectCodeLines();
+              const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+              if (activeEl) {
+                activeEl.classList.remove('code-annotation-active');
+              }
+              selectCodeLines(clickedEl);
+              clickedEl.classList.add('code-annotation-active');
+            } else {
+              // Unselect the line
+              unselectCodeLines();
+              clickedEl.classList.remove('code-annotation-active');
+            }
+          });
+        }
+    const findCites = (el) => {
+      const parentEl = el.parentElement;
+      if (parentEl) {
+        const cites = parentEl.dataset.cites;
+        if (cites) {
+          return {
+            el,
+            cites: cites.split(' ')
+          };
+        } else {
+          return findCites(el.parentElement)
+        }
+      } else {
+        return undefined;
+      }
+    };
+    var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+    for (var i=0; i<bibliorefs.length; i++) {
+      const ref = bibliorefs[i];
+      const citeInfo = findCites(ref);
+      if (citeInfo) {
+        tippyHover(citeInfo.el, function() {
+          var popup = window.document.createElement('div');
+          citeInfo.cites.forEach(function(cite) {
+            var citeDiv = window.document.createElement('div');
+            citeDiv.classList.add('hanging-indent');
+            citeDiv.classList.add('csl-entry');
+            var biblioDiv = window.document.getElementById('ref-' + cite);
+            if (biblioDiv) {
+              citeDiv.innerHTML = biblioDiv.innerHTML;
+            }
+            popup.appendChild(citeDiv);
+          });
+          return popup.innerHTML;
+        });
+      }
+    }
+  });
+  </script>
+<nav class="page-navigation">
+  <div class="nav-page nav-page-previous">
+      <a href="./spatial_adv_lesson5.html" class="pagination-link" aria-label="跨切片整合、三维重建与空间多组学">
+        <i class="bi bi-arrow-left-short"></i> <span class="nav-page-text"><span class="chapter-number">50</span>&nbsp; <span class="chapter-title">跨切片整合、三维重建与空间多组学</span></span>
+      </a>          
+  </div>
+  <div class="nav-page nav-page-next">
+      <a href="./metagenomics_lesson1.html" class="pagination-link" aria-label="专题 10.1（待撰写）">
+        <span class="nav-page-text"><span class="chapter-number">52</span>&nbsp; <span class="chapter-title">专题 10.1（待撰写）</span></span> <i class="bi bi-arrow-right-short"></i>
+      </a>
+  </div>
+</nav>
+</div> <!-- /content -->
+
+
+
+
+<footer class="footer"><div class="nav-footer"><div class="nav-footer-center"><div class="toc-actions d-sm-block d-md-none"><ul><li><a href="https://github.com/cxzdsa2332/Applied-Omics-Analysis/edit/main/10-metagenomics.qmd" class="toc-action"><i class="bi bi-github"></i>Edit this page</a></li><li><a href="https://github.com/cxzdsa2332/Applied-Omics-Analysis/issues/new" class="toc-action"><i class="bi empty"></i>Report an issue</a></li><li><a href="https://github.com/cxzdsa2332/Applied-Omics-Analysis/blob/main/10-metagenomics.qmd" class="toc-action"><i class="bi empty"></i>View source</a></li></ul></div></div></div></footer></body></html>
