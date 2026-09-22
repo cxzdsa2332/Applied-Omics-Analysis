@@ -63,7 +63,7 @@ crossref:
 
 细胞解卷积在数学上是一个有约束的混合模型反演问题：已知混合信号（Spot 的表达向量）与各成分的特征谱（细胞类型签名矩阵），求各成分的混合比例。这一表述立即揭示了它的软肋——反演的质量完全取决于特征谱的准确性与完备性。若参考 scRNA-seq 缺少目标组织中实际存在的某种细胞类型，算法无法凭空识别它，只会把它的信号错误分摊给签名最相似的已有类型，产出看似合理实则系统性偏倚的空间分布。本专题梳理解卷积工具的三代谱系：基于线性回归的 RCTD 与 SPOTlight、基于层次贝叶斯生成模型的 cell2location、基于深度学习映射的 Tangram，并补充考虑空间相关性的 CARD。除方法本身外，本专题用相当篇幅讲解结果验证：模拟 Spot 的定量基准、与标志基因空间表达的一致性核查、以及不确定性估计的正确解读。
 
-{{Wiki:Deconvolution}}
+![解卷积（Deconvolution）效果对比。左为受点扩散函数模糊的原始观测，右为解卷积还原后的图像，与从 Spot 混合信号反解细胞类型构成同一类数学问题。](https://upload.wikimedia.org/wikipedia/commons/thumb/5/5f/Deconvolution_of_an_astronomical_image.png/960px-Deconvolution_of_an_astronomical_image.png){#fig-deconvolution width=85%}
 
 **核心概念**：
 
@@ -145,7 +145,7 @@ BayesSpace 的马尔可夫随机场先验用一个固定的邻域势能项表达
 
 成像型平台走了一条与测序完全不同的路：不建库、不测序，而是通过多轮荧光原位杂交在组织原位逐位读出每个 RNA 分子的身份编码。MERFISH 的核心创新是纠错编码——每个基因被分配一个满足汉明距离约束的二进制码字，使得任意一轮杂交出错都能被唯一纠正，正是这种"误差稳健"使其在数千基因的高度复用下仍保持低误判率。但成像型数据有一个测序型没有的前置难题：测序型的"细胞"由微流控液滴或条形码阵列天然定义，而成像型得到的原始数据是一张布满 RNA 分子点的图像，必须先划定每个细胞的边界，才能把分子分配给细胞、构建表达矩阵。这一步就是**细胞分割**（Cell Segmentation），它决定了下游一切结果的质量上限——分割错误会直接制造出与 scRNA-seq 中"双胞"同源的假象，且无法在下游被检出和修正。
 
-{{Wiki:Fluorescence_in_situ_hybridization}}
+![多重荧光原位杂交（FISH）成像结果。不同荧光通道标记不同的靶标 RNA，是 MERFISH 等成像型空间转录组平台的技术基础。](https://upload.wikimedia.org/wikipedia/commons/a/a1/Multiplex_ViewRNA_FISH_Assay_in_Jurkat_and_HeLa_cells.jpg){#fig-fish width=70%}
 
 **核心概念**：
 

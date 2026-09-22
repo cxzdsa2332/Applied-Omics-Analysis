@@ -20,7 +20,7 @@ crossref:
 
 上游处理输出的"细胞"仍然鱼龙混杂：其中既有完整健康的细胞，也有濒死的破膜细胞、被双重包裹的双细胞（Doublet），以及高背景污染的低质量条形码。若不加甄别地把它们全部投入下游分析，会产生虚假的细胞群、扭曲的差异表达和误导性的轨迹。本专题讲解 scRNA-seq 的质量控制（Quality Control, QC）逻辑——它与 Bulk RNA-seq 有本质区别，需要在**单个细胞**层面逐一评估质量——以及随后的归一化、高变基因选择与数据缩放等预处理步骤。
 
-**学习目标**：掌握 scRNA-seq 质控三项核心指标及其联合判读逻辑；理解基于 MAD 的自适应阈值相比固定阈值的优势；理解双细胞（Doublet）的成因、危害与检测方法；区分 LogNormalize 与 SCTransform 两种归一化策略；掌握高变基因选择与数据缩放的作用。
+**学习目标**：掌握 scRNA-seq 质控三项核心指标及其联合判读逻辑；能用散点图做指标间的联合诊断；理解基于 MAD 的自适应阈值相比固定阈值的优势；理解环境 RNA（ambient RNA）污染的来源、识别与校正方法；理解双细胞（Doublet）的成因、危害与检测方法；能识别解离诱导的应激伪影；掌握细胞周期评分与是否回归的判断；区分 LogNormalize 与 SCTransform 两种归一化策略；掌握高变基因选择与数据缩放的作用。
 
 ---
 
@@ -31,10 +31,81 @@ crossref:
 scRNA-seq 的质控与 Bulk RNA-seq 有本质区别：Bulk 在样本层面做整体评估，而 scRNA-seq 必须逐个细胞判断质量。三项指标联合构成判读的基础：
 
 - **每细胞基因数（`nFeature_RNA`）**：该细胞中检测到表达的基因数量。过低提示细胞破裂、RNA 大量流失或为空液滴；过高则可能是双细胞。
-- **每细胞 UMI 数（`nCount_RNA`）**：该细胞捕获的 mRNA 分子总数（去重后）。与基因数高度正相关，含义相近。
-- **线粒体基因比例（`percent.mt`）**：线粒体基因 UMI 占该细胞总 UMI 的百分比。当细胞膜破裂，胞质 mRNA 流失而线粒体（被双层膜包裹）相对保留，导致线粒体比例升高，因此高线粒体比例是细胞濒死/破膜的标志。
+- **每细胞 UMI 数（`nCount_RNA`）**：该细胞捕获到的 mRNA 分子总数。与基因数高度正相关，含义相近。
+- **线粒体基因比例（`percent.mt`）**：线粒体基因的 UMI 数占该细胞总 UMI 数的百分比。当细胞膜破裂，胞质 mRNA 流失而线粒体（被双层膜包裹）相对保留，导致线粒体比例升高，因此高线粒体比例是细胞濒死/破膜的标志。
 
-{{Wiki:Quality_control}}
+:::note
+**运行环境说明：** 本专题延续专题 6.1 的 PBMC 3k 数据（`/Users/angdong/Documents/bio_example/SingleCell/`）。下面第一个代码块重新加载数据，因此本专题可独立运行，不依赖上一专题的会话状态。仅需 `Seurat`；涉及 `scuttle`、`SoupX`、`DoubletFinder` 的小节会各自标注额外依赖。
+:::
+
+```r
+library(Seurat)
+
+SC_DIR <- "/Users/angdong/Documents/bio_example/SingleCell"
+
+# Reload the canonical PBMC 3k dataset so this topic runs standalone
+pbmc <- CreateSeuratObject(
+    counts = Read10X(file.path(SC_DIR, "filtered_gene_bc_matrices/hg19")),
+    project = "pbmc3k", min.cells = 3, min.features = 200
+)
+
+# Compute the mitochondrial gene percentage per cell (human genes start with "MT-")
+pbmc[["percent.mt"]] <- PercentageFeatureSet(pbmc, pattern = "^MT-")
+pbmc
+```
+
+## "UMI 数"到底是什么数
+
+这里需要停下来澄清一个容易绊住人的地方：专题 6.1 中的 UMI 是一段 **10 bp 的随机序列**——贴在每个 mRNA 分子上的标签；而这里的"UMI 数"却是一个**整数**。同一个词，一个指标签、一个指数量，衔接不说清就会读得很别扭。
+
+桥梁在于 6.1 讲过的去重步骤。回忆那个例子：某细胞的基因 *A* 有 5 条读段，其中 3 条共享同一个 UMI（PCR 拷贝），去重后剩下 3 个**不同的** UMI。既然每个 UMI 标记一个原始分子，那么"剩下几个不同的 UMI"就等于"捕获到几个原始 mRNA 分子"。于是：
+
+$$\text{UMI 数} \;=\; \text{去重后不同 UMI 的个数} \;=\; \text{捕获到的原始 mRNA 分子数}$$
+
+**表达矩阵里的每一个数值，本身就是一个 UMI 计数**——第 $i$ 行第 $j$ 列的值，是基因 $i$ 在细胞 $j$ 中去重后剩下的 UMI 个数。因此三项质控指标并不需要回到原始读段去重新统计，它们全都可以从矩阵直接算出来：
+
+| 指标 | 从矩阵怎么算 | 含义 |
+|---|---|---|
+| `nCount_RNA` | 该细胞所在列的**所有数值求和** | 该细胞捕获的分子总数 |
+| `nFeature_RNA` | 该细胞所在列的**非零元素个数** | 该细胞检出的基因数 |
+| `percent.mt` | 该列中线粒体基因行的和 ÷ 列总和 | 线粒体来源分子的占比 |
+
+: 三项质控指标与表达矩阵的对应关系 {#tbl-qc-from-matrix}
+
+这个对应关系可以直接验证：
+
+```r
+library(Seurat)
+library(Matrix)
+
+cm <- GetAssayData(pbmc, layer = "counts")
+
+# The QC metrics are nothing but column summaries of the count matrix
+identical(unname(pbmc$nCount_RNA),   unname(Matrix::colSums(cm)))
+identical(unname(pbmc$nFeature_RNA), unname(Matrix::colSums(cm > 0)))
+```
+
+```r
+library(Seurat)
+
+# Walk through one cell to make it concrete
+mt_genes <- grep("^MT-", rownames(pbmc), value = TRUE)
+cell <- colnames(pbmc)[1]
+
+cat("Cell:", cell, "\n")
+cat("  total UMIs (nCount_RNA)   :", pbmc$nCount_RNA[1], "\n")
+cat("  genes detected (nFeature) :", pbmc$nFeature_RNA[1], "\n")
+cat("  mitochondrial genes       :", length(mt_genes), "\n")
+cat("  mitochondrial UMIs        :", sum(cm[mt_genes, 1]), "\n")
+cat("  percent.mt                :",
+    round(sum(cm[mt_genes, 1]) / pbmc$nCount_RNA[1] * 100, 2), "%\n")
+```
+
+在 PBMC 3k 的第一个细胞（`AAACATACAACCAC-1`）上，这段代码给出：总 UMI 数 2,419、检出基因 779 个、13 个线粒体基因贡献了 73 个 UMI，占比 3.02%——与 `PercentageFeatureSet()` 算出的 `percent.mt` 完全一致。全体细胞的中位数则是 nFeature 816、nCount 2,196、percent.mt 2.03%。
+
+:::note
+**为什么 Seurat 把它们叫 `nCount` 和 `nFeature`：** 这两个名字里并没有出现 "UMI" 或 "gene"，是因为 Seurat 的命名刻意保持了通用性——同一套对象结构还要承载抗体标签（ADT）、染色质 peak 等其他模态（参见第 7 章）。在这些模态里"行"不是基因、"值"也不是 UMI，因此统一称为 **feature**（行）与 **count**（值）。后缀 `_RNA` 指明了是哪个 assay。读作"该 assay 中，这个细胞的非零特征数 / 计数总和"即可，放到 RNA assay 上就分别是基因数与 UMI 数。
+:::
 
 ## 联合判读的逻辑
 
@@ -55,13 +126,6 @@ scRNA-seq 的质控与 Bulk RNA-seq 有本质区别：Bulk 在样本层面做整
 :::
 
 ```r
-library(Seurat)
-
-# Compute the mitochondrial gene percentage per cell (human genes start with "MT-")
-pbmc[["percent.mt"]] <- PercentageFeatureSet(pbmc, pattern = "^MT-")
-```
-
-```r
 #| label: fig-qc-violin
 #| fig-cap: "PBMC 3k 数据质控三指标的小提琴图。从左至右分别为每细胞基因数（nFeature_RNA）、每细胞 UMI 数（nCount_RNA）与线粒体基因比例（percent.mt）。小提琴形状展示各指标在所有细胞中的分布，据此可判断离群细胞的分布位置并指导阈值设定。"
 library(Seurat)
@@ -70,9 +134,69 @@ VlnPlot(pbmc, features = c("nFeature_RNA", "nCount_RNA", "percent.mt"),
         ncol = 3, pt.size = 0)
 ```
 
+## 指标之间的联合诊断
+
+小提琴图逐个展示指标的边缘分布，但三项指标之间的**关系**同样携带信息，而这只有在散点图上才看得到。最有诊断价值的是两张图：`nCount_RNA` 对 `percent.mt`、以及 `nCount_RNA` 对 `nFeature_RNA`。
+
+后一张图为什么有用，值得先想清楚。一个细胞捕获的分子越多（`nCount_RNA` 越大），这些分子来自越多不同基因的机会也越大（`nFeature_RNA` 越大）——因此二者必然正相关，在 PBMC 3k 上实测 Pearson $r = 0.953$。但这个关系**不是线性的**：分子数翻倍时基因数远不到翻倍，因为新增的分子越来越多地落在已经检出过的基因上。这正是专题 6.1 讲的饱和现象在单个细胞尺度上的体现。
+
+有了这条预期的主趋势曲线，**偏离它的细胞就值得怀疑**——它们的"分子数与基因数的搭配"不符合一般规律，通常意味着转录谱结构异常。
+
+```r
+#| label: fig-qc-scatter
+#| fig-cap: "PBMC 3k 数据质控指标的联合散点图。左图为每细胞 UMI 数与线粒体基因比例的关系，破膜/濒死细胞聚集于低 UMI、高线粒体比例的左上区域；右图为每细胞 UMI 数与检出基因数的关系，二者呈高度正相关，落在主趋势线下方（UMI 高但基因数偏低）的细胞提示转录本集中于少数基因的异常表达谱。相关系数标注于各图顶部。"
+library(Seurat)
+
+p1 <- FeatureScatter(pbmc, feature1 = "nCount_RNA", feature2 = "percent.mt")
+p2 <- FeatureScatter(pbmc, feature1 = "nCount_RNA", feature2 = "nFeature_RNA")
+p1 + p2
+```
+
+右图中偏离主趋势的两个方向各有含义：
+
+- **UMI 数高而基因数偏低**（落在主趋势下方）：该细胞捕获了很多分子，但它们挤在少数几个基因上，说明转录谱被极少数高表达基因主导。典型情形是红细胞（血红蛋白基因可占其转录本的绝大部分）、浆细胞（免疫球蛋白基因主导），或已启动凋亡程序、正常转录程序崩溃的细胞。
+- **基因数相对 UMI 数偏高**（落在主趋势上方）：检出的基因种类超出了该分子数应有的水平。双细胞是最常见的原因——两个细胞的转录组叠加后，基因种类近似取并集而增长，分子数却只是相加，于是"基因/分子"比值被抬高。
+
+:::tip
+**两张散点图的分工：** 左图（`nCount_RNA` vs `percent.mt`）用于识别**细胞完整性**问题——破膜细胞聚集在低 UMI、高线粒体比例的左上角，因为胞质 mRNA 流失使分子总数下降、而线粒体 RNA 相对保留使其占比上升。右图（`nCount_RNA` vs `nFeature_RNA`）则用于识别**转录谱结构**异常，与细胞是否完整无关。两张图查的是不同的问题，应当一起看：一个细胞可能在左图上完全正常，却在右图上明显偏离。
+:::
+
 ## 自适应阈值：基于 MAD
 
-固定阈值（如 `nFeature > 200`）简单但僵硬：它无视数据本身的分布，对不同测序深度、不同细胞类型的数据集需要反复手动调整。基于中位数绝对偏差（Median Absolute Deviation, MAD）的自适应阈值是更稳健的选择——它以数据的中位数为中心，将偏离中位数超过若干个 MAD 的细胞判为离群。MAD 对极端值不敏感（不像标准差会被离群值拉大），因此能在污染存在时仍给出可靠的离群边界。
+固定阈值（如 `nFeature > 200`）简单但僵硬：它无视数据本身的分布，对不同测序深度、不同细胞类型的数据集需要反复手动调整。基于中位数绝对偏差（Median Absolute Deviation, MAD）的自适应阈值是更稳健的选择——它以数据的中位数为中心，将偏离中位数超过若干个 MAD 的细胞判为离群。
+
+MAD 的定义是"每个观测值到中位数的距离"的中位数：
+
+$$\mathrm{MAD} = \mathrm{median}\left(\left|x_i - \mathrm{median}(x)\right|\right)$$
+
+它与标准差的关键差别在于，**两次取中位数使它对极端值几乎免疫**。标准差要对离均差做平方再平均，一个极端值经平方放大后会显著抬高整体尺度；MAD 则只关心"一半的点落在多远以内"，离群值再极端也只是排在队尾、不改变中位位置。这一差别在质控场景下尤其要紧——我们正是要用这把尺子去量离群细胞，若尺子本身被离群细胞带偏，阈值就会被撑大到失去过滤作用。
+
+下面用一个刻意的例子说明这种"尺子被带偏"是什么意思：
+
+```r
+# Why MAD rather than SD: contaminate a clean sample with a few extreme values
+set.seed(42)
+clean <- rnorm(1000, mean = 1000, sd = 100)
+dirty <- c(clean, rep(50000, 10))   # 10 extreme outliers out of 1010
+
+comparison <- data.frame(
+    dataset = c("clean", "contaminated"),
+    median  = round(c(median(clean),  median(dirty))),
+    mad     = round(c(mad(clean),     mad(dirty))),
+    sd      = round(c(sd(clean),      sd(dirty)))
+)
+print(comparison)
+
+# The threshold each scale implies (3 units below centre)
+cat("\n3-MAD lower bound  :", round(median(dirty) - 3 * mad(dirty)), "\n")
+cat("3-SD  lower bound  :", round(mean(dirty)   - 3 * sd(dirty)),  "\n")
+```
+
+仅仅 10 个（约 1%）极端值就让标准差从约 100 膨胀到约 4,900——涨了近 50 倍，而 MAD 几乎纹丝不动。后果直接体现在阈值上：3 倍 MAD 给出的下界仍在合理位置，而 3 倍标准差的下界已经变成负数，等于完全不过滤。这正是质控应当用 MAD 而非标准差的原因。
+
+:::note
+**运行环境说明：** `scuttle` 为 Bioconductor 包（`BiocManager::install("scuttle")`），需单独安装。若暂不具备该依赖，可先用后面的固定阈值版本继续，两种方式的输出对象结构相同。
+:::
 
 ```r
 library(scuttle)
@@ -85,12 +209,248 @@ qc_high_mt   <- isOutlier(pbmc$percent.mt, nmads = 3, type = "higher")
 
 # Keep cells that fail neither criterion
 keep <- !(qc_low_genes | qc_high_mt)
-pbmc <- pbmc[, keep]
 cat("Cells retained:", sum(keep), "of", length(keep), "\n")
 ```
 
+```r
+library(Seurat)
+
+# Fixed-threshold equivalent, widely used on this dataset.
+# On PBMC 3k it retains 2,638 of the 2,700 cells.
+pbmc <- subset(pbmc, subset = nFeature_RNA > 200 &
+                              nFeature_RNA < 2500 &
+                              percent.mt < 5)
+cat("Cells after QC:", ncol(pbmc), "\n")
+```
+
+## 过滤之后必须回头核验
+
+设好阈值、跑完 `subset()`，工作并没有结束——**还要回头看看到底删掉了什么**。这一步几乎总是被跳过，却是质控中唯一能发现"误删真实细胞类型"的环节。阈值本身无法告诉你它删对了没有；只有被删细胞的身份能。
+
+做法是：先用宽松条件保留全部细胞、跑一遍快速聚类，再看被标记为"待删"的细胞落在哪些聚类里。若它们**零散分布**于各个聚类，说明删的是各处的低质量细胞，符合预期；若它们**高度集中**在某一两个聚类，那就危险了——很可能整个细胞类型正在被系统性地删除。
+
+```r
+library(Seurat)
+
+# Cluster FIRST, filter later -- so we can see the identity of what we remove
+pbmc_all <- CreateSeuratObject(
+    counts = Read10X(file.path(SC_DIR, "filtered_gene_bc_matrices/hg19")),
+    project = "pbmc3k", min.cells = 3, min.features = 200
+)
+pbmc_all[["percent.mt"]] <- PercentageFeatureSet(pbmc_all, pattern = "^MT-")
+
+pbmc_all <- NormalizeData(pbmc_all, verbose = FALSE) |>
+    FindVariableFeatures(verbose = FALSE) |>
+    ScaleData(verbose = FALSE) |>
+    RunPCA(npcs = 20, verbose = FALSE) |>
+    FindNeighbors(dims = 1:15, verbose = FALSE) |>
+    FindClusters(resolution = 0.5, verbose = FALSE) |>
+    RunUMAP(dims = 1:15, verbose = FALSE)   # needed for the DimPlot below
+
+# Flag (but do not yet delete) the cells the thresholds would remove
+would_remove <- !(pbmc_all$nFeature_RNA > 200 &
+                  pbmc_all$nFeature_RNA < 2500 &
+                  pbmc_all$percent.mt < 5)
+cat("Would remove:", sum(would_remove), "of", ncol(pbmc_all), "\n")
+```
+
+```r
+library(Seurat)
+
+# The key diagnostic: is removal spread across clusters, or concentrated in one?
+tb <- table(cluster = Idents(pbmc_all), removed = would_remove)
+data.frame(
+    cluster      = rownames(tb),
+    n_cells      = as.integer(rowSums(tb)),
+    n_removed    = as.integer(tb[, "TRUE"]),
+    pct_removed  = sprintf("%.1f%%", tb[, "TRUE"] / rowSums(tb) * 100)
+)
+```
+
+在 PBMC 3k 上，62 个被删细胞在九个聚类中的分布如 @tbl-removal-by-cluster 所示。
+
+| 聚类 | 细胞数 | 被删 | 被删比例 |
+|---|---|---|---|
+| 0 | 671 | 18 | 2.7% |
+| 1 | 504 | 2 | 0.4% |
+| 2 | 497 | 12 | 2.4% |
+| 3 | 350 | 6 | 1.7% |
+| 4 | 310 | 17 | 5.5% |
+| 5 | 166 | 6 | 3.6% |
+| 6 | 157 | 1 | 0.6% |
+| 7 | 31 | 0 | 0.0% |
+| 8 | 14 | 0 | 0.0% |
+
+: PBMC 3k 中被质控阈值删除的细胞在各聚类中的分布 {#tbl-removal-by-cluster}
+
+这个结果是健康的：各聚类被删比例都在 0%–5.5% 之间，没有任何一群被整体清除。最高的聚类 4 也只删了 5.5%。被删细胞的指标中位数是 nFeature 492、percent.mt 5.7%——正是典型的"低基因数 + 高线粒体"破膜细胞特征。
+
+```r
+library(Seurat)
+
+# What do the removed cells look like on the QC metrics?
+cat("Removed cells -- median nFeature:",
+    median(pbmc_all$nFeature_RNA[would_remove]),
+    "| median percent.mt:",
+    round(median(pbmc_all$percent.mt[would_remove]), 1), "%\n")
+
+# And where do they sit on the embedding?
+pbmc_all$qc_fail <- would_remove
+DimPlot(pbmc_all, reduction = "umap", group.by = "qc_fail")
+```
+
+:::warning
+**什么样的结果应当拉响警报：** 若某个聚类被删比例达到 50% 甚至更高，几乎可以肯定阈值出了问题——它删的不是"坏细胞"，而是"某一类 RNA 含量天然偏低或线粒体天然偏高的细胞"。最典型的两种受害者是**静息淋巴细胞**（体积小、RNA 少，容易撞上 `nFeature` 下限）与**心肌细胞、肝细胞等高代谢细胞**（线粒体比例本就 30% 以上，必然撞上 `percent.mt` 上限）。遇到这种情况，正确做法不是接受结果，而是回去放宽该项阈值、或对不同细胞群采用不同阈值。本节这套"先聚类、后核验"的流程，存在的意义就是让这类问题在造成损害之前被看见。
+:::
+
 :::tip
 **`nmads = 3` 的含义与调节：** 偏离中位数 3 个 MAD 约对应正态分布下 1% 的尾部，是常用的折中。若数据质量整体较差、污染较多，可放宽到 `nmads = 5` 避免过度删除；若追求高纯度（如稀有细胞研究），可收紧到 `nmads = 2.5`。对计数类指标先取对数（`log = TRUE`）再做 MAD，可纠正其右偏分布。
+:::
+
+## 三项之外：按组织补充的质控指标
+
+前述三项是通用底线，但它们并不足以覆盖所有情形。根据样本类型，通常还应补充下面几项——每一项都是针对一类特定污染或伪影设计的。
+
+- **核糖体蛋白基因比例（`percent.ribo`）**：`RPS`/`RPL` 开头的基因。它们本身是高丰度管家基因，比例高低通常**不**指示细胞质量差；但若某一群细胞的核糖体比例显著偏离其余细胞，往往提示其转录活性或细胞状态特殊，值得留意而非直接剔除。
+- **血红蛋白基因比例（`percent.hb`）**：`HB` 开头（排除 `HBP`）的基因。对任何含血或灌注不彻底的组织样本，红细胞污染是常见问题；红细胞本身几乎只转录血红蛋白，若某细胞该比例极高，基本可判定为红细胞或其碎片。
+- **最高表达基因占比**：检查单个基因占该细胞总 UMI 的比例。若某细胞被一两个基因主导，通常是前面散点图中"UMI 高而基因数低"那一类异常。
+
+```r
+library(Seurat)
+
+# Ribosomal and haemoglobin fractions -- tissue-dependent extra QC metrics
+pbmc[["percent.ribo"]] <- PercentageFeatureSet(pbmc, pattern = "^RP[SL]")
+pbmc[["percent.hb"]]   <- PercentageFeatureSet(pbmc, pattern = "^HB[^(P)]")
+
+summary(pbmc$percent.ribo)
+summary(pbmc$percent.hb)
+```
+
+在 PBMC 3k 上，核糖体比例中位数高达 **36.8%**（范围 1.1%–59.4%）——这个数字乍看惊人，却完全正常：核糖体蛋白基因是细胞中最活跃的转录单元之一。这恰好说明为什么**不能**照搬线粒体那套"比例高就是坏细胞"的直觉。血红蛋白比例中位数则为 **0**，符合预期——PBMC 是经密度梯度离心纯化的单个核细胞，红细胞已被去除。
+
+```r
+library(Seurat)
+library(Matrix)
+
+# Which genes dominate the library overall? A useful sanity check on any dataset.
+cm  <- GetAssayData(pbmc, layer = "counts")
+top <- sort(Matrix::rowSums(cm), decreasing = TRUE)[1:8]
+
+data.frame(
+    gene        = names(top),
+    total_UMI   = as.integer(top),
+    pct_of_all  = sprintf("%.2f%%", top / sum(cm) * 100)
+)
+```
+
+本数据的前八名依次是 MALAT1（2.53%）、TMSB4X（1.94%）、B2M（1.90%），随后是一串核糖体蛋白基因 RPL10、RPL13、RPL13A、RPS2 与铁蛋白轻链 FTL。这个榜单本身就是一次质控：**MALAT1 高居第一是健康样本的正常特征**（它是核内滞留的长非编码 RNA），但若它占比异常突出、同时线粒体基因也排进前列，则提示大量细胞已破膜——胞质 RNA 流失后，核内与线粒体来源的 RNA 占比会同时被抬高。
+
+:::warning
+**不要把"扩展指标"当成新的过滤阈值清单：** 补充这几项的目的是**诊断**，不是无脑增加过滤条件。核糖体比例尤其容易被误用——见到 30%–40% 就设阈值去删，会把大量完全健康的细胞删掉。正确用法是：先看这些指标在本数据中的分布与空间/聚类分布，只有当某一群细胞在某项指标上明显离群、且能与生物学解释对应时，才考虑处理。多加一个阈值就多一分误删真实细胞的风险，而误删的往往正是那些状态特殊、最值得研究的细胞。
+:::
+
+---
+
+# 环境 RNA 污染
+
+## 一个所有液滴数据都存在的问题
+
+细胞悬液的制备不可避免地会损伤一部分细胞，它们释放的 mRNA 游离在缓冲液中，形成所谓的**环境 RNA**（Ambient RNA，业内俗称"汤"，soup）。液滴生成时，每个 GEM 除了包裹目标细胞，也会包进一小份这样的缓冲液——于是每个细胞的表达谱中都掺入了一份来自"全组织平均"的背景信号。
+
+这一污染的危害在于它**制造看似真实的表达**。PBMC 3k 就是一个现成的例子：单核细胞高表达溶菌酶基因 LYZ，其转录本大量渗入"汤"中，导致近一半的 T 细胞也检出了 LYZ——若不加甄别，分析者可能据此报告一群"表达髓系标志的 T 细胞"这样并不存在的细胞状态。与低质量细胞不同，环境 RNA 污染的是**每一个细胞**，因此无法靠过滤细胞解决。
+
+:::warning
+**环境 RNA 是"假阳性表达"的主要来源：** 在解读任何"某细胞类型意外表达了另一谱系的标志基因"这类发现之前，都应先排除环境 RNA。一个快速的判据是看该基因在**空液滴**中的表达水平——若空液滴里也有可观表达，说明它大量存在于环境 RNA 中，那么它在细胞中的低水平信号很可能就是背景而非真实转录。这类误判在肿瘤浸润免疫细胞、组织常驻免疫细胞的研究中尤为常见，因为那里恰恰存在多种谱系混杂的样本。
+:::
+
+## 校正方法
+
+环境 RNA 校正的共同逻辑是：先估计"汤"的成分，再从每个细胞的计数中扣除相应份额。
+
+- **SoupX**（R）：从空液滴估计环境 RNA 的表达谱，再用一组在特定细胞类型中理应完全不表达的基因（如 T 细胞中的 HBB）估计每个细胞的污染比例 $\rho$，据此按比例扣除。它需要原始（未过滤）矩阵作为输入。
+- **CellBender**（Python，深度学习）：用变分自编码器同时建模真实细胞表达与环境背景，无需人工指定标志基因，但需要 GPU 且训练耗时较长。
+
+:::note
+**运行环境说明：** SoupX 为 CRAN R 包（`install.packages("SoupX")`）。它需要**原始**与**过滤后**两个矩阵——前者提供空液滴以估计环境谱，这正是专题 6.1 强调要保留原始矩阵的原因。SoupX 自带的 `load10X()` 期望 Cell Ranger 的 `outs/` 目录结构，而本章数据是解压后的矩阵目录，因此下面改用 `SoupChannel()` 手动构建通道——这种方式适用于任何来源的矩阵，通用性更好。`autoEstCont()` 需要先有聚类标签才能自动估计污染比例。CellBender 为 Python 包，建议 GPU 运行。
+:::
+
+```r
+library(SoupX)
+library(Seurat)
+library(Matrix)
+
+SC_DIR <- "/Users/angdong/Documents/bio_example/SingleCell"
+
+# tod = "table of droplets": ALL barcodes, including empty ones
+# toc = "table of counts"  : the called cells only
+tod <- Read10X(file.path(SC_DIR, "raw_gene_bc_matrices/hg19"))
+toc <- Read10X(file.path(SC_DIR, "filtered_gene_bc_matrices/hg19"))
+
+sc <- SoupChannel(tod, toc)
+sc
+```
+
+```r
+library(SoupX)
+library(Seurat)
+
+# autoEstCont() needs cluster labels: run a quick standard pipeline first
+quick <- CreateSeuratObject(toc) |>
+    NormalizeData(verbose = FALSE) |>
+    FindVariableFeatures(verbose = FALSE) |>
+    ScaleData(verbose = FALSE) |>
+    RunPCA(npcs = 20, verbose = FALSE) |>
+    FindNeighbors(dims = 1:20, verbose = FALSE) |>
+    FindClusters(resolution = 0.5, verbose = FALSE)
+
+sc <- setClusters(sc, setNames(as.character(Idents(quick)), colnames(quick)))
+
+# Estimate the contamination fraction rho automatically
+sc <- autoEstCont(sc)
+cat("Estimated contamination fraction:",
+    sprintf("%.1f%%", sc$fit$rhoEst * 100), "\n")
+```
+
+:::warning
+**`adjustCounts()` 默认返回的不是整数：** 该函数的参数 `roundToInt` 默认为 `FALSE`，因此校正后的矩阵里绝大多数值是小数——在本数据上实测 **98.5% 的非零值不是整数**（如 0.9233、0.9415、1.9709）。这是"按比例扣除背景"的自然结果，但会带来两类麻烦：一是所有假设输入为计数的模型（负二项建模、`SCTransform`、以及 DESeq2 等拟bulk工具）在数学上不再成立；二是任何用 `%d` 格式化或做整数运算的代码会静默出错。除非有特别理由保留小数，否则应显式设 `roundToInt = TRUE`。
+:::
+
+```r
+library(SoupX)
+library(Seurat)
+
+# Subtract the ambient profile. roundToInt = TRUE is important: the default
+# FALSE returns fractional counts, which break count-based downstream models.
+corrected_counts <- adjustCounts(sc, roundToInt = TRUE)
+
+# Rebuild the Seurat object on the decontaminated matrix
+pbmc <- CreateSeuratObject(counts = corrected_counts, project = "pbmc3k",
+                           min.cells = 3, min.features = 200)
+pbmc[["percent.mt"]] <- PercentageFeatureSet(pbmc, pattern = "^MT-")
+```
+
+```r
+library(Seurat)
+
+# Verification. LYZ is the classic soup gene in PBMC: monocytes express it at
+# very high levels, so it leaks into every droplet. Any LYZ seen in T cells is
+# almost entirely ambient. CD3D, by contrast, is a genuine T-cell marker and
+# must survive the correction -- that contrast is the whole point of the check.
+counts_before <- GetAssayData(quick, layer = "counts")
+t_like <- counts_before["CD3D", ] > 0 & counts_before["LYZ", ] < 5
+
+cat(sprintf("LYZ  in T-like cells: %.1f%% -> %.1f%% of cells\n",
+            mean(counts_before["LYZ", t_like] > 0) * 100,
+            mean(corrected_counts["LYZ", names(which(t_like))] > 0) * 100))
+cat(sprintf("CD3D in T-like cells: %.1f%% -> %.1f%% of cells\n",
+            mean(counts_before["CD3D", t_like] > 0) * 100,
+            mean(corrected_counts["CD3D", names(which(t_like))] > 0) * 100))
+```
+
+在 PBMC 3k 上，`autoEstCont()` 估计的污染比例为 **5.7%**，而上面的核验给出了一个教科书式的对比结果：在 1343 个 T 样细胞中，LYZ 的检出率从 **48.8% 降至 7.6%**（每细胞平均计数从 0.69 降至 0.09），而真正的 T 细胞标志 CD3D 几乎纹丝不动（100% → **95.7%**）。这正是校正成功的标志——背景被大幅压低，真实信号被保留。若 CD3D 也随之明显下降，就说明 $\rho$ 被高估、校正过度了。
+
+:::tip
+**校正也可能过度：** 环境 RNA 校正会从所有细胞中扣除信号，若污染比例被高估，真实的低表达基因也会被一并抹去。校正后应做一次核验：挑几个已知的细胞类型特异标志基因，确认它们在**目标细胞类型中仍然高表达**、只是在其他类型中的背景信号被压低了。若目标类型的标志基因也被显著削弱，说明 $\rho$ 估计过高，应改用手动指定的更保守取值。
 :::
 
 ---
@@ -110,18 +470,183 @@ cat("Cells retained:", sum(keep), "of", length(keep), "\n")
 - **DoubletFinder**（R）：从真实细胞随机配对合成模拟双细胞，混入数据后做降维，对每个真实细胞统计其近邻中模拟双细胞的比例（pANN），比例高者判为双细胞。
 - **Scrublet**（Python）：思路类似，在 PCA 空间中为每个细胞计算"双细胞得分"，并基于得分的双峰分布自动确定阈值。
 
+:::note
+**运行环境说明：** `DoubletFinder` 不在 CRAN/Bioconductor 上，需从 GitHub 安装（`remotes::install_github("chris-mcginnis-ucsf/DoubletFinder")`）。本节代码在 v2.0.6 上验证通过。**注意函数名随版本变化**：v2.0.4 之前为 `doubletFinder_v3()` 与 `paramSweep_v3()`，此后去掉了 `_v3` 后缀。`paramSweep()` 在 2,600 个细胞上约需一到数分钟，数据量大时应设 `num.cores` 并行。
+:::
+
+**必须先完成预处理。** DoubletFinder 的工作方式是：随机配对真实细胞合成"模拟双细胞"，把它们混入数据后重跑一遍降维，再看每个真实细胞的近邻中有多少模拟双细胞。为了让模拟细胞与真实细胞经过**同样**的处理，它会读取输入对象的 `@commands` 记录、按原样重放归一化与降维——因此输入对象必须真的跑过 `NormalizeData()`、`ScaleData()` 与 `RunPCA()`。
+
+:::warning
+**最常见的报错及其原因：** 若对未经预处理的对象直接调用 `doubletFinder()`，会得到这样一条难以索解的错误：
+
+```text
+Error in orig.commands$NormalizeData.RNA@params : 
+  no applicable method for `@` applied to an object of class "NULL"
+```
+
+它的含义是：DoubletFinder 去读 `seu@commands$NormalizeData.RNA` 时拿到了 `NULL`，因为该对象从未执行过 `NormalizeData()`，命令历史是空的。**特别容易在本专题这个位置踩中**——上一节的环境 RNA 校正用 `CreateSeuratObject(counts = corrected_counts, ...)` 重建了对象，而新建对象的 `@commands` 是空的，此前做过的任何预处理都不会被继承。用 `length(pbmc@commands)` 可以直接确认：重建后它是 0。解决办法就是在调用前补做预处理，如下。
+:::
+
+```r
+library(Seurat)
+
+# DoubletFinder replays the recorded preprocessing on its simulated doublets,
+# so the object must actually have been normalised and reduced first.
+pbmc <- NormalizeData(pbmc, verbose = FALSE) |>
+    FindVariableFeatures(verbose = FALSE) |>
+    ScaleData(verbose = FALSE) |>
+    RunPCA(npcs = 30, verbose = FALSE) |>
+    FindNeighbors(dims = 1:30, verbose = FALSE) |>
+    FindClusters(resolution = 0.5, verbose = FALSE)
+
+# This must be non-zero, otherwise doubletFinder() will fail
+cat("Commands recorded:", length(pbmc@commands), "\n")
+print(names(pbmc@commands))
+```
+
+**`pK` 必须由数据决定，不能照抄。** `pK` 是计算近邻时的邻域大小（占总细胞数的比例），最优值随数据集而变。`paramSweep()` 在一系列 `pK` 上试算，`find.pK()` 则用双峰性系数（BCmetric）挑出最优值——该指标越大，说明双细胞得分的分布越呈双峰、真假细胞分得越开。
+
 ```r
 library(DoubletFinder)
 
-# DoubletFinder requires a preprocessed object (PCA done). Expected doublet rate
-# scales with loaded cells (~0.8% per 1000 cells on 10x).
-n_exp <- round(0.039 * ncol(pbmc))     # e.g. ~3.9% for a ~5000-cell load
-pbmc <- doubletFinder(pbmc, PCs = 1:30, pN = 0.25, pK = 0.09,
-                      nExp = n_exp, sct = FALSE)
+# Sweep pK and pick the value maximising the bimodality coefficient
+sweep_res   <- paramSweep(pbmc, PCs = 1:30, sct = FALSE)
+sweep_stats <- summarizeSweep(sweep_res, GT = FALSE)
+bcmvn       <- find.pK(sweep_stats)
+
+best_pK <- as.numeric(as.character(bcmvn$pK[which.max(bcmvn$BCmetric)]))
+cat("Optimal pK for this dataset:", best_pK, "\n")
+```
+
+在 PBMC 3k 上得到的最优 `pK` 是 **0.02**——与许多教程里照抄的 0.09 相差甚远，这正说明该参数不可挪用。
+
+**预期双细胞数要按本数据估、还要做同源校正。** 预期数量应由本数据的实际细胞数经泊松关系推出（参见专题 6.1），而非套用别处的比率。此外还需一道校正：`modelHomotypic()` 估计**同源双细胞**（两个同类型细胞结合）的比例——这类双细胞的转录谱与单个该类型细胞几乎无异，原理上就检测不出来，因此应把它们从预期数中扣除，否则会迫使算法多判一批假阳性。
+
+```r
+library(DoubletFinder)
+
+n_cells <- ncol(pbmc)
+rate    <- n_cells / 1000 * 0.008        # Poisson approximation, see 专题 6.1
+nExp    <- round(rate * n_cells)
+
+# Homotypic doublets (same cell type twice) are essentially undetectable --
+# subtract their expected share rather than forcing the model to find them
+homotypic_prop <- modelHomotypic(Idents(pbmc))
+nExp_adj       <- round(nExp * (1 - homotypic_prop))
+
+cat(sprintf("cells=%d  rate=%.2f%%  nExp=%d  homotypic=%.3f  nExp_adj=%d\n",
+            n_cells, rate * 100, nExp, homotypic_prop, nExp_adj))
+```
+
+```r
+library(DoubletFinder)
+
+pbmc <- doubletFinder(pbmc, PCs = 1:30, pN = 0.25,
+                      pK = best_pK, nExp = nExp_adj, sct = FALSE)
+
+# Column names encode the parameters used, e.g. DF.classifications_0.25_0.02_40
+df_col <- grep("^DF.classifications", colnames(pbmc[[]]), value = TRUE)
+table(pbmc[[df_col[1]]][, 1])
+```
+
+在本专题的流程中实测：此处 `pbmc` 有 2,700 个细胞、预期双细胞率 2.16%、`nExp` = 58，同源比例 0.264、校正后 `nExp_adj` = 43，最终判定 **43 个双细胞、2,657 个单细胞**。注意最后一步输出的列名 `DF.classifications_0.25_0.02_43` 把三个参数都编码了进去——这是好的工程习惯，便于事后核对当时用的是什么设置。
+
+:::tip
+**为什么这里是 2,700 个细胞而不是前面过滤后的 2,638 个：** 上一节的环境 RNA 校正从 `corrected_counts` **重建**了对象，而 SoupX 校正的是完整的 2,700 个细胞，因此此前 MAD/固定阈值过滤掉的细胞又回来了。这不是笔误，而是"重建对象会丢失此前所有状态"的又一个体现——与前面 `@commands` 被清空是同一个原因。实际项目中应决定好先后：要么先过滤再校正（校正只作用于保留的细胞），要么校正后重新过滤一遍。本专题为分别演示两种方法而采用了前一种顺序，读者在自己的流程中应把过滤统一放在校正之后，避免这种细胞数反复。
+:::
+
+:::note
+**双细胞检测的时机：** 两点需要澄清。其一，检测必须在**每个样本内部独立**进行，而非合并多样本后统一检测——模拟双细胞只有基于同一文库的细胞配对才有生物学意义。其二，正确的流程顺序是：**基础 QC（去除破膜/空液滴细胞）→ 归一化与降维 → 双细胞检测 → 剔除双细胞 → 下游分析**。这里归一化必须在检测**之前**，因为 DoubletFinder 依赖它；而基础 QC 应在最前，以免低质量细胞干扰双细胞模型的估计。剔除双细胞后，若样本量变化较大，可考虑重跑一遍归一化与降维再进入下游。
+:::
+
+---
+
+# 解离伪影与细胞周期
+
+## 解离本身会改变转录组
+
+组织解离需要酶解与机械处理，通常在 37 ℃ 下进行数十分钟。细胞在这段时间里并非被动等待——它们会启动应激反应，转录一批即早基因（Immediate Early Genes, IEG）如 *FOS*、*JUN*、*EGR1* 与热休克蛋白基因如 *HSPA1A*。这些转录变化是**实验过程制造的**，却与真实的生物学激活状态在数据上难以区分。
+
+后果是一类隐蔽的错误：分析者可能得到一群"高表达 FOS/JUN 的激活态细胞"，并赋予其生物学意义，而它实际上只反映该批细胞在解离时承受了更多应激。由于不同样本的解离时长与操作手法常有差异，这种伪影还会伪装成组间差异。
+
+:::warning
+**本节的评分函数需要先完成归一化与降维：** `AddModuleScore()` 与 `CellCycleScoring()` 都在归一化后的表达值上计算，`DimPlot(reduction = "pca")` 还需要先跑 PCA。本专题把这两节放在归一化小节之前，是为了保持"先识别伪影、再决定如何处理"的叙述顺序；但在实际执行时，必须先做一遍归一化与降维。下面的代码块显式包含了这些前置步骤，可直接运行。
+:::
+
+```r
+library(Seurat)
+
+# Prerequisite: these scores are computed on normalised data, and the PCA plot
+# below needs a reduction. Run a minimal pipeline first.
+pbmc <- NormalizeData(pbmc, verbose = FALSE) |>
+    FindVariableFeatures(verbose = FALSE) |>
+    ScaleData(verbose = FALSE) |>
+    RunPCA(npcs = 30, verbose = FALSE) |>
+    FindNeighbors(dims = 1:15, verbose = FALSE) |>
+    FindClusters(resolution = 0.5, verbose = FALSE)
+```
+
+```r
+library(Seurat)
+
+# Score each cell for a dissociation-induced stress signature.
+# These genes are transcribed in response to enzymatic digestion, not biology.
+stress_genes <- c("FOS", "FOSB", "JUN", "JUNB", "EGR1",
+                  "HSPA1A", "HSPA1B", "HSPB1", "DNAJB1")
+stress_genes <- intersect(stress_genes, rownames(pbmc))
+cat("Stress genes found in this dataset:", length(stress_genes), "\n")
+
+pbmc <- AddModuleScore(pbmc, features = list(stress_genes), name = "stress")
+
+# If one cluster stands out on this score, suspect a dissociation artefact
+VlnPlot(pbmc, features = "stress1", group.by = "seurat_clusters", pt.size = 0)
+```
+
+:::warning
+**不要急着把应激基因回归掉：** 发现应激信号后的第一反应常是"回归掉它"，但这可能抹去真实信号——在免疫学研究中，*FOS*/*JUN* 的表达本身就是 T 细胞活化的真实标志。正确的顺序是先**判断来源**：若高应激评分的细胞随机散布于各细胞类型，多半是解离伪影；若它集中在特定的、生物学上确实可能被激活的细胞类型中，则可能是真实信号。只有确认为伪影时才考虑回归或剔除，并在方法部分明确说明。从实验端缩短解离时间、使用冷活性蛋白酶或改做单核测序（snRNA-seq），比任何事后校正都更有效。
+:::
+
+## 细胞周期评分
+
+增殖细胞的转录组被细胞周期强烈驱动：同一种细胞处于 S 期与 G2M 期时，其表达谱差异可能大过它与另一种细胞类型的差异。结果是聚类按**周期阶段**而非细胞类型分开——这在肿瘤、发育与干细胞研究中是一个常见陷阱。
+
+![真核细胞周期各时相示意图。G1、S、G2、M 四个时相依次循环，S 期与 G2M 期细胞的转录谱差异显著，是单细胞聚类中常见的混杂因素。](https://upload.wikimedia.org/wikipedia/commons/a/a4/Normal_Cell_Life_Cycle.png){#fig-cell-cycle width=85%}
+
+Seurat 内置了基于经典周期基因集的评分函数，可为每个细胞打出 S 期与 G2M 期得分并指派周期阶段。
+
+```r
+library(Seurat)
+
+# Seurat ships with curated S-phase and G2M-phase gene sets (human symbols)
+s_genes   <- cc.genes.updated.2019$s.genes
+g2m_genes <- cc.genes.updated.2019$g2m.genes
+
+pbmc <- CellCycleScoring(pbmc, s.features = s_genes,
+                         g2m.features = g2m_genes, set.ident = FALSE)
+
+table(pbmc$Phase)
+```
+
+```r
+#| label: fig-cell-cycle
+#| fig-cap: "PBMC 3k 数据按细胞周期阶段着色的主成分分布。每个点为一个细胞，颜色表示 CellCycleScoring 指派的周期阶段（G1、S、G2M）。若各阶段细胞在主成分空间中彼此混杂、无明显分离，说明细胞周期不是该数据的主要变异来源，无需回归；若不同阶段沿某个主成分明显分开，则细胞周期正在驱动降维结构，需考虑回归处理。"
+library(Seurat)
+
+DimPlot(pbmc, reduction = "pca", group.by = "Phase")
+```
+
+是否要回归掉细胞周期，取决于它是噪声还是信号：
+
+```r
+library(Seurat)
+
+# Regress out cell-cycle effects ONLY if they dominate the embedding
+# and proliferation is not part of the research question
+pbmc <- ScaleData(pbmc, vars.to.regress = c("S.Score", "G2M.Score"))
 ```
 
 :::note
-**双细胞检测的时机：** 双细胞检测应在**每个样本内部独立**进行，而非合并多样本后统一检测——因为模拟双细胞需基于同一文库的细胞配对才有意义。检测顺序上，先做基础 QC（去除明显的破膜/空液滴细胞），再做双细胞检测，最后进入归一化，可避免低质量细胞干扰双细胞模型的估计。
+**何时不该回归细胞周期：** 若研究对象本身就与增殖有关——肿瘤细胞的增殖异质性、干细胞的自我更新、发育中的祖细胞扩增——那么细胞周期信号正是研究要观察的生物学，回归掉它等于删除了答案。一个折中方案是回归 `S.Score - G2M.Score` 的差值而非二者本身：这样可以消除增殖细胞内部不同周期阶段的差异，同时保留"增殖 vs 静息"这一层信息。判断依据始终是研究问题，而非某个固定流程。
 :::
 
 ---
@@ -135,37 +660,146 @@ pbmc <- doubletFinder(pbmc, PCs = 1:30, pN = 0.25, pK = 0.09,
 - **LogNormalize**（`NormalizeData()`）：将每个细胞的计数除以其总 UMI（消除深度差异），乘以缩放因子（默认 10000），再取自然对数 `log1p`。简单快速，是经典做法，但隐含"所有细胞测序深度差异是纯技术性"的假设，在高度异质的数据上偏差较大。
 - **SCTransform**（`SCTransform()`）：用正则化负二项回归对每个基因建模其计数与测序深度的关系，输出皮尔逊残差作为归一化表达。它同时完成深度校正、方差稳定与高变基因选择，对技术噪声的处理更精细，是当前推荐方法（Hafemeister & Satija, 2019）。
 
+![负二项分布概率质量函数。相比泊松分布，它引入额外的离散参数以刻画方差大于均值的过离散现象，是 scRNA-seq 计数数据建模的基础分布。](https://upload.wikimedia.org/wikipedia/commons/8/83/Negbinomial.gif){#fig-negbinom width=70%}
+
+## LogNormalize 的三步，逐步拆开
+
+`NormalizeData()` 看起来只是一个函数调用，实际做了三件独立的事。把它写成公式可以看得更清楚——对细胞 $j$ 中的基因 $i$：
+
+$$x_{ij}^{\text{norm}} = \log\left(1 + \frac{c_{ij}}{\sum_k c_{kj}} \times 10^4\right)$$
+
+三步分别是：
+
+1. **除以该细胞的总计数** $\sum_k c_{kj}$：这一步消除测序深度差异，把绝对计数变成**该基因占该细胞转录组的比例**。做完这一步，一个测到 5,000 UMI 的细胞和一个测到 500 UMI 的细胞才可比。
+2. **乘以缩放因子 $10^4$**：纯粹是为了让数值回到便于阅读的量级（比例值通常是 $10^{-5}$ 量级，乘完变成个位到百位）。这个 $10^4$ 常被称为"每万转录本计数"（CP10K），它**不影响任何下游分析结果**——只要所有细胞用同一个因子，后续的相对比较完全不受影响。
+3. **取 $\log(1+x)$**：压缩高表达基因的动态范围，使数据更接近正态、方差更均匀。加 1 是为了让零值仍映射到零（$\log(1+0)=0$），避免 $\log 0 = -\infty$。
+
+这三步可以手工复现，用来确认自己理解无误：
+
+```r
+library(Seurat)
+library(Matrix)
+
+pbmc <- NormalizeData(pbmc, normalization.method = "LogNormalize",
+                      scale.factor = 1e4, verbose = FALSE)
+
+# Reproduce Seurat's value by hand for one gene in one cell
+cm <- GetAssayData(pbmc, layer = "counts")
+nm <- GetAssayData(pbmc, layer = "data")
+
+j <- 1                       # first cell
+i <- which(cm[, j] > 0)[1]   # its first expressed gene
+
+manual <- log1p(cm[i, j] / sum(cm[, j]) * 1e4)
+# Use %g rather than %d: sparse values are doubles, and some upstream
+# corrections (see the SoupX note above) can leave them non-integer
+cat(sprintf("raw count = %g, cell total = %g\n", cm[i, j], sum(cm[, j])))
+cat(sprintf("manual = %.4f   Seurat = %.4f   identical = %s\n",
+            manual, nm[i, j], isTRUE(all.equal(manual, nm[i, j]))))
+```
+
+在本专题的流程中，这个细胞的原始计数为 1、总计数为 2,286，于是 $\log(1 + 1/2286 \times 10^4) = 1.6817$——与 Seurat 存在 `data` layer 中的值完全一致。（总计数不是专题开头那个 2,419，是因为此处的对象已经过环境 RNA 校正，每个细胞都被扣除了一部分背景计数。）
+
+:::warning
+**LogNormalize 隐含了一个很强的假设：** 第一步"除以总计数"等价于断言——**细胞之间总 UMI 数的差异纯粹是技术性的**（捕获效率不同），而非生物学的。这个假设在细胞大小相近时尚可接受，但在异质样本中会出问题：一个转录极活跃的大细胞（如浆细胞、巨噬细胞）本来就该有更多 mRNA，把它的计数除以总数，等于人为抹掉了"这个细胞转录更活跃"这一真实的生物学差异。SCTransform 正是为缓解这一问题而设计——它不做简单的比例化，而是对每个基因分别建模其计数与深度的关系。
+:::
+
+## SCTransform 与皮尔逊残差
+
+SCTransform 的思路换了一个角度：与其把计数转成比例，不如**问每个基因在每个细胞中的观测计数，比"仅由测序深度决定"的期望值高多少或低多少**。
+
+具体地，它对每个基因 $i$ 拟合一个以测序深度为自变量的正则化负二项回归，得到期望计数 $\mu_{ij}$ 与离散参数；归一化后的值则是**皮尔逊残差**：
+
+$$z_{ij} = \frac{c_{ij} - \mu_{ij}}{\sqrt{\mu_{ij} + \mu_{ij}^2/\theta_i}}$$
+
+分子是"观测减期望"，分母是负二项分布下该期望对应的标准差。这个式子的含义很直观：**残差衡量的是"这个基因在这个细胞里的表达，超出/低于深度所能解释的程度有多少个标准差"**。深度高的细胞期望值本就高，因而不会仅因为测得多就获得高残差——深度的影响被建模掉了，而不是被除掉了。
+
+"正则化"（regularized）则指：单个基因的参数估计噪声很大，因此 SCTransform 先按表达水平把基因分组、拟合参数随均值变化的平滑趋势，再用这条趋势去校正每个基因的参数估计。这使低表达基因的参数不至于被少量噪声带偏。
+
 ```r
 library(Seurat)
 
-# Option A: classic log-normalization
-pbmc <- NormalizeData(pbmc, normalization.method = "LogNormalize",
-                      scale.factor = 1e4)
-
-# Option B (recommended): SCTransform does normalization + variance stabilization
-# + HVG selection in one step, and can regress out confounders such as percent.mt
+# SCTransform: normalization + variance stabilization + HVG selection in one call.
+# It writes a new assay named "SCT" and leaves the RNA assay untouched.
 pbmc <- SCTransform(pbmc, vars.to.regress = "percent.mt", verbose = FALSE)
+
+Assays(pbmc)
+DefaultAssay(pbmc)
 ```
 
-## 高变基因选择
+:::note
+**两种方法怎么选：** 没有一刀切的答案，但有几条可操作的判据。**选 LogNormalize** 的情形：细胞类型相对均质、测序深度差异不大、需要与既有流程或已发表结果保持可比、或计算资源受限（SCTransform 慢得多、内存占用也高）。**选 SCTransform** 的情形：样本高度异质（细胞大小、转录活跃度差异大）、深度差异显著、或下游要做对表达量精度敏感的分析。
 
-数万个基因中，大多数在细胞间表达稳定，对区分细胞类型没有贡献，反而引入噪声。高变基因（Highly Variable Genes, HVGs）选择保留那些在细胞间变异显著高于其平均表达水平所预期的基因——这些基因最可能携带细胞类型差异的信号。通常选取 2000–3000 个 HVG 作为后续 PCA 的输入。
+两点实务提醒：其一，SCTransform 会新建一个名为 `SCT` 的 assay，而不是覆盖 `RNA`——后续函数调用要留意 `DefaultAssay()` 指向哪个，这是常见的困惑来源（参见专题 6.3 中 `clustree` 的 `prefix` 参数）。其二，**同一项研究内不要混用两种归一化**，否则样本间不可比。
+:::
+
+## 高变基因选择的原理
+
+归一化之后，下一步是从两万多个基因里挑出最有信息量的一小部分。朴素的做法是"按方差排序取前 2000 个"，但这会直接失败——**基因的方差强烈依赖于其平均表达水平**，高表达基因天然方差大。若按原始方差排序，选出的将全是管家基因，而它们恰恰在所有细胞中都稳定表达、毫无区分能力。
+
+`selection.method = "vst"` 解决这一问题的办法是：先拟合一条"方差 ~ 均值"的趋势曲线（在对数尺度上做局部多项式回归），再看每个基因的实际方差**相对于同等表达水平所预期的方差**高出多少。这个比值称为标准化方差（standardized variance），据此排序才是公平的比较。
 
 ```r
-# Select the top 2000 highly variable genes using the variance-stabilizing method
-# (skip this if SCTransform was used -- it already returns variable features)
-pbmc <- FindVariableFeatures(pbmc, selection.method = "vst", nfeatures = 2000)
+library(Seurat)
+
+DefaultAssay(pbmc) <- "RNA"
+pbmc <- FindVariableFeatures(pbmc, selection.method = "vst",
+                             nfeatures = 2000, verbose = FALSE)
+
+cat("HVGs selected:", length(VariableFeatures(pbmc)), "\n")
+cat("Top 10:", paste(head(VariableFeatures(pbmc), 10), collapse = ", "), "\n")
+
+# Standardized variance of the selected genes -- all well above 1 by construction
+hv <- HVFInfo(pbmc)[VariableFeatures(pbmc), ]
+cat("standardized variance range:",
+    round(min(hv$variance.standardized), 2), "-",
+    round(max(hv$variance.standardized), 2), "\n")
 ```
+
+```r
+#| label: fig-hvg
+#| fig-cap: "PBMC 3k 数据的高变基因选择结果。横轴为基因的平均表达量（对数尺度），纵轴为标准化方差。灰点为未入选基因，红点为入选的 2000 个高变基因，标注了标准化方差最高的若干基因名。可以看到入选基因分布于各个表达量区间，而非集中在高表达端——这正是方差标准化的作用：它使低表达但变异显著的基因也能被选中。"
+library(Seurat)
+
+top10 <- head(VariableFeatures(pbmc), 10)
+LabelPoints(plot = VariableFeaturePlot(pbmc), points = top10, repel = TRUE)
+```
+
+在本数据上选出的前五个高变基因是 **PPBP、LYZ、S100A9、IGLL5、GNLY**——分别是血小板、单核细胞、单核细胞、B 细胞、NK 细胞的标志基因，标准化方差范围 1.27–11.44。这个结果本身就是一次流程正确性的验证：**若选出的高变基因全是管家基因或核糖体基因，说明方差标准化没起作用**，需要检查是否误用了原始方差排序。
 
 ## 数据缩放
 
-PCA 对各基因的数值尺度敏感：若不缩放，少数高表达基因会主导主成分。`ScaleData()` 对每个基因做 z-score 标准化（均值 0、方差 1），使所有基因在 PCA 中权重均等；同时可借线性回归从表达中"回归掉"已知的混淆变量（如总 UMI、线粒体比例），减少技术因素对降维的干扰。
+即便完成了归一化与高变基因选择，还有最后一道工序。PCA 寻找的是方差最大的方向，而**方差的大小依赖于数值的尺度**：一个平均表达值为 5 的基因，其方差天然大于一个平均值为 0.5 的基因，哪怕后者的相对变化更剧烈。若不处理，前几个主成分会被少数几个高表达基因主导，反映的是"谁表达得多"而非"谁区分细胞类型"。
+
+`ScaleData()` 对每个基因做 z-score 标准化：
+
+$$z_{ij} = \frac{x_{ij} - \bar{x}_i}{s_i}$$
+
+即减去该基因在所有细胞中的均值、再除以其标准差，使每个基因都变成均值 0、方差 1。这样所有基因在 PCA 中获得**均等的权重**，主成分方向由"变异模式"而非"绝对表达量"决定。
 
 ```r
+library(Seurat)
+
 # Center and scale each gene; regress out technical confounders.
 # (When using SCTransform, scaling is already handled and this step is skipped.)
-pbmc <- ScaleData(pbmc, vars.to.regress = c("nCount_RNA", "percent.mt"))
+pbmc <- ScaleData(pbmc, vars.to.regress = c("nCount_RNA", "percent.mt"),
+                  verbose = FALSE)
+
+# Verify: every scaled gene now has mean ~0 and sd ~1
+sd_mat <- GetAssayData(pbmc, layer = "scale.data")
+cat("mean of scaled values:", round(mean(rowMeans(sd_mat)), 6), "\n")
+cat("mean of per-gene SDs :", round(mean(apply(sd_mat, 1, sd)), 4), "\n")
 ```
+
+`vars.to.regress` 则多做一件事：把指定的混淆变量（这里是总 UMI 与线粒体比例）作为自变量对每个基因做线性回归，用**残差**替代原值。其效果是从表达中扣除这些技术因素可解释的部分。
+
+:::warning
+**回归混淆变量要克制：** 每回归掉一个变量，都在从数据中移除信息，而移除的未必全是技术噪声。回归 `nCount_RNA` 尤其需要谨慎——如前所述，总 UMI 数并不纯粹是技术量，它也反映细胞的真实转录活跃度；把它回归掉，等于抹平了"浆细胞比静息 T 细胞转录更活跃"这类真实差异。实践中的稳妥顺序是：**先不回归任何变量跑一遍**，检查降维结果是否被某个技术因素主导（例如把 `percent.mt` 画在 UMAP 上，看是否存在明显梯度）；只有确认存在主导性的技术效应时，才针对性地回归该变量。使用 SCTransform 时这一步通常可省略——它已在建模阶段处理了深度效应。
+:::
+
+:::tip
+**`ScaleData()` 默认只作用于高变基因：** 这是一个容易被忽略的细节。默认 `features = VariableFeatures(object)`，因此 `scale.data` layer 里通常只有 2000 行而非全部基因。这对 PCA 完全够用（PCA 本就只用高变基因），但若后续要画非高变基因的热图（`DoHeatmap()` 用的正是 `scale.data`），就会报"找不到该基因"。此时需显式指定 `ScaleData(pbmc, features = rownames(pbmc))`，代价是内存占用大幅上升——全基因的 `scale.data` 是稠密矩阵，不再享有稀疏存储的优势。
+:::
 
 :::info
 **黄金法则：** 质控的目标不是"删得越多越好"，而是在**去除技术伪影**与**保留真实生物学信号**之间求平衡。过松会让低质量细胞与双细胞污染下游、制造虚假细胞群；过严则可能误删真实的稀有细胞类型（它们往往 UMI 较低、易被当作低质量删除）。每一次过滤都应可视化前后分布、检查被删细胞的身份，确保删除的是噪声而非信号。
@@ -175,7 +809,11 @@ pbmc <- ScaleData(pbmc, vars.to.regress = c("nCount_RNA", "percent.mt"))
 
 # 方法总结与衔接说明
 
-本专题构建了 scRNA-seq 从"上游原始细胞"到"可分析干净数据"的预处理链条：基于三项指标与 MAD 自适应阈值的质控、双细胞检测、SCTransform 归一化、高变基因选择与数据缩放。这些步骤的质量直接决定下游结果的可信度——垃圾进、垃圾出。专题 6.3 将在这份干净数据之上进行降维、聚类与细胞类型注释，回答 scRNA-seq 最核心的问题：这些细胞各是什么类型？
+本专题构建了 scRNA-seq 从"上游原始细胞"到"可分析干净数据"的预处理链条。质控层面，三项核心指标需要联合判读，散点图揭示的指标间关系比边缘分布携带更多诊断信息，MAD 自适应阈值则比固定阈值更稳健。污染层面，本专题区分了三类性质不同的问题：环境 RNA 污染**每一个**细胞、无法靠过滤解决，需用 SoupX 等方法扣除，它是"某细胞类型意外表达另一谱系标志"这类假阳性发现的主要来源；双细胞是两个细胞的混合，会伪装成虚假的中间态细胞群；解离伪影则是实验过程本身制造的应激转录，与真实的细胞活化难以区分。归一化层面，SCTransform 以正则化负二项回归同时完成深度校正、方差稳定与高变基因选择。
+
+贯穿全篇的判断原则是：**每一次"校正"都在移除信号，因此必须先确认要移除的确实是伪影**。环境 RNA 校正过度会抹去真实的低表达基因，回归应激基因可能删掉真实的免疫活化，回归细胞周期则可能删掉增殖研究的答案本身。
+
+专题 6.3 将在这份干净数据之上进行降维、聚类与细胞类型注释，回答 scRNA-seq 最核心的问题：这些细胞各是什么类型？
 
 ---
 
@@ -195,7 +833,19 @@ pbmc <- ScaleData(pbmc, vars.to.regress = c("nCount_RNA", "percent.mt"))
 
 7. LogNormalize 与 SCTransform 在归一化思路上有何区别？为什么说 SCTransform 对技术噪声的处理更精细？
 
-8. 一位研究者为追求数据纯净，将质控阈值设为 `nFeature > 1000` 且 `percent.mt < 5%`，结果发现某个预期存在的静息淋巴细胞群消失了。请解释原因，并提出改进建议。
+8. `nCount_RNA` 对 `nFeature_RNA` 的散点图中，偏离主趋势的两个方向各对应什么情况？为什么"UMI 高而基因数偏低"可能是红细胞？
+
+9. 什么是环境 RNA（ambient RNA）？为什么说它与低质量细胞的性质根本不同、无法靠过滤细胞解决？
+
+10. 如何快速判断"某细胞类型意外表达了另一谱系标志基因"这一发现是否为环境 RNA 造成的假阳性？
+
+11. SoupX 为什么必须同时输入原始矩阵与过滤后矩阵？校正后应如何核验污染比例没有被高估？
+
+12. 解离诱导的应激伪影表现为哪些基因的表达？为什么"发现应激信号就回归掉"是危险的做法？应如何判断其来源？
+
+13. 细胞周期为什么会干扰聚类？在什么研究场景下**不应该**回归细胞周期？折中方案是什么？
+
+14. 一位研究者为追求数据纯净，将质控阈值设为 `nFeature > 1000` 且 `percent.mt < 5%`，结果发现某个预期存在的静息淋巴细胞群消失了。请解释原因，并提出改进建议。
 
 <details>
 <summary><strong>参考答案 (Reference Answers)</strong></summary>
@@ -214,6 +864,18 @@ pbmc <- ScaleData(pbmc, vars.to.regress = c("nCount_RNA", "percent.mt"))
 
 7. *LogNormalize 把每个细胞计数除以其总 UMI、乘缩放因子再取对数，隐含"深度差异纯属技术性"的假设，简单但在异质数据上偏差大；SCTransform 用正则化负二项回归对每个基因建模计数与深度的关系、输出皮尔逊残差。SCTransform 更精细，因为它按基因分别建模均值-方差关系并做方差稳定，能更好地区分技术噪声与生物变异，还能同时回归掉混淆变量。*
 
-8. *该阈值过严。静息淋巴细胞（如静息 T/B 细胞）本身体积小、RNA 含量低、检出基因数天然偏低（常 < 1000），因此被 `nFeature > 1000` 整体误删；同时部分细胞类型正常线粒体比例也可能略高于 5%。改进：先可视化本数据各指标分布与被删细胞的身份，改用基于 MAD 的自适应下限而非固定的 1000，并结合组织类型放宽线粒体阈值，确保删除的是噪声而非真实的稀有/低 RNA 细胞群。*
+8. *两个方向：（1）UMI 高而基因数偏低，说明转录本高度集中于少数基因；（2）基因数相对 UMI 偏高，常见于双细胞（两个细胞的转录组合并，覆盖的基因种类增多）。红细胞属于第一种情况，是因为成熟红细胞几乎只转录血红蛋白基因（HBB、HBA 等），少数几个基因占据绝对主导，于是总 UMI 可以很高但检出的基因种类很少。已启动凋亡程序的细胞也会表现出类似模式。*
+
+9. *环境 RNA 是细胞悬液制备过程中受损细胞释放到缓冲液中的游离 mRNA。液滴生成时每个 GEM 除包裹目标细胞外，也会包进一小份含环境 RNA 的缓冲液，于是每个细胞的表达谱都掺入了一份"全组织平均"的背景信号。它与低质量细胞的性质根本不同：低质量细胞是**部分细胞**有问题，剔除它们即可；环境 RNA 污染的是**每一个细胞**（包括所有健康细胞），无论怎样过滤细胞，留下来的细胞依然带着这份背景，因此只能通过从计数中扣除背景份额来处理。*
+
+10. *看该基因在**空液滴**中的表达水平。空液滴不含细胞，其信号全部来自环境 RNA，因此空液滴中该基因的丰度直接反映它在"汤"中的含量。若空液滴里也有可观表达，说明它大量存在于环境 RNA 中，那么它在细胞中的低水平信号很可能就是背景而非真实转录。这一判据在肿瘤浸润免疫细胞、组织常驻免疫细胞研究中尤其重要，因为那里样本中多种谱系混杂、环境 RNA 成分复杂。*
+
+11. *因为 SoupX 需要从**空液滴**估计环境 RNA 的表达谱，而空液滴只存在于原始（未过滤）矩阵中——过滤后的矩阵按定义已把空液滴全部去除。过滤后矩阵则用于确定哪些条形码是需要校正的真实细胞。核验方法：挑几个已知的细胞类型特异标志基因，确认校正后它们在**目标细胞类型中仍然高表达**、只是在其他类型中的背景信号被压低。若目标类型的标志基因也被显著削弱，说明污染比例 ρ 被高估、校正过度，应改用手动指定的更保守取值。*
+
+12. *主要是即早基因（FOS、FOSB、JUN、JUNB、EGR1）与热休克蛋白基因（HSPA1A、HSPA1B、HSPB1、DNAJB1）。"发现就回归"危险，是因为这些基因的表达也可能是真实的生物学信号——在免疫学研究中 FOS/JUN 的表达本身就是 T 细胞活化的标志，回归掉等于删除了真实结论。判断来源的方法：若高应激评分的细胞随机散布于各细胞类型，多半是解离伪影（应激是实验操作施加于所有细胞的）；若集中在特定的、生物学上确实可能被激活的细胞类型中，则更可能是真实信号。更根本的解决办法在实验端——缩短解离时间、使用冷活性蛋白酶或改做单核测序。*
+
+13. *因为同一种细胞处于 S 期与 G2M 期时表达谱差异可能大过它与另一种细胞类型的差异，导致聚类按周期阶段而非细胞类型分开。在研究对象本身与增殖有关时不应回归：肿瘤细胞的增殖异质性、干细胞自我更新、发育中祖细胞扩增——此时细胞周期信号正是要观察的生物学，回归掉等于删除答案。折中方案是回归 `S.Score - G2M.Score` 的差值而非二者本身：这样消除了增殖细胞内部不同周期阶段之间的差异，同时保留"增殖 vs 静息"这一层信息。*
+
+14. *该阈值过严。静息淋巴细胞（如静息 T/B 细胞）本身体积小、RNA 含量低、检出基因数天然偏低（常 < 1000），因此被 `nFeature > 1000` 整体误删；同时部分细胞类型正常线粒体比例也可能略高于 5%。改进：先可视化本数据各指标分布与被删细胞的身份（可先用宽松阈值保留、聚类后再看被删的是哪一群），改用基于 MAD 的自适应下限而非固定的 1000，并结合组织类型放宽线粒体阈值，确保删除的是噪声而非真实的稀有/低 RNA 细胞群。*
 
 </details>

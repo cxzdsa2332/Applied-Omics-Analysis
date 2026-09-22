@@ -1,0 +1,1603 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.9.36">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+<meta name="dcterms.date" content="2026-09-21">
+
+<title>46&nbsp; 细胞解卷积：从 Spot 混合信号还原细胞类型 – Introduction to Applied High-throughput Biological Data Analysis</title>
+<style>
+/* Default styles provided by pandoc.
+** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
+*/
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+/* CSS for syntax highlighting */
+html { -webkit-text-size-adjust: 100%; }
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+</style>
+
+
+<script src="site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="site_libs/quarto-nav/headroom.min.js"></script>
+<script src="site_libs/clipboard/clipboard.min.js"></script>
+<script src="site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="site_libs/quarto-search/fuse.min.js"></script>
+<script src="site_libs/quarto-search/quarto-search.js"></script>
+<meta name="quarto:offset" content="./">
+<link href="./spatial_adv_lesson2.html" rel="next">
+<link href="./09-spatial-advanced.html" rel="prev">
+<script src="site_libs/quarto-html/quarto.js" type="module"></script>
+<script src="site_libs/quarto-html/tabsets/tabsets.js" type="module"></script>
+<script src="site_libs/quarto-html/popper.min.js"></script>
+<script src="site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="site_libs/quarto-html/anchor.min.js"></script>
+<link href="site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="site_libs/quarto-html/quarto-syntax-highlighting-845c23b38eaddc0f92fda52bfe77a8c8.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="site_libs/bootstrap/bootstrap-5ccb035bea26c1e21f80f44cf7c27909.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
+<script id="quarto-search-options" type="application/json">{
+  "location": "sidebar",
+  "copy-button": false,
+  "collapse-after": 3,
+  "panel-placement": "start",
+  "type": "textbox",
+  "limit": 50,
+  "keyboard-shortcut": [
+    "f",
+    "/",
+    "s"
+  ],
+  "show-item-context": false,
+  "language": {
+    "search-no-results-text": "No results",
+    "search-matching-documents-text": "matching documents",
+    "search-copy-link-title": "Copy link to search",
+    "search-hide-matches-text": "Hide additional matches",
+    "search-more-match-text": "more match in this document",
+    "search-more-matches-text": "more matches in this document",
+    "search-clear-button-title": "Clear",
+    "search-text-placeholder": "",
+    "search-detached-cancel-button-title": "Cancel",
+    "search-submit-button-title": "Submit",
+    "search-label": "Search"
+  }
+}</script>
+
+  <script src="https://cdnjs.cloudflare.com/polyfill/v3/polyfill.min.js?features=es6"></script>
+  <script defer="" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js" type="text/javascript"></script>
+
+<script type="text/javascript">
+const typesetMath = (el) => {
+  if (window.MathJax) {
+    // MathJax Typeset
+    window.MathJax.typeset([el]);
+  } else if (window.katex) {
+    // KaTeX Render
+    var mathElements = el.getElementsByClassName("math");
+    var macros = [];
+    for (var i = 0; i < mathElements.length; i++) {
+      var texText = mathElements[i].firstChild;
+      if (mathElements[i].tagName == "SPAN" && texText && texText.data) {
+        window.katex.render(texText.data, mathElements[i], {
+          displayMode: mathElements[i].classList.contains('display'),
+          throwOnError: false,
+          macros: macros,
+          fleqn: false
+        });
+      }
+    }
+  }
+}
+window.Quarto = {
+  typesetMath
+};
+</script>
+
+</head>
+
+<body class="nav-sidebar floating quarto-light">
+
+<div id="quarto-search-results"></div>
+  <header id="quarto-header" class="headroom fixed-top">
+  <nav class="quarto-secondary-nav">
+    <div class="container-fluid d-flex">
+      <button type="button" class="quarto-btn-toggle btn" data-bs-toggle="collapse" role="button" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+        <i class="bi bi-layout-text-sidebar-reverse"></i>
+      </button>
+        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="./04-transcriptomics-basic.html">第二阶段：转录组、单细胞与空间组学</a></li><li class="breadcrumb-item"><a href="./spatial_adv_lesson1.html"><span class="chapter-number">46</span>&nbsp; <span class="chapter-title">细胞解卷积：从 Spot 混合信号还原细胞类型</span></a></li></ol></nav>
+        <a class="flex-grow-1" role="navigation" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">      
+        </a>
+      <button type="button" class="btn quarto-search-button" aria-label="Search" onclick="window.quartoOpenSearch();">
+        <i class="bi bi-search"></i>
+      </button>
+    </div>
+  </nav>
+</header>
+<!-- content -->
+<div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article">
+<!-- sidebar -->
+  <nav id="quarto-sidebar" class="sidebar collapse collapse-horizontal quarto-sidebar-collapse-item sidebar-navigation floating overflow-auto">
+    <div class="pt-lg-2 mt-2 text-left sidebar-header">
+    <div class="sidebar-title mb-0 py-0">
+      <a href="./">Introduction to Applied High-throughput Biological Data Analysis</a> 
+        <div class="sidebar-tools-main">
+    <a href="https://github.com/cxzdsa2332/Applied-Omics-Analysis" title="Source Code" class="quarto-navigation-tool px-1" aria-label="Source Code"><i class="bi bi-github"></i></a>
+</div>
+    </div>
+      </div>
+        <div class="mt-2 flex-shrink-0 align-items-center">
+        <div class="sidebar-search">
+        <div id="quarto-search" class="" title="Search"></div>
+        </div>
+        </div>
+    <div class="sidebar-menu-container"> 
+    <ul class="list-unstyled mt-1">
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./index.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">1</span>&nbsp; <span class="chapter-title">Course Introduction</span></span></a>
+  </div>
+</li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-1" role="navigation" aria-expanded="true">
+ <span class="menu-text">第一阶段：基础与基因组</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-1" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-1" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./01-intro.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">2</span>&nbsp; <span class="chapter-title">生物信息学入门：从分子到数据</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./intro_lesson1.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">3</span>&nbsp; <span class="chapter-title">分子生物学基础与高通量概念启蒙</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./intro_lesson2.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">4</span>&nbsp; <span class="chapter-title">高通量测序原理与生物数据生命周期</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./intro_lesson3.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">5</span>&nbsp; <span class="chapter-title">拥抱命令行——Linux 操作系统与开源精神导论</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./intro_lesson4.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">6</span>&nbsp; <span class="chapter-title">生物信息学双擎——R 与 Python 核心环境配置及AI辅助</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./intro_lesson5.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">7</span>&nbsp; <span class="chapter-title">探索生物大数据的基石：数据库网络与核心文件格式</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./02-genomics-qc.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">8</span>&nbsp; <span class="chapter-title">基因组数据分析：质量控制、从头组装与变异检测</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./genomics_qc_lesson1.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">9</span>&nbsp; <span class="chapter-title">原始下机数据的数字表现</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./genomics_qc_lesson2.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">10</span>&nbsp; <span class="chapter-title">数据预处理与参考基因组比对</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./genomics_qc_lesson3.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">11</span>&nbsp; <span class="chapter-title">从头基因组组装：当没有参考基因组时</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./genomics_qc_lesson4.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">12</span>&nbsp; <span class="chapter-title">变异检测算法与 VCF 通用格式</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./genomics_qc_lesson5.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">13</span>&nbsp; <span class="chapter-title">功能注释、GATK 最佳实践与群体遗传学基础</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./03-genomics-variant.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">14</span>&nbsp; <span class="chapter-title">基因组学 —— 从经典分子标记到 GWAS 群体分析</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./genomics_variant_lesson1.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">15</span>&nbsp; <span class="chapter-title">经典分子标记、遗传图谱与 QTL 定位</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./genomics_variant_lesson2.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">16</span>&nbsp; <span class="chapter-title">全基因组 SNP 鉴定、连锁不平衡图谱与基因型数据处理</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./genomics_variant_lesson3.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">17</span>&nbsp; <span class="chapter-title">GWAS 统计模型</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./genomics_variant_lesson4.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">18</span>&nbsp; <span class="chapter-title">GWAS 结果可视化、多重检验与候选位点解析</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./genomics_variant_lesson5.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">19</span>&nbsp; <span class="chapter-title">精细定位、功能注释、因果推断与更多</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-2" role="navigation" aria-expanded="true">
+ <span class="menu-text">第二阶段：转录组、单细胞与空间组学</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-2" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-2" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./04-transcriptomics-basic.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">20</span>&nbsp; <span class="chapter-title">Bulk 转录组分析基础：质量控制、定量与差异表达</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./transcriptomics_basic_lesson1.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">21</span>&nbsp; <span class="chapter-title">测序原理、文库特性与原始数据质量控制</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./transcriptomics_basic_lesson2.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">22</span>&nbsp; <span class="chapter-title">Splice-Aware 比对与表达量定量</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./transcriptomics_basic_lesson3.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">23</span>&nbsp; <span class="chapter-title">差异表达分析</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./transcriptomics_basic_lesson4.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">24</span>&nbsp; <span class="chapter-title">功能富集分析</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./05-transcriptomics-advanced.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">25</span>&nbsp; <span class="chapter-title">Bulk 转录组高级分析：转录本结构与调控网络</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./transcriptomics_adv_lesson1.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">26</span>&nbsp; <span class="chapter-title">可变剪接差异分析与基因融合鉴定</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./transcriptomics_adv_lesson2.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">27</span>&nbsp; <span class="chapter-title">可变多腺苷酸化分析与长读长转录组展望</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./transcriptomics_adv_lesson3.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">28</span>&nbsp; <span class="chapter-title">加权基因共表达网络分析（WGCNA）</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./transcriptomics_adv_lesson4.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">29</span>&nbsp; <span class="chapter-title">基因调控网络推断——从随机森林到动力系统</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./transcriptomics_adv_lesson5.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">30</span>&nbsp; <span class="chapter-title">扰动稳态下的非线性基因调控模型学习</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./06-scrna-basic.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">31</span>&nbsp; <span class="chapter-title">单细胞转录组基础：上游处理、质量控制与标准分析流程</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./scrna_basic_lesson1.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">32</span>&nbsp; <span class="chapter-title">10x Genomics 技术原理与上游处理</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./scrna_basic_lesson2.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">33</span>&nbsp; <span class="chapter-title">单细胞数据质量控制与预处理</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./scrna_basic_lesson3.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">34</span>&nbsp; <span class="chapter-title">降维、聚类与细胞类型注释</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./07-scrna-advanced.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">35</span>&nbsp; <span class="chapter-title">单细胞转录组进阶：多样本统计、动态推断、细胞通讯与多组学</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./scrna_adv_lesson1.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">36</span>&nbsp; <span class="chapter-title">跨样本整合、批次校正与多样本差异分析</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./scrna_adv_lesson2.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">37</span>&nbsp; <span class="chapter-title">拟时序分析与 RNA Velocity</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./scrna_adv_lesson3.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">38</span>&nbsp; <span class="chapter-title">细胞通讯分析与基因调控网络推断</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./scrna_adv_lesson4.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">39</span>&nbsp; <span class="chapter-title">单细胞多组学：CITE-seq 与 10x Multiome 联合分析</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./08-spatial-basic.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">40</span>&nbsp; <span class="chapter-title">空间转录组基础：技术平台、上游处理与标准分析流程</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./spatial_basic_lesson1.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">41</span>&nbsp; <span class="chapter-title">空间转录组技术全景与平台选型</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./spatial_basic_lesson2.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">42</span>&nbsp; <span class="chapter-title">Visium 技术原理与 Space Ranger 上游处理</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./spatial_basic_lesson3.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">43</span>&nbsp; <span class="chapter-title">空间数据质控、归一化与空间高变基因识别</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./spatial_basic_lesson4.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">44</span>&nbsp; <span class="chapter-title">空间域识别与组织结构注释</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./09-spatial-advanced.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">45</span>&nbsp; <span class="chapter-title">空间转录组进阶：解卷积、图深度学习、空间通讯与跨切片整合</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./spatial_adv_lesson1.html" class="sidebar-item-text sidebar-link active">
+ <span class="menu-text"><span class="chapter-number">46</span>&nbsp; <span class="chapter-title">细胞解卷积：从 Spot 混合信号还原细胞类型</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./spatial_adv_lesson2.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">47</span>&nbsp; <span class="chapter-title">空间图神经网络与空间域识别进阶</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./spatial_adv_lesson3.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">48</span>&nbsp; <span class="chapter-title">空间细胞通讯与微环境生态位分析</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./spatial_adv_lesson4.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">49</span>&nbsp; <span class="chapter-title">成像型空间转录组与细胞分割</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./spatial_adv_lesson5.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">50</span>&nbsp; <span class="chapter-title">跨切片整合、三维重建与空间多组学</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-3" role="navigation" aria-expanded="true">
+ <span class="menu-text">第三阶段：进阶与整合</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-3" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-3" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./10-metagenomics.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">51</span>&nbsp; <span class="chapter-title">宏基因组与微生物组：扩增子、鸟枪法、群落统计与宏转录组</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./metagenomics_lesson1.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">52</span>&nbsp; <span class="chapter-title">专题 10.1（待撰写）</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./metagenomics_lesson2.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">53</span>&nbsp; <span class="chapter-title">专题 10.2（待撰写）</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./metagenomics_lesson3.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">54</span>&nbsp; <span class="chapter-title">专题 10.3（待撰写）</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./metagenomics_lesson4.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">55</span>&nbsp; <span class="chapter-title">专题 10.4（待撰写）</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./metagenomics_lesson5.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">56</span>&nbsp; <span class="chapter-title">专题 10.5（待撰写）</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./11-epigenomics.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">57</span>&nbsp; <span class="chapter-title">11-epigenomics.html</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./epigenomics_lesson1.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">58</span>&nbsp; <span class="chapter-title">专题 11.1（待撰写）</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./epigenomics_lesson2.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">59</span>&nbsp; <span class="chapter-title">专题 11.2（待撰写）</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./epigenomics_lesson3.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">60</span>&nbsp; <span class="chapter-title">专题 11.3（待撰写）</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./epigenomics_lesson4.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">61</span>&nbsp; <span class="chapter-title">专题 11.4（待撰写）</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./epigenomics_lesson5.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">62</span>&nbsp; <span class="chapter-title">专题 11.5（待撰写）</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./12-proteometab.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">63</span>&nbsp; <span class="chapter-title">12-proteometab.html</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./proteometab_lesson1.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">64</span>&nbsp; <span class="chapter-title">专题 12.1（待撰写）</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./proteometab_lesson2.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">65</span>&nbsp; <span class="chapter-title">专题 12.2（待撰写）</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./proteometab_lesson3.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">66</span>&nbsp; <span class="chapter-title">专题 12.3（待撰写）</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./proteometab_lesson4.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">67</span>&nbsp; <span class="chapter-title">专题 12.4（待撰写）</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./proteometab_lesson5.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">68</span>&nbsp; <span class="chapter-title">专题 12.5（待撰写）</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./13-integration.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">69</span>&nbsp; <span class="chapter-title">13-integration.html</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./integration_lesson1.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">70</span>&nbsp; <span class="chapter-title">专题 13.1（待撰写）</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./integration_lesson2.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">71</span>&nbsp; <span class="chapter-title">专题 13.2（待撰写）</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./integration_lesson3.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">72</span>&nbsp; <span class="chapter-title">专题 13.3（待撰写）</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./integration_lesson4.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">73</span>&nbsp; <span class="chapter-title">专题 13.4（待撰写）</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./integration_lesson5.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">74</span>&nbsp; <span class="chapter-title">专题 13.5（待撰写）</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./14-summary.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">75</span>&nbsp; <span class="chapter-title">14-summary.html</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./summary_lesson1.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">76</span>&nbsp; <span class="chapter-title">专题 14.1（待撰写）</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./references.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">参考资料</span></a>
+  </div>
+</li>
+    </ul>
+    </div>
+</nav>
+<div id="quarto-sidebar-glass" class="quarto-sidebar-collapse-item" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item"></div>
+<!-- margin-sidebar -->
+    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+        <nav id="TOC" role="doc-toc" class="toc-active">
+    <h2 id="toc-title">Table of contents</h2>
+   
+  <ul>
+  <li><a href="#专题概述" id="toc-专题概述" class="nav-link active" data-scroll-target="#专题概述"><span class="header-section-number">47</span> 专题概述</a></li>
+  <li><a href="#解卷积问题的数学表述" id="toc-解卷积问题的数学表述" class="nav-link" data-scroll-target="#解卷积问题的数学表述"><span class="header-section-number">48</span> 解卷积问题的数学表述</a>
+  <ul class="collapse">
+  <li><a href="#一个混合模型的反演" id="toc-一个混合模型的反演" class="nav-link" data-scroll-target="#一个混合模型的反演"><span class="header-section-number">48.1</span> 一个混合模型的反演</a></li>
+  <li><a href="#参考图谱的三项要求" id="toc-参考图谱的三项要求" class="nav-link" data-scroll-target="#参考图谱的三项要求"><span class="header-section-number">48.2</span> 参考图谱的三项要求</a></li>
+  </ul></li>
+  <li><a href="#方法谱系" id="toc-方法谱系" class="nav-link" data-scroll-target="#方法谱系"><span class="header-section-number">49</span> 方法谱系</a>
+  <ul class="collapse">
+  <li><a href="#三代方法的演进" id="toc-三代方法的演进" class="nav-link" data-scroll-target="#三代方法的演进"><span class="header-section-number">49.1</span> 三代方法的演进</a></li>
+  </ul></li>
+  <li><a href="#cell2location-实操" id="toc-cell2location-实操" class="nav-link" data-scroll-target="#cell2location-实操"><span class="header-section-number">50</span> cell2location 实操</a>
+  <ul class="collapse">
+  <li><a href="#两阶段框架的设计逻辑" id="toc-两阶段框架的设计逻辑" class="nav-link" data-scroll-target="#两阶段框架的设计逻辑"><span class="header-section-number">50.1</span> 两阶段框架的设计逻辑</a></li>
+  <li><a href="#第二阶段与两个关键先验" id="toc-第二阶段与两个关键先验" class="nav-link" data-scroll-target="#第二阶段与两个关键先验"><span class="header-section-number">50.2</span> 第二阶段与两个关键先验</a></li>
+  <li><a href="#r-路线rctd" id="toc-r-路线rctd" class="nav-link" data-scroll-target="#r-路线rctd"><span class="header-section-number">50.3</span> R 路线：RCTD</a></li>
+  </ul></li>
+  <li><a href="#解卷积结果的验证" id="toc-解卷积结果的验证" class="nav-link" data-scroll-target="#解卷积结果的验证"><span class="header-section-number">51</span> 解卷积结果的验证</a>
+  <ul class="collapse">
+  <li><a href="#为什么验证比选方法更重要" id="toc-为什么验证比选方法更重要" class="nav-link" data-scroll-target="#为什么验证比选方法更重要"><span class="header-section-number">51.1</span> 为什么验证比选方法更重要</a></li>
+  <li><a href="#验证一标志基因空间一致性" id="toc-验证一标志基因空间一致性" class="nav-link" data-scroll-target="#验证一标志基因空间一致性"><span class="header-section-number">51.2</span> 验证一：标志基因空间一致性</a></li>
+  <li><a href="#验证二模拟-spot-基准" id="toc-验证二模拟-spot-基准" class="nav-link" data-scroll-target="#验证二模拟-spot-基准"><span class="header-section-number">51.3</span> 验证二：模拟 Spot 基准</a></li>
+  <li><a href="#验证三后验不确定性" id="toc-验证三后验不确定性" class="nav-link" data-scroll-target="#验证三后验不确定性"><span class="header-section-number">51.4</span> 验证三：后验不确定性</a></li>
+  <li><a href="#解卷积失败的典型征象" id="toc-解卷积失败的典型征象" class="nav-link" data-scroll-target="#解卷积失败的典型征象"><span class="header-section-number">51.5</span> 解卷积失败的典型征象</a></li>
+  </ul></li>
+  <li><a href="#方法总结与衔接说明" id="toc-方法总结与衔接说明" class="nav-link" data-scroll-target="#方法总结与衔接说明"><span class="header-section-number">52</span> 方法总结与衔接说明</a></li>
+  <li><a href="#课后自测-post-lesson-quiz" id="toc-课后自测-post-lesson-quiz" class="nav-link" data-scroll-target="#课后自测-post-lesson-quiz"><span class="header-section-number">53</span> 课后自测 (Post-Lesson Quiz)</a></li>
+  </ul>
+<div class="toc-actions"><ul><li><a href="https://github.com/cxzdsa2332/Applied-Omics-Analysis/edit/main/spatial_adv_lesson1.qmd" class="toc-action"><i class="bi bi-github"></i>Edit this page</a></li><li><a href="https://github.com/cxzdsa2332/Applied-Omics-Analysis/issues/new" class="toc-action"><i class="bi empty"></i>Report an issue</a></li><li><a href="https://github.com/cxzdsa2332/Applied-Omics-Analysis/blob/main/spatial_adv_lesson1.qmd" class="toc-action"><i class="bi empty"></i>View source</a></li></ul></div></nav>
+    </div>
+<!-- main -->
+<main class="content" id="quarto-document-content">
+
+<header id="title-block-header" class="quarto-title-block default"><nav class="quarto-page-breadcrumbs quarto-title-breadcrumbs d-none d-lg-block" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="./04-transcriptomics-basic.html">第二阶段：转录组、单细胞与空间组学</a></li><li class="breadcrumb-item"><a href="./spatial_adv_lesson1.html"><span class="chapter-number">46</span>&nbsp; <span class="chapter-title">细胞解卷积：从 Spot 混合信号还原细胞类型</span></a></li></ol></nav>
+<div class="quarto-title">
+<h1 class="title"><span class="chapter-number">46</span>&nbsp; <span class="chapter-title">细胞解卷积：从 Spot 混合信号还原细胞类型</span></h1>
+</div>
+
+
+
+<div class="quarto-title-meta">
+
+    
+    <div>
+    <div class="quarto-title-meta-heading">Published</div>
+    <div class="quarto-title-meta-contents">
+      <p class="date">September 21, 2026</p>
+    </div>
+  </div>
+  
+    
+  </div>
+  
+
+
+</header>
+
+
+<section id="专题概述" class="level1" data-number="47">
+<h1 data-number="47"><span class="header-section-number">47</span> 专题概述</h1>
+<p>第 8 章的基础流程止步于一个未解的核心问题：Visium 的每个 Spot 是多细胞混合信号，聚类给出的空间域只说明”这片区域的转录特征相似”，却没有回答”这里住着哪些细胞类型、各占多少”。细胞解卷积（Cell Type Deconvolution）正是为回答后者而生——借助已知细胞类型转录特征的 scRNA-seq 参考，把每个 Spot 的混合信号反解为各细胞类型的丰度向量。这在数学上是一个有约束的混合模型反演问题，而这一表述立即揭示了它的软肋：反演的质量完全取决于特征谱的准确性与完备性。本专题系统讲解解卷积的方法谱系与实操，并用相当篇幅讨论一个常被忽略却更重要的问题——如何验证解卷积的结果是否可信。</p>
+<p><strong>学习目标</strong>：掌握解卷积的数学表述与约束条件；理解参考图谱的三项质量要求及其失效后果；掌握 RCTD、cell2location、Tangram、CARD 四类方法的统计框架与适用场景；能完成 cell2location 两阶段流程与 RCTD 的 R 实操；理解绝对丰度与相对比例两种输出的解读差异；掌握模拟 Spot 基准、标志基因一致性、后验不确定性三种验证策略；能识别解卷积失败的典型征象。</p>
+<hr>
+</section>
+<section id="解卷积问题的数学表述" class="level1" data-number="48">
+<h1 data-number="48"><span class="header-section-number">48</span> 解卷积问题的数学表述</h1>
+<section id="一个混合模型的反演" class="level2" data-number="48.1">
+<h2 data-number="48.1" class="anchored" data-anchor-id="一个混合模型的反演"><span class="header-section-number">48.1</span> 一个混合模型的反演</h2>
+<p>设某个 Spot <span class="math inline">\(s\)</span> 观测到的表达向量为 <span class="math inline">\(\mathbf{y}_s \in \mathbb{R}^G\)</span>（<span class="math inline">\(G\)</span> 为基因数），参考中第 <span class="math inline">\(k\)</span> 种细胞类型的平均表达谱（签名）为 <span class="math inline">\(\mathbf{g}_k \in \mathbb{R}^G\)</span>，则解卷积模型的基本形式是：</p>
+<p><span class="math display">\[\mathbf{y}_s = \sum_{k=1}^{K} \beta_{sk}\, \mathbf{g}_k + \boldsymbol{\epsilon}_s, \qquad \beta_{sk} \geq 0\]</span></p>
+<p>其中 <span class="math inline">\(\beta_{sk}\)</span> 是待求的、细胞类型 <span class="math inline">\(k\)</span> 在 Spot <span class="math inline">\(s\)</span> 中的丰度。两个约束是本质的：<strong>非负性</strong>（丰度不能为负）与视输出定义而定的<strong>归一化</strong>（若输出相对比例则 <span class="math inline">\(\sum_k \beta_{sk} = 1\)</span>，若输出绝对丰度则不归一）。</p>
+<div id="fig-deconvolution" class="quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-deconvolution-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<img src="https://upload.wikimedia.org/wikipedia/commons/thumb/5/5f/Deconvolution_of_an_astronomical_image.png/960px-Deconvolution_of_an_astronomical_image.png" class="img-fluid figure-img" style="width:85.0%">
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-deconvolution-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+图&nbsp;1: 解卷积（Deconvolution）效果对比。左为受点扩散函数模糊的原始观测，右为解卷积还原后的图像，与从 Spot 混合信号反解细胞类型构成同一类数学问题。
+</figcaption>
+</figure>
+</div>
+<p>这个式子看起来只是一个非负最小二乘问题，但实际难点在三处：</p>
+<ol type="1">
+<li><strong><span class="math inline">\(\mathbf{g}_k\)</span> 不是已知常量</strong>，而是从另一批数据（scRNA-seq 参考）估计出来的，本身带有误差与批次效应。</li>
+<li><strong>噪声 <span class="math inline">\(\boldsymbol{\epsilon}_s\)</span> 不是高斯的</strong>。表达数据是计数，方差随均值增长，必须用泊松或负二项建模。</li>
+<li><strong>模型可能设定错误</strong>。若参考缺少某个实际存在的细胞类型，模型中就不存在对应的 <span class="math inline">\(\mathbf{g}_k\)</span>，而算法仍会强行给出一组非负解——把缺失类型的信号分摊到最相似的已有类型上。</li>
+</ol>
+<p>第三点是解卷积最危险的失效模式，因为它不会报错，只会安静地给出一个看似合理的错误答案。</p>
+</section>
+<section id="参考图谱的三项要求" class="level2" data-number="48.2">
+<h2 data-number="48.2" class="anchored" data-anchor-id="参考图谱的三项要求"><span class="header-section-number">48.2</span> 参考图谱的三项要求</h2>
+<p>由上述分析，参考 scRNA-seq 必须满足三项要求，缺一不可：</p>
+<ul>
+<li><strong>同源性</strong>：同物种、同组织，最好同发育阶段与病理状态。用健康脑的参考去解卷积肿瘤组织，必然失败。</li>
+<li><strong>完备性</strong>：覆盖目标组织中实际存在的所有细胞类型。这一点无法从数据本身验证，只能依靠对组织生物学的了解。</li>
+<li><strong>充分性</strong>：每种细胞类型至少有数十个细胞（通常建议 ≥ 50）以稳定估计其签名。细胞数太少的稀有类型，其签名噪声大，会污染整个反演。</li>
+</ul>
+<div class="warning">
+<p><strong>参考图谱不匹配是解卷积最大的失败来源：</strong> 若参考 scRNA-seq 缺少目标组织中实际存在的某种细胞类型，解卷积无法”凭空”识别它，只会把它的信号错误地分摊给签名最相似的已有类型，产生系统性偏差。因此参考必须来自同种、同组织（最好同发育阶段/病理状态），且覆盖所有预期细胞类型，每种类型至少有数十个细胞以稳定估计签名。盲目套用不匹配的公共参考会得到看似合理实则错误的空间分布——而且由于结果”看起来很像那么回事”，这类错误极难在事后被发现。</p>
+</div>
+<hr>
+</section>
+</section>
+<section id="方法谱系" class="level1" data-number="49">
+<h1 data-number="49"><span class="header-section-number">49</span> 方法谱系</h1>
+<section id="三代方法的演进" class="level2" data-number="49.1">
+<h2 data-number="49.1" class="anchored" data-anchor-id="三代方法的演进"><span class="header-section-number">49.1</span> 三代方法的演进</h2>
+<p>细胞解卷积工具按统计复杂度大致可分为三代，<a href="#tbl-deconv-methods" class="quarto-xref">表&nbsp;<span>1</span></a> 做了系统对比。</p>
+<ul>
+<li><strong>基于线性回归（RCTD、SPOTlight）</strong>：假设 Spot 表达是各细胞类型签名的线性加权和，用带稳健性处理的回归求解权重。RCTD（Robust Cell Type Decomposition）用泊松最大似然建模，并提供 <code>doublet_mode</code>，假设每个 Spot 至多由两种主要细胞类型构成——这一假设适合分辨率较高、每个单元只覆盖少数细胞的平台（如 Slide-seq），在标准 Visium 上通常应改用 <code>full</code> 模式（Cable et al., 2022）。SPOTlight 则用非负矩阵分解（NMF）以细胞类型标签作为种子初始化，再做非负最小二乘。</li>
+<li><strong>基于概率生成模型（cell2location）</strong>：用层次贝叶斯模型，显式建模技术批次、每个 Spot 的捕获效率与细胞类型丰度，精度高且能给出完整的后验不确定性估计（Kleshchevnikov et al., 2022）。</li>
+<li><strong>基于深度学习（Tangram）</strong>：不估计比例，而是学习一个把单细胞”映射”到空间位置的概率矩阵，灵活但可解释性较弱。</li>
+</ul>
+<p>{{Wiki:Non-negative_matrix_factorization}} {{Wiki:Bayesian_hierarchical_modeling}}</p>
+<p>此外还有一类值得单独提及的方法：<strong>CARD</strong> 引入条件自回归（Conditional Autoregressive, CAR）先验，利用”相邻 Spot 的细胞组成应当相似”这一空间平滑性假设——这与第 8 章 BayesSpace 的 MRF 先验是同一思想在解卷积问题上的应用（Ma &amp; Zhou, 2022）。</p>
+<div id="tbl-deconv-methods" class="quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-tbl figure">
+<figcaption class="quarto-float-caption-top quarto-float-caption quarto-float-tbl" id="tbl-deconv-methods-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+表&nbsp;1: 主流细胞解卷积方法对比
+</figcaption>
+<div aria-describedby="tbl-deconv-methods-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<table class="caption-top table">
+<colgroup>
+<col style="width: 10%">
+<col style="width: 16%">
+<col style="width: 16%">
+<col style="width: 23%">
+<col style="width: 16%">
+<col style="width: 16%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>方法</th>
+<th>统计框架</th>
+<th>空间先验</th>
+<th>不确定性估计</th>
+<th>计算需求</th>
+<th>适用场景</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>RCTD</td>
+<td>泊松最大似然回归</td>
+<td>无</td>
+<td>有限</td>
+<td>中（CPU）</td>
+<td>R 生态、中小规模数据</td>
+</tr>
+<tr class="even">
+<td>SPOTlight</td>
+<td>NMF + 非负最小二乘</td>
+<td>无</td>
+<td>无</td>
+<td>低（CPU）</td>
+<td>快速探索</td>
+</tr>
+<tr class="odd">
+<td>cell2location</td>
+<td>层次贝叶斯生成模型</td>
+<td>无（可加协变量）</td>
+<td>完整后验</td>
+<td>高（建议 GPU）</td>
+<td>大规模、需校正批次</td>
+</tr>
+<tr class="even">
+<td>CARD</td>
+<td>NMF + CAR 空间先验</td>
+<td>有</td>
+<td>有限</td>
+<td>中（CPU）</td>
+<td>需空间平滑的组织</td>
+</tr>
+<tr class="odd">
+<td>Tangram</td>
+<td>深度学习映射</td>
+<td>可选</td>
+<td>无</td>
+<td>高（GPU）</td>
+<td>把单细胞投射到空间</td>
+</tr>
+</tbody>
+</table>
+</div>
+</figure>
+</div>
+<div class="tip">
+<p><strong>没有普遍最优的方法，但有普遍必要的验证：</strong> 多项独立基准研究比较过上述方法，结论随评测数据集与指标而变化，并不存在一个在所有场景下占优的工具。与其纠结选哪个，不如把精力放在两件更有回报的事上：一是保证参考图谱的质量（这比换算法的影响大得多），二是对结果做本专题后半部分讲的三类验证。一个务实的做法是用两种原理不同的方法（如 RCTD 与 cell2location）各跑一遍，把结论限定在二者一致的部分。</p>
+</div>
+<hr>
+</section>
+</section>
+<section id="cell2location-实操" class="level1" data-number="50">
+<h1 data-number="50"><span class="header-section-number">50</span> cell2location 实操</h1>
+<section id="两阶段框架的设计逻辑" class="level2" data-number="50.1">
+<h2 data-number="50.1" class="anchored" data-anchor-id="两阶段框架的设计逻辑"><span class="header-section-number">50.1</span> 两阶段框架的设计逻辑</h2>
+<p>cell2location 把解卷积分解为两个独立训练的阶段，这一设计兼顾了准确性与可迁移性：</p>
+<ol type="1">
+<li><strong>第一阶段：学习细胞类型签名</strong>。在带注释的 scRNA-seq 参考上，用负二项回归估计每种细胞类型每个基因的参考表达水平（签名矩阵），并把实验批次作为协变量纳入，以消除参考数据自身的技术差异。这一阶段只依赖 scRNA 参考，与具体空间数据无关，因此签名矩阵可复用于同组织的多个空间切片。</li>
+<li><strong>第二阶段：估计空间丰度</strong>。固定第一阶段的签名矩阵，用层次贝叶斯模型推断每个 Spot 中各细胞类型的<strong>绝对丰度</strong>。模型显式建模了每个 Spot 的总 RNA 捕获效率与技术背景，从而把”细胞类型丰度”与”捕获效率”两个混杂因素分离开。</li>
+</ol>
+<p>第二点是 cell2location 区别于回归类方法的关键。回归方法输出的是比例（各类型占该 Spot 的百分比），而比例是组成数据——一种细胞类型的比例上升必然意味着其余类型的比例下降，即便后者的绝对数量并未改变。cell2location 通过显式建模捕获效率，输出的是绝对细胞数量的估计，避免了这一组成性约束带来的误读。</p>
+<div class="note">
+<p><strong>运行环境说明：</strong> cell2location 是 Python 包（<code>pip install cell2location</code>），基于 scvi-tools 与 PyTorch，<strong>强烈建议在 GPU 环境运行</strong>；CPU 上训练可能需要数小时。输入为 AnnData 格式的 scRNA 参考（<code>sc_ref.h5ad</code>，含 <code>cell_type</code> 注释）与 Visium 数据（<code>visium.h5ad</code>）。参考数据应使用<strong>原始计数</strong>而非归一化值。本示例展示核心 API，省略了完整的训练超参数调优与收敛诊断。</p>
+</div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb1"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> cell2location</span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> scanpy <span class="im">as</span> sc</span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> cell2location.models <span class="im">import</span> RegressionModel, Cell2location</span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a><span class="co"># ---- Stage 1: estimate per-cell-type reference signatures from scRNA-seq ----</span></span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a>adata_ref <span class="op">=</span> sc.read_h5ad(<span class="st">"sc_ref.h5ad"</span>)</span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a><span class="co"># Filter genes: cell2location expects raw counts and a permissive gene set</span></span>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> cell2location.utils.filtering <span class="im">import</span> filter_genes</span>
+<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a>selected <span class="op">=</span> filter_genes(adata_ref, cell_count_cutoff<span class="op">=</span><span class="dv">5</span>,</span>
+<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a>                        cell_percentage_cutoff2<span class="op">=</span><span class="fl">0.03</span>, nonz_mean_cutoff<span class="op">=</span><span class="fl">1.12</span>)</span>
+<span id="cb1-12"><a href="#cb1-12" aria-hidden="true" tabindex="-1"></a>adata_ref <span class="op">=</span> adata_ref[:, selected].copy()</span>
+<span id="cb1-13"><a href="#cb1-13" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-14"><a href="#cb1-14" aria-hidden="true" tabindex="-1"></a>RegressionModel.setup_anndata(adata_ref, batch_key<span class="op">=</span><span class="st">"batch"</span>, labels_key<span class="op">=</span><span class="st">"cell_type"</span>)</span>
+<span id="cb1-15"><a href="#cb1-15" aria-hidden="true" tabindex="-1"></a>ref_model <span class="op">=</span> RegressionModel(adata_ref)</span>
+<span id="cb1-16"><a href="#cb1-16" aria-hidden="true" tabindex="-1"></a>ref_model.train(max_epochs<span class="op">=</span><span class="dv">250</span>)</span>
+<span id="cb1-17"><a href="#cb1-17" aria-hidden="true" tabindex="-1"></a>adata_ref <span class="op">=</span> ref_model.export_posterior(adata_ref)</span>
+<span id="cb1-18"><a href="#cb1-18" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-19"><a href="#cb1-19" aria-hidden="true" tabindex="-1"></a><span class="co"># Reference signature matrix: mean expression per gene per cell type</span></span>
+<span id="cb1-20"><a href="#cb1-20" aria-hidden="true" tabindex="-1"></a>inf_signatures <span class="op">=</span> adata_ref.varm[<span class="st">"means_per_cluster_mu_fg"</span>]</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb2"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Always check convergence before trusting the signatures</span></span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>ref_model.plot_history(<span class="dv">20</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</section>
+<section id="第二阶段与两个关键先验" class="level2" data-number="50.2">
+<h2 data-number="50.2" class="anchored" data-anchor-id="第二阶段与两个关键先验"><span class="header-section-number">50.2</span> 第二阶段与两个关键先验</h2>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb3"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="co"># ---- Stage 2: estimate per-spot cell-type abundances on the Visium data ----</span></span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a>adata_vis <span class="op">=</span> sc.read_h5ad(<span class="st">"visium.h5ad"</span>)</span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a><span class="co"># Restrict to genes shared between reference and spatial data</span></span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a>shared <span class="op">=</span> adata_vis.var_names.intersection(inf_signatures.index)</span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a>adata_vis <span class="op">=</span> adata_vis[:, shared].copy()</span>
+<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a>inf_signatures <span class="op">=</span> inf_signatures.loc[shared, :]</span>
+<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-9"><a href="#cb3-9" aria-hidden="true" tabindex="-1"></a>Cell2location.setup_anndata(adata_vis, batch_key<span class="op">=</span><span class="st">"sample"</span>)</span>
+<span id="cb3-10"><a href="#cb3-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-11"><a href="#cb3-11" aria-hidden="true" tabindex="-1"></a><span class="co"># N_cells_per_location and detection_alpha are the two key priors:</span></span>
+<span id="cb3-12"><a href="#cb3-12" aria-hidden="true" tabindex="-1"></a><span class="co">#   - N_cells_per_location: expected cells per spot (tissue-dependent, ~8 for brain)</span></span>
+<span id="cb3-13"><a href="#cb3-13" aria-hidden="true" tabindex="-1"></a><span class="co">#   - detection_alpha: regularization of per-spot detection efficiency</span></span>
+<span id="cb3-14"><a href="#cb3-14" aria-hidden="true" tabindex="-1"></a><span class="co">#       low  (~20): strong regularization, use when technical variation is high</span></span>
+<span id="cb3-15"><a href="#cb3-15" aria-hidden="true" tabindex="-1"></a><span class="co">#       high (~200): weak regularization, use when tissue is technically uniform</span></span>
+<span id="cb3-16"><a href="#cb3-16" aria-hidden="true" tabindex="-1"></a>mod <span class="op">=</span> Cell2location(</span>
+<span id="cb3-17"><a href="#cb3-17" aria-hidden="true" tabindex="-1"></a>    adata_vis,</span>
+<span id="cb3-18"><a href="#cb3-18" aria-hidden="true" tabindex="-1"></a>    cell_state_df<span class="op">=</span>inf_signatures,</span>
+<span id="cb3-19"><a href="#cb3-19" aria-hidden="true" tabindex="-1"></a>    N_cells_per_location<span class="op">=</span><span class="dv">8</span>,</span>
+<span id="cb3-20"><a href="#cb3-20" aria-hidden="true" tabindex="-1"></a>    detection_alpha<span class="op">=</span><span class="dv">20</span>,</span>
+<span id="cb3-21"><a href="#cb3-21" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb3-22"><a href="#cb3-22" aria-hidden="true" tabindex="-1"></a>mod.train(max_epochs<span class="op">=</span><span class="dv">30000</span>, batch_size<span class="op">=</span><span class="va">None</span>, train_size<span class="op">=</span><span class="dv">1</span>)</span>
+<span id="cb3-23"><a href="#cb3-23" aria-hidden="true" tabindex="-1"></a>adata_vis <span class="op">=</span> mod.export_posterior(adata_vis)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><code>N_cells_per_location</code> 应根据组织类型估计——最可靠的做法是在 H&amp;E 图像上数几个 Spot 覆盖范围内的细胞核数量，取中位数。这个先验不需要非常精确，但数量级错误（如脑组织填 1 或 50）会明显影响结果。</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb4"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="co">#| label: fig-cell2location-abundance</span></span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a><span class="co">#| fig-cap: "cell2location 推断的细胞类型空间丰度（stxBrain Visium 小鼠脑）。每个子图为一种细胞类型的后验丰度空间热图，颜色越亮表示该 Spot 中该细胞类型的估计丰度越高。兴奋性神经元、抑制性神经元与星形胶质细胞呈现与已知脑区解剖结构一致的分层分布，验证了解卷积结果的生物学可靠性。"</span></span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> scanpy <span class="im">as</span> sc</span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a><span class="co"># Posterior means of cell abundance, written back into adata.obs</span></span>
+<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a>adata_vis.obs[adata_vis.uns[<span class="st">"mod"</span>][<span class="st">"factor_names"</span>]] <span class="op">=</span> <span class="op">\</span></span>
+<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a>    adata_vis.obsm[<span class="st">"q05_cell_abundance_w_sf"</span>]</span>
+<span id="cb4-8"><a href="#cb4-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-9"><a href="#cb4-9" aria-hidden="true" tabindex="-1"></a>sc.pl.spatial(</span>
+<span id="cb4-10"><a href="#cb4-10" aria-hidden="true" tabindex="-1"></a>    adata_vis,</span>
+<span id="cb4-11"><a href="#cb4-11" aria-hidden="true" tabindex="-1"></a>    color<span class="op">=</span>[<span class="st">"Excitatory_neurons"</span>, <span class="st">"Inhibitory_neurons"</span>, <span class="st">"Astrocytes"</span>],</span>
+<span id="cb4-12"><a href="#cb4-12" aria-hidden="true" tabindex="-1"></a>    ncols<span class="op">=</span><span class="dv">3</span>,</span>
+<span id="cb4-13"><a href="#cb4-13" aria-hidden="true" tabindex="-1"></a>    size<span class="op">=</span><span class="fl">1.3</span>,</span>
+<span id="cb4-14"><a href="#cb4-14" aria-hidden="true" tabindex="-1"></a>    save<span class="op">=</span><span class="st">"_cell2location_abundance.png"</span>,</span>
+<span id="cb4-15"><a href="#cb4-15" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</section>
+<section id="r-路线rctd" class="level2" data-number="50.3">
+<h2 data-number="50.3" class="anchored" data-anchor-id="r-路线rctd"><span class="header-section-number">50.3</span> R 路线：RCTD</h2>
+<p>R 用户可使用 <code>spacexr</code> 包的 RCTD 作为等价方案。它的流程更短，计算也更轻，适合作为快速的第一遍分析或 cell2location 结果的交叉验证。</p>
+<div class="note">
+<p><strong>运行环境说明：</strong> <code>spacexr</code> 需从 GitHub 安装（<code>devtools::install_github("dmcable/spacexr")</code>），不在 CRAN/Bioconductor 上。RCTD 在标准 Visium 切片上于多核 CPU 通常数分钟至半小时完成，不需要 GPU。参考对象同样要求原始计数。</p>
+</div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb5"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(spacexr)</span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(Seurat)</span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a><span class="co"># ---- Build the scRNA-seq reference ----</span></span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a><span class="co"># counts: genes x cells raw count matrix; cell_types: named factor of annotations</span></span>
+<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a>ref_counts <span class="ot">&lt;-</span> <span class="fu">GetAssayData</span>(sc_ref, <span class="at">assay =</span> <span class="st">"RNA"</span>, <span class="at">layer =</span> <span class="st">"counts"</span>)</span>
+<span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a>cell_types <span class="ot">&lt;-</span> <span class="fu">setNames</span>(<span class="fu">factor</span>(sc_ref<span class="sc">$</span>cell_type), <span class="fu">colnames</span>(sc_ref))</span>
+<span id="cb5-8"><a href="#cb5-8" aria-hidden="true" tabindex="-1"></a>nUMI_ref   <span class="ot">&lt;-</span> <span class="fu">colSums</span>(ref_counts)</span>
+<span id="cb5-9"><a href="#cb5-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-10"><a href="#cb5-10" aria-hidden="true" tabindex="-1"></a>reference <span class="ot">&lt;-</span> <span class="fu">Reference</span>(ref_counts, cell_types, nUMI_ref)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb6"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(spacexr)</span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(Seurat)</span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a><span class="co"># ---- Build the spatial object ----</span></span>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a>coords <span class="ot">&lt;-</span> <span class="fu">GetTissueCoordinates</span>(brain)[, <span class="fu">c</span>(<span class="st">"imagerow"</span>, <span class="st">"imagecol"</span>)]</span>
+<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a>sp_counts <span class="ot">&lt;-</span> <span class="fu">GetAssayData</span>(brain, <span class="at">assay =</span> <span class="st">"Spatial"</span>, <span class="at">layer =</span> <span class="st">"counts"</span>)</span>
+<span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-8"><a href="#cb6-8" aria-hidden="true" tabindex="-1"></a>puck <span class="ot">&lt;-</span> <span class="fu">SpatialRNA</span>(coords, sp_counts, <span class="fu">colSums</span>(sp_counts))</span>
+<span id="cb6-9"><a href="#cb6-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-10"><a href="#cb6-10" aria-hidden="true" tabindex="-1"></a><span class="co"># ---- Run deconvolution ----</span></span>
+<span id="cb6-11"><a href="#cb6-11" aria-hidden="true" tabindex="-1"></a><span class="co"># doublet_mode = "full" for Visium: a 55 um spot holds more than two cell types</span></span>
+<span id="cb6-12"><a href="#cb6-12" aria-hidden="true" tabindex="-1"></a>rctd <span class="ot">&lt;-</span> <span class="fu">create.RCTD</span>(puck, reference, <span class="at">max_cores =</span> <span class="dv">4</span>)</span>
+<span id="cb6-13"><a href="#cb6-13" aria-hidden="true" tabindex="-1"></a>rctd <span class="ot">&lt;-</span> <span class="fu">run.RCTD</span>(rctd, <span class="at">doublet_mode =</span> <span class="st">"full"</span>)</span>
+<span id="cb6-14"><a href="#cb6-14" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-15"><a href="#cb6-15" aria-hidden="true" tabindex="-1"></a><span class="co"># Weight matrix: spots x cell types, normalise rows to get proportions</span></span>
+<span id="cb6-16"><a href="#cb6-16" aria-hidden="true" tabindex="-1"></a>weights <span class="ot">&lt;-</span> rctd<span class="sc">@</span>results<span class="sc">$</span>weights</span>
+<span id="cb6-17"><a href="#cb6-17" aria-hidden="true" tabindex="-1"></a>proportions <span class="ot">&lt;-</span> <span class="fu">sweep</span>(weights, <span class="dv">1</span>, <span class="fu">rowSums</span>(weights), <span class="st">"/"</span>)</span>
+<span id="cb6-18"><a href="#cb6-18" aria-hidden="true" tabindex="-1"></a><span class="fu">head</span>(<span class="fu">round</span>(proportions[, <span class="dv">1</span><span class="sc">:</span><span class="dv">5</span>], <span class="dv">3</span>))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb7"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="co">#| label: fig-rctd-proportions</span></span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a><span class="co">#| fig-cap: "RCTD 推断的细胞类型比例空间分布（stxBrain Visium 小鼠脑）。每个子图为一种细胞类型在各 Spot 中所占比例，绘制在真实组织坐标上。与 cell2location 的绝对丰度输出不同，此处为归一化后的相对比例，因此同一 Spot 中所有细胞类型的取值之和为 1，解读时需注意组成数据的此消彼长特性。"</span></span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(Seurat)</span>
+<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a><span class="co"># Carry proportions back onto the Seurat object for spatial plotting</span></span>
+<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> (ct <span class="cf">in</span> <span class="fu">colnames</span>(proportions)[<span class="dv">1</span><span class="sc">:</span><span class="dv">3</span>]) {</span>
+<span id="cb7-7"><a href="#cb7-7" aria-hidden="true" tabindex="-1"></a>    brain[[<span class="fu">paste0</span>(<span class="st">"prop_"</span>, ct)]] <span class="ot">&lt;-</span> proportions[<span class="fu">colnames</span>(brain), ct]</span>
+<span id="cb7-8"><a href="#cb7-8" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb7-9"><a href="#cb7-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-10"><a href="#cb7-10" aria-hidden="true" tabindex="-1"></a><span class="fu">SpatialFeaturePlot</span>(brain, <span class="at">features =</span> <span class="fu">paste0</span>(<span class="st">"prop_"</span>, <span class="fu">colnames</span>(proportions)[<span class="dv">1</span><span class="sc">:</span><span class="dv">3</span>]), <span class="at">ncol =</span> <span class="dv">3</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="warning">
+<p><strong>绝对丰度与相对比例不可混用：</strong> cell2location 默认输出绝对丰度（估计的细胞数量），RCTD 输出的权重经归一化后是相对比例。两者在解读上完全不同。设想一个 Spot 中免疫细胞数量不变、但肿瘤细胞大量增殖：绝对丰度会显示”免疫细胞不变、肿瘤细胞上升”，而相对比例会显示”免疫细胞比例下降”——后者极易被误读为免疫细胞减少。跨 Spot 或跨条件比较时，务必明确自己用的是哪一种，并在论文中写清楚。组成数据的这一陷阱与第 10 章微生物组分析中遇到的完全同源。</p>
+</div>
+<hr>
+</section>
+</section>
+<section id="解卷积结果的验证" class="level1" data-number="51">
+<h1 data-number="51"><span class="header-section-number">51</span> 解卷积结果的验证</h1>
+<section id="为什么验证比选方法更重要" class="level2" data-number="51.1">
+<h2 data-number="51.1" class="anchored" data-anchor-id="为什么验证比选方法更重要"><span class="header-section-number">51.1</span> 为什么验证比选方法更重要</h2>
+<p>解卷积的输出是一组数字，它总是存在、总是非负、总是能画成漂亮的空间热图——无论参考是否匹配、模型是否设定正确。因此<strong>不做验证就使用解卷积结果，是空间分析中最常见的严重错误</strong>。下面三类验证策略应当成为标准流程。</p>
+</section>
+<section id="验证一标志基因空间一致性" class="level2" data-number="51.2">
+<h2 data-number="51.2" class="anchored" data-anchor-id="验证一标志基因空间一致性"><span class="header-section-number">51.2</span> 验证一：标志基因空间一致性</h2>
+<p>最直接也最有说服力的检验：若解卷积说某细胞类型富集在某个区域，那么该细胞类型的经典标志基因，其原始表达也应该在同一区域最高。这是一个完全独立于解卷积模型的证据——标志基因的表达是直接观测量，不经过任何反演。</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb8"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="co">#| label: fig-deconv-validation</span></span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a><span class="co">#| fig-cap: "解卷积结果与标志基因表达的空间一致性核验（stxBrain Visium 小鼠脑）。上排为解卷积推断的两种细胞类型丰度空间分布，下排为对应细胞类型经典标志基因的原始表达空间分布。若解卷积结果可靠，同一列的上下两图应呈现高度重合的空间模式；二者若出现系统性错位，则提示参考图谱不匹配或模型设定有误。"</span></span>
+<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(Seurat)</span>
+<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(patchwork)</span>
+<span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-6"><a href="#cb8-6" aria-hidden="true" tabindex="-1"></a><span class="co"># Inferred abundance (top) versus raw marker expression (bottom)</span></span>
+<span id="cb8-7"><a href="#cb8-7" aria-hidden="true" tabindex="-1"></a>p_top <span class="ot">&lt;-</span> <span class="fu">SpatialFeaturePlot</span>(brain, <span class="at">features =</span> <span class="fu">c</span>(<span class="st">"prop_Astrocytes"</span>, <span class="st">"prop_Oligodendrocytes"</span>), <span class="at">ncol =</span> <span class="dv">2</span>)</span>
+<span id="cb8-8"><a href="#cb8-8" aria-hidden="true" tabindex="-1"></a>p_bot <span class="ot">&lt;-</span> <span class="fu">SpatialFeaturePlot</span>(brain, <span class="at">features =</span> <span class="fu">c</span>(<span class="st">"Aqp4"</span>, <span class="st">"Mbp"</span>), <span class="at">ncol =</span> <span class="dv">2</span>)</span>
+<span id="cb8-9"><a href="#cb8-9" aria-hidden="true" tabindex="-1"></a>p_top <span class="sc">/</span> p_bot</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb9"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(Seurat)</span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a><span class="co"># Quantify it: correlation between inferred abundance and marker expression</span></span>
+<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a>marker_map <span class="ot">&lt;-</span> <span class="fu">list</span>(<span class="at">Astrocytes =</span> <span class="st">"Aqp4"</span>, <span class="at">Oligodendrocytes =</span> <span class="st">"Mbp"</span>)</span>
+<span id="cb9-5"><a href="#cb9-5" aria-hidden="true" tabindex="-1"></a>expr <span class="ot">&lt;-</span> <span class="fu">GetAssayData</span>(brain, <span class="at">assay =</span> <span class="st">"SCT"</span>, <span class="at">layer =</span> <span class="st">"data"</span>)</span>
+<span id="cb9-6"><a href="#cb9-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-7"><a href="#cb9-7" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> (ct <span class="cf">in</span> <span class="fu">names</span>(marker_map)) {</span>
+<span id="cb9-8"><a href="#cb9-8" aria-hidden="true" tabindex="-1"></a>    r <span class="ot">&lt;-</span> <span class="fu">cor</span>(brain[[<span class="fu">paste0</span>(<span class="st">"prop_"</span>, ct)]][, <span class="dv">1</span>],</span>
+<span id="cb9-9"><a href="#cb9-9" aria-hidden="true" tabindex="-1"></a>             <span class="fu">as.numeric</span>(expr[marker_map[[ct]], ]),</span>
+<span id="cb9-10"><a href="#cb9-10" aria-hidden="true" tabindex="-1"></a>             <span class="at">method =</span> <span class="st">"spearman"</span>)</span>
+<span id="cb9-11"><a href="#cb9-11" aria-hidden="true" tabindex="-1"></a>    <span class="fu">cat</span>(<span class="fu">sprintf</span>(<span class="st">"%-18s vs %-6s : rho = %.3f</span><span class="sc">\n</span><span class="st">"</span>, ct, marker_map[[ct]], r))</span>
+<span id="cb9-12"><a href="#cb9-12" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>相关系数应当明显为正。若某细胞类型的推断丰度与其经典标志基因几乎不相关，该类型的解卷积结果就不可信。</p>
+</section>
+<section id="验证二模拟-spot-基准" class="level2" data-number="51.3">
+<h2 data-number="51.3" class="anchored" data-anchor-id="验证二模拟-spot-基准"><span class="header-section-number">51.3</span> 验证二：模拟 Spot 基准</h2>
+<p>第二类验证是构造已知答案的测试。把 scRNA-seq 参考中的细胞按已知比例随机混合，人工合成”伪 Spot”，再用解卷积去还原——由于真实比例已知，可以直接量化误差。</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb10"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(Seurat)</span>
+<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a><span class="co"># Build synthetic spots with known composition from the scRNA-seq reference</span></span>
+<span id="cb10-4"><a href="#cb10-4" aria-hidden="true" tabindex="-1"></a>make_pseudo_spots <span class="ot">&lt;-</span> <span class="cf">function</span>(sc_obj, <span class="at">n_spots =</span> <span class="dv">200</span>, <span class="at">cells_per_spot =</span> <span class="dv">8</span>, <span class="at">seed =</span> <span class="dv">1</span>) {</span>
+<span id="cb10-5"><a href="#cb10-5" aria-hidden="true" tabindex="-1"></a>    <span class="fu">set.seed</span>(seed)</span>
+<span id="cb10-6"><a href="#cb10-6" aria-hidden="true" tabindex="-1"></a>    counts <span class="ot">&lt;-</span> <span class="fu">GetAssayData</span>(sc_obj, <span class="at">assay =</span> <span class="st">"RNA"</span>, <span class="at">layer =</span> <span class="st">"counts"</span>)</span>
+<span id="cb10-7"><a href="#cb10-7" aria-hidden="true" tabindex="-1"></a>    types  <span class="ot">&lt;-</span> <span class="fu">as.character</span>(sc_obj<span class="sc">$</span>cell_type)</span>
+<span id="cb10-8"><a href="#cb10-8" aria-hidden="true" tabindex="-1"></a>    all_types <span class="ot">&lt;-</span> <span class="fu">sort</span>(<span class="fu">unique</span>(types))</span>
+<span id="cb10-9"><a href="#cb10-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-10"><a href="#cb10-10" aria-hidden="true" tabindex="-1"></a>    spot_mat <span class="ot">&lt;-</span> <span class="fu">matrix</span>(<span class="dv">0</span>, <span class="at">nrow =</span> <span class="fu">nrow</span>(counts), <span class="at">ncol =</span> n_spots,</span>
+<span id="cb10-11"><a href="#cb10-11" aria-hidden="true" tabindex="-1"></a>                       <span class="at">dimnames =</span> <span class="fu">list</span>(<span class="fu">rownames</span>(counts), <span class="fu">paste0</span>(<span class="st">"pseudo"</span>, <span class="fu">seq_len</span>(n_spots))))</span>
+<span id="cb10-12"><a href="#cb10-12" aria-hidden="true" tabindex="-1"></a>    truth <span class="ot">&lt;-</span> <span class="fu">matrix</span>(<span class="dv">0</span>, <span class="at">nrow =</span> n_spots, <span class="at">ncol =</span> <span class="fu">length</span>(all_types),</span>
+<span id="cb10-13"><a href="#cb10-13" aria-hidden="true" tabindex="-1"></a>                    <span class="at">dimnames =</span> <span class="fu">list</span>(<span class="fu">colnames</span>(spot_mat), all_types))</span>
+<span id="cb10-14"><a href="#cb10-14" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-15"><a href="#cb10-15" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> (i <span class="cf">in</span> <span class="fu">seq_len</span>(n_spots)) {</span>
+<span id="cb10-16"><a href="#cb10-16" aria-hidden="true" tabindex="-1"></a>        picked <span class="ot">&lt;-</span> <span class="fu">sample</span>(<span class="fu">ncol</span>(counts), cells_per_spot)</span>
+<span id="cb10-17"><a href="#cb10-17" aria-hidden="true" tabindex="-1"></a>        spot_mat[, i] <span class="ot">&lt;-</span> Matrix<span class="sc">::</span><span class="fu">rowSums</span>(counts[, picked, <span class="at">drop =</span> <span class="cn">FALSE</span>])</span>
+<span id="cb10-18"><a href="#cb10-18" aria-hidden="true" tabindex="-1"></a>        tab <span class="ot">&lt;-</span> <span class="fu">table</span>(<span class="fu">factor</span>(types[picked], <span class="at">levels =</span> all_types))</span>
+<span id="cb10-19"><a href="#cb10-19" aria-hidden="true" tabindex="-1"></a>        truth[i, ] <span class="ot">&lt;-</span> <span class="fu">as.numeric</span>(tab) <span class="sc">/</span> cells_per_spot</span>
+<span id="cb10-20"><a href="#cb10-20" aria-hidden="true" tabindex="-1"></a>    }</span>
+<span id="cb10-21"><a href="#cb10-21" aria-hidden="true" tabindex="-1"></a>    <span class="fu">list</span>(<span class="at">counts =</span> spot_mat, <span class="at">truth =</span> truth)</span>
+<span id="cb10-22"><a href="#cb10-22" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb10-23"><a href="#cb10-23" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-24"><a href="#cb10-24" aria-hidden="true" tabindex="-1"></a>sim <span class="ot">&lt;-</span> <span class="fu">make_pseudo_spots</span>(sc_ref, <span class="at">n_spots =</span> <span class="dv">200</span>, <span class="at">cells_per_spot =</span> <span class="dv">8</span>)</span>
+<span id="cb10-25"><a href="#cb10-25" aria-hidden="true" tabindex="-1"></a><span class="fu">dim</span>(sim<span class="sc">$</span>counts)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb11"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Run the same deconvolution pipeline on the synthetic spots, then score it</span></span>
+<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a><span class="co"># (estimated: spots x cell types, same ordering as sim$truth)</span></span>
+<span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a>rmse <span class="ot">&lt;-</span> <span class="fu">sqrt</span>(<span class="fu">mean</span>((estimated <span class="sc">-</span> sim<span class="sc">$</span>truth)<span class="sc">^</span><span class="dv">2</span>))</span>
+<span id="cb11-4"><a href="#cb11-4" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">"Overall RMSE:"</span>, <span class="fu">round</span>(rmse, <span class="dv">4</span>), <span class="st">"</span><span class="sc">\n</span><span class="st">"</span>)</span>
+<span id="cb11-5"><a href="#cb11-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-6"><a href="#cb11-6" aria-hidden="true" tabindex="-1"></a><span class="co"># Per-cell-type accuracy: which types are recovered well, which are not?</span></span>
+<span id="cb11-7"><a href="#cb11-7" aria-hidden="true" tabindex="-1"></a>per_type <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(</span>
+<span id="cb11-8"><a href="#cb11-8" aria-hidden="true" tabindex="-1"></a>    <span class="at">cell_type =</span> <span class="fu">colnames</span>(sim<span class="sc">$</span>truth),</span>
+<span id="cb11-9"><a href="#cb11-9" aria-hidden="true" tabindex="-1"></a>    <span class="at">rmse =</span> <span class="fu">sqrt</span>(<span class="fu">colMeans</span>((estimated <span class="sc">-</span> sim<span class="sc">$</span>truth)<span class="sc">^</span><span class="dv">2</span>)),</span>
+<span id="cb11-10"><a href="#cb11-10" aria-hidden="true" tabindex="-1"></a>    <span class="at">cor  =</span> <span class="fu">mapply</span>(<span class="cf">function</span>(a, b) <span class="fu">cor</span>(a, b),</span>
+<span id="cb11-11"><a href="#cb11-11" aria-hidden="true" tabindex="-1"></a>                  <span class="fu">as.data.frame</span>(estimated), <span class="fu">as.data.frame</span>(sim<span class="sc">$</span>truth))</span>
+<span id="cb11-12"><a href="#cb11-12" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb11-13"><a href="#cb11-13" aria-hidden="true" tabindex="-1"></a>per_type[<span class="fu">order</span>(per_type<span class="sc">$</span>rmse), ]</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="tip">
+<p><strong>模拟基准的一个重要局限：</strong> 用同一份 scRNA-seq 参考既合成伪 Spot 又做解卷积，相当于让模型在”完美匹配的参考”下考试，结果必然偏乐观——它检验不出参考不匹配这一最主要的失效模式。更严格的做法是把参考随机拆成两半，一半合成伪 Spot、另一半作为解卷积参考；或者刻意从参考中删掉一种细胞类型，观察其信号被分摊到了哪里。后者尤其有价值，它能让你亲眼看到”缺失类型”的失效模式长什么样。</p>
+</div>
+</section>
+<section id="验证三后验不确定性" class="level2" data-number="51.4">
+<h2 data-number="51.4" class="anchored" data-anchor-id="验证三后验不确定性"><span class="header-section-number">51.4</span> 验证三：后验不确定性</h2>
+<p>cell2location 输出完整的后验分布，因而可以给出每个估计的可信区间。一个常被忽略的事实是：<strong>后验均值很高但区间也很宽的估计，其实是不可信的</strong>。绘图时应优先使用后验的 5% 分位数（<code>q05</code>）而非均值，这是一个保守的下界估计。</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb12"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> numpy <span class="im">as</span> np</span>
+<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a><span class="co"># Posterior spread relative to the mean: a crude but useful uncertainty flag</span></span>
+<span id="cb12-4"><a href="#cb12-4" aria-hidden="true" tabindex="-1"></a>q05 <span class="op">=</span> adata_vis.obsm[<span class="st">"q05_cell_abundance_w_sf"</span>].values</span>
+<span id="cb12-5"><a href="#cb12-5" aria-hidden="true" tabindex="-1"></a>q95 <span class="op">=</span> adata_vis.obsm[<span class="st">"q95_cell_abundance_w_sf"</span>].values</span>
+<span id="cb12-6"><a href="#cb12-6" aria-hidden="true" tabindex="-1"></a>mean <span class="op">=</span> adata_vis.obsm[<span class="st">"means_cell_abundance_w_sf"</span>].values</span>
+<span id="cb12-7"><a href="#cb12-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-8"><a href="#cb12-8" aria-hidden="true" tabindex="-1"></a>relative_width <span class="op">=</span> (q95 <span class="op">-</span> q05) <span class="op">/</span> (mean <span class="op">+</span> <span class="fl">1e-6</span>)</span>
+<span id="cb12-9"><a href="#cb12-9" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="st">"Median relative posterior width per cell type:"</span>)</span>
+<span id="cb12-10"><a href="#cb12-10" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(np.<span class="bu">round</span>(np.median(relative_width, axis<span class="op">=</span><span class="dv">0</span>), <span class="dv">2</span>))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</section>
+<section id="解卷积失败的典型征象" class="level2" data-number="51.5">
+<h2 data-number="51.5" class="anchored" data-anchor-id="解卷积失败的典型征象"><span class="header-section-number">51.5</span> 解卷积失败的典型征象</h2>
+<p>最后，<a href="#tbl-deconv-failure" class="quarto-xref">表&nbsp;<span>2</span></a> 汇总了几类应当引起警觉的结果模式。它们不构成证明，但每一条都值得回头检查参考与参数。</p>
+<div id="tbl-deconv-failure" class="quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-tbl figure">
+<figcaption class="quarto-float-caption-top quarto-float-caption quarto-float-tbl" id="tbl-deconv-failure-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+表&nbsp;2: 解卷积结果的失败征象与常见原因
+</figcaption>
+<div aria-describedby="tbl-deconv-failure-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<table class="caption-top table">
+<colgroup>
+<col style="width: 37%">
+<col style="width: 62%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>征象</th>
+<th>可能原因</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>某类型在全切片均匀分布、无空间结构</td>
+<td>该类型签名不特异，或实际不存在于该组织</td>
+</tr>
+<tr class="even">
+<td>生物学上互斥的类型高度共定位</td>
+<td>参考缺失了真正存在的第三种类型</td>
+</tr>
+<tr class="odd">
+<td>推断丰度与经典标志基因不相关</td>
+<td>参考不匹配，或该类型细胞数过少签名不稳</td>
+</tr>
+<tr class="even">
+<td>少数几种类型占据几乎所有权重</td>
+<td>参考细胞类型粒度过粗，或存在主导性的高表达类型</td>
+</tr>
+<tr class="odd">
+<td>结果对随机种子高度敏感</td>
+<td>模型未收敛，或数据信息量不足以支撑该粒度</td>
+</tr>
+</tbody>
+</table>
+</div>
+</figure>
+</div>
+<div class="info">
+<p><strong>黄金法则：</strong> 解卷积的输出永远存在，但它是否有意义完全取决于参考图谱——算法本身无法告诉你参考错了。因此解卷积的正确使用方式不是”跑完看结果”，而是”先用独立证据检验结果，再决定是否采信”。最有力的独立证据是标志基因的原始表达空间分布，因为它不经过任何反演、不依赖任何模型假设。一条实用的纪律是：<strong>凡是没有经过标志基因一致性核验的解卷积结果，不进入论文的结论部分</strong>。</p>
+</div>
+<hr>
+</section>
+</section>
+<section id="方法总结与衔接说明" class="level1" data-number="52">
+<h1 data-number="52"><span class="header-section-number">52</span> 方法总结与衔接说明</h1>
+<p>本专题把细胞解卷积拆解为三个层面。问题层面，它是一个带非负约束的混合模型反演，其难点不在求解而在模型设定——参考缺失细胞类型时算法不会报错，只会安静地给出错误答案。方法层面，从 RCTD、SPOTlight 的回归路线，到 cell2location 的层次贝叶斯路线，再到 CARD 引入空间平滑先验与 Tangram 的深度学习映射，各有取舍且不存在普遍最优；绝对丰度与相对比例两种输出的混用是常见的解读错误。验证层面，本专题给出了三条应成为标准流程的检验：标志基因空间一致性、模拟 Spot 定量基准、以及后验不确定性的正确使用。</p>
+<p>解卷积产出的细胞类型丰度是本章后续分析的直接输入——专题 9.3 的空间细胞通讯与生态位分析，正是建立在”每个位置有哪些细胞类型”这一信息之上。而在此之前，专题 9.2 将回到空间域识别问题，看图神经网络如何用比 MRF 先验更灵活的方式利用空间邻接关系。</p>
+<hr>
+</section>
+<section id="课后自测-post-lesson-quiz" class="level1" data-number="53">
+<h1 data-number="53"><span class="header-section-number">53</span> 课后自测 (Post-Lesson Quiz)</h1>
+<ol type="1">
+<li><p>请写出细胞解卷积的基本数学模型并说明其两个约束条件。为什么说它”看起来只是非负最小二乘，实际难点在别处”？</p></li>
+<li><p>参考 scRNA-seq 图谱必须满足哪三项要求？其中哪一项无法从数据本身验证，只能依靠对组织生物学的了解？</p></li>
+<li><p>为什么说”参考缺失细胞类型”是解卷积最危险的失效模式？它与一般的算法报错有何本质区别？</p></li>
+<li><p>cell2location 为什么把解卷积分为”学习签名”与”估计丰度”两个独立阶段？这种分解带来了什么实际好处？</p></li>
+<li><p>绝对丰度与相对比例两种输出在解读上有何根本差异？请用”肿瘤细胞增殖而免疫细胞数量不变”这一情形说明误读的风险。</p></li>
+<li><p>RCTD 的 <code>doublet_mode</code> 假设每个 Spot 至多由两种主要细胞类型构成。为什么这一假设适合 Slide-seq 而通常不适合标准 Visium？</p></li>
+<li><p>为什么说”标志基因空间一致性”是最有说服力的解卷积验证方法？它相比模型内部的拟合优度指标强在哪里？</p></li>
+<li><p>某研究者用一份健康小鼠脑的 scRNA-seq 参考，对一批脑胶质瘤模型的 Visium 数据做了解卷积，结果显示肿瘤区域富集大量”星形胶质细胞”。请评估这一结论的可靠性，说明可能的问题，并给出验证与改进方案。</p></li>
+</ol>
+<details>
+<summary>
+<strong>参考答案 (Reference Answers)</strong>
+</summary>
+<ol type="1">
+<li><p><em>模型为 <span class="math inline">\(\mathbf{y}_s = \sum_{k} \beta_{sk}\mathbf{g}_k + \boldsymbol{\epsilon}_s\)</span>，其中 <span class="math inline">\(\mathbf{y}_s\)</span> 是 Spot 的观测表达向量、<span class="math inline">\(\mathbf{g}_k\)</span> 是细胞类型 <span class="math inline">\(k\)</span> 的签名、<span class="math inline">\(\beta_{sk}\)</span> 是待求丰度。两个约束是非负性（<span class="math inline">\(\beta_{sk} \geq 0\)</span>）与归一化（若输出相对比例则 <span class="math inline">\(\sum_k \beta_{sk} = 1\)</span>）。难点在别处，是因为：（1）签名 <span class="math inline">\(\mathbf{g}_k\)</span> 不是已知常量而是从另一批数据估计的，本身带误差与批次效应；（2）噪声不是高斯的，计数数据方差随均值增长，需泊松或负二项建模；（3）模型可能设定错误——参考缺少某类型时模型中不存在对应的 <span class="math inline">\(\mathbf{g}_k\)</span>，算法仍会强行给出非负解。</em></p></li>
+<li><p><em>三项要求：同源性（同物种、同组织，最好同发育阶段与病理状态）、完备性（覆盖目标组织中实际存在的所有细胞类型）、充分性（每种类型至少数十个细胞，通常 ≥ 50，以稳定估计签名）。其中完备性无法从数据本身验证——数据不会告诉你少了什么，只能依靠对目标组织生物学的了解来判断参考是否涵盖了所有应有的细胞类型。</em></p></li>
+<li><p><em>因为它不会触发任何错误或警告。参考缺少某类型时，模型中不存在对应的签名向量，但算法仍会在现有的类型集合内求出一组满足非负约束的最优解，把缺失类型的信号分摊给签名最相似的已有类型。结果是一个数值合法、可以画成漂亮空间热图、看起来完全合理的错误答案。与一般算法报错的本质区别在于：报错会中断流程、提示使用者去检查；而这种失效是静默的，只有通过外部独立证据（如标志基因表达）才能发现。</em></p></li>
+<li><p><em>因为第一阶段（学习签名）只依赖 scRNA 参考、与具体空间数据无关，第二阶段（估计丰度）固定签名再推断空间丰度。好处：（1）签名矩阵可复用于同组织的多个空间切片，避免每张切片重新训练参考，提高效率与跨切片一致性；（2）参考自身的批次效应在第一阶段就作为协变量消除，不会传递到空间推断；（3）两阶段解耦使得每一步的收敛可分别诊断，问题定位更容易。</em></p></li>
+<li><p><em>绝对丰度估计的是细胞数量本身，相对比例估计的是各类型占该 Spot 的百分比，后者是组成数据，受”此消彼长”约束。在”肿瘤细胞大量增殖而免疫细胞数量不变”的情形下：绝对丰度会正确显示”免疫细胞不变、肿瘤细胞上升”；而相对比例会显示”免疫细胞比例下降”，极易被误读为免疫细胞减少甚至被排斥。跨 Spot 或跨条件比较时必须明确使用的是哪一种输出。这一陷阱与微生物组分析中的组成数据问题完全同源。</em></p></li>
+<li><p><em>因为 <code>doublet_mode</code> 的假设是每个测量单元只覆盖极少数细胞。Slide-seq 的微珠直径约 10 µm，接近单细胞尺度，一个珠子通常只捕获一到两个细胞的 RNA，该假设基本成立。标准 Visium 的 Spot 直径 55 µm，通常涵盖 1–10 个细胞，强行假设至多两种主要类型会迫使模型丢弃真实存在的其他类型，产生系统性偏差。因此 Visium 上应使用 <code>full</code> 模式，允许每个 Spot 由任意多种类型混合构成。</em></p></li>
+<li><p><em>因为标志基因的表达是直接观测量，完全不经过解卷积的反演过程，也不依赖解卷积模型的任何假设——它是一个真正独立的证据来源。相比之下，模型内部的拟合优度指标（如残差、似然）衡量的是”模型对数据拟合得好不好”，但一个设定错误的模型（如参考缺类型）同样可以拟合得很好：它把缺失类型的信号分摊出去后，重构误差可能依然很小。因此内部指标无法检出模型设定错误，而外部的标志基因证据可以。</em></p></li>
+<li><p><em>这一结论高度可疑。核心问题是参考图谱与目标组织不匹配，违反了同源性要求：健康脑参考中不包含胶质瘤细胞这一类型，而胶质瘤细胞在转录特征上与星形胶质细胞最为接近（胶质瘤本就源自胶质细胞谱系）。因此解卷积无法识别肿瘤细胞，只能把它们的信号全部分摊给签名最相似的星形胶质细胞——“肿瘤区富集星形胶质细胞”很可能正是这一失效模式的表现，而非真实生物学。验证方案：（1）检查该区域的胶质瘤标志基因（如 EGFR 扩增相关基因、增殖标志 Mki67）的原始表达，若高表达则说明该区域是肿瘤细胞而非正常星形胶质细胞；（2）检查星形胶质细胞的经典标志（如 Aqp4、Gfap）在该区域的原始表达是否与推断丰度一致；（3）做”刻意删除类型”的模拟实验，观察删掉某类型后其信号被分摊到何处。改进方案：更换为含胶质瘤细胞的同病理状态 scRNA-seq 参考，或用该实验自身配套的肿瘤 scRNA-seq 数据构建参考，确保参考涵盖肿瘤细胞、反应性星形胶质细胞等所有实际存在的类型。</em></p></li>
+</ol>
+</details>
+
+
+</section>
+
+</main> <!-- /main -->
+<script id="quarto-html-after-body" type="application/javascript">
+  window.document.addEventListener("DOMContentLoaded", function (event) {
+    const icon = "";
+    const anchorJS = new window.AnchorJS();
+    anchorJS.options = {
+      placement: 'right',
+      icon: icon
+    };
+    anchorJS.add('.anchored');
+    const isCodeAnnotation = (el) => {
+      for (const clz of el.classList) {
+        if (clz.startsWith('code-annotation-')) {                     
+          return true;
+        }
+      }
+      return false;
+    }
+    const onCopySuccess = function(e) {
+      // button target
+      const button = e.trigger;
+      // don't keep focus
+      button.blur();
+      // flash "checked"
+      button.classList.add('code-copy-button-checked');
+      var currentTitle = button.getAttribute("title");
+      button.setAttribute("title", "Copied!");
+      let tooltip;
+      if (window.bootstrap) {
+        button.setAttribute("data-bs-toggle", "tooltip");
+        button.setAttribute("data-bs-placement", "left");
+        button.setAttribute("data-bs-title", "Copied!");
+        tooltip = new bootstrap.Tooltip(button, 
+          { trigger: "manual", 
+            customClass: "code-copy-button-tooltip",
+            offset: [0, -8]});
+        tooltip.show();    
+      }
+      setTimeout(function() {
+        if (tooltip) {
+          tooltip.hide();
+          button.removeAttribute("data-bs-title");
+          button.removeAttribute("data-bs-toggle");
+          button.removeAttribute("data-bs-placement");
+        }
+        button.setAttribute("title", currentTitle);
+        button.classList.remove('code-copy-button-checked');
+      }, 1000);
+      // clear code selection
+      e.clearSelection();
+    }
+    const getTextToCopy = function(trigger) {
+      const outerScaffold = trigger.parentElement.cloneNode(true);
+      const codeEl = outerScaffold.querySelector('code');
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+    }
+    const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+      text: getTextToCopy
+    });
+    clipboard.on('success', onCopySuccess);
+    if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+      const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+        text: getTextToCopy,
+        container: window.document.getElementById('quarto-embedded-source-code-modal')
+      });
+      clipboardModal.on('success', onCopySuccess);
+    }
+      var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+      var mailtoRegex = new RegExp(/^mailto:/);
+        var filterRegex = new RegExp('/' + window.location.host + '/');
+      var isInternal = (href) => {
+          return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+      }
+      // Inspect non-navigation links and adorn them if external
+     var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+      for (var i=0; i<links.length; i++) {
+        const link = links[i];
+        if (!isInternal(link.href)) {
+          // undo the damage that might have been done by quarto-nav.js in the case of
+          // links that we want to consider external
+          if (link.dataset.originalHref !== undefined) {
+            link.href = link.dataset.originalHref;
+          }
+        }
+      }
+    function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+      const config = {
+        allowHTML: true,
+        maxWidth: 500,
+        delay: 100,
+        arrow: false,
+        appendTo: function(el) {
+            return el.parentElement;
+        },
+        interactive: true,
+        interactiveBorder: 10,
+        theme: 'quarto',
+        placement: 'bottom-start',
+      };
+      if (contentFn) {
+        config.content = contentFn;
+      }
+      if (onTriggerFn) {
+        config.onTrigger = onTriggerFn;
+      }
+      if (onUntriggerFn) {
+        config.onUntrigger = onUntriggerFn;
+      }
+      window.tippy(el, config); 
+    }
+    const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+    for (var i=0; i<noterefs.length; i++) {
+      const ref = noterefs[i];
+      tippyHover(ref, function() {
+        // use id or data attribute instead here
+        let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+        try { href = new URL(href).hash; } catch {}
+        const id = href.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note) {
+          return note.innerHTML;
+        } else {
+          return "";
+        }
+      });
+    }
+    const xrefs = window.document.querySelectorAll('a.quarto-xref');
+    const processXRef = (id, note) => {
+      // Strip column container classes
+      const stripColumnClz = (el) => {
+        el.classList.remove("page-full", "page-columns");
+        if (el.children) {
+          for (const child of el.children) {
+            stripColumnClz(child);
+          }
+        }
+      }
+      stripColumnClz(note)
+      if (id === null || id.startsWith('sec-')) {
+        // Special case sections, only their first couple elements
+        const container = document.createElement("div");
+        if (note.children && note.children.length > 2) {
+          container.appendChild(note.children[0].cloneNode(true));
+          for (let i = 1; i < note.children.length; i++) {
+            const child = note.children[i];
+            if (child.tagName === "P" && child.innerText === "") {
+              continue;
+            } else {
+              container.appendChild(child.cloneNode(true));
+              break;
+            }
+          }
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(container);
+          }
+          return container.innerHTML
+        } else {
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(note);
+          }
+          return note.innerHTML;
+        }
+      } else {
+        // Remove any anchor links if they are present
+        const anchorLink = note.querySelector('a.anchorjs-link');
+        if (anchorLink) {
+          anchorLink.remove();
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        if (note.classList.contains("callout")) {
+          return note.outerHTML;
+        } else {
+          return note.innerHTML;
+        }
+      }
+    }
+    for (var i=0; i<xrefs.length; i++) {
+      const xref = xrefs[i];
+      tippyHover(xref, undefined, function(instance) {
+        instance.disable();
+        let url = xref.getAttribute('href');
+        let hash = undefined; 
+        if (url.startsWith('#')) {
+          hash = url;
+        } else {
+          try { hash = new URL(url).hash; } catch {}
+        }
+        if (hash) {
+          const id = hash.replace(/^#\/?/, "");
+          const note = window.document.getElementById(id);
+          if (note !== null) {
+            try {
+              const html = processXRef(id, note.cloneNode(true));
+              instance.setContent(html);
+            } finally {
+              instance.enable();
+              instance.show();
+            }
+          } else {
+            // See if we can fetch this
+            fetch(url.split('#')[0])
+            .then(res => res.text())
+            .then(html => {
+              const parser = new DOMParser();
+              const htmlDoc = parser.parseFromString(html, "text/html");
+              const note = htmlDoc.getElementById(id);
+              if (note !== null) {
+                const html = processXRef(id, note);
+                instance.setContent(html);
+              } 
+            }).finally(() => {
+              instance.enable();
+              instance.show();
+            });
+          }
+        } else {
+          // See if we can fetch a full url (with no hash to target)
+          // This is a special case and we should probably do some content thinning / targeting
+          fetch(url)
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.querySelector('main.content');
+            if (note !== null) {
+              // This should only happen for chapter cross references
+              // (since there is no id in the URL)
+              // remove the first header
+              if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+                note.children[0].remove();
+              }
+              const html = processXRef(null, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      }, function(instance) {
+      });
+    }
+        let selectedAnnoteEl;
+        const selectorForAnnotation = ( cell, annotation) => {
+          let cellAttr = 'data-code-cell="' + cell + '"';
+          let lineAttr = 'data-code-annotation="' +  annotation + '"';
+          const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+          return selector;
+        }
+        const selectCodeLines = (annoteEl) => {
+          const doc = window.document;
+          const targetCell = annoteEl.getAttribute("data-target-cell");
+          const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+          const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+          const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+          const lineIds = lines.map((line) => {
+            return targetCell + "-" + line;
+          })
+          let top = null;
+          let height = null;
+          let parent = null;
+          if (lineIds.length > 0) {
+              //compute the position of the single el (top and bottom and make a div)
+              const el = window.document.getElementById(lineIds[0]);
+              top = el.offsetTop;
+              height = el.offsetHeight;
+              parent = el.parentElement.parentElement;
+            if (lineIds.length > 1) {
+              const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+              const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+              height = bottom - top;
+            }
+            if (top !== null && height !== null && parent !== null) {
+              // cook up a div (if necessary) and position it 
+              let div = window.document.getElementById("code-annotation-line-highlight");
+              if (div === null) {
+                div = window.document.createElement("div");
+                div.setAttribute("id", "code-annotation-line-highlight");
+                div.style.position = 'absolute';
+                parent.appendChild(div);
+              }
+              div.style.top = top - 2 + "px";
+              div.style.height = height + 4 + "px";
+              div.style.left = 0;
+              let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+              if (gutterDiv === null) {
+                gutterDiv = window.document.createElement("div");
+                gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+                gutterDiv.style.position = 'absolute';
+                const codeCell = window.document.getElementById(targetCell);
+                const gutter = codeCell.querySelector('.code-annotation-gutter');
+                gutter.appendChild(gutterDiv);
+              }
+              gutterDiv.style.top = top - 2 + "px";
+              gutterDiv.style.height = height + 4 + "px";
+            }
+            selectedAnnoteEl = annoteEl;
+          }
+        };
+        const unselectCodeLines = () => {
+          const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+          elementsIds.forEach((elId) => {
+            const div = window.document.getElementById(elId);
+            if (div) {
+              div.remove();
+            }
+          });
+          selectedAnnoteEl = undefined;
+        };
+          // Handle positioning of the toggle
+      window.addEventListener(
+        "resize",
+        throttle(() => {
+          elRect = undefined;
+          if (selectedAnnoteEl) {
+            selectCodeLines(selectedAnnoteEl);
+          }
+        }, 10)
+      );
+      function throttle(fn, ms) {
+      let throttle = false;
+      let timer;
+        return (...args) => {
+          if(!throttle) { // first call gets through
+              fn.apply(this, args);
+              throttle = true;
+          } else { // all the others get throttled
+              if(timer) clearTimeout(timer); // cancel #2
+              timer = setTimeout(() => {
+                fn.apply(this, args);
+                timer = throttle = false;
+              }, ms);
+          }
+        };
+      }
+        // Attach click handler to the DT
+        const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+        for (const annoteDlNode of annoteDls) {
+          annoteDlNode.addEventListener('click', (event) => {
+            const clickedEl = event.target;
+            if (clickedEl !== selectedAnnoteEl) {
+              unselectCodeLines();
+              const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+              if (activeEl) {
+                activeEl.classList.remove('code-annotation-active');
+              }
+              selectCodeLines(clickedEl);
+              clickedEl.classList.add('code-annotation-active');
+            } else {
+              // Unselect the line
+              unselectCodeLines();
+              clickedEl.classList.remove('code-annotation-active');
+            }
+          });
+        }
+    const findCites = (el) => {
+      const parentEl = el.parentElement;
+      if (parentEl) {
+        const cites = parentEl.dataset.cites;
+        if (cites) {
+          return {
+            el,
+            cites: cites.split(' ')
+          };
+        } else {
+          return findCites(el.parentElement)
+        }
+      } else {
+        return undefined;
+      }
+    };
+    var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+    for (var i=0; i<bibliorefs.length; i++) {
+      const ref = bibliorefs[i];
+      const citeInfo = findCites(ref);
+      if (citeInfo) {
+        tippyHover(citeInfo.el, function() {
+          var popup = window.document.createElement('div');
+          citeInfo.cites.forEach(function(cite) {
+            var citeDiv = window.document.createElement('div');
+            citeDiv.classList.add('hanging-indent');
+            citeDiv.classList.add('csl-entry');
+            var biblioDiv = window.document.getElementById('ref-' + cite);
+            if (biblioDiv) {
+              citeDiv.innerHTML = biblioDiv.innerHTML;
+            }
+            popup.appendChild(citeDiv);
+          });
+          return popup.innerHTML;
+        });
+      }
+    }
+  });
+  </script>
+<nav class="page-navigation">
+  <div class="nav-page nav-page-previous">
+      <a href="./09-spatial-advanced.html" class="pagination-link" aria-label="空间转录组进阶：解卷积、图深度学习、空间通讯与跨切片整合">
+        <i class="bi bi-arrow-left-short"></i> <span class="nav-page-text"><span class="chapter-number">45</span>&nbsp; <span class="chapter-title">空间转录组进阶：解卷积、图深度学习、空间通讯与跨切片整合</span></span>
+      </a>          
+  </div>
+  <div class="nav-page nav-page-next">
+      <a href="./spatial_adv_lesson2.html" class="pagination-link" aria-label="空间图神经网络与空间域识别进阶">
+        <span class="nav-page-text"><span class="chapter-number">47</span>&nbsp; <span class="chapter-title">空间图神经网络与空间域识别进阶</span></span> <i class="bi bi-arrow-right-short"></i>
+      </a>
+  </div>
+</nav>
+</div> <!-- /content -->
+
+
+
+
+<footer class="footer"><div class="nav-footer"><div class="nav-footer-center"><div class="toc-actions d-sm-block d-md-none"><ul><li><a href="https://github.com/cxzdsa2332/Applied-Omics-Analysis/edit/main/spatial_adv_lesson1.qmd" class="toc-action"><i class="bi bi-github"></i>Edit this page</a></li><li><a href="https://github.com/cxzdsa2332/Applied-Omics-Analysis/issues/new" class="toc-action"><i class="bi empty"></i>Report an issue</a></li><li><a href="https://github.com/cxzdsa2332/Applied-Omics-Analysis/blob/main/spatial_adv_lesson1.qmd" class="toc-action"><i class="bi empty"></i>View source</a></li></ul></div></div></div></footer></body></html>

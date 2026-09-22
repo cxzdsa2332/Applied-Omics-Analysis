@@ -1,0 +1,1535 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.9.36">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+<meta name="dcterms.date" content="2026-09-21">
+
+<title>43&nbsp; 空间数据质控、归一化与空间高变基因识别 – Introduction to Applied High-throughput Biological Data Analysis</title>
+<style>
+/* Default styles provided by pandoc.
+** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
+*/
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+/* CSS for syntax highlighting */
+html { -webkit-text-size-adjust: 100%; }
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+</style>
+
+
+<script src="site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="site_libs/quarto-nav/headroom.min.js"></script>
+<script src="site_libs/clipboard/clipboard.min.js"></script>
+<script src="site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="site_libs/quarto-search/fuse.min.js"></script>
+<script src="site_libs/quarto-search/quarto-search.js"></script>
+<meta name="quarto:offset" content="./">
+<link href="./spatial_basic_lesson4.html" rel="next">
+<link href="./spatial_basic_lesson2.html" rel="prev">
+<script src="site_libs/quarto-html/quarto.js" type="module"></script>
+<script src="site_libs/quarto-html/tabsets/tabsets.js" type="module"></script>
+<script src="site_libs/quarto-html/popper.min.js"></script>
+<script src="site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="site_libs/quarto-html/anchor.min.js"></script>
+<link href="site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="site_libs/quarto-html/quarto-syntax-highlighting-845c23b38eaddc0f92fda52bfe77a8c8.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="site_libs/bootstrap/bootstrap-5ccb035bea26c1e21f80f44cf7c27909.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
+<script id="quarto-search-options" type="application/json">{
+  "location": "sidebar",
+  "copy-button": false,
+  "collapse-after": 3,
+  "panel-placement": "start",
+  "type": "textbox",
+  "limit": 50,
+  "keyboard-shortcut": [
+    "f",
+    "/",
+    "s"
+  ],
+  "show-item-context": false,
+  "language": {
+    "search-no-results-text": "No results",
+    "search-matching-documents-text": "matching documents",
+    "search-copy-link-title": "Copy link to search",
+    "search-hide-matches-text": "Hide additional matches",
+    "search-more-match-text": "more match in this document",
+    "search-more-matches-text": "more matches in this document",
+    "search-clear-button-title": "Clear",
+    "search-text-placeholder": "",
+    "search-detached-cancel-button-title": "Cancel",
+    "search-submit-button-title": "Submit",
+    "search-label": "Search"
+  }
+}</script>
+
+  <script src="https://cdnjs.cloudflare.com/polyfill/v3/polyfill.min.js?features=es6"></script>
+  <script defer="" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js" type="text/javascript"></script>
+
+<script type="text/javascript">
+const typesetMath = (el) => {
+  if (window.MathJax) {
+    // MathJax Typeset
+    window.MathJax.typeset([el]);
+  } else if (window.katex) {
+    // KaTeX Render
+    var mathElements = el.getElementsByClassName("math");
+    var macros = [];
+    for (var i = 0; i < mathElements.length; i++) {
+      var texText = mathElements[i].firstChild;
+      if (mathElements[i].tagName == "SPAN" && texText && texText.data) {
+        window.katex.render(texText.data, mathElements[i], {
+          displayMode: mathElements[i].classList.contains('display'),
+          throwOnError: false,
+          macros: macros,
+          fleqn: false
+        });
+      }
+    }
+  }
+}
+window.Quarto = {
+  typesetMath
+};
+</script>
+
+</head>
+
+<body class="nav-sidebar floating quarto-light">
+
+<div id="quarto-search-results"></div>
+  <header id="quarto-header" class="headroom fixed-top">
+  <nav class="quarto-secondary-nav">
+    <div class="container-fluid d-flex">
+      <button type="button" class="quarto-btn-toggle btn" data-bs-toggle="collapse" role="button" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+        <i class="bi bi-layout-text-sidebar-reverse"></i>
+      </button>
+        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="./04-transcriptomics-basic.html">第二阶段：转录组、单细胞与空间组学</a></li><li class="breadcrumb-item"><a href="./spatial_basic_lesson3.html"><span class="chapter-number">43</span>&nbsp; <span class="chapter-title">空间数据质控、归一化与空间高变基因识别</span></a></li></ol></nav>
+        <a class="flex-grow-1" role="navigation" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">      
+        </a>
+      <button type="button" class="btn quarto-search-button" aria-label="Search" onclick="window.quartoOpenSearch();">
+        <i class="bi bi-search"></i>
+      </button>
+    </div>
+  </nav>
+</header>
+<!-- content -->
+<div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article">
+<!-- sidebar -->
+  <nav id="quarto-sidebar" class="sidebar collapse collapse-horizontal quarto-sidebar-collapse-item sidebar-navigation floating overflow-auto">
+    <div class="pt-lg-2 mt-2 text-left sidebar-header">
+    <div class="sidebar-title mb-0 py-0">
+      <a href="./">Introduction to Applied High-throughput Biological Data Analysis</a> 
+        <div class="sidebar-tools-main">
+    <a href="https://github.com/cxzdsa2332/Applied-Omics-Analysis" title="Source Code" class="quarto-navigation-tool px-1" aria-label="Source Code"><i class="bi bi-github"></i></a>
+</div>
+    </div>
+      </div>
+        <div class="mt-2 flex-shrink-0 align-items-center">
+        <div class="sidebar-search">
+        <div id="quarto-search" class="" title="Search"></div>
+        </div>
+        </div>
+    <div class="sidebar-menu-container"> 
+    <ul class="list-unstyled mt-1">
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./index.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">1</span>&nbsp; <span class="chapter-title">Course Introduction</span></span></a>
+  </div>
+</li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-1" role="navigation" aria-expanded="true">
+ <span class="menu-text">第一阶段：基础与基因组</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-1" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-1" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./01-intro.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">2</span>&nbsp; <span class="chapter-title">生物信息学入门：从分子到数据</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./intro_lesson1.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">3</span>&nbsp; <span class="chapter-title">分子生物学基础与高通量概念启蒙</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./intro_lesson2.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">4</span>&nbsp; <span class="chapter-title">高通量测序原理与生物数据生命周期</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./intro_lesson3.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">5</span>&nbsp; <span class="chapter-title">拥抱命令行——Linux 操作系统与开源精神导论</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./intro_lesson4.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">6</span>&nbsp; <span class="chapter-title">生物信息学双擎——R 与 Python 核心环境配置及AI辅助</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./intro_lesson5.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">7</span>&nbsp; <span class="chapter-title">探索生物大数据的基石：数据库网络与核心文件格式</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./02-genomics-qc.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">8</span>&nbsp; <span class="chapter-title">基因组数据分析：质量控制、从头组装与变异检测</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./genomics_qc_lesson1.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">9</span>&nbsp; <span class="chapter-title">原始下机数据的数字表现</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./genomics_qc_lesson2.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">10</span>&nbsp; <span class="chapter-title">数据预处理与参考基因组比对</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./genomics_qc_lesson3.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">11</span>&nbsp; <span class="chapter-title">从头基因组组装：当没有参考基因组时</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./genomics_qc_lesson4.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">12</span>&nbsp; <span class="chapter-title">变异检测算法与 VCF 通用格式</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./genomics_qc_lesson5.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">13</span>&nbsp; <span class="chapter-title">功能注释、GATK 最佳实践与群体遗传学基础</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./03-genomics-variant.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">14</span>&nbsp; <span class="chapter-title">基因组学 —— 从经典分子标记到 GWAS 群体分析</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./genomics_variant_lesson1.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">15</span>&nbsp; <span class="chapter-title">经典分子标记、遗传图谱与 QTL 定位</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./genomics_variant_lesson2.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">16</span>&nbsp; <span class="chapter-title">全基因组 SNP 鉴定、连锁不平衡图谱与基因型数据处理</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./genomics_variant_lesson3.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">17</span>&nbsp; <span class="chapter-title">GWAS 统计模型</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./genomics_variant_lesson4.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">18</span>&nbsp; <span class="chapter-title">GWAS 结果可视化、多重检验与候选位点解析</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./genomics_variant_lesson5.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">19</span>&nbsp; <span class="chapter-title">精细定位、功能注释、因果推断与更多</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-2" role="navigation" aria-expanded="true">
+ <span class="menu-text">第二阶段：转录组、单细胞与空间组学</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-2" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-2" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./04-transcriptomics-basic.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">20</span>&nbsp; <span class="chapter-title">Bulk 转录组分析基础：质量控制、定量与差异表达</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./transcriptomics_basic_lesson1.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">21</span>&nbsp; <span class="chapter-title">测序原理、文库特性与原始数据质量控制</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./transcriptomics_basic_lesson2.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">22</span>&nbsp; <span class="chapter-title">Splice-Aware 比对与表达量定量</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./transcriptomics_basic_lesson3.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">23</span>&nbsp; <span class="chapter-title">差异表达分析</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./transcriptomics_basic_lesson4.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">24</span>&nbsp; <span class="chapter-title">功能富集分析</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./05-transcriptomics-advanced.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">25</span>&nbsp; <span class="chapter-title">Bulk 转录组高级分析：转录本结构与调控网络</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./transcriptomics_adv_lesson1.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">26</span>&nbsp; <span class="chapter-title">可变剪接差异分析与基因融合鉴定</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./transcriptomics_adv_lesson2.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">27</span>&nbsp; <span class="chapter-title">可变多腺苷酸化分析与长读长转录组展望</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./transcriptomics_adv_lesson3.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">28</span>&nbsp; <span class="chapter-title">加权基因共表达网络分析（WGCNA）</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./transcriptomics_adv_lesson4.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">29</span>&nbsp; <span class="chapter-title">基因调控网络推断——从随机森林到动力系统</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./transcriptomics_adv_lesson5.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">30</span>&nbsp; <span class="chapter-title">扰动稳态下的非线性基因调控模型学习</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./06-scrna-basic.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">31</span>&nbsp; <span class="chapter-title">单细胞转录组基础：上游处理、质量控制与标准分析流程</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./scrna_basic_lesson1.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">32</span>&nbsp; <span class="chapter-title">10x Genomics 技术原理与上游处理</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./scrna_basic_lesson2.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">33</span>&nbsp; <span class="chapter-title">单细胞数据质量控制与预处理</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./scrna_basic_lesson3.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">34</span>&nbsp; <span class="chapter-title">降维、聚类与细胞类型注释</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./07-scrna-advanced.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">35</span>&nbsp; <span class="chapter-title">单细胞转录组进阶：多样本统计、动态推断、细胞通讯与多组学</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./scrna_adv_lesson1.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">36</span>&nbsp; <span class="chapter-title">跨样本整合、批次校正与多样本差异分析</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./scrna_adv_lesson2.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">37</span>&nbsp; <span class="chapter-title">拟时序分析与 RNA Velocity</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./scrna_adv_lesson3.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">38</span>&nbsp; <span class="chapter-title">细胞通讯分析与基因调控网络推断</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./scrna_adv_lesson4.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">39</span>&nbsp; <span class="chapter-title">单细胞多组学：CITE-seq 与 10x Multiome 联合分析</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./08-spatial-basic.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">40</span>&nbsp; <span class="chapter-title">空间转录组基础：技术平台、上游处理与标准分析流程</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./spatial_basic_lesson1.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">41</span>&nbsp; <span class="chapter-title">空间转录组技术全景与平台选型</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./spatial_basic_lesson2.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">42</span>&nbsp; <span class="chapter-title">Visium 技术原理与 Space Ranger 上游处理</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./spatial_basic_lesson3.html" class="sidebar-item-text sidebar-link active">
+ <span class="menu-text"><span class="chapter-number">43</span>&nbsp; <span class="chapter-title">空间数据质控、归一化与空间高变基因识别</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./spatial_basic_lesson4.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">44</span>&nbsp; <span class="chapter-title">空间域识别与组织结构注释</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./09-spatial-advanced.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">45</span>&nbsp; <span class="chapter-title">空间转录组进阶：解卷积、图深度学习、空间通讯与跨切片整合</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./spatial_adv_lesson1.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">46</span>&nbsp; <span class="chapter-title">细胞解卷积：从 Spot 混合信号还原细胞类型</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./spatial_adv_lesson2.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">47</span>&nbsp; <span class="chapter-title">空间图神经网络与空间域识别进阶</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./spatial_adv_lesson3.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">48</span>&nbsp; <span class="chapter-title">空间细胞通讯与微环境生态位分析</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./spatial_adv_lesson4.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">49</span>&nbsp; <span class="chapter-title">成像型空间转录组与细胞分割</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./spatial_adv_lesson5.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">50</span>&nbsp; <span class="chapter-title">跨切片整合、三维重建与空间多组学</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-3" role="navigation" aria-expanded="true">
+ <span class="menu-text">第三阶段：进阶与整合</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-3" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-3" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./10-metagenomics.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">51</span>&nbsp; <span class="chapter-title">宏基因组与微生物组：扩增子、鸟枪法、群落统计与宏转录组</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./metagenomics_lesson1.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">52</span>&nbsp; <span class="chapter-title">专题 10.1（待撰写）</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./metagenomics_lesson2.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">53</span>&nbsp; <span class="chapter-title">专题 10.2（待撰写）</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./metagenomics_lesson3.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">54</span>&nbsp; <span class="chapter-title">专题 10.3（待撰写）</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./metagenomics_lesson4.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">55</span>&nbsp; <span class="chapter-title">专题 10.4（待撰写）</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./metagenomics_lesson5.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">56</span>&nbsp; <span class="chapter-title">专题 10.5（待撰写）</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./11-epigenomics.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">57</span>&nbsp; <span class="chapter-title">11-epigenomics.html</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./epigenomics_lesson1.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">58</span>&nbsp; <span class="chapter-title">专题 11.1（待撰写）</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./epigenomics_lesson2.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">59</span>&nbsp; <span class="chapter-title">专题 11.2（待撰写）</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./epigenomics_lesson3.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">60</span>&nbsp; <span class="chapter-title">专题 11.3（待撰写）</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./epigenomics_lesson4.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">61</span>&nbsp; <span class="chapter-title">专题 11.4（待撰写）</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./epigenomics_lesson5.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">62</span>&nbsp; <span class="chapter-title">专题 11.5（待撰写）</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./12-proteometab.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">63</span>&nbsp; <span class="chapter-title">12-proteometab.html</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./proteometab_lesson1.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">64</span>&nbsp; <span class="chapter-title">专题 12.1（待撰写）</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./proteometab_lesson2.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">65</span>&nbsp; <span class="chapter-title">专题 12.2（待撰写）</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./proteometab_lesson3.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">66</span>&nbsp; <span class="chapter-title">专题 12.3（待撰写）</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./proteometab_lesson4.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">67</span>&nbsp; <span class="chapter-title">专题 12.4（待撰写）</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./proteometab_lesson5.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">68</span>&nbsp; <span class="chapter-title">专题 12.5（待撰写）</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./13-integration.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">69</span>&nbsp; <span class="chapter-title">13-integration.html</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./integration_lesson1.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">70</span>&nbsp; <span class="chapter-title">专题 13.1（待撰写）</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./integration_lesson2.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">71</span>&nbsp; <span class="chapter-title">专题 13.2（待撰写）</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./integration_lesson3.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">72</span>&nbsp; <span class="chapter-title">专题 13.3（待撰写）</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./integration_lesson4.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">73</span>&nbsp; <span class="chapter-title">专题 13.4（待撰写）</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./integration_lesson5.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">74</span>&nbsp; <span class="chapter-title">专题 13.5（待撰写）</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./14-summary.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">75</span>&nbsp; <span class="chapter-title">14-summary.html</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./summary_lesson1.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">76</span>&nbsp; <span class="chapter-title">专题 14.1（待撰写）</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./references.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">参考资料</span></a>
+  </div>
+</li>
+    </ul>
+    </div>
+</nav>
+<div id="quarto-sidebar-glass" class="quarto-sidebar-collapse-item" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item"></div>
+<!-- margin-sidebar -->
+    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+        <nav id="TOC" role="doc-toc" class="toc-active">
+    <h2 id="toc-title">Table of contents</h2>
+   
+  <ul>
+  <li><a href="#专题概述" id="toc-专题概述" class="nav-link active" data-scroll-target="#专题概述"><span class="header-section-number">44</span> 专题概述</a></li>
+  <li><a href="#空间数据质控与归一化" id="toc-空间数据质控与归一化" class="nav-link" data-scroll-target="#空间数据质控与归一化"><span class="header-section-number">45</span> 空间数据质控与归一化</a>
+  <ul class="collapse">
+  <li><a href="#结合图像的空间质检" id="toc-结合图像的空间质检" class="nav-link" data-scroll-target="#结合图像的空间质检"><span class="header-section-number">45.1</span> 结合图像的空间质检</a></li>
+  <li><a href="#区分边缘效应与真实的低密度区域" id="toc-区分边缘效应与真实的低密度区域" class="nav-link" data-scroll-target="#区分边缘效应与真实的低密度区域"><span class="header-section-number">45.2</span> 区分边缘效应与真实的低密度区域</a></li>
+  <li><a href="#归一化的空间考量" id="toc-归一化的空间考量" class="nav-link" data-scroll-target="#归一化的空间考量"><span class="header-section-number">45.3</span> 归一化的空间考量</a></li>
+  </ul></li>
+  <li><a href="#空间高变基因分析" id="toc-空间高变基因分析" class="nav-link" data-scroll-target="#空间高变基因分析"><span class="header-section-number">46</span> 空间高变基因分析</a>
+  <ul class="collapse">
+  <li><a href="#什么是空间高变基因" id="toc-什么是空间高变基因" class="nav-link" data-scroll-target="#什么是空间高变基因"><span class="header-section-number">46.1</span> 什么是空间高变基因</a></li>
+  <li><a href="#空间权重矩阵把相邻写成数学" id="toc-空间权重矩阵把相邻写成数学" class="nav-link" data-scroll-target="#空间权重矩阵把相邻写成数学"><span class="header-section-number">46.2</span> 空间权重矩阵：把”相邻”写成数学</a></li>
+  <li><a href="#morans-i-空间自相关" id="toc-morans-i-空间自相关" class="nav-link" data-scroll-target="#morans-i-空间自相关"><span class="header-section-number">46.3</span> Moran’s I 空间自相关</a></li>
+  <li><a href="#gearys-c对局部差异更敏感的互补统计量" id="toc-gearys-c对局部差异更敏感的互补统计量" class="nav-link" data-scroll-target="#gearys-c对局部差异更敏感的互补统计量"><span class="header-section-number">46.4</span> Geary’s C：对局部差异更敏感的互补统计量</a></li>
+  <li><a href="#在-seurat-中识别-svg" id="toc-在-seurat-中识别-svg" class="nav-link" data-scroll-target="#在-seurat-中识别-svg"><span class="header-section-number">46.5</span> 在 Seurat 中识别 SVG</a></li>
+  <li><a href="#其他-svg-识别方法" id="toc-其他-svg-识别方法" class="nav-link" data-scroll-target="#其他-svg-识别方法"><span class="header-section-number">46.6</span> 其他 SVG 识别方法</a></li>
+  <li><a href="#从单个基因到空间表达模块" id="toc-从单个基因到空间表达模块" class="nav-link" data-scroll-target="#从单个基因到空间表达模块"><span class="header-section-number">46.7</span> 从单个基因到空间表达模块</a></li>
+  </ul></li>
+  <li><a href="#方法总结与衔接说明" id="toc-方法总结与衔接说明" class="nav-link" data-scroll-target="#方法总结与衔接说明"><span class="header-section-number">47</span> 方法总结与衔接说明</a></li>
+  <li><a href="#课后自测-post-lesson-quiz" id="toc-课后自测-post-lesson-quiz" class="nav-link" data-scroll-target="#课后自测-post-lesson-quiz"><span class="header-section-number">48</span> 课后自测 (Post-Lesson Quiz)</a></li>
+  </ul>
+<div class="toc-actions"><ul><li><a href="https://github.com/cxzdsa2332/Applied-Omics-Analysis/edit/main/spatial_basic_lesson3.qmd" class="toc-action"><i class="bi bi-github"></i>Edit this page</a></li><li><a href="https://github.com/cxzdsa2332/Applied-Omics-Analysis/issues/new" class="toc-action"><i class="bi empty"></i>Report an issue</a></li><li><a href="https://github.com/cxzdsa2332/Applied-Omics-Analysis/blob/main/spatial_basic_lesson3.qmd" class="toc-action"><i class="bi empty"></i>View source</a></li></ul></div></nav>
+    </div>
+<!-- main -->
+<main class="content" id="quarto-document-content">
+
+<header id="title-block-header" class="quarto-title-block default"><nav class="quarto-page-breadcrumbs quarto-title-breadcrumbs d-none d-lg-block" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="./04-transcriptomics-basic.html">第二阶段：转录组、单细胞与空间组学</a></li><li class="breadcrumb-item"><a href="./spatial_basic_lesson3.html"><span class="chapter-number">43</span>&nbsp; <span class="chapter-title">空间数据质控、归一化与空间高变基因识别</span></a></li></ol></nav>
+<div class="quarto-title">
+<h1 class="title"><span class="chapter-number">43</span>&nbsp; <span class="chapter-title">空间数据质控、归一化与空间高变基因识别</span></h1>
+</div>
+
+
+
+<div class="quarto-title-meta">
+
+    
+    <div>
+    <div class="quarto-title-meta-heading">Published</div>
+    <div class="quarto-title-meta-contents">
+      <p class="date">September 21, 2026</p>
+    </div>
+  </div>
+  
+    
+  </div>
+  
+
+
+</header>
+
+
+<section id="专题概述" class="level1" data-number="44">
+<h1 data-number="44"><span class="header-section-number">44</span> 专题概述</h1>
+<p>加载 Visium 数据之后，分析流程与 scRNA-seq 高度共享——质控、归一化、降维的逻辑一脉相承（参见第 6 章）。但空间数据多了一个其他组学没有的维度：坐标。这带来两个后果。其一，质控不能只看数值：一个 Spot 即便 UMI 达标，若位于组织边缘或折叠处也不可信；反之低 UMI 未必是技术问题，也可能真实反映白质等细胞稀疏区域。其二，坐标催生了一类全新的核心分析——识别那些表达呈现非随机空间分布的基因，即空间高变基因（Spatially Variable Genes, SVG）。本专题讲解结合图像的空间质控与归一化要点，随后系统展开 SVG 识别：从 Moran’s I 空间自相关的数学定义出发，延伸到 Geary’s C、SpatialDE、SPARK-X 与 nnSVG，并说明各方法在统计假设与适用规模上的差异。</p>
+<p><strong>学习目标</strong>：掌握空间质控相比 scRNA-seq 的额外考量，能识别组织边缘与折叠伪影；理解空间数据归一化的特有混杂因素；能构建空间权重矩阵并理解其对结果的影响；掌握 Moran’s I 与 Geary’s C 的定义、解释与实现；能用 <code>FindSpatiallyVariableFeatures()</code> 识别并可视化 SVG；理解 SpatialDE、SPARK-X、nnSVG 三类方法的统计思路与适用场景；能把 SVG 按空间模式归类为表达模块并解读其解剖学对应。</p>
+<hr>
+</section>
+<section id="空间数据质控与归一化" class="level1" data-number="45">
+<h1 data-number="45"><span class="header-section-number">45</span> 空间数据质控与归一化</h1>
+<section id="结合图像的空间质检" class="level2" data-number="45.1">
+<h2 data-number="45.1" class="anchored" data-anchor-id="结合图像的空间质检"><span class="header-section-number">45.1</span> 结合图像的空间质检</h2>
+<p>空间数据的质控指标与 scRNA-seq 相同——每 Spot 检出基因数、每 Spot UMI 数、线粒体比例——但多了一层空间维度的判读。一个 Spot 即便表达量达标，若它位于组织边缘、脱落区域或折叠处，也应被剔除。因此空间质控必须<strong>结合 H&amp;E 图像进行视觉检查</strong>，而非只看数值阈值。</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb1"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(Seurat)</span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(SeuratData)</span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a>brain <span class="ot">&lt;-</span> <span class="fu">LoadData</span>(<span class="st">"stxBrain"</span>, <span class="at">type =</span> <span class="st">"anterior1"</span>)</span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a><span class="co"># Standard per-Spot QC metrics, same as scRNA-seq</span></span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a>brain[[<span class="st">"percent.mt"</span>]] <span class="ot">&lt;-</span> <span class="fu">PercentageFeatureSet</span>(brain, <span class="at">pattern =</span> <span class="st">"^mt-"</span>)</span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a><span class="co"># Distributions first: violin plots tell you the overall range</span></span>
+<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a><span class="fu">VlnPlot</span>(</span>
+<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a>    brain,</span>
+<span id="cb1-12"><a href="#cb1-12" aria-hidden="true" tabindex="-1"></a>    <span class="at">features =</span> <span class="fu">c</span>(<span class="st">"nCount_Spatial"</span>, <span class="st">"nFeature_Spatial"</span>, <span class="st">"percent.mt"</span>),</span>
+<span id="cb1-13"><a href="#cb1-13" aria-hidden="true" tabindex="-1"></a>    <span class="at">pt.size =</span> <span class="fl">0.1</span>, <span class="at">ncol =</span> <span class="dv">3</span></span>
+<span id="cb1-14"><a href="#cb1-14" aria-hidden="true" tabindex="-1"></a>) <span class="sc">&amp;</span> <span class="fu">theme</span>(<span class="at">legend.position =</span> <span class="st">"none"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>数值分布只是第一步。空间质控的关键动作是把同样的指标<strong>画回组织上</strong>——低质量 Spot 在空间上通常不是随机散布的，而是成片聚集在组织边缘或损伤区域，这一模式在小提琴图上完全看不出来。</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb2"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="co">#| label: fig-spatial-qc</span></span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a><span class="co">#| fig-cap: "小鼠脑前切片的质控指标空间分布（stxBrain Visium 数据）。左图为每个 Spot 的总 UMI 数，右图为线粒体基因比例，均按数值着色绘制在组织坐标上。可以看到 UMI 数在组织内部呈现与细胞密度相关的结构化分布，而非随机噪声；组织边缘的 Spot 则普遍表现为低 UMI 伴随较高线粒体比例，提示为边缘损伤而非真实的低表达区域。"</span></span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(Seurat)</span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a><span class="co"># Inspect QC distributions spatially: low-count Spots often cluster at tissue edges</span></span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a><span class="fu">SpatialFeaturePlot</span>(brain, <span class="at">features =</span> <span class="fu">c</span>(<span class="st">"nCount_Spatial"</span>, <span class="st">"percent.mt"</span>))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="warning">
+<p><strong>别用同一阈值无差别过滤所有 Spot：</strong> Visium 中每个 Spot 的 UMI 总数还反映了真实的生物学差异——细胞密度高的区域（如脑的细胞密集层）天然有更高的 UMI，细胞稀疏区域（如白质、纤维区）UMI 本就低。若用 scRNA-seq 式的统一下限过滤，会系统性地删除低细胞密度的组织区域，造成空间偏差：被删掉的不是”坏数据”，而是”某一类组织”。空间质控应把”低 UMI 是技术问题还是生物学真实”结合图像区分对待。</p>
+</div>
+</section>
+<section id="区分边缘效应与真实的低密度区域" class="level2" data-number="45.2">
+<h2 data-number="45.2" class="anchored" data-anchor-id="区分边缘效应与真实的低密度区域"><span class="header-section-number">45.2</span> 区分边缘效应与真实的低密度区域</h2>
+<p>上述警告提出了一个实际操作问题：怎么区分这两种低 UMI？一个可行的判据是看<strong>低 UMI 是否伴随其他质量异常</strong>。技术性的边缘损伤通常同时表现为低 UMI、低基因数和偏高的线粒体比例（细胞破损、胞质 RNA 流失）；而真实的低细胞密度区域只是 UMI 和基因数偏低，线粒体比例正常。</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb3"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(Seurat)</span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a><span class="co"># Flag spots that are low-count AND high-mitochondrial: likely damaged, not sparse</span></span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a>qc <span class="ot">&lt;-</span> brain[[<span class="fu">c</span>(<span class="st">"nCount_Spatial"</span>, <span class="st">"nFeature_Spatial"</span>, <span class="st">"percent.mt"</span>)]]</span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a>low_count <span class="ot">&lt;-</span> qc<span class="sc">$</span>nCount_Spatial <span class="sc">&lt;</span> <span class="fu">quantile</span>(qc<span class="sc">$</span>nCount_Spatial, <span class="fl">0.05</span>)</span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a>high_mt   <span class="ot">&lt;-</span> qc<span class="sc">$</span>percent.mt <span class="sc">&gt;</span> <span class="fu">quantile</span>(qc<span class="sc">$</span>percent.mt, <span class="fl">0.95</span>)</span>
+<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a>brain<span class="sc">$</span>qc_flag <span class="ot">&lt;-</span> dplyr<span class="sc">::</span><span class="fu">case_when</span>(</span>
+<span id="cb3-9"><a href="#cb3-9" aria-hidden="true" tabindex="-1"></a>    low_count <span class="sc">&amp;</span> high_mt  <span class="sc">~</span> <span class="st">"damaged"</span>,</span>
+<span id="cb3-10"><a href="#cb3-10" aria-hidden="true" tabindex="-1"></a>    low_count <span class="sc">&amp;</span> <span class="sc">!</span>high_mt <span class="sc">~</span> <span class="st">"sparse_tissue"</span>,</span>
+<span id="cb3-11"><a href="#cb3-11" aria-hidden="true" tabindex="-1"></a>    <span class="cn">TRUE</span>                 <span class="sc">~</span> <span class="st">"pass"</span></span>
+<span id="cb3-12"><a href="#cb3-12" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb3-13"><a href="#cb3-13" aria-hidden="true" tabindex="-1"></a><span class="fu">table</span>(brain<span class="sc">$</span>qc_flag)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb4"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="co">#| label: fig-qc-flag</span></span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a><span class="co">#| fig-cap: "基于联合判据的 Spot 质量分类空间分布（stxBrain Visium 数据）。每个 Spot 按质量类别着色：damaged（低 UMI 且高线粒体比例，提示组织损伤）、sparse_tissue（低 UMI 但线粒体比例正常，提示真实的低细胞密度区域）、pass（通过质控）。damaged 类 Spot 集中分布于组织边缘，验证了边缘损伤的空间聚集特征；sparse_tissue 则分布于白质等纤维区域，说明不应将其与损伤 Spot 一并剔除。"</span></span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(Seurat)</span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a><span class="co"># Where do the two kinds of low-count spots actually sit on the tissue?</span></span>
+<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a><span class="fu">SpatialDimPlot</span>(brain, <span class="at">group.by =</span> <span class="st">"qc_flag"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>这一分类不应被当作机械规则——它的作用是把判断的依据显式化，最终仍需结合 H&amp;E 图像确认。若 <code>damaged</code> 类 Spot 确实集中在组织边缘，则可放心剔除；若它们散布在组织内部，则更可能是真实的生物学信号（如坏死区域），此时删除反而丢失了关键信息。</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb5"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(Seurat)</span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a><span class="co"># Remove only the spots judged to be technically damaged</span></span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a>brain <span class="ot">&lt;-</span> <span class="fu">subset</span>(brain, <span class="at">subset =</span> qc_flag <span class="sc">!=</span> <span class="st">"damaged"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</section>
+<section id="归一化的空间考量" class="level2" data-number="45.3">
+<h2 data-number="45.3" class="anchored" data-anchor-id="归一化的空间考量"><span class="header-section-number">45.3</span> 归一化的空间考量</h2>
+<p>空间数据可沿用 scRNA-seq 的归一化策略，<code>SCTransform()</code> 同样适用且推荐。但需注意一个空间特有的混杂因素：Spot 的”测序深度”（总 UMI）不仅受技术捕获效率影响，还受该 Spot 覆盖的细胞数与细胞密度影响。SCTransform 的方差稳定能在一定程度上缓解，但在解读时应警惕——表达模式可能部分由细胞密度的空间梯度驱动，而非单纯的基因调控差异。</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb6"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(Seurat)</span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a><span class="co"># SCTransform for spatial data: note the assay is "Spatial", not "RNA"</span></span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a>brain <span class="ot">&lt;-</span> <span class="fu">SCTransform</span>(brain, <span class="at">assay =</span> <span class="st">"Spatial"</span>, <span class="at">verbose =</span> <span class="cn">FALSE</span>)</span>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a><span class="co"># Compare raw counts and normalised values for the same gene</span></span>
+<span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a>p1 <span class="ot">&lt;-</span> <span class="fu">SpatialFeaturePlot</span>(brain, <span class="at">features =</span> <span class="st">"Ttr"</span>, <span class="at">slot =</span> <span class="st">"counts"</span>) <span class="sc">+</span></span>
+<span id="cb6-8"><a href="#cb6-8" aria-hidden="true" tabindex="-1"></a>    ggplot2<span class="sc">::</span><span class="fu">ggtitle</span>(<span class="st">"Raw counts"</span>)</span>
+<span id="cb6-9"><a href="#cb6-9" aria-hidden="true" tabindex="-1"></a>p2 <span class="ot">&lt;-</span> <span class="fu">SpatialFeaturePlot</span>(brain, <span class="at">features =</span> <span class="st">"Ttr"</span>) <span class="sc">+</span></span>
+<span id="cb6-10"><a href="#cb6-10" aria-hidden="true" tabindex="-1"></a>    ggplot2<span class="sc">::</span><span class="fu">ggtitle</span>(<span class="st">"SCTransform normalised"</span>)</span>
+<span id="cb6-11"><a href="#cb6-11" aria-hidden="true" tabindex="-1"></a>p1 <span class="sc">+</span> p2</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="note">
+<p><strong>一个实用的诊断：</strong> 若怀疑某个”空间表达模式”其实是细胞密度梯度的产物，可以做一个简单检验——把该基因的表达与 <code>nCount_Spatial</code> 做空间相关性比较。若两者的空间分布高度吻合，则该模式很可能只是密度效应的映射，而非该基因的特异调控。真正有意义的 SVG 应当在归一化之后仍保持其空间结构，并且其模式与总 UMI 的分布<strong>不</strong>一致。</p>
+</div>
+<hr>
+</section>
+</section>
+<section id="空间高变基因分析" class="level1" data-number="46">
+<h1 data-number="46"><span class="header-section-number">46</span> 空间高变基因分析</h1>
+<section id="什么是空间高变基因" class="level2" data-number="46.1">
+<h2 data-number="46.1" class="anchored" data-anchor-id="什么是空间高变基因"><span class="header-section-number">46.1</span> 什么是空间高变基因</h2>
+<p>scRNA-seq 的高变基因（参见第 6 章）衡量基因在细胞间的总体变异，但忽略了空间结构。空间高变基因（Spatially Variable Genes, SVG）则专门识别那些表达呈现<strong>显著空间自相关</strong>的基因——即在组织上相邻的 Spot 倾向于有相似表达、表达模式不是空间随机散布的。这类基因往往标志着功能特异的组织层、解剖区域或局部微环境，是空间转录组最具特色的发现。</p>
+<p>普通高变基因与 SVG 的区别在于：一个基因可以在细胞间高度变异（是 HVG），但其高低表达细胞在空间上随机分布（不是 SVG）；反之，一个总体变异不大的基因，若其表达在某个特定区域系统性升高，则是 SVG。二者的关系可以用 <a href="#tbl-hvg-svg" class="quarto-xref">表&nbsp;<span>1</span></a> 概括。</p>
+<div id="tbl-hvg-svg" class="quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-tbl figure">
+<figcaption class="quarto-float-caption-top quarto-float-caption quarto-float-tbl" id="tbl-hvg-svg-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+表&nbsp;1: 高变基因（HVG）与空间高变基因（SVG）的关系
+</figcaption>
+<div aria-describedby="tbl-hvg-svg-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<table class="caption-top table">
+<colgroup>
+<col style="width: 33%">
+<col style="width: 33%">
+<col style="width: 33%">
+</colgroup>
+<thead>
+<tr class="header">
+<th></th>
+<th>空间随机分布</th>
+<th>空间聚集分布</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><strong>总体变异大</strong></td>
+<td>HVG 但非 SVG（如受细胞周期驱动的基因）</td>
+<td>HVG 且 SVG（最典型的区域标志基因）</td>
+</tr>
+<tr class="even">
+<td><strong>总体变异小</strong></td>
+<td>既非 HVG 也非 SVG（管家基因）</td>
+<td>SVG 但非 HVG（弱但结构化的区域信号）</td>
+</tr>
+</tbody>
+</table>
+</div>
+</figure>
+</div>
+<p>右下角的”SVG 但非 HVG”是空间分析独有的收获：这类基因表达幅度变化不大，会被常规 HVG 筛选完全漏掉，但其表达严格局限于某一解剖结构，往往是该结构的精确标志。</p>
+</section>
+<section id="空间权重矩阵把相邻写成数学" class="level2" data-number="46.2">
+<h2 data-number="46.2" class="anchored" data-anchor-id="空间权重矩阵把相邻写成数学"><span class="header-section-number">46.2</span> 空间权重矩阵：把”相邻”写成数学</h2>
+<p>所有空间自相关统计量都建立在同一个前提之上——必须先定义”哪些位置算相邻”。这就是<strong>空间权重矩阵</strong> <span class="math inline">\(W = \{w_{ij}\}\)</span>：<span class="math inline">\(w_{ij}\)</span> 越大表示位置 <span class="math inline">\(i\)</span> 与 <span class="math inline">\(j\)</span> 的空间关联越强，通常自身权重 <span class="math inline">\(w_{ii} = 0\)</span>。</p>
+<p>常见的构建方式有三种：</p>
+<ul>
+<li><strong>直接邻居</strong>：Visium 的六角网格中每个 Spot 有六个直接相邻 Spot，令这六个的权重为 1、其余为 0。最贴合阵列的物理结构。</li>
+<li><strong>k-近邻</strong>：取距离最近的 <span class="math inline">\(k\)</span> 个 Spot 权重为 1。适用于 Slide-seq 等不规则排布的平台。</li>
+<li><strong>距离衰减核</strong>：<span class="math inline">\(w_{ij} = \exp(-d_{ij}^2 / 2\sigma^2)\)</span>，权重随距离连续衰减。<span class="math inline">\(\sigma\)</span> 控制空间尺度——小 <span class="math inline">\(\sigma\)</span> 侧重局部模式、大 <span class="math inline">\(\sigma\)</span> 侧重大范围梯度。</li>
+</ul>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb7"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(Seurat)</span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a><span class="co"># Build a spatial weight matrix from Visium coordinates (k-nearest neighbours)</span></span>
+<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a>coords <span class="ot">&lt;-</span> <span class="fu">as.matrix</span>(<span class="fu">GetTissueCoordinates</span>(brain)[, <span class="fu">c</span>(<span class="st">"imagerow"</span>, <span class="st">"imagecol"</span>)])</span>
+<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a>build_knn_weights <span class="ot">&lt;-</span> <span class="cf">function</span>(coords, <span class="at">k =</span> <span class="dv">6</span>) {</span>
+<span id="cb7-7"><a href="#cb7-7" aria-hidden="true" tabindex="-1"></a>    d <span class="ot">&lt;-</span> <span class="fu">as.matrix</span>(<span class="fu">dist</span>(coords))</span>
+<span id="cb7-8"><a href="#cb7-8" aria-hidden="true" tabindex="-1"></a>    <span class="fu">diag</span>(d) <span class="ot">&lt;-</span> <span class="cn">Inf</span></span>
+<span id="cb7-9"><a href="#cb7-9" aria-hidden="true" tabindex="-1"></a>    W <span class="ot">&lt;-</span> <span class="fu">matrix</span>(<span class="dv">0</span>, <span class="fu">nrow</span>(d), <span class="fu">ncol</span>(d), <span class="at">dimnames =</span> <span class="fu">dimnames</span>(d))</span>
+<span id="cb7-10"><a href="#cb7-10" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> (i <span class="cf">in</span> <span class="fu">seq_len</span>(<span class="fu">nrow</span>(d))) {</span>
+<span id="cb7-11"><a href="#cb7-11" aria-hidden="true" tabindex="-1"></a>        W[i, <span class="fu">order</span>(d[i, ])[<span class="fu">seq_len</span>(k)]] <span class="ot">&lt;-</span> <span class="dv">1</span></span>
+<span id="cb7-12"><a href="#cb7-12" aria-hidden="true" tabindex="-1"></a>    }</span>
+<span id="cb7-13"><a href="#cb7-13" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Symmetrise: i and j are neighbours if either lists the other</span></span>
+<span id="cb7-14"><a href="#cb7-14" aria-hidden="true" tabindex="-1"></a>    W <span class="ot">&lt;-</span> <span class="fu">pmax</span>(W, <span class="fu">t</span>(W))</span>
+<span id="cb7-15"><a href="#cb7-15" aria-hidden="true" tabindex="-1"></a>    W</span>
+<span id="cb7-16"><a href="#cb7-16" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb7-17"><a href="#cb7-17" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-18"><a href="#cb7-18" aria-hidden="true" tabindex="-1"></a>W <span class="ot">&lt;-</span> <span class="fu">build_knn_weights</span>(coords, <span class="at">k =</span> <span class="dv">6</span>)</span>
+<span id="cb7-19"><a href="#cb7-19" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">"Mean number of neighbours per spot:"</span>, <span class="fu">round</span>(<span class="fu">mean</span>(<span class="fu">rowSums</span>(W)), <span class="dv">2</span>), <span class="st">"</span><span class="sc">\n</span><span class="st">"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="warning">
+<p><strong>权重矩阵的选择会改变结论：</strong> 空间自相关统计量对 <span class="math inline">\(W\)</span> 的定义并不稳健。同一批数据，用六邻居和用 <span class="math inline">\(k = 20\)</span> 近邻，得到的 SVG 排名可能有实质差异——前者只能检出局部的、边界清晰的模式，后者更容易检出大尺度的梯度。这不是缺陷，而是”空间尺度”本身就是需要研究者指定的参数。因此报告 SVG 结果时<strong>必须同时报告权重矩阵的构建方式与参数</strong>，否则结果无法复现。若不确定合适的尺度，应在多个 <span class="math inline">\(k\)</span> 值下重跑并关注稳定出现的基因。</p>
+</div>
+</section>
+<section id="morans-i-空间自相关" class="level2" data-number="46.3">
+<h2 data-number="46.3" class="anchored" data-anchor-id="morans-i-空间自相关"><span class="header-section-number">46.3</span> Moran’s I 空间自相关</h2>
+<p>识别 SVG 最常用的统计量是 Moran’s I 空间自相关指数。它衡量”相邻位置的取值是否相似”：</p>
+<p><span class="math display">\[I = \frac{N}{\sum_{i}\sum_{j} w_{ij}} \cdot \frac{\sum_{i}\sum_{j} w_{ij}(x_i - \bar{x})(x_j - \bar{x})}{\sum_{i}(x_i - \bar{x})^2}\]</span></p>
+<p>其中 <span class="math inline">\(x_i\)</span> 为 Spot <span class="math inline">\(i\)</span> 的表达量，<span class="math inline">\(\bar{x}\)</span> 为均值，<span class="math inline">\(w_{ij}\)</span> 为空间权重矩阵，<span class="math inline">\(N\)</span> 为 Spot 总数。这个式子的结构值得拆开看：分子是”相邻 Spot 的离均差乘积”的加权和——若相邻 Spot 同时高于均值或同时低于均值，乘积为正；一高一低则为负。分母是总方差，起标准化作用。因此 Moran’s I 本质上是<strong>空间滞后版本的相关系数</strong>。</p>
+<div id="fig-morans-i" class="quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-morans-i-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<img src="https://upload.wikimedia.org/wikipedia/commons/thumb/7/70/Checkerboard_pattern.svg/960px-Checkerboard_pattern.svg.png" class="img-fluid figure-img" style="width:70.0%">
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-morans-i-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+图&nbsp;1: 棋盘格模式示意图。相邻格点取值恒相反，是负空间自相关（Moran’s I &lt; 0）的典型情形，与空间高变基因常见的正自相关聚集模式形成对照。
+</figcaption>
+</figure>
+</div>
+<p>其取值与解释类似相关系数：</p>
+<ul>
+<li><span class="math inline">\(I &gt; 0\)</span>：正空间自相关——相邻 Spot 表达相似，呈现空间聚集模式（典型的 SVG）。</li>
+<li><span class="math inline">\(I \approx 0\)</span>：无空间自相关——表达空间随机分布。</li>
+<li><span class="math inline">\(I &lt; 0\)</span>：负空间自相关——相邻 Spot 表达相反（罕见，如棋盘格模式）。</li>
+</ul>
+<p>注意在零假设（空间随机）下 Moran’s I 的期望不是 0 而是 <span class="math inline">\(E[I] = -1/(N-1)\)</span>，在 Spot 数很大时才近似为 0。</p>
+<p>下面用一段代码手工实现 Moran’s I，以建立对该统计量的直观理解。实际分析中应使用成熟实现，但亲手算一遍有助于理解权重矩阵为何如此重要。</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb8"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(Seurat)</span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a><span class="co"># Manual Moran's I -- for building intuition, not for production use</span></span>
+<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a>morans_i <span class="ot">&lt;-</span> <span class="cf">function</span>(x, W) {</span>
+<span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a>    n <span class="ot">&lt;-</span> <span class="fu">length</span>(x)</span>
+<span id="cb8-6"><a href="#cb8-6" aria-hidden="true" tabindex="-1"></a>    z <span class="ot">&lt;-</span> x <span class="sc">-</span> <span class="fu">mean</span>(x)</span>
+<span id="cb8-7"><a href="#cb8-7" aria-hidden="true" tabindex="-1"></a>    num <span class="ot">&lt;-</span> <span class="fu">sum</span>(W <span class="sc">*</span> <span class="fu">outer</span>(z, z))</span>
+<span id="cb8-8"><a href="#cb8-8" aria-hidden="true" tabindex="-1"></a>    den <span class="ot">&lt;-</span> <span class="fu">sum</span>(z<span class="sc">^</span><span class="dv">2</span>)</span>
+<span id="cb8-9"><a href="#cb8-9" aria-hidden="true" tabindex="-1"></a>    (n <span class="sc">/</span> <span class="fu">sum</span>(W)) <span class="sc">*</span> (num <span class="sc">/</span> den)</span>
+<span id="cb8-10"><a href="#cb8-10" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb8-11"><a href="#cb8-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-12"><a href="#cb8-12" aria-hidden="true" tabindex="-1"></a>expr <span class="ot">&lt;-</span> <span class="fu">GetAssayData</span>(brain, <span class="at">assay =</span> <span class="st">"SCT"</span>, <span class="at">layer =</span> <span class="st">"data"</span>)</span>
+<span id="cb8-13"><a href="#cb8-13" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-14"><a href="#cb8-14" aria-hidden="true" tabindex="-1"></a><span class="co"># A known region-specific gene versus a housekeeping gene</span></span>
+<span id="cb8-15"><a href="#cb8-15" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> (g <span class="cf">in</span> <span class="fu">c</span>(<span class="st">"Ttr"</span>, <span class="st">"Hpca"</span>, <span class="st">"Actb"</span>)) {</span>
+<span id="cb8-16"><a href="#cb8-16" aria-hidden="true" tabindex="-1"></a>    i_val <span class="ot">&lt;-</span> <span class="fu">morans_i</span>(<span class="fu">as.numeric</span>(expr[g, ]), W)</span>
+<span id="cb8-17"><a href="#cb8-17" aria-hidden="true" tabindex="-1"></a>    <span class="fu">cat</span>(<span class="fu">sprintf</span>(<span class="st">"%-6s Moran's I = %6.3f</span><span class="sc">\n</span><span class="st">"</span>, g, i_val))</span>
+<span id="cb8-18"><a href="#cb8-18" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>区域特异基因（<code>Ttr</code>、<code>Hpca</code>）应得到明显为正的 Moran’s I，而管家基因 <code>Actb</code> 虽然表达量高，其空间自相关却接近于零——这正是 SVG 与 HVG 的区别在数值上的体现。</p>
+</section>
+<section id="gearys-c对局部差异更敏感的互补统计量" class="level2" data-number="46.4">
+<h2 data-number="46.4" class="anchored" data-anchor-id="gearys-c对局部差异更敏感的互补统计量"><span class="header-section-number">46.4</span> Geary’s C：对局部差异更敏感的互补统计量</h2>
+<p>Moran’s I 关注的是”相邻位置是否同时偏离全局均值”，因此它对<strong>全局性的大尺度模式</strong>最敏感。Geary’s C 则直接度量相邻位置的差值：</p>
+<p><span class="math display">\[C = \frac{(N-1)}{2\sum_{i}\sum_{j} w_{ij}} \cdot \frac{\sum_{i}\sum_{j} w_{ij}(x_i - x_j)^2}{\sum_{i}(x_i - \bar{x})^2}\]</span></p>
+<p>其取值方向与 Moran’s I 相反：<span class="math inline">\(C &lt; 1\)</span> 表示正空间自相关（相邻值接近），<span class="math inline">\(C \approx 1\)</span> 表示空间随机，<span class="math inline">\(C &gt; 1\)</span> 表示负空间自相关。</p>
+<p><img src="https://upload.wikimedia.org/wikipedia/commons/c/c7/Snow-cholera-map.jpg" id="fig-spatial-analysis" class="img-fluid" style="width:85.0%" alt="John Snow 绘制的伦敦霍乱病例分布图。病例在特定水泵周围高度聚集，是空间自相关分析最早也最著名的应用实例。">由于分子直接用平方差，Geary’s C 对<strong>局部的、小尺度的</strong>空间变化更敏感。两者常一起使用：若某基因 Moran’s I 高而 Geary’s C 也接近 1，提示它有大尺度梯度但局部噪声也大。</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb9"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(Seurat)</span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a><span class="co"># Geary's C: sensitive to local differences rather than global clustering</span></span>
+<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a>gearys_c <span class="ot">&lt;-</span> <span class="cf">function</span>(x, W) {</span>
+<span id="cb9-5"><a href="#cb9-5" aria-hidden="true" tabindex="-1"></a>    n <span class="ot">&lt;-</span> <span class="fu">length</span>(x)</span>
+<span id="cb9-6"><a href="#cb9-6" aria-hidden="true" tabindex="-1"></a>    z <span class="ot">&lt;-</span> x <span class="sc">-</span> <span class="fu">mean</span>(x)</span>
+<span id="cb9-7"><a href="#cb9-7" aria-hidden="true" tabindex="-1"></a>    num <span class="ot">&lt;-</span> <span class="fu">sum</span>(W <span class="sc">*</span> <span class="fu">outer</span>(x, x, <span class="cf">function</span>(a, b) (a <span class="sc">-</span> b)<span class="sc">^</span><span class="dv">2</span>))</span>
+<span id="cb9-8"><a href="#cb9-8" aria-hidden="true" tabindex="-1"></a>    den <span class="ot">&lt;-</span> <span class="fu">sum</span>(z<span class="sc">^</span><span class="dv">2</span>)</span>
+<span id="cb9-9"><a href="#cb9-9" aria-hidden="true" tabindex="-1"></a>    ((n <span class="sc">-</span> <span class="dv">1</span>) <span class="sc">/</span> (<span class="dv">2</span> <span class="sc">*</span> <span class="fu">sum</span>(W))) <span class="sc">*</span> (num <span class="sc">/</span> den)</span>
+<span id="cb9-10"><a href="#cb9-10" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb9-11"><a href="#cb9-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-12"><a href="#cb9-12" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> (g <span class="cf">in</span> <span class="fu">c</span>(<span class="st">"Ttr"</span>, <span class="st">"Hpca"</span>, <span class="st">"Actb"</span>)) {</span>
+<span id="cb9-13"><a href="#cb9-13" aria-hidden="true" tabindex="-1"></a>    <span class="fu">cat</span>(<span class="fu">sprintf</span>(<span class="st">"%-6s Geary's C = %6.3f</span><span class="sc">\n</span><span class="st">"</span>, g, <span class="fu">gearys_c</span>(<span class="fu">as.numeric</span>(expr[g, ]), W)))</span>
+<span id="cb9-14"><a href="#cb9-14" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</section>
+<section id="在-seurat-中识别-svg" class="level2" data-number="46.5">
+<h2 data-number="46.5" class="anchored" data-anchor-id="在-seurat-中识别-svg"><span class="header-section-number">46.5</span> 在 Seurat 中识别 SVG</h2>
+<p>Seurat 的 <code>FindSpatiallyVariableFeatures()</code> 封装了 Moran’s I 的计算与检验。为控制运行时间，通常先用常规 HVG 筛出候选基因再计算空间统计量。</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb10"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="co">#| label: fig-svg</span></span>
+<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a><span class="co">#| fig-cap: "小鼠脑前切片识别出的空间高变基因（SVG）的空间表达（stxBrain Visium 数据）。展示 Moran's I 排名靠前的六个基因，每个 Spot 按表达量着色。这些基因呈现出与脑解剖结构吻合的清晰空间聚集模式（如特定皮层分层、海马区、脉络丛），印证了它们的高空间自相关性。"</span></span>
+<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(Seurat)</span>
+<span id="cb10-4"><a href="#cb10-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-5"><a href="#cb10-5" aria-hidden="true" tabindex="-1"></a><span class="co"># Identify spatially variable features using Moran's I autocorrelation</span></span>
+<span id="cb10-6"><a href="#cb10-6" aria-hidden="true" tabindex="-1"></a>brain <span class="ot">&lt;-</span> <span class="fu">FindSpatiallyVariableFeatures</span>(</span>
+<span id="cb10-7"><a href="#cb10-7" aria-hidden="true" tabindex="-1"></a>    brain, <span class="at">assay =</span> <span class="st">"SCT"</span>,</span>
+<span id="cb10-8"><a href="#cb10-8" aria-hidden="true" tabindex="-1"></a>    <span class="at">features =</span> <span class="fu">VariableFeatures</span>(brain)[<span class="dv">1</span><span class="sc">:</span><span class="dv">1000</span>],</span>
+<span id="cb10-9"><a href="#cb10-9" aria-hidden="true" tabindex="-1"></a>    <span class="at">selection.method =</span> <span class="st">"moransi"</span></span>
+<span id="cb10-10"><a href="#cb10-10" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb10-11"><a href="#cb10-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-12"><a href="#cb10-12" aria-hidden="true" tabindex="-1"></a><span class="co"># Visualize the top spatially variable genes on the tissue</span></span>
+<span id="cb10-13"><a href="#cb10-13" aria-hidden="true" tabindex="-1"></a>top_svg <span class="ot">&lt;-</span> <span class="fu">head</span>(<span class="fu">SpatiallyVariableFeatures</span>(brain, <span class="at">selection.method =</span> <span class="st">"moransi"</span>), <span class="dv">6</span>)</span>
+<span id="cb10-14"><a href="#cb10-14" aria-hidden="true" tabindex="-1"></a><span class="fu">SpatialFeaturePlot</span>(brain, <span class="at">features =</span> top_svg, <span class="at">ncol =</span> <span class="dv">3</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="tip">
+<p><strong>先筛 HVG 再算 SVG 是一个折中，不是定论：</strong> 用 HVG 预筛能把计算量降低一到两个数量级，但它恰好会漏掉 <a href="#tbl-hvg-svg" class="quarto-xref">表&nbsp;<span>1</span></a> 右下角那类”SVG 但非 HVG”的基因——表达幅度不大却严格局限于某一解剖结构的精确标志基因。若研究目标正是寻找此类精细标志，应跳过 HVG 预筛，改用 SPARK-X 等为全基因组扫描设计的高效方法。</p>
+</div>
+</section>
+<section id="其他-svg-识别方法" class="level2" data-number="46.6">
+<h2 data-number="46.6" class="anchored" data-anchor-id="其他-svg-识别方法"><span class="header-section-number">46.6</span> 其他 SVG 识别方法</h2>
+<p>基于 Moran’s I 的方法计算简单、解释直观，但它把表达量当作普通连续变量，忽略了计数数据的噪声结构，也无法给出”空间变异的尺度有多大”。学界因此发展了若干统计上更完备的方法，<a href="#tbl-svg-methods" class="quarto-xref">表&nbsp;<span>2</span></a> 做了对比。</p>
+<div id="tbl-svg-methods" class="quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-tbl figure">
+<figcaption class="quarto-float-caption-top quarto-float-caption quarto-float-tbl" id="tbl-svg-methods-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+表&nbsp;2: 主流空间高变基因识别方法的对比
+</figcaption>
+<div aria-describedby="tbl-svg-methods-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<table class="caption-top table">
+<colgroup>
+<col style="width: 16%">
+<col style="width: 27%">
+<col style="width: 27%">
+<col style="width: 27%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>方法</th>
+<th>统计框架</th>
+<th>主要优势</th>
+<th>主要限制</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Moran’s I</td>
+<td>空间自相关统计量</td>
+<td>快速、直观、易解释</td>
+<td>忽略计数噪声；依赖权重矩阵设定</td>
+</tr>
+<tr class="even">
+<td>SpatialDE</td>
+<td>高斯过程回归，方差分解</td>
+<td>给出空间/非空间方差比例与长度尺度</td>
+<td>计算量大，不适合大规模数据</td>
+</tr>
+<tr class="odd">
+<td>SPARK-X</td>
+<td>无参核矩阵检验</td>
+<td>近线性复杂度，可全基因组扫描</td>
+<td>只做检验，不估计模式参数</td>
+</tr>
+<tr class="even">
+<td>nnSVG</td>
+<td>最近邻高斯过程 + 计数模型</td>
+<td>估计每基因的空间变异尺度，考虑计数噪声</td>
+<td>计算量中等偏高</td>
+</tr>
+</tbody>
+</table>
+</div>
+</figure>
+</div>
+<p><strong>SpatialDE</strong> 用高斯过程（Gaussian Process）回归把每个基因的空间表达分解为”空间结构成分”与”非空间噪声成分”，据此检验是否存在显著的空间表达模式，并顺带估计该模式的特征长度尺度（Svensson et al., 2018）。</p>
+<p>{{Wiki:Gaussian_process}}它的输出比 Moran’s I 更丰富，但计算成本随 Spot 数的三次方增长，在大规模数据上难以直接使用。</p>
+<p><strong>SPARK-X</strong> 针对这一瓶颈设计：它把问题转化为两个核矩阵之间的关联检验，避开了高斯过程的矩阵求逆，复杂度接近线性，因而可在数分钟内完成数万 Spot、全基因组的扫描（Zhu et al., 2021）。代价是它只给出显著性，不估计空间模式的参数。</p>
+<p><strong>nnSVG</strong> 则用最近邻高斯过程近似完整的高斯过程，在保留”估计每个基因空间变异长度尺度”这一能力的同时大幅降低计算量，并直接在计数模型上建模（Weber et al., 2023）。当研究需要比较不同基因的空间模式尺度（例如区分”锐利的分层边界”与”缓慢的梯度”）时，nnSVG 是合适的选择。</p>
+<div class="note">
+<p><strong>运行环境说明：</strong> SpatialDE 与 SPARK-X 分别为 Python 与 R 包，nnSVG 为 Bioconductor R 包，均需单独安装且不随 Seurat 提供。下面的代码演示 SPARK-X 的调用方式，需先 <code>install.packages("SPARK")</code> 或从其 GitHub 仓库安装。在缺少这些依赖的环境中，本节代码仅作阅读用途，本专题的其余分析可继续用 Seurat 的 Moran’s I 完成。</p>
+</div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb11"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(SPARK)</span>
+<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(Seurat)</span>
+<span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-4"><a href="#cb11-4" aria-hidden="true" tabindex="-1"></a><span class="co"># SPARK-X: non-parametric test scalable to whole-transcriptome screening</span></span>
+<span id="cb11-5"><a href="#cb11-5" aria-hidden="true" tabindex="-1"></a>counts <span class="ot">&lt;-</span> <span class="fu">GetAssayData</span>(brain, <span class="at">assay =</span> <span class="st">"Spatial"</span>, <span class="at">layer =</span> <span class="st">"counts"</span>)</span>
+<span id="cb11-6"><a href="#cb11-6" aria-hidden="true" tabindex="-1"></a>loc <span class="ot">&lt;-</span> <span class="fu">as.matrix</span>(<span class="fu">GetTissueCoordinates</span>(brain)[, <span class="fu">c</span>(<span class="st">"imagerow"</span>, <span class="st">"imagecol"</span>)])</span>
+<span id="cb11-7"><a href="#cb11-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-8"><a href="#cb11-8" aria-hidden="true" tabindex="-1"></a>sparkx_res <span class="ot">&lt;-</span> <span class="fu">sparkx</span>(counts, loc, <span class="at">numCores =</span> <span class="dv">4</span>, <span class="at">option =</span> <span class="st">"mixture"</span>)</span>
+<span id="cb11-9"><a href="#cb11-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-10"><a href="#cb11-10" aria-hidden="true" tabindex="-1"></a><span class="co"># Combined p-values across kernels, ranked</span></span>
+<span id="cb11-11"><a href="#cb11-11" aria-hidden="true" tabindex="-1"></a><span class="fu">head</span>(sparkx_res<span class="sc">$</span>res_mtest[<span class="fu">order</span>(sparkx_res<span class="sc">$</span>res_mtest<span class="sc">$</span>adjustedPval), ], <span class="dv">10</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</section>
+<section id="从单个基因到空间表达模块" class="level2" data-number="46.7">
+<h2 data-number="46.7" class="anchored" data-anchor-id="从单个基因到空间表达模块"><span class="header-section-number">46.7</span> 从单个基因到空间表达模块</h2>
+<p>单独看每个 SVG 的空间图意义有限——真正有信息量的是它们<strong>呈现出哪几类空间模式</strong>。把所有 SVG 按其空间表达轮廓聚类，可以得到若干”空间表达模块”，每个模块对应一个解剖或功能结构，模块内的基因共享同一空间分布。</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb12"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="co">#| label: fig-svg-modules</span></span>
+<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a><span class="co">#| fig-cap: "空间高变基因按表达模式聚类得到的空间表达模块（stxBrain Visium 数据）。将 Moran's I 排名前列的 SVG 按其跨 Spot 的表达轮廓聚为若干模块后，绘制每个模块的平均表达空间分布。各模块分别对应皮层分层、海马、白质与脉络丛等不同解剖结构，说明 SVG 并非彼此独立，而是聚集为少数几类共享空间分布的基因集合。"</span></span>
+<span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(Seurat)</span>
+<span id="cb12-4"><a href="#cb12-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-5"><a href="#cb12-5" aria-hidden="true" tabindex="-1"></a><span class="co"># Cluster SVGs by their spatial expression profile into modules</span></span>
+<span id="cb12-6"><a href="#cb12-6" aria-hidden="true" tabindex="-1"></a>svg_genes <span class="ot">&lt;-</span> <span class="fu">head</span>(<span class="fu">SpatiallyVariableFeatures</span>(brain, <span class="at">selection.method =</span> <span class="st">"moransi"</span>), <span class="dv">100</span>)</span>
+<span id="cb12-7"><a href="#cb12-7" aria-hidden="true" tabindex="-1"></a>svg_expr <span class="ot">&lt;-</span> <span class="fu">as.matrix</span>(<span class="fu">GetAssayData</span>(brain, <span class="at">assay =</span> <span class="st">"SCT"</span>, <span class="at">layer =</span> <span class="st">"scale.data"</span>)[svg_genes, ])</span>
+<span id="cb12-8"><a href="#cb12-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-9"><a href="#cb12-9" aria-hidden="true" tabindex="-1"></a>gene_clusters <span class="ot">&lt;-</span> <span class="fu">cutree</span>(<span class="fu">hclust</span>(<span class="fu">as.dist</span>(<span class="dv">1</span> <span class="sc">-</span> <span class="fu">cor</span>(<span class="fu">t</span>(svg_expr)))), <span class="at">k =</span> <span class="dv">4</span>)</span>
+<span id="cb12-10"><a href="#cb12-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-11"><a href="#cb12-11" aria-hidden="true" tabindex="-1"></a><span class="co"># Average expression of each module, mapped back onto the tissue</span></span>
+<span id="cb12-12"><a href="#cb12-12" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> (m <span class="cf">in</span> <span class="fu">sort</span>(<span class="fu">unique</span>(gene_clusters))) {</span>
+<span id="cb12-13"><a href="#cb12-13" aria-hidden="true" tabindex="-1"></a>    brain[[<span class="fu">paste0</span>(<span class="st">"module_"</span>, m)]] <span class="ot">&lt;-</span> <span class="fu">colMeans</span>(svg_expr[gene_clusters <span class="sc">==</span> m, , <span class="at">drop =</span> <span class="cn">FALSE</span>])</span>
+<span id="cb12-14"><a href="#cb12-14" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb12-15"><a href="#cb12-15" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-16"><a href="#cb12-16" aria-hidden="true" tabindex="-1"></a><span class="fu">SpatialFeaturePlot</span>(brain, <span class="at">features =</span> <span class="fu">paste0</span>(<span class="st">"module_"</span>, <span class="dv">1</span><span class="sc">:</span><span class="dv">4</span>), <span class="at">ncol =</span> <span class="dv">2</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb13"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Which genes define each module? These are the candidate region markers</span></span>
+<span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a><span class="fu">split</span>(<span class="fu">names</span>(gene_clusters), gene_clusters) <span class="sc">|&gt;</span> <span class="fu">lapply</span>(head, <span class="dv">8</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="info">
+<p><strong>黄金法则：</strong> SVG 分析的输出不是一张基因列表，而是一组空间假设。任何一个被判为显著的 SVG，都必须能在组织图像上指认出它对应的解剖结构——说不出”这个基因标志的是哪一层、哪个区域”，就说明这个结果还没有被真正解读。统计显著性只是筛选工具，解剖学归属才是结论。当一个高 Moran’s I 的基因在图上呈现的是组织边缘的环状分布或与总 UMI 高度一致的梯度时，它几乎一定是技术伪影，而非区域标志。</p>
+</div>
+<hr>
+</section>
+</section>
+<section id="方法总结与衔接说明" class="level1" data-number="47">
+<h1 data-number="47"><span class="header-section-number">47</span> 方法总结与衔接说明</h1>
+<p>本专题完成了 Visium 数据从原始对象到空间假设的转化。质控层面，核心是把 scRNA-seq 的数值阈值升级为”数值 + 图像”的联合判读，并用线粒体比例这一独立指标区分技术性边缘损伤与真实的低细胞密度区域。归一化层面，<code>SCTransform</code> 可直接沿用，但需警惕细胞密度梯度伪装成表达模式。SVG 层面，本专题从空间权重矩阵这一共同基础出发，讲解了 Moran’s I 与 Geary’s C 两个经典统计量的定义与互补性，对比了 SpatialDE、SPARK-X、nnSVG 三类现代方法的取舍，并强调了把 SVG 聚类为空间表达模块这一关键的解读步骤。</p>
+<p>至此我们拥有了一组带空间模式的基因，但还没有把组织本身划分成结构单元。专题 8.4 将完成这一步：用聚类把 Spot 划分为空间域，比较普通聚类与纳入空间坐标的 BayesSpace，并把划分结果与组织解剖结构相互印证，形成可解读的组织结构图谱。</p>
+<hr>
+</section>
+<section id="课后自测-post-lesson-quiz" class="level1" data-number="48">
+<h1 data-number="48"><span class="header-section-number">48</span> 课后自测 (Post-Lesson Quiz)</h1>
+<ol type="1">
+<li><p>空间数据的质控相比 scRNA-seq 多了哪一层判读？为什么把 QC 指标”画回组织上”比只看小提琴图更重要？</p></li>
+<li><p>为什么不能用 scRNA-seq 式的统一 UMI 下限无差别过滤所有 Visium Spot？这样做会造成什么空间偏差？</p></li>
+<li><p>如何区分”技术性的边缘损伤”与”真实的低细胞密度区域”？请说明所依据的判据及其生物学理由。</p></li>
+<li><p>什么是空间高变基因（SVG）？请用 HVG 与 SVG 的二维关系说明，为什么”SVG 但非 HVG”这一类基因是空间分析独有的收获。</p></li>
+<li><p>空间权重矩阵 <span class="math inline">\(w_{ij}\)</span> 有哪三种常见构建方式？为什么说权重矩阵的选择会实质改变 SVG 的结论，报告结果时必须一并说明？</p></li>
+<li><p>Moran’s I 的分子部分在数学上表达了什么含义？为什么说它本质上是”空间滞后版本的相关系数”？在零假设下它的期望值是多少？</p></li>
+<li><p>Geary’s C 与 Moran’s I 在敏感性上有何差异？若某基因 Moran’s I 很高但 Geary’s C 也接近 1，这提示什么？</p></li>
+<li><p>一位研究者用 <code>FindSpatiallyVariableFeatures()</code> 得到一批 SVG，其中排名很高的某个基因在组织上呈现均匀的环状分布，恰好沿着组织边缘一圈。请判断这是否为真实的生物学信号，说明理由与核验方法。</p></li>
+</ol>
+<details>
+<summary>
+<strong>参考答案 (Reference Answers)</strong>
+</summary>
+<ol type="1">
+<li><p><em>多了结合 H&amp;E 图像与空间坐标的判读。因为低质量 Spot 在空间上通常不是随机散布的，而是成片聚集在组织边缘、折叠或损伤区域——这种空间聚集模式在小提琴图上完全看不出来，只有把指标画回组织坐标上才能发现。此外，位于边缘或脱落区的 Spot 即便数值达标也不可信，这只能通过结合图像的视觉检查识别。</em></p></li>
+<li><p><em>因为 Visium 中 Spot 的 UMI 总数还反映真实生物学差异——细胞密集区天然高 UMI、细胞稀疏区（白质、纤维区）天然低 UMI。用统一下限过滤会系统性删除低细胞密度的组织区域，造成空间偏差：被删掉的不是”坏数据”而是”某一类组织”，使后续分析只覆盖高密度区域，结论无法推广到整张切片。</em></p></li>
+<li><p><em>判据是看低 UMI 是否伴随其他质量异常。技术性边缘损伤通常同时表现为低 UMI、低基因数和偏高的线粒体比例；真实的低细胞密度区域只是 UMI 和基因数偏低，线粒体比例正常。生物学理由：细胞破损时胞质 mRNA 流失而线粒体被双层膜包裹相对保留，故线粒体比例升高；而细胞稀疏只是细胞数少，每个细胞本身是完整的，线粒体比例不受影响。判定后仍需结合 H&amp;E 图像确认——若”damaged”类 Spot 集中在边缘可放心剔除，若散布在组织内部则可能是坏死区等真实信号。</em></p></li>
+<li><p><em>SVG 是表达呈现显著空间自相关（相邻 Spot 表达相似、非空间随机）的基因。HVG 衡量总体变异、SVG 衡量空间结构化变异，二者正交，可组合为四类。“SVG 但非 HVG”指总体表达幅度变化不大、会被常规 HVG 筛选完全漏掉，但表达严格局限于某一解剖结构的基因——它们往往是该结构的精确标志。这类基因只有通过空间统计量才能发现，是空间分析独有的收获。</em></p></li>
+<li><p><em>三种方式：直接邻居（Visium 六角网格的六个相邻 Spot）、k-近邻（最近的 k 个 Spot，适用于不规则排布平台）、距离衰减核（权重随距离连续衰减，由 σ 控制尺度）。选择会实质改变结论，是因为不同的权重定义对应不同的空间尺度：六邻居只能检出局部、边界清晰的模式，大 k 值或大 σ 更容易检出大尺度梯度，同一数据下 SVG 排名可能有实质差异。因此必须报告权重矩阵的构建方式与参数，否则结果不可复现；不确定时应在多个参数下重跑并关注稳定出现的基因。</em></p></li>
+<li><p><em>分子是相邻 Spot 离均差乘积的加权和：若相邻 Spot 同时高于均值或同时低于均值，乘积为正；一高一低则为负。因此它度量的是”空间上相邻的位置是否同向偏离全局均值”。分母是总方差，起标准化作用，使统计量落在类似相关系数的尺度上——所以说 Moran’s I 本质是把普通相关系数中的”另一个变量”换成了”该变量的空间滞后”。零假设（空间随机）下期望为 <span class="math inline">\(E[I] = -1/(N-1)\)</span>，只有当 Spot 数很大时才近似为 0。</em></p></li>
+<li><p><em>Moran’s I 用离均差乘积，度量”是否同时偏离全局均值”，对全局性的大尺度模式最敏感；Geary’s C 直接用相邻位置的平方差，对局部的、小尺度的空间变化更敏感，且取值方向相反（C &lt; 1 为正空间自相关）。若某基因 Moran’s I 很高但 Geary’s C 接近 1，提示它存在大尺度的整体梯度（使全局自相关显著），但局部相邻 Spot 之间的差异仍然很大——即该基因有大范围趋势但叠加了较强的局部噪声。</em></p></li>
+<li><p><em>几乎可以断定不是真实生物学信号。理由：沿组织边缘一圈的均匀环状分布是典型的技术伪影模式——组织边缘的 Spot 普遍存在细胞损伤、透化不均与捕获效率差异，这些技术因素本身就具有很强的空间自相关性（边缘 Spot 彼此相邻），因此会产生很高的 Moran’s I，但它反映的是”边缘效应”而非该基因的区域特异表达。核验方法：（1）检查该基因表达与 <code>nCount_Spatial</code> 及 <code>percent.mt</code> 的空间分布是否高度一致，若一致则为技术效应；（2）查看这些边缘 Spot 在本专题的 qc_flag 分类中是否被标为 damaged；（3）剔除边缘 Spot 后重新计算该基因的 Moran’s I，若显著性大幅下降则确认为伪影；（4）在 H&amp;E 图像上确认该环状区域是否对应组织边缘而非任何真实解剖结构。</em></p></li>
+</ol>
+</details>
+
+
+</section>
+
+</main> <!-- /main -->
+<script id="quarto-html-after-body" type="application/javascript">
+  window.document.addEventListener("DOMContentLoaded", function (event) {
+    const icon = "";
+    const anchorJS = new window.AnchorJS();
+    anchorJS.options = {
+      placement: 'right',
+      icon: icon
+    };
+    anchorJS.add('.anchored');
+    const isCodeAnnotation = (el) => {
+      for (const clz of el.classList) {
+        if (clz.startsWith('code-annotation-')) {                     
+          return true;
+        }
+      }
+      return false;
+    }
+    const onCopySuccess = function(e) {
+      // button target
+      const button = e.trigger;
+      // don't keep focus
+      button.blur();
+      // flash "checked"
+      button.classList.add('code-copy-button-checked');
+      var currentTitle = button.getAttribute("title");
+      button.setAttribute("title", "Copied!");
+      let tooltip;
+      if (window.bootstrap) {
+        button.setAttribute("data-bs-toggle", "tooltip");
+        button.setAttribute("data-bs-placement", "left");
+        button.setAttribute("data-bs-title", "Copied!");
+        tooltip = new bootstrap.Tooltip(button, 
+          { trigger: "manual", 
+            customClass: "code-copy-button-tooltip",
+            offset: [0, -8]});
+        tooltip.show();    
+      }
+      setTimeout(function() {
+        if (tooltip) {
+          tooltip.hide();
+          button.removeAttribute("data-bs-title");
+          button.removeAttribute("data-bs-toggle");
+          button.removeAttribute("data-bs-placement");
+        }
+        button.setAttribute("title", currentTitle);
+        button.classList.remove('code-copy-button-checked');
+      }, 1000);
+      // clear code selection
+      e.clearSelection();
+    }
+    const getTextToCopy = function(trigger) {
+      const outerScaffold = trigger.parentElement.cloneNode(true);
+      const codeEl = outerScaffold.querySelector('code');
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+    }
+    const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+      text: getTextToCopy
+    });
+    clipboard.on('success', onCopySuccess);
+    if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+      const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+        text: getTextToCopy,
+        container: window.document.getElementById('quarto-embedded-source-code-modal')
+      });
+      clipboardModal.on('success', onCopySuccess);
+    }
+      var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+      var mailtoRegex = new RegExp(/^mailto:/);
+        var filterRegex = new RegExp('/' + window.location.host + '/');
+      var isInternal = (href) => {
+          return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+      }
+      // Inspect non-navigation links and adorn them if external
+     var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+      for (var i=0; i<links.length; i++) {
+        const link = links[i];
+        if (!isInternal(link.href)) {
+          // undo the damage that might have been done by quarto-nav.js in the case of
+          // links that we want to consider external
+          if (link.dataset.originalHref !== undefined) {
+            link.href = link.dataset.originalHref;
+          }
+        }
+      }
+    function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+      const config = {
+        allowHTML: true,
+        maxWidth: 500,
+        delay: 100,
+        arrow: false,
+        appendTo: function(el) {
+            return el.parentElement;
+        },
+        interactive: true,
+        interactiveBorder: 10,
+        theme: 'quarto',
+        placement: 'bottom-start',
+      };
+      if (contentFn) {
+        config.content = contentFn;
+      }
+      if (onTriggerFn) {
+        config.onTrigger = onTriggerFn;
+      }
+      if (onUntriggerFn) {
+        config.onUntrigger = onUntriggerFn;
+      }
+      window.tippy(el, config); 
+    }
+    const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+    for (var i=0; i<noterefs.length; i++) {
+      const ref = noterefs[i];
+      tippyHover(ref, function() {
+        // use id or data attribute instead here
+        let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+        try { href = new URL(href).hash; } catch {}
+        const id = href.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note) {
+          return note.innerHTML;
+        } else {
+          return "";
+        }
+      });
+    }
+    const xrefs = window.document.querySelectorAll('a.quarto-xref');
+    const processXRef = (id, note) => {
+      // Strip column container classes
+      const stripColumnClz = (el) => {
+        el.classList.remove("page-full", "page-columns");
+        if (el.children) {
+          for (const child of el.children) {
+            stripColumnClz(child);
+          }
+        }
+      }
+      stripColumnClz(note)
+      if (id === null || id.startsWith('sec-')) {
+        // Special case sections, only their first couple elements
+        const container = document.createElement("div");
+        if (note.children && note.children.length > 2) {
+          container.appendChild(note.children[0].cloneNode(true));
+          for (let i = 1; i < note.children.length; i++) {
+            const child = note.children[i];
+            if (child.tagName === "P" && child.innerText === "") {
+              continue;
+            } else {
+              container.appendChild(child.cloneNode(true));
+              break;
+            }
+          }
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(container);
+          }
+          return container.innerHTML
+        } else {
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(note);
+          }
+          return note.innerHTML;
+        }
+      } else {
+        // Remove any anchor links if they are present
+        const anchorLink = note.querySelector('a.anchorjs-link');
+        if (anchorLink) {
+          anchorLink.remove();
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        if (note.classList.contains("callout")) {
+          return note.outerHTML;
+        } else {
+          return note.innerHTML;
+        }
+      }
+    }
+    for (var i=0; i<xrefs.length; i++) {
+      const xref = xrefs[i];
+      tippyHover(xref, undefined, function(instance) {
+        instance.disable();
+        let url = xref.getAttribute('href');
+        let hash = undefined; 
+        if (url.startsWith('#')) {
+          hash = url;
+        } else {
+          try { hash = new URL(url).hash; } catch {}
+        }
+        if (hash) {
+          const id = hash.replace(/^#\/?/, "");
+          const note = window.document.getElementById(id);
+          if (note !== null) {
+            try {
+              const html = processXRef(id, note.cloneNode(true));
+              instance.setContent(html);
+            } finally {
+              instance.enable();
+              instance.show();
+            }
+          } else {
+            // See if we can fetch this
+            fetch(url.split('#')[0])
+            .then(res => res.text())
+            .then(html => {
+              const parser = new DOMParser();
+              const htmlDoc = parser.parseFromString(html, "text/html");
+              const note = htmlDoc.getElementById(id);
+              if (note !== null) {
+                const html = processXRef(id, note);
+                instance.setContent(html);
+              } 
+            }).finally(() => {
+              instance.enable();
+              instance.show();
+            });
+          }
+        } else {
+          // See if we can fetch a full url (with no hash to target)
+          // This is a special case and we should probably do some content thinning / targeting
+          fetch(url)
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.querySelector('main.content');
+            if (note !== null) {
+              // This should only happen for chapter cross references
+              // (since there is no id in the URL)
+              // remove the first header
+              if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+                note.children[0].remove();
+              }
+              const html = processXRef(null, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      }, function(instance) {
+      });
+    }
+        let selectedAnnoteEl;
+        const selectorForAnnotation = ( cell, annotation) => {
+          let cellAttr = 'data-code-cell="' + cell + '"';
+          let lineAttr = 'data-code-annotation="' +  annotation + '"';
+          const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+          return selector;
+        }
+        const selectCodeLines = (annoteEl) => {
+          const doc = window.document;
+          const targetCell = annoteEl.getAttribute("data-target-cell");
+          const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+          const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+          const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+          const lineIds = lines.map((line) => {
+            return targetCell + "-" + line;
+          })
+          let top = null;
+          let height = null;
+          let parent = null;
+          if (lineIds.length > 0) {
+              //compute the position of the single el (top and bottom and make a div)
+              const el = window.document.getElementById(lineIds[0]);
+              top = el.offsetTop;
+              height = el.offsetHeight;
+              parent = el.parentElement.parentElement;
+            if (lineIds.length > 1) {
+              const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+              const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+              height = bottom - top;
+            }
+            if (top !== null && height !== null && parent !== null) {
+              // cook up a div (if necessary) and position it 
+              let div = window.document.getElementById("code-annotation-line-highlight");
+              if (div === null) {
+                div = window.document.createElement("div");
+                div.setAttribute("id", "code-annotation-line-highlight");
+                div.style.position = 'absolute';
+                parent.appendChild(div);
+              }
+              div.style.top = top - 2 + "px";
+              div.style.height = height + 4 + "px";
+              div.style.left = 0;
+              let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+              if (gutterDiv === null) {
+                gutterDiv = window.document.createElement("div");
+                gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+                gutterDiv.style.position = 'absolute';
+                const codeCell = window.document.getElementById(targetCell);
+                const gutter = codeCell.querySelector('.code-annotation-gutter');
+                gutter.appendChild(gutterDiv);
+              }
+              gutterDiv.style.top = top - 2 + "px";
+              gutterDiv.style.height = height + 4 + "px";
+            }
+            selectedAnnoteEl = annoteEl;
+          }
+        };
+        const unselectCodeLines = () => {
+          const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+          elementsIds.forEach((elId) => {
+            const div = window.document.getElementById(elId);
+            if (div) {
+              div.remove();
+            }
+          });
+          selectedAnnoteEl = undefined;
+        };
+          // Handle positioning of the toggle
+      window.addEventListener(
+        "resize",
+        throttle(() => {
+          elRect = undefined;
+          if (selectedAnnoteEl) {
+            selectCodeLines(selectedAnnoteEl);
+          }
+        }, 10)
+      );
+      function throttle(fn, ms) {
+      let throttle = false;
+      let timer;
+        return (...args) => {
+          if(!throttle) { // first call gets through
+              fn.apply(this, args);
+              throttle = true;
+          } else { // all the others get throttled
+              if(timer) clearTimeout(timer); // cancel #2
+              timer = setTimeout(() => {
+                fn.apply(this, args);
+                timer = throttle = false;
+              }, ms);
+          }
+        };
+      }
+        // Attach click handler to the DT
+        const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+        for (const annoteDlNode of annoteDls) {
+          annoteDlNode.addEventListener('click', (event) => {
+            const clickedEl = event.target;
+            if (clickedEl !== selectedAnnoteEl) {
+              unselectCodeLines();
+              const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+              if (activeEl) {
+                activeEl.classList.remove('code-annotation-active');
+              }
+              selectCodeLines(clickedEl);
+              clickedEl.classList.add('code-annotation-active');
+            } else {
+              // Unselect the line
+              unselectCodeLines();
+              clickedEl.classList.remove('code-annotation-active');
+            }
+          });
+        }
+    const findCites = (el) => {
+      const parentEl = el.parentElement;
+      if (parentEl) {
+        const cites = parentEl.dataset.cites;
+        if (cites) {
+          return {
+            el,
+            cites: cites.split(' ')
+          };
+        } else {
+          return findCites(el.parentElement)
+        }
+      } else {
+        return undefined;
+      }
+    };
+    var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+    for (var i=0; i<bibliorefs.length; i++) {
+      const ref = bibliorefs[i];
+      const citeInfo = findCites(ref);
+      if (citeInfo) {
+        tippyHover(citeInfo.el, function() {
+          var popup = window.document.createElement('div');
+          citeInfo.cites.forEach(function(cite) {
+            var citeDiv = window.document.createElement('div');
+            citeDiv.classList.add('hanging-indent');
+            citeDiv.classList.add('csl-entry');
+            var biblioDiv = window.document.getElementById('ref-' + cite);
+            if (biblioDiv) {
+              citeDiv.innerHTML = biblioDiv.innerHTML;
+            }
+            popup.appendChild(citeDiv);
+          });
+          return popup.innerHTML;
+        });
+      }
+    }
+  });
+  </script>
+<nav class="page-navigation">
+  <div class="nav-page nav-page-previous">
+      <a href="./spatial_basic_lesson2.html" class="pagination-link" aria-label="Visium 技术原理与 Space Ranger 上游处理">
+        <i class="bi bi-arrow-left-short"></i> <span class="nav-page-text"><span class="chapter-number">42</span>&nbsp; <span class="chapter-title">Visium 技术原理与 Space Ranger 上游处理</span></span>
+      </a>          
+  </div>
+  <div class="nav-page nav-page-next">
+      <a href="./spatial_basic_lesson4.html" class="pagination-link" aria-label="空间域识别与组织结构注释">
+        <span class="nav-page-text"><span class="chapter-number">44</span>&nbsp; <span class="chapter-title">空间域识别与组织结构注释</span></span> <i class="bi bi-arrow-right-short"></i>
+      </a>
+  </div>
+</nav>
+</div> <!-- /content -->
+
+
+
+
+<footer class="footer"><div class="nav-footer"><div class="nav-footer-center"><div class="toc-actions d-sm-block d-md-none"><ul><li><a href="https://github.com/cxzdsa2332/Applied-Omics-Analysis/edit/main/spatial_basic_lesson3.qmd" class="toc-action"><i class="bi bi-github"></i>Edit this page</a></li><li><a href="https://github.com/cxzdsa2332/Applied-Omics-Analysis/issues/new" class="toc-action"><i class="bi empty"></i>Report an issue</a></li><li><a href="https://github.com/cxzdsa2332/Applied-Omics-Analysis/blob/main/spatial_basic_lesson3.qmd" class="toc-action"><i class="bi empty"></i>View source</a></li></ul></div></div></div></footer></body></html>

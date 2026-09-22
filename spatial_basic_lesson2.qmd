@@ -55,6 +55,8 @@ Visium 的核心是一张预先印刷了空间条形码捕获阵列的载玻片�
 5. **捕获与逆转录**：释放的 mRNA 被就近 Spot 的 poly-T 探针捕获，原位逆转录为带空间条形码的 cDNA。
 6. **建库与测序**：后续流程与常规 3′ RNA-seq 一致。
 
+![苏木精-伊红（H&E）染色组织切片。细胞核被苏木精染为蓝紫色、胞质与细胞外基质被伊红染为粉红色，是 Visium 流程中用于形态学判读与图像配准的染色方式。](https://upload.wikimedia.org/wikipedia/commons/thumb/b/bb/Eosinophilic%2C_basophilic%2C_chromophobic_and_amphophilic_staining.png/960px-Eosinophilic%2C_basophilic%2C_chromophobic_and_amphophilic_staining.png){#fig-he-stain width=70%}
+
 :::warning
 **透化时间决定了"空间分辨率"的实际值：** 标称 55 µm 的分辨率只在 mRNA 不发生横向扩散的理想情况下成立。透化过度时，mRNA 在被捕获前已经扩散到邻近 Spot，实际分辨率显著劣化——组织上一个锐利的表达边界会在数据中呈现为渐变的过渡带。这种弥散与真实的生物学梯度在数据上难以区分，因此不能指望在分析阶段识别并校正它。唯一的防线是实验前的透化优化（Tissue Optimization）实验：用荧光标记的 cDNA 成像，选择信号最强且空间最锐利的时间点。
 :::
@@ -82,6 +84,8 @@ Visium 与 scRNA-seq 最本质的区别在于分辨率。55 µm 直径的 Spot �
 ## 新鲜冷冻与 FFPE 两条捕获路线
 
 上述 poly-T 捕获方案要求 mRNA 的 poly-A 尾完整，因此只适用于新鲜冷冻（FF）样本。但临床研究中绝大多数存档样本是 FFPE 的，其 RNA 已高度片段化且发生交联，poly-A 捕获几乎完全失效。为此 10x 推出了**探针捕获**（Probe-based）方案：设计一组覆盖全转录组的成对探针，每对探针杂交到目标转录本的相邻区域后被连接酶连接，连接产物再被阵列上的探针捕获。由于每对探针只需要约 50 nt 的完整模板，该方案对片段化 RNA 的耐受度远高于 poly-A 捕获。
+
+{{Wiki:Formalin-fixed_paraffin-embedded}}
 
 @tbl-ff-vs-ffpe 总结了两条路线的差异。这一选择在实验设计阶段就必须确定，因为它决定了使用哪种试剂盒与哪套 Space Ranger 参考。
 

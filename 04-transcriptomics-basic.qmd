@@ -82,7 +82,7 @@ RNA-seq 数据的质量特征与 DNA 测序数据存在系统性差异，这些�
 
 RNA-seq 比对面临 DNA 比对所没有的根本挑战：成熟 mRNA 已切除内含子，一个跨越剪接位点的读段（junction read）在基因组上对应两段不连续区间，普通比对工具无法正确处理。splice-aware 比对算法（STAR、HISAT2）通过两步策略解决这一问题：先将读段映射至外显子区域，再利用已知或新发现的剪接位点正确拼接跨内含子部分。在定量层面，本专题深入对比两种主流策略：featureCounts 依赖比对结果逐外显子计数，而 Salmon 的伪比对（quasi-mapping）直接将读段与转录本序列匹配，无需全基因组比对，速度更快且内置偏差校正模型。本专题还介绍 SAM/BAM 格式的核心字段解析与比对质量诊断方法，以及如何通过与 airway 官方计数矩阵的相关性分析验证定量结果的可靠性。
 
-{{Wiki:RNA-Seq}}
+![RNA-seq 实验与分析全流程示意图，从 RNA 提取、建库、测序到比对与表达量定量。](https://upload.wikimedia.org/wikipedia/commons/thumb/f/f3/Summary_of_RNA-Seq.svg/960px-Summary_of_RNA-Seq.svg.png){#fig-rnaseq-summary width=85%}
 
 **核心概念**：
 
@@ -111,7 +111,7 @@ RNA-seq 比对面临 DNA 比对所没有的根本挑战：成熟 mRNA 已切除�
 
 差异表达分析的统计问题本质是：在有限重复数（通常 3–5 个）条件下，如何可靠估计每个基因的表达变异，并从数以万计的基因中识别出真实的表达差异，同时将假阳性率控制在可接受水平。本专题从泊松分布的适用边界出发，系统推导负二项分布模型对生物学过离散的建模方式，并深入讲解 DESeq2 的三步核心流程——几何均值大小因子估计、Empirical Bayes 离散度缩减、NB-GLM Wald 检验——以及离散度参数如何通过 Fisher 信息矩阵影响系数的标准误差，进而决定检验效力。本专题同时覆盖 edgeR 拟似然框架（QLF）与 limma-voom 线性模型方法，提供三种主流工具的方法论对比与共识基因集策略；在工程层面，系统讲解批次效应的两种处理路径：在设计矩阵中建模（推荐）与 ComBat/removeBatchEffect 可视化校正。
 
-{{Wiki:Negative_binomial_distribution}}
+![负二项分布概率质量函数。相比泊松分布，它引入额外的离散参数以刻画方差大于均值的过离散现象，是 scRNA-seq 计数数据建模的基础分布。](https://upload.wikimedia.org/wikipedia/commons/8/83/Negbinomial.gif){#fig-negbinom width=70%}
 
 **核心概念**：
 

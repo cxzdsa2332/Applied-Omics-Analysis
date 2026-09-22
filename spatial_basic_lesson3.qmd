@@ -185,7 +185,7 @@ $$I = \frac{N}{\sum_{i}\sum_{j} w_{ij}} \cdot \frac{\sum_{i}\sum_{j} w_{ij}(x_i 
 
 其中 $x_i$ 为 Spot $i$ 的表达量，$\bar{x}$ 为均值，$w_{ij}$ 为空间权重矩阵，$N$ 为 Spot 总数。这个式子的结构值得拆开看：分子是"相邻 Spot 的离均差乘积"的加权和——若相邻 Spot 同时高于均值或同时低于均值，乘积为正；一高一低则为负。分母是总方差，起标准化作用。因此 Moran's I 本质上是**空间滞后版本的相关系数**。
 
-{{Wiki:Moran%27s_I}}
+![棋盘格模式示意图。相邻格点取值恒相反，是负空间自相关（Moran's I < 0）的典型情形，与空间高变基因常见的正自相关聚集模式形成对照。](https://upload.wikimedia.org/wikipedia/commons/thumb/7/70/Checkerboard_pattern.svg/960px-Checkerboard_pattern.svg.png){#fig-morans-i width=70%}
 
 其取值与解释类似相关系数：
 
@@ -226,7 +226,9 @@ Moran's I 关注的是"相邻位置是否同时偏离全局均值"，因此它�
 
 $$C = \frac{(N-1)}{2\sum_{i}\sum_{j} w_{ij}} \cdot \frac{\sum_{i}\sum_{j} w_{ij}(x_i - x_j)^2}{\sum_{i}(x_i - \bar{x})^2}$$
 
-其取值方向与 Moran's I 相反：$C < 1$ 表示正空间自相关（相邻值接近），$C \approx 1$ 表示空间随机，$C > 1$ 表示负空间自相关。由于分子直接用平方差，Geary's C 对**局部的、小尺度的**空间变化更敏感。两者常一起使用：若某基因 Moran's I 高而 Geary's C 也接近 1，提示它有大尺度梯度但局部噪声也大。
+其取值方向与 Moran's I 相反：$C < 1$ 表示正空间自相关（相邻值接近），$C \approx 1$ 表示空间随机，$C > 1$ 表示负空间自相关。
+
+![John Snow 绘制的伦敦霍乱病例分布图。病例在特定水泵周围高度聚集，是空间自相关分析最早也最著名的应用实例。](https://upload.wikimedia.org/wikipedia/commons/c/c7/Snow-cholera-map.jpg){#fig-spatial-analysis width=85%}由于分子直接用平方差，Geary's C 对**局部的、小尺度的**空间变化更敏感。两者常一起使用：若某基因 Moran's I 高而 Geary's C 也接近 1，提示它有大尺度梯度但局部噪声也大。
 
 ```r
 library(Seurat)
@@ -283,7 +285,9 @@ SpatialFeaturePlot(brain, features = top_svg, ncol = 3)
 
 : 主流空间高变基因识别方法的对比 {#tbl-svg-methods}
 
-**SpatialDE** 用高斯过程（Gaussian Process）回归把每个基因的空间表达分解为"空间结构成分"与"非空间噪声成分"，据此检验是否存在显著的空间表达模式，并顺带估计该模式的特征长度尺度（Svensson et al., 2018）。它的输出比 Moran's I 更丰富，但计算成本随 Spot 数的三次方增长，在大规模数据上难以直接使用。
+**SpatialDE** 用高斯过程（Gaussian Process）回归把每个基因的空间表达分解为"空间结构成分"与"非空间噪声成分"，据此检验是否存在显著的空间表达模式，并顺带估计该模式的特征长度尺度（Svensson et al., 2018）。
+
+{{Wiki:Gaussian_process}}它的输出比 Moran's I 更丰富，但计算成本随 Spot 数的三次方增长，在大规模数据上难以直接使用。
 
 **SPARK-X** 针对这一瓶颈设计：它把问题转化为两个核矩阵之间的关联检验，避开了高斯过程的矩阵求逆，复杂度接近线性，因而可在数分钟内完成数万 Spot、全基因组的扫描（Zhu et al., 2021）。代价是它只给出显著性，不估计空间模式的参数。
 

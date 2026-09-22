@@ -63,6 +63,8 @@ crossref:
 
 最直接的做法是把每个 Spot 当作一个"细胞"，套用第 6 章的标准流程：PCA 降维、构建 KNN 图、Leiden 聚类。它只用表达相似性，完全不考虑 Spot 是否空间相邻。
 
+![聚类分析示意图。散点按彼此距离被划分为若干簇，是降维后识别细胞类型与空间域的共同算法基础。](https://upload.wikimedia.org/wikipedia/commons/thumb/c/c8/Cluster-2.svg/960px-Cluster-2.svg.png){#fig-cluster-analysis width=85%}
+
 ```r
 library(Seurat)
 library(SeuratData)
@@ -140,7 +142,7 @@ $$p(\mathbf{z}) \propto \exp\left(\gamma \sum_{i}\sum_{j \in N(i)} \mathbb{I}(z_
 
 其中 $N(i)$ 是 Spot $i$ 的邻域，$\mathbb{I}(\cdot)$ 是示性函数，$\gamma > 0$ 是平滑参数。这个式子的含义很直白：相邻 Spot 标签相同的对数越多，这组标签的先验概率越高。$\gamma$ 控制空间先验的强度——$\gamma = 0$ 时退化为普通的混合模型聚类，$\gamma$ 越大则空间平滑越强。
 
-{{Wiki:Markov_random_field}}
+![马尔可夫随机场示意图。节点的取值仅依赖其邻域，这一局部依赖结构正是 BayesSpace 用以编码组织空间连续性的先验形式。](https://upload.wikimedia.org/wikipedia/commons/thumb/f/f1/Markov_random_field_example.svg/960px-Markov_random_field_example.svg.png){#fig-mrf width=70%}
 
 表达层面，BayesSpace 用多元 $t$ 分布对 PCA 降维后的表示建模，相比高斯分布对离群 Spot 更稳健。模型通过马尔可夫链蒙特卡洛（MCMC）采样估计后验。
 
@@ -233,6 +235,8 @@ cat("BayesSpace: k =", nlevels(brain$bayesspace),
 cat("Adjusted Rand index:",
     round(mclust::adjustedRandIndex(brain$seurat_clusters, brain$bayesspace), 3), "\n")
 ```
+
+![调整兰德指数（Adjusted Rand Index）计算示意图。两种聚类划分的一致程度由同属与异属配对的数量关系量化。](https://upload.wikimedia.org/wikipedia/commons/thumb/3/3c/Example_for_Adjusted_Rand_index.svg/960px-Example_for_Adjusted_Rand_index.svg.png){#fig-rand-index width=85%}
 
 调整兰德指数（Adjusted Rand Index, ARI）衡量两种划分的一致程度。在典型数据上它通常不低——这再次印证了前文的观察：空间先验主要改善的是边界与孤立点，而非推翻整体划分。
 

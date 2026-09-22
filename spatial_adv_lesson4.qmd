@@ -38,7 +38,7 @@ MERFISH 的解决方案是**组合编码**：给每个基因分配一个多位�
 
 MERFISH 的核心创新正在于此：它**故意不用满编码空间**，而是只挑选一个满足距离约束的子集作为有效码字（Chen et al., 2015）。
 
-{{Wiki:Hamming_distance}}
+![四位二进制码字的汉明距离示意图。两个码字间不同位的个数即汉明距离，MERFISH 通过要求有效码字两两距离不小于 4 实现一位纠错。](https://upload.wikimedia.org/wikipedia/commons/thumb/b/bf/Hamming_distance_4_bit_binary.svg/960px-Hamming_distance_4_bit_binary.svg.png){#fig-hamming width=70%}
 
 具体约束是：任意两个有效码字的汉明距离 $\geq 4$。这一约束的纠错逻辑可以精确地推演：
 
@@ -49,6 +49,8 @@ MERFISH 的核心创新正在于此：它**故意不用满编码空间**，而�
 于是一位错误可被唯一纠正。若观测码字与所有有效码字的距离都 $\geq 2$，则说明发生了两位以上的错误，该分子被直接丢弃而非勉强归类。
 
 实践中常用的是 MHD4 编码（Modified Hamming Distance 4）：16 位中恰有 4 位为 1，且两两汉明距离 $\geq 4$。这样的码字共有约 140 个可用——远少于 $2^{16}$，正是用编码空间换取了纠错能力。
+
+![分组纠错码原理示意图。信息位之外附加冗余校验位，使接收端能检出并纠正传输中发生的位翻转。](https://upload.wikimedia.org/wikipedia/commons/thumb/3/3d/Block_code_error_correction.png/960px-Block_code_error_correction.png?utm_source=en.wikipedia.org&utm_campaign=imageinfo&utm_content=thumbnail){#fig-ecc width=85%}
 
 ```python
 # Why "exactly 4 ones out of 16" -- generating an MHD4-style codebook
@@ -124,7 +126,11 @@ $$\text{FDR} \approx \frac{\text{空白码字平均检出数}}{\text{基因码�
 
 **阈值 + 分水岭（Watershed）**：经典图像处理方案。先用阈值分离前景，再用分水岭算法切分粘连的对象。它在细胞稀疏、形态规则的样本上可用，但在密集组织中表现很差——分水岭倾向于沿亮度低谷切分，而密集排列的细胞核之间往往没有清晰的亮度低谷。
 
+![分水岭算法示意图。图像梯度被视为地形起伏，算法沿山脊划分区域，在细胞密集处因缺乏清晰亮度低谷而失效。](https://upload.wikimedia.org/wikipedia/commons/d/db/Relief_of_gradient_of_heart_MRI.png){#fig-watershed width=70%}
+
 **Cellpose：通用深度学习分割**：Cellpose 的核心思路是不直接预测掩膜，而是预测一个**流场**（flow）——图像中每个像素指向其所属细胞中心的方向向量。分割时从每个像素沿流场"爬坡"，汇聚到同一中心的像素即构成一个细胞（Stringer et al., 2021）。这一表示方式使模型能处理任意形状的细胞，且在大量人工标注的多样图像上预训练后具有很好的跨数据集泛化能力。
+
+![图像分割结果示意图。算法从影像中划出目标结构的边界，成像型空间转录组的细胞分割属于同一类问题。](https://upload.wikimedia.org/wikipedia/commons/thumb/2/21/Model_of_a_segmented_femur_-_journal.pone.0079004.g005.png/960px-Model_of_a_segmented_femur_-_journal.pone.0079004.g005.png){#fig-image-seg width=70%}
 
 **Baysor：从图像转向分子**：Baysor 采取了一个不同的视角——既然最终目标是把转录本分配给细胞，为什么一定要先从图像划出边界？它直接对**转录本的空间分布**做概率聚类：空间上聚集且表达模式一致的分子应属于同一细胞（Petukhov et al., 2022）。核染色若可用则作为先验纳入，但并非必需。这一思路在核染色质量差或细胞形态不规则（如神经元的长突起）时优势明显。
 

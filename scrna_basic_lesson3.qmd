@@ -20,7 +20,7 @@ crossref:
 
 质控与归一化产出了一份干净的细胞×基因矩阵，但它仍是高维（数千个高变基因）、难以直接解读的。scRNA-seq 分析的核心目标——识别数据中存在哪些细胞类型——通过三步串联实现：先用 PCA 把高维表达压缩到几十个主成分以去噪，再在主成分空间构建近邻图并用图聚类算法将细胞划分为社区，最后用 UMAP 将结果嵌入二维以供可视化。聚类只给出"第几群"这样的匿名标签，还需通过标志基因把每个聚类对应到真实的细胞类型。本专题讲解这条从降维到注释的标准流程。
 
-**学习目标**：理解 PCA 在 scRNA-seq 中的去噪作用与主成分数量的选择；掌握 KNN 图构建与 Leiden 图聚类的逻辑及分辨率参数的影响；理解 UMAP 与 t-SNE 的特点与局限；掌握基于标志基因的手动注释与 SingleR 自动注释，并能交叉验证。
+**学习目标**：理解 PCA 在 scRNA-seq 中的去噪作用，掌握肘部图与置换检验两类主成分数量选择方法；理解 KNN 图构建的逻辑与 Louvain、Leiden 两种社区检测算法的关键差异；掌握分辨率参数的影响并能用多分辨率树评估聚类稳定性；理解 UMAP 与 t-SNE 的特点与共同局限；掌握基于标志基因的手动注释与 SingleR 自动注释，能评估自动注释的置信度并交叉验证；理解层级注释（二次聚类）的必要性与操作。
 
 ---
 
@@ -30,20 +30,112 @@ crossref:
 
 即使只保留 2000 个高变基因，表达空间依然高维且充满噪声——dropout、技术变异使任意两个细胞的距离都不可靠。主成分分析（Principal Component Analysis, PCA）通过线性变换找到数据中方差最大的若干正交方向（主成分），将数据投影到前 20–50 个主成分上。由于真实的生物学变异（细胞类型差异）通常贡献了最大的方差、而随机噪声分散在大量低方差方向上，保留前几十个主成分既压缩了维度，又起到了去噪的作用。
 
-{{Wiki:Principal_component_analysis}}
+![主成分分析示意图。二维高斯散点上的两个正交箭头分别为第一、第二主成分，方向对应数据方差最大与次大的方向。](https://upload.wikimedia.org/wikipedia/commons/thumb/f/f5/GaussianScatterPCA.svg/960px-GaussianScatterPCA.svg.png){#fig-pca width=85%}
 
 需要强调，PCA 只用高变基因作为输入，而非全部基因——这样既减小计算量，又避免大量稳定表达基因稀释信号。
+
+:::note
+**运行环境说明：** 本专题延续 PBMC 3k 数据。下面第一个代码块从本地矩阵重建对象并完成专题 6.2 的预处理，因此本专题可独立运行。基础流程仅需 `Seurat`；`clustree` 与 `SingleR`/`celldex` 小节会各自标注依赖。
+:::
+
+```r
+library(Seurat)
+
+SC_DIR <- "/Users/angdong/Documents/bio_example/SingleCell"
+set.seed(42)
+
+# Rebuild and preprocess so this topic runs standalone (see 专题 6.2)
+pbmc <- CreateSeuratObject(
+    counts = Read10X(file.path(SC_DIR, "filtered_gene_bc_matrices/hg19")),
+    project = "pbmc3k", min.cells = 3, min.features = 200
+)
+pbmc[["percent.mt"]] <- PercentageFeatureSet(pbmc, pattern = "^MT-")
+pbmc <- subset(pbmc, subset = nFeature_RNA > 200 &
+                              nFeature_RNA < 2500 & percent.mt < 5)
+pbmc <- NormalizeData(pbmc, verbose = FALSE) |>
+    FindVariableFeatures(selection.method = "vst", nfeatures = 2000, verbose = FALSE) |>
+    ScaleData(verbose = FALSE)
+cat("Cells entering PCA:", ncol(pbmc), "\n")
+```
 
 ```r
 library(Seurat)
 
 # PCA is run on the scaled highly variable genes from the preprocessing step
-pbmc <- RunPCA(pbmc, npcs = 50)
+pbmc <- RunPCA(pbmc, npcs = 50, verbose = FALSE)
 ```
+
+## 主成分是什么：读懂载荷
+
+主成分常被当作一个"降维后的黑箱坐标"，但它其实是可以直接解读的。每个主成分是所有高变基因的一个**线性组合**，每个基因在其中的系数称为**载荷**（loading）。载荷绝对值大的基因，就是主导该主成分方向的基因——因此看一个主成分的顶部载荷基因，就能知道它捕捉的是哪一类生物学差异。
+
+```r
+library(Seurat)
+
+# What biology does each PC capture? Look at the genes with the largest loadings
+# at both ends -- a PC is an axis, so both directions carry meaning.
+for (k in 1:4) {
+    L <- Loadings(pbmc, "pca")[, k]
+    cat(sprintf("PC%d  +: %s\n", k,
+                paste(names(sort(L, decreasing = TRUE))[1:5], collapse = ", ")))
+    cat(sprintf("     -: %s\n",
+                paste(names(sort(L))[1:5], collapse = ", ")))
+}
+```
+
+在 PBMC 3k 上，前四个主成分的两端基因如 @tbl-pc-loadings 所示，其生物学含义相当清晰。
+
+| 主成分 | 正向顶部基因 | 负向顶部基因 | 捕捉的差异 |
+|---|---|---|---|
+| PC1 | CST3, TYROBP, LST1, AIF1, FTL | MALAT1, LTB, IL32, IL7R, CD2 | 髓系 vs 淋巴系 |
+| PC2 | CD79A, MS4A1, TCL1A, HLA-DQA1 | NKG7, PRF1, CST7, GZMB | B 细胞 vs 细胞毒性细胞 |
+| PC3 | HLA-DQA1, CD79A, CD79B | PPBP, PF4, SDPR, SPARC | B 细胞 vs 血小板 |
+| PC4 | HLA-DQA1, CD79B, CD79A, MS4A1 | VIM, IL7R, S100A6, IL32 | B 细胞 vs T 细胞 |
+
+: PBMC 3k 前四个主成分的顶部载荷基因及其生物学含义 {#tbl-pc-loadings}
+
+这张表值得细看，因为它把"降维"这件事从抽象变具体了：**PCA 并没有发明新的信息，它只是找到了区分细胞的最有效的几个方向**，而这些方向恰好对应着最主要的细胞谱系划分。PC1 一条轴就把髓系与淋巴系分开，PC2 再把 B 细胞与细胞毒性细胞分开——这正是后续聚类能奏效的原因。
+
+:::tip
+**主成分的正负号没有含义：** 载荷与得分的符号可以整体翻转而不改变任何结果（$-\mathbf{v}$ 与 $\mathbf{v}$ 张成同一条轴）。因此"PC1 为正的是髓系"这种说法依赖于具体运行，换台机器、换个随机种子就可能反过来。**主成分是轴而非方向**，描述时应说"PC1 区分髓系与淋巴系"，而不是"PC1 高表示髓系"。
+:::
+
+```r
+#| label: fig-dimheatmap
+#| fig-cap: "PBMC 3k 前六个主成分的载荷热图。每个子图对应一个主成分，行为该主成分载荷绝对值最大的若干基因，列为按该主成分得分排序的细胞（两端各取 500 个），颜色表示缩放后的表达量。清晰的黄紫分块说明该主成分确实区分了两群表达模式相反的细胞；若某个主成分的热图杂乱无明显分块，则提示它主要捕捉噪声而非结构，可作为选择主成分数量的辅助判据。"
+library(Seurat)
+
+DimHeatmap(pbmc, dims = 1:6, cells = 500, balanced = TRUE)
+```
+
+## 每个主成分解释了多少方差
+
+除了"捕捉什么"，还应知道"捕捉了多少"。各主成分的标准差平方即其方差，除以总方差便是解释比例。
+
+```r
+library(Seurat)
+
+sdev <- Stdev(pbmc, reduction = "pca")
+var_pct <- sdev^2 / sum(sdev^2) * 100
+
+data.frame(
+    PC          = 1:10,
+    var_percent = sprintf("%.1f%%", var_pct[1:10]),
+    cumulative  = sprintf("%.1f%%", cumsum(var_pct)[1:10])
+)
+```
+
+在本数据上，PC1 独占 **20.5%** 的方差，PC2 降至 8.2%，到 PC10 只剩 1.4%，前十个主成分累计解释 **53.2%**。这个衰减模式本身传递了重要信息：**方差高度集中在前几个主成分**，说明数据确实存在强结构（几个界限分明的细胞类型）；若方差在几十个主成分上均匀分布，则通常意味着结构微弱或噪声主导。
+
+:::warning
+**不要用"累计解释 80% 方差"这类经验法则来选主成分数：** 这条规则来自传统多元统计，在 scRNA-seq 上会给出荒谬的结果——本数据要累计到 80% 需要三十多个主成分，而其中绝大多数只捕捉噪声。原因在于 scRNA-seq 的"总方差"里本就含有巨量技术噪声，它们分散在大量低方差主成分中，永远也"解释"不完。正确的做法是找结构与噪声的分界（肘部或置换检验），而不是追求某个方差百分比。
+:::
 
 ## 选择主成分数量
 
 保留多少个主成分是一个需要判断的参数。保留太少会丢失区分相近细胞类型的信号，太多则重新引入噪声。肘部图（ElbowPlot）将各主成分解释的方差（标准差）从大到小排列，曲线由陡变平的"肘部"提示了信号主成分与噪声主成分的大致分界。
+
+在 PBMC 3k 上，前若干个主成分的标准差依次为 7.10、4.50、3.87、3.75、3.17、2.54、2.07、1.93、1.85、1.83，随后稳定在 1.7–1.8 附近不再明显下降。这条曲线的"肘部"位于第 7–10 个主成分之间，但如下面的提示所述，在 10–30 之间取值对最终聚类的影响有限。
 
 ```r
 #| label: fig-elbow
@@ -57,6 +149,25 @@ ElbowPlot(pbmc, ndims = 50)
 **主成分数量不必精确：** 肘部位置往往不唯一、略显模糊，不必为选 12 还是 15 个主成分纠结。实践中在合理范围（如 10–30）内多取几个值跑一遍，观察聚类结果是否稳定，比追求"最优单一值"更有意义。使用 SCTransform 归一化时，由于其更强的去噪能力，通常可以安全地保留更多主成分（如 30 个）。
 :::
 
+## 置换检验：给"肘部"一个统计判据
+
+肘部图依赖目视判断，不同人看同一张图可能得出不同结论。置换检验提供了一个更客观的替代：随机打乱一小部分基因的表达值、重跑 PCA，从而构造出"纯噪声"情况下主成分的零分布；再检验每个真实主成分的基因载荷是否显著偏离该零分布。显著的主成分携带真实结构，不显著的则与噪声无异。
+
+```r
+library(Seurat)
+
+# Permutation test: only valid after LogNormalize + ScaleData,
+# NOT applicable to SCTransform output (its residuals break the null model)
+pbmc <- JackStraw(pbmc, num.replicate = 100, dims = 50)
+pbmc <- ScoreJackStraw(pbmc, dims = 1:50)
+
+JackStrawPlot(pbmc, dims = 1:30)
+```
+
+:::warning
+**JackStraw 不适用于 SCTransform：** 置换检验的零模型假设输入是经典的对数归一化表达值。SCTransform 输出的是皮尔逊残差，其分布性质与该假设不符，对残差做置换得到的零分布没有意义。这是一个容易被忽略的前提——若流程用了 SCTransform，应直接依据肘部图并适当多保留主成分（如 30 个），而不是套用 JackStraw。实践中还有一个更省事的经验：在 10–30 范围内主成分数量的具体取值对最终聚类结果影响通常有限，真正致命的是取得过少（如只用 5 个）而丢失了区分近缘细胞类型的信号。
+:::
+
 ---
 
 # 聚类
@@ -65,29 +176,234 @@ ElbowPlot(pbmc, ndims = 50)
 
 在选定的主成分空间中，scRNA-seq 采用基于图的聚类，而非 K-means 等传统方法。原因是细胞类型的大小、密度差异巨大，图聚类对这种不均衡结构更稳健。流程分两步：先用 `FindNeighbors()` 为每个细胞找到其 K 个最近邻，构建 K-近邻图（KNN graph），相似的细胞由边相连；再用 `FindClusters()` 调用 Leiden（或 Louvain）算法，在图中寻找连接紧密的"社区"（community）作为聚类。
 
+![最近邻图（Nearest Neighbor Graph）示意图。每个点与其最近邻之间连边，构成图聚类所依赖的邻接结构。](https://upload.wikimedia.org/wikipedia/commons/thumb/2/22/Nearest_neighbor_graph.svg/960px-Nearest_neighbor_graph.svg.png){#fig-knn-graph width=70%}
+
 ```r
 library(Seurat)
 
 # Step 1: build the KNN graph in the chosen PC space (here, first 15 PCs)
-pbmc <- FindNeighbors(pbmc, dims = 1:15)
+# k.param controls how many neighbours each cell connects to
+pbmc <- FindNeighbors(pbmc, dims = 1:15, k.param = 20)
 
-# Step 2: graph-based community detection (Leiden algorithm = 4)
-pbmc <- FindClusters(pbmc, resolution = 0.5, algorithm = 4)
+# Step 2: graph-based community detection.
+# algorithm = 1 is Louvain (default, always available);
+# algorithm = 4 selects Leiden but needs {leidenbase} -- see the warning below
+pbmc <- FindClusters(pbmc, resolution = 0.5)
+```
+
+## KNN 与 SNN：Seurat 实际用的是后者
+
+`FindNeighbors()` 这个函数名容易让人以为它只做了一件事，实际上它建了**两张图**，而聚类用的是第二张。
+
+```r
+library(Seurat)
+
+# FindNeighbors() creates TWO graphs, not one
+names(pbmc@graphs)
+
+nn  <- pbmc@graphs$RNA_nn     # k-nearest-neighbour graph: binary
+snn <- pbmc@graphs$RNA_snn    # shared-nearest-neighbour graph: weighted
+
+cat("KNN: mean neighbours per cell =",
+    round(mean(Matrix::rowSums(nn > 0)), 1), "\n")
+cat("SNN: mean neighbours per cell =",
+    round(mean(Matrix::rowSums(snn > 0)), 1),
+    "| weight range:", round(min(snn@x), 3), "-", round(max(snn@x), 3), "\n")
+```
+
+两张图的区别是本质性的：
+
+- **KNN 图**：每个细胞连向距离最近的 `k.param` 个细胞（默认 20），边**无权重**——是邻居就连，不是就不连。在本数据上每行恰好 20 个非零元。
+- **SNN 图**（Shared Nearest Neighbor，共享近邻图）：两个细胞之间的边权重，取决于它们**共享多少个共同邻居**。若两个细胞的 20 个邻居里有 18 个重合，说明它们处于同一个稠密区域，权重高；若只重合 2 个，则可能只是恰好挨着，权重低。本数据上 SNN 图平均每行 81.5 个非零元，权重分布在 0.081–1.000 之间。
+
+为什么要多绕这一道？因为**"互为近邻"是一个脆弱的信号，而"共享大量邻居"是一个稳健的信号**。高维空间中距离度量本就不可靠（维数灾难），个别近邻关系很容易由噪声产生；但若两个细胞共享大量邻居，它们几乎必定属于同一个真实的细胞群。SNN 相当于对邻接关系做了一次去噪，这也是 Seurat 把聚类建在 SNN 而非 KNN 上的原因。
+
+## `k.param` 的影响
+
+`k.param` 决定了"局部"的尺度，它与 `resolution` 是两个容易混淆但作用不同的参数：
+
+- `k.param` 控制**图的构建**——每个细胞看多远。值小则图稀疏、局部结构保留得细致，但对噪声敏感；值大则图稠密、结果平滑，但可能把小细胞群并入大群。
+- `resolution` 控制**图的切分**——在既定的图上切得多细。
+
+```r
+library(Seurat)
+
+# k.param and resolution act at different stages -- vary one at a time
+for (k in c(5, 20, 50)) {
+    tmp <- FindNeighbors(pbmc, dims = 1:15, k.param = k, verbose = FALSE)
+    tmp <- FindClusters(tmp, resolution = 0.5, verbose = FALSE)
+    cat(sprintf("k.param = %2d  ->  %d clusters\n", k, nlevels(Idents(tmp))))
+}
+```
+
+在本数据上固定 `resolution = 0.5`、只改 `k.param`，聚类数从 10（k=5）降到 9（k=20）再降到 6（k=50）——**同一个分辨率下，仅仅改变建图的邻域大小就能让聚类数少掉四成**。这说明报告聚类结果时只写 `resolution` 是不够的，`k.param` 与所用主成分数同样必须交代。
+
+:::tip
+**`k.param` 的经验取值：** 默认 20 在数千细胞的数据上通常合适。一个常用的启发式是让 `k.param` 随细胞数增长，如 $k \approx \sqrt{N}$——2,600 个细胞对应约 50。但更重要的是理解它的方向性影响：**若怀疑稀有细胞群被淹没，应调小 `k.param`**（让图更局部，小群才有机会自成社区）；若聚类结果零碎、充满小簇，可调大它。与 `resolution` 不同，`k.param` 改变的是图本身，因此改动后必须重跑 `FindNeighbors()` 而不只是 `FindClusters()`。
+:::
+
+## Louvain 与 Leiden 的差别
+
+`FindClusters()` 的 `algorithm` 参数默认是 1（Louvain），而上面的代码指定了 4（Leiden）。这不是一个无关紧要的选择。
+
+两种算法都通过优化**模块度**（Modularity）来划分社区——模块度衡量"社区内部的边比随机情况下多出多少"。Louvain 算法迭代地把节点移动到能最大提升模块度的社区中，效率很高，长期是图聚类的事实标准。
+
+两种算法优化的都是**模块度**（Modularity）——一个衡量"社区内部的边比随机情况下多出多少"的指标。记 $m$ 为总边权、$A_{ij}$ 为边权、$k_i$ 为节点 $i$ 的度，则：
+
+$$Q = \frac{1}{2m}\sum_{i,j}\left(A_{ij} - \frac{k_i k_j}{2m}\right)\delta(c_i, c_j)$$
+
+括号里的第一项是**实际**连接，第二项 $k_i k_j/(2m)$ 是在保持各节点度数不变的随机图中该对节点**期望**的连接强度；$\delta(c_i,c_j)$ 则只在 $i$ 与 $j$ 同属一个社区时取 1。所以 $Q$ 度量的是"同社区节点之间实际连接超出随机期望的总量"——$Q$ 越大，社区划分越有意义。`resolution` 参数实际上就是调节第二项的权重：调高它相当于抬高"随机期望"的基准，于是需要更紧密的连接才够格算一个社区，切出的社区自然更多更小。
+
+
+但 Louvain 有一个被长期忽视的缺陷：它**不保证社区内部是连通的**。在优化过程中，某个节点被移走后可能把原社区切成两个互不相连的部分，而算法不会检查这一点。结果是一个"聚类"在图上实际可能由两块毫无连接的细胞组成——对 scRNA-seq 而言，这意味着一个细胞类型标签下混着两群彼此不相似的细胞。Leiden 算法在每轮迭代后增加了一个精炼（refinement）步骤，**保证每个社区都是连通的**，从而消除了这一问题（Traag et al., 2019）。
+
+:::warning
+**Leiden 需要 Python 依赖，默认环境跑不了：** Seurat 出于历史兼容性把 Louvain（`algorithm = 1`）保留为默认值。要用 Leiden 必须额外安装依赖，否则 `algorithm = 4` 会直接报错——这也是它未被设为默认的实际原因。**注意 Seurat 版本之间的差异**：Seurat 4 通过 `reticulate` 调用 Python 的 `leidenalg`，而 Seurat 5 改走 R 包 `leidenbase`（`install.packages("leidenbase")`）。照抄旧教程里的 `leidenalg` 安装说明，在 Seurat 5 下仍会报 `Package 'leidenbase' is required`。本章后续代码为保证可直接运行而使用默认的 Louvain；在正式分析中若能配置好 Python 环境，应优先使用 Leiden。只能用 Louvain 时，至少应检查是否存在在 UMAP 上明显分成互不相邻两块的聚类——那往往就是连通性缺陷的表现。
+:::
+
+```r
+library(Seurat)
+
+# Default (Louvain) -- always available
+pbmc <- FindClusters(pbmc, resolution = 0.5, verbose = FALSE)
+
+# Leiden -- preferred, but Seurat 5 routes algorithm = 4 through {leidenbase}
+if (requireNamespace("leidenbase", quietly = TRUE)) {
+    pbmc <- FindClusters(pbmc, resolution = 0.5, algorithm = 4, verbose = FALSE)
+}
+cat("Clusters found:", nlevels(Idents(pbmc)), "\n")
 ```
 
 ## 分辨率参数
 
 `resolution` 是聚类最关键的参数，控制划分的粒度：值越大，社区检测越倾向于切出更多、更小的聚类；值越小，聚类越少、越粗。常用范围为 0.3–1.0。它没有"正确值"——粒度的合适与否取决于研究问题：要区分主要细胞类型用低分辨率，要解析细胞亚型用高分辨率。
 
+在 PBMC 3k 上，分辨率与聚类数的实际对应关系如 @tbl-resolution-k 所示。注意 0.5 与 0.8 给出了相同的聚类数——这说明该处存在一个稳定的划分，是一个值得信赖的粒度。
+
+| resolution | 聚类数 |
+|---|---|
+| 0.1 | 4 |
+| 0.3 | 8 |
+| 0.5 | 9 |
+| 0.8 | 9 |
+| 1.0 | 11 |
+
+: PBMC 3k 数据中分辨率与聚类数的对应关系（15 个主成分，Louvain） {#tbl-resolution-k}
+
 :::warning
 **分辨率不是越高越好：** 调高分辨率总能切出更多聚类，但其中许多可能是同一细胞类型被人为拆分，或由技术变异（细胞周期、应激）驱动的虚假亚群。判断一个聚类是否"真实"，不能只看它能被分出来，而要看它是否具有特异、可解释的标志基因。盲目追求高分辨率会制造大量需要解释却无生物学意义的聚类。
+:::
+
+## 用多分辨率树评估稳定性
+
+与其纠结该选哪一个分辨率，不如把一系列分辨率的结果一起看。`clustree` 把多个分辨率下的聚类结果画成一棵树：每一层是一个分辨率，节点是聚类，边表示细胞从上一层的哪个聚类流向下一层的哪个聚类。
+
+这棵树能直接读出两件事。**稳定的聚类**在连续多个分辨率下保持独立、边清晰单一——它对应的很可能是真实的细胞类型。**不稳定的划分**则表现为节点之间出现大量交叉的边（细胞在相邻分辨率间来回跳动），提示这里的切分是数据噪声而非真实结构。
+
+:::note
+**运行环境说明：** `clustree` 为 CRAN 包（`install.packages("clustree")`）。`prefix` 参数必须与 Seurat 实际写入的元数据列名前缀一致：用 `NormalizeData` 流程时为 `RNA_snn_res.`，用 `SCTransform` 时为 `SCT_snn_res.`。写错前缀会报"找不到列"。
+:::
+
+```r
+library(Seurat)
+library(clustree)
+
+# Cluster across a range of resolutions; each is stored as a separate metadata column
+for (res in c(0.1, 0.2, 0.4, 0.6, 0.8, 1.0)) {
+    pbmc <- FindClusters(pbmc, resolution = res, verbose = FALSE)
+}
+
+# Check what the columns are actually called before plotting
+grep("_snn_res", colnames(pbmc[[]]), value = TRUE)
+```
+
+```r
+#| label: fig-clustree
+#| fig-cap: "PBMC 3k 数据在一系列聚类分辨率下的聚类关系树（clustree）。每一层对应一个分辨率（自上而下递增），节点为该分辨率下的聚类，节点大小表示细胞数，边表示细胞在相邻分辨率间的流向、边的透明度表示流量大小。在多个连续分辨率下保持独立且入边单一的分支对应稳定的细胞类型；节点间出现大量交叉边的区域则提示该处的划分不稳定，是噪声驱动而非真实结构。"
+library(clustree)
+
+# Prefix must match the metadata columns printed above
+clustree(pbmc, prefix = "RNA_snn_res.")
+```
+
+:::tip
+**一个实用的读图策略：** 从树的顶端（低分辨率）向下看，找到"再往下分就开始出现交叉边"的那一层，它通常就是该数据能够稳定支持的最细粒度。需要更细的亚型时，正确做法不是继续调高全局分辨率（那会把所有聚类都过度切分），而是对感兴趣的聚类单独做二次聚类——这一点在本专题最后讨论。
+:::
+
+## 为什么不用 K-means 或层次聚类
+
+前面一笔带过"图聚类对不均衡结构更稳健"，值得展开说清楚，因为这解释了整个流程的设计动机。
+
+**K-means 的问题在于它的隐含假设**：它通过最小化各点到簇中心的平方距离来划分，这等价于假设每个簇是**大小相近的球形**。而真实的细胞类型完全不满足这一点——PBMC 中 T 细胞可能有上千个、血小板只有十几个，且各类细胞在表达空间中的弥散程度差异巨大。用 K-means 处理这种数据，结果往往是大簇被硬切成几块、而小簇被并入邻近的大簇。本数据中只有 14 个细胞的血小板群，在 K-means 下几乎必然消失。
+
+**层次聚类的问题在于计算量与阈值**：它需要计算所有细胞两两之间的距离，复杂度 $O(N^2)$ 的内存开销在数万细胞时就不可行；而且树在哪里切依然是一个需要人为设定的阈值，并不比 `resolution` 更客观。
+
+**图聚类之所以合适**，是因为它只依赖局部邻接关系而不假设簇的形状或大小：一个只有十几个细胞的群，只要它们彼此的连接远密于与外界的连接，就能被识别为一个社区。此外 KNN 图是稀疏的，内存与计算都随细胞数近似线性增长，这才使数万乃至百万细胞的分析成为可能。
+
+| 方法 | 隐含假设 | 对小簇 | 复杂度 | scRNA-seq 适用性 |
+|---|---|---|---|---|
+| K-means | 球形、大小相近 | 易被吞并 | $O(NKd)$ | 差 |
+| 层次聚类 | 无形状假设 | 可保留 | $O(N^2)$ 内存 | 规模受限 |
+| 图聚类（Leiden） | 局部连接紧密 | 可保留 | 近似线性 | 好 |
+
+: 三类聚类方法在 scRNA-seq 上的适用性对比 {#tbl-clustering-methods}
+
+## UMAP 跑在主成分上，不是原始表达上
+
+一个容易被忽略但影响理解的细节：`RunUMAP(pbmc, dims = 1:15)` 里的 `dims` 参数说明 UMAP 的输入是**前 15 个主成分**，而非两万个基因的原始表达。`FindNeighbors(dims = 1:15)` 同理。
+
+这样做有三个理由。其一是**去噪**：如前所述，前若干个主成分集中了生物学信号，而噪声分散在大量低方差方向上，先做 PCA 等于先滤掉一层噪声。其二是**计算量**：UMAP 要反复计算细胞间距离，在 15 维上算比在 2000 维上算快两个数量级。其三是**距离的可靠性**：在极高维空间中，任意两点间的距离会趋于相近（维数灾难），使"最近邻"失去意义；降到几十维后距离才重新具有区分力。
+
+```r
+library(Seurat)
+
+# Both the graph and the UMAP are built on PCs, not on raw expression.
+# Changing `dims` changes both -- they must be kept consistent.
+pbmc <- FindNeighbors(pbmc, dims = 1:15, verbose = FALSE)
+pbmc <- RunUMAP(pbmc, dims = 1:15, verbose = FALSE)
+
+# The UMAP embedding is 2D; the space it was computed from is 15D
+cat("PCA dims available :", ncol(Embeddings(pbmc, "pca")), "\n")
+cat("dims used          : 15\n")
+cat("UMAP embedding dims:", ncol(Embeddings(pbmc, "umap")), "\n")
+```
+
+:::warning
+**`FindNeighbors()` 与 `RunUMAP()` 应当使用相同的 `dims`：** 二者若用不同的主成分数，聚类是在一个空间里算的、而图是画在另一个空间里的，结果就是 UMAP 上看起来混在一起的细胞却属于不同的簇，或者反之。这类"图与聚类对不上"的困惑，十有八九源于此。同理，若中途重跑了 `RunPCA()`（例如改了高变基因或缩放参数），必须把 `FindNeighbors()`、`FindClusters()`、`RunUMAP()` 全部重跑一遍——主成分已经变了，基于旧主成分的图和嵌入都已失效。
 :::
 
 ## UMAP 可视化
 
 聚类是在高维主成分空间完成的，但人需要二维图来观察。UMAP（Uniform Manifold Approximation and Projection）将高维结构非线性地嵌入二维平面，倾向于保留数据的局部与部分全局结构，是当前最常用的可视化方法。t-SNE 是另一种选择，更强调局部结构，但对全局结构和参数（perplexity）更敏感。
 
-{{Wiki:Nonlinear_dimensionality_reduction}}
+![非线性降维示意图。瑞士卷（Swiss roll）流形经 LLE 等非线性方法展开为二维平面，说明非线性降维能揭示线性方法无法捕捉的流形结构。](https://upload.wikimedia.org/wikipedia/commons/f/fd/Lle_hlle_swissroll.png){#fig-nonlinear-dr width=85%}
+![t-SNE 降维可视化示例。高维数据被嵌入二维平面后形成若干分离的簇，体现 t-SNE 对局部邻域结构的保持能力。](https://upload.wikimedia.org/wikipedia/commons/thumb/9/94/T-SNE_visualisation_of_word_embeddings_generated_using_19th_century_literature.png/960px-T-SNE_visualisation_of_word_embeddings_generated_using_19th_century_literature.png){#fig-tsne width=85%}
+
+@tbl-umap-tsne 对比了二者。需要强调的是，它们**共享同一类局限**——都是非线性嵌入，都不保证全局距离的保真。
+
+| 维度 | UMAP | t-SNE |
+|------|------|-------|
+| 理论基础 | 黎曼几何与代数拓扑 | 概率分布的 KL 散度最小化 |
+| 关键参数 | `n.neighbors`、`min.dist` | `perplexity` |
+| 全局结构保留 | 相对较好 | 较差 |
+| 运行速度 | 快 | 慢（大数据尤甚） |
+| 对参数的敏感性 | 中等 | 较高 |
+| 可否嵌入新数据 | 可以（支持 transform） | 不能（需重算） |
+
+: UMAP 与 t-SNE 的对比 {#tbl-umap-tsne}
+
+UMAP 的两个关键参数值得理解：`n.neighbors` 控制在多大的邻域范围内保持结构——值小侧重局部细节、值大侧重全局形态；`min.dist` 控制嵌入中点与点能靠多近——值小则簇内更紧密、簇间更分离，视觉上更"干净"，但这种分离度是参数造就的视觉效果，不代表数据中真实的分离程度。
+
+```r
+library(Seurat)
+
+# The apparent separation between clusters is partly a parameter choice.
+# Compare a "tight" and a "loose" embedding of the very same data.
+pbmc <- RunUMAP(pbmc, dims = 1:15, min.dist = 0.1, reduction.name = "umap_tight")
+pbmc <- RunUMAP(pbmc, dims = 1:15, min.dist = 0.8, reduction.name = "umap_loose")
+
+DimPlot(pbmc, reduction = "umap_tight") | DimPlot(pbmc, reduction = "umap_loose")
+```
 
 ```r
 #| label: fig-umap-clusters
@@ -124,6 +440,96 @@ markers |>
     slice_max(avg_log2FC, n = 5)
 ```
 
+## 一个被普遍忽略的统计问题：双重浸入
+
+上面那行 `FindAllMarkers()` 会输出一列 `p_val_adj`，看起来像是常规的多重检验校正后 p 值。但这些 p 值**在统计上是无效的**，其原因值得认真对待。
+
+问题出在流程本身：我们先用表达数据**定义**了聚类，再用**同一份数据**检验这些聚类之间有没有差异表达。聚类算法的目标恰恰是让簇间差异最大化——换句话说，我们是在检验一个"根据这批数据挑选出来的最大差异是否显著"，而检验时却假装这些分组是事先指定的。这种"用同一份数据既选假设又验假设"的做法称为**双重浸入**（double dipping）或循环推断（circular inference），其后果是 p 值被系统性地压低，显著性被严重高估。
+
+这不是理论上的顾虑。下面用纯随机数据演示：生成一个**完全没有任何真实结构**的泊松计数矩阵，走一遍标准流程，看能"发现"多少标志基因。
+
+```r
+library(Seurat)
+library(Matrix)
+
+# Pure noise: every count drawn from the same Poisson, no structure whatsoever
+set.seed(1)
+n_genes <- 2000
+for (n_cells in c(2000, 5000)) {
+    m <- matrix(rpois(n_genes * n_cells, lambda = 0.5), nrow = n_genes,
+                dimnames = list(paste0("g", 1:n_genes), paste0("c", 1:n_cells)))
+    o <- CreateSeuratObject(as(m, "dgCMatrix")) |>
+        NormalizeData(verbose = FALSE) |>
+        FindVariableFeatures(verbose = FALSE) |>
+        ScaleData(verbose = FALSE) |>
+        RunPCA(npcs = 20, verbose = FALSE) |>
+        FindNeighbors(dims = 1:10, verbose = FALSE) |>
+        FindClusters(resolution = 0.8, verbose = FALSE)
+
+    mk <- FindAllMarkers(o, only.pos = TRUE, min.pct = 0.1,
+                         logfc.threshold = 0.1, verbose = FALSE)
+    cat(sprintf("%d cells -> %d clusters, %d 'significant' markers (padj < 0.05)\n",
+                n_cells, nlevels(Idents(o)), sum(mk$p_val_adj < 0.05)))
+}
+```
+
+结果如 @tbl-double-dipping：在**毫无结构**的数据上，算法照样切出了 8 个和 11 个"细胞类型"，并给出了 16 个和 70 个"统计显著"的标志基因，最小校正后 p 值可低至 $1.7\times10^{-8}$。
+
+| 细胞数 | 聚出簇数 | "显著"标志基因数 | 最小 padj |
+|---|---|---|---|
+| 2,000 | 8 | 16 | $1.9\times10^{-3}$ |
+| 5,000 | 11 | 70 | $1.7\times10^{-8}$ |
+
+: 纯随机数据上双重浸入产生的假阳性（泊松噪声，无任何真实结构） {#tbl-double-dipping}
+
+注意假阳性数量**随细胞数增长**——这正是双重浸入的典型特征：细胞越多，聚类算法越有机会在噪声中找到可切分的方向，而检验的自由度也越大。这意味着在动辄数万细胞的现代数据集上，问题只会更严重，不会更轻。
+
+:::warning
+**这不意味着 `FindAllMarkers()` 不能用，而是意味着它的 p 值不能按字面解读。** 实践中应当这样对待：**把标志基因的 p 值当作排序依据，而不是显著性证据**。`avg_log2FC`（效应量）与 `pct.1`/`pct.2`（两组的检出比例）比 p 值更值得关注——一个在簇内 90% 细胞检出、簇外仅 5% 检出的基因，无论 p 值多少都是好的标志基因；反之一个 p 值极小但 `pct.1` 与 `pct.2` 相差无几的基因，几乎没有标志价值。
+
+真正的验证只能来自数据之外：该基因是否是已知的该细胞类型标志？该细胞群是否能在**独立样本**中被重复检出？如果研究结论依赖于"某个新细胞亚群确实存在"，则必须在独立数据上重复，而不能靠 p 值支撑。
+:::
+
+:::note
+**统计学界对此有专门的解决方案，但尚未普及：** 近年发展出的选择性推断（selective inference）方法试图给出在"分组由数据选出"这一条件下仍然有效的 p 值，代表工作包括针对层次聚类与 k-means 的条件检验，以及针对单细胞场景的数据分裂（data splitting）策略——把计数矩阵按泊松分布随机拆成两半，一半用于聚类、另一半用于检验，从而切断循环。这类方法目前尚未进入 Seurat/Scanpy 的默认流程，多数研究仍在报告未校正的双重浸入 p 值。作为读者，至少应当知道这些 p 值的性质，并在写作时避免用"p < 0.001，因此该亚群显著存在"这类表述。
+:::
+
+## 标志基因的可视化：选对图
+
+拿到标志基因列表后，下一步是可视化确认。Seurat 提供了五种常用图形，它们回答的问题并不相同，选错会看不出想看的东西。
+
+| 函数 | 展示形式 | 最适合回答的问题 |
+|---|---|---|
+| `FeaturePlot()` | 表达量着色的 UMAP | 这个基因在**哪些区域**表达？ |
+| `VlnPlot()` | 按簇分组的小提琴图 | 各簇的**表达分布**差异如何？ |
+| `DotPlot()` | 点的大小=检出比例，颜色=平均表达 | **多个基因 × 多个簇**的总览 |
+| `RidgePlot()` | 按簇分组的密度脊线图 | 表达是否**双峰**（部分细胞高、部分不表达）？ |
+| `DoHeatmap()` | 单细胞分辨率热图 | 标志基因在**单个细胞**层面是否干净？ |
+
+: 标志基因可视化函数的适用场景 {#tbl-marker-viz}
+
+```r
+library(Seurat)
+
+markers_to_check <- c("IL7R", "CD8A", "MS4A1", "GNLY", "CD14", "FCGR3A")
+
+# DotPlot is the single most informative view: it shows BOTH how much a gene is
+# expressed (colour) and in what fraction of cells (dot size), across all clusters.
+DotPlot(pbmc, features = markers_to_check) + Seurat::RotatedAxis()
+```
+
+```r
+library(Seurat)
+
+# FeaturePlot answers "where", VlnPlot answers "how much and how variable"
+FeaturePlot(pbmc, features = c("CD3D", "MS4A1", "LYZ", "GNLY"), ncol = 2)
+VlnPlot(pbmc, features = c("CD3D", "MS4A1"), pt.size = 0)
+```
+
+:::tip
+**`DotPlot()` 的点大小比颜色更重要：** 一个常见的误读是只看颜色（平均表达量）而忽略点的大小（检出比例）。二者可能给出相反的印象：某基因在一个簇中平均表达很高，但若点很小，说明只有少数细胞表达它、其余为零——这通常不是好的标志基因，而更可能是少数离群细胞或双细胞拉高了均值。**理想的标志基因应当点大且色深**：在该簇的绝大多数细胞中表达，且表达量高。
+:::
+
 ## 手动注释
 
 得到每个聚类的标志基因后，对照已知的细胞类型标志基因数据库（如 PanglaoDB、CellMarker）即可手动指派类型。@tbl-pbmc-markers 列出 PBMC 常见细胞类型的经典标志基因。
@@ -141,6 +547,22 @@ markers |>
 
 : PBMC 常见细胞类型及其经典标志基因 {#tbl-pbmc-markers}
 
+在 PBMC 3k 上以 `resolution = 0.5` 实际得到 9 个聚类，各聚类的 `avg_log2FC` 排名前列的标志基因与对应的细胞类型判定见 @tbl-pbmc3k-observed。可以看到判定几乎是自明的——这正是该数据集适合作为教学与流程验证基准的原因。
+
+| 聚类 | 细胞数 | 实测顶部标志基因 | 判定类型 |
+|---|---|---|---|
+| 0 | 600 | CCR7, LDLRAP1, LEF1 | 幼稚 CD4 T |
+| 1 | 534 | AQP3, CD40LG, TRADD | 记忆 CD4 T |
+| 2 | 469 | FOLR3, S100A12, S100A8 | CD14+ 单核 |
+| 3 | 342 | LINC00926, VPREB3, CD79A | B 细胞 |
+| 4 | 315 | GZMK, GZMH, CD8A | CD8 T |
+| 5 | 174 | CKB, CDKN1C, MS4A4A | FCGR3A+ 单核 |
+| 6 | 159 | AKR1C3, SH2D1B, GNLY | NK 细胞 |
+| 7 | 32 | SERPINF1, FCER1A, CLIC2 | 树突状细胞 |
+| 8 | 13 | LY6G6F, CLDN5, PPBP | 血小板 |
+
+: PBMC 3k 实测聚类结果与标志基因（15 个主成分，resolution = 0.5） {#tbl-pbmc3k-observed}
+
 ```r
 # Visualize known markers to confirm cluster identities
 FeaturePlot(pbmc, features = c("CD3D", "MS4A1", "LYZ", "GNLY"))
@@ -157,6 +579,10 @@ pbmc <- RenameIdents(pbmc, new_ids)
 
 手动注释依赖专家知识、耗时且主观。自动注释工具用带标签的参考数据集为查询细胞快速指派类型。SingleR 对每个查询细胞，计算其表达谱与参考数据集中各细胞类型表达谱的相关性，指派相关性最高的类型，并通过迭代微调（fine-tuning）提高分辨力（Aran et al., 2019）。
 
+:::note
+**运行环境说明：** `SingleR` 与 `celldex` 均为 Bioconductor 包（`BiocManager::install(c("SingleR","celldex"))`）。`celldex` 的参考数据集首次调用时需从 ExperimentHub 联网下载（约数十 MB）并缓存到本地，因此第一次运行较慢、且需要网络。
+:::
+
 ```r
 library(SingleR)
 library(celldex)
@@ -170,15 +596,142 @@ pred <- SingleR(test = sce, ref = ref, labels = ref$label.main)
 pbmc$SingleR_label <- pred$labels
 ```
 
+## 评估自动注释的可信度
+
+SingleR 对每个细胞都会给出一个标签，但标签的可信度差异很大——一个转录谱与参考中所有类型都不太像的细胞，仍然会被指派给"相对最像"的那个。因此**必须检查置信度，而不是直接采用标签**。
+
+SingleR 提供两个诊断量：`delta`（最佳匹配得分与次佳的差距，差距小说明模棱两可）与 `pruned.labels`（对 delta 过低的细胞置为 `NA`，即拒绝判定）。
+
+```r
+library(SingleR)
+
+# Cells whose best match is not clearly better than the runner-up get pruned
+pbmc$SingleR_pruned <- pred$pruned.labels
+
+cat("Cells with no confident label:",
+    sum(is.na(pred$pruned.labels)), "/", nrow(pred), "\n")
+
+# Score heatmap: a confident cell shows one bright row; an ambiguous one does not
+plotScoreHeatmap(pred)
+```
+
+```r
+library(SingleR)
+
+# Delta distribution per label: consistently low delta means the reference
+# probably lacks that cell type altogether
+plotDeltaDistribution(pred, ncol = 4)
+```
+
+被大量 `pruned` 的细胞是一个有价值的信号而非麻烦：它往往意味着**参考数据集缺少该细胞类型**。这与第 9 章解卷积中参考不完备的失效模式是同一个问题（参见第 9 章）——算法不会告诉你参考错了，只会给出一个"相对最像"的答案。
+
+```r
+library(Seurat)
+
+# Cross-tabulate manual clusters against automatic labels.
+# A clean block-diagonal pattern means the two agree; off-diagonal mass is where
+# you need to look more carefully.
+table(Cluster = pbmc$seurat_clusters, SingleR = pbmc$SingleR_pruned)
+```
+
 :::info
 **黄金法则：** 手动注释与自动注释应相互印证，而非二选一。自动注释快速、客观，适合提供初步框架；手动注释精确、可解释，能纠正参考数据集缺失类型或物种/组织不匹配带来的错误。当二者一致时，注释可信；当二者矛盾时，正是发现新细胞状态或识别注释陷阱（如参考缺失该类型）的契机。任何最终注释都应能用一组特异标志基因解释。
+:::
+
+## 注释的三类陷阱
+
+并非每一个聚类都对应一种细胞类型。在赋予生物学标签之前，应先排除三类"伪细胞类型"——它们在数据上表现得像一个独立的群，实际上却是技术产物。
+
+**第一类：低质量细胞簇。** 破膜、濒死细胞的共同特征是高线粒体比例、低基因数，这些特征本身就足以让它们在降维空间中聚成一群。若某个簇的标志基因清一色是线粒体基因（`MT-` 开头），它几乎必定是这类簇。
+
+**第二类：双细胞簇。** 若双细胞数量足够多且来自同一对细胞类型（如 T 细胞 + 单核细胞），它们会聚成一个位于两个亲本簇之间的独立群，同时表达两者的标志基因。这正是专题 6.2 强调要做双细胞检测的原因——一旦形成独立簇，它极易被当作"过渡态"或"双阳性细胞"报告。
+
+**第三类：应激/解离伪影簇。** 高表达 *FOS*、*JUN* 等即早基因的细胞若数量可观，也会自成一簇（参见专题 6.2）。
+
+下面这段诊断代码把三类嫌疑一次性查完：
+
+```r
+library(Seurat)
+
+# Screen every cluster for the three classic "fake cell type" signatures
+diag_tbl <- data.frame(
+    cluster   = levels(Idents(pbmc)),
+    n_cells   = as.integer(table(Idents(pbmc))),
+    med_nFeat = tapply(pbmc$nFeature_RNA, Idents(pbmc), median),
+    med_mt    = round(tapply(pbmc$percent.mt, Idents(pbmc), median), 2)
+)
+diag_tbl
+```
+
+```r
+library(Seurat)
+
+# Are any cluster's top markers dominated by mitochondrial genes?
+top_per_cluster <- lapply(split(markers, markers$cluster), function(d) {
+    g <- head(d$gene[order(-d$avg_log2FC)], 10)
+    c(mt_fraction = mean(grepl("^MT-", g)),
+      top_genes   = paste(head(g, 3), collapse = ", "))
+})
+do.call(rbind, top_per_cluster)
+```
+
+```r
+library(Seurat)
+
+# Doublet-cluster check: does any cluster co-express markers of two lineages?
+# A genuine cell type expresses one lineage's markers, not both.
+FeaturePlot(pbmc, features = c("CD3D", "LYZ"), blend = TRUE)
+```
+
+:::warning
+**"双阳性细胞"这个词应当触发警觉：** 在 scRNA-seq 论文中，报告"同时表达 A 谱系与 B 谱系标志的双阳性细胞群"是一个高风险结论。绝大多数情况下，它是双细胞或环境 RNA 污染的产物，而非真实的细胞状态。在下结论之前至少要排除三件事：（1）该群是否已被双细胞检测工具标记（专题 6.2）；（2）两个标志基因中是否有一个是本样本的"汤"基因（环境 RNA，同专题 6.2）；（3）该群的 `nCount_RNA` 是否显著高于其他簇（双细胞的典型特征）。三项都排除后，还应在独立样本中重复检出，并最好用流式分选或免疫荧光在蛋白层面确认。
+:::
+
+:::info
+**黄金法则：** 注释的正确方向是**从已知走向未知**，而不是反过来。先用公认的经典标志基因把能确定的簇一一认领，剩下认不出来的簇才是需要深究的对象——而"认不出来"的首选解释应当是技术伪影，其次才是新的细胞类型。把顺序颠倒过来（先假设是新细胞类型、再找证据支持）是单细胞研究中虚假发现的主要来源。一个实用的自检问题是：**如果我告诉一位该组织领域的专家我发现了这个新群体，他会先问我什么？** 那个问题通常就是你还没排除的可能性。
+:::
+
+## 层级注释：先粗后细
+
+一次聚类很难同时分辨"主要细胞类型"与"细胞亚型"——二者所需的分辨率不同。T 细胞与单核细胞的差异巨大，低分辨率即可分开；而 CD4 幼稚 T 细胞与 CD4 记忆 T 细胞的差异细微，需要很高的分辨率才能区分。若用高分辨率一次做完，单核细胞等异质性低的类型会被过度切分成一堆无意义的碎片。
+
+正确做法是**层级注释**：先用低分辨率划分主要类型并完成注释，再把感兴趣的类型单独取出、在其内部重新做一轮完整的降维与聚类。二次聚类的关键在于，取出子集后必须**重新选择高变基因**——原先的高变基因是为区分所有细胞类型而选的（如 T 细胞 vs 单核细胞的标志基因），对区分 T 细胞内部的亚型没有帮助。
+
+```r
+library(Seurat)
+
+# Step 1: pull out one major cell type
+t_cells <- subset(pbmc, idents = c("CD4 T", "CD8 T"))
+
+# Step 2: re-run the full pipeline INSIDE the subset.
+# Re-selecting variable features is the essential step: genes that separated
+# T cells from monocytes are useless for separating T-cell subtypes.
+t_cells <- FindVariableFeatures(t_cells, nfeatures = 2000) |>
+    ScaleData() |>
+    RunPCA(npcs = 30) |>
+    FindNeighbors(dims = 1:20) |>
+    FindClusters(resolution = 0.6) |>
+    RunUMAP(dims = 1:20)
+```
+
+```r
+library(Seurat)
+
+# Sub-type markers that would be invisible at the global resolution
+FeaturePlot(t_cells, features = c("CCR7", "SELL", "IL7R", "GZMK", "FOXP3", "MKI67"))
+```
+
+`CCR7`/`SELL` 标记幼稚（naive）T 细胞、`IL7R` 标记中央记忆、`GZMK` 标记效应记忆、`FOXP3` 标记调节性 T 细胞——这些区分在全局聚类中通常完全看不到。
+
+:::warning
+**二次聚类总能"分出"亚群，这正是它的危险之处：** 对任何一群细胞重新聚类，算法都必然返回若干个子簇，哪怕这群细胞在生物学上完全均质。因此二次聚类的结果需要比一次聚类更严格的验证：每个亚群必须有特异且**可解释**的标志基因（而非仅仅是统计显著的差异基因），最好能在独立样本或已发表数据中被重复。把二次聚类当作"发现新亚型"的自动装置，是单细胞研究中虚假发现的一个常见来源。
 :::
 
 ---
 
 # 方法总结与衔接说明
 
-本专题完成了 scRNA-seq 基础分析的核心闭环：PCA 降维去噪 → KNN 图 + Leiden 聚类 → UMAP 可视化 → 标志基因 + SingleR 双重注释。至此，模块 A 实现了从原始读段到带细胞类型标签的注释图谱的完整流程。这份注释图谱不仅是单细胞分析的终点，更是众多高级分析的起点——它是第 7 章拟时序、细胞通讯、调控网络推断的共同输入，也是第 9 章空间细胞解卷积不可或缺的参考（参见第 9 章）。第 7 章将在此基础上展开多样本整合、动态推断、调控网络与多组学等高级分析。
+本专题完成了 scRNA-seq 基础分析的核心闭环：PCA 降维去噪 → KNN 图 + Leiden 聚类 → UMAP 可视化 → 标志基因 + SingleR 双重注释 → 层级二次聚类解析亚型。其中有四个判断点值得单独记住：主成分数量可用肘部图或置换检验确定，但后者不适用于 SCTransform 的残差；聚类应显式选用 Leiden 而非默认的 Louvain，因为只有前者保证社区连通；分辨率不应靠单次试凑，而应用多分辨率树找出数据能稳定支持的粒度；自动注释必须检查 delta 与 pruned 标签，大量细胞无法自信归类通常意味着参考数据集缺少该类型。至此，模块 A 实现了从原始读段到带细胞类型标签的注释图谱的完整流程。这份注释图谱不仅是单细胞分析的终点，更是众多高级分析的起点——它是第 7 章拟时序、细胞通讯、调控网络推断的共同输入，也是第 9 章空间细胞解卷积不可或缺的参考（参见第 9 章）。第 7 章将在此基础上展开多样本整合、动态推断、调控网络与多组学等高级分析。
 
 ---
 
@@ -198,7 +751,21 @@ pbmc$SingleR_label <- pred$labels
 
 7. `FindAllMarkers()` 用什么策略为每个聚类找标志基因？得到标志基因后如何完成手动注释？
 
-8. SingleR 自动注释的原理是什么？为什么说自动注释与手动注释应相互印证而非二选一？请举一个二者矛盾时反而有价值的情形。
+8. 置换检验（JackStraw）如何为主成分数量的选择提供统计判据？为什么它不适用于 SCTransform 归一化后的数据？
+
+9. Louvain 与 Leiden 都通过优化模块度划分社区，Leiden 修正了 Louvain 的什么缺陷？这一缺陷在 scRNA-seq 中会表现为什么问题？
+
+10. 多分辨率聚类树（clustree）能读出哪两类信息？如何据此判断该数据能稳定支持的最细粒度？
+
+11. UMAP 的 `min.dist` 参数控制什么？为什么说"调小 min.dist 让聚类看起来分得更开"是一种需要警惕的视觉效果？
+
+12. SingleR 的 `delta` 与 `pruned.labels` 分别是什么？为什么说"大量细胞被 pruned"是一个有价值的信号而非麻烦？它与第 9 章解卷积的哪个失效模式同源？
+
+13. 为什么层级注释（先粗后细）优于一次用高分辨率聚类？二次聚类时为什么必须重新选择高变基因？
+
+14. 为什么说"二次聚类总能分出亚群"恰恰是它危险的地方？应如何验证二次聚类得到的亚群是真实的？
+
+15. SingleR 自动注释的原理是什么？为什么说自动注释与手动注释应相互印证而非二选一？请举一个二者矛盾时反而有价值的情形。
 
 <details>
 <summary><strong>参考答案 (Reference Answers)</strong></summary>
@@ -217,6 +784,20 @@ pbmc$SingleR_label <- pred$labels
 
 7. *`FindAllMarkers()` 对每个聚类做"一对其余"（one-vs-rest）的差异表达检验（默认 Wilcoxon 秩和检验），筛出该聚类显著上调的标志基因。手动注释是将每个聚类的标志基因对照已知细胞类型标志基因数据库（如 PanglaoDB、CellMarker），把匿名聚类指派为对应的真实细胞类型，并用 FeaturePlot/DotPlot 可视化经典标志基因加以确认。*
 
-8. *SingleR 对每个查询细胞计算其表达谱与参考数据集中各细胞类型表达谱的相关性，指派相关性最高的类型并迭代微调。二者应相互印证是因为自动注释快速客观但受参考数据集覆盖度限制、手动注释精确可解释但主观耗时；互补可提高可靠性。矛盾有价值的情形：当参考数据集缺失某种细胞类型时，SingleR 会把该类型误派为最相似的已有类型，而手动注释通过其独特标志基因发现这是参考未覆盖的新类型/新状态——矛盾正好揭示了潜在的新发现或注释陷阱。*
+8. *置换检验随机打乱一小部分基因的表达值并重跑 PCA，从而构造出"纯噪声"情况下主成分基因载荷的零分布，再检验每个真实主成分是否显著偏离该零分布——显著者携带真实结构，不显著者与噪声无异。它把目视判断的"肘部"换成了可检验的统计判据。不适用于 SCTransform，是因为该检验的零模型假设输入是经典的对数归一化表达值，而 SCTransform 输出的是皮尔逊残差，其分布性质与该假设不符，对残差做置换得到的零分布没有意义。*
+
+9. *Leiden 修正了 Louvain 不保证社区内部连通的缺陷。Louvain 在迭代中把节点移动到能最大提升模块度的社区时，某个节点被移走后可能把原社区切成两个互不相连的部分，而算法不会检查这一点。Leiden 在每轮迭代后增加了精炼（refinement）步骤，保证每个社区都是连通的。在 scRNA-seq 中这一缺陷表现为：一个"聚类"标签下实际混着两群在图上毫无连接、彼此并不相似的细胞——在 UMAP 上常表现为同一颜色的聚类明显分成互不相邻的两块。*
+
+10. *两类信息：（1）稳定的聚类——在连续多个分辨率下保持独立、入边清晰单一的分支，对应很可能真实的细胞类型；（2）不稳定的划分——节点之间出现大量交叉边，说明细胞在相邻分辨率间来回跳动，提示该处的切分由噪声而非真实结构驱动。判断方法：从树顶端（低分辨率）向下看，找到"再往下分就开始出现交叉边"的那一层，它通常就是该数据能稳定支持的最细粒度。需要更细的亚型时应对特定聚类做二次聚类，而非继续调高全局分辨率。*
+
+11. *`min.dist` 控制嵌入中点与点能靠多近：值小则簇内更紧密、簇间更分离。需要警惕是因为这种分离度是**参数造就的视觉效果**，不代表数据中真实的分离程度——同一份数据、同样的聚类结果，仅改变 min.dist 就能让图看起来"干净"或"糊成一团"。若据此宣称"细胞类型界限清晰"，实际上只是在报告自己的参数选择。这与 UMAP 距离不可定量解读是同一条原则的不同侧面。*
+
+12. *`delta` 是最佳匹配得分与次佳的差距，差距小说明判定模棱两可；`pruned.labels` 则把 delta 过低的细胞置为 NA，即拒绝判定。大量细胞被 pruned 有价值，是因为它往往意味着**参考数据集缺少该细胞类型**——这些细胞与参考中所有类型都不够像，于是无法自信归类。这是一个关于参考质量的诊断信号，指出了需要补充参考或手动注释的位置。它与第 9 章细胞解卷积中"参考缺失细胞类型"的失效模式同源：算法都不会告诉你参考错了，只会给出一个"相对最像"的答案；区别在于 SingleR 至少通过 delta 提供了识别这一情形的手段，而解卷积连这个都没有。*
+
+13. *因为主要细胞类型与细胞亚型所需的分辨率不同：T 细胞与单核细胞差异巨大、低分辨率即可分开，而 CD4 幼稚 T 与 CD4 记忆 T 差异细微、需要很高分辨率。若用高分辨率一次做完，异质性低的类型（如单核细胞）会被过度切分成一堆无意义的碎片。二次聚类必须重新选择高变基因，是因为原先的高变基因是为区分所有细胞类型而选的（如 T 细胞 vs 单核细胞的标志基因），这些基因在 T 细胞子集内部几乎不变异，对区分 T 细胞亚型毫无帮助；只有在子集内重新计算变异，才能选出区分亚型的基因。*
+
+14. *因为对任何一群细胞重新聚类，算法都必然返回若干个子簇，哪怕这群细胞在生物学上完全均质——"能分出来"本身不构成任何证据。这使得二次聚类很容易成为虚假发现的来源：研究者对每个聚类都再分一次，总能得到一批"新亚型"。验证要求应比一次聚类更严格：每个亚群必须有特异且**可解释**的标志基因（而非仅仅统计显著的差异基因——在足够多的细胞下任何划分都能产生显著差异），并且最好能在独立样本或已发表数据中被重复检出。*
+
+15. *SingleR 对每个查询细胞计算其表达谱与参考数据集中各细胞类型表达谱的相关性，指派相关性最高的类型并迭代微调。二者应相互印证是因为自动注释快速客观但受参考数据集覆盖度限制、手动注释精确可解释但主观耗时；互补可提高可靠性。矛盾有价值的情形：当参考数据集缺失某种细胞类型时，SingleR 会把该类型误派为最相似的已有类型，而手动注释通过其独特标志基因发现这是参考未覆盖的新类型/新状态——矛盾正好揭示了潜在的新发现或注释陷阱。*
 
 </details>

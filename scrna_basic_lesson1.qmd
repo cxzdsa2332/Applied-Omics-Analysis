@@ -20,7 +20,89 @@ crossref:
 
 单细胞 RNA-seq（scRNA-seq）的核心技术挑战在于：如何在数以千计的细胞中，为每个细胞的 mRNA 分子打上独一无二的"地址"，以便测序完成后将读段准确归属到正确的细胞。本专题讲解 10x Genomics Chromium 平台如何用液滴微流控（droplet microfluidics）解决这一问题，以及上游软件 Cell Ranger 与开源替代 STARsolo 如何将原始测序读段转化为可供下游分析的细胞×基因表达矩阵。理解上游处理的每一步——条形码解码、UMI 去重、空液滴过滤——是正确解读下游结果、排查异常的前提。
 
-**学习目标**：理解 10x Chromium 液滴微流控的技术原理与 GEM、Cell Barcode、UMI 三者的关系；掌握 Cell Ranger 上游处理的核心步骤；理解条形码纠错与 UMI 去重的逻辑；区分 EmptyDrops 与膝点法两种空液滴过滤策略；能解读 Cell Ranger Web Summary 的关键质量指标。
+**学习目标**：了解单细胞测序的技术发展脉络与板式、液滴式两条路线的权衡；理解 10x Chromium 液滴微流控的技术原理与 GEM、Cell Barcode、UMI 三者的关系；能从数据本身判定化学版本并理解条形码白名单的纠错设计；区分 3′ 与 5′ 文库的适用场景；**理解双细胞的成因，能用泊松模型定量推导载入细胞数与双细胞率的关系**；掌握测序饱和度的定义并理解 UMI 碰撞的边界；掌握 Cell Ranger 上游处理的核心步骤与条形码纠错、UMI 去重的逻辑；理解环境 RNA 的双重影响；区分 EmptyDrops 与膝点法两种空液滴过滤策略；了解 snRNA-seq 的适用场景与 `--include-introns` 的必要性；了解细胞标签混样（Cell Hashing）的设计动机；能读懂 10x 三件套文件格式并理解稀疏存储的必要性；了解上游工具生态的取舍；能解读 Cell Ranger Web Summary 的关键质量指标。
+
+---
+
+# 本章使用的数据
+
+本章全部实操代码使用同一份数据：**10x Genomics PBMC 3k**——约 2700 个健康供体外周血单个核细胞（Peripheral Blood Mononuclear Cells, PBMC），10x Chromium v1 化学，比对至 hg19。它是单细胞领域事实上的标准教学数据集：细胞类型清晰（T、B、NK、单核、树突状细胞、血小板）、标志基因明确、规模适中，因而便于验证分析流程是否正确——若流程跑出的结果与公认的 PBMC 细胞组成不符，问题必然出在流程而非数据。
+
+数据已下载至本地，包含**原始**与**过滤后**两套矩阵：
+
+```bash
+# Canonical single-cell teaching dataset: 10x Genomics PBMC 3k
+SC_DIR=/Users/angdong/Documents/bio_example/SingleCell
+mkdir -p "$SC_DIR" && cd "$SC_DIR"
+
+# Filtered matrix: 2,700 called cells -- input for most downstream analysis
+curl -L -O https://cf.10xgenomics.com/samples/cell/pbmc3k/pbmc3k_filtered_gene_bc_matrices.tar.gz
+
+# Raw matrix: all 737,280 barcodes including empty droplets -- required for
+# EmptyDrops cell calling and for SoupX ambient-RNA correction
+curl -L -O https://cf.10xgenomics.com/samples/cell/pbmc3k/pbmc3k_raw_gene_bc_matrices.tar.gz
+
+tar xzf pbmc3k_filtered_gene_bc_matrices.tar.gz
+tar xzf pbmc3k_raw_gene_bc_matrices.tar.gz
+find . -type f -name "*.tsv" -o -name "*.mtx" | sort
+```
+
+得到的目录结构如下，本章所有代码都以此为输入：
+
+```text
+/Users/angdong/Documents/bio_example/SingleCell/
+├── filtered_gene_bc_matrices/hg19/     # 2,700 cells x 32,738 genes
+│   ├── barcodes.tsv
+│   ├── genes.tsv
+│   └── matrix.mtx
+└── raw_gene_bc_matrices/hg19/          # 737,280 barcodes x 32,738 genes
+    ├── barcodes.tsv
+    ├── genes.tsv
+    └── matrix.mtx
+```
+
+:::note
+**为什么必须保留原始矩阵：** 多数教程只提供过滤后的矩阵，因为下游分析用不到空液滴。但本章有三处分析**必须**用原始矩阵：空液滴过滤（EmptyDrops 需要空液滴来估计背景）、条形码等级图（要画出完整的 UMI 排序曲线）、以及环境 RNA 校正（SoupX 从空液滴估计"汤"的成分，见专题 6.2）。一旦只保留过滤后的矩阵，这三项分析就永远做不了——这也是实际项目中应始终归档 Cell Ranger 完整输出的原因。
+:::
+
+---
+
+# 从一个细胞到数万个细胞
+
+## 技术发展的两次跃迁
+
+单细胞转录组测序的第一篇论文发表于 2009 年，测的是**一个**小鼠卵裂球细胞（Tang et al., 2009）。在此后的数年里，单细胞实验的规模以"几十个细胞"为单位增长——每个细胞都需要手工挑取或流式分选到单独的孔中，单独建库、单独加索引。通量的瓶颈不在测序，而在于**每个细胞都要占用一套独立的实验操作**。
+
+![单细胞 RNA-seq 实验与分析全流程示意图。从组织解离、单细胞分离、逆转录与文库构建，到测序与下游的表达矩阵分析，构成本章讨论的完整链条。](https://upload.wikimedia.org/wikipedia/commons/thumb/0/0f/Single-cell_RNA-Seq_workflow.pdf/page1-960px-Single-cell_RNA-Seq_workflow.pdf.jpg){#fig-scrna-workflow width=85%}
+
+打破这一瓶颈的关键思想非常简洁：**与其把细胞分开处理，不如给每个细胞的分子贴上标签，再混在一起处理**。一旦每条 cDNA 都携带了"我来自哪个细胞"的信息，后续的建库与测序就可以完全合并进行，成本不再随细胞数线性增长。这正是条形码（Barcode）策略的核心，也是今天所有高通量单细胞平台的共同基础。
+
+:::note
+**"标签化 + 混合处理"是一个反复出现的思想：** 这一思路并非单细胞领域独有。二代测序的样本多重化（multiplexing）用样本索引把多个文库混在一张芯片上测；空间转录组用位置条形码把坐标写进分子（参见第 8 章）；MERFISH 用组合编码把基因身份写进多轮荧光信号（参见第 9 章）。它们解决的都是同一类问题——**当待测对象的数量远超可并行的物理通道数时，就用编码把区分的负担从硬件转移到信息层面**。理解了这一点，就能看出单细胞、空间与多重成像技术在方法论上的同源性。
+:::
+
+## 板式与液滴式：两条路线的权衡
+
+高通量单细胞平台主要分两类，其权衡关系与第 8 章讨论的空间平台如出一辙——**通量与信息深度不可兼得**。
+
+- **板式（Plate-based）**：用流式分选把单个细胞分到 96/384 孔板的每个孔中，代表方法为 Smart-seq2 及其后继 Smart-seq3。每个细胞单独建库，因此可以做**全长转录本**测序——能检测可变剪接、融合基因与 SNV，灵敏度（每细胞检出基因数）也最高。代价是通量受限于孔板规模，单细胞成本高。
+- **液滴式（Droplet-based）**：用微流控把细胞与条形码微珠共包裹进油滴，代表平台为 10x Chromium。通量可达单次实验数千至数万细胞，单细胞成本低；但因为只测转录本的一端（3′ 或 5′），无法获得全长信息，每细胞检出基因数也低于板式。
+
+@tbl-plate-vs-droplet 汇总了二者的差异。
+
+| 维度 | 板式（Smart-seq2/3） | 液滴式（10x Chromium） |
+|------|---------------------|----------------------|
+| 单次通量 | 数百细胞 | 数千至数万细胞 |
+| 转录本覆盖 | 全长 | 仅 3′ 或 5′ 末端 |
+| 每细胞检出基因数 | 高（可达 8000–10000） | 中（通常 1000–3000） |
+| 可否检测可变剪接/SNV | 可以 | 基本不能 |
+| 是否有 UMI | Smart-seq2 无，Smart-seq3 有 | 有 |
+| 单细胞成本 | 高 | 低 |
+| 典型用途 | 稀有细胞深度刻画、剪接研究 | 图谱构建、细胞类型普查 |
+
+: 板式与液滴式单细胞平台的对比 {#tbl-plate-vs-droplet}
+
+本章以应用最广的 10x Chromium 为主线。需要强调的是，"哪个更好"取决于研究问题：要绘制组织细胞图谱选液滴式，要深入刻画少量稀有细胞的转录本结构选板式。
 
 ---
 
@@ -30,7 +112,7 @@ crossref:
 
 10x Genomics Chromium 平台的核心是把单个细胞与一个携带特异条形码的凝胶珠（gel bead）共同包裹进一滴油中，形成所谓的 GEM（Gel bead-in-EMulsion，凝胶珠乳液）。在微流控芯片上，细胞悬液、凝胶珠和逆转录试剂分别从不同通道流入，与油相在交汇处剪切形成数万个纳升级油滴；通过控制细胞浓度，使绝大多数油滴最多包裹一个细胞。
 
-{{Wiki:Microfluidics}}
+![微流控芯片实物图。芯片上蚀刻的微米级通道网络用于精确操控纳升级液体，是 10x Chromium 生成单细胞油滴的物理基础。](https://upload.wikimedia.org/wikipedia/commons/thumb/a/ac/Microfluidic_Device_%286842746147%29.jpg/960px-Microfluidic_Device_%286842746147%29.jpg){#fig-microfluidics width=70%}
 
 每个凝胶珠表面携带数十万条寡核苷酸捕获探针，它们共享同一段**细胞条形码（Cell Barcode）**——这是该 GEM 的"地址"，标记 mRNA 来自哪个细胞。每条探针还带有一段不同的**分子条形码（Unique Molecular Identifier, UMI）**，用于标记单个 mRNA 分子，以及一段 poly-T 序列用于捕获带 poly-A 尾的 mRNA。油滴内完成逆转录后，所有 cDNA 都携带了"细胞地址 + 分子标签"的双重信息。
 
@@ -38,16 +120,196 @@ crossref:
 
 理解 scRNA-seq 数据，关键在于厘清三个标签的不同作用，见 @tbl-10x-barcodes。
 
-| 标签 | 长度（v3） | 作用 | 类比 |
-|------|-----------|------|------|
-| Cell Barcode | 16 bp | 标记 mRNA 来自哪个细胞 | 收件人地址 |
-| UMI | 12 bp | 标记单个 mRNA 分子，用于去除 PCR 重复 | 包裹追踪号 |
-| poly-T / 测序读段 | — | 捕获并测定 mRNA 序列本身 | 包裹内容 |
+| 标签 | 作用 | 类比 |
+|------|------|------|
+| Cell Barcode | 标记 mRNA 来自哪个细胞；同一 GEM 内所有探针共享 | 收件人地址 |
+| UMI | 标记单个 mRNA 分子，用于去除 PCR 重复；同一探针上各不相同 | 包裹追踪号 |
+| poly-T / 测序读段 | 捕获并测定 mRNA 序列本身 | 包裹内容 |
 
 : 10x Chromium 文库中三类标签的作用 {#tbl-10x-barcodes}
 
 :::note
 **为什么需要 UMI：** 文库制备包含 PCR 扩增，同一条原始 mRNA 会被复制成许多拷贝。若直接计数测序读段，高扩增效率的转录本会被严重高估。UMI 在逆转录时就标记了每个原始分子，因此测序后只需统计"不同 UMI 的数量"而非"读段数量"，即可还原真实的分子数，消除 PCR 扩增偏差。这是 scRNA-seq 定量准确性的基石。
+:::
+
+UMI 去重的逻辑用一个具体例子最容易说清。设某细胞中基因 *A* 被测到 5 条读段：
+
+```text
+读段   Cell Barcode      UMI           比对到
+r1     AAACATACAAAACG    ACGTACGTAC    基因 A
+r2     AAACATACAAAACG    ACGTACGTAC    基因 A   <- 与 r1 同 UMI，PCR 拷贝
+r3     AAACATACAAAACG    ACGTACGTAC    基因 A   <- 与 r1 同 UMI，PCR 拷贝
+r4     AAACATACAAAACG    TTGGCCAATT    基因 A
+r5     AAACATACAAAACG    GGCCTTAAGG    基因 A
+
+按读段计数：5          <- 被 PCR 扩增效率扭曲
+按 UMI 计数：3          <- 真实的原始分子数
+```
+
+矩阵里记录的是后者。这也解释了为何 scRNA-seq 的表达值常被称为"UMI 计数"而非"读段计数"。
+
+## 化学版本：条形码长度不是常数
+
+一个常被忽略的细节是，Cell Barcode 与 UMI 的长度**随 10x 化学版本而变**。照抄教程里的固定长度去解析自有数据，是上游处理最常见的错误之一。
+
+| 化学版本 | Cell Barcode | UMI | 白名单规模 |
+|---|---|---|---|
+| v1（2016） | 14 bp | 10 bp | 737,280 |
+| v2（2017） | 16 bp | 10 bp | 约 737,000 |
+| v3 / v3.1（2018 起） | 16 bp | 12 bp | 约 6,794,880 |
+
+: 10x Chromium 各化学版本的标签长度 {#tbl-10x-chemistry}
+
+**本章使用的 PBMC 3k 正是 v1 化学**，因此它的条形码是 14 bp、UMI 是 10 bp。这一点可以直接从数据里读出来，不必查文档：
+
+```r
+SC_DIR <- "/Users/angdong/Documents/bio_example/SingleCell"
+
+bc <- readLines(file.path(SC_DIR, "raw_gene_bc_matrices/hg19/barcodes.tsv"))
+head(bc, 3)
+
+# The "-1" suffix is the GEM well index, added by Cell Ranger when several
+# libraries are aggregated; strip it to get the barcode sequence itself
+core <- sub("-\\d+$", "", bc)
+cat("Barcode length:", unique(nchar(core)), "bp\n")
+cat("Whitelist size :", length(unique(core)), "\n")
+cat("4^14 would be  :", format(4^14, big.mark = ","), "\n")
+```
+
+输出为 14 bp、737,280 条。注意最后一行的对比：14 bp 理论上有 $4^{14} \approx 2.68 \times 10^8$ 种组合，而白名单只用了其中的 737,280 条——**不到理论空间的 0.3%**。
+
+:::note
+**白名单为什么是一个精心挑选的小子集：** 若把全部 $4^{14}$ 种序列都当作合法条形码，任何一个测序错误都会把某个条形码变成另一个同样合法的条形码，错误将无法被察觉。10x 的做法与第 9 章 MERFISH 的纠错编码是同一思想（参见第 9 章）：只启用彼此差异足够大的一个子集，使得单碱基错误产生的序列必然落在白名单之外、从而可被检出并纠正回最近的合法条形码。用编码空间的冗余换取纠错能力——这是本书中反复出现的权衡。
+:::
+
+## 3′ 与 5′ 文库
+
+10x 提供两种化学方案，差别在于条形码被加在转录本的哪一端，这一看似微小的设计差异决定了能做哪些下游分析：
+
+- **3′ 文库**：条形码与 UMI 位于转录本 3′ 端，测序读取 poly-A 尾附近的序列。这是最常用的方案，适合常规的细胞类型普查与基因表达定量。
+- **5′ 文库**：条形码与 UMI 位于 5′ 端。其关键价值在于，免疫受体（TCR/BCR）的可变区（V(D)J 区）恰好位于转录本 5′ 端——因此 5′ 方案可以在同一批细胞上同时获得基因表达谱与**完整的免疫受体序列**，实现免疫组库与转录组的配对分析。
+
+:::tip
+**文库类型必须在实验设计阶段确定：** 3′ 与 5′ 是不同的试剂盒与建库流程，数据产出后无法相互转换。若研究涉及 T/B 细胞克隆追踪、肿瘤浸润淋巴细胞或疫苗应答，必须在实验开始前就选择 5′ 方案，否则拿到数据才发现做不了 V(D)J 分析已无法补救。此外，选择 5′ 方案会在 `cellranger` 中使用 `cellranger multi` 而非 `cellranger count`，以同时处理基因表达与 V(D)J 文库。
+:::
+
+## 什么是双细胞
+
+前面说"通过控制细胞浓度，使绝大多数油滴最多包裹一个细胞"——这句话里的"绝大多数"是有代价的。细胞进入油滴的过程是随机的，因此总有一部分油滴会包进两个或更多细胞。**一个油滴包裹了两个及以上细胞时，这些细胞的 mRNA 共享同一个 Cell Barcode，在数据中表现为一个"细胞"**——这就是**双细胞**（Doublet；三个及以上时统称多细胞，Multiplet）。
+
+这里必须强调一点：双细胞**不是**可以在测序后被识别出来的实验失误，而是**液滴包裹的统计学必然**。它在数据中没有任何显式标记——你拿到的表达矩阵里，一个双细胞与一个真实细胞占据的位置完全相同，都是一列。如果不加处理，一个"T 细胞 + 单核细胞"的双细胞会呈现为同时表达 *CD3D* 与 *LYZ* 的转录谱，在下游极易被误读为一种新的"髓系-淋巴系过渡态细胞"。识别与剔除双细胞的方法属于质控范畴，将在专题 6.2 详细展开；本节关心的是它的**上游成因**，以及它如何反过来约束实验设计。
+
+## 泊松统计：为什么上样细胞数有上限
+
+把细胞随机分配到大量油滴中，是一个标准的泊松过程。设一次实验产生 $G$ 个有效 GEM、载入 $N$ 个细胞，则平均每滴细胞数 $\lambda = N/G$，而一个油滴恰好包含 $k$ 个细胞的概率为：
+
+$$P(k) = \frac{\lambda^{k} e^{-\lambda}}{k!}$$
+
+由此可以推出三个量：空液滴比例 $P(0) = e^{-\lambda}$、单细胞滴比例 $P(1) = \lambda e^{-\lambda}$、多细胞滴比例 $P(k \geq 2) = 1 - e^{-\lambda} - \lambda e^{-\lambda}$。
+
+但真正有意义的不是多细胞滴占**全部油滴**的比例（那个数很小，因为绝大多数油滴是空的），而是它占**被回收的细胞**的比例——因为空液滴会在上游被过滤掉，不进入最终矩阵。于是有：
+
+$$\text{双细胞率} = \frac{P(k \geq 2)}{1 - P(0)}$$
+
+在 $\lambda$ 很小时，这个式子近似等于 $\lambda/2 = N/(2G)$——**与载入细胞数成正比**。这正是业界那条"每 1000 个细胞约 0.8%"经验规则的来源，它并非纯经验，而是泊松统计的一阶近似。
+
+```r
+# Poisson encapsulation: why loading more cells costs you in doublets.
+# G is the number of usable GEMs per channel (order 10^4-10^5 on 10x).
+doublet_table <- function(N, G = 60000) {
+    lambda <- N / G
+    p0 <- exp(-lambda)                 # empty droplets
+    p1 <- lambda * exp(-lambda)        # exactly one cell
+    p2 <- 1 - p0 - p1                  # two or more cells
+    data.frame(
+        loaded_cells   = N,
+        lambda         = round(lambda, 4),
+        empty_pct      = sprintf("%.1f%%", p0 * 100),
+        singlet_pct    = sprintf("%.2f%%", p1 * 100),
+        # Among RECOVERED cells -- empty droplets are filtered out upstream
+        doublet_rate   = sprintf("%.2f%%", p2 / (1 - p0) * 100)
+    )
+}
+
+do.call(rbind, lapply(c(1000, 3000, 5000, 8000, 10000, 20000), doublet_table))
+```
+
+取 $G = 60{,}000$ 时该模型给出的双细胞率依次为 0.83%、2.48%、4.11%、6.52%、8.10%、15.74%，与 10x 官方手册的数值表高度吻合。@tbl-doublet-poisson 汇总了这一结果。
+
+| 载入细胞数 | $\lambda$ | 空液滴比例 | 单细胞滴比例 | 回收细胞中的双细胞率 |
+|---|---|---|---|---|
+| 1,000 | 0.0167 | 98.3% | 1.64% | 0.83% |
+| 3,000 | 0.0500 | 95.1% | 4.76% | 2.48% |
+| 5,000 | 0.0833 | 92.0% | 7.67% | 4.11% |
+| 8,000 | 0.1333 | 87.5% | 11.67% | 6.52% |
+| 10,000 | 0.1667 | 84.6% | 14.11% | 8.10% |
+| 20,000 | 0.3333 | 71.7% | 23.88% | 15.74% |
+
+: 泊松模型下载入细胞数与双细胞率的关系（$G = 60{,}000$ 个有效 GEM） {#tbl-doublet-poisson}
+
+这张表还揭示了一个常被忽视的事实：**即使在最保守的设置下，超过 84% 的油滴是空的**。这不是浪费，而是必要的代价——正是这种"稀释"才保证了大多数被占用的油滴里只有一个细胞。液滴微流控的效率低得惊人，却仍是目前最实用的高通量方案。
+
+:::warning
+**"多回收细胞"与"数据干净"是直接冲突的：** 提高上样浓度能线性地增加回收细胞数，但双细胞率也随之线性上升。回收 20,000 个细胞意味着其中约 3,100 个是双细胞——这些假细胞会在 UMAP 上形成虚假的"中间态"群体，且无法被完全识别剔除（专题 6.2 的检测工具通常只能找出其中一部分）。因此上样量的决策不应只看预算和目标细胞数，还要问：**本研究能容忍多少假细胞群？** 若研究目标涉及发现新的细胞状态或过渡态，双细胞是最危险的混杂因素，应把回收数控制在 5,000 以内；若只是给已知细胞类型做普查，较高的双细胞率尚可接受。
+:::
+
+## 规划测序深度
+
+第二个必须在实验前定下的数字是**每个细胞测多少读段**。
+
+常用经验值是**每细胞 20000–50000 个读段**。但绝对读段数是"投入"而非"产出"——同样 30,000 读段，用在一个总 mRNA 量很低的静息淋巴细胞上可能已经饱和，用在一个转录活跃的巨噬细胞上却远远不够。更有意义的判据是**测序饱和度**（Sequencing Saturation），Cell Ranger 对它的定义是：
+
+$$\text{Saturation} = 1 - \frac{\text{去重后的 UMI 数}}{\text{比对到基因的读段数}}$$
+
+分子是"检出的不同分子数"，分母是"付出的读段数"。因此饱和度实际在回答：**新增一条读段，有多大概率带来一个此前没见过的分子？** 饱和度 0.9 意味着每 10 条新读段里只有 1 条是新分子，其余 9 条都是已见分子的 PCR 拷贝——继续加测序量近乎纯浪费。反之饱和度过低说明许多真实分子尚未被检出，基因检出数被系统性低估。
+
+```r
+# Saturation is a property of (cell, depth), not of the run as a whole.
+# Simulate down-sampling: how does the detected-molecule count grow with depth?
+set.seed(42)
+true_molecules <- 5000                     # distinct mRNA molecules in one cell
+depths <- c(2000, 5000, 10000, 20000, 50000, 100000)
+
+sapply(depths, function(d) {
+    # Each read is a random draw (with replacement) from the molecule pool
+    seen <- length(unique(sample.int(true_molecules, d, replace = TRUE)))
+    c(reads = d, distinct_UMIs = seen,
+      saturation = round(1 - seen / d, 3))
+}) |> t()
+```
+
+这段模拟直观展示了收益递减：读段数翻倍，新检出的分子数远不到翻倍。
+
+:::note
+**饱和度多高才合适没有统一答案：** 目标是细胞类型鉴定时，饱和度 50%–70% 通常已足够——聚类依赖的是高表达的类型特异基因，它们在中等深度下就能被可靠检出。但若研究关注低表达的转录因子、需要精确定量表达水平、或要做拟时序等对表达精度敏感的分析，则应测到更高饱和度。一个务实的做法是先浅测一轮估计饱和度曲线，再决定是否补测——补测的数据可以与首轮合并，而测过头的钱无法退回。
+:::
+
+## UMI 碰撞：一个被普遍忽略的下界
+
+UMI 去重隐含一个假设：同一细胞、同一基因的两个不同 mRNA 分子，不会碰巧被贴上相同的 UMI。这个假设在多数情况下成立，但并非总是——UMI 是随机序列，当同一基因在同一细胞内的分子数足够多时，**必然**出现重复，这称为 **UMI 碰撞**（UMI Collision）。碰撞发生时，两个真实分子被当作一个，表达量被低估。
+
+这是经典的生日问题。设 UMI 长度为 $L$、序列空间 $S = 4^L$，某基因在某细胞中有 $m$ 个真实分子，则期望观测到的不同 UMI 数为：
+
+$$E[\text{观测}] = S\left[1 - \left(1 - \frac{1}{S}\right)^{m}\right]$$
+
+```r
+# UMI collision: how much do we undercount at a given molecule load?
+umi_collision <- function(m, L) {
+    S <- 4^L
+    expected <- S * (1 - (1 - 1/S)^m)
+    data.frame(umi_len = L, true_molecules = m,
+               expected_observed = round(expected, 1),
+               undercount = sprintf("%.2f%%", (m - expected) / m * 100))
+}
+
+do.call(rbind, lapply(c(100, 1000, 5000, 10000),
+                      function(m) rbind(umi_collision(m, 10), umi_collision(m, 12))))
+```
+
+结果显示这一偏差在常规场景下确实可以忽略：10 bp UMI（本章 v1 数据）在单个基因 10,000 个分子时低估约 0.48%，12 bp UMI 则仅 0.03%。但两点值得注意：其一，**低估是系统性的、且只作用于高表达基因**——它压缩了表达量的动态范围上端；其二，$L = 10$ 与 $L = 12$ 相差十余倍的容量，这正是 v3 化学把 UMI 从 10 bp 延长到 12 bp 的原因。
+
+:::tip
+**什么时候需要真的担心 UMI 碰撞：** 常规 scRNA-seq 中每个细胞每个基因的分子数通常在 $10^0$–$10^2$ 量级，碰撞可完全忽略。但在两类场景下它会变得重要：一是靶向扩增方案（只测几十个基因，单基因分子数可达 $10^4$ 以上）；二是极高表达的基因（如红细胞中的血红蛋白、浆细胞中的免疫球蛋白），其计数可能已触及 UMI 空间上限。遇到某个基因的 UMI 数在所有细胞中都"卡"在一个相近的天花板值时，应当先怀疑 UMI 碰撞而非生物学调控。
 :::
 
 ---
@@ -60,6 +322,10 @@ Cell Ranger 是 10x 官方的上游分析软件，把测序仪输出的原始数
 
 1. **`cellranger mkfastq`**：将测序仪的 BCL 原始文件按样本索引拆分为标准 FASTQ 文件。
 2. **`cellranger count`**：对单个样本的 FASTQ 执行条形码处理、比对、UMI 计数与细胞识别，输出表达矩阵。
+
+:::warning
+**以下两条命令不可直接运行：** 本章的教学数据集从 Cell Ranger 的**输出**（表达矩阵）开始，不包含原始 BCL 或 FASTQ 文件——完整的 PBMC 3k 原始测序数据约 20 GB，且 `cellranger count` 需要数小时与数十 GB 内存，不适合课堂演示。下面的命令用于说明参数结构与处理逻辑，路径为占位符。若要在自有数据上实际运行，需先安装 Cell Ranger 并下载对应物种的参考转录组。本章从加载表达矩阵起的所有代码则都可直接执行。
+:::
 
 ```bash
 # Step 1: demultiplex raw BCL into per-sample FASTQ files
@@ -89,21 +355,101 @@ cellranger count \
 比对到同一基因、且携带相同细胞条形码与相同 UMI 的多条读段，被认为来自同一原始 mRNA 分子的 PCR 拷贝，应合并计为一次。Cell Ranger 采用基于有向网络（directional network）的去重策略：考虑到 UMI 本身也可能有测序错误，它将仅差一个碱基、且丰度呈悬殊关系的 UMI 合并，从而避免把"测错的 UMI"误计为新分子。
 
 :::tip
-**`--include-introns` 参数：** 默认情况下 Cell Ranger 只统计比对到外显子的读段。对于单核 RNA 测序（snRNA-seq），细胞核内富含未剪接的前体 mRNA（含内含子），此时应开启 `--include-introns`（新版本默认开启）以纳入内含子读段，否则会严重低估基因表达。判断依据是样本类型：完整细胞用默认设置，细胞核样本需纳入内含子。
+**`--include-introns` 参数与单核测序：** 默认情况下 Cell Ranger 只统计比对到**外显子**的读段。这对完整细胞是合理的——胞质中的 mRNA 绝大多数已完成剪接。但有一类样本例外：**单核 RNA 测序**（single-nucleus RNA-seq, snRNA-seq）不分离完整细胞，而是先裂解细胞膜、只回收细胞核再上机。之所以要这么做，是因为许多组织根本无法被温和地解离成活的单细胞——冷冻存档的临床样本、脂肪组织、骨骼肌、以及带长突起的神经元，强行酶解要么细胞大量死亡、要么突起被切断导致转录组失真。细胞核则坚固得多，即便从冷冻组织中也能完整分离。
+
+代价是核内 RNA 的组成与胞质完全不同：细胞核富含**未剪接的前体 mRNA**（pre-mRNA，含内含子）。若沿用默认的仅计外显子设置，这部分读段会被全部丢弃，基因表达被严重低估、每细胞检出基因数骤降。因此 snRNA-seq **必须**开启 `--include-introns`（Cell Ranger 7 起已默认开启）。判断依据只看样本类型：完整细胞用默认设置，细胞核样本必须纳入内含子。这一区别也会影响下游——snRNA-seq 数据的线粒体基因比例天然极低（线粒体在胞质，不在核内），专题 6.2 的线粒体质控阈值需要相应调整。
 :::
 
 ## 空液滴过滤：区分细胞与背景
 
-并非每个 GEM 都包裹了真实细胞——大量油滴只含游离 RNA（来自破裂细胞的环境 RNA，称为 ambient RNA）。区分"真实细胞条形码"与"空液滴条形码"是上游处理最关键也最易出错的一步。
+上一节的泊松表已经说明：绝大多数油滴（84% 以上）根本没有包进细胞。但这些"空"液滴并非完全没有信号——细胞悬液的制备总会损伤一部分细胞，它们破裂后释放的 mRNA 游离在缓冲液中，被称为**环境 RNA**（Ambient RNA，业内俗称"汤"）。每个油滴都会包进一小份这样的缓冲液，因此空液滴里也能测到少量 UMI。
+
+于是问题变成：一个条形码测到了几百个 UMI，它究竟是**一个 RNA 含量很低的真实小细胞**，还是**一个只含环境 RNA 的空液滴**？区分二者是上游处理最关键也最易出错的一步——判错的两个方向都有代价：把空液滴当细胞会引入纯噪声的"细胞"，把真实小细胞当空液滴则会系统性丢失某些细胞类型（静息淋巴细胞尤其容易被误删）。
+
+:::note
+**环境 RNA 的影响不止于此：** 它不仅制造了"空液滴 vs 真实细胞"的判别难题，还污染了**每一个真实细胞**——因为包进细胞的那些油滴同样含有一份缓冲液。这意味着即便完美地识别出所有真实细胞，每个细胞的表达谱里仍掺着一份来自全组织平均的背景信号。这一层污染无法靠过滤细胞解决，需要专门的校正方法，将在专题 6.2 展开。本节只需记住：环境 RNA 是同时影响"细胞判定"与"表达定量"的双重问题。
+:::
 
 两种主流策略：
 
 - **膝点法（Knee point）**：将所有条形码按其总 UMI 数从高到低排序作图（barcode rank plot），真实细胞通常 UMI 数高、聚集在曲线左侧的"平台"，空液滴 UMI 数低、聚集在右侧；曲线急剧下降的"膝点/拐点"即为分界阈值。简单直观，但对细胞 RNA 含量差异大的样本不稳健。
 - **EmptyDrops**：不依赖单一阈值，而是先用极低 UMI 的条形码估计 ambient RNA 的表达谱，再对每个条形码统计检验其表达谱是否显著偏离 ambient 背景。能挽救 UMI 较低但表达谱明确的真实小细胞（如静息淋巴细胞），是当前推荐方法。
 
-{{Wiki:Knee_of_a_curve}}
+![曲线拐点（膝点）判据示意图。纵轴指标随序号下降，曲线由陡变平处即为膝点，是空液滴过滤与主成分数量选择共用的判据形式。](https://upload.wikimedia.org/wikipedia/commons/c/cd/DataClustering_ElbowCriterion.JPG){#fig-knee-curve width=70%}
 
 Cell Ranger 现代版本结合了两种思想：先用膝点确定一批高置信细胞，再用 EmptyDrops 式检验从其余条形码中挽救低 UMI 的真实细胞。
+
+:::note
+**运行环境说明：** `DropletUtils` 为 Bioconductor 包（`BiocManager::install("DropletUtils")`），需单独安装。`emptyDrops()` 在 737,280 个条形码上运行约需一至数分钟。本节代码直接读取上面下载的**原始**矩阵，路径可原样执行。
+:::
+
+```r
+library(DropletUtils)
+library(Matrix)
+
+SC_DIR <- "/Users/angdong/Documents/bio_example/SingleCell"
+
+# EmptyDrops needs the RAW (unfiltered) matrix -- it estimates the ambient
+# profile from empty droplets, so never run it on filtered output
+raw <- read10xCounts(file.path(SC_DIR, "raw_gene_bc_matrices/hg19"))
+cat("Raw matrix:", nrow(raw), "genes x", ncol(raw), "barcodes\n")
+
+set.seed(42)
+e_out <- emptyDrops(counts(raw), lower = 100)
+
+# Barcodes significantly deviating from the ambient profile are real cells
+is_cell <- e_out$FDR <= 0.01
+cat("Called cells:", sum(is_cell, na.rm = TRUE), "\n")
+```
+
+```r
+#| label: fig-barcode-rank
+#| fig-cap: "PBMC 3k 数据的条形码等级图（barcode rank plot）。横轴为按总 UMI 数降序排列的条形码序号（对数尺度），纵轴为该条形码的总 UMI 数（对数尺度）。曲线左侧的平台区对应真实细胞，右侧的低平台对应仅含环境 RNA 的空液滴，二者之间的急剧下降区即为膝点。图中标出的 knee 与 inflection 两条参考线展示了阈值法的判定位置。"
+library(DropletUtils)
+
+# `raw` comes from the read10xCounts() call above
+br <- barcodeRanks(counts(raw))
+
+plot(br$rank, br$total, log = "xy",
+     xlab = "Barcode rank", ylab = "Total UMI count", pch = 16, cex = 0.4)
+abline(h = metadata(br)$knee, col = "dodgerblue", lty = 2)
+abline(h = metadata(br)$inflection, col = "forestgreen", lty = 2)
+legend("bottomleft", legend = c("knee", "inflection"),
+       col = c("dodgerblue", "forestgreen"), lty = 2, bty = "n")
+```
+
+## 混样与细胞标签去卷积
+
+单独跑一个 10x 通道处理一个样本，成本高且引入批次效应——不同通道的细胞在不同时间、不同试剂批次下被处理，样本间差异与批次差异完全混杂，事后无法分离（参见第 7 章）。**细胞标签混样**（Cell Hashing）用一个巧妙的办法绕开了这一问题：在上样前，用带有寡核苷酸标签的抗体分别标记每个样本的细胞，再把所有样本混合进同一个通道。测序后，依据每个细胞携带的标签序列即可反查它来自哪个样本。
+
+![多重化（Multiplexing）原理示意图。多路信号经复用器合并到单一信道传输、再由解复用器还原，这正是 Cell Hashing 把多个样本混入同一测序通道的思想原型。](https://upload.wikimedia.org/wikipedia/commons/thumb/6/6f/Multiplexing_diagram.svg/960px-Multiplexing_diagram.svg.png){#fig-multiplexing width=85%}
+
+这一设计带来三重收益：所有样本共享同一批次，样本效应与批次效应被彻底解耦；单样本成本大幅下降；而且由于**来自不同样本的两个细胞若被包进同一液滴，会同时带上两种标签**，跨样本双细胞可以被直接识别并剔除——这是常规实验中无法获得的信息。
+
+:::warning
+**本小节代码不可在 PBMC 3k 上运行：** Cell Hashing 需要额外的 HTO（Hashtag Oligo）抗体标签文库，而本章的 PBMC 3k 是单样本、无标签数据，不含 `hto_counts`。下面的代码用于说明去卷积流程的调用方式；若要实际演练，需使用带 HTO 文库的数据集（如 `SeuratData` 的 `pbmc_hto`）。
+:::
+
+```r
+library(Seurat)
+
+# Illustrative: requires an HTO library, which PBMC 3k does not have
+# HTO (Hashtag Oligo) counts live in a separate assay alongside RNA
+pbmc[["HTO"]] <- CreateAssayObject(counts = hto_counts)
+
+# CLR normalisation across features, as for any antibody-derived tag
+pbmc <- NormalizeData(pbmc, assay = "HTO", normalization.method = "CLR", margin = 2)
+
+# Assign each cell to its sample of origin; cells with two tags are cross-sample doublets
+pbmc <- HTODemux(pbmc, assay = "HTO", positive.quantile = 0.99)
+table(pbmc$HTO_classification.global)
+```
+
+`HTO_classification.global` 把细胞分为三类：`Singlet`（单一标签，正常细胞）、`Doublet`（多标签，跨样本双细胞）与 `Negative`（无标签，标记失败或空液滴）。后两类应在下游分析前剔除。
+
+:::note
+**无标签混样：遗传去卷积。** 若样本来自不同个体，还有一种无需额外抗体标记的方案：直接利用 reads 中天然携带的 SNP 差异，把细胞按基因型聚类归属到各供体。`demuxlet`（需已知基因型）与 `souporcell`（无需基因型，从数据本身学习）是两个代表性工具。这一思路的优势是零额外实验成本、零抗体干扰，但只适用于**跨个体**混样——同一个体的不同处理条件之间没有基因型差异，无法区分，此时仍需 Cell Hashing。
+:::
 
 ---
 
@@ -116,6 +462,8 @@ STARsolo 是 STAR 比对器内置的 scRNA-seq 定量模块，是 Cell Ranger �
 :::
 
 ```bash
+# Illustrative only -- requires a STAR index and raw FASTQ, neither of which
+# is part of the teaching dataset (see the note above)
 # STARsolo: open-source alternative producing Cell Ranger-compatible output
 STAR --runMode alignReads \
     --genomeDir /path/to/STAR_index_GRCh38 \
@@ -133,6 +481,25 @@ STAR --runMode alignReads \
 **读段顺序易错点：** 在 10x 文库中，R1 携带细胞条形码与 UMI，R2 携带 cDNA 测序序列。STARsolo 的 `--readFilesIn` 要求**先 cDNA（R2）后 barcode（R1）**，即 `R2.fastq.gz R1.fastq.gz`，顺序与直觉相反。写错会导致比对率几乎为零，是初学者最常见的错误之一。
 :::
 
+## 上游工具生态
+
+除 Cell Ranger 与 STARsolo 外，还有两类基于**伪比对**（pseudo-alignment）的工具，它们不做完整的基因组比对，而是直接判断读段与哪些转录本相容，速度快一到两个数量级。@tbl-upstream-tools 汇总了四者的取舍。
+
+| 工具 | 策略 | 速度 | 内存 | 特点 |
+|---|---|---|---|---|
+| Cell Ranger | STAR 基因组比对 | 慢 | 高（约 32–64 GB） | 官方标准、输出含 Web Summary、与 Loupe 生态集成 |
+| STARsolo | STAR 基因组比对 | 中 | 高 | 开源、参数灵活、输出与 Cell Ranger 高度一致 |
+| alevin-fry | 选择性比对（salmon） | 快 | 低 | 支持剪接感知索引，可同时产出 spliced/unspliced 计数 |
+| kallisto \| bustools | 伪比对 + BUS 格式 | 最快 | 最低 | 极轻量，适合大规模批量处理 |
+
+: 主流 scRNA-seq 上游定量工具的对比 {#tbl-upstream-tools}
+
+:::tip
+**换工具会改变结果，所以不要中途换：** 多项基准研究表明，这几款工具在细胞类型层面的结论高度一致，但**每个基因的具体计数并不相同**——伪比对工具对多重比对读段的处理方式与基因组比对不同，在旁系同源基因、重叠基因与假基因上差异尤为明显。因此同一项研究的所有样本必须用**同一工具、同一版本、同一参考注释**处理；混用会引入与生物学无关的批次效应，而且这种效应按基因分布、极难在下游察觉。方法部分应明确记录工具名称、版本号与参考基因组版本。
+
+此外，若研究需要做 RNA Velocity（参见第 7 章），应优先选择 alevin-fry 或专用的 velocyto 流程——它们能直接输出未剪接/已剪接两套计数矩阵，而标准 Cell Ranger 输出不含这一信息，事后需要重新处理 BAM 文件。
+:::
+
 ---
 
 # 上游输出与质量解读
@@ -141,21 +508,69 @@ STAR --runMode alignReads \
 
 Cell Ranger 与 STARsolo 均输出稀疏矩阵格式的三件套文件，构成下游分析的统一入口：
 
-- `barcodes.tsv.gz`：每个真实细胞的条形码列表（矩阵的列）
-- `features.tsv.gz`：检测到的基因列表（矩阵的行）
-- `matrix.mtx.gz`：稀疏格式的表达计数矩阵（Matrix Market 格式，仅存储非零值）
+- `barcodes.tsv(.gz)`：每个条形码，对应矩阵的**列**
+- `genes.tsv` / `features.tsv(.gz)`：每个基因，对应矩阵的**行**（v3 起改名为 `features`，因为可能包含抗体等非基因特征）
+- `matrix.mtx(.gz)`：Matrix Market 格式的稀疏计数矩阵
+
+这三个文件的关系值得亲手看一遍，因为几乎所有"读不进数据"的报错都源于对它的误解：
+
+```bash
+SC_DIR=/Users/angdong/Documents/bio_example/SingleCell
+cd "$SC_DIR/filtered_gene_bc_matrices/hg19"
+
+echo "--- barcodes.tsv (matrix COLUMNS) ---"
+head -3 barcodes.tsv; wc -l < barcodes.tsv
+
+echo "--- genes.tsv (matrix ROWS): Ensembl ID <TAB> gene symbol ---"
+head -3 genes.tsv; wc -l < genes.tsv
+
+echo "--- matrix.mtx header ---"
+head -4 matrix.mtx
+```
+
+在本数据上，`genes.tsv` 有 32,738 行、`barcodes.tsv` 有 2,700 行，而 `matrix.mtx` 的头部是：
+
+```text
+%%MatrixMarket matrix coordinate real general
+%
+32738 2700 2286884
+1821 1 1
+```
+
+第三行是维度声明：**32,738 行（基因）× 2,700 列（细胞），共 2,286,884 个非零值**。从第四行起每行是一个三元组 `行号 列号 数值`——上面的 `1821 1 1` 表示"第 1821 个基因在第 1 个细胞中计数为 1"。注意它**只存非零值**：完整矩阵有 32738 × 2700 ≈ 8,839 万个元素，而实际记录的只有 229 万个，即 **97.4% 的元素是零**。
+
+```r
+# The sparsity is not an artefact -- it is the defining property of the data type
+SC_DIR <- "/Users/angdong/Documents/bio_example/SingleCell"
+m <- Seurat::Read10X(file.path(SC_DIR, "filtered_gene_bc_matrices/hg19"))
+
+cat("Dimensions      :", nrow(m), "genes x", ncol(m), "cells\n")
+cat("Non-zero entries:", format(Matrix::nnzero(m), big.mark = ","), "\n")
+cat("Density         :", sprintf("%.2f%%", Matrix::nnzero(m) / length(m) * 100), "\n")
+cat("Object class    :", class(m), "\n")
+```
+
+原始矩阵的稀疏程度更为极端：32,738 × 737,280 约合 241 亿个元素，非零值仅 290 万个，**密度 0.012%**。若用常规稠密矩阵存储，仅这一个矩阵就需要约 193 GB 内存；稀疏存储把它压到了 40 MB 的文件。这就是为什么整个单细胞生态（Seurat 的 `dgCMatrix`、Scanpy 的 `scipy.sparse`）都建立在稀疏矩阵之上——**稀疏不是一种优化，而是让分析在普通机器上成为可能的前提**。
+
+:::warning
+**`Read10X()` 必须指向含三个文件的那一层目录：** 本数据解压后是 `filtered_gene_bc_matrices/hg19/`，三个文件在 `hg19` 子目录里。若把路径写成上一层的 `filtered_gene_bc_matrices/`，`Read10X()` 会报找不到文件。这个 `hg19` 目录名来自建库时使用的参考基因组版本，不同数据集可能是 `GRCh38`、`mm10` 等；较新的 Cell Ranger 输出则直接把三个文件放在 `filtered_feature_bc_matrix/` 下、不再有物种子目录。拿到新数据时，先 `find . -name "matrix.mtx*"` 确认实际层级，比照抄教程路径可靠。
+:::
 
 ```r
 library(Seurat)
 
+SC_DIR <- "/Users/angdong/Documents/bio_example/SingleCell"
+
 # Load the 10x sparse matrix (three-file directory) into a Seurat object
-pbmc_data <- Read10X(data.dir = "/path/to/pbmc3k/outs/filtered_feature_bc_matrix")
+pbmc_data <- Read10X(data.dir = file.path(SC_DIR, "filtered_gene_bc_matrices/hg19"))
 pbmc <- CreateSeuratObject(counts = pbmc_data, project = "pbmc3k",
                            min.cells = 3, min.features = 200)
 
 # Quick sanity check: cells (columns) x genes (rows)
 pbmc
 ```
+
+在本数据上，这段代码的实际输出为 13,714 个基因 × 2,700 个细胞——`min.cells = 3` 把 32,738 个基因中仅在不到 3 个细胞里检出的绝大多数滤掉了，而 `min.features = 200` 未删除任何细胞（10x 提供的过滤矩阵已完成细胞判定）。
 
 ## Web Summary 关键指标
 
@@ -180,7 +595,17 @@ Cell Ranger 生成一份 HTML 格式的 Web Summary 报告，是判断实验成�
 
 # 方法总结与衔接说明
 
-本专题梳理了从液滴微流控的物理原理到表达矩阵的完整上游链条：细胞条形码定位、UMI 去重计数、空液滴过滤识别真实细胞。理解这些步骤，才能正确解读 Web Summary 指标、在数据异常时定位问题根源。但上游输出的"真实细胞"仍混杂着低质量细胞、双细胞与高背景细胞——专题 6.2 将讲解如何在细胞层面进行系统的质量控制与预处理，为降维聚类准备干净的数据。
+本专题梳理了从技术选型到表达矩阵的完整上游链条，其中有几条贯穿性的线索值得单独提取出来。
+
+**编码换通量，冗余换纠错。** 单细胞测序的通量跃迁来自"标签化 + 混合处理"——用条形码把区分的负担从硬件转移到信息层面，这同样是空间转录组与多重成像技术的方法论基础。而条形码白名单只启用 $4^{14}$ 种组合中的 737,280 条（不足 0.3%），则是用编码空间的冗余换取单碱基纠错能力，与 MERFISH 的汉明距离约束同源。
+
+**随机性是统计必然，不是实验失误。** 细胞进入油滴服从泊松分布，因此双细胞不可避免，其比率近似为 $N/(2G)$、与载入细胞数成正比；同样地，84% 以上的油滴必然是空的，这不是浪费而是保证单细胞占比的代价。理解这一点，才能把"多回收细胞"与"数据干净"之间的冲突当作需要主动决策的权衡，而非可以两全的技术问题。
+
+**每一步都有自己的定量边界。** UMI 去重依赖"不碰撞"假设，其误差可由生日问题精确刻画（10 bp UMI 在万分子量级低估约 0.5%）；测序深度的收益由饱和度刻画而非绝对读段数；环境 RNA 则同时污染"细胞判定"与"表达定量"两个层面。
+
+**工程细节决定成败。** 化学版本决定条形码长度、`Read10X()` 必须指向正确的目录层级、STARsolo 的读段顺序与直觉相反、snRNA-seq 必须开启 `--include-introns`、上游工具一经选定不可中途更换——这些都不是理论问题，却是实际分析中最常翻车的地方。
+
+理解这些步骤，才能正确解读 Web Summary 指标、在数据异常时定位问题根源。但上游输出的"真实细胞"仍混杂着低质量细胞、双细胞与环境 RNA 污染——专题 6.2 将讲解如何在细胞层面进行系统的质量控制与预处理，为降维聚类准备干净的数据。
 
 ---
 
@@ -200,7 +625,35 @@ Cell Ranger 生成一份 HTML 格式的 Web Summary 报告，是判断实验成�
 
 7. 在用 STARsolo 时，`--readFilesIn` 中 R1 与 R2 的顺序为何与直觉相反？写错会导致什么后果？
 
-8. 某 Cell Ranger Web Summary 报告显示 Fraction Reads in Cells 仅为 45%，Estimated Number of Cells 远高于上样预期。请推测可能的实验问题，并说明这对下游分析意味着什么。
+8. 单细胞测序从"一次测一个细胞"跃迁到"一次测数万个细胞"，其核心思想是什么？请说明这一思想与空间转录组、MERFISH 在方法论上的同源之处。
+
+9. 板式（Smart-seq2/3）与液滴式（10x）平台在通量与信息深度上如何权衡？若研究目标是刻画一小群稀有细胞的可变剪接模式，应选哪条路线？
+
+10. 3′ 与 5′ 文库的差别是什么？为什么说这一选择必须在实验设计阶段确定、事后无法补救？
+
+11. 上样细胞数的上限由什么决定？测序饱和度为什么比"每细胞读段数"更能指导深度规划？饱和度多高才合适取决于什么？
+
+12. Cell Hashing 带来了哪三重收益？为什么它能识别常规实验中无法发现的跨样本双细胞？遗传去卷积（demuxlet/souporcell）在什么情况下不适用？
+
+13. 什么是双细胞（Doublet）？为什么说它是"液滴包裹的统计学必然"而非实验失误？一个 T 细胞与单核细胞形成的双细胞在数据中会呈现什么特征，容易被误读为什么？
+
+14. 请写出泊松模型下空液滴、单细胞滴与多细胞滴的概率表达式。为什么计算双细胞率时分母要用 $1 - P(0)$ 而不是 1？
+
+15. 泊松表显示即使在保守设置下也有 84% 以上的油滴是空的。这是技术浪费吗？请说明这一"低效率"的必要性。
+
+16. 为什么 10x 的条形码白名单只使用了 $4^{14}$ 种可能序列中的 737,280 条（不足 0.3%）？这一设计与第 9 章 MERFISH 的纠错编码在思想上有何共通之处？
+
+17. 测序饱和度的定义式是什么？它为什么比"每细胞读段数"更能指导深度规划？
+
+18. 什么是 UMI 碰撞？它为什么是一个**系统性**偏差而非随机误差？在哪两类场景下需要真的担心它？
+
+19. snRNA-seq 与 scRNA-seq 的样本制备有何本质差异？为什么 snRNA-seq 必须开启 `--include-introns`？这一差异还会如何影响下游的线粒体质控？
+
+20. 原始矩阵有 241 亿个元素而非零值仅 290 万个。请说明稀疏存储为何是"分析得以进行的前提"而非单纯的优化。
+
+21. 为什么同一项研究的所有样本必须用同一上游工具、同一版本处理？混用会引入什么样的问题，为何它特别难以察觉？
+
+22. 某 Cell Ranger Web Summary 报告显示 Fraction Reads in Cells 仅为 45%，Estimated Number of Cells 远高于上样预期。请推测可能的实验问题，并说明这对下游分析意味着什么。
 
 <details>
 <summary><strong>参考答案 (Reference Answers)</strong></summary>
@@ -219,6 +672,34 @@ Cell Ranger 生成一份 HTML 格式的 Web Summary 报告，是判断实验成�
 
 7. *因为 10x 文库中 R1 携带 Cell Barcode 与 UMI、R2 携带 cDNA 测序序列，而 STARsolo 的 `--readFilesIn` 要求先提供 cDNA（R2）、后提供 barcode（R1），即 `R2 R1`。写反会使比对器用条形码序列去比对基因组，导致比对率几乎为零。*
 
-8. *Fraction Reads in Cells 仅 45% 说明大量读段来自细胞外游离 ambient RNA，结合细胞数远超预期，提示空液滴/低质量条形码被误判为细胞——很可能是细胞解离损伤严重、活力低、破裂细胞释放大量游离 RNA。对下游意味着：背景信号污染严重，即使过滤也难完全挽救，细胞类型边界会模糊，应优先在湿实验层面改进细胞制备而非仅靠计算补救。*
+8. *核心思想是"标签化 + 混合处理"：与其把每个细胞分开做一套独立的实验操作（这使成本随细胞数线性增长），不如给每个细胞的分子贴上标识其来源的条形码，之后所有细胞的分子就可以混在一起建库测序。同源之处在于，空间转录组用位置条形码把坐标写进分子、MERFISH 用组合编码把基因身份写进多轮荧光信号，三者解决的是同一类问题——当待测对象数量远超可并行的物理通道数时，用编码把区分的负担从硬件转移到信息层面。*
+
+9. *板式用流式分选把细胞分到孔板单独建库，可做全长转录本测序，每细胞检出基因数高（可达 8000–10000）、能检测可变剪接与 SNV，但通量仅数百细胞、单细胞成本高；液滴式通量达数千至数万细胞、成本低，但只测转录本一端，无法获得全长信息，每细胞检出基因数较低。刻画一小群稀有细胞的可变剪接模式应选板式（Smart-seq2/3）——因为可变剪接需要全长转录本信息，液滴式的 3′ 或 5′ 末端测序根本无法提供；而研究对象是"一小群"细胞，通量不构成约束。*
+
+10. *差别在于条形码与 UMI 被加在转录本的哪一端：3′ 文库加在 3′ 端、读取 poly-A 尾附近序列，适合常规表达定量；5′ 文库加在 5′ 端，而免疫受体（TCR/BCR）的 V(D)J 可变区恰位于转录本 5′ 端，因此 5′ 方案可在同一批细胞上同时获得表达谱与完整免疫受体序列。必须事先确定是因为二者是不同的试剂盒与建库流程，数据产出后无法相互转换——若拿到 3′ 数据才发现需要做 V(D)J 分析，只能重新实验。*
+
+11. *上样细胞数的上限由双细胞率决定：10x 上双细胞率与回收细胞数近似线性，每回收 1000 个细胞约上升 0.8%，故回收 10000 细胞意味着约 8% 双细胞。饱和度更有指导意义，是因为它直接衡量"新增读段还能带来多少新 UMI"——每细胞读段数是投入，饱和度才是产出；饱和度接近 1 时继续加量只是重复检出已有分子（纯浪费），过低则真实分子未被充分检出、基因数被低估。合适的饱和度取决于分析目标：细胞类型鉴定依赖高表达的类型特异基因，50%–70% 通常够用；关注低表达转录因子、需要精确定量或做拟时序等对表达精度敏感的分析，则需更高饱和度。*
+
+12. *三重收益：（1）所有样本共享同一通道、同一批次，样本效应与批次效应被彻底解耦；（2）单样本成本大幅下降；（3）可直接识别跨样本双细胞。能识别跨样本双细胞，是因为来自不同样本的两个细胞若被包进同一液滴，会同时携带两种不同的标签序列——这在常规实验中根本不存在可区分的信号，因为同一通道内所有细胞本就来自同一样本。遗传去卷积依赖 reads 中天然的 SNP 基因型差异，因此只适用于跨个体混样；同一个体的不同处理条件之间没有基因型差异、无法区分，此时仍须使用 Cell Hashing。*
+
+13. *双细胞指一个油滴包裹了两个及以上细胞，这些细胞的 mRNA 共享同一个 Cell Barcode，因而在数据中表现为一个"细胞"（三个及以上称多细胞）。它是统计学必然而非失误，因为细胞进入油滴是随机过程、服从泊松分布，只要载入细胞就一定有一部分油滴包进多个——无法通过改进操作消除，只能通过控制浓度降低其比率。T 细胞与单核细胞形成的双细胞会同时表达 CD3D 与 LYZ，转录谱落在两种细胞类型之间，在 UMAP 上形成虚假的中间群体，极易被误读为一种新的"髓系-淋巴系过渡态细胞"。*
+
+14. *空液滴 $P(0)=e^{-\lambda}$；单细胞滴 $P(1)=\lambda e^{-\lambda}$；多细胞滴 $P(k\geq 2)=1-e^{-\lambda}-\lambda e^{-\lambda}$，其中 $\lambda = N/G$。分母用 $1-P(0)$ 而非 1，是因为空液滴在上游会被识别并过滤掉、不进入最终表达矩阵；研究者真正关心的是"我拿到的这批细胞里有多大比例是假的"，因此分母应是被回收的（即非空的）液滴总数，而不是全部液滴。若用 1 作分母，得到的数字会小一个数量级，严重低估风险。*
+
+15. *不是浪费，而是必要的代价。空液滴比例高正是"稀释"的结果，而稀释恰恰是保证被占用液滴中大多数只含一个细胞的手段——由泊松分布，降低 $\lambda$ 会同时提高空滴比例和降低多细胞滴在占用滴中的占比，二者不可分割。若为提高"利用率"而提高细胞浓度，空滴比例确实下降，但双细胞率会同步线性上升，数据质量迅速劣化。因此液滴微流控是用极低的液滴利用率换取单细胞纯度，这一权衡是该技术的本质而非缺陷。*
+
+16. *因为若全部 $4^{14}$ 种序列都合法，任何单碱基测序错误都会把一个条形码变成另一个同样合法的条形码，错误无法被察觉、读段会被错误归属到别的细胞。只启用彼此差异足够大的子集后，单碱基错误产生的序列必然落在白名单之外，因而可被检出并纠正回最近的合法条形码。与 MERFISH 的共通之处在于：二者都通过**牺牲编码空间的利用率来换取纠错能力**——MERFISH 要求有效码字两两汉明距离 ≥ 4 从而只用了 $2^{16}$ 中的约 140 个码字，10x 则只用了 $4^{14}$ 中的 0.3%。这是信息论中冗余与可靠性权衡的同一原理在两种技术上的体现。*
+
+17. *定义式为 $\text{Saturation} = 1 - \dfrac{\text{去重后的 UMI 数}}{\text{比对到基因的读段数}}$。它比每细胞读段数更有指导意义，是因为读段数只是"投入"，而饱和度直接衡量"产出"——即新增一条读段带来一个未见过分子的概率。同样 30,000 条读段，用在总 mRNA 量低的静息淋巴细胞上可能已接近饱和，用在转录活跃的巨噬细胞上却远远不够；绝对读段数无法反映这种差异，饱和度可以。饱和度 0.9 意味着每 10 条新读段只有 1 条带来新分子，继续加测序近乎纯浪费。*
+
+18. *UMI 碰撞指同一细胞、同一基因的两个不同 mRNA 分子被随机贴上了相同的 UMI，去重时被当作一个分子，导致表达量低估。它是系统性偏差而非随机误差，原因有二：其一，碰撞只会导致低估、不会导致高估，误差方向恒定；其二，碰撞概率随该基因在该细胞中的分子数单调上升，因此只作用于高表达基因，效果是压缩表达量动态范围的上端，而非在所有基因上随机扰动。需要真正担心的两类场景：靶向扩增方案（只测几十个基因，单基因分子数可达 $10^4$ 以上）与极高表达基因（红细胞血红蛋白、浆细胞免疫球蛋白）。若发现某基因的 UMI 数在所有细胞中都"卡"在相近的天花板值，应先怀疑碰撞而非生物学调控。*
+
+19. *scRNA-seq 分离完整细胞，snRNA-seq 则先裂解细胞膜、只回收细胞核。采用后者是因为许多组织无法被温和解离成活的单细胞——冷冻存档临床样本、脂肪、骨骼肌以及带长突起的神经元，强行酶解会导致大量死亡或突起被切断致转录组失真；细胞核则坚固得多，可从冷冻组织中完整分离。必须开启 `--include-introns`，是因为细胞核富含未剪接的前体 mRNA（含内含子），默认仅计外显子会丢弃这部分读段，导致表达量严重低估、每细胞检出基因数骤降。对下游的影响：snRNA-seq 数据的线粒体基因比例天然极低（线粒体位于胞质而非核内），因此专题 6.2 中基于线粒体比例的质控阈值必须相应下调，照搬 scRNA-seq 的阈值会几乎不起过滤作用。*
+
+20. *因为稠密存储在内存上根本不可行。原始矩阵 32,738 × 737,280 约 241 亿个元素，若按常规数值类型稠密存储需约 193 GB 内存，超出绝大多数工作站的容量；而稀疏存储只记录 290 万个非零值的"行号-列号-数值"三元组，文件仅 40 MB。也就是说，不用稀疏结构，这份数据在普通机器上连载入都做不到，更谈不上分析。因此整个单细胞生态（Seurat 的 dgCMatrix、Scanpy 的 scipy.sparse）都建立在稀疏矩阵之上——稀疏性不是一项可选的性能优化，而是使分析得以进行的前提条件。*
+
+21. *因为不同工具对多重比对读段的处理方式不同（基因组比对 vs 伪比对），在旁系同源基因、重叠基因与假基因上给出的计数存在系统性差异。混用会引入与生物学无关的批次效应，其难以察觉之处在于：这种效应并非均匀地作用于所有基因，而是**按基因选择性地出现**——多数基因一致、少数基因系统性偏移。下游的批次校正方法假设批次效应有较为一致的结构，难以识别与移除这类按基因分布的偏差；而差异表达分析则可能把工具差异误判为生物学差异。因此应在方法部分明确记录工具名称、版本号与参考基因组注释版本。*
+
+22. *Fraction Reads in Cells 仅 45% 说明大量读段来自细胞外游离 ambient RNA，结合细胞数远超预期，提示空液滴/低质量条形码被误判为细胞——很可能是细胞解离损伤严重、活力低、破裂细胞释放大量游离 RNA。对下游意味着：背景信号污染严重，即使过滤也难完全挽救，细胞类型边界会模糊，应优先在湿实验层面改进细胞制备而非仅靠计算补救；若数据已无法重做，至少应在预处理中加入环境 RNA 校正（参见专题 6.2）并对结果保持审慎。*
 
 </details>

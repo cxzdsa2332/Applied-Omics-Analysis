@@ -398,7 +398,7 @@ ggplot(hill_data, aes(x = x, y = g, color = n)) +
 
 SINDy 并非凭空出现，它是统计学界三十余年来求解 **ODE 反问题（inverse problem）** 思想的延续。所谓反问题，是指给定基因表达的时间序列，反推支配其动态的微分方程及参数——这与前向问题（已知方程求轨迹）相反。理解这条方法脉络，能更清楚地看出 SINDy 的核心思想究竟来自何处。
 
-{{Wiki:Inverse_problem}}
+![反演问题求解流程示意图。由观测结果反推产生该结果的未知参数，解卷积即属此类。](https://upload.wikimedia.org/wikipedia/commons/9/92/Inversion_algorithm.jpg?utm_source=en.wikipedia.org&utm_campaign=imageinfo&utm_content=thumbnail_unscaled){#fig-inverse-problem width=70%}
 
 **第一步：梯度匹配避免反复积分（Varah, 1982）。** 求解 ODE 反问题最朴素的做法是：对一组候选参数积分 ODE 得到轨迹，再与观测比较，不断迭代——但这需要反复数值积分，计算昂贵且极易陷入局部最优。Varah 提出了一个影响深远的**两阶段（two-stage）**替代方案，又称梯度匹配（gradient matching）：第一阶段用光滑样条（spline）拟合带噪观测数据 $x(t)$，并对样条求导得到导数估计 $\dot{x}(t)$；第二阶段把 $\dot{x}$ 与 $x$ 都视为"已观测"，于是方程 $\dot{x}=f(x;\theta)$ 退化为一个普通的回归问题，用最小二乘直接估计参数 $\theta$，**完全不需要对 ODE 积分**。这一"先估计导数、再回归"的解耦思想，正是后来包括 SINDy 在内的几乎所有现代方程辨识方法的共同骨架。
 

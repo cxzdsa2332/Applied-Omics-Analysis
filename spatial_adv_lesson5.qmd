@@ -39,6 +39,8 @@ crossref:
 
 配准算法必须在"消除技术形变"与"保留生物学变化"之间取得平衡。过度配准会把不同深度的结构强行对齐，抹掉真实的三维形态；配准不足则技术偏差残留，使后续的三维重建扭曲。
 
+![图像配准前后对比。两幅存在位移与形变的影像经配准后落入同一坐标系，与空间转录组的跨切片对齐是同一数学问题。](https://upload.wikimedia.org/wikipedia/commons/thumb/d/d7/Registrator_Demo2.png/960px-Registrator_Demo2.png){#fig-img-reg width=70%}
+
 :::note
 **这个问题在医学影像学中已有数十年历史：** 图像配准（Image Registration）是放射学的核心技术之一——把同一患者不同时间、不同模态（CT/MRI/PET）的影像对齐，才能做纵向比较与多模态融合。空间转录组面对的是同一个数学问题，但有一个独特的优势：除了几何信息，每个位置还带有一个高维的表达向量。这意味着配准不必只依赖形态，还可以依据"这两个位置的转录特征是否相似"来判断它们是否对应——这正是 PASTE 等方法的出发点，也是空间转录组配准相比纯影像配准的额外抓手。
 :::
@@ -55,6 +57,8 @@ $$\min_{\Pi} \sum_{i,j} \Pi_{ij}\, c(\mathbf{y}_i, \mathbf{y}'_j) + \lambda \sum
 - **第二项（几何一致性）**：它要求匹配保持空间结构——若切片一中 $i$ 与 $k$ 相距很远，则它们的匹配对象 $j$ 与 $l$ 也应相距很远。这一项使配准不会把空间上打乱的点强行匹配。
 
 $\lambda$ 平衡两者。这一形式在最优传输理论中称为 Fused Gromov-Wasserstein 问题——"Fused"指同时使用了特征与几何两类信息。
+
+{{Wiki:Wasserstein_metric}}
 
 :::note
 **运行环境说明：** PASTE 为 Python 包（`pip install paste-bio`），基于 AnnData 与 POT（Python Optimal Transport）。配准的计算复杂度随 Spot 数的平方增长，两张标准 Visium 切片在 CPU 上通常数分钟完成；GPU 可加速但非必需。本节代码使用 `stxBrain` 的前脑与后脑切片——需注意二者并非严格意义上的连续切片，此处仅用于演示配准流程的调用方式，真实的三维重建应使用同一器官的连续切片序列。
@@ -263,6 +267,8 @@ head(res[order(res$padj), ])
 
 : 主要空间多组学技术路线 {#tbl-spatial-multiomics}
 
+![ATAC-seq 中 Tn5 转座酶的插入原理图。转座酶优先切割并标记开放染色质区域，从而读出染色质可及性。](https://upload.wikimedia.org/wikipedia/commons/thumb/1/1e/Tn5_Transposase_in_ATAC-seq.webp/960px-Tn5_Transposase_in_ATAC-seq.webp){#fig-atac width=85%}
+
 其中 **Slide-tags** 的思路值得单独说明：它不改变下游建库方式，而是在组织切片上先给细胞核打上位置条形码，然后把细胞核解离、走常规的单细胞多组学流程。这样得到的是带空间坐标的标准单细胞数据——既有单细胞分辨率与全转录组覆盖，又保留了位置信息。这一"先标位置、再解离"的思路绕开了原位测量的诸多技术限制，是一个巧妙的设计。
 
 ## 分析框架的延续性
@@ -284,6 +290,8 @@ head(res[order(res$padj), ])
 最后是一个工程问题。三维与多模态数据的规模远超单张切片：一套 50 张切片的三维 Visium 数据有约 25 万个 Spot；Stereo-seq 单张切片的原始捕获点可达数亿。在这个规模上，常规的内存内分析会直接失败。
 
 实用的应对策略包括：使用稀疏矩阵表示（`Matrix` 包的 `dgCMatrix`、`scipy.sparse`）；采用基于磁盘的后端（如 `HDF5Array`、AnnData 的 backed 模式）；在分析早期就做合理的 binning 或降采样；以及把计算密集的步骤（配准、深度学习模型）放到有充足内存与 GPU 的计算节点上。
+
+![稀疏矩阵非零元分布示意图。绝大多数元素为零，因而只存储非零元即可大幅压缩内存，这正是单细胞与空间表达矩阵的存储方式。](https://upload.wikimedia.org/wikipedia/commons/8/8a/Finite_element_sparse_matrix.png){#fig-sparse-matrix width=70%}
 
 ```r
 library(Seurat)
