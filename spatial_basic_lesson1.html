@@ -6,7 +6,7 @@
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
-<meta name="dcterms.date" content="2026-09-17">
+<meta name="dcterms.date" content="2026-09-22">
 
 <title>41&nbsp; 空间转录组技术全景与平台选型 – Introduction to Applied High-throughput Biological Data Analysis</title>
 <style>
@@ -695,7 +695,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
     <div>
     <div class="quarto-title-meta-heading">Published</div>
     <div class="quarto-title-meta-contents">
-      <p class="date">September 17, 2026</p>
+      <p class="date">September 22, 2026</p>
     </div>
   </div>
   
@@ -718,10 +718,29 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <section id="空间信息一直是生物学的默认维度" class="level2" data-number="43.1">
 <h2 data-number="43.1" class="anchored" data-anchor-id="空间信息一直是生物学的默认维度"><span class="header-section-number">43.1</span> 空间信息一直是生物学的默认维度</h2>
 <p>值得提醒的是，在生物学的绝大部分历史中，“空间”从来不是需要额外找回的东西——它就是观察的起点。组织学切片、免疫组化、原位杂交（In Situ Hybridization, ISH），这些方法从一开始就是在组织原位看分子的分布。真正的异常发生在高通量时代：为了同时测量成千上万个基因，我们不得不把组织磨碎、把细胞解离，用通量换掉了位置。</p>
-<p>{{Wiki:In_situ_hybridization}}</p>
+<div id="fig-ish" class="quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-ish-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<img src="https://upload.wikimedia.org/wikipedia/commons/5/57/RNA_in_situ_hybridization_in_FFPE_samples.jpg" class="img-fluid figure-img" style="width:70.0%">
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-ish-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+图&nbsp;1: RNA 原位杂交（ISH）染色结果。标记探针在组织切片上直接显示特定 RNA 的分布位置，是空间转录组学的技术前身。
+</figcaption>
+</figure>
+</div>
 <p>这一交换的代价在 Allen Brain Atlas 项目中体现得最为直观。该项目用传统 ISH 逐个基因地绘制小鼠脑中约两万个基因的表达分布，历时数年、耗资巨大——因为每个基因都需要一张独立的切片、一轮独立的杂交。它证明了空间表达图谱的科学价值，也暴露了传统方法的根本瓶颈：<strong>通量与空间不可兼得</strong>。</p>
 <div class="note">
 <p><strong>一个被忽视的先驱：</strong> 激光捕获显微切割（Laser Capture Microdissection, LCM）曾是空间转录组的主力方案——在显微镜下用激光把感兴趣的组织区域”切”下来，再单独做 RNA-seq。它的分辨率完全取决于操作者的手工圈选，通量极低，但在 2000 年代确实产出了大量有价值的区域特异表达数据。今天的空间转录组学在方法论上可以看作是把 LCM 的”先定位、再测序”自动化并推向了数千个位点的并行。理解这一延续性，有助于把握空间数据的本质——它始终是”位置 + 表达”的配对测量。</p>
+</div>
+<div id="fig-lcm" class="quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-lcm-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<img src="https://upload.wikimedia.org/wikipedia/commons/7/72/Laser_capture_microdissection_transfer_of_pure_breast_duct_epithelial_cells.jpg" class="img-fluid figure-img" style="width:70.0%">
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-lcm-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+图&nbsp;2: 激光捕获显微切割（LCM）取材示意。激光将显微镜下选定的组织区域切下并转移，实现先定位再测序的低通量空间分析。
+</figcaption>
+</figure>
 </div>
 </section>
 <section id="两条路线的原理分野" class="level2" data-number="43.2">
@@ -729,6 +748,16 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <p>2016 年前后，两条不同的技术路线几乎同时突破了通量瓶颈，其分野一直延续到今天：</p>
 <p><strong>测序型（Sequencing-based）</strong>：在载玻片上预先铺设一层带空间条形码的捕获探针。组织贴附并透化后，释放的 mRNA 被就近的探针捕获，条形码随即把”位置”写进了分子本身。之后的建库与测序完全沿用常规 RNA-seq 流程。这条路线的核心优势是<strong>无偏</strong>——不需要预先知道要测哪些基因，全转录组一次捕获。其分辨率上限由捕获单元的物理尺寸与排布密度决定。</p>
 <p><strong>成像型（Imaging-based）</strong>：不做捕获、不建库、不测序。而是设计一组荧光探针直接杂交到组织中的目标 RNA 上，通过多轮成像逐位读出每个分子的身份编码。这条路线的分辨率由光学系统决定，可达亚细胞乃至单分子级别；但每个待测基因都需要预先设计探针，因此只能检测一个有限的 panel。</p>
+<div id="fig-fish" class="quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-fish-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<img src="https://upload.wikimedia.org/wikipedia/commons/a/a1/Multiplex_ViewRNA_FISH_Assay_in_Jurkat_and_HeLa_cells.jpg" class="img-fluid figure-img" style="width:70.0%">
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-fish-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+图&nbsp;3: 多重荧光原位杂交（FISH）成像结果。不同荧光通道标记不同的靶标 RNA，是 MERFISH 等成像型空间转录组平台的技术基础。
+</figcaption>
+</figure>
+</div>
 <p><a href="#tbl-two-routes" class="quarto-xref">表&nbsp;<span>1</span></a> 概括了这一分野的后果。</p>
 <div id="tbl-two-routes" class="quarto-float quarto-figure quarto-figure-center anchored">
 <figure class="quarto-float quarto-float-tbl figure">
@@ -1030,6 +1059,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <li><strong>切片方向与取材位置</strong>：同一器官不同切面的解剖结构完全不同。必须在实验设计阶段就明确切面，并保留连续切片用于 H&amp;E 形态学对照。</li>
 <li><strong>样本量与重复</strong>：这是空间研究中最常被牺牲的一项。单张切片不是生物学重复，任何跨条件比较都需要多个独立样本——这一统计原则与单细胞研究完全一致（参见第 7 章）。</li>
 </ul>
+<p>{{Wiki:RNA_integrity_number}}</p>
 <div class="info">
 <p><strong>黄金法则：</strong> 空间转录组的数据质量在样本进入测序仪之前就已经被决定了。切片折叠、RNA 降解、透化不当造成的信号弥散——这三类问题在下游分析中既无法识别为独立变量，也无法被任何算法校正，只会伪装成”空间表达模式”混入结论。因此空间实验中，<strong>在组织学上的投入远比在算法上的投入更能提高研究质量</strong>。任何空间项目都应从与病理学家一起看 H&amp;E 切片开始，而不是从选择聚类算法开始。</p>
 </div>

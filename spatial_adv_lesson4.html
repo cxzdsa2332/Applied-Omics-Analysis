@@ -6,7 +6,7 @@
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
-<meta name="dcterms.date" content="2026-09-17">
+<meta name="dcterms.date" content="2026-09-22">
 
 <title>49&nbsp; 成像型空间转录组与细胞分割 – Introduction to Applied High-throughput Biological Data Analysis</title>
 <style>
@@ -731,7 +731,7 @@ window.Quarto = {
     <div>
     <div class="quarto-title-meta-heading">Published</div>
     <div class="quarto-title-meta-contents">
-      <p class="date">September 17, 2026</p>
+      <p class="date">September 22, 2026</p>
     </div>
   </div>
   
@@ -760,7 +760,16 @@ window.Quarto = {
 <section id="汉明距离约束" class="level2" data-number="51.2">
 <h2 data-number="51.2" class="anchored" data-anchor-id="汉明距离约束"><span class="header-section-number">51.2</span> 汉明距离约束</h2>
 <p>MERFISH 的核心创新正在于此：它<strong>故意不用满编码空间</strong>，而是只挑选一个满足距离约束的子集作为有效码字（Chen et al., 2015）。</p>
-<p>{{Wiki:Hamming_distance}}</p>
+<div id="fig-hamming" class="quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-hamming-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<img src="https://upload.wikimedia.org/wikipedia/commons/thumb/b/bf/Hamming_distance_4_bit_binary.svg/960px-Hamming_distance_4_bit_binary.svg.png" class="img-fluid figure-img" style="width:70.0%">
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-hamming-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+图&nbsp;1: 四位二进制码字的汉明距离示意图。两个码字间不同位的个数即汉明距离，MERFISH 通过要求有效码字两两距离不小于 4 实现一位纠错。
+</figcaption>
+</figure>
+</div>
 <p>具体约束是：任意两个有效码字的汉明距离 <span class="math inline">\(\geq 4\)</span>。这一约束的纠错逻辑可以精确地推演：</p>
 <ul>
 <li>设真实码字为 <span class="math inline">\(c\)</span>，某一轮出错导致观测码字为 <span class="math inline">\(c'\)</span>，则 <span class="math inline">\(d(c, c') = 1\)</span>。</li>
@@ -769,6 +778,16 @@ window.Quarto = {
 </ul>
 <p>于是一位错误可被唯一纠正。若观测码字与所有有效码字的距离都 <span class="math inline">\(\geq 2\)</span>，则说明发生了两位以上的错误，该分子被直接丢弃而非勉强归类。</p>
 <p>实践中常用的是 MHD4 编码（Modified Hamming Distance 4）：16 位中恰有 4 位为 1，且两两汉明距离 <span class="math inline">\(\geq 4\)</span>。这样的码字共有约 140 个可用——远少于 <span class="math inline">\(2^{16}\)</span>，正是用编码空间换取了纠错能力。</p>
+<div id="fig-ecc" class="quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-ecc-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<img src="https://upload.wikimedia.org/wikipedia/commons/thumb/3/3d/Block_code_error_correction.png/960px-Block_code_error_correction.png?utm_source=en.wikipedia.org&amp;utm_campaign=imageinfo&amp;utm_content=thumbnail" class="img-fluid figure-img" style="width:85.0%">
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-ecc-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+图&nbsp;2: 分组纠错码原理示意图。信息位之外附加冗余校验位，使接收端能检出并纠正传输中发生的位翻转。
+</figcaption>
+</figure>
+</div>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb1"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Why "exactly 4 ones out of 16" -- generating an MHD4-style codebook</span></span>
 <span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> itertools <span class="im">import</span> combinations</span>
 <span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> numpy <span class="im">as</span> np</span>
@@ -876,7 +895,27 @@ window.Quarto = {
 <h2 data-number="52.2" class="anchored" data-anchor-id="从分水岭到深度学习"><span class="header-section-number">52.2</span> 从分水岭到深度学习</h2>
 <p>分割的输入通常是 DAPI 核染色，有时辅以 poly-T 或细胞膜染色。方法的演进有三个阶段：</p>
 <p><strong>阈值 + 分水岭（Watershed）</strong>：经典图像处理方案。先用阈值分离前景，再用分水岭算法切分粘连的对象。它在细胞稀疏、形态规则的样本上可用，但在密集组织中表现很差——分水岭倾向于沿亮度低谷切分，而密集排列的细胞核之间往往没有清晰的亮度低谷。</p>
+<div id="fig-watershed" class="quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-watershed-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<img src="https://upload.wikimedia.org/wikipedia/commons/d/db/Relief_of_gradient_of_heart_MRI.png" class="img-fluid figure-img" style="width:70.0%">
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-watershed-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+图&nbsp;3: 分水岭算法示意图。图像梯度被视为地形起伏，算法沿山脊划分区域，在细胞密集处因缺乏清晰亮度低谷而失效。
+</figcaption>
+</figure>
+</div>
 <p><strong>Cellpose：通用深度学习分割</strong>：Cellpose 的核心思路是不直接预测掩膜，而是预测一个<strong>流场</strong>（flow）——图像中每个像素指向其所属细胞中心的方向向量。分割时从每个像素沿流场”爬坡”，汇聚到同一中心的像素即构成一个细胞（Stringer et al., 2021）。这一表示方式使模型能处理任意形状的细胞，且在大量人工标注的多样图像上预训练后具有很好的跨数据集泛化能力。</p>
+<div id="fig-image-seg" class="quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-image-seg-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<img src="https://upload.wikimedia.org/wikipedia/commons/thumb/2/21/Model_of_a_segmented_femur_-_journal.pone.0079004.g005.png/960px-Model_of_a_segmented_femur_-_journal.pone.0079004.g005.png" class="img-fluid figure-img" style="width:70.0%">
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-image-seg-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+图&nbsp;4: 图像分割结果示意图。算法从影像中划出目标结构的边界，成像型空间转录组的细胞分割属于同一类问题。
+</figcaption>
+</figure>
+</div>
 <p><strong>Baysor：从图像转向分子</strong>：Baysor 采取了一个不同的视角——既然最终目标是把转录本分配给细胞，为什么一定要先从图像划出边界？它直接对<strong>转录本的空间分布</strong>做概率聚类：空间上聚集且表达模式一致的分子应属于同一细胞（Petukhov et al., 2022）。核染色若可用则作为先验纳入，但并非必需。这一思路在核染色质量差或细胞形态不规则（如神经元的长突起）时优势明显。</p>
 <p><a href="#tbl-segmentation" class="quarto-xref">表&nbsp;<span>2</span></a> 对比三种路线。</p>
 <div id="tbl-segmentation" class="quarto-float quarto-figure quarto-figure-center anchored">

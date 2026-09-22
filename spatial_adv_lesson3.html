@@ -6,7 +6,7 @@
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
-<meta name="dcterms.date" content="2026-09-17">
+<meta name="dcterms.date" content="2026-09-22">
 
 <title>48&nbsp; 空间细胞通讯与微环境生态位分析 – Introduction to Applied High-throughput Biological Data Analysis</title>
 <style>
@@ -733,7 +733,7 @@ window.Quarto = {
     <div>
     <div class="quarto-title-meta-heading">Published</div>
     <div class="quarto-title-meta-contents">
-      <p class="date">September 17, 2026</p>
+      <p class="date">September 22, 2026</p>
     </div>
   </div>
   
@@ -807,7 +807,18 @@ window.Quarto = {
 </div>
 </figure>
 </div>
+<div id="fig-cell-signaling" class="quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-cell-signaling-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<img src="https://upload.wikimedia.org/wikipedia/commons/thumb/3/37/XBio_illustration_%E2%80%93_Signaling_Pathway.png/960px-XBio_illustration_%E2%80%93_Signaling_Pathway.png" class="img-fluid figure-img" style="width:85.0%">
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-cell-signaling-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+图&nbsp;1: 细胞信号转导通路示意图。配体与受体结合后经胞内级联传递信号，其作用距离决定了空间转录组能否分辨该类通讯。
+</figcaption>
+</figure>
+</div>
 <p>这张表给出了两个重要推论。其一，<strong>空间约束对旁分泌通讯最有价值</strong>——它的作用尺度恰好与 Visium 的 Spot 间距同量级，因此空间数据能有效区分”在作用范围内”与”不在作用范围内”。其二，<strong>近分泌与自分泌需要单细胞分辨率</strong>：在 55 µm 的 Spot 内部，我们无法知道两个细胞是否真的接触，因此 Visium 上做 Notch-Delta 这类接触依赖信号的推断，本质上仍是猜测。</p>
+<p>{{Wiki:Morphogen}}</p>
 <div class="note">
 <p><strong>一个来自发育生物学的提醒：</strong> 形态发生素（Morphogen）梯度是旁分泌信号最经典的例子——Wolpert 的”法国国旗模型”设想细胞根据自己所处位置的信号浓度决定命运，而浓度由扩散源的距离决定。这一思想提出于 1969 年，此后半个世纪里，验证它主要依赖对少数几个分子做原位杂交与免疫荧光。空间转录组的出现，第一次让研究者能在全转录组尺度上同时观察”信号源在哪里”与”响应基因在哪里表达”，从而把梯度假说从少数模式分子推广到整个转录组。这也解释了为什么发育生物学是空间转录组应用最活跃的领域之一。</p>
 </div>
@@ -948,6 +959,7 @@ window.Quarto = {
 <section id="commot最优传输视角" class="level2" data-number="52.2">
 <h2 data-number="52.2" class="anchored" data-anchor-id="commot最优传输视角"><span class="header-section-number">52.2</span> COMMOT：最优传输视角</h2>
 <p>COMMOT 从完全不同的角度建模（Cang et al., 2023）。它把通讯看作一个<strong>资源分配问题</strong>：组织中某些位置”供给”配体，另一些位置”需求”受体，信号如何从供给方流向需求方？这正是最优传输（Optimal Transport）的标准形式——在满足供需约束的前提下，求使总传输代价最小的方案，其中代价由空间距离决定。</p>
+<p>{{Wiki:Transportation_theory_(mathematics)}}</p>
 <p>这一框架的优势在于它天然处理了三件事：多个配体源竞争同一受体位点的分配问题、信号传输的距离衰减、以及配体总量的守恒约束。它的输出是一个”通讯流场”，可以直观地画出信号在组织上的流动方向。</p>
 <p><a href="#tbl-spatial-ccc" class="quarto-xref">表&nbsp;<span>2</span></a> 对比了三类方法。</p>
 <div id="tbl-spatial-ccc" class="quarto-float quarto-figure quarto-figure-center anchored">
@@ -1007,6 +1019,7 @@ window.Quarto = {
 <h2 data-number="53.1" class="anchored" data-anchor-id="生态位的定义"><span class="header-section-number">53.1</span> 生态位的定义</h2>
 <p>共定位分析给出的是全局的类型对关系（“星形胶质细胞与神经元倾向相邻”），但组织的实际组织方式往往更结构化：某些<strong>特定的细胞类型组合</strong>会在组织中反复出现，构成可辨识的功能单元。这样的重复出现的局部细胞组成模式，称为<strong>生态位</strong>（Niche）或<strong>细胞邻域</strong>（Cellular Neighborhood, CN）。</p>
 <p>识别生态位的方法出奇地简单：对每个位置，取它的空间邻域，统计邻域内各细胞类型的组成，得到一个组成向量；然后对所有位置的组成向量做聚类。每个聚类就是一个生态位——一类具有相似邻域细胞组成的位置。</p>
+<p>{{Wiki:Ecological_niche}}</p>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb9"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(Seurat)</span>
 <span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a><span class="co"># Step 1: for each spot, compute the cell-type composition of its neighbourhood</span></span>

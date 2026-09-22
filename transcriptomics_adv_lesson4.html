@@ -6,7 +6,7 @@
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
-<meta name="dcterms.date" content="2026-09-17">
+<meta name="dcterms.date" content="2026-09-22">
 
 <title>29&nbsp; 基因调控网络推断——从随机森林到动力系统 – Introduction to Applied High-throughput Biological Data Analysis</title>
 <style>
@@ -737,7 +737,7 @@ window.Quarto = {
     <div>
     <div class="quarto-title-meta-heading">Published</div>
     <div class="quarto-title-meta-contents">
-      <p class="date">September 17, 2026</p>
+      <p class="date">September 22, 2026</p>
     </div>
   </div>
   
@@ -1093,7 +1093,16 @@ window.Quarto = {
 <section id="方法溯源从梯度匹配到稀疏可加模型" class="level2" data-number="32.3">
 <h2 data-number="32.3" class="anchored" data-anchor-id="方法溯源从梯度匹配到稀疏可加模型"><span class="header-section-number">32.3</span> 方法溯源：从梯度匹配到稀疏可加模型</h2>
 <p>SINDy 并非凭空出现，它是统计学界三十余年来求解 <strong>ODE 反问题（inverse problem）</strong> 思想的延续。所谓反问题，是指给定基因表达的时间序列，反推支配其动态的微分方程及参数——这与前向问题（已知方程求轨迹）相反。理解这条方法脉络，能更清楚地看出 SINDy 的核心思想究竟来自何处。</p>
-<p>{{Wiki:Inverse_problem}}</p>
+<div id="fig-inverse-problem" class="quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-inverse-problem-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<img src="https://upload.wikimedia.org/wikipedia/commons/9/92/Inversion_algorithm.jpg?utm_source=en.wikipedia.org&amp;utm_campaign=imageinfo&amp;utm_content=thumbnail_unscaled" class="img-fluid figure-img" style="width:70.0%">
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-inverse-problem-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+图&nbsp;3: 反演问题求解流程示意图。由观测结果反推产生该结果的未知参数，解卷积即属此类。
+</figcaption>
+</figure>
+</div>
 <p><strong>第一步：梯度匹配避免反复积分（Varah, 1982）。</strong> 求解 ODE 反问题最朴素的做法是：对一组候选参数积分 ODE 得到轨迹，再与观测比较，不断迭代——但这需要反复数值积分，计算昂贵且极易陷入局部最优。Varah 提出了一个影响深远的<strong>两阶段（two-stage）</strong>替代方案，又称梯度匹配（gradient matching）：第一阶段用光滑样条（spline）拟合带噪观测数据 <span class="math inline">\(x(t)\)</span>，并对样条求导得到导数估计 <span class="math inline">\(\dot{x}(t)\)</span>；第二阶段把 <span class="math inline">\(\dot{x}\)</span> 与 <span class="math inline">\(x\)</span> 都视为”已观测”，于是方程 <span class="math inline">\(\dot{x}=f(x;\theta)\)</span> 退化为一个普通的回归问题，用最小二乘直接估计参数 <span class="math inline">\(\theta\)</span>，<strong>完全不需要对 ODE 积分</strong>。这一”先估计导数、再回归”的解耦思想，正是后来包括 SINDy 在内的几乎所有现代方程辨识方法的共同骨架。</p>
 <p><strong>第二步：高维线性可加模型（Lu et al., 2011）。</strong> 当目标从单个方程扩展到包含成百上千个基因的调控网络时，参数数量爆炸，且样本量远小于参数量（<span class="math inline">\(p \gg n\)</span>）。Lu 等人将每个基因的导数建模为其他基因表达量的<strong>线性可加（linear additive）</strong>组合：</p>
 <p><span class="math display">\[\frac{dx_i}{dt} = a_{i0} + \sum_{j} a_{ij}\, x_j\]</span></p>
@@ -1122,7 +1131,7 @@ window.Quarto = {
 <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/f/f8/L1_and_L2_balls.svg/500px-L1_and_L2_balls.svg.png" class="img-fluid figure-img" style="width:70.0%">
 </div>
 <figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-lasso-l1l2-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
-图&nbsp;3: LASSO（<span class="math inline">\(\ell_1\)</span>）与岭回归（<span class="math inline">\(\ell_2\)</span>）约束区域对比：<span class="math inline">\(\ell_1\)</span> 的菱形角点导致稀疏解，正则化路径在坐标轴上与等值线相交
+图&nbsp;4: LASSO（<span class="math inline">\(\ell_1\)</span>）与岭回归（<span class="math inline">\(\ell_2\)</span>）约束区域对比：<span class="math inline">\(\ell_1\)</span> 的菱形角点导致稀疏解，正则化路径在坐标轴上与等值线相交
 </figcaption>
 </figure>
 </div>

@@ -6,7 +6,7 @@
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
-<meta name="dcterms.date" content="2026-09-17">
+<meta name="dcterms.date" content="2026-09-22">
 
 <title>38&nbsp; 细胞通讯分析与基因调控网络推断 – Introduction to Applied High-throughput Biological Data Analysis</title>
 <style>
@@ -721,7 +721,7 @@ window.Quarto = {
     <div>
     <div class="quarto-title-meta-heading">Published</div>
     <div class="quarto-title-meta-contents">
-      <p class="date">September 17, 2026</p>
+      <p class="date">September 22, 2026</p>
     </div>
   </div>
   
@@ -744,7 +744,16 @@ window.Quarto = {
 <section id="从表达到通讯推断逻辑" class="level2" data-number="40.1">
 <h2 data-number="40.1" class="anchored" data-anchor-id="从表达到通讯推断逻辑"><span class="header-section-number">40.1</span> 从表达到通讯：推断逻辑</h2>
 <p>多细胞生物的协调依赖细胞间持续的信号交流。scRNA-seq 提供了一种计算推断细胞通讯的途径，其基本逻辑是：若细胞类型 A 高表达某配体（Ligand），而细胞类型 B 高表达该配体对应的受体（Receptor），则推断 A → B 之间存在该信号通路的潜在通讯。这一推断建立在一个简化假设上——配体与受体的 mRNA 表达水平能够代表蛋白质水平的信号交互能力。</p>
-<p>{{Wiki:Cell_signaling}}</p>
+<div id="fig-cell-signaling" class="quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-cell-signaling-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<img src="https://upload.wikimedia.org/wikipedia/commons/thumb/3/37/XBio_illustration_%E2%80%93_Signaling_Pathway.png/960px-XBio_illustration_%E2%80%93_Signaling_Pathway.png" class="img-fluid figure-img" style="width:85.0%">
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-cell-signaling-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+图&nbsp;1: 细胞信号转导通路示意图。配体与受体结合后经胞内级联传递信号，其作用距离决定了空间转录组能否分辨该类通讯。
+</figcaption>
+</figure>
+</div>
 <p>需要清醒认识这一假设的局限：mRNA 表达不等于蛋白质丰度，更不等于实际发生的物理结合；通讯推断给出的是”潜在可能”而非”已证实的相互作用”，所有计算预测都需要实验验证（如共培养、邻近标记、配体阻断）。</p>
 </section>
 <section id="cellchat-的通讯概率模型" class="level2" data-number="40.2">
@@ -811,7 +820,16 @@ window.Quarto = {
 <li><strong>motif 富集过滤（RcisTarget）</strong>：对每个 TF 的候选靶基因集，检验这些靶基因的启动子/调控区是否显著富集该 TF 的结合 motif。只有同时满足”共表达”与”motif 证据”的 TF-靶基因关系才被保留，构成一个 <strong>Regulon（调控子）</strong>——即一个 TF 及其经 motif 验证的直接靶基因集合。</li>
 <li><strong>调控子活性打分（AUCell）</strong>：对每个细胞，用 AUCell 计算每个 Regulon 的活性得分——本质是该 Regulon 的靶基因在该细胞表达排名中的富集程度（曲线下面积 AUC）。由此得到”细胞 × Regulon 活性”矩阵，可像表达矩阵一样用于聚类与可视化。</li>
 </ol>
-<p>{{Wiki:Gene_regulatory_network}}</p>
+<div id="fig-grn" class="quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-grn-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<img src="https://upload.wikimedia.org/wikipedia/commons/c/c4/Gene_Regulatory_Network.jpg" class="img-fluid figure-img" style="width:70.0%">
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-grn-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+图&nbsp;2: 基因调控网络示意图。转录因子与靶基因构成有向调控关系，网络拓扑决定细胞状态的稳定与转换。
+</figcaption>
+</figure>
+</div>
 <p>SCENIC 的核心价值在于第二步：通过引入 motif 这一独立的、机制性的证据，它从纯统计的共表达关系中筛出了更可能是真实直接调控的关系，大幅降低了假阳性。</p>
 </section>
 <section id="regulon-与-aucell-的意义" class="level2" data-number="41.2">

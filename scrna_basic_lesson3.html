@@ -6,7 +6,7 @@
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
-<meta name="dcterms.date" content="2026-09-17">
+<meta name="dcterms.date" content="2026-09-22">
 
 <title>34&nbsp; 降维、聚类与细胞类型注释 – Introduction to Applied High-throughput Biological Data Analysis</title>
 <style>
@@ -112,6 +112,35 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   }
 }</script>
 
+  <script src="https://cdnjs.cloudflare.com/polyfill/v3/polyfill.min.js?features=es6"></script>
+  <script defer="" src="https://cdn.jsdelivr.net/npm/mathjax@4/tex-chtml.js" type="text/javascript"></script>
+
+<script type="text/javascript">
+const typesetMath = (el) => {
+  if (window.MathJax) {
+    // MathJax Typeset
+    window.MathJax.typeset([el]);
+  } else if (window.katex) {
+    // KaTeX Render
+    var mathElements = el.getElementsByClassName("math");
+    var macros = [];
+    for (var i = 0; i < mathElements.length; i++) {
+      var texText = mathElements[i].firstChild;
+      if (mathElements[i].tagName == "SPAN" && texText && texText.data) {
+        window.katex.render(texText.data, mathElements[i], {
+          displayMode: mathElements[i].classList.contains('display'),
+          throwOnError: false,
+          macros: macros,
+          fleqn: false
+        });
+      }
+    }
+  }
+}
+window.Quarto = {
+  typesetMath
+};
+</script>
 
 </head>
 
@@ -661,19 +690,33 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   <li><a href="#降维" id="toc-降维" class="nav-link" data-scroll-target="#降维"><span class="header-section-number">36</span> 降维</a>
   <ul class="collapse">
   <li><a href="#pca去噪与压缩" id="toc-pca去噪与压缩" class="nav-link" data-scroll-target="#pca去噪与压缩"><span class="header-section-number">36.1</span> PCA：去噪与压缩</a></li>
-  <li><a href="#选择主成分数量" id="toc-选择主成分数量" class="nav-link" data-scroll-target="#选择主成分数量"><span class="header-section-number">36.2</span> 选择主成分数量</a></li>
+  <li><a href="#主成分是什么读懂载荷" id="toc-主成分是什么读懂载荷" class="nav-link" data-scroll-target="#主成分是什么读懂载荷"><span class="header-section-number">36.2</span> 主成分是什么：读懂载荷</a></li>
+  <li><a href="#每个主成分解释了多少方差" id="toc-每个主成分解释了多少方差" class="nav-link" data-scroll-target="#每个主成分解释了多少方差"><span class="header-section-number">36.3</span> 每个主成分解释了多少方差</a></li>
+  <li><a href="#选择主成分数量" id="toc-选择主成分数量" class="nav-link" data-scroll-target="#选择主成分数量"><span class="header-section-number">36.4</span> 选择主成分数量</a></li>
+  <li><a href="#置换检验给肘部一个统计判据" id="toc-置换检验给肘部一个统计判据" class="nav-link" data-scroll-target="#置换检验给肘部一个统计判据"><span class="header-section-number">36.5</span> 置换检验：给”肘部”一个统计判据</a></li>
   </ul></li>
   <li><a href="#聚类" id="toc-聚类" class="nav-link" data-scroll-target="#聚类"><span class="header-section-number">37</span> 聚类</a>
   <ul class="collapse">
   <li><a href="#knn-图与图聚类" id="toc-knn-图与图聚类" class="nav-link" data-scroll-target="#knn-图与图聚类"><span class="header-section-number">37.1</span> KNN 图与图聚类</a></li>
-  <li><a href="#分辨率参数" id="toc-分辨率参数" class="nav-link" data-scroll-target="#分辨率参数"><span class="header-section-number">37.2</span> 分辨率参数</a></li>
-  <li><a href="#umap-可视化" id="toc-umap-可视化" class="nav-link" data-scroll-target="#umap-可视化"><span class="header-section-number">37.3</span> UMAP 可视化</a></li>
+  <li><a href="#knn-与-snnseurat-实际用的是后者" id="toc-knn-与-snnseurat-实际用的是后者" class="nav-link" data-scroll-target="#knn-与-snnseurat-实际用的是后者"><span class="header-section-number">37.2</span> KNN 与 SNN：Seurat 实际用的是后者</a></li>
+  <li><a href="#k.param-的影响" id="toc-k.param-的影响" class="nav-link" data-scroll-target="#k.param-的影响"><span class="header-section-number">37.3</span> <code>k.param</code> 的影响</a></li>
+  <li><a href="#louvain-与-leiden-的差别" id="toc-louvain-与-leiden-的差别" class="nav-link" data-scroll-target="#louvain-与-leiden-的差别"><span class="header-section-number">37.4</span> Louvain 与 Leiden 的差别</a></li>
+  <li><a href="#分辨率参数" id="toc-分辨率参数" class="nav-link" data-scroll-target="#分辨率参数"><span class="header-section-number">37.5</span> 分辨率参数</a></li>
+  <li><a href="#用多分辨率树评估稳定性" id="toc-用多分辨率树评估稳定性" class="nav-link" data-scroll-target="#用多分辨率树评估稳定性"><span class="header-section-number">37.6</span> 用多分辨率树评估稳定性</a></li>
+  <li><a href="#为什么不用-k-means-或层次聚类" id="toc-为什么不用-k-means-或层次聚类" class="nav-link" data-scroll-target="#为什么不用-k-means-或层次聚类"><span class="header-section-number">37.7</span> 为什么不用 K-means 或层次聚类</a></li>
+  <li><a href="#umap-跑在主成分上不是原始表达上" id="toc-umap-跑在主成分上不是原始表达上" class="nav-link" data-scroll-target="#umap-跑在主成分上不是原始表达上"><span class="header-section-number">37.8</span> UMAP 跑在主成分上，不是原始表达上</a></li>
+  <li><a href="#umap-可视化" id="toc-umap-可视化" class="nav-link" data-scroll-target="#umap-可视化"><span class="header-section-number">37.9</span> UMAP 可视化</a></li>
   </ul></li>
   <li><a href="#细胞类型注释" id="toc-细胞类型注释" class="nav-link" data-scroll-target="#细胞类型注释"><span class="header-section-number">38</span> 细胞类型注释</a>
   <ul class="collapse">
   <li><a href="#标志基因鉴定" id="toc-标志基因鉴定" class="nav-link" data-scroll-target="#标志基因鉴定"><span class="header-section-number">38.1</span> 标志基因鉴定</a></li>
-  <li><a href="#手动注释" id="toc-手动注释" class="nav-link" data-scroll-target="#手动注释"><span class="header-section-number">38.2</span> 手动注释</a></li>
-  <li><a href="#自动注释singler" id="toc-自动注释singler" class="nav-link" data-scroll-target="#自动注释singler"><span class="header-section-number">38.3</span> 自动注释：SingleR</a></li>
+  <li><a href="#一个被普遍忽略的统计问题双重浸入" id="toc-一个被普遍忽略的统计问题双重浸入" class="nav-link" data-scroll-target="#一个被普遍忽略的统计问题双重浸入"><span class="header-section-number">38.2</span> 一个被普遍忽略的统计问题：双重浸入</a></li>
+  <li><a href="#标志基因的可视化选对图" id="toc-标志基因的可视化选对图" class="nav-link" data-scroll-target="#标志基因的可视化选对图"><span class="header-section-number">38.3</span> 标志基因的可视化：选对图</a></li>
+  <li><a href="#手动注释" id="toc-手动注释" class="nav-link" data-scroll-target="#手动注释"><span class="header-section-number">38.4</span> 手动注释</a></li>
+  <li><a href="#自动注释singler" id="toc-自动注释singler" class="nav-link" data-scroll-target="#自动注释singler"><span class="header-section-number">38.5</span> 自动注释：SingleR</a></li>
+  <li><a href="#评估自动注释的可信度" id="toc-评估自动注释的可信度" class="nav-link" data-scroll-target="#评估自动注释的可信度"><span class="header-section-number">38.6</span> 评估自动注释的可信度</a></li>
+  <li><a href="#注释的三类陷阱" id="toc-注释的三类陷阱" class="nav-link" data-scroll-target="#注释的三类陷阱"><span class="header-section-number">38.7</span> 注释的三类陷阱</a></li>
+  <li><a href="#层级注释先粗后细" id="toc-层级注释先粗后细" class="nav-link" data-scroll-target="#层级注释先粗后细"><span class="header-section-number">38.8</span> 层级注释：先粗后细</a></li>
   </ul></li>
   <li><a href="#方法总结与衔接说明" id="toc-方法总结与衔接说明" class="nav-link" data-scroll-target="#方法总结与衔接说明"><span class="header-section-number">39</span> 方法总结与衔接说明</a></li>
   <li><a href="#课后自测-post-lesson-quiz" id="toc-课后自测-post-lesson-quiz" class="nav-link" data-scroll-target="#课后自测-post-lesson-quiz"><span class="header-section-number">40</span> 课后自测 (Post-Lesson Quiz)</a></li>
@@ -696,7 +739,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
     <div>
     <div class="quarto-title-meta-heading">Published</div>
     <div class="quarto-title-meta-contents">
-      <p class="date">September 17, 2026</p>
+      <p class="date">September 22, 2026</p>
     </div>
   </div>
   
@@ -711,7 +754,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <section id="专题概述" class="level1" data-number="35">
 <h1 data-number="35"><span class="header-section-number">35</span> 专题概述</h1>
 <p>质控与归一化产出了一份干净的细胞×基因矩阵，但它仍是高维（数千个高变基因）、难以直接解读的。scRNA-seq 分析的核心目标——识别数据中存在哪些细胞类型——通过三步串联实现：先用 PCA 把高维表达压缩到几十个主成分以去噪，再在主成分空间构建近邻图并用图聚类算法将细胞划分为社区，最后用 UMAP 将结果嵌入二维以供可视化。聚类只给出”第几群”这样的匿名标签，还需通过标志基因把每个聚类对应到真实的细胞类型。本专题讲解这条从降维到注释的标准流程。</p>
-<p><strong>学习目标</strong>：理解 PCA 在 scRNA-seq 中的去噪作用与主成分数量的选择；掌握 KNN 图构建与 Leiden 图聚类的逻辑及分辨率参数的影响；理解 UMAP 与 t-SNE 的特点与局限；掌握基于标志基因的手动注释与 SingleR 自动注释，并能交叉验证。</p>
+<p><strong>学习目标</strong>：理解 PCA 在 scRNA-seq 中的去噪作用，掌握肘部图与置换检验两类主成分数量选择方法；理解 KNN 图构建的逻辑与 Louvain、Leiden 两种社区检测算法的关键差异；掌握分辨率参数的影响并能用多分辨率树评估聚类稳定性；理解 UMAP 与 t-SNE 的特点与共同局限；掌握基于标志基因的手动注释与 SingleR 自动注释，能评估自动注释的置信度并交叉验证；理解层级注释（二次聚类）的必要性与操作。</p>
 <hr>
 </section>
 <section id="降维" class="level1" data-number="36">
@@ -719,23 +762,162 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <section id="pca去噪与压缩" class="level2" data-number="36.1">
 <h2 data-number="36.1" class="anchored" data-anchor-id="pca去噪与压缩"><span class="header-section-number">36.1</span> PCA：去噪与压缩</h2>
 <p>即使只保留 2000 个高变基因，表达空间依然高维且充满噪声——dropout、技术变异使任意两个细胞的距离都不可靠。主成分分析（Principal Component Analysis, PCA）通过线性变换找到数据中方差最大的若干正交方向（主成分），将数据投影到前 20–50 个主成分上。由于真实的生物学变异（细胞类型差异）通常贡献了最大的方差、而随机噪声分散在大量低方差方向上，保留前几十个主成分既压缩了维度，又起到了去噪的作用。</p>
-<p>{{Wiki:Principal_component_analysis}}</p>
+<div id="fig-pca" class="quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-pca-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<img src="https://upload.wikimedia.org/wikipedia/commons/thumb/f/f5/GaussianScatterPCA.svg/960px-GaussianScatterPCA.svg.png" class="img-fluid figure-img" style="width:85.0%">
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-pca-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+图&nbsp;1: 主成分分析示意图。二维高斯散点上的两个正交箭头分别为第一、第二主成分，方向对应数据方差最大与次大的方向。
+</figcaption>
+</figure>
+</div>
 <p>需要强调，PCA 只用高变基因作为输入，而非全部基因——这样既减小计算量，又避免大量稳定表达基因稀释信号。</p>
+<div class="note">
+<p><strong>运行环境说明：</strong> 本专题延续 PBMC 3k 数据。下面第一个代码块从本地矩阵重建对象并完成专题 6.2 的预处理，因此本专题可独立运行。基础流程仅需 <code>Seurat</code>；<code>clustree</code> 与 <code>SingleR</code>/<code>celldex</code> 小节会各自标注依赖。</p>
+</div>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb1"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(Seurat)</span>
 <span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="co"># PCA is run on the scaled highly variable genes from the preprocessing step</span></span>
-<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a>pbmc <span class="ot">&lt;-</span> <span class="fu">RunPCA</span>(pbmc, <span class="at">npcs =</span> <span class="dv">50</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a>SC_DIR <span class="ot">&lt;-</span> <span class="st">"/Users/angdong/Documents/bio_example/SingleCell"</span></span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">42</span>)</span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a><span class="co"># Rebuild and preprocess so this topic runs standalone (see 专题 6.2)</span></span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a>pbmc <span class="ot">&lt;-</span> <span class="fu">CreateSeuratObject</span>(</span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a>    <span class="at">counts =</span> <span class="fu">Read10X</span>(<span class="fu">file.path</span>(SC_DIR, <span class="st">"filtered_gene_bc_matrices/hg19"</span>)),</span>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a>    <span class="at">project =</span> <span class="st">"pbmc3k"</span>, <span class="at">min.cells =</span> <span class="dv">3</span>, <span class="at">min.features =</span> <span class="dv">200</span></span>
+<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a>pbmc[[<span class="st">"percent.mt"</span>]] <span class="ot">&lt;-</span> <span class="fu">PercentageFeatureSet</span>(pbmc, <span class="at">pattern =</span> <span class="st">"^MT-"</span>)</span>
+<span id="cb1-12"><a href="#cb1-12" aria-hidden="true" tabindex="-1"></a>pbmc <span class="ot">&lt;-</span> <span class="fu">subset</span>(pbmc, <span class="at">subset =</span> nFeature_RNA <span class="sc">&gt;</span> <span class="dv">200</span> <span class="sc">&amp;</span></span>
+<span id="cb1-13"><a href="#cb1-13" aria-hidden="true" tabindex="-1"></a>                              nFeature_RNA <span class="sc">&lt;</span> <span class="dv">2500</span> <span class="sc">&amp;</span> percent.mt <span class="sc">&lt;</span> <span class="dv">5</span>)</span>
+<span id="cb1-14"><a href="#cb1-14" aria-hidden="true" tabindex="-1"></a>pbmc <span class="ot">&lt;-</span> <span class="fu">NormalizeData</span>(pbmc, <span class="at">verbose =</span> <span class="cn">FALSE</span>) <span class="sc">|&gt;</span></span>
+<span id="cb1-15"><a href="#cb1-15" aria-hidden="true" tabindex="-1"></a>    <span class="fu">FindVariableFeatures</span>(<span class="at">selection.method =</span> <span class="st">"vst"</span>, <span class="at">nfeatures =</span> <span class="dv">2000</span>, <span class="at">verbose =</span> <span class="cn">FALSE</span>) <span class="sc">|&gt;</span></span>
+<span id="cb1-16"><a href="#cb1-16" aria-hidden="true" tabindex="-1"></a>    <span class="fu">ScaleData</span>(<span class="at">verbose =</span> <span class="cn">FALSE</span>)</span>
+<span id="cb1-17"><a href="#cb1-17" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">"Cells entering PCA:"</span>, <span class="fu">ncol</span>(pbmc), <span class="st">"</span><span class="sc">\n</span><span class="st">"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb2"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(Seurat)</span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a><span class="co"># PCA is run on the scaled highly variable genes from the preprocessing step</span></span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a>pbmc <span class="ot">&lt;-</span> <span class="fu">RunPCA</span>(pbmc, <span class="at">npcs =</span> <span class="dv">50</span>, <span class="at">verbose =</span> <span class="cn">FALSE</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </section>
-<section id="选择主成分数量" class="level2" data-number="36.2">
-<h2 data-number="36.2" class="anchored" data-anchor-id="选择主成分数量"><span class="header-section-number">36.2</span> 选择主成分数量</h2>
+<section id="主成分是什么读懂载荷" class="level2" data-number="36.2">
+<h2 data-number="36.2" class="anchored" data-anchor-id="主成分是什么读懂载荷"><span class="header-section-number">36.2</span> 主成分是什么：读懂载荷</h2>
+<p>主成分常被当作一个”降维后的黑箱坐标”，但它其实是可以直接解读的。每个主成分是所有高变基因的一个<strong>线性组合</strong>，每个基因在其中的系数称为<strong>载荷</strong>（loading）。载荷绝对值大的基因，就是主导该主成分方向的基因——因此看一个主成分的顶部载荷基因，就能知道它捕捉的是哪一类生物学差异。</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb3"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(Seurat)</span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a><span class="co"># What biology does each PC capture? Look at the genes with the largest loadings</span></span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a><span class="co"># at both ends -- a PC is an axis, so both directions carry meaning.</span></span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> (k <span class="cf">in</span> <span class="dv">1</span><span class="sc">:</span><span class="dv">4</span>) {</span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a>    L <span class="ot">&lt;-</span> <span class="fu">Loadings</span>(pbmc, <span class="st">"pca"</span>)[, k]</span>
+<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a>    <span class="fu">cat</span>(<span class="fu">sprintf</span>(<span class="st">"PC%d  +: %s</span><span class="sc">\n</span><span class="st">"</span>, k,</span>
+<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a>                <span class="fu">paste</span>(<span class="fu">names</span>(<span class="fu">sort</span>(L, <span class="at">decreasing =</span> <span class="cn">TRUE</span>))[<span class="dv">1</span><span class="sc">:</span><span class="dv">5</span>], <span class="at">collapse =</span> <span class="st">", "</span>)))</span>
+<span id="cb3-9"><a href="#cb3-9" aria-hidden="true" tabindex="-1"></a>    <span class="fu">cat</span>(<span class="fu">sprintf</span>(<span class="st">"     -: %s</span><span class="sc">\n</span><span class="st">"</span>,</span>
+<span id="cb3-10"><a href="#cb3-10" aria-hidden="true" tabindex="-1"></a>                <span class="fu">paste</span>(<span class="fu">names</span>(<span class="fu">sort</span>(L))[<span class="dv">1</span><span class="sc">:</span><span class="dv">5</span>], <span class="at">collapse =</span> <span class="st">", "</span>)))</span>
+<span id="cb3-11"><a href="#cb3-11" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>在 PBMC 3k 上，前四个主成分的两端基因如 <a href="#tbl-pc-loadings" class="quarto-xref">表&nbsp;<span>1</span></a> 所示，其生物学含义相当清晰。</p>
+<div id="tbl-pc-loadings" class="quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-tbl figure">
+<figcaption class="quarto-float-caption-top quarto-float-caption quarto-float-tbl" id="tbl-pc-loadings-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+表&nbsp;1: PBMC 3k 前四个主成分的顶部载荷基因及其生物学含义
+</figcaption>
+<div aria-describedby="tbl-pc-loadings-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<table class="caption-top table">
+<colgroup>
+<col style="width: 25%">
+<col style="width: 25%">
+<col style="width: 25%">
+<col style="width: 25%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>主成分</th>
+<th>正向顶部基因</th>
+<th>负向顶部基因</th>
+<th>捕捉的差异</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>PC1</td>
+<td>CST3, TYROBP, LST1, AIF1, FTL</td>
+<td>MALAT1, LTB, IL32, IL7R, CD2</td>
+<td>髓系 vs 淋巴系</td>
+</tr>
+<tr class="even">
+<td>PC2</td>
+<td>CD79A, MS4A1, TCL1A, HLA-DQA1</td>
+<td>NKG7, PRF1, CST7, GZMB</td>
+<td>B 细胞 vs 细胞毒性细胞</td>
+</tr>
+<tr class="odd">
+<td>PC3</td>
+<td>HLA-DQA1, CD79A, CD79B</td>
+<td>PPBP, PF4, SDPR, SPARC</td>
+<td>B 细胞 vs 血小板</td>
+</tr>
+<tr class="even">
+<td>PC4</td>
+<td>HLA-DQA1, CD79B, CD79A, MS4A1</td>
+<td>VIM, IL7R, S100A6, IL32</td>
+<td>B 细胞 vs T 细胞</td>
+</tr>
+</tbody>
+</table>
+</div>
+</figure>
+</div>
+<p>这张表值得细看，因为它把”降维”这件事从抽象变具体了：<strong>PCA 并没有发明新的信息，它只是找到了区分细胞的最有效的几个方向</strong>，而这些方向恰好对应着最主要的细胞谱系划分。PC1 一条轴就把髓系与淋巴系分开，PC2 再把 B 细胞与细胞毒性细胞分开——这正是后续聚类能奏效的原因。</p>
+<div class="tip">
+<p><strong>主成分的正负号没有含义：</strong> 载荷与得分的符号可以整体翻转而不改变任何结果（<span class="math inline">\(-\mathbf{v}\)</span> 与 <span class="math inline">\(\mathbf{v}\)</span> 张成同一条轴）。因此”PC1 为正的是髓系”这种说法依赖于具体运行，换台机器、换个随机种子就可能反过来。<strong>主成分是轴而非方向</strong>，描述时应说”PC1 区分髓系与淋巴系”，而不是”PC1 高表示髓系”。</p>
+</div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb4"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="co">#| label: fig-dimheatmap</span></span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a><span class="co">#| fig-cap: "PBMC 3k 前六个主成分的载荷热图。每个子图对应一个主成分，行为该主成分载荷绝对值最大的若干基因，列为按该主成分得分排序的细胞（两端各取 500 个），颜色表示缩放后的表达量。清晰的黄紫分块说明该主成分确实区分了两群表达模式相反的细胞；若某个主成分的热图杂乱无明显分块，则提示它主要捕捉噪声而非结构，可作为选择主成分数量的辅助判据。"</span></span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(Seurat)</span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a><span class="fu">DimHeatmap</span>(pbmc, <span class="at">dims =</span> <span class="dv">1</span><span class="sc">:</span><span class="dv">6</span>, <span class="at">cells =</span> <span class="dv">500</span>, <span class="at">balanced =</span> <span class="cn">TRUE</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</section>
+<section id="每个主成分解释了多少方差" class="level2" data-number="36.3">
+<h2 data-number="36.3" class="anchored" data-anchor-id="每个主成分解释了多少方差"><span class="header-section-number">36.3</span> 每个主成分解释了多少方差</h2>
+<p>除了”捕捉什么”，还应知道”捕捉了多少”。各主成分的标准差平方即其方差，除以总方差便是解释比例。</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb5"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(Seurat)</span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a>sdev <span class="ot">&lt;-</span> <span class="fu">Stdev</span>(pbmc, <span class="at">reduction =</span> <span class="st">"pca"</span>)</span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a>var_pct <span class="ot">&lt;-</span> sdev<span class="sc">^</span><span class="dv">2</span> <span class="sc">/</span> <span class="fu">sum</span>(sdev<span class="sc">^</span><span class="dv">2</span>) <span class="sc">*</span> <span class="dv">100</span></span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a><span class="fu">data.frame</span>(</span>
+<span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a>    <span class="at">PC          =</span> <span class="dv">1</span><span class="sc">:</span><span class="dv">10</span>,</span>
+<span id="cb5-8"><a href="#cb5-8" aria-hidden="true" tabindex="-1"></a>    <span class="at">var_percent =</span> <span class="fu">sprintf</span>(<span class="st">"%.1f%%"</span>, var_pct[<span class="dv">1</span><span class="sc">:</span><span class="dv">10</span>]),</span>
+<span id="cb5-9"><a href="#cb5-9" aria-hidden="true" tabindex="-1"></a>    <span class="at">cumulative  =</span> <span class="fu">sprintf</span>(<span class="st">"%.1f%%"</span>, <span class="fu">cumsum</span>(var_pct)[<span class="dv">1</span><span class="sc">:</span><span class="dv">10</span>])</span>
+<span id="cb5-10"><a href="#cb5-10" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>在本数据上，PC1 独占 <strong>20.5%</strong> 的方差，PC2 降至 8.2%，到 PC10 只剩 1.4%，前十个主成分累计解释 <strong>53.2%</strong>。这个衰减模式本身传递了重要信息：<strong>方差高度集中在前几个主成分</strong>，说明数据确实存在强结构（几个界限分明的细胞类型）；若方差在几十个主成分上均匀分布，则通常意味着结构微弱或噪声主导。</p>
+<div class="warning">
+<p><strong>不要用”累计解释 80% 方差”这类经验法则来选主成分数：</strong> 这条规则来自传统多元统计，在 scRNA-seq 上会给出荒谬的结果——本数据要累计到 80% 需要三十多个主成分，而其中绝大多数只捕捉噪声。原因在于 scRNA-seq 的”总方差”里本就含有巨量技术噪声，它们分散在大量低方差主成分中，永远也”解释”不完。正确的做法是找结构与噪声的分界（肘部或置换检验），而不是追求某个方差百分比。</p>
+</div>
+</section>
+<section id="选择主成分数量" class="level2" data-number="36.4">
+<h2 data-number="36.4" class="anchored" data-anchor-id="选择主成分数量"><span class="header-section-number">36.4</span> 选择主成分数量</h2>
 <p>保留多少个主成分是一个需要判断的参数。保留太少会丢失区分相近细胞类型的信号，太多则重新引入噪声。肘部图（ElbowPlot）将各主成分解释的方差（标准差）从大到小排列，曲线由陡变平的”肘部”提示了信号主成分与噪声主成分的大致分界。</p>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb2"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="co">#| label: fig-elbow</span></span>
-<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a><span class="co">#| fig-cap: "PBMC 3k 数据的 PCA 肘部图（ElbowPlot）。横轴为主成分序号，纵轴为各主成分对应的标准差。曲线在前若干个主成分后迅速变平，'肘部'位置（约第 10–15 个主成分附近）提示信号主成分与噪声主成分的大致分界，可据此选择下游使用的主成分数量。"</span></span>
-<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(Seurat)</span>
-<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a><span class="fu">ElbowPlot</span>(pbmc, <span class="at">ndims =</span> <span class="dv">50</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>在 PBMC 3k 上，前若干个主成分的标准差依次为 7.10、4.50、3.87、3.75、3.17、2.54、2.07、1.93、1.85、1.83，随后稳定在 1.7–1.8 附近不再明显下降。这条曲线的”肘部”位于第 7–10 个主成分之间，但如下面的提示所述，在 10–30 之间取值对最终聚类的影响有限。</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb6"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="co">#| label: fig-elbow</span></span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a><span class="co">#| fig-cap: "PBMC 3k 数据的 PCA 肘部图（ElbowPlot）。横轴为主成分序号，纵轴为各主成分对应的标准差。曲线在前若干个主成分后迅速变平，'肘部'位置（约第 10–15 个主成分附近）提示信号主成分与噪声主成分的大致分界，可据此选择下游使用的主成分数量。"</span></span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(Seurat)</span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a><span class="fu">ElbowPlot</span>(pbmc, <span class="at">ndims =</span> <span class="dv">50</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="tip">
 <p><strong>主成分数量不必精确：</strong> 肘部位置往往不唯一、略显模糊，不必为选 12 还是 15 个主成分纠结。实践中在合理范围（如 10–30）内多取几个值跑一遍，观察聚类结果是否稳定，比追求”最优单一值”更有意义。使用 SCTransform 归一化时，由于其更强的去噪能力，通常可以安全地保留更多主成分（如 30 个）。</p>
+</div>
+</section>
+<section id="置换检验给肘部一个统计判据" class="level2" data-number="36.5">
+<h2 data-number="36.5" class="anchored" data-anchor-id="置换检验给肘部一个统计判据"><span class="header-section-number">36.5</span> 置换检验：给”肘部”一个统计判据</h2>
+<p>肘部图依赖目视判断，不同人看同一张图可能得出不同结论。置换检验提供了一个更客观的替代：随机打乱一小部分基因的表达值、重跑 PCA，从而构造出”纯噪声”情况下主成分的零分布；再检验每个真实主成分的基因载荷是否显著偏离该零分布。显著的主成分携带真实结构，不显著的则与噪声无异。</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb7"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(Seurat)</span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a><span class="co"># Permutation test: only valid after LogNormalize + ScaleData,</span></span>
+<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a><span class="co"># NOT applicable to SCTransform output (its residuals break the null model)</span></span>
+<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a>pbmc <span class="ot">&lt;-</span> <span class="fu">JackStraw</span>(pbmc, <span class="at">num.replicate =</span> <span class="dv">100</span>, <span class="at">dims =</span> <span class="dv">50</span>)</span>
+<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a>pbmc <span class="ot">&lt;-</span> <span class="fu">ScoreJackStraw</span>(pbmc, <span class="at">dims =</span> <span class="dv">1</span><span class="sc">:</span><span class="dv">50</span>)</span>
+<span id="cb7-7"><a href="#cb7-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-8"><a href="#cb7-8" aria-hidden="true" tabindex="-1"></a><span class="fu">JackStrawPlot</span>(pbmc, <span class="at">dims =</span> <span class="dv">1</span><span class="sc">:</span><span class="dv">30</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="warning">
+<p><strong>JackStraw 不适用于 SCTransform：</strong> 置换检验的零模型假设输入是经典的对数归一化表达值。SCTransform 输出的是皮尔逊残差，其分布性质与该假设不符，对残差做置换得到的零分布没有意义。这是一个容易被忽略的前提——若流程用了 SCTransform，应直接依据肘部图并适当多保留主成分（如 30 个），而不是套用 JackStraw。实践中还有一个更省事的经验：在 10–30 范围内主成分数量的具体取值对最终聚类结果影响通常有限，真正致命的是取得过少（如只用 5 个）而丢失了区分近缘细胞类型的信号。</p>
 </div>
 <hr>
 </section>
@@ -745,31 +927,305 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <section id="knn-图与图聚类" class="level2" data-number="37.1">
 <h2 data-number="37.1" class="anchored" data-anchor-id="knn-图与图聚类"><span class="header-section-number">37.1</span> KNN 图与图聚类</h2>
 <p>在选定的主成分空间中，scRNA-seq 采用基于图的聚类，而非 K-means 等传统方法。原因是细胞类型的大小、密度差异巨大，图聚类对这种不均衡结构更稳健。流程分两步：先用 <code>FindNeighbors()</code> 为每个细胞找到其 K 个最近邻，构建 K-近邻图（KNN graph），相似的细胞由边相连；再用 <code>FindClusters()</code> 调用 Leiden（或 Louvain）算法，在图中寻找连接紧密的”社区”（community）作为聚类。</p>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb3"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(Seurat)</span>
-<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a><span class="co"># Step 1: build the KNN graph in the chosen PC space (here, first 15 PCs)</span></span>
-<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a>pbmc <span class="ot">&lt;-</span> <span class="fu">FindNeighbors</span>(pbmc, <span class="at">dims =</span> <span class="dv">1</span><span class="sc">:</span><span class="dv">15</span>)</span>
-<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a><span class="co"># Step 2: graph-based community detection (Leiden algorithm = 4)</span></span>
-<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a>pbmc <span class="ot">&lt;-</span> <span class="fu">FindClusters</span>(pbmc, <span class="at">resolution =</span> <span class="fl">0.5</span>, <span class="at">algorithm =</span> <span class="dv">4</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div id="fig-knn-graph" class="quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-knn-graph-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<img src="https://upload.wikimedia.org/wikipedia/commons/thumb/2/22/Nearest_neighbor_graph.svg/960px-Nearest_neighbor_graph.svg.png" class="img-fluid figure-img" style="width:70.0%">
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-knn-graph-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+图&nbsp;2: 最近邻图（Nearest Neighbor Graph）示意图。每个点与其最近邻之间连边，构成图聚类所依赖的邻接结构。
+</figcaption>
+</figure>
+</div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb8"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(Seurat)</span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a><span class="co"># Step 1: build the KNN graph in the chosen PC space (here, first 15 PCs)</span></span>
+<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a><span class="co"># k.param controls how many neighbours each cell connects to</span></span>
+<span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a>pbmc <span class="ot">&lt;-</span> <span class="fu">FindNeighbors</span>(pbmc, <span class="at">dims =</span> <span class="dv">1</span><span class="sc">:</span><span class="dv">15</span>, <span class="at">k.param =</span> <span class="dv">20</span>)</span>
+<span id="cb8-6"><a href="#cb8-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-7"><a href="#cb8-7" aria-hidden="true" tabindex="-1"></a><span class="co"># Step 2: graph-based community detection.</span></span>
+<span id="cb8-8"><a href="#cb8-8" aria-hidden="true" tabindex="-1"></a><span class="co"># algorithm = 1 is Louvain (default, always available);</span></span>
+<span id="cb8-9"><a href="#cb8-9" aria-hidden="true" tabindex="-1"></a><span class="co"># algorithm = 4 selects Leiden but needs {leidenbase} -- see the warning below</span></span>
+<span id="cb8-10"><a href="#cb8-10" aria-hidden="true" tabindex="-1"></a>pbmc <span class="ot">&lt;-</span> <span class="fu">FindClusters</span>(pbmc, <span class="at">resolution =</span> <span class="fl">0.5</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </section>
-<section id="分辨率参数" class="level2" data-number="37.2">
-<h2 data-number="37.2" class="anchored" data-anchor-id="分辨率参数"><span class="header-section-number">37.2</span> 分辨率参数</h2>
+<section id="knn-与-snnseurat-实际用的是后者" class="level2" data-number="37.2">
+<h2 data-number="37.2" class="anchored" data-anchor-id="knn-与-snnseurat-实际用的是后者"><span class="header-section-number">37.2</span> KNN 与 SNN：Seurat 实际用的是后者</h2>
+<p><code>FindNeighbors()</code> 这个函数名容易让人以为它只做了一件事，实际上它建了<strong>两张图</strong>，而聚类用的是第二张。</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb9"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(Seurat)</span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a><span class="co"># FindNeighbors() creates TWO graphs, not one</span></span>
+<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a><span class="fu">names</span>(pbmc<span class="sc">@</span>graphs)</span>
+<span id="cb9-5"><a href="#cb9-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-6"><a href="#cb9-6" aria-hidden="true" tabindex="-1"></a>nn  <span class="ot">&lt;-</span> pbmc<span class="sc">@</span>graphs<span class="sc">$</span>RNA_nn     <span class="co"># k-nearest-neighbour graph: binary</span></span>
+<span id="cb9-7"><a href="#cb9-7" aria-hidden="true" tabindex="-1"></a>snn <span class="ot">&lt;-</span> pbmc<span class="sc">@</span>graphs<span class="sc">$</span>RNA_snn    <span class="co"># shared-nearest-neighbour graph: weighted</span></span>
+<span id="cb9-8"><a href="#cb9-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-9"><a href="#cb9-9" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">"KNN: mean neighbours per cell ="</span>,</span>
+<span id="cb9-10"><a href="#cb9-10" aria-hidden="true" tabindex="-1"></a>    <span class="fu">round</span>(<span class="fu">mean</span>(Matrix<span class="sc">::</span><span class="fu">rowSums</span>(nn <span class="sc">&gt;</span> <span class="dv">0</span>)), <span class="dv">1</span>), <span class="st">"</span><span class="sc">\n</span><span class="st">"</span>)</span>
+<span id="cb9-11"><a href="#cb9-11" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">"SNN: mean neighbours per cell ="</span>,</span>
+<span id="cb9-12"><a href="#cb9-12" aria-hidden="true" tabindex="-1"></a>    <span class="fu">round</span>(<span class="fu">mean</span>(Matrix<span class="sc">::</span><span class="fu">rowSums</span>(snn <span class="sc">&gt;</span> <span class="dv">0</span>)), <span class="dv">1</span>),</span>
+<span id="cb9-13"><a href="#cb9-13" aria-hidden="true" tabindex="-1"></a>    <span class="st">"| weight range:"</span>, <span class="fu">round</span>(<span class="fu">min</span>(snn<span class="sc">@</span>x), <span class="dv">3</span>), <span class="st">"-"</span>, <span class="fu">round</span>(<span class="fu">max</span>(snn<span class="sc">@</span>x), <span class="dv">3</span>), <span class="st">"</span><span class="sc">\n</span><span class="st">"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>两张图的区别是本质性的：</p>
+<ul>
+<li><strong>KNN 图</strong>：每个细胞连向距离最近的 <code>k.param</code> 个细胞（默认 20），边<strong>无权重</strong>——是邻居就连，不是就不连。在本数据上每行恰好 20 个非零元。</li>
+<li><strong>SNN 图</strong>（Shared Nearest Neighbor，共享近邻图）：两个细胞之间的边权重，取决于它们<strong>共享多少个共同邻居</strong>。若两个细胞的 20 个邻居里有 18 个重合，说明它们处于同一个稠密区域，权重高；若只重合 2 个，则可能只是恰好挨着，权重低。本数据上 SNN 图平均每行 81.5 个非零元，权重分布在 0.081–1.000 之间。</li>
+</ul>
+<p>为什么要多绕这一道？因为<strong>“互为近邻”是一个脆弱的信号，而”共享大量邻居”是一个稳健的信号</strong>。高维空间中距离度量本就不可靠（维数灾难），个别近邻关系很容易由噪声产生；但若两个细胞共享大量邻居，它们几乎必定属于同一个真实的细胞群。SNN 相当于对邻接关系做了一次去噪，这也是 Seurat 把聚类建在 SNN 而非 KNN 上的原因。</p>
+</section>
+<section id="k.param-的影响" class="level2" data-number="37.3">
+<h2 data-number="37.3" class="anchored" data-anchor-id="k.param-的影响"><span class="header-section-number">37.3</span> <code>k.param</code> 的影响</h2>
+<p><code>k.param</code> 决定了”局部”的尺度，它与 <code>resolution</code> 是两个容易混淆但作用不同的参数：</p>
+<ul>
+<li><code>k.param</code> 控制<strong>图的构建</strong>——每个细胞看多远。值小则图稀疏、局部结构保留得细致，但对噪声敏感；值大则图稠密、结果平滑，但可能把小细胞群并入大群。</li>
+<li><code>resolution</code> 控制<strong>图的切分</strong>——在既定的图上切得多细。</li>
+</ul>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb10"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(Seurat)</span>
+<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a><span class="co"># k.param and resolution act at different stages -- vary one at a time</span></span>
+<span id="cb10-4"><a href="#cb10-4" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> (k <span class="cf">in</span> <span class="fu">c</span>(<span class="dv">5</span>, <span class="dv">20</span>, <span class="dv">50</span>)) {</span>
+<span id="cb10-5"><a href="#cb10-5" aria-hidden="true" tabindex="-1"></a>    tmp <span class="ot">&lt;-</span> <span class="fu">FindNeighbors</span>(pbmc, <span class="at">dims =</span> <span class="dv">1</span><span class="sc">:</span><span class="dv">15</span>, <span class="at">k.param =</span> k, <span class="at">verbose =</span> <span class="cn">FALSE</span>)</span>
+<span id="cb10-6"><a href="#cb10-6" aria-hidden="true" tabindex="-1"></a>    tmp <span class="ot">&lt;-</span> <span class="fu">FindClusters</span>(tmp, <span class="at">resolution =</span> <span class="fl">0.5</span>, <span class="at">verbose =</span> <span class="cn">FALSE</span>)</span>
+<span id="cb10-7"><a href="#cb10-7" aria-hidden="true" tabindex="-1"></a>    <span class="fu">cat</span>(<span class="fu">sprintf</span>(<span class="st">"k.param = %2d  -&gt;  %d clusters</span><span class="sc">\n</span><span class="st">"</span>, k, <span class="fu">nlevels</span>(<span class="fu">Idents</span>(tmp))))</span>
+<span id="cb10-8"><a href="#cb10-8" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>在本数据上固定 <code>resolution = 0.5</code>、只改 <code>k.param</code>，聚类数从 10（k=5）降到 9（k=20）再降到 6（k=50）——<strong>同一个分辨率下，仅仅改变建图的邻域大小就能让聚类数少掉四成</strong>。这说明报告聚类结果时只写 <code>resolution</code> 是不够的，<code>k.param</code> 与所用主成分数同样必须交代。</p>
+<div class="tip">
+<p><strong><code>k.param</code> 的经验取值：</strong> 默认 20 在数千细胞的数据上通常合适。一个常用的启发式是让 <code>k.param</code> 随细胞数增长，如 <span class="math inline">\(k \approx \sqrt{N}\)</span>——2,600 个细胞对应约 50。但更重要的是理解它的方向性影响：<strong>若怀疑稀有细胞群被淹没，应调小 <code>k.param</code></strong>（让图更局部，小群才有机会自成社区）；若聚类结果零碎、充满小簇，可调大它。与 <code>resolution</code> 不同，<code>k.param</code> 改变的是图本身，因此改动后必须重跑 <code>FindNeighbors()</code> 而不只是 <code>FindClusters()</code>。</p>
+</div>
+</section>
+<section id="louvain-与-leiden-的差别" class="level2" data-number="37.4">
+<h2 data-number="37.4" class="anchored" data-anchor-id="louvain-与-leiden-的差别"><span class="header-section-number">37.4</span> Louvain 与 Leiden 的差别</h2>
+<p><code>FindClusters()</code> 的 <code>algorithm</code> 参数默认是 1（Louvain），而上面的代码指定了 4（Leiden）。这不是一个无关紧要的选择。</p>
+<p>两种算法都通过优化<strong>模块度</strong>（Modularity）来划分社区——模块度衡量”社区内部的边比随机情况下多出多少”。Louvain 算法迭代地把节点移动到能最大提升模块度的社区中，效率很高，长期是图聚类的事实标准。</p>
+<p>两种算法优化的都是<strong>模块度</strong>（Modularity）——一个衡量”社区内部的边比随机情况下多出多少”的指标。记 <span class="math inline">\(m\)</span> 为总边权、<span class="math inline">\(A_{ij}\)</span> 为边权、<span class="math inline">\(k_i\)</span> 为节点 <span class="math inline">\(i\)</span> 的度，则：</p>
+<p><span class="math display">\[Q = \frac{1}{2m}\sum_{i,j}\left(A_{ij} - \frac{k_i k_j}{2m}\right)\delta(c_i, c_j)\]</span></p>
+<p>括号里的第一项是<strong>实际</strong>连接，第二项 <span class="math inline">\(k_i k_j/(2m)\)</span> 是在保持各节点度数不变的随机图中该对节点<strong>期望</strong>的连接强度；<span class="math inline">\(\delta(c_i,c_j)\)</span> 则只在 <span class="math inline">\(i\)</span> 与 <span class="math inline">\(j\)</span> 同属一个社区时取 1。所以 <span class="math inline">\(Q\)</span> 度量的是”同社区节点之间实际连接超出随机期望的总量”——<span class="math inline">\(Q\)</span> 越大，社区划分越有意义。<code>resolution</code> 参数实际上就是调节第二项的权重：调高它相当于抬高”随机期望”的基准，于是需要更紧密的连接才够格算一个社区，切出的社区自然更多更小。</p>
+<p>但 Louvain 有一个被长期忽视的缺陷：它<strong>不保证社区内部是连通的</strong>。在优化过程中，某个节点被移走后可能把原社区切成两个互不相连的部分，而算法不会检查这一点。结果是一个”聚类”在图上实际可能由两块毫无连接的细胞组成——对 scRNA-seq 而言，这意味着一个细胞类型标签下混着两群彼此不相似的细胞。Leiden 算法在每轮迭代后增加了一个精炼（refinement）步骤，<strong>保证每个社区都是连通的</strong>，从而消除了这一问题（Traag et al., 2019）。</p>
+<div class="warning">
+<p><strong>Leiden 需要 Python 依赖，默认环境跑不了：</strong> Seurat 出于历史兼容性把 Louvain（<code>algorithm = 1</code>）保留为默认值。要用 Leiden 必须额外安装依赖，否则 <code>algorithm = 4</code> 会直接报错——这也是它未被设为默认的实际原因。<strong>注意 Seurat 版本之间的差异</strong>：Seurat 4 通过 <code>reticulate</code> 调用 Python 的 <code>leidenalg</code>，而 Seurat 5 改走 R 包 <code>leidenbase</code>（<code>install.packages("leidenbase")</code>）。照抄旧教程里的 <code>leidenalg</code> 安装说明，在 Seurat 5 下仍会报 <code>Package 'leidenbase' is required</code>。本章后续代码为保证可直接运行而使用默认的 Louvain；在正式分析中若能配置好 Python 环境，应优先使用 Leiden。只能用 Louvain 时，至少应检查是否存在在 UMAP 上明显分成互不相邻两块的聚类——那往往就是连通性缺陷的表现。</p>
+</div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb11"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(Seurat)</span>
+<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a><span class="co"># Default (Louvain) -- always available</span></span>
+<span id="cb11-4"><a href="#cb11-4" aria-hidden="true" tabindex="-1"></a>pbmc <span class="ot">&lt;-</span> <span class="fu">FindClusters</span>(pbmc, <span class="at">resolution =</span> <span class="fl">0.5</span>, <span class="at">verbose =</span> <span class="cn">FALSE</span>)</span>
+<span id="cb11-5"><a href="#cb11-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-6"><a href="#cb11-6" aria-hidden="true" tabindex="-1"></a><span class="co"># Leiden -- preferred, but Seurat 5 routes algorithm = 4 through {leidenbase}</span></span>
+<span id="cb11-7"><a href="#cb11-7" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> (<span class="fu">requireNamespace</span>(<span class="st">"leidenbase"</span>, <span class="at">quietly =</span> <span class="cn">TRUE</span>)) {</span>
+<span id="cb11-8"><a href="#cb11-8" aria-hidden="true" tabindex="-1"></a>    pbmc <span class="ot">&lt;-</span> <span class="fu">FindClusters</span>(pbmc, <span class="at">resolution =</span> <span class="fl">0.5</span>, <span class="at">algorithm =</span> <span class="dv">4</span>, <span class="at">verbose =</span> <span class="cn">FALSE</span>)</span>
+<span id="cb11-9"><a href="#cb11-9" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb11-10"><a href="#cb11-10" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">"Clusters found:"</span>, <span class="fu">nlevels</span>(<span class="fu">Idents</span>(pbmc)), <span class="st">"</span><span class="sc">\n</span><span class="st">"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</section>
+<section id="分辨率参数" class="level2" data-number="37.5">
+<h2 data-number="37.5" class="anchored" data-anchor-id="分辨率参数"><span class="header-section-number">37.5</span> 分辨率参数</h2>
 <p><code>resolution</code> 是聚类最关键的参数，控制划分的粒度：值越大，社区检测越倾向于切出更多、更小的聚类；值越小，聚类越少、越粗。常用范围为 0.3–1.0。它没有”正确值”——粒度的合适与否取决于研究问题：要区分主要细胞类型用低分辨率，要解析细胞亚型用高分辨率。</p>
+<p>在 PBMC 3k 上，分辨率与聚类数的实际对应关系如 <a href="#tbl-resolution-k" class="quarto-xref">表&nbsp;<span>2</span></a> 所示。注意 0.5 与 0.8 给出了相同的聚类数——这说明该处存在一个稳定的划分，是一个值得信赖的粒度。</p>
+<div id="tbl-resolution-k" class="quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-tbl figure">
+<figcaption class="quarto-float-caption-top quarto-float-caption quarto-float-tbl" id="tbl-resolution-k-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+表&nbsp;2: PBMC 3k 数据中分辨率与聚类数的对应关系（15 个主成分，Louvain）
+</figcaption>
+<div aria-describedby="tbl-resolution-k-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<table class="caption-top table">
+<thead>
+<tr class="header">
+<th>resolution</th>
+<th>聚类数</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>0.1</td>
+<td>4</td>
+</tr>
+<tr class="even">
+<td>0.3</td>
+<td>8</td>
+</tr>
+<tr class="odd">
+<td>0.5</td>
+<td>9</td>
+</tr>
+<tr class="even">
+<td>0.8</td>
+<td>9</td>
+</tr>
+<tr class="odd">
+<td>1.0</td>
+<td>11</td>
+</tr>
+</tbody>
+</table>
+</div>
+</figure>
+</div>
 <div class="warning">
 <p><strong>分辨率不是越高越好：</strong> 调高分辨率总能切出更多聚类，但其中许多可能是同一细胞类型被人为拆分，或由技术变异（细胞周期、应激）驱动的虚假亚群。判断一个聚类是否”真实”，不能只看它能被分出来，而要看它是否具有特异、可解释的标志基因。盲目追求高分辨率会制造大量需要解释却无生物学意义的聚类。</p>
 </div>
 </section>
-<section id="umap-可视化" class="level2" data-number="37.3">
-<h2 data-number="37.3" class="anchored" data-anchor-id="umap-可视化"><span class="header-section-number">37.3</span> UMAP 可视化</h2>
+<section id="用多分辨率树评估稳定性" class="level2" data-number="37.6">
+<h2 data-number="37.6" class="anchored" data-anchor-id="用多分辨率树评估稳定性"><span class="header-section-number">37.6</span> 用多分辨率树评估稳定性</h2>
+<p>与其纠结该选哪一个分辨率，不如把一系列分辨率的结果一起看。<code>clustree</code> 把多个分辨率下的聚类结果画成一棵树：每一层是一个分辨率，节点是聚类，边表示细胞从上一层的哪个聚类流向下一层的哪个聚类。</p>
+<p>这棵树能直接读出两件事。<strong>稳定的聚类</strong>在连续多个分辨率下保持独立、边清晰单一——它对应的很可能是真实的细胞类型。<strong>不稳定的划分</strong>则表现为节点之间出现大量交叉的边（细胞在相邻分辨率间来回跳动），提示这里的切分是数据噪声而非真实结构。</p>
+<div class="note">
+<p><strong>运行环境说明：</strong> <code>clustree</code> 为 CRAN 包（<code>install.packages("clustree")</code>）。<code>prefix</code> 参数必须与 Seurat 实际写入的元数据列名前缀一致：用 <code>NormalizeData</code> 流程时为 <code>RNA_snn_res.</code>，用 <code>SCTransform</code> 时为 <code>SCT_snn_res.</code>。写错前缀会报”找不到列”。</p>
+</div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb12"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(Seurat)</span>
+<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(clustree)</span>
+<span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-4"><a href="#cb12-4" aria-hidden="true" tabindex="-1"></a><span class="co"># Cluster across a range of resolutions; each is stored as a separate metadata column</span></span>
+<span id="cb12-5"><a href="#cb12-5" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> (res <span class="cf">in</span> <span class="fu">c</span>(<span class="fl">0.1</span>, <span class="fl">0.2</span>, <span class="fl">0.4</span>, <span class="fl">0.6</span>, <span class="fl">0.8</span>, <span class="fl">1.0</span>)) {</span>
+<span id="cb12-6"><a href="#cb12-6" aria-hidden="true" tabindex="-1"></a>    pbmc <span class="ot">&lt;-</span> <span class="fu">FindClusters</span>(pbmc, <span class="at">resolution =</span> res, <span class="at">verbose =</span> <span class="cn">FALSE</span>)</span>
+<span id="cb12-7"><a href="#cb12-7" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb12-8"><a href="#cb12-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-9"><a href="#cb12-9" aria-hidden="true" tabindex="-1"></a><span class="co"># Check what the columns are actually called before plotting</span></span>
+<span id="cb12-10"><a href="#cb12-10" aria-hidden="true" tabindex="-1"></a><span class="fu">grep</span>(<span class="st">"_snn_res"</span>, <span class="fu">colnames</span>(pbmc[[]]), <span class="at">value =</span> <span class="cn">TRUE</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb13"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a><span class="co">#| label: fig-clustree</span></span>
+<span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a><span class="co">#| fig-cap: "PBMC 3k 数据在一系列聚类分辨率下的聚类关系树（clustree）。每一层对应一个分辨率（自上而下递增），节点为该分辨率下的聚类，节点大小表示细胞数，边表示细胞在相邻分辨率间的流向、边的透明度表示流量大小。在多个连续分辨率下保持独立且入边单一的分支对应稳定的细胞类型；节点间出现大量交叉边的区域则提示该处的划分不稳定，是噪声驱动而非真实结构。"</span></span>
+<span id="cb13-3"><a href="#cb13-3" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(clustree)</span>
+<span id="cb13-4"><a href="#cb13-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb13-5"><a href="#cb13-5" aria-hidden="true" tabindex="-1"></a><span class="co"># Prefix must match the metadata columns printed above</span></span>
+<span id="cb13-6"><a href="#cb13-6" aria-hidden="true" tabindex="-1"></a><span class="fu">clustree</span>(pbmc, <span class="at">prefix =</span> <span class="st">"RNA_snn_res."</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="tip">
+<p><strong>一个实用的读图策略：</strong> 从树的顶端（低分辨率）向下看，找到”再往下分就开始出现交叉边”的那一层，它通常就是该数据能够稳定支持的最细粒度。需要更细的亚型时，正确做法不是继续调高全局分辨率（那会把所有聚类都过度切分），而是对感兴趣的聚类单独做二次聚类——这一点在本专题最后讨论。</p>
+</div>
+</section>
+<section id="为什么不用-k-means-或层次聚类" class="level2" data-number="37.7">
+<h2 data-number="37.7" class="anchored" data-anchor-id="为什么不用-k-means-或层次聚类"><span class="header-section-number">37.7</span> 为什么不用 K-means 或层次聚类</h2>
+<p>前面一笔带过”图聚类对不均衡结构更稳健”，值得展开说清楚，因为这解释了整个流程的设计动机。</p>
+<p><strong>K-means 的问题在于它的隐含假设</strong>：它通过最小化各点到簇中心的平方距离来划分，这等价于假设每个簇是<strong>大小相近的球形</strong>。而真实的细胞类型完全不满足这一点——PBMC 中 T 细胞可能有上千个、血小板只有十几个，且各类细胞在表达空间中的弥散程度差异巨大。用 K-means 处理这种数据，结果往往是大簇被硬切成几块、而小簇被并入邻近的大簇。本数据中只有 14 个细胞的血小板群，在 K-means 下几乎必然消失。</p>
+<p><strong>层次聚类的问题在于计算量与阈值</strong>：它需要计算所有细胞两两之间的距离，复杂度 <span class="math inline">\(O(N^2)\)</span> 的内存开销在数万细胞时就不可行；而且树在哪里切依然是一个需要人为设定的阈值，并不比 <code>resolution</code> 更客观。</p>
+<p><strong>图聚类之所以合适</strong>，是因为它只依赖局部邻接关系而不假设簇的形状或大小：一个只有十几个细胞的群，只要它们彼此的连接远密于与外界的连接，就能被识别为一个社区。此外 KNN 图是稀疏的，内存与计算都随细胞数近似线性增长，这才使数万乃至百万细胞的分析成为可能。</p>
+<div id="tbl-clustering-methods" class="quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-tbl figure">
+<figcaption class="quarto-float-caption-top quarto-float-caption quarto-float-tbl" id="tbl-clustering-methods-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+表&nbsp;3: 三类聚类方法在 scRNA-seq 上的适用性对比
+</figcaption>
+<div aria-describedby="tbl-clustering-methods-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<table class="caption-top table">
+<thead>
+<tr class="header">
+<th>方法</th>
+<th>隐含假设</th>
+<th>对小簇</th>
+<th>复杂度</th>
+<th>scRNA-seq 适用性</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>K-means</td>
+<td>球形、大小相近</td>
+<td>易被吞并</td>
+<td><span class="math inline">\(O(NKd)\)</span></td>
+<td>差</td>
+</tr>
+<tr class="even">
+<td>层次聚类</td>
+<td>无形状假设</td>
+<td>可保留</td>
+<td><span class="math inline">\(O(N^2)\)</span> 内存</td>
+<td>规模受限</td>
+</tr>
+<tr class="odd">
+<td>图聚类（Leiden）</td>
+<td>局部连接紧密</td>
+<td>可保留</td>
+<td>近似线性</td>
+<td>好</td>
+</tr>
+</tbody>
+</table>
+</div>
+</figure>
+</div>
+</section>
+<section id="umap-跑在主成分上不是原始表达上" class="level2" data-number="37.8">
+<h2 data-number="37.8" class="anchored" data-anchor-id="umap-跑在主成分上不是原始表达上"><span class="header-section-number">37.8</span> UMAP 跑在主成分上，不是原始表达上</h2>
+<p>一个容易被忽略但影响理解的细节：<code>RunUMAP(pbmc, dims = 1:15)</code> 里的 <code>dims</code> 参数说明 UMAP 的输入是<strong>前 15 个主成分</strong>，而非两万个基因的原始表达。<code>FindNeighbors(dims = 1:15)</code> 同理。</p>
+<p>这样做有三个理由。其一是<strong>去噪</strong>：如前所述，前若干个主成分集中了生物学信号，而噪声分散在大量低方差方向上，先做 PCA 等于先滤掉一层噪声。其二是<strong>计算量</strong>：UMAP 要反复计算细胞间距离，在 15 维上算比在 2000 维上算快两个数量级。其三是<strong>距离的可靠性</strong>：在极高维空间中，任意两点间的距离会趋于相近（维数灾难），使”最近邻”失去意义；降到几十维后距离才重新具有区分力。</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb14"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(Seurat)</span>
+<span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb14-3"><a href="#cb14-3" aria-hidden="true" tabindex="-1"></a><span class="co"># Both the graph and the UMAP are built on PCs, not on raw expression.</span></span>
+<span id="cb14-4"><a href="#cb14-4" aria-hidden="true" tabindex="-1"></a><span class="co"># Changing `dims` changes both -- they must be kept consistent.</span></span>
+<span id="cb14-5"><a href="#cb14-5" aria-hidden="true" tabindex="-1"></a>pbmc <span class="ot">&lt;-</span> <span class="fu">FindNeighbors</span>(pbmc, <span class="at">dims =</span> <span class="dv">1</span><span class="sc">:</span><span class="dv">15</span>, <span class="at">verbose =</span> <span class="cn">FALSE</span>)</span>
+<span id="cb14-6"><a href="#cb14-6" aria-hidden="true" tabindex="-1"></a>pbmc <span class="ot">&lt;-</span> <span class="fu">RunUMAP</span>(pbmc, <span class="at">dims =</span> <span class="dv">1</span><span class="sc">:</span><span class="dv">15</span>, <span class="at">verbose =</span> <span class="cn">FALSE</span>)</span>
+<span id="cb14-7"><a href="#cb14-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb14-8"><a href="#cb14-8" aria-hidden="true" tabindex="-1"></a><span class="co"># The UMAP embedding is 2D; the space it was computed from is 15D</span></span>
+<span id="cb14-9"><a href="#cb14-9" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">"PCA dims available :"</span>, <span class="fu">ncol</span>(<span class="fu">Embeddings</span>(pbmc, <span class="st">"pca"</span>)), <span class="st">"</span><span class="sc">\n</span><span class="st">"</span>)</span>
+<span id="cb14-10"><a href="#cb14-10" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">"dims used          : 15</span><span class="sc">\n</span><span class="st">"</span>)</span>
+<span id="cb14-11"><a href="#cb14-11" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">"UMAP embedding dims:"</span>, <span class="fu">ncol</span>(<span class="fu">Embeddings</span>(pbmc, <span class="st">"umap"</span>)), <span class="st">"</span><span class="sc">\n</span><span class="st">"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="warning">
+<p><strong><code>FindNeighbors()</code> 与 <code>RunUMAP()</code> 应当使用相同的 <code>dims</code>：</strong> 二者若用不同的主成分数，聚类是在一个空间里算的、而图是画在另一个空间里的，结果就是 UMAP 上看起来混在一起的细胞却属于不同的簇，或者反之。这类”图与聚类对不上”的困惑，十有八九源于此。同理，若中途重跑了 <code>RunPCA()</code>（例如改了高变基因或缩放参数），必须把 <code>FindNeighbors()</code>、<code>FindClusters()</code>、<code>RunUMAP()</code> 全部重跑一遍——主成分已经变了，基于旧主成分的图和嵌入都已失效。</p>
+</div>
+</section>
+<section id="umap-可视化" class="level2" data-number="37.9">
+<h2 data-number="37.9" class="anchored" data-anchor-id="umap-可视化"><span class="header-section-number">37.9</span> UMAP 可视化</h2>
 <p>聚类是在高维主成分空间完成的，但人需要二维图来观察。UMAP（Uniform Manifold Approximation and Projection）将高维结构非线性地嵌入二维平面，倾向于保留数据的局部与部分全局结构，是当前最常用的可视化方法。t-SNE 是另一种选择，更强调局部结构，但对全局结构和参数（perplexity）更敏感。</p>
-<p>{{Wiki:Nonlinear_dimensionality_reduction}}</p>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb4"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="co">#| label: fig-umap-clusters</span></span>
-<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a><span class="co">#| fig-cap: "PBMC 3k 数据的 UMAP 嵌入，按 Leiden 聚类结果着色。每个点为一个细胞，颜色对应其所属聚类。UMAP 将高维主成分空间的细胞关系非线性地映射到二维平面，便于直观观察各聚类的分离程度与相对关系。"</span></span>
-<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(Seurat)</span>
-<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a>pbmc <span class="ot">&lt;-</span> <span class="fu">RunUMAP</span>(pbmc, <span class="at">dims =</span> <span class="dv">1</span><span class="sc">:</span><span class="dv">15</span>)</span>
-<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a><span class="fu">DimPlot</span>(pbmc, <span class="at">reduction =</span> <span class="st">"umap"</span>, <span class="at">label =</span> <span class="cn">TRUE</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><img src="https://upload.wikimedia.org/wikipedia/commons/f/fd/Lle_hlle_swissroll.png" id="fig-nonlinear-dr" class="img-fluid" style="width:85.0%" alt="非线性降维示意图。瑞士卷（Swiss roll）流形经 LLE 等非线性方法展开为二维平面，说明非线性降维能揭示线性方法无法捕捉的流形结构。"> <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/9/94/T-SNE_visualisation_of_word_embeddings_generated_using_19th_century_literature.png/960px-T-SNE_visualisation_of_word_embeddings_generated_using_19th_century_literature.png" id="fig-tsne" class="img-fluid" style="width:85.0%" alt="t-SNE 降维可视化示例。高维数据被嵌入二维平面后形成若干分离的簇，体现 t-SNE 对局部邻域结构的保持能力。"></p>
+<p><a href="#tbl-umap-tsne" class="quarto-xref">表&nbsp;<span>4</span></a> 对比了二者。需要强调的是，它们<strong>共享同一类局限</strong>——都是非线性嵌入，都不保证全局距离的保真。</p>
+<div id="tbl-umap-tsne" class="quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-tbl figure">
+<figcaption class="quarto-float-caption-top quarto-float-caption quarto-float-tbl" id="tbl-umap-tsne-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+表&nbsp;4: UMAP 与 t-SNE 的对比
+</figcaption>
+<div aria-describedby="tbl-umap-tsne-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<table class="caption-top table">
+<thead>
+<tr class="header">
+<th>维度</th>
+<th>UMAP</th>
+<th>t-SNE</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>理论基础</td>
+<td>黎曼几何与代数拓扑</td>
+<td>概率分布的 KL 散度最小化</td>
+</tr>
+<tr class="even">
+<td>关键参数</td>
+<td><code>n.neighbors</code>、<code>min.dist</code></td>
+<td><code>perplexity</code></td>
+</tr>
+<tr class="odd">
+<td>全局结构保留</td>
+<td>相对较好</td>
+<td>较差</td>
+</tr>
+<tr class="even">
+<td>运行速度</td>
+<td>快</td>
+<td>慢（大数据尤甚）</td>
+</tr>
+<tr class="odd">
+<td>对参数的敏感性</td>
+<td>中等</td>
+<td>较高</td>
+</tr>
+<tr class="even">
+<td>可否嵌入新数据</td>
+<td>可以（支持 transform）</td>
+<td>不能（需重算）</td>
+</tr>
+</tbody>
+</table>
+</div>
+</figure>
+</div>
+<p>UMAP 的两个关键参数值得理解：<code>n.neighbors</code> 控制在多大的邻域范围内保持结构——值小侧重局部细节、值大侧重全局形态；<code>min.dist</code> 控制嵌入中点与点能靠多近——值小则簇内更紧密、簇间更分离，视觉上更”干净”，但这种分离度是参数造就的视觉效果，不代表数据中真实的分离程度。</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb15"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(Seurat)</span>
+<span id="cb15-2"><a href="#cb15-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-3"><a href="#cb15-3" aria-hidden="true" tabindex="-1"></a><span class="co"># The apparent separation between clusters is partly a parameter choice.</span></span>
+<span id="cb15-4"><a href="#cb15-4" aria-hidden="true" tabindex="-1"></a><span class="co"># Compare a "tight" and a "loose" embedding of the very same data.</span></span>
+<span id="cb15-5"><a href="#cb15-5" aria-hidden="true" tabindex="-1"></a>pbmc <span class="ot">&lt;-</span> <span class="fu">RunUMAP</span>(pbmc, <span class="at">dims =</span> <span class="dv">1</span><span class="sc">:</span><span class="dv">15</span>, <span class="at">min.dist =</span> <span class="fl">0.1</span>, <span class="at">reduction.name =</span> <span class="st">"umap_tight"</span>)</span>
+<span id="cb15-6"><a href="#cb15-6" aria-hidden="true" tabindex="-1"></a>pbmc <span class="ot">&lt;-</span> <span class="fu">RunUMAP</span>(pbmc, <span class="at">dims =</span> <span class="dv">1</span><span class="sc">:</span><span class="dv">15</span>, <span class="at">min.dist =</span> <span class="fl">0.8</span>, <span class="at">reduction.name =</span> <span class="st">"umap_loose"</span>)</span>
+<span id="cb15-7"><a href="#cb15-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-8"><a href="#cb15-8" aria-hidden="true" tabindex="-1"></a><span class="fu">DimPlot</span>(pbmc, <span class="at">reduction =</span> <span class="st">"umap_tight"</span>) <span class="sc">|</span> <span class="fu">DimPlot</span>(pbmc, <span class="at">reduction =</span> <span class="st">"umap_loose"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb16"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a><span class="co">#| label: fig-umap-clusters</span></span>
+<span id="cb16-2"><a href="#cb16-2" aria-hidden="true" tabindex="-1"></a><span class="co">#| fig-cap: "PBMC 3k 数据的 UMAP 嵌入，按 Leiden 聚类结果着色。每个点为一个细胞，颜色对应其所属聚类。UMAP 将高维主成分空间的细胞关系非线性地映射到二维平面，便于直观观察各聚类的分离程度与相对关系。"</span></span>
+<span id="cb16-3"><a href="#cb16-3" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(Seurat)</span>
+<span id="cb16-4"><a href="#cb16-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-5"><a href="#cb16-5" aria-hidden="true" tabindex="-1"></a>pbmc <span class="ot">&lt;-</span> <span class="fu">RunUMAP</span>(pbmc, <span class="at">dims =</span> <span class="dv">1</span><span class="sc">:</span><span class="dv">15</span>)</span>
+<span id="cb16-6"><a href="#cb16-6" aria-hidden="true" tabindex="-1"></a><span class="fu">DimPlot</span>(pbmc, <span class="at">reduction =</span> <span class="st">"umap"</span>, <span class="at">label =</span> <span class="cn">TRUE</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="warning">
 <p><strong>UMAP 的距离不可定量解读：</strong> UMAP 图上两个聚类之间的距离、聚类的大小、形状都<strong>不具有定量意义</strong>——它们是非线性嵌入的产物，会因参数与随机种子而变化。不能因为两群在 UMAP 上挨得近就断言它们”关系更近”，也不能由聚类面积推断细胞数量。UMAP 只用于定性展示分离结构，定量结论必须回到高维空间或基因表达本身。</p>
 </div>
@@ -781,25 +1237,164 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <section id="标志基因鉴定" class="level2" data-number="38.1">
 <h2 data-number="38.1" class="anchored" data-anchor-id="标志基因鉴定"><span class="header-section-number">38.1</span> 标志基因鉴定</h2>
 <p>聚类给出的是匿名的 “0、1、2……” 标签，注释的任务是把它们对应到真实的细胞类型。第一步是为每个聚类找出其特异高表达的标志基因（Marker genes）：<code>FindAllMarkers()</code> 对每个聚类做与其余所有细胞的差异表达检验（默认 Wilcoxon 秩和检验），筛出该聚类显著上调的基因。</p>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb5"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(Seurat)</span>
-<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a><span class="co"># Find positive markers for every cluster (one-vs-rest Wilcoxon test)</span></span>
-<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a>markers <span class="ot">&lt;-</span> <span class="fu">FindAllMarkers</span>(pbmc, <span class="at">only.pos =</span> <span class="cn">TRUE</span>,</span>
-<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a>                          <span class="at">min.pct =</span> <span class="fl">0.25</span>, <span class="at">logfc.threshold =</span> <span class="fl">0.25</span>)</span>
-<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a><span class="co"># Top marker genes per cluster guide manual cell-type assignment</span></span>
-<span id="cb5-8"><a href="#cb5-8" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(dplyr)</span>
-<span id="cb5-9"><a href="#cb5-9" aria-hidden="true" tabindex="-1"></a>markers <span class="sc">|&gt;</span></span>
-<span id="cb5-10"><a href="#cb5-10" aria-hidden="true" tabindex="-1"></a>    <span class="fu">group_by</span>(cluster) <span class="sc">|&gt;</span></span>
-<span id="cb5-11"><a href="#cb5-11" aria-hidden="true" tabindex="-1"></a>    <span class="fu">slice_max</span>(avg_log2FC, <span class="at">n =</span> <span class="dv">5</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb17"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(Seurat)</span>
+<span id="cb17-2"><a href="#cb17-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb17-3"><a href="#cb17-3" aria-hidden="true" tabindex="-1"></a><span class="co"># Find positive markers for every cluster (one-vs-rest Wilcoxon test)</span></span>
+<span id="cb17-4"><a href="#cb17-4" aria-hidden="true" tabindex="-1"></a>markers <span class="ot">&lt;-</span> <span class="fu">FindAllMarkers</span>(pbmc, <span class="at">only.pos =</span> <span class="cn">TRUE</span>,</span>
+<span id="cb17-5"><a href="#cb17-5" aria-hidden="true" tabindex="-1"></a>                          <span class="at">min.pct =</span> <span class="fl">0.25</span>, <span class="at">logfc.threshold =</span> <span class="fl">0.25</span>)</span>
+<span id="cb17-6"><a href="#cb17-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb17-7"><a href="#cb17-7" aria-hidden="true" tabindex="-1"></a><span class="co"># Top marker genes per cluster guide manual cell-type assignment</span></span>
+<span id="cb17-8"><a href="#cb17-8" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(dplyr)</span>
+<span id="cb17-9"><a href="#cb17-9" aria-hidden="true" tabindex="-1"></a>markers <span class="sc">|&gt;</span></span>
+<span id="cb17-10"><a href="#cb17-10" aria-hidden="true" tabindex="-1"></a>    <span class="fu">group_by</span>(cluster) <span class="sc">|&gt;</span></span>
+<span id="cb17-11"><a href="#cb17-11" aria-hidden="true" tabindex="-1"></a>    <span class="fu">slice_max</span>(avg_log2FC, <span class="at">n =</span> <span class="dv">5</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </section>
-<section id="手动注释" class="level2" data-number="38.2">
-<h2 data-number="38.2" class="anchored" data-anchor-id="手动注释"><span class="header-section-number">38.2</span> 手动注释</h2>
-<p>得到每个聚类的标志基因后，对照已知的细胞类型标志基因数据库（如 PanglaoDB、CellMarker）即可手动指派类型。<a href="#tbl-pbmc-markers" class="quarto-xref">表&nbsp;<span>1</span></a> 列出 PBMC 常见细胞类型的经典标志基因。</p>
+<section id="一个被普遍忽略的统计问题双重浸入" class="level2" data-number="38.2">
+<h2 data-number="38.2" class="anchored" data-anchor-id="一个被普遍忽略的统计问题双重浸入"><span class="header-section-number">38.2</span> 一个被普遍忽略的统计问题：双重浸入</h2>
+<p>上面那行 <code>FindAllMarkers()</code> 会输出一列 <code>p_val_adj</code>，看起来像是常规的多重检验校正后 p 值。但这些 p 值<strong>在统计上是无效的</strong>，其原因值得认真对待。</p>
+<p>问题出在流程本身：我们先用表达数据<strong>定义</strong>了聚类，再用<strong>同一份数据</strong>检验这些聚类之间有没有差异表达。聚类算法的目标恰恰是让簇间差异最大化——换句话说，我们是在检验一个”根据这批数据挑选出来的最大差异是否显著”，而检验时却假装这些分组是事先指定的。这种”用同一份数据既选假设又验假设”的做法称为<strong>双重浸入</strong>（double dipping）或循环推断（circular inference），其后果是 p 值被系统性地压低，显著性被严重高估。</p>
+<p>这不是理论上的顾虑。下面用纯随机数据演示：生成一个<strong>完全没有任何真实结构</strong>的泊松计数矩阵，走一遍标准流程，看能”发现”多少标志基因。</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb18"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(Seurat)</span>
+<span id="cb18-2"><a href="#cb18-2" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(Matrix)</span>
+<span id="cb18-3"><a href="#cb18-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb18-4"><a href="#cb18-4" aria-hidden="true" tabindex="-1"></a><span class="co"># Pure noise: every count drawn from the same Poisson, no structure whatsoever</span></span>
+<span id="cb18-5"><a href="#cb18-5" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">1</span>)</span>
+<span id="cb18-6"><a href="#cb18-6" aria-hidden="true" tabindex="-1"></a>n_genes <span class="ot">&lt;-</span> <span class="dv">2000</span></span>
+<span id="cb18-7"><a href="#cb18-7" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> (n_cells <span class="cf">in</span> <span class="fu">c</span>(<span class="dv">2000</span>, <span class="dv">5000</span>)) {</span>
+<span id="cb18-8"><a href="#cb18-8" aria-hidden="true" tabindex="-1"></a>    m <span class="ot">&lt;-</span> <span class="fu">matrix</span>(<span class="fu">rpois</span>(n_genes <span class="sc">*</span> n_cells, <span class="at">lambda =</span> <span class="fl">0.5</span>), <span class="at">nrow =</span> n_genes,</span>
+<span id="cb18-9"><a href="#cb18-9" aria-hidden="true" tabindex="-1"></a>                <span class="at">dimnames =</span> <span class="fu">list</span>(<span class="fu">paste0</span>(<span class="st">"g"</span>, <span class="dv">1</span><span class="sc">:</span>n_genes), <span class="fu">paste0</span>(<span class="st">"c"</span>, <span class="dv">1</span><span class="sc">:</span>n_cells)))</span>
+<span id="cb18-10"><a href="#cb18-10" aria-hidden="true" tabindex="-1"></a>    o <span class="ot">&lt;-</span> <span class="fu">CreateSeuratObject</span>(<span class="fu">as</span>(m, <span class="st">"dgCMatrix"</span>)) <span class="sc">|&gt;</span></span>
+<span id="cb18-11"><a href="#cb18-11" aria-hidden="true" tabindex="-1"></a>        <span class="fu">NormalizeData</span>(<span class="at">verbose =</span> <span class="cn">FALSE</span>) <span class="sc">|&gt;</span></span>
+<span id="cb18-12"><a href="#cb18-12" aria-hidden="true" tabindex="-1"></a>        <span class="fu">FindVariableFeatures</span>(<span class="at">verbose =</span> <span class="cn">FALSE</span>) <span class="sc">|&gt;</span></span>
+<span id="cb18-13"><a href="#cb18-13" aria-hidden="true" tabindex="-1"></a>        <span class="fu">ScaleData</span>(<span class="at">verbose =</span> <span class="cn">FALSE</span>) <span class="sc">|&gt;</span></span>
+<span id="cb18-14"><a href="#cb18-14" aria-hidden="true" tabindex="-1"></a>        <span class="fu">RunPCA</span>(<span class="at">npcs =</span> <span class="dv">20</span>, <span class="at">verbose =</span> <span class="cn">FALSE</span>) <span class="sc">|&gt;</span></span>
+<span id="cb18-15"><a href="#cb18-15" aria-hidden="true" tabindex="-1"></a>        <span class="fu">FindNeighbors</span>(<span class="at">dims =</span> <span class="dv">1</span><span class="sc">:</span><span class="dv">10</span>, <span class="at">verbose =</span> <span class="cn">FALSE</span>) <span class="sc">|&gt;</span></span>
+<span id="cb18-16"><a href="#cb18-16" aria-hidden="true" tabindex="-1"></a>        <span class="fu">FindClusters</span>(<span class="at">resolution =</span> <span class="fl">0.8</span>, <span class="at">verbose =</span> <span class="cn">FALSE</span>)</span>
+<span id="cb18-17"><a href="#cb18-17" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb18-18"><a href="#cb18-18" aria-hidden="true" tabindex="-1"></a>    mk <span class="ot">&lt;-</span> <span class="fu">FindAllMarkers</span>(o, <span class="at">only.pos =</span> <span class="cn">TRUE</span>, <span class="at">min.pct =</span> <span class="fl">0.1</span>,</span>
+<span id="cb18-19"><a href="#cb18-19" aria-hidden="true" tabindex="-1"></a>                         <span class="at">logfc.threshold =</span> <span class="fl">0.1</span>, <span class="at">verbose =</span> <span class="cn">FALSE</span>)</span>
+<span id="cb18-20"><a href="#cb18-20" aria-hidden="true" tabindex="-1"></a>    <span class="fu">cat</span>(<span class="fu">sprintf</span>(<span class="st">"%d cells -&gt; %d clusters, %d 'significant' markers (padj &lt; 0.05)</span><span class="sc">\n</span><span class="st">"</span>,</span>
+<span id="cb18-21"><a href="#cb18-21" aria-hidden="true" tabindex="-1"></a>                n_cells, <span class="fu">nlevels</span>(<span class="fu">Idents</span>(o)), <span class="fu">sum</span>(mk<span class="sc">$</span>p_val_adj <span class="sc">&lt;</span> <span class="fl">0.05</span>)))</span>
+<span id="cb18-22"><a href="#cb18-22" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>结果如 <a href="#tbl-double-dipping" class="quarto-xref">表&nbsp;<span>5</span></a>：在<strong>毫无结构</strong>的数据上，算法照样切出了 8 个和 11 个”细胞类型”，并给出了 16 个和 70 个”统计显著”的标志基因，最小校正后 p 值可低至 <span class="math inline">\(1.7\times10^{-8}\)</span>。</p>
+<div id="tbl-double-dipping" class="quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-tbl figure">
+<figcaption class="quarto-float-caption-top quarto-float-caption quarto-float-tbl" id="tbl-double-dipping-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+表&nbsp;5: 纯随机数据上双重浸入产生的假阳性（泊松噪声，无任何真实结构）
+</figcaption>
+<div aria-describedby="tbl-double-dipping-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<table class="caption-top table">
+<thead>
+<tr class="header">
+<th>细胞数</th>
+<th>聚出簇数</th>
+<th>“显著”标志基因数</th>
+<th>最小 padj</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>2,000</td>
+<td>8</td>
+<td>16</td>
+<td><span class="math inline">\(1.9\times10^{-3}\)</span></td>
+</tr>
+<tr class="even">
+<td>5,000</td>
+<td>11</td>
+<td>70</td>
+<td><span class="math inline">\(1.7\times10^{-8}\)</span></td>
+</tr>
+</tbody>
+</table>
+</div>
+</figure>
+</div>
+<p>注意假阳性数量<strong>随细胞数增长</strong>——这正是双重浸入的典型特征：细胞越多，聚类算法越有机会在噪声中找到可切分的方向，而检验的自由度也越大。这意味着在动辄数万细胞的现代数据集上，问题只会更严重，不会更轻。</p>
+<div class="warning">
+<p><strong>这不意味着 <code>FindAllMarkers()</code> 不能用，而是意味着它的 p 值不能按字面解读。</strong> 实践中应当这样对待：<strong>把标志基因的 p 值当作排序依据，而不是显著性证据</strong>。<code>avg_log2FC</code>（效应量）与 <code>pct.1</code>/<code>pct.2</code>（两组的检出比例）比 p 值更值得关注——一个在簇内 90% 细胞检出、簇外仅 5% 检出的基因，无论 p 值多少都是好的标志基因；反之一个 p 值极小但 <code>pct.1</code> 与 <code>pct.2</code> 相差无几的基因，几乎没有标志价值。</p>
+<p>真正的验证只能来自数据之外：该基因是否是已知的该细胞类型标志？该细胞群是否能在<strong>独立样本</strong>中被重复检出？如果研究结论依赖于”某个新细胞亚群确实存在”，则必须在独立数据上重复，而不能靠 p 值支撑。</p>
+</div>
+<div class="note">
+<p><strong>统计学界对此有专门的解决方案，但尚未普及：</strong> 近年发展出的选择性推断（selective inference）方法试图给出在”分组由数据选出”这一条件下仍然有效的 p 值，代表工作包括针对层次聚类与 k-means 的条件检验，以及针对单细胞场景的数据分裂（data splitting）策略——把计数矩阵按泊松分布随机拆成两半，一半用于聚类、另一半用于检验，从而切断循环。这类方法目前尚未进入 Seurat/Scanpy 的默认流程，多数研究仍在报告未校正的双重浸入 p 值。作为读者，至少应当知道这些 p 值的性质，并在写作时避免用”p &lt; 0.001，因此该亚群显著存在”这类表述。</p>
+</div>
+</section>
+<section id="标志基因的可视化选对图" class="level2" data-number="38.3">
+<h2 data-number="38.3" class="anchored" data-anchor-id="标志基因的可视化选对图"><span class="header-section-number">38.3</span> 标志基因的可视化：选对图</h2>
+<p>拿到标志基因列表后，下一步是可视化确认。Seurat 提供了五种常用图形，它们回答的问题并不相同，选错会看不出想看的东西。</p>
+<div id="tbl-marker-viz" class="quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-tbl figure">
+<figcaption class="quarto-float-caption-top quarto-float-caption quarto-float-tbl" id="tbl-marker-viz-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+表&nbsp;6: 标志基因可视化函数的适用场景
+</figcaption>
+<div aria-describedby="tbl-marker-viz-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<table class="caption-top table">
+<colgroup>
+<col style="width: 33%">
+<col style="width: 33%">
+<col style="width: 33%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>函数</th>
+<th>展示形式</th>
+<th>最适合回答的问题</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>FeaturePlot()</code></td>
+<td>表达量着色的 UMAP</td>
+<td>这个基因在<strong>哪些区域</strong>表达？</td>
+</tr>
+<tr class="even">
+<td><code>VlnPlot()</code></td>
+<td>按簇分组的小提琴图</td>
+<td>各簇的<strong>表达分布</strong>差异如何？</td>
+</tr>
+<tr class="odd">
+<td><code>DotPlot()</code></td>
+<td>点的大小=检出比例，颜色=平均表达</td>
+<td><strong>多个基因 × 多个簇</strong>的总览</td>
+</tr>
+<tr class="even">
+<td><code>RidgePlot()</code></td>
+<td>按簇分组的密度脊线图</td>
+<td>表达是否<strong>双峰</strong>（部分细胞高、部分不表达）？</td>
+</tr>
+<tr class="odd">
+<td><code>DoHeatmap()</code></td>
+<td>单细胞分辨率热图</td>
+<td>标志基因在<strong>单个细胞</strong>层面是否干净？</td>
+</tr>
+</tbody>
+</table>
+</div>
+</figure>
+</div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb19"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb19-1"><a href="#cb19-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(Seurat)</span>
+<span id="cb19-2"><a href="#cb19-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb19-3"><a href="#cb19-3" aria-hidden="true" tabindex="-1"></a>markers_to_check <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="st">"IL7R"</span>, <span class="st">"CD8A"</span>, <span class="st">"MS4A1"</span>, <span class="st">"GNLY"</span>, <span class="st">"CD14"</span>, <span class="st">"FCGR3A"</span>)</span>
+<span id="cb19-4"><a href="#cb19-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb19-5"><a href="#cb19-5" aria-hidden="true" tabindex="-1"></a><span class="co"># DotPlot is the single most informative view: it shows BOTH how much a gene is</span></span>
+<span id="cb19-6"><a href="#cb19-6" aria-hidden="true" tabindex="-1"></a><span class="co"># expressed (colour) and in what fraction of cells (dot size), across all clusters.</span></span>
+<span id="cb19-7"><a href="#cb19-7" aria-hidden="true" tabindex="-1"></a><span class="fu">DotPlot</span>(pbmc, <span class="at">features =</span> markers_to_check) <span class="sc">+</span> Seurat<span class="sc">::</span><span class="fu">RotatedAxis</span>()</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb20"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb20-1"><a href="#cb20-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(Seurat)</span>
+<span id="cb20-2"><a href="#cb20-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb20-3"><a href="#cb20-3" aria-hidden="true" tabindex="-1"></a><span class="co"># FeaturePlot answers "where", VlnPlot answers "how much and how variable"</span></span>
+<span id="cb20-4"><a href="#cb20-4" aria-hidden="true" tabindex="-1"></a><span class="fu">FeaturePlot</span>(pbmc, <span class="at">features =</span> <span class="fu">c</span>(<span class="st">"CD3D"</span>, <span class="st">"MS4A1"</span>, <span class="st">"LYZ"</span>, <span class="st">"GNLY"</span>), <span class="at">ncol =</span> <span class="dv">2</span>)</span>
+<span id="cb20-5"><a href="#cb20-5" aria-hidden="true" tabindex="-1"></a><span class="fu">VlnPlot</span>(pbmc, <span class="at">features =</span> <span class="fu">c</span>(<span class="st">"CD3D"</span>, <span class="st">"MS4A1"</span>), <span class="at">pt.size =</span> <span class="dv">0</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="tip">
+<p><strong><code>DotPlot()</code> 的点大小比颜色更重要：</strong> 一个常见的误读是只看颜色（平均表达量）而忽略点的大小（检出比例）。二者可能给出相反的印象：某基因在一个簇中平均表达很高，但若点很小，说明只有少数细胞表达它、其余为零——这通常不是好的标志基因，而更可能是少数离群细胞或双细胞拉高了均值。<strong>理想的标志基因应当点大且色深</strong>：在该簇的绝大多数细胞中表达，且表达量高。</p>
+</div>
+</section>
+<section id="手动注释" class="level2" data-number="38.4">
+<h2 data-number="38.4" class="anchored" data-anchor-id="手动注释"><span class="header-section-number">38.4</span> 手动注释</h2>
+<p>得到每个聚类的标志基因后，对照已知的细胞类型标志基因数据库（如 PanglaoDB、CellMarker）即可手动指派类型。<a href="#tbl-pbmc-markers" class="quarto-xref">表&nbsp;<span>7</span></a> 列出 PBMC 常见细胞类型的经典标志基因。</p>
 <div id="tbl-pbmc-markers" class="quarto-float quarto-figure quarto-figure-center anchored">
 <figure class="quarto-float quarto-float-tbl figure">
 <figcaption class="quarto-float-caption-top quarto-float-caption quarto-float-tbl" id="tbl-pbmc-markers-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
-表&nbsp;1: PBMC 常见细胞类型及其经典标志基因
+表&nbsp;7: PBMC 常见细胞类型及其经典标志基因
 </figcaption>
 <div aria-describedby="tbl-pbmc-markers-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
 <table class="caption-top table">
@@ -847,38 +1442,209 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </div>
 </figure>
 </div>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb6"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Visualize known markers to confirm cluster identities</span></span>
-<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a><span class="fu">FeaturePlot</span>(pbmc, <span class="at">features =</span> <span class="fu">c</span>(<span class="st">"CD3D"</span>, <span class="st">"MS4A1"</span>, <span class="st">"LYZ"</span>, <span class="st">"GNLY"</span>))</span>
-<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a><span class="fu">DotPlot</span>(pbmc, <span class="at">features =</span> <span class="fu">c</span>(<span class="st">"IL7R"</span>, <span class="st">"CD8A"</span>, <span class="st">"MS4A1"</span>, <span class="st">"GNLY"</span>, <span class="st">"CD14"</span>, <span class="st">"FCGR3A"</span>)) <span class="sc">+</span></span>
-<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a>    Seurat<span class="sc">::</span><span class="fu">RotatedAxis</span>()</span>
-<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a><span class="co"># Assign biological labels to clusters (example mapping)</span></span>
-<span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a>new_ids <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="st">"0"</span> <span class="ot">=</span> <span class="st">"CD4 T"</span>, <span class="st">"1"</span> <span class="ot">=</span> <span class="st">"CD14+ Mono"</span>, <span class="st">"2"</span> <span class="ot">=</span> <span class="st">"B"</span>,</span>
-<span id="cb6-8"><a href="#cb6-8" aria-hidden="true" tabindex="-1"></a>             <span class="st">"3"</span> <span class="ot">=</span> <span class="st">"CD8 T"</span>, <span class="st">"4"</span> <span class="ot">=</span> <span class="st">"NK"</span>, <span class="st">"5"</span> <span class="ot">=</span> <span class="st">"FCGR3A+ Mono"</span>)</span>
-<span id="cb6-9"><a href="#cb6-9" aria-hidden="true" tabindex="-1"></a>pbmc <span class="ot">&lt;-</span> <span class="fu">RenameIdents</span>(pbmc, new_ids)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>在 PBMC 3k 上以 <code>resolution = 0.5</code> 实际得到 9 个聚类，各聚类的 <code>avg_log2FC</code> 排名前列的标志基因与对应的细胞类型判定见 <a href="#tbl-pbmc3k-observed" class="quarto-xref">表&nbsp;<span>8</span></a>。可以看到判定几乎是自明的——这正是该数据集适合作为教学与流程验证基准的原因。</p>
+<div id="tbl-pbmc3k-observed" class="quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-tbl figure">
+<figcaption class="quarto-float-caption-top quarto-float-caption quarto-float-tbl" id="tbl-pbmc3k-observed-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+表&nbsp;8: PBMC 3k 实测聚类结果与标志基因（15 个主成分，resolution = 0.5）
+</figcaption>
+<div aria-describedby="tbl-pbmc3k-observed-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<table class="caption-top table">
+<thead>
+<tr class="header">
+<th>聚类</th>
+<th>细胞数</th>
+<th>实测顶部标志基因</th>
+<th>判定类型</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>0</td>
+<td>600</td>
+<td>CCR7, LDLRAP1, LEF1</td>
+<td>幼稚 CD4 T</td>
+</tr>
+<tr class="even">
+<td>1</td>
+<td>534</td>
+<td>AQP3, CD40LG, TRADD</td>
+<td>记忆 CD4 T</td>
+</tr>
+<tr class="odd">
+<td>2</td>
+<td>469</td>
+<td>FOLR3, S100A12, S100A8</td>
+<td>CD14+ 单核</td>
+</tr>
+<tr class="even">
+<td>3</td>
+<td>342</td>
+<td>LINC00926, VPREB3, CD79A</td>
+<td>B 细胞</td>
+</tr>
+<tr class="odd">
+<td>4</td>
+<td>315</td>
+<td>GZMK, GZMH, CD8A</td>
+<td>CD8 T</td>
+</tr>
+<tr class="even">
+<td>5</td>
+<td>174</td>
+<td>CKB, CDKN1C, MS4A4A</td>
+<td>FCGR3A+ 单核</td>
+</tr>
+<tr class="odd">
+<td>6</td>
+<td>159</td>
+<td>AKR1C3, SH2D1B, GNLY</td>
+<td>NK 细胞</td>
+</tr>
+<tr class="even">
+<td>7</td>
+<td>32</td>
+<td>SERPINF1, FCER1A, CLIC2</td>
+<td>树突状细胞</td>
+</tr>
+<tr class="odd">
+<td>8</td>
+<td>13</td>
+<td>LY6G6F, CLDN5, PPBP</td>
+<td>血小板</td>
+</tr>
+</tbody>
+</table>
+</div>
+</figure>
+</div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb21"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb21-1"><a href="#cb21-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Visualize known markers to confirm cluster identities</span></span>
+<span id="cb21-2"><a href="#cb21-2" aria-hidden="true" tabindex="-1"></a><span class="fu">FeaturePlot</span>(pbmc, <span class="at">features =</span> <span class="fu">c</span>(<span class="st">"CD3D"</span>, <span class="st">"MS4A1"</span>, <span class="st">"LYZ"</span>, <span class="st">"GNLY"</span>))</span>
+<span id="cb21-3"><a href="#cb21-3" aria-hidden="true" tabindex="-1"></a><span class="fu">DotPlot</span>(pbmc, <span class="at">features =</span> <span class="fu">c</span>(<span class="st">"IL7R"</span>, <span class="st">"CD8A"</span>, <span class="st">"MS4A1"</span>, <span class="st">"GNLY"</span>, <span class="st">"CD14"</span>, <span class="st">"FCGR3A"</span>)) <span class="sc">+</span></span>
+<span id="cb21-4"><a href="#cb21-4" aria-hidden="true" tabindex="-1"></a>    Seurat<span class="sc">::</span><span class="fu">RotatedAxis</span>()</span>
+<span id="cb21-5"><a href="#cb21-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb21-6"><a href="#cb21-6" aria-hidden="true" tabindex="-1"></a><span class="co"># Assign biological labels to clusters (example mapping)</span></span>
+<span id="cb21-7"><a href="#cb21-7" aria-hidden="true" tabindex="-1"></a>new_ids <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="st">"0"</span> <span class="ot">=</span> <span class="st">"CD4 T"</span>, <span class="st">"1"</span> <span class="ot">=</span> <span class="st">"CD14+ Mono"</span>, <span class="st">"2"</span> <span class="ot">=</span> <span class="st">"B"</span>,</span>
+<span id="cb21-8"><a href="#cb21-8" aria-hidden="true" tabindex="-1"></a>             <span class="st">"3"</span> <span class="ot">=</span> <span class="st">"CD8 T"</span>, <span class="st">"4"</span> <span class="ot">=</span> <span class="st">"NK"</span>, <span class="st">"5"</span> <span class="ot">=</span> <span class="st">"FCGR3A+ Mono"</span>)</span>
+<span id="cb21-9"><a href="#cb21-9" aria-hidden="true" tabindex="-1"></a>pbmc <span class="ot">&lt;-</span> <span class="fu">RenameIdents</span>(pbmc, new_ids)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </section>
-<section id="自动注释singler" class="level2" data-number="38.3">
-<h2 data-number="38.3" class="anchored" data-anchor-id="自动注释singler"><span class="header-section-number">38.3</span> 自动注释：SingleR</h2>
+<section id="自动注释singler" class="level2" data-number="38.5">
+<h2 data-number="38.5" class="anchored" data-anchor-id="自动注释singler"><span class="header-section-number">38.5</span> 自动注释：SingleR</h2>
 <p>手动注释依赖专家知识、耗时且主观。自动注释工具用带标签的参考数据集为查询细胞快速指派类型。SingleR 对每个查询细胞，计算其表达谱与参考数据集中各细胞类型表达谱的相关性，指派相关性最高的类型，并通过迭代微调（fine-tuning）提高分辨力（Aran et al., 2019）。</p>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb7"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(SingleR)</span>
-<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(celldex)</span>
-<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a><span class="co"># Use a built-in reference (e.g. Human Primary Cell Atlas / ENCODE-based)</span></span>
-<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a>ref <span class="ot">&lt;-</span> celldex<span class="sc">::</span><span class="fu">HumanPrimaryCellAtlasData</span>()</span>
-<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb7-7"><a href="#cb7-7" aria-hidden="true" tabindex="-1"></a><span class="co"># Correlation-based per-cell annotation against the reference</span></span>
-<span id="cb7-8"><a href="#cb7-8" aria-hidden="true" tabindex="-1"></a>sce <span class="ot">&lt;-</span> <span class="fu">as.SingleCellExperiment</span>(pbmc)</span>
-<span id="cb7-9"><a href="#cb7-9" aria-hidden="true" tabindex="-1"></a>pred <span class="ot">&lt;-</span> <span class="fu">SingleR</span>(<span class="at">test =</span> sce, <span class="at">ref =</span> ref, <span class="at">labels =</span> ref<span class="sc">$</span>label.main)</span>
-<span id="cb7-10"><a href="#cb7-10" aria-hidden="true" tabindex="-1"></a>pbmc<span class="sc">$</span>SingleR_label <span class="ot">&lt;-</span> pred<span class="sc">$</span>labels</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="note">
+<p><strong>运行环境说明：</strong> <code>SingleR</code> 与 <code>celldex</code> 均为 Bioconductor 包（<code>BiocManager::install(c("SingleR","celldex"))</code>）。<code>celldex</code> 的参考数据集首次调用时需从 ExperimentHub 联网下载（约数十 MB）并缓存到本地，因此第一次运行较慢、且需要网络。</p>
+</div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb22"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb22-1"><a href="#cb22-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(SingleR)</span>
+<span id="cb22-2"><a href="#cb22-2" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(celldex)</span>
+<span id="cb22-3"><a href="#cb22-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb22-4"><a href="#cb22-4" aria-hidden="true" tabindex="-1"></a><span class="co"># Use a built-in reference (e.g. Human Primary Cell Atlas / ENCODE-based)</span></span>
+<span id="cb22-5"><a href="#cb22-5" aria-hidden="true" tabindex="-1"></a>ref <span class="ot">&lt;-</span> celldex<span class="sc">::</span><span class="fu">HumanPrimaryCellAtlasData</span>()</span>
+<span id="cb22-6"><a href="#cb22-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb22-7"><a href="#cb22-7" aria-hidden="true" tabindex="-1"></a><span class="co"># Correlation-based per-cell annotation against the reference</span></span>
+<span id="cb22-8"><a href="#cb22-8" aria-hidden="true" tabindex="-1"></a>sce <span class="ot">&lt;-</span> <span class="fu">as.SingleCellExperiment</span>(pbmc)</span>
+<span id="cb22-9"><a href="#cb22-9" aria-hidden="true" tabindex="-1"></a>pred <span class="ot">&lt;-</span> <span class="fu">SingleR</span>(<span class="at">test =</span> sce, <span class="at">ref =</span> ref, <span class="at">labels =</span> ref<span class="sc">$</span>label.main)</span>
+<span id="cb22-10"><a href="#cb22-10" aria-hidden="true" tabindex="-1"></a>pbmc<span class="sc">$</span>SingleR_label <span class="ot">&lt;-</span> pred<span class="sc">$</span>labels</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</section>
+<section id="评估自动注释的可信度" class="level2" data-number="38.6">
+<h2 data-number="38.6" class="anchored" data-anchor-id="评估自动注释的可信度"><span class="header-section-number">38.6</span> 评估自动注释的可信度</h2>
+<p>SingleR 对每个细胞都会给出一个标签，但标签的可信度差异很大——一个转录谱与参考中所有类型都不太像的细胞，仍然会被指派给”相对最像”的那个。因此<strong>必须检查置信度，而不是直接采用标签</strong>。</p>
+<p>SingleR 提供两个诊断量：<code>delta</code>（最佳匹配得分与次佳的差距，差距小说明模棱两可）与 <code>pruned.labels</code>（对 delta 过低的细胞置为 <code>NA</code>，即拒绝判定）。</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb23"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb23-1"><a href="#cb23-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(SingleR)</span>
+<span id="cb23-2"><a href="#cb23-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb23-3"><a href="#cb23-3" aria-hidden="true" tabindex="-1"></a><span class="co"># Cells whose best match is not clearly better than the runner-up get pruned</span></span>
+<span id="cb23-4"><a href="#cb23-4" aria-hidden="true" tabindex="-1"></a>pbmc<span class="sc">$</span>SingleR_pruned <span class="ot">&lt;-</span> pred<span class="sc">$</span>pruned.labels</span>
+<span id="cb23-5"><a href="#cb23-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb23-6"><a href="#cb23-6" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">"Cells with no confident label:"</span>,</span>
+<span id="cb23-7"><a href="#cb23-7" aria-hidden="true" tabindex="-1"></a>    <span class="fu">sum</span>(<span class="fu">is.na</span>(pred<span class="sc">$</span>pruned.labels)), <span class="st">"/"</span>, <span class="fu">nrow</span>(pred), <span class="st">"</span><span class="sc">\n</span><span class="st">"</span>)</span>
+<span id="cb23-8"><a href="#cb23-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb23-9"><a href="#cb23-9" aria-hidden="true" tabindex="-1"></a><span class="co"># Score heatmap: a confident cell shows one bright row; an ambiguous one does not</span></span>
+<span id="cb23-10"><a href="#cb23-10" aria-hidden="true" tabindex="-1"></a><span class="fu">plotScoreHeatmap</span>(pred)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb24"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb24-1"><a href="#cb24-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(SingleR)</span>
+<span id="cb24-2"><a href="#cb24-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb24-3"><a href="#cb24-3" aria-hidden="true" tabindex="-1"></a><span class="co"># Delta distribution per label: consistently low delta means the reference</span></span>
+<span id="cb24-4"><a href="#cb24-4" aria-hidden="true" tabindex="-1"></a><span class="co"># probably lacks that cell type altogether</span></span>
+<span id="cb24-5"><a href="#cb24-5" aria-hidden="true" tabindex="-1"></a><span class="fu">plotDeltaDistribution</span>(pred, <span class="at">ncol =</span> <span class="dv">4</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>被大量 <code>pruned</code> 的细胞是一个有价值的信号而非麻烦：它往往意味着<strong>参考数据集缺少该细胞类型</strong>。这与第 9 章解卷积中参考不完备的失效模式是同一个问题（参见第 9 章）——算法不会告诉你参考错了，只会给出一个”相对最像”的答案。</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb25"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb25-1"><a href="#cb25-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(Seurat)</span>
+<span id="cb25-2"><a href="#cb25-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb25-3"><a href="#cb25-3" aria-hidden="true" tabindex="-1"></a><span class="co"># Cross-tabulate manual clusters against automatic labels.</span></span>
+<span id="cb25-4"><a href="#cb25-4" aria-hidden="true" tabindex="-1"></a><span class="co"># A clean block-diagonal pattern means the two agree; off-diagonal mass is where</span></span>
+<span id="cb25-5"><a href="#cb25-5" aria-hidden="true" tabindex="-1"></a><span class="co"># you need to look more carefully.</span></span>
+<span id="cb25-6"><a href="#cb25-6" aria-hidden="true" tabindex="-1"></a><span class="fu">table</span>(<span class="at">Cluster =</span> pbmc<span class="sc">$</span>seurat_clusters, <span class="at">SingleR =</span> pbmc<span class="sc">$</span>SingleR_pruned)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="info">
 <p><strong>黄金法则：</strong> 手动注释与自动注释应相互印证，而非二选一。自动注释快速、客观，适合提供初步框架；手动注释精确、可解释，能纠正参考数据集缺失类型或物种/组织不匹配带来的错误。当二者一致时，注释可信；当二者矛盾时，正是发现新细胞状态或识别注释陷阱（如参考缺失该类型）的契机。任何最终注释都应能用一组特异标志基因解释。</p>
+</div>
+</section>
+<section id="注释的三类陷阱" class="level2" data-number="38.7">
+<h2 data-number="38.7" class="anchored" data-anchor-id="注释的三类陷阱"><span class="header-section-number">38.7</span> 注释的三类陷阱</h2>
+<p>并非每一个聚类都对应一种细胞类型。在赋予生物学标签之前，应先排除三类”伪细胞类型”——它们在数据上表现得像一个独立的群，实际上却是技术产物。</p>
+<p><strong>第一类：低质量细胞簇。</strong> 破膜、濒死细胞的共同特征是高线粒体比例、低基因数，这些特征本身就足以让它们在降维空间中聚成一群。若某个簇的标志基因清一色是线粒体基因（<code>MT-</code> 开头），它几乎必定是这类簇。</p>
+<p><strong>第二类：双细胞簇。</strong> 若双细胞数量足够多且来自同一对细胞类型（如 T 细胞 + 单核细胞），它们会聚成一个位于两个亲本簇之间的独立群，同时表达两者的标志基因。这正是专题 6.2 强调要做双细胞检测的原因——一旦形成独立簇，它极易被当作”过渡态”或”双阳性细胞”报告。</p>
+<p><strong>第三类：应激/解离伪影簇。</strong> 高表达 <em>FOS</em>、<em>JUN</em> 等即早基因的细胞若数量可观，也会自成一簇（参见专题 6.2）。</p>
+<p>下面这段诊断代码把三类嫌疑一次性查完：</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb26"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb26-1"><a href="#cb26-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(Seurat)</span>
+<span id="cb26-2"><a href="#cb26-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb26-3"><a href="#cb26-3" aria-hidden="true" tabindex="-1"></a><span class="co"># Screen every cluster for the three classic "fake cell type" signatures</span></span>
+<span id="cb26-4"><a href="#cb26-4" aria-hidden="true" tabindex="-1"></a>diag_tbl <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(</span>
+<span id="cb26-5"><a href="#cb26-5" aria-hidden="true" tabindex="-1"></a>    <span class="at">cluster   =</span> <span class="fu">levels</span>(<span class="fu">Idents</span>(pbmc)),</span>
+<span id="cb26-6"><a href="#cb26-6" aria-hidden="true" tabindex="-1"></a>    <span class="at">n_cells   =</span> <span class="fu">as.integer</span>(<span class="fu">table</span>(<span class="fu">Idents</span>(pbmc))),</span>
+<span id="cb26-7"><a href="#cb26-7" aria-hidden="true" tabindex="-1"></a>    <span class="at">med_nFeat =</span> <span class="fu">tapply</span>(pbmc<span class="sc">$</span>nFeature_RNA, <span class="fu">Idents</span>(pbmc), median),</span>
+<span id="cb26-8"><a href="#cb26-8" aria-hidden="true" tabindex="-1"></a>    <span class="at">med_mt    =</span> <span class="fu">round</span>(<span class="fu">tapply</span>(pbmc<span class="sc">$</span>percent.mt, <span class="fu">Idents</span>(pbmc), median), <span class="dv">2</span>)</span>
+<span id="cb26-9"><a href="#cb26-9" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb26-10"><a href="#cb26-10" aria-hidden="true" tabindex="-1"></a>diag_tbl</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb27"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb27-1"><a href="#cb27-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(Seurat)</span>
+<span id="cb27-2"><a href="#cb27-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb27-3"><a href="#cb27-3" aria-hidden="true" tabindex="-1"></a><span class="co"># Are any cluster's top markers dominated by mitochondrial genes?</span></span>
+<span id="cb27-4"><a href="#cb27-4" aria-hidden="true" tabindex="-1"></a>top_per_cluster <span class="ot">&lt;-</span> <span class="fu">lapply</span>(<span class="fu">split</span>(markers, markers<span class="sc">$</span>cluster), <span class="cf">function</span>(d) {</span>
+<span id="cb27-5"><a href="#cb27-5" aria-hidden="true" tabindex="-1"></a>    g <span class="ot">&lt;-</span> <span class="fu">head</span>(d<span class="sc">$</span>gene[<span class="fu">order</span>(<span class="sc">-</span>d<span class="sc">$</span>avg_log2FC)], <span class="dv">10</span>)</span>
+<span id="cb27-6"><a href="#cb27-6" aria-hidden="true" tabindex="-1"></a>    <span class="fu">c</span>(<span class="at">mt_fraction =</span> <span class="fu">mean</span>(<span class="fu">grepl</span>(<span class="st">"^MT-"</span>, g)),</span>
+<span id="cb27-7"><a href="#cb27-7" aria-hidden="true" tabindex="-1"></a>      <span class="at">top_genes   =</span> <span class="fu">paste</span>(<span class="fu">head</span>(g, <span class="dv">3</span>), <span class="at">collapse =</span> <span class="st">", "</span>))</span>
+<span id="cb27-8"><a href="#cb27-8" aria-hidden="true" tabindex="-1"></a>})</span>
+<span id="cb27-9"><a href="#cb27-9" aria-hidden="true" tabindex="-1"></a><span class="fu">do.call</span>(rbind, top_per_cluster)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb28"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb28-1"><a href="#cb28-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(Seurat)</span>
+<span id="cb28-2"><a href="#cb28-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb28-3"><a href="#cb28-3" aria-hidden="true" tabindex="-1"></a><span class="co"># Doublet-cluster check: does any cluster co-express markers of two lineages?</span></span>
+<span id="cb28-4"><a href="#cb28-4" aria-hidden="true" tabindex="-1"></a><span class="co"># A genuine cell type expresses one lineage's markers, not both.</span></span>
+<span id="cb28-5"><a href="#cb28-5" aria-hidden="true" tabindex="-1"></a><span class="fu">FeaturePlot</span>(pbmc, <span class="at">features =</span> <span class="fu">c</span>(<span class="st">"CD3D"</span>, <span class="st">"LYZ"</span>), <span class="at">blend =</span> <span class="cn">TRUE</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="warning">
+<p><strong>“双阳性细胞”这个词应当触发警觉：</strong> 在 scRNA-seq 论文中，报告”同时表达 A 谱系与 B 谱系标志的双阳性细胞群”是一个高风险结论。绝大多数情况下，它是双细胞或环境 RNA 污染的产物，而非真实的细胞状态。在下结论之前至少要排除三件事：（1）该群是否已被双细胞检测工具标记（专题 6.2）；（2）两个标志基因中是否有一个是本样本的”汤”基因（环境 RNA，同专题 6.2）；（3）该群的 <code>nCount_RNA</code> 是否显著高于其他簇（双细胞的典型特征）。三项都排除后，还应在独立样本中重复检出，并最好用流式分选或免疫荧光在蛋白层面确认。</p>
+</div>
+<div class="info">
+<p><strong>黄金法则：</strong> 注释的正确方向是<strong>从已知走向未知</strong>，而不是反过来。先用公认的经典标志基因把能确定的簇一一认领，剩下认不出来的簇才是需要深究的对象——而”认不出来”的首选解释应当是技术伪影，其次才是新的细胞类型。把顺序颠倒过来（先假设是新细胞类型、再找证据支持）是单细胞研究中虚假发现的主要来源。一个实用的自检问题是：<strong>如果我告诉一位该组织领域的专家我发现了这个新群体，他会先问我什么？</strong> 那个问题通常就是你还没排除的可能性。</p>
+</div>
+</section>
+<section id="层级注释先粗后细" class="level2" data-number="38.8">
+<h2 data-number="38.8" class="anchored" data-anchor-id="层级注释先粗后细"><span class="header-section-number">38.8</span> 层级注释：先粗后细</h2>
+<p>一次聚类很难同时分辨”主要细胞类型”与”细胞亚型”——二者所需的分辨率不同。T 细胞与单核细胞的差异巨大，低分辨率即可分开；而 CD4 幼稚 T 细胞与 CD4 记忆 T 细胞的差异细微，需要很高的分辨率才能区分。若用高分辨率一次做完，单核细胞等异质性低的类型会被过度切分成一堆无意义的碎片。</p>
+<p>正确做法是<strong>层级注释</strong>：先用低分辨率划分主要类型并完成注释，再把感兴趣的类型单独取出、在其内部重新做一轮完整的降维与聚类。二次聚类的关键在于，取出子集后必须<strong>重新选择高变基因</strong>——原先的高变基因是为区分所有细胞类型而选的（如 T 细胞 vs 单核细胞的标志基因），对区分 T 细胞内部的亚型没有帮助。</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb29"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb29-1"><a href="#cb29-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(Seurat)</span>
+<span id="cb29-2"><a href="#cb29-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb29-3"><a href="#cb29-3" aria-hidden="true" tabindex="-1"></a><span class="co"># Step 1: pull out one major cell type</span></span>
+<span id="cb29-4"><a href="#cb29-4" aria-hidden="true" tabindex="-1"></a>t_cells <span class="ot">&lt;-</span> <span class="fu">subset</span>(pbmc, <span class="at">idents =</span> <span class="fu">c</span>(<span class="st">"CD4 T"</span>, <span class="st">"CD8 T"</span>))</span>
+<span id="cb29-5"><a href="#cb29-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb29-6"><a href="#cb29-6" aria-hidden="true" tabindex="-1"></a><span class="co"># Step 2: re-run the full pipeline INSIDE the subset.</span></span>
+<span id="cb29-7"><a href="#cb29-7" aria-hidden="true" tabindex="-1"></a><span class="co"># Re-selecting variable features is the essential step: genes that separated</span></span>
+<span id="cb29-8"><a href="#cb29-8" aria-hidden="true" tabindex="-1"></a><span class="co"># T cells from monocytes are useless for separating T-cell subtypes.</span></span>
+<span id="cb29-9"><a href="#cb29-9" aria-hidden="true" tabindex="-1"></a>t_cells <span class="ot">&lt;-</span> <span class="fu">FindVariableFeatures</span>(t_cells, <span class="at">nfeatures =</span> <span class="dv">2000</span>) <span class="sc">|&gt;</span></span>
+<span id="cb29-10"><a href="#cb29-10" aria-hidden="true" tabindex="-1"></a>    <span class="fu">ScaleData</span>() <span class="sc">|&gt;</span></span>
+<span id="cb29-11"><a href="#cb29-11" aria-hidden="true" tabindex="-1"></a>    <span class="fu">RunPCA</span>(<span class="at">npcs =</span> <span class="dv">30</span>) <span class="sc">|&gt;</span></span>
+<span id="cb29-12"><a href="#cb29-12" aria-hidden="true" tabindex="-1"></a>    <span class="fu">FindNeighbors</span>(<span class="at">dims =</span> <span class="dv">1</span><span class="sc">:</span><span class="dv">20</span>) <span class="sc">|&gt;</span></span>
+<span id="cb29-13"><a href="#cb29-13" aria-hidden="true" tabindex="-1"></a>    <span class="fu">FindClusters</span>(<span class="at">resolution =</span> <span class="fl">0.6</span>) <span class="sc">|&gt;</span></span>
+<span id="cb29-14"><a href="#cb29-14" aria-hidden="true" tabindex="-1"></a>    <span class="fu">RunUMAP</span>(<span class="at">dims =</span> <span class="dv">1</span><span class="sc">:</span><span class="dv">20</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb30"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb30-1"><a href="#cb30-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(Seurat)</span>
+<span id="cb30-2"><a href="#cb30-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb30-3"><a href="#cb30-3" aria-hidden="true" tabindex="-1"></a><span class="co"># Sub-type markers that would be invisible at the global resolution</span></span>
+<span id="cb30-4"><a href="#cb30-4" aria-hidden="true" tabindex="-1"></a><span class="fu">FeaturePlot</span>(t_cells, <span class="at">features =</span> <span class="fu">c</span>(<span class="st">"CCR7"</span>, <span class="st">"SELL"</span>, <span class="st">"IL7R"</span>, <span class="st">"GZMK"</span>, <span class="st">"FOXP3"</span>, <span class="st">"MKI67"</span>))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><code>CCR7</code>/<code>SELL</code> 标记幼稚（naive）T 细胞、<code>IL7R</code> 标记中央记忆、<code>GZMK</code> 标记效应记忆、<code>FOXP3</code> 标记调节性 T 细胞——这些区分在全局聚类中通常完全看不到。</p>
+<div class="warning">
+<p><strong>二次聚类总能”分出”亚群，这正是它的危险之处：</strong> 对任何一群细胞重新聚类，算法都必然返回若干个子簇，哪怕这群细胞在生物学上完全均质。因此二次聚类的结果需要比一次聚类更严格的验证：每个亚群必须有特异且<strong>可解释</strong>的标志基因（而非仅仅是统计显著的差异基因），最好能在独立样本或已发表数据中被重复。把二次聚类当作”发现新亚型”的自动装置，是单细胞研究中虚假发现的一个常见来源。</p>
 </div>
 <hr>
 </section>
 </section>
 <section id="方法总结与衔接说明" class="level1" data-number="39">
 <h1 data-number="39"><span class="header-section-number">39</span> 方法总结与衔接说明</h1>
-<p>本专题完成了 scRNA-seq 基础分析的核心闭环：PCA 降维去噪 → KNN 图 + Leiden 聚类 → UMAP 可视化 → 标志基因 + SingleR 双重注释。至此，模块 A 实现了从原始读段到带细胞类型标签的注释图谱的完整流程。这份注释图谱不仅是单细胞分析的终点，更是众多高级分析的起点——它是第 7 章拟时序、细胞通讯、调控网络推断的共同输入，也是第 9 章空间细胞解卷积不可或缺的参考（参见第 9 章）。第 7 章将在此基础上展开多样本整合、动态推断、调控网络与多组学等高级分析。</p>
+<p>本专题完成了 scRNA-seq 基础分析的核心闭环：PCA 降维去噪 → KNN 图 + Leiden 聚类 → UMAP 可视化 → 标志基因 + SingleR 双重注释 → 层级二次聚类解析亚型。其中有四个判断点值得单独记住：主成分数量可用肘部图或置换检验确定，但后者不适用于 SCTransform 的残差；聚类应显式选用 Leiden 而非默认的 Louvain，因为只有前者保证社区连通；分辨率不应靠单次试凑，而应用多分辨率树找出数据能稳定支持的粒度；自动注释必须检查 delta 与 pruned 标签，大量细胞无法自信归类通常意味着参考数据集缺少该类型。至此，模块 A 实现了从原始读段到带细胞类型标签的注释图谱的完整流程。这份注释图谱不仅是单细胞分析的终点，更是众多高级分析的起点——它是第 7 章拟时序、细胞通讯、调控网络推断的共同输入，也是第 9 章空间细胞解卷积不可或缺的参考（参见第 9 章）。第 7 章将在此基础上展开多样本整合、动态推断、调控网络与多组学等高级分析。</p>
 <hr>
 </section>
 <section id="课后自测-post-lesson-quiz" class="level1" data-number="40">
@@ -891,6 +1657,13 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <li><p>为什么”调高分辨率总能切出更多聚类”并不意味着这些聚类都是真实的？判断一个聚类是否真实的标准是什么？</p></li>
 <li><p>为什么不能根据 UMAP 图上两个聚类的距离远近、或聚类面积大小来下定量结论？</p></li>
 <li><p><code>FindAllMarkers()</code> 用什么策略为每个聚类找标志基因？得到标志基因后如何完成手动注释？</p></li>
+<li><p>置换检验（JackStraw）如何为主成分数量的选择提供统计判据？为什么它不适用于 SCTransform 归一化后的数据？</p></li>
+<li><p>Louvain 与 Leiden 都通过优化模块度划分社区，Leiden 修正了 Louvain 的什么缺陷？这一缺陷在 scRNA-seq 中会表现为什么问题？</p></li>
+<li><p>多分辨率聚类树（clustree）能读出哪两类信息？如何据此判断该数据能稳定支持的最细粒度？</p></li>
+<li><p>UMAP 的 <code>min.dist</code> 参数控制什么？为什么说”调小 min.dist 让聚类看起来分得更开”是一种需要警惕的视觉效果？</p></li>
+<li><p>SingleR 的 <code>delta</code> 与 <code>pruned.labels</code> 分别是什么？为什么说”大量细胞被 pruned”是一个有价值的信号而非麻烦？它与第 9 章解卷积的哪个失效模式同源？</p></li>
+<li><p>为什么层级注释（先粗后细）优于一次用高分辨率聚类？二次聚类时为什么必须重新选择高变基因？</p></li>
+<li><p>为什么说”二次聚类总能分出亚群”恰恰是它危险的地方？应如何验证二次聚类得到的亚群是真实的？</p></li>
 <li><p>SingleR 自动注释的原理是什么？为什么说自动注释与手动注释应相互印证而非二选一？请举一个二者矛盾时反而有价值的情形。</p></li>
 </ol>
 <details>
@@ -905,6 +1678,13 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <li><p><em>因为提高分辨率总能把社区进一步细分，但细分出的可能是同一细胞类型被人为拆分，或由细胞周期、应激等技术变异驱动的虚假亚群。判断聚类是否真实的标准不是”能否被分出来”，而是它是否具有特异、可解释的标志基因——有则真实，无则可能是过度切分的产物。</em></p></li>
 <li><p><em>因为 UMAP 是非线性嵌入，聚类间距离、聚类面积与形状都不具定量意义，会随参数和随机种子变化。两群在 UMAP 上挨得近不代表生物学关系更近，聚类面积大也不代表细胞更多。UMAP 只用于定性展示分离结构，定量结论须回到高维空间或基因表达本身。</em></p></li>
 <li><p><em><code>FindAllMarkers()</code> 对每个聚类做”一对其余”（one-vs-rest）的差异表达检验（默认 Wilcoxon 秩和检验），筛出该聚类显著上调的标志基因。手动注释是将每个聚类的标志基因对照已知细胞类型标志基因数据库（如 PanglaoDB、CellMarker），把匿名聚类指派为对应的真实细胞类型，并用 FeaturePlot/DotPlot 可视化经典标志基因加以确认。</em></p></li>
+<li><p><em>置换检验随机打乱一小部分基因的表达值并重跑 PCA，从而构造出”纯噪声”情况下主成分基因载荷的零分布，再检验每个真实主成分是否显著偏离该零分布——显著者携带真实结构，不显著者与噪声无异。它把目视判断的”肘部”换成了可检验的统计判据。不适用于 SCTransform，是因为该检验的零模型假设输入是经典的对数归一化表达值，而 SCTransform 输出的是皮尔逊残差，其分布性质与该假设不符，对残差做置换得到的零分布没有意义。</em></p></li>
+<li><p><em>Leiden 修正了 Louvain 不保证社区内部连通的缺陷。Louvain 在迭代中把节点移动到能最大提升模块度的社区时，某个节点被移走后可能把原社区切成两个互不相连的部分，而算法不会检查这一点。Leiden 在每轮迭代后增加了精炼（refinement）步骤，保证每个社区都是连通的。在 scRNA-seq 中这一缺陷表现为：一个”聚类”标签下实际混着两群在图上毫无连接、彼此并不相似的细胞——在 UMAP 上常表现为同一颜色的聚类明显分成互不相邻的两块。</em></p></li>
+<li><p><em>两类信息：（1）稳定的聚类——在连续多个分辨率下保持独立、入边清晰单一的分支，对应很可能真实的细胞类型；（2）不稳定的划分——节点之间出现大量交叉边，说明细胞在相邻分辨率间来回跳动，提示该处的切分由噪声而非真实结构驱动。判断方法：从树顶端（低分辨率）向下看，找到”再往下分就开始出现交叉边”的那一层，它通常就是该数据能稳定支持的最细粒度。需要更细的亚型时应对特定聚类做二次聚类，而非继续调高全局分辨率。</em></p></li>
+<li><p><em><code>min.dist</code> 控制嵌入中点与点能靠多近：值小则簇内更紧密、簇间更分离。需要警惕是因为这种分离度是<strong>参数造就的视觉效果</strong>，不代表数据中真实的分离程度——同一份数据、同样的聚类结果，仅改变 min.dist 就能让图看起来”干净”或”糊成一团”。若据此宣称”细胞类型界限清晰”，实际上只是在报告自己的参数选择。这与 UMAP 距离不可定量解读是同一条原则的不同侧面。</em></p></li>
+<li><p><em><code>delta</code> 是最佳匹配得分与次佳的差距，差距小说明判定模棱两可；<code>pruned.labels</code> 则把 delta 过低的细胞置为 NA，即拒绝判定。大量细胞被 pruned 有价值，是因为它往往意味着<strong>参考数据集缺少该细胞类型</strong>——这些细胞与参考中所有类型都不够像，于是无法自信归类。这是一个关于参考质量的诊断信号，指出了需要补充参考或手动注释的位置。它与第 9 章细胞解卷积中”参考缺失细胞类型”的失效模式同源：算法都不会告诉你参考错了，只会给出一个”相对最像”的答案；区别在于 SingleR 至少通过 delta 提供了识别这一情形的手段，而解卷积连这个都没有。</em></p></li>
+<li><p><em>因为主要细胞类型与细胞亚型所需的分辨率不同：T 细胞与单核细胞差异巨大、低分辨率即可分开，而 CD4 幼稚 T 与 CD4 记忆 T 差异细微、需要很高分辨率。若用高分辨率一次做完，异质性低的类型（如单核细胞）会被过度切分成一堆无意义的碎片。二次聚类必须重新选择高变基因，是因为原先的高变基因是为区分所有细胞类型而选的（如 T 细胞 vs 单核细胞的标志基因），这些基因在 T 细胞子集内部几乎不变异，对区分 T 细胞亚型毫无帮助；只有在子集内重新计算变异，才能选出区分亚型的基因。</em></p></li>
+<li><p><em>因为对任何一群细胞重新聚类，算法都必然返回若干个子簇，哪怕这群细胞在生物学上完全均质——“能分出来”本身不构成任何证据。这使得二次聚类很容易成为虚假发现的来源：研究者对每个聚类都再分一次，总能得到一批”新亚型”。验证要求应比一次聚类更严格：每个亚群必须有特异且<strong>可解释</strong>的标志基因（而非仅仅统计显著的差异基因——在足够多的细胞下任何划分都能产生显著差异），并且最好能在独立样本或已发表数据中被重复检出。</em></p></li>
 <li><p><em>SingleR 对每个查询细胞计算其表达谱与参考数据集中各细胞类型表达谱的相关性，指派相关性最高的类型并迭代微调。二者应相互印证是因为自动注释快速客观但受参考数据集覆盖度限制、手动注释精确可解释但主观耗时；互补可提高可靠性。矛盾有价值的情形：当参考数据集缺失某种细胞类型时，SingleR 会把该类型误派为最相似的已有类型，而手动注释通过其独特标志基因发现这是参考未覆盖的新类型/新状态——矛盾正好揭示了潜在的新发现或注释陷阱。</em></p></li>
 </ol>
 </details>

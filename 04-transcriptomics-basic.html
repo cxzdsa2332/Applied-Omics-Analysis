@@ -6,7 +6,7 @@
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
-<meta name="dcterms.date" content="2026-09-17">
+<meta name="dcterms.date" content="2026-09-22">
 
 <title>20&nbsp; Bulk 转录组分析基础：质量控制、定量与差异表达 – Introduction to Applied High-throughput Biological Data Analysis</title>
 <style>
@@ -682,7 +682,7 @@ window.Quarto = {
     <div>
     <div class="quarto-title-meta-heading">Published</div>
     <div class="quarto-title-meta-contents">
-      <p class="date">September 17, 2026</p>
+      <p class="date">September 22, 2026</p>
     </div>
   </div>
   
@@ -755,7 +755,16 @@ window.Quarto = {
 <section id="专题-4.2splice-aware-比对与表达量定量" class="level2" data-number="23.2">
 <h2 data-number="23.2" class="anchored" data-anchor-id="专题-4.2splice-aware-比对与表达量定量"><span class="header-section-number">23.2</span> 专题 4.2：Splice-Aware 比对与表达量定量</h2>
 <p>RNA-seq 比对面临 DNA 比对所没有的根本挑战：成熟 mRNA 已切除内含子，一个跨越剪接位点的读段（junction read）在基因组上对应两段不连续区间，普通比对工具无法正确处理。splice-aware 比对算法（STAR、HISAT2）通过两步策略解决这一问题：先将读段映射至外显子区域，再利用已知或新发现的剪接位点正确拼接跨内含子部分。在定量层面，本专题深入对比两种主流策略：featureCounts 依赖比对结果逐外显子计数，而 Salmon 的伪比对（quasi-mapping）直接将读段与转录本序列匹配，无需全基因组比对，速度更快且内置偏差校正模型。本专题还介绍 SAM/BAM 格式的核心字段解析与比对质量诊断方法，以及如何通过与 airway 官方计数矩阵的相关性分析验证定量结果的可靠性。</p>
-<p>{{Wiki:RNA-Seq}}</p>
+<div id="fig-rnaseq-summary" class="quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-rnaseq-summary-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<img src="https://upload.wikimedia.org/wikipedia/commons/thumb/f/f3/Summary_of_RNA-Seq.svg/960px-Summary_of_RNA-Seq.svg.png" class="img-fluid figure-img" style="width:85.0%">
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-rnaseq-summary-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;23.1: RNA-seq 实验与分析全流程示意图，从 RNA 提取、建库、测序到比对与表达量定量。
+</figcaption>
+</figure>
+</div>
 <p><strong>核心概念</strong>：</p>
 <ul>
 <li>Splice-aware 比对的必要性：junction read 的挑战；Read-through 问题</li>
@@ -781,7 +790,16 @@ window.Quarto = {
 <section id="专题-4.3差异表达分析" class="level2" data-number="24.1">
 <h2 data-number="24.1" class="anchored" data-anchor-id="专题-4.3差异表达分析"><span class="header-section-number">24.1</span> 专题 4.3：差异表达分析</h2>
 <p>差异表达分析的统计问题本质是：在有限重复数（通常 3–5 个）条件下，如何可靠估计每个基因的表达变异，并从数以万计的基因中识别出真实的表达差异，同时将假阳性率控制在可接受水平。本专题从泊松分布的适用边界出发，系统推导负二项分布模型对生物学过离散的建模方式，并深入讲解 DESeq2 的三步核心流程——几何均值大小因子估计、Empirical Bayes 离散度缩减、NB-GLM Wald 检验——以及离散度参数如何通过 Fisher 信息矩阵影响系数的标准误差，进而决定检验效力。本专题同时覆盖 edgeR 拟似然框架（QLF）与 limma-voom 线性模型方法，提供三种主流工具的方法论对比与共识基因集策略；在工程层面，系统讲解批次效应的两种处理路径：在设计矩阵中建模（推荐）与 ComBat/removeBatchEffect 可视化校正。</p>
-<p>{{Wiki:Negative_binomial_distribution}}</p>
+<div id="fig-negbinom" class="quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-negbinom-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<img src="https://upload.wikimedia.org/wikipedia/commons/8/83/Negbinomial.gif" class="img-fluid figure-img" style="width:70.0%">
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-negbinom-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;24.1: 负二项分布概率质量函数。相比泊松分布，它引入额外的离散参数以刻画方差大于均值的过离散现象，是 scRNA-seq 计数数据建模的基础分布。
+</figcaption>
+</figure>
+</div>
 <p><strong>核心概念</strong>：</p>
 <ul>
 <li>泊松分布的适用边界：技术重复 vs 生物学重复；过离散（Overdispersion）的三类来源</li>

@@ -6,7 +6,7 @@
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
-<meta name="dcterms.date" content="2026-09-17">
+<meta name="dcterms.date" content="2026-09-22">
 
 <title>43&nbsp; 空间数据质控、归一化与空间高变基因识别 – Introduction to Applied High-throughput Biological Data Analysis</title>
 <style>
@@ -724,7 +724,7 @@ window.Quarto = {
     <div>
     <div class="quarto-title-meta-heading">Published</div>
     <div class="quarto-title-meta-contents">
-      <p class="date">September 17, 2026</p>
+      <p class="date">September 22, 2026</p>
     </div>
   </div>
   
@@ -900,7 +900,16 @@ window.Quarto = {
 <p>识别 SVG 最常用的统计量是 Moran’s I 空间自相关指数。它衡量”相邻位置的取值是否相似”：</p>
 <p><span class="math display">\[I = \frac{N}{\sum_{i}\sum_{j} w_{ij}} \cdot \frac{\sum_{i}\sum_{j} w_{ij}(x_i - \bar{x})(x_j - \bar{x})}{\sum_{i}(x_i - \bar{x})^2}\]</span></p>
 <p>其中 <span class="math inline">\(x_i\)</span> 为 Spot <span class="math inline">\(i\)</span> 的表达量，<span class="math inline">\(\bar{x}\)</span> 为均值，<span class="math inline">\(w_{ij}\)</span> 为空间权重矩阵，<span class="math inline">\(N\)</span> 为 Spot 总数。这个式子的结构值得拆开看：分子是”相邻 Spot 的离均差乘积”的加权和——若相邻 Spot 同时高于均值或同时低于均值，乘积为正；一高一低则为负。分母是总方差，起标准化作用。因此 Moran’s I 本质上是<strong>空间滞后版本的相关系数</strong>。</p>
-<p>{{Wiki:Moran%27s_I}}</p>
+<div id="fig-morans-i" class="quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-morans-i-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<img src="https://upload.wikimedia.org/wikipedia/commons/thumb/7/70/Checkerboard_pattern.svg/960px-Checkerboard_pattern.svg.png" class="img-fluid figure-img" style="width:70.0%">
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-morans-i-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+图&nbsp;1: 棋盘格模式示意图。相邻格点取值恒相反，是负空间自相关（Moran’s I &lt; 0）的典型情形，与空间高变基因常见的正自相关聚集模式形成对照。
+</figcaption>
+</figure>
+</div>
 <p>其取值与解释类似相关系数：</p>
 <ul>
 <li><span class="math inline">\(I &gt; 0\)</span>：正空间自相关——相邻 Spot 表达相似，呈现空间聚集模式（典型的 SVG）。</li>
@@ -933,7 +942,8 @@ window.Quarto = {
 <h2 data-number="46.4" class="anchored" data-anchor-id="gearys-c对局部差异更敏感的互补统计量"><span class="header-section-number">46.4</span> Geary’s C：对局部差异更敏感的互补统计量</h2>
 <p>Moran’s I 关注的是”相邻位置是否同时偏离全局均值”，因此它对<strong>全局性的大尺度模式</strong>最敏感。Geary’s C 则直接度量相邻位置的差值：</p>
 <p><span class="math display">\[C = \frac{(N-1)}{2\sum_{i}\sum_{j} w_{ij}} \cdot \frac{\sum_{i}\sum_{j} w_{ij}(x_i - x_j)^2}{\sum_{i}(x_i - \bar{x})^2}\]</span></p>
-<p>其取值方向与 Moran’s I 相反：<span class="math inline">\(C &lt; 1\)</span> 表示正空间自相关（相邻值接近），<span class="math inline">\(C \approx 1\)</span> 表示空间随机，<span class="math inline">\(C &gt; 1\)</span> 表示负空间自相关。由于分子直接用平方差，Geary’s C 对<strong>局部的、小尺度的</strong>空间变化更敏感。两者常一起使用：若某基因 Moran’s I 高而 Geary’s C 也接近 1，提示它有大尺度梯度但局部噪声也大。</p>
+<p>其取值方向与 Moran’s I 相反：<span class="math inline">\(C &lt; 1\)</span> 表示正空间自相关（相邻值接近），<span class="math inline">\(C \approx 1\)</span> 表示空间随机，<span class="math inline">\(C &gt; 1\)</span> 表示负空间自相关。</p>
+<p><img src="https://upload.wikimedia.org/wikipedia/commons/c/c7/Snow-cholera-map.jpg" id="fig-spatial-analysis" class="img-fluid" style="width:85.0%" alt="John Snow 绘制的伦敦霍乱病例分布图。病例在特定水泵周围高度聚集，是空间自相关分析最早也最著名的应用实例。">由于分子直接用平方差，Geary’s C 对<strong>局部的、小尺度的</strong>空间变化更敏感。两者常一起使用：若某基因 Moran’s I 高而 Geary’s C 也接近 1，提示它有大尺度梯度但局部噪声也大。</p>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb9"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(Seurat)</span>
 <span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a><span class="co"># Geary's C: sensitive to local differences rather than global clustering</span></span>
@@ -1024,7 +1034,8 @@ window.Quarto = {
 </div>
 </figure>
 </div>
-<p><strong>SpatialDE</strong> 用高斯过程（Gaussian Process）回归把每个基因的空间表达分解为”空间结构成分”与”非空间噪声成分”，据此检验是否存在显著的空间表达模式，并顺带估计该模式的特征长度尺度（Svensson et al., 2018）。它的输出比 Moran’s I 更丰富，但计算成本随 Spot 数的三次方增长，在大规模数据上难以直接使用。</p>
+<p><strong>SpatialDE</strong> 用高斯过程（Gaussian Process）回归把每个基因的空间表达分解为”空间结构成分”与”非空间噪声成分”，据此检验是否存在显著的空间表达模式，并顺带估计该模式的特征长度尺度（Svensson et al., 2018）。</p>
+<p>{{Wiki:Gaussian_process}}它的输出比 Moran’s I 更丰富，但计算成本随 Spot 数的三次方增长，在大规模数据上难以直接使用。</p>
 <p><strong>SPARK-X</strong> 针对这一瓶颈设计：它把问题转化为两个核矩阵之间的关联检验，避开了高斯过程的矩阵求逆，复杂度接近线性，因而可在数分钟内完成数万 Spot、全基因组的扫描（Zhu et al., 2021）。代价是它只给出显著性，不估计空间模式的参数。</p>
 <p><strong>nnSVG</strong> 则用最近邻高斯过程近似完整的高斯过程，在保留”估计每个基因空间变异长度尺度”这一能力的同时大幅降低计算量，并直接在计数模型上建模（Weber et al., 2023）。当研究需要比较不同基因的空间模式尺度（例如区分”锐利的分层边界”与”缓慢的梯度”）时，nnSVG 是合适的选择。</p>
 <div class="note">

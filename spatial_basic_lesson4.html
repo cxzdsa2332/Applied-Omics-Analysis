@@ -6,7 +6,7 @@
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
-<meta name="dcterms.date" content="2026-09-17">
+<meta name="dcterms.date" content="2026-09-22">
 
 <title>44&nbsp; 空间域识别与组织结构注释 – Introduction to Applied High-throughput Biological Data Analysis</title>
 <style>
@@ -729,7 +729,7 @@ window.Quarto = {
     <div>
     <div class="quarto-title-meta-heading">Published</div>
     <div class="quarto-title-meta-contents">
-      <p class="date">September 17, 2026</p>
+      <p class="date">September 22, 2026</p>
     </div>
   </div>
   
@@ -823,6 +823,16 @@ window.Quarto = {
 <section id="完全复用-scrna-seq-流程" class="level2" data-number="47.1">
 <h2 data-number="47.1" class="anchored" data-anchor-id="完全复用-scrna-seq-流程"><span class="header-section-number">47.1</span> 完全复用 scRNA-seq 流程</h2>
 <p>最直接的做法是把每个 Spot 当作一个”细胞”，套用第 6 章的标准流程：PCA 降维、构建 KNN 图、Leiden 聚类。它只用表达相似性，完全不考虑 Spot 是否空间相邻。</p>
+<div id="fig-cluster-analysis" class="quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-cluster-analysis-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<img src="https://upload.wikimedia.org/wikipedia/commons/thumb/c/c8/Cluster-2.svg/960px-Cluster-2.svg.png" class="img-fluid figure-img" style="width:85.0%">
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-cluster-analysis-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+图&nbsp;1: 聚类分析示意图。散点按彼此距离被划分为若干簇，是降维后识别细胞类型与空间域的共同算法基础。
+</figcaption>
+</figure>
+</div>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb1"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(Seurat)</span>
 <span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(SeuratData)</span>
 <span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a></span>
@@ -883,7 +893,16 @@ window.Quarto = {
 <p>这一约束通过马尔可夫随机场（Markov Random Field, MRF）实现。具体地，BayesSpace 在 Potts 模型下为聚类标签 <span class="math inline">\(\mathbf{z}\)</span> 指定先验：</p>
 <p><span class="math display">\[p(\mathbf{z}) \propto \exp\left(\gamma \sum_{i}\sum_{j \in N(i)} \mathbb{I}(z_i = z_j)\right)\]</span></p>
 <p>其中 <span class="math inline">\(N(i)\)</span> 是 Spot <span class="math inline">\(i\)</span> 的邻域，<span class="math inline">\(\mathbb{I}(\cdot)\)</span> 是示性函数，<span class="math inline">\(\gamma &gt; 0\)</span> 是平滑参数。这个式子的含义很直白：相邻 Spot 标签相同的对数越多，这组标签的先验概率越高。<span class="math inline">\(\gamma\)</span> 控制空间先验的强度——<span class="math inline">\(\gamma = 0\)</span> 时退化为普通的混合模型聚类，<span class="math inline">\(\gamma\)</span> 越大则空间平滑越强。</p>
-<p>{{Wiki:Markov_random_field}}</p>
+<div id="fig-mrf" class="quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-mrf-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<img src="https://upload.wikimedia.org/wikipedia/commons/thumb/f/f1/Markov_random_field_example.svg/960px-Markov_random_field_example.svg.png" class="img-fluid figure-img" style="width:70.0%">
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-mrf-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+图&nbsp;2: 马尔可夫随机场示意图。节点的取值仅依赖其邻域，这一局部依赖结构正是 BayesSpace 用以编码组织空间连续性的先验形式。
+</figcaption>
+</figure>
+</div>
 <p>表达层面，BayesSpace 用多元 <span class="math inline">\(t\)</span> 分布对 PCA 降维后的表示建模，相比高斯分布对离群 Spot 更稳健。模型通过马尔可夫链蒙特卡洛（MCMC）采样估计后验。</p>
 <div class="note">
 <p><strong>运行环境说明：</strong> BayesSpace 为 Bioconductor R 包（<code>BiocManager::install("BayesSpace")</code>），基于 <code>SingleCellExperiment</code> 对象工作，需要从 Seurat 对象转换。MCMC 采样默认 50000 次迭代，在一张 Visium 切片上通常需要数分钟到半小时，属于本章计算量最大的步骤。若只做快速探索，普通聚类已足够，不必等待 MCMC 完成。</p>
@@ -959,6 +978,16 @@ window.Quarto = {
 <span id="cb8-9"><a href="#cb8-9" aria-hidden="true" tabindex="-1"></a><span class="co"># How much do the two partitions actually agree?</span></span>
 <span id="cb8-10"><a href="#cb8-10" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">"Adjusted Rand index:"</span>,</span>
 <span id="cb8-11"><a href="#cb8-11" aria-hidden="true" tabindex="-1"></a>    <span class="fu">round</span>(mclust<span class="sc">::</span><span class="fu">adjustedRandIndex</span>(brain<span class="sc">$</span>seurat_clusters, brain<span class="sc">$</span>bayesspace), <span class="dv">3</span>), <span class="st">"</span><span class="sc">\n</span><span class="st">"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div id="fig-rand-index" class="quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-rand-index-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<img src="https://upload.wikimedia.org/wikipedia/commons/thumb/3/3c/Example_for_Adjusted_Rand_index.svg/960px-Example_for_Adjusted_Rand_index.svg.png" class="img-fluid figure-img" style="width:85.0%">
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-rand-index-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+图&nbsp;3: 调整兰德指数（Adjusted Rand Index）计算示意图。两种聚类划分的一致程度由同属与异属配对的数量关系量化。
+</figcaption>
+</figure>
+</div>
 <p>调整兰德指数（Adjusted Rand Index, ARI）衡量两种划分的一致程度。在典型数据上它通常不低——这再次印证了前文的观察：空间先验主要改善的是边界与孤立点，而非推翻整体划分。</p>
 <div class="note">
 <p><strong>何时需要空间感知聚类：</strong> 并非所有研究都需要 BayesSpace。若研究目标只是”组织里有哪些转录状态”，普通聚类已足够；若目标是精确划定空间域边界、研究组织的空间组织结构（如肿瘤微环境分区、发育中的形态发生场），则空间感知聚类的连续性约束更有价值。合理的工作流是：先用普通聚类快速探索并确定大致的域数量，再视需要用 BayesSpace 精细化。</p>

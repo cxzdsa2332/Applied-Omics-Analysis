@@ -6,7 +6,7 @@
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
-<meta name="dcterms.date" content="2026-09-17">
+<meta name="dcterms.date" content="2026-09-22">
 
 <title>35&nbsp; 单细胞转录组进阶：多样本统计、动态推断、细胞通讯与多组学 – Introduction to Applied High-throughput Biological Data Analysis</title>
 <style>
@@ -682,7 +682,7 @@ window.Quarto = {
     <div>
     <div class="quarto-title-meta-heading">Published</div>
     <div class="quarto-title-meta-contents">
-      <p class="date">September 17, 2026</p>
+      <p class="date">September 22, 2026</p>
     </div>
   </div>
   
@@ -746,7 +746,16 @@ window.Quarto = {
 <section id="专题-7.2拟时序分析与-rna-velocity" class="level2" data-number="38.2">
 <h2 data-number="38.2" class="anchored" data-anchor-id="专题-7.2拟时序分析与-rna-velocity"><span class="header-section-number">38.2</span> 专题 7.2：拟时序分析与 RNA Velocity</h2>
 <p>细胞分化是一个连续的动态过程，但 scRNA-seq 对每个细胞只产生一次”快照”。拟时序分析（Trajectory Inference, TI）通过假设转录组相似的细胞处于相近的分化状态，利用细胞间的转录组距离重建分化路径，给每个细胞赋予一个”伪时间”（Pseudotime）坐标。这一思路的核心在于：细胞在分化过程中的转录变化是渐进的，即使我们无法追踪单个细胞随时间的变化，大量细胞的横断面数据依然包含了足够的轨迹信息。RNA Velocity 从另一个角度补充了这一方法：通过比较 pre-mRNA（未剪接，spliced）与成熟 mRNA（已剪接，unspliced）的丰度比值，推断每个基因的转录速率方向，从而为拟时序轨迹赋予真实的时间方向性。</p>
-<p>{{Wiki:Cell_potency}}</p>
+<div id="fig-cell-potency" class="quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-cell-potency-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<img src="https://upload.wikimedia.org/wikipedia/commons/thumb/6/6b/XBio_illustration_%E2%80%93_Totipotent.png/960px-XBio_illustration_%E2%80%93_Totipotent.png" class="img-fluid figure-img" style="width:85.0%">
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-cell-potency-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+图&nbsp;1: 细胞分化潜能层级示意图。全能、多能、多潜能与单潜能细胞依分化能力由强至弱排列。
+</figcaption>
+</figure>
+</div>
 <p><strong>核心概念</strong>：</p>
 <ul>
 <li>拟时序方法演进：DDRTree（Monocle 2）→ 学习图（Learned Graph, Monocle 3）→ 主曲线（Slingshot）→ 最优传输（WaddingtonOT）</li>
@@ -786,7 +795,16 @@ window.Quarto = {
 <section id="专题-7.4单细胞多组学分析cite-seq-与-10x-multiome" class="level2" data-number="39.2">
 <h2 data-number="39.2" class="anchored" data-anchor-id="专题-7.4单细胞多组学分析cite-seq-与-10x-multiome"><span class="header-section-number">39.2</span> 专题 7.4：单细胞多组学分析（CITE-seq 与 10x Multiome）</h2>
 <p>细胞的表型不仅体现在转录组层面：蛋白质表面标志物（如流式细胞术的 CD 抗原）和染色质可及性（顺式调控元件的活跃状态）都携带转录组无法提供的信息。单细胞多组学技术在同一细胞中同时测量多种模态。CITE-seq（Cellular Indexing of Transcriptomes and Epitopes by Sequencing）通过抗体偶联寡核苷酸（ADT）在测 mRNA 的同时测表面蛋白；10x Genomics Multiome 则从同一细胞核同时测量 RNA 与染色质可及性（scATAC）。Seurat 的加权最近邻（Weighted Nearest Neighbor, WNN）算法根据每个细胞各模态的信息量自适应赋权，实现真正意义上的多模态聚类；Signac 则提供从 peak 矩阵到 motif 活性的完整 scATAC 工具链。</p>
-<p>{{Wiki:ATAC-seq}}</p>
+<div id="fig-atac" class="quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-atac-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<img src="https://upload.wikimedia.org/wikipedia/commons/thumb/1/1e/Tn5_Transposase_in_ATAC-seq.webp/960px-Tn5_Transposase_in_ATAC-seq.webp" class="img-fluid figure-img" style="width:85.0%">
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-atac-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+图&nbsp;2: ATAC-seq 中 Tn5 转座酶的插入原理图。转座酶优先切割并标记开放染色质区域，从而读出染色质可及性。
+</figcaption>
+</figure>
+</div>
 <p><strong>核心概念</strong>：</p>
 <ul>
 <li>CITE-seq 文库结构：ADT 与 RNA 文库的共同条形码索引；ADT 的 CLR（Centered Log-Ratio）归一化</li>

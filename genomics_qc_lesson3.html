@@ -6,7 +6,7 @@
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
-<meta name="dcterms.date" content="2026-09-17">
+<meta name="dcterms.date" content="2026-09-22">
 
 <title>11&nbsp; 从头基因组组装：当没有参考基因组时 – Introduction to Applied High-throughput Biological Data Analysis</title>
 <style>
@@ -750,7 +750,7 @@ window.Quarto = {
     <div>
     <div class="quarto-title-meta-heading">Published</div>
     <div class="quarto-title-meta-contents">
-      <p class="date">September 17, 2026</p>
+      <p class="date">September 22, 2026</p>
     </div>
   </div>
   
@@ -868,7 +868,16 @@ Contigs (连续序列，100 bp ~ 数 Mb，无 gap)
 Scaffolds (骨架，包含已知大小的 gap "NNNNN")
   ↓ [光学图谱/长读/Hi-C]
 Chromosomes (完整染色体)</code></pre>
-<p>{{Wiki:Contig}}</p>
+<div id="fig-contig" class="quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-contig-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<img src="https://upload.wikimedia.org/wikipedia/commons/6/6e/PET_contig_scaffold.png" class="img-fluid figure-img" style="width:85.0%">
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-contig-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;13.1: Contig 与 Scaffold 关系示意图。重叠的读段拼接为 contig，再借助配对信息与间隔连接为 scaffold。
+</figcaption>
+</figure>
+</div>
 <p><strong>关键术语：</strong></p>
 <ul>
 <li><strong>Contig（重叠群）</strong>：由 reads 重叠延伸得到的连续序列，内部无未知碱基</li>
@@ -961,7 +970,16 @@ contig5: 1000 bp
 <h2 data-number="14.1" class="anchored" data-anchor-id="overlap-layout-consensusolc"><span class="header-section-number">14.1</span> Overlap-Layout-Consensus（OLC）</h2>
 <p>OLC 是最早的系统性组装框架，由 Myers（1995）提出，广泛用于 Sanger 测序时代（read 长 500–1000 bp）和现代长读（PacBio、Nanopore）组装。</p>
 <p>{{Wiki:Sequence_assembly}}</p>
-<p>{{Wiki:Overlap_graph}}</p>
+<div id="fig-overlap-graph" class="quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-overlap-graph-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<img src="https://upload.wikimedia.org/wikipedia/commons/e/e9/Intersection_graph.gif" class="img-fluid figure-img" style="width:70.0%">
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-overlap-graph-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;14.1: 重叠图（Overlap Graph）示意图。节点为读段、边表示读段间的重叠关系，是 OLC 组装范式的核心数据结构。
+</figcaption>
+</figure>
+</div>
 <section id="三阶段原理" class="level3" data-number="14.1.1">
 <h3 data-number="14.1.1" class="anchored" data-anchor-id="三阶段原理"><span class="header-section-number">14.1.1</span> 三阶段原理</h3>
 <p>设想手中有一段撕碎的纸条，每块碎片保留了若干字符，任务是从这些碎片重建原始句子——这正是 OLC 面对的问题。</p>
@@ -1210,7 +1228,16 @@ Read 2 prefix:      G A T C A G...
 <section id="de-bruijn-图dbg" class="level2" data-number="14.2">
 <h2 data-number="14.2" class="anchored" data-anchor-id="de-bruijn-图dbg"><span class="header-section-number">14.2</span> De Bruijn 图（DBG）</h2>
 <p>De Bruijn 图方法由 Pevzner 等（2001）引入基因组组装，是目前几乎所有短读组装工具（SPAdes、Velvet、MEGAHIT）的核心算法框架。其关键创新是<strong>将 reads 分解为 k-mer</strong>，从而将 <span class="math inline">\(O(n^2)\)</span> 的两两比较问题转化为 <span class="math inline">\(O(n)\)</span> 的图构建问题。</p>
-<p>{{Wiki:De_Bruijn_graph}}</p>
+<div id="fig-debruijn" class="quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-debruijn-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<img src="https://upload.wikimedia.org/wikipedia/commons/thumb/d/d0/DeBruijn-3-2.svg/960px-DeBruijn-3-2.svg.png?utm_source=en.wikipedia.org&amp;utm_campaign=imageinfo&amp;utm_content=thumbnail" class="img-fluid figure-img" style="width:85.0%">
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-debruijn-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;14.2: De Bruijn 图示意图。节点为长度 k−1 的序列、边为 k-mer，基因组组装通过寻找图中的欧拉路径重建原始序列。
+</figcaption>
+</figure>
+</div>
 <hr>
 </section>
 </section>
@@ -1947,7 +1974,16 @@ Contig 1  : ATCGATCGAATCGATCG
 <section id="组装前k-mer-频谱分析与基因组特征估算" class="level1" data-number="17">
 <h1 data-number="17"><span class="header-section-number">17</span> 组装前：k-mer 频谱分析与基因组特征估算</h1>
 <p>在运行任何组装工具之前，先对测序数据进行 <strong>k-mer 频谱分析</strong>是标准的工业流程步骤。这一分析以 <span class="math inline">\(O(N)\)</span> 的时间成本提供三项关键信息：基因组大小估算、测序深度确认、以及杂合度与重复序列比例的预判——这些信息直接影响后续组装参数的选择。</p>
-<p>{{Wiki:K-mer}}</p>
+<div id="fig-kmer" class="quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-kmer-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<img src="https://upload.wikimedia.org/wikipedia/commons/thumb/8/8a/K-mer_diagram.svg/960px-K-mer_diagram.svg.png" class="img-fluid figure-img" style="width:85.0%">
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-kmer-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;17.1: k-mer 拆分示意图。一条序列被拆为所有长度为 k 的连续子串，是 De Bruijn 图组装与序列分类的基本单元。
+</figcaption>
+</figure>
+</div>
 <section id="k-mer-频谱的解读原理" class="level2" data-number="17.1">
 <h2 data-number="17.1" class="anchored" data-anchor-id="k-mer-频谱的解读原理"><span class="header-section-number">17.1</span> k-mer 频谱的解读原理</h2>
 <p>对全部 reads 进行 k-mer 计数后，以 k-mer 出现频次为横轴、具有该频次的不同 k-mer 数量为纵轴绘制频谱图。在无误差的理想情况下，单倍体基因组的频谱应呈现<strong>单峰分布</strong>，峰值位置对应测序深度 <span class="math inline">\(\lambda\)</span>；而双倍体基因组（含杂合位点）会出现<strong>双峰</strong>，第一个峰在 <span class="math inline">\(\lambda/2\)</span> 处（杂合区段，两条单倍型各贡献一半深度），第二个峰在 <span class="math inline">\(\lambda\)</span> 处（纯合区段）。</p>

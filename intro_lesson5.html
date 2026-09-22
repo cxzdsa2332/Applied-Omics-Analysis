@@ -6,7 +6,7 @@
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
-<meta name="dcterms.date" content="2026-09-17">
+<meta name="dcterms.date" content="2026-09-22">
 
 <title>7&nbsp; 探索生物大数据的基石：数据库网络与核心文件格式 – Introduction to Applied High-throughput Biological Data Analysis</title>
 <style>
@@ -736,7 +736,7 @@ window.Quarto = {
     <div>
     <div class="quarto-title-meta-heading">Published</div>
     <div class="quarto-title-meta-contents">
-      <p class="date">September 17, 2026</p>
+      <p class="date">September 22, 2026</p>
     </div>
   </div>
   
@@ -1022,7 +1022,16 @@ chrX    155701  .         C    CTAG  99   PASS    DP=40;AF=0.5   GT:DP     0/1:4
 <section id="wig-bedgraph-bigwig覆盖度与信号轨道" class="level3" data-number="7.3.7">
 <h3 data-number="7.3.7" class="anchored" data-anchor-id="wig-bedgraph-bigwig覆盖度与信号轨道"><span class="header-section-number">7.3.7</span> WIG / bedGraph / bigWig：覆盖度与信号轨道</h3>
 <p>上述格式均记录离散的基因组特征（序列、变异、区间）。而许多实验（ChIP-seq 染色质免疫共沉淀、ATAC-seq 染色质开放性、RNA-seq 覆盖度）的分析结果是<strong>连续的数值信号</strong>，需要专用格式存储。</p>
-<p>{{Wiki:ChIP-sequencing}}</p>
+<div id="fig-chipseq" class="quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-chipseq-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<img src="https://upload.wikimedia.org/wikipedia/commons/f/fb/Chip_sequencing2.png" class="img-fluid figure-img" style="width:85.0%">
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-chipseq-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;7.1: ChIP-seq 原理示意图。抗体富集与目标蛋白结合的 DNA 片段后测序，从而定位蛋白质在基因组上的结合位点。
+</figcaption>
+</figure>
+</div>
 <p><strong>bedGraph</strong>：BED 格式的扩展，第四列记录该区间的数值信号（如覆盖深度、富集得分）。</p>
 <pre class="text"><code>chr1    0       100     0.0
 chr1    100     200     12.5
@@ -1074,7 +1083,16 @@ chr1    350     400     3.2</code></pre>
 <section id="hdf5-anndata.h5ad单细胞时代的矩阵格式" class="level3" data-number="7.3.8">
 <h3 data-number="7.3.8" class="anchored" data-anchor-id="hdf5-anndata.h5ad单细胞时代的矩阵格式"><span class="header-section-number">7.3.8</span> HDF5 / AnnData（.h5ad）：单细胞时代的矩阵格式</h3>
 <p>传统的 CSV/TSV 表格格式在样本量达到数万至数百万（单细胞测序）时面临根本性挑战。<strong>HDF5（Hierarchical Data Format 5）</strong> 是专为大规模科学数据设计的二进制格式，支持分块存储（chunking）、压缩、元数据嵌入和快速随机访问。</p>
-<p>{{Wiki:Hierarchical_Data_Format}}</p>
+<div id="fig-hdf-logo" class="quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-hdf-logo-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<img src="https://upload.wikimedia.org/wikipedia/commons/thumb/6/65/HDF_logo_%282017%29.svg/960px-HDF_logo_%282017%29.svg.png" class="img-fluid figure-img" style="width:15.0%">
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-hdf-logo-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;7.2: HDF 数据格式标志。
+</figcaption>
+</figure>
+</div>
 <p><strong>AnnData（.h5ad）</strong> 是 Python <code>anndata</code> 包定义的单细胞数据容器，基于 HDF5 构建，已成为 Python 单细胞分析生态（Scanpy）的标准数据结构：</p>
 <pre><code>AnnData 对象的内部结构：
   .X          → 核心表达量矩阵（细胞 × 基因），稀疏矩阵格式

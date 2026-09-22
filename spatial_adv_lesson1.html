@@ -6,7 +6,7 @@
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
-<meta name="dcterms.date" content="2026-09-17">
+<meta name="dcterms.date" content="2026-09-22">
 
 <title>46&nbsp; 细胞解卷积：从 Spot 混合信号还原细胞类型 – Introduction to Applied High-throughput Biological Data Analysis</title>
 <style>
@@ -731,7 +731,7 @@ window.Quarto = {
     <div>
     <div class="quarto-title-meta-heading">Published</div>
     <div class="quarto-title-meta-contents">
-      <p class="date">September 17, 2026</p>
+      <p class="date">September 22, 2026</p>
     </div>
   </div>
   
@@ -756,7 +756,16 @@ window.Quarto = {
 <p>设某个 Spot <span class="math inline">\(s\)</span> 观测到的表达向量为 <span class="math inline">\(\mathbf{y}_s \in \mathbb{R}^G\)</span>（<span class="math inline">\(G\)</span> 为基因数），参考中第 <span class="math inline">\(k\)</span> 种细胞类型的平均表达谱（签名）为 <span class="math inline">\(\mathbf{g}_k \in \mathbb{R}^G\)</span>，则解卷积模型的基本形式是：</p>
 <p><span class="math display">\[\mathbf{y}_s = \sum_{k=1}^{K} \beta_{sk}\, \mathbf{g}_k + \boldsymbol{\epsilon}_s, \qquad \beta_{sk} \geq 0\]</span></p>
 <p>其中 <span class="math inline">\(\beta_{sk}\)</span> 是待求的、细胞类型 <span class="math inline">\(k\)</span> 在 Spot <span class="math inline">\(s\)</span> 中的丰度。两个约束是本质的：<strong>非负性</strong>（丰度不能为负）与视输出定义而定的<strong>归一化</strong>（若输出相对比例则 <span class="math inline">\(\sum_k \beta_{sk} = 1\)</span>，若输出绝对丰度则不归一）。</p>
-<p>{{Wiki:Deconvolution}}</p>
+<div id="fig-deconvolution" class="quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-deconvolution-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<img src="https://upload.wikimedia.org/wikipedia/commons/thumb/5/5f/Deconvolution_of_an_astronomical_image.png/960px-Deconvolution_of_an_astronomical_image.png" class="img-fluid figure-img" style="width:85.0%">
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-deconvolution-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+图&nbsp;1: 解卷积（Deconvolution）效果对比。左为受点扩散函数模糊的原始观测，右为解卷积还原后的图像，与从 Spot 混合信号反解细胞类型构成同一类数学问题。
+</figcaption>
+</figure>
+</div>
 <p>这个式子看起来只是一个非负最小二乘问题，但实际难点在三处：</p>
 <ol type="1">
 <li><strong><span class="math inline">\(\mathbf{g}_k\)</span> 不是已知常量</strong>，而是从另一批数据（scRNA-seq 参考）估计出来的，本身带有误差与批次效应。</li>
@@ -789,6 +798,7 @@ window.Quarto = {
 <li><strong>基于概率生成模型（cell2location）</strong>：用层次贝叶斯模型，显式建模技术批次、每个 Spot 的捕获效率与细胞类型丰度，精度高且能给出完整的后验不确定性估计（Kleshchevnikov et al., 2022）。</li>
 <li><strong>基于深度学习（Tangram）</strong>：不估计比例，而是学习一个把单细胞”映射”到空间位置的概率矩阵，灵活但可解释性较弱。</li>
 </ul>
+<p>{{Wiki:Non-negative_matrix_factorization}} {{Wiki:Bayesian_hierarchical_modeling}}</p>
 <p>此外还有一类值得单独提及的方法：<strong>CARD</strong> 引入条件自回归（Conditional Autoregressive, CAR）先验，利用”相邻 Spot 的细胞组成应当相似”这一空间平滑性假设——这与第 8 章 BayesSpace 的 MRF 先验是同一思想在解卷积问题上的应用（Ma &amp; Zhou, 2022）。</p>
 <div id="tbl-deconv-methods" class="quarto-float quarto-figure quarto-figure-center anchored">
 <figure class="quarto-float quarto-float-tbl figure">

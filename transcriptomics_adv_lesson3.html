@@ -6,7 +6,7 @@
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
-<meta name="dcterms.date" content="2026-09-17">
+<meta name="dcterms.date" content="2026-09-22">
 
 <title>28&nbsp; 加权基因共表达网络分析（WGCNA） – Introduction to Applied High-throughput Biological Data Analysis</title>
 <style>
@@ -727,7 +727,7 @@ window.Quarto = {
     <div>
     <div class="quarto-title-meta-heading">Published</div>
     <div class="quarto-title-meta-contents">
-      <p class="date">September 17, 2026</p>
+      <p class="date">September 22, 2026</p>
     </div>
   </div>
   
@@ -857,7 +857,16 @@ window.Quarto = {
 <section id="层次聚类与动态树切割" class="level2" data-number="30.4">
 <h2 data-number="30.4" class="anchored" data-anchor-id="层次聚类与动态树切割"><span class="header-section-number">30.4</span> 层次聚类与动态树切割</h2>
 <p>得到 TOM 之后，WGCNA 以 <span class="math inline">\(1 - \text{TOM}\)</span> 作为基因间的相异度（dissimilarity），采用平均连接法（average linkage）进行层次聚类，生成基因聚类树状图（dendrogram）。树状图的每个叶节点是一个基因，紧密共表达的基因在低高度处汇合形成致密分支，而模块即对应于树状图上的这些分支。识别模块的本质，就是将树状图切割成若干分支。</p>
-<p>{{Wiki:Hierarchical_clustering}}</p>
+<div id="fig-hclust" class="quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-hclust-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<img src="https://upload.wikimedia.org/wikipedia/commons/thumb/b/b5/Clusters.svg/960px-Clusters.svg.png?utm_source=en.wikipedia.org&amp;utm_campaign=imageinfo&amp;utm_content=thumbnail" class="img-fluid figure-img" style="width:70.0%">
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-hclust-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+图&nbsp;2: 层次聚类树状图示意。样本按相似度逐级合并，树的切割高度决定最终的聚类数。
+</figcaption>
+</figure>
+</div>
 <p>最朴素的切割方式是<strong>固定高度切割（Static / Fixed-height Cut）</strong>：在树状图上画一条水平线，线下的每个独立分支即为一个模块。然而固定高度切割存在根本缺陷：真实的共表达模块在大小、致密程度和汇合高度上差异很大，单一的全局切割高度无法同时适配它们——切得太低会把一个大模块拆成碎片，切得太高则会把若干小模块强行合并。换言之，固定高度假设了所有模块具有相同的”深度”，这与生物数据的异质性相悖。</p>
 <p><strong>动态树切割（Dynamic Tree Cut）</strong>正是为解决这一问题而设计。它不依赖单一高度，而是自适应地分析树状图每个分支的<strong>形状</strong>——综合考虑分支的高度、大小、内部致密度以及与相邻分支的间隔——据此决定该分支是否构成一个独立模块。其要点包括：</p>
 <ul>

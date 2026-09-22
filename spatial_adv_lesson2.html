@@ -6,7 +6,7 @@
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
-<meta name="dcterms.date" content="2026-09-17">
+<meta name="dcterms.date" content="2026-09-22">
 
 <title>47&nbsp; 空间图神经网络与空间域识别进阶 – Introduction to Applied High-throughput Biological Data Analysis</title>
 <style>
@@ -734,7 +734,7 @@ window.Quarto = {
     <div>
     <div class="quarto-title-meta-heading">Published</div>
     <div class="quarto-title-meta-contents">
-      <p class="date">September 17, 2026</p>
+      <p class="date">September 22, 2026</p>
     </div>
   </div>
   
@@ -834,6 +834,16 @@ window.Quarto = {
 <li><strong>半径邻域</strong>：连接距离小于 <span class="math inline">\(r\)</span> 的所有节点。保证了边的物理意义一致（都在 <span class="math inline">\(r\)</span> 微米内），但密集区域的节点度数会很高。</li>
 <li><strong>Delaunay 三角剖分</strong>：基于计算几何构造，自适应密度且不需要指定参数。它给出的邻接关系在几何上最”自然”，常用于细胞级数据（如成像型平台）。</li>
 </ul>
+<div id="fig-delaunay" class="quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-delaunay-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<img src="https://upload.wikimedia.org/wikipedia/commons/thumb/d/db/Delaunay_circumcircles_vectorial.svg/960px-Delaunay_circumcircles_vectorial.svg.png" class="img-fluid figure-img" style="width:85.0%">
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-delaunay-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+图&nbsp;1: Delaunay 三角剖分与外接圆示意图。每个三角形的外接圆内不含其他顶点，由此得到的邻接关系自适应点密度，无需人工指定参数。
+</figcaption>
+</figure>
+</div>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb1"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(Seurat)</span>
 <span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(SeuratData)</span>
 <span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a></span>
@@ -895,6 +905,7 @@ window.Quarto = {
 <p>图卷积网络（Graph Convolutional Network, GCN）的基本操作是<strong>消息传递</strong>：每一层，每个节点把自己和邻居的特征做加权平均，得到新的表示。形式上，第 <span class="math inline">\(l+1\)</span> 层的表示为：</p>
 <p><span class="math display">\[H^{(l+1)} = \sigma\left(\tilde{D}^{-1/2}\tilde{A}\tilde{D}^{-1/2} H^{(l)} W^{(l)}\right)\]</span></p>
 <p>其中 <span class="math inline">\(\tilde{A} = A + I\)</span> 是加了自环的邻接矩阵，<span class="math inline">\(\tilde{D}\)</span> 是其度矩阵，<span class="math inline">\(W^{(l)}\)</span> 是可学习的权重，<span class="math inline">\(\sigma\)</span> 是激活函数。归一化项 <span class="math inline">\(\tilde{D}^{-1/2}\tilde{A}\tilde{D}^{-1/2}\)</span> 的作用是防止高度数节点的表示被放大。</p>
+<p>{{Wiki:Graph_Fourier_transform}}</p>
 <p>直观地说，每过一层，每个 Spot 的表示就融合一圈邻居的信息：一层看到直接邻居，两层看到邻居的邻居，以此类推。这正是”空间平滑”在特征层面的实现——但与 MRF 不同，这里平滑的是<strong>表示</strong>而非标签，且权重 <span class="math inline">\(W^{(l)}\)</span> 是学出来的。</p>
 <div class="warning">
 <p><strong>过平滑（Over-smoothing）是 GCN 的固有陷阱：</strong> 层数越多，每个节点看到的邻域越大，但表示也越趋同——在极限情况下所有节点的表示收敛到同一个值，所有空间结构信息被完全抹平。这与”深度网络越深越好”的直觉相反。实践中空间转录组的 GCN 通常只用 2–3 层；若发现聚类结果随层数增加而变得越来越均匀、域的数量减少，那正是过平滑的典型表现。这也是 STAGATE 等方法引入注意力机制的动机之一——让模型自己决定哪些邻居该被聚合、哪些不该。</p>
@@ -910,7 +921,18 @@ window.Quarto = {
 <p>图注意力网络（Graph Attention Network, GAT）不再用固定的归一化权重，而是为<strong>每条边学习一个注意力系数</strong>：</p>
 <p><span class="math display">\[\alpha_{ij} = \frac{\exp\left(\text{LeakyReLU}\left(\mathbf{a}^\top [W\mathbf{h}_i \Vert W\mathbf{h}_j]\right)\right)}{\sum_{k \in N(i)}\exp\left(\text{LeakyReLU}\left(\mathbf{a}^\top [W\mathbf{h}_i \Vert W\mathbf{h}_k]\right)\right)}\]</span></p>
 <p><span class="math inline">\(\alpha_{ij}\)</span> 表示节点 <span class="math inline">\(i\)</span> 聚合邻居 <span class="math inline">\(j\)</span> 时的权重，由两个节点的表示共同决定。关键后果是：<strong>当两个相邻 Spot 的表达差异很大时，注意力系数会自动降低</strong>——这恰好就是”在边界处减弱平滑”的机制，且完全由数据驱动。</p>
-<p>STAGATE 把 GAT 嵌入一个自编码器框架：编码器用图注意力把表达压缩为低维空间表示，解码器从该表示重构原始表达，训练目标是重构误差最小（Dong &amp; Zhang, 2022）。这是一种自监督学习——不需要任何标签，模型通过”能否重构自己”来学习有意义的表示。</p>
+<p>STAGATE 把 GAT 嵌入一个自编码器框架：编码器用图注意力把表达压缩为低维空间表示，解码器从该表示重构原始表达，训练目标是重构误差最小（Dong &amp; Zhang, 2022）。</p>
+<div id="fig-autoencoder" class="quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-autoencoder-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<img src="https://upload.wikimedia.org/wikipedia/commons/3/37/Autoencoder_schema.png" class="img-fluid figure-img" style="width:85.0%">
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-autoencoder-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+图&nbsp;2: 自编码器结构示意图。编码器将输入压缩为低维表示、解码器从该表示重构输入，STAGATE 正是在此框架中嵌入图注意力以学习空间表示。
+</figcaption>
+</figure>
+</div>
+<p>这是一种自监督学习——不需要任何标签，模型通过”能否重构自己”来学习有意义的表示。</p>
 </section>
 <section id="graphst引入对比学习" class="level2" data-number="51.4">
 <h2 data-number="51.4" class="anchored" data-anchor-id="graphst引入对比学习"><span class="header-section-number">51.4</span> GraphST：引入对比学习</h2>

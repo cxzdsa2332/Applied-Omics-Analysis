@@ -6,7 +6,7 @@
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
-<meta name="dcterms.date" content="2026-09-17">
+<meta name="dcterms.date" content="2026-09-22">
 
 <title>37&nbsp; 拟时序分析与 RNA Velocity – Introduction to Applied High-throughput Biological Data Analysis</title>
 <style>
@@ -722,7 +722,7 @@ window.Quarto = {
     <div>
     <div class="quarto-title-meta-heading">Published</div>
     <div class="quarto-title-meta-contents">
-      <p class="date">September 17, 2026</p>
+      <p class="date">September 22, 2026</p>
     </div>
   </div>
   
@@ -745,7 +745,16 @@ window.Quarto = {
 <section id="从快照到轨迹核心假设" class="level2" data-number="39.1">
 <h2 data-number="39.1" class="anchored" data-anchor-id="从快照到轨迹核心假设"><span class="header-section-number">39.1</span> 从快照到轨迹：核心假设</h2>
 <p>scRNA-seq 在解离组织时杀死了细胞，因此无法追踪同一个细胞随时间的变化。拟时序分析绕过这一限制的关键洞见是：在一个正在分化的细胞群体中，不同细胞恰好”凝固”在分化过程的不同阶段。如果在高维表达空间中，分化是渐进、连续的，那么处于相邻分化阶段的细胞在转录组上也彼此相邻。于是，大量细胞的横断面数据共同勾勒出一条连续的”轨迹”，沿轨迹的位置就是伪时间。</p>
-<p>{{Wiki:Cellular_differentiation}}</p>
+<div id="fig-differentiation" class="quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-differentiation-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<img src="https://upload.wikimedia.org/wikipedia/commons/thumb/d/d3/Final_stem_cell_differentiation_%281%29.svg/960px-Final_stem_cell_differentiation_%281%29.svg.png" class="img-fluid figure-img" style="width:85.0%">
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-differentiation-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+图&nbsp;1: 干细胞分化层级示意图。多能干细胞经逐级分化产生各谱系的终末细胞类型。
+</figcaption>
+</figure>
+</div>
 <p>需要强调，伪时间是一个<strong>相对的、无单位的</strong>坐标，它衡量细胞沿分化路径走了多远，而非真实的物理时间（小时或天）。两个伪时间相差 0.5 的细胞，其真实分化时间差并不固定。</p>
 </section>
 <section id="拟时序方法的演进" class="level2" data-number="39.2">
@@ -807,7 +816,16 @@ window.Quarto = {
 <section id="剪接动力学的基本思想" class="level2" data-number="40.1">
 <h2 data-number="40.1" class="anchored" data-anchor-id="剪接动力学的基本思想"><span class="header-section-number">40.1</span> 剪接动力学的基本思想</h2>
 <p>RNA Velocity 的核心观察是：在标准 scRNA-seq 文库中，除了成熟的、已剪接的 mRNA（spliced, <span class="math inline">\(s\)</span>），还能捕获到含内含子的、未剪接的 pre-mRNA（unspliced, <span class="math inline">\(u\)</span>）。新转录的基因会先积累未剪接 RNA，随后才转化为成熟 mRNA。因此，<strong>未剪接与已剪接 RNA 的相对丰度，编码了该基因表达正在上升还是下降的信息</strong>：若 <span class="math inline">\(u\)</span> 相对 <span class="math inline">\(s\)</span> 偏高，说明转录正在增强（基因即将上调）；反之则正在减弱。</p>
-<p>{{Wiki:RNA_splicing}}</p>
+<div id="fig-rna-splicing" class="quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-rna-splicing-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<img src="https://upload.wikimedia.org/wikipedia/commons/3/37/Process_of_RNA_splicing.png" class="img-fluid figure-img" style="width:85.0%">
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-rna-splicing-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+图&nbsp;2: RNA 剪接过程示意图。前体 mRNA 中的内含子被剪接体切除，外显子拼接形成成熟 mRNA。
+</figcaption>
+</figure>
+</div>
 </section>
 <section id="ode-动力学模型" class="level2" data-number="40.2">
 <h2 data-number="40.2" class="anchored" data-anchor-id="ode-动力学模型"><span class="header-section-number">40.2</span> ODE 动力学模型</h2>

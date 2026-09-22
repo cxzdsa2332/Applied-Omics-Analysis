@@ -6,7 +6,7 @@
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
-<meta name="dcterms.date" content="2026-09-17">
+<meta name="dcterms.date" content="2026-09-22">
 
 <title>23&nbsp; 差异表达分析 – Introduction to Applied High-throughput Biological Data Analysis</title>
 <style>
@@ -752,7 +752,7 @@ window.Quarto = {
     <div>
     <div class="quarto-title-meta-heading">Published</div>
     <div class="quarto-title-meta-contents">
-      <p class="date">September 17, 2026</p>
+      <p class="date">September 22, 2026</p>
     </div>
   </div>
   
@@ -794,7 +794,16 @@ window.Quarto = {
 <p>泊松分布描述的是：<strong>在固定时间或空间范围内，独立随机事件发生次数</strong>的概率分布。若随机变量 <span class="math inline">\(X\)</span> 服从参数为 <span class="math inline">\(\lambda\)</span> 的泊松分布，记作 <span class="math inline">\(X \sim \text{Pois}(\lambda)\)</span>，则：</p>
 <p><span class="math display">\[P(X = k) = \frac{\lambda^k e^{-\lambda}}{k!}, \quad k = 0, 1, 2, \ldots\]</span></p>
 <p>泊松分布有一个核心性质：<strong>均值与方差相等</strong>，即 <span class="math inline">\(E(X) = \text{Var}(X) = \lambda\)</span>。</p>
-<p>{{Wiki:Poisson_distribution}}</p>
+<div id="fig-poisson" class="quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-poisson-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<img src="https://upload.wikimedia.org/wikipedia/commons/thumb/1/16/Poisson_pmf.svg/960px-Poisson_pmf.svg.png" class="img-fluid figure-img" style="width:70.0%">
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-poisson-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+图&nbsp;1: 泊松分布概率质量函数。它描述固定区间内随机事件发生次数的分布，是测序覆盖度与计数数据的基准模型。
+</figcaption>
+</figure>
+</div>
 <section id="直观案例公共汽车站的候车人数" class="level3" data-number="3.1">
 <h3 data-number="3.1" class="anchored" data-anchor-id="直观案例公共汽车站的候车人数"><span class="header-section-number">3.1</span> 直观案例：公共汽车站的候车人数</h3>
 <p>设某公交站平均每分钟到达 3 名乘客（<span class="math inline">\(\lambda = 3\)</span>），则某一分钟内到达人数 <span class="math inline">\(X \sim \text{Pois}(3)\)</span>：</p>
@@ -806,7 +815,7 @@ window.Quarto = {
 <img src="transcriptomics_basic_lesson3_files/figure-html/fig-poisson-demo-1.png" class="img-fluid figure-img" width="960">
 </div>
 <figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-poisson-demo-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
-图&nbsp;1: 泊松分布示例（λ = 3）。左图为概率质量函数，右图展示了 1000 次模拟观测中均值与方差几乎相等的特性。
+图&nbsp;2: 泊松分布示例（λ = 3）。左图为概率质量函数，右图展示了 1000 次模拟观测中均值与方差几乎相等的特性。
 </figcaption>
 </figure>
 </div>
@@ -842,17 +851,26 @@ window.Quarto = {
 <img src="transcriptomics_basic_lesson3_files/figure-html/fig-overdispersion-1.png" class="img-fluid figure-img" width="672">
 </div>
 <figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-overdispersion-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
-图&nbsp;2: airway 数据集（8 个人类气道上皮细胞样本，Himes et al.&nbsp;2014）中各基因的方差–均值关系。每个点代表一个基因；橙色虚线为泊松分布的理论预测（Var = Mean）。几乎所有基因的方差都显著高于均值，且偏离程度随均值增大而加剧，体现了典型的过离散特征。
+图&nbsp;3: airway 数据集（8 个人类气道上皮细胞样本，Himes et al.&nbsp;2014）中各基因的方差–均值关系。每个点代表一个基因；橙色虚线为泊松分布的理论预测（Var = Mean）。几乎所有基因的方差都显著高于均值，且偏离程度随均值增大而加剧，体现了典型的过离散特征。
 </figcaption>
 </figure>
 </div>
 </div>
 </div>
-<p><a href="#fig-overdispersion" class="quarto-xref">图&nbsp;<span>2</span></a> 以本课程使用的 airway 数据集为例，清楚地展示了真实 RNA-seq 数据中的过离散现象：几乎所有基因的方差都远高于泊松预测（Var = Mean），中位方差–均值比（Var/Mean）通常在 10–100 倍之间，且随均值增大而增大。这一特征直接驱动了负二项分布模型的引入。</p>
+<p><a href="#fig-overdispersion" class="quarto-xref">图&nbsp;<span>3</span></a> 以本课程使用的 airway 数据集为例，清楚地展示了真实 RNA-seq 数据中的过离散现象：几乎所有基因的方差都远高于泊松预测（Var = Mean），中位方差–均值比（Var/Mean）通常在 10–100 倍之间，且随均值增大而增大。这一特征直接驱动了负二项分布模型的引入。</p>
 </section>
 <section id="负二项分布对过离散的数学描述" class="level3" data-number="4.3">
 <h3 data-number="4.3" class="anchored" data-anchor-id="负二项分布对过离散的数学描述"><span class="header-section-number">4.3</span> 负二项分布：对过离散的数学描述</h3>
-<p>{{Wiki:Negative_binomial_distribution}}</p>
+<div id="fig-negbinom" class="quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-negbinom-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<img src="https://upload.wikimedia.org/wikipedia/commons/8/83/Negbinomial.gif" class="img-fluid figure-img" style="width:70.0%">
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-negbinom-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+图&nbsp;4: 负二项分布概率质量函数。相比泊松分布，它引入额外的离散参数以刻画方差大于均值的过离散现象，是 scRNA-seq 计数数据建模的基础分布。
+</figcaption>
+</figure>
+</div>
 <p><strong>负二项分布（Negative Binomial Distribution）</strong> 通过在泊松分布的基础上引入一个额外的离散参数 <span class="math inline">\(\alpha_i\)</span>，将个体间的生物学变异纳入模型：</p>
 <p><span class="math display">\[K_{ij} \sim \text{NB}(\mu_{ij},\ \alpha_i)\]</span></p>
 <p>其概率质量函数为：</p>
@@ -861,7 +879,7 @@ window.Quarto = {
 <p><span class="math display">\[\underbrace{\text{Var}_{\text{Poisson}}(K) = \mu_{ij}}_{\text{抽样噪声（1个参数）}} \quad \longrightarrow \quad \underbrace{\text{Var}_{\text{NB}}(K_{ij}) = \mu_{ij} + \alpha_i \mu_{ij}^2}_{\text{抽样噪声 + 生物学变异（2个参数）}}\]</span></p>
 <ul>
 <li><strong>第一项</strong> <span class="math inline">\(\mu_{ij}\)</span>：与泊松分布完全相同，来源于随机抽样的固有随机性，方差与均值等比；</li>
-<li><strong>第二项</strong> <span class="math inline">\(\alpha_i \mu_{ij}^2\)</span>：仅负二项分布具备，刻画了个体间真实的生物学差异，随均值<strong>平方</strong>增长。这正是 <a href="#fig-overdispersion" class="quarto-xref">图&nbsp;<span>2</span></a> 中方差偏离对角线的速率随均值增大而加快的数学根源。</li>
+<li><strong>第二项</strong> <span class="math inline">\(\alpha_i \mu_{ij}^2\)</span>：仅负二项分布具备，刻画了个体间真实的生物学差异，随均值<strong>平方</strong>增长。这正是 <a href="#fig-overdispersion" class="quarto-xref">图&nbsp;<span>3</span></a> 中方差偏离对角线的速率随均值增大而加快的数学根源。</li>
 </ul>
 <p><span class="math inline">\(\alpha_i\)</span> 称为<strong>基因特异性离散参数（gene-wise dispersion）</strong>。从两个极端情形可以直观理解其含义：</p>
 <ul>
@@ -986,13 +1004,13 @@ window.Quarto = {
 <img src="transcriptomics_basic_lesson3_files/figure-html/fig-dispersion-shrinkage-1.png" class="img-fluid figure-img" width="768">
 </div>
 <figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-dispersion-shrinkage-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
-图&nbsp;3: 离散度估计的三步流程模拟。蓝点：每个基因的 MLE 初始估计（样本量 n=3，噪声大）；橙色曲线：对全体基因拟合的趋势线（负幂律）；黑点：MAP 缩减后的最终估计（向趋势线收拢）。DESeq2 的 plotDispEsts() 产生同样的图形结构。
+图&nbsp;5: 离散度估计的三步流程模拟。蓝点：每个基因的 MLE 初始估计（样本量 n=3，噪声大）；橙色曲线：对全体基因拟合的趋势线（负幂律）；黑点：MAP 缩减后的最终估计（向趋势线收拢）。DESeq2 的 plotDispEsts() 产生同样的图形结构。
 </figcaption>
 </figure>
 </div>
 </div>
 </div>
-<p>从 <a href="#fig-dispersion-shrinkage" class="quarto-xref">图&nbsp;<span>3</span></a> 可以直观观察到三步流程的效果：蓝色点（MLE 初始估计）围绕真实趋势大幅散布，尤其在低均值区域，由于样本量仅 3 个，MLE 的估计误差极大；橙红色曲线（拟合趋势）通过汇总全体基因信息，准确捕捉到离散度随均值降低的规律；黑色点（MAP 缩减后）相比蓝色点更紧密地聚拢在趋势曲线周围——这正是 Empirical Bayes 缩减在起作用：以少量偏差换取方差的大幅降低，是小样本条件下可靠统计推断的关键。</p>
+<p>从 <a href="#fig-dispersion-shrinkage" class="quarto-xref">图&nbsp;<span>5</span></a> 可以直观观察到三步流程的效果：蓝色点（MLE 初始估计）围绕真实趋势大幅散布，尤其在低均值区域，由于样本量仅 3 个，MLE 的估计误差极大；橙红色曲线（拟合趋势）通过汇总全体基因信息，准确捕捉到离散度随均值降低的规律；黑色点（MAP 缩减后）相比蓝色点更紧密地聚拢在趋势曲线周围——这正是 Empirical Bayes 缩减在起作用：以少量偏差换取方差的大幅降低，是小样本条件下可靠统计推断的关键。</p>
 <p><strong>离散度估计诊断图</strong>：</p>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb2"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="co"># After running DESeq2, plot dispersion estimates</span></span>
 <span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a><span class="fu">plotDispEsts</span>(dds)</span>
