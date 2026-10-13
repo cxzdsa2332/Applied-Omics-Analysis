@@ -2,11 +2,11 @@
 <html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
 
 <meta charset="utf-8">
-<meta name="generator" content="quarto-1.10.18">
+<meta name="generator" content="quarto-1.10.19">
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
-<meta name="dcterms.date" content="2026-09-22">
+<meta name="dcterms.date" content="2026-10-13">
 
 <title>33&nbsp; 单细胞数据质量控制与预处理 – Introduction to Applied High-throughput Biological Data Analysis</title>
 <style>
@@ -80,10 +80,10 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <script src="site_libs/quarto-html/tippy.umd.min.js"></script>
 <script src="site_libs/quarto-html/anchor.min.js"></script>
 <link href="site_libs/quarto-html/tippy.css" rel="stylesheet">
-<link href="site_libs/quarto-html/quarto-syntax-highlighting-64a204ab8560d761af7679ceaba22944.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<link href="site_libs/quarto-html/quarto-syntax-highlighting-bf27225e3a48a9273f3daa8f8e829971.css" rel="stylesheet" id="quarto-text-highlighting-styles">
 <script src="site_libs/bootstrap/bootstrap.min.js"></script>
 <link href="site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
-<link href="site_libs/bootstrap/bootstrap-ed7344add5f1663e434276306a2aa159.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
+<link href="site_libs/bootstrap/bootstrap-fd0503e23dce65854c81c5baaade3bdf.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
 <script id="quarto-search-options" type="application/json">{
   "location": "sidebar",
   "copy-button": false,
@@ -710,7 +710,13 @@ window.Quarto = {
   <li><a href="#解离伪影与细胞周期" id="toc-解离伪影与细胞周期" class="nav-link" data-scroll-target="#解离伪影与细胞周期"><span class="header-section-number">38</span> 解离伪影与细胞周期</a>
   <ul class="collapse">
   <li><a href="#解离本身会改变转录组" id="toc-解离本身会改变转录组" class="nav-link" data-scroll-target="#解离本身会改变转录组"><span class="header-section-number">38.1</span> 解离本身会改变转录组</a></li>
-  <li><a href="#细胞周期评分" id="toc-细胞周期评分" class="nav-link" data-scroll-target="#细胞周期评分"><span class="header-section-number">38.2</span> 细胞周期评分</a></li>
+  <li><a href="#细胞周期评分" id="toc-细胞周期评分" class="nav-link" data-scroll-target="#细胞周期评分"><span class="header-section-number">38.2</span> 细胞周期评分</a>
+  <ul class="collapse">
+  <li><a href="#周期基因集的来源" id="toc-周期基因集的来源" class="nav-link" data-scroll-target="#周期基因集的来源"><span class="header-section-number">38.2.1</span> 周期基因集的来源</a></li>
+  <li><a href="#评分算法与对照基因集相比较" id="toc-评分算法与对照基因集相比较" class="nav-link" data-scroll-target="#评分算法与对照基因集相比较"><span class="header-section-number">38.2.2</span> 评分算法：与对照基因集相比较</a></li>
+  <li><a href="#阶段判定规则" id="toc-阶段判定规则" class="nav-link" data-scroll-target="#阶段判定规则"><span class="header-section-number">38.2.3</span> 阶段判定规则</a></li>
+  <li><a href="#回归细胞周期效应" id="toc-回归细胞周期效应" class="nav-link" data-scroll-target="#回归细胞周期效应"><span class="header-section-number">38.2.4</span> 回归细胞周期效应</a></li>
+  </ul></li>
   </ul></li>
   <li><a href="#归一化与预处理" id="toc-归一化与预处理" class="nav-link" data-scroll-target="#归一化与预处理"><span class="header-section-number">39</span> 归一化与预处理</a>
   <ul class="collapse">
@@ -720,7 +726,10 @@ window.Quarto = {
   <li><a href="#高变基因选择的原理" id="toc-高变基因选择的原理" class="nav-link" data-scroll-target="#高变基因选择的原理"><span class="header-section-number">39.4</span> 高变基因选择的原理</a></li>
   <li><a href="#数据缩放" id="toc-数据缩放" class="nav-link" data-scroll-target="#数据缩放"><span class="header-section-number">39.5</span> 数据缩放</a></li>
   </ul></li>
-  <li><a href="#方法总结与衔接说明" id="toc-方法总结与衔接说明" class="nav-link" data-scroll-target="#方法总结与衔接说明"><span class="header-section-number">40</span> 方法总结与衔接说明</a></li>
+  <li><a href="#方法总结与衔接说明" id="toc-方法总结与衔接说明" class="nav-link" data-scroll-target="#方法总结与衔接说明"><span class="header-section-number">40</span> 方法总结与衔接说明</a>
+  <ul class="collapse">
+  <li><a href="#标准预处理流程汇总" id="toc-标准预处理流程汇总" class="nav-link" data-scroll-target="#标准预处理流程汇总"><span class="header-section-number">40.1</span> 标准预处理流程汇总</a></li>
+  </ul></li>
   <li><a href="#课后自测-post-lesson-quiz" id="toc-课后自测-post-lesson-quiz" class="nav-link" data-scroll-target="#课后自测-post-lesson-quiz"><span class="header-section-number">41</span> 课后自测 (Post-Lesson Quiz)</a></li>
   </ul>
 <div class="toc-actions"><ul><li><a href="https://github.com/cxzdsa2332/Applied-Omics-Analysis/edit/main/scrna_basic_lesson2.qmd" class="toc-action"><i class="bi bi-github"></i>Edit this page</a></li><li><a href="https://github.com/cxzdsa2332/Applied-Omics-Analysis/issues/new" class="toc-action"><i class="bi empty"></i>Report an issue</a></li><li><a href="https://github.com/cxzdsa2332/Applied-Omics-Analysis/blob/main/scrna_basic_lesson2.qmd" class="toc-action"><i class="bi empty"></i>View source</a></li></ul></div></nav>
@@ -741,7 +750,7 @@ window.Quarto = {
     <div>
     <div class="quarto-title-meta-heading">Published</div>
     <div class="quarto-title-meta-contents">
-      <p class="date">September 22, 2026</p>
+      <p class="date">October 13, 2026</p>
     </div>
   </div>
   
@@ -995,6 +1004,9 @@ window.Quarto = {
 <h2 data-number="35.6" class="anchored" data-anchor-id="过滤之后必须回头核验"><span class="header-section-number">35.6</span> 过滤之后必须回头核验</h2>
 <p>设好阈值、跑完 <code>subset()</code>，工作并没有结束——<strong>还要回头看看到底删掉了什么</strong>。这一步几乎总是被跳过，却是质控中唯一能发现”误删真实细胞类型”的环节。阈值本身无法告诉你它删对了没有；只有被删细胞的身份能。</p>
 <p>做法是：先用宽松条件保留全部细胞、跑一遍快速聚类，再看被标记为”待删”的细胞落在哪些聚类里。若它们<strong>零散分布</strong>于各个聚类，说明删的是各处的低质量细胞，符合预期；若它们<strong>高度集中</strong>在某一两个聚类，那就危险了——很可能整个细胞类型正在被系统性地删除。</p>
+<div class="note">
+<p><strong>关于本专题中的”快速聚类”：</strong> 聚类的原理与调参是专题 6.3 的内容，但质控阶段已经离不开它。本专题有四处需要细胞分组：此处的过滤核验、SoupX 估计污染比例、DoubletFinder 估计同源双细胞比例，以及解离应激的按簇比较。这些场景只需要一个粗略的分组，因此统一采用”快速聚类”：以默认参数依次运行 <code>NormalizeData()</code> → <code>FindVariableFeatures()</code> → <code>ScaleData()</code> → <code>RunPCA()</code> → <code>FindNeighbors()</code> → <code>FindClusters()</code>。读者此时可将它视为一个黑箱工具，不必深究参数（参见专题 6.3）。快速聚类的结果只服务于质控判断，不是最终的细胞分群；后文再用到时只作简要说明。</p>
+</div>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb9"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(Seurat)</span>
 <span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a><span class="co"># Cluster FIRST, filter later -- so we can see the identity of what we remove</span></span>
@@ -1333,18 +1345,16 @@ window.Quarto = {
 <p>组织解离需要酶解与机械处理，通常在 37 ℃ 下进行数十分钟。细胞在这段时间里并非被动等待——它们会启动应激反应，转录一批即早基因（Immediate Early Genes, IEG）如 <em>FOS</em>、<em>JUN</em>、<em>EGR1</em> 与热休克蛋白基因如 <em>HSPA1A</em>。这些转录变化是<strong>实验过程制造的</strong>，却与真实的生物学激活状态在数据上难以区分。</p>
 <p>后果是一类隐蔽的错误：分析者可能得到一群”高表达 FOS/JUN 的激活态细胞”，并赋予其生物学意义，而它实际上只反映该批细胞在解离时承受了更多应激。由于不同样本的解离时长与操作手法常有差异，这种伪影还会伪装成组间差异。</p>
 <div class="warning">
-<p><strong>本节的评分函数需要先完成归一化与降维：</strong> <code>AddModuleScore()</code> 与 <code>CellCycleScoring()</code> 都在归一化后的表达值上计算，<code>DimPlot(reduction = "pca")</code> 还需要先跑 PCA。本专题把这两节放在归一化小节之前，是为了保持”先识别伪影、再决定如何处理”的叙述顺序；但在实际执行时，必须先做一遍归一化与降维。下面的代码块显式包含了这些前置步骤，可直接运行。</p>
+<p><strong>本节的评分函数需要先完成归一化与降维：</strong> <code>AddModuleScore()</code> 与 <code>CellCycleScoring()</code> 都在归一化后的表达值上计算，<code>DimPlot(reduction = "pca")</code> 还需要先跑 PCA。本专题把这两节放在归一化小节之前，是为了保持”先识别伪影、再决定如何处理”的叙述顺序。实际执行时无需重做：上一节为 DoubletFinder 运行的快速聚类已完成归一化、PCA 与聚类，本节直接沿用该对象。下面的代码块只检查这些前置状态是否存在；若单独运行本节而检查失败，应先回到双细胞检测一节运行其预处理代码。</p>
 </div>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb23"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb23-1"><a href="#cb23-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(Seurat)</span>
 <span id="cb23-2"><a href="#cb23-2" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb23-3"><a href="#cb23-3" aria-hidden="true" tabindex="-1"></a><span class="co"># Prerequisite: these scores are computed on normalised data, and the PCA plot</span></span>
-<span id="cb23-4"><a href="#cb23-4" aria-hidden="true" tabindex="-1"></a><span class="co"># below needs a reduction. Run a minimal pipeline first.</span></span>
-<span id="cb23-5"><a href="#cb23-5" aria-hidden="true" tabindex="-1"></a>pbmc <span class="ot">&lt;-</span> <span class="fu">NormalizeData</span>(pbmc, <span class="at">verbose =</span> <span class="cn">FALSE</span>) <span class="sc">|&gt;</span></span>
-<span id="cb23-6"><a href="#cb23-6" aria-hidden="true" tabindex="-1"></a>    <span class="fu">FindVariableFeatures</span>(<span class="at">verbose =</span> <span class="cn">FALSE</span>) <span class="sc">|&gt;</span></span>
-<span id="cb23-7"><a href="#cb23-7" aria-hidden="true" tabindex="-1"></a>    <span class="fu">ScaleData</span>(<span class="at">verbose =</span> <span class="cn">FALSE</span>) <span class="sc">|&gt;</span></span>
-<span id="cb23-8"><a href="#cb23-8" aria-hidden="true" tabindex="-1"></a>    <span class="fu">RunPCA</span>(<span class="at">npcs =</span> <span class="dv">30</span>, <span class="at">verbose =</span> <span class="cn">FALSE</span>) <span class="sc">|&gt;</span></span>
-<span id="cb23-9"><a href="#cb23-9" aria-hidden="true" tabindex="-1"></a>    <span class="fu">FindNeighbors</span>(<span class="at">dims =</span> <span class="dv">1</span><span class="sc">:</span><span class="dv">15</span>, <span class="at">verbose =</span> <span class="cn">FALSE</span>) <span class="sc">|&gt;</span></span>
-<span id="cb23-10"><a href="#cb23-10" aria-hidden="true" tabindex="-1"></a>    <span class="fu">FindClusters</span>(<span class="at">resolution =</span> <span class="fl">0.5</span>, <span class="at">verbose =</span> <span class="cn">FALSE</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<span id="cb23-3"><a href="#cb23-3" aria-hidden="true" tabindex="-1"></a><span class="co"># Reuse the quick-clustering state from the DoubletFinder section:</span></span>
+<span id="cb23-4"><a href="#cb23-4" aria-hidden="true" tabindex="-1"></a><span class="co"># normalised data, PCA and cluster labels must all be present.</span></span>
+<span id="cb23-5"><a href="#cb23-5" aria-hidden="true" tabindex="-1"></a><span class="fu">stopifnot</span>(<span class="st">"Run the DoubletFinder preprocessing block first"</span> <span class="ot">=</span></span>
+<span id="cb23-6"><a href="#cb23-6" aria-hidden="true" tabindex="-1"></a>              <span class="st">"data"</span> <span class="sc">%in%</span> <span class="fu">Layers</span>(pbmc) <span class="sc">&amp;&amp;</span></span>
+<span id="cb23-7"><a href="#cb23-7" aria-hidden="true" tabindex="-1"></a>              <span class="st">"pca"</span> <span class="sc">%in%</span> <span class="fu">Reductions</span>(pbmc) <span class="sc">&amp;&amp;</span></span>
+<span id="cb23-8"><a href="#cb23-8" aria-hidden="true" tabindex="-1"></a>              <span class="st">"seurat_clusters"</span> <span class="sc">%in%</span> <span class="fu">colnames</span>(pbmc[[]]))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb24"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb24-1"><a href="#cb24-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(Seurat)</span>
 <span id="cb24-2"><a href="#cb24-2" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb24-3"><a href="#cb24-3" aria-hidden="true" tabindex="-1"></a><span class="co"># Score each cell for a dissociation-induced stress signature.</span></span>
@@ -1354,10 +1364,88 @@ window.Quarto = {
 <span id="cb24-7"><a href="#cb24-7" aria-hidden="true" tabindex="-1"></a>stress_genes <span class="ot">&lt;-</span> <span class="fu">intersect</span>(stress_genes, <span class="fu">rownames</span>(pbmc))</span>
 <span id="cb24-8"><a href="#cb24-8" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">"Stress genes found in this dataset:"</span>, <span class="fu">length</span>(stress_genes), <span class="st">"</span><span class="sc">\n</span><span class="st">"</span>)</span>
 <span id="cb24-9"><a href="#cb24-9" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb24-10"><a href="#cb24-10" aria-hidden="true" tabindex="-1"></a>pbmc <span class="ot">&lt;-</span> <span class="fu">AddModuleScore</span>(pbmc, <span class="at">features =</span> <span class="fu">list</span>(stress_genes), <span class="at">name =</span> <span class="st">"stress"</span>)</span>
-<span id="cb24-11"><a href="#cb24-11" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb24-12"><a href="#cb24-12" aria-hidden="true" tabindex="-1"></a><span class="co"># If one cluster stands out on this score, suspect a dissociation artefact</span></span>
-<span id="cb24-13"><a href="#cb24-13" aria-hidden="true" tabindex="-1"></a><span class="fu">VlnPlot</span>(pbmc, <span class="at">features =</span> <span class="st">"stress1"</span>, <span class="at">group.by =</span> <span class="st">"seurat_clusters"</span>, <span class="at">pt.size =</span> <span class="dv">0</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<span id="cb24-10"><a href="#cb24-10" aria-hidden="true" tabindex="-1"></a>pbmc <span class="ot">&lt;-</span> <span class="fu">AddModuleScore</span>(pbmc, <span class="at">features =</span> <span class="fu">list</span>(stress_genes), <span class="at">name =</span> <span class="st">"stress"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb25"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb25-1"><a href="#cb25-1" aria-hidden="true" tabindex="-1"></a><span class="co">#| label: fig-stress-vln</span></span>
+<span id="cb25-2"><a href="#cb25-2" aria-hidden="true" tabindex="-1"></a><span class="co">#| fig-cap: "PBMC 3k 各簇的解离应激评分分布。横轴为聚类编号，纵轴为 AddModuleScore 计算的 stress1 得分（目标基因集平均表达减去表达水平匹配的对照基因集平均表达）。除血小板簇外，各簇得分普遍略高于 0 且分布大幅重叠，没有单独抬升的离群簇。"</span></span>
+<span id="cb25-3"><a href="#cb25-3" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(Seurat)</span>
+<span id="cb25-4"><a href="#cb25-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb25-5"><a href="#cb25-5" aria-hidden="true" tabindex="-1"></a><span class="co"># If one cluster stands out on this score, suspect a dissociation artefact</span></span>
+<span id="cb25-6"><a href="#cb25-6" aria-hidden="true" tabindex="-1"></a><span class="fu">VlnPlot</span>(pbmc, <span class="at">features =</span> <span class="st">"stress1"</span>, <span class="at">group.by =</span> <span class="st">"seurat_clusters"</span>, <span class="at">pt.size =</span> <span class="dv">0</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>在本专题的流程中，此处的对象是环境 RNA 校正后重建的 2,700 个细胞，沿用的快速聚类在分辨率 0.5 下得到 8 个簇。依据经典标志基因（如 <em>IL7R</em>、<em>LYZ</em>、<em>MS4A1</em>、<em>GNLY</em>、<em>PPBP</em>）初步判断，它们依次为 CD4 T（簇 0）、CD14+ 单核（簇 1）、B（簇 2）、CD8 T（簇 3）、FCGR3A+ 单核（簇 4）、NK（簇 5）、DC（簇 6）与血小板（簇 7）。这里的细胞类型名称只是为了便于解读应激信号，系统的细胞类型注释方法见专题 6.3。下表汇总了 <span class="quarto-unresolved-ref">?fig-stress-vln</span> 中各簇的评分。</p>
+<table class="caption-top table">
+<thead>
+<tr class="header">
+<th>簇</th>
+<th>细胞类型</th>
+<th>细胞数</th>
+<th>stress1 中位数</th>
+<th>得分 &gt; 0.5 的比例</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>0</td>
+<td>CD4 T</td>
+<td>1,187</td>
+<td>0.50</td>
+<td>50%</td>
+</tr>
+<tr class="even">
+<td>1</td>
+<td>CD14+ 单核</td>
+<td>489</td>
+<td>0.30</td>
+<td>23%</td>
+</tr>
+<tr class="odd">
+<td>2</td>
+<td>B</td>
+<td>353</td>
+<td>0.21</td>
+<td>23%</td>
+</tr>
+<tr class="even">
+<td>3</td>
+<td>CD8 T</td>
+<td>322</td>
+<td>0.23</td>
+<td>26%</td>
+</tr>
+<tr class="odd">
+<td>4</td>
+<td>FCGR3A+ 单核</td>
+<td>162</td>
+<td>0.17</td>
+<td>10%</td>
+</tr>
+<tr class="even">
+<td>5</td>
+<td>NK</td>
+<td>140</td>
+<td>−0.07</td>
+<td>9%</td>
+</tr>
+<tr class="odd">
+<td>6</td>
+<td>DC</td>
+<td>33</td>
+<td>0.31</td>
+<td>15%</td>
+</tr>
+<tr class="even">
+<td>7</td>
+<td>血小板</td>
+<td>14</td>
+<td>−0.07</td>
+<td>0%</td>
+</tr>
+</tbody>
+</table>
+<p><strong>主要结果。</strong> 第一，应激评分在各细胞类型中普遍偏高，没有离群簇。除血小板外，各簇中位数均在 0 附近或以上，分布大幅重叠，符合”随机散布于各细胞类型”的模式。第二，信号几乎全部来自即早基因。<em>FOS</em>、<em>JUNB</em>、<em>JUN</em> 在多数簇中有 65%–100% 的细胞检出；热休克基因则很少，<em>HSPA1A</em> 检出率仅 3%–15%，<em>HSPA1B</em> 多在 1% 左右，<em>EGR1</em> 不超过 5%。第三，CD4 T 簇得分最高，但其分布是连续的单峰，表现为整个簇的平移，而非簇内分出一个”高应激亚群”。第四，评分与质量指标无关：stress1 与 nCount_RNA、percent.mt 的 Spearman 相关系数分别为 0.08 与 −0.10。</p>
+<p><strong>结论。</strong> PBMC 3k 中没有证据表明存在解离伪影驱动的细胞群，因此本数据不需要回归应激基因。这与样本来源相符：PBMC 经密度梯度离心分离，不经过酶解，因此缺少酶解应激常伴随的热休克反应。普遍存在的 <em>FOS</em>/<em>JUN</em> 表达更可能来自离体处理与等待时间，或是血细胞的基线表达。T 细胞中 <em>JUN</em>、<em>JUNB</em> 的基线表达较高，这可能部分解释了 CD4 T 簇的整体平移。NK 与血小板簇得分偏低，主要是这些基因在两类细胞中表达本就较低；血小板簇仅 14 个细胞，不宜过度解读。</p>
+<div class="tip">
+<p><strong>小提琴图的局限：</strong> 小提琴图只能比较已有的簇，无法回答”应激是否制造了某个簇”。更直接的检查是 <code>FeaturePlot(pbmc, features = "stress1")</code>：观察高分细胞是否在 UMAP 上自成一团。若它们形成独立的岛屿，就提示存在一个由应激驱动的伪簇。此外，模块得分是相对于对照基因集计算的，0.5 这类绝对数值本身没有独立含义，只有簇间的相对高低可以比较。</p>
+</div>
 <div class="warning">
 <p><strong>不要急着把应激基因回归掉：</strong> 发现应激信号后的第一反应常是”回归掉它”，但这可能抹去真实信号——在免疫学研究中，<em>FOS</em>/<em>JUN</em> 的表达本身就是 T 细胞活化的真实标志。正确的顺序是先<strong>判断来源</strong>：若高应激评分的细胞随机散布于各细胞类型，多半是解离伪影；若它集中在特定的、生物学上确实可能被激活的细胞类型中，则可能是真实信号。只有确认为伪影时才考虑回归或剔除，并在方法部分明确说明。从实验端缩短解离时间、使用冷活性蛋白酶或改做单核测序（snRNA-seq），比任何事后校正都更有效。</p>
 </div>
@@ -1375,32 +1463,149 @@ window.Quarto = {
 </figcaption>
 </figure>
 </div>
-<p>Seurat 内置了基于经典周期基因集的评分函数，可为每个细胞打出 S 期与 G2M 期得分并指派周期阶段。</p>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb25"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb25-1"><a href="#cb25-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(Seurat)</span>
-<span id="cb25-2"><a href="#cb25-2" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb25-3"><a href="#cb25-3" aria-hidden="true" tabindex="-1"></a><span class="co"># Seurat ships with curated S-phase and G2M-phase gene sets (human symbols)</span></span>
-<span id="cb25-4"><a href="#cb25-4" aria-hidden="true" tabindex="-1"></a>s_genes   <span class="ot">&lt;-</span> cc.genes.updated<span class="fl">.2019</span><span class="sc">$</span>s.genes</span>
-<span id="cb25-5"><a href="#cb25-5" aria-hidden="true" tabindex="-1"></a>g2m_genes <span class="ot">&lt;-</span> cc.genes.updated<span class="fl">.2019</span><span class="sc">$</span>g2m.genes</span>
-<span id="cb25-6"><a href="#cb25-6" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb25-7"><a href="#cb25-7" aria-hidden="true" tabindex="-1"></a>pbmc <span class="ot">&lt;-</span> <span class="fu">CellCycleScoring</span>(pbmc, <span class="at">s.features =</span> s_genes,</span>
-<span id="cb25-8"><a href="#cb25-8" aria-hidden="true" tabindex="-1"></a>                         <span class="at">g2m.features =</span> g2m_genes, <span class="at">set.ident =</span> <span class="cn">FALSE</span>)</span>
-<span id="cb25-9"><a href="#cb25-9" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb25-10"><a href="#cb25-10" aria-hidden="true" tabindex="-1"></a><span class="fu">table</span>(pbmc<span class="sc">$</span>Phase)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb26"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb26-1"><a href="#cb26-1" aria-hidden="true" tabindex="-1"></a><span class="co">#| label: fig-cell-cycle</span></span>
-<span id="cb26-2"><a href="#cb26-2" aria-hidden="true" tabindex="-1"></a><span class="co">#| fig-cap: "PBMC 3k 数据按细胞周期阶段着色的主成分分布。每个点为一个细胞，颜色表示 CellCycleScoring 指派的周期阶段（G1、S、G2M）。若各阶段细胞在主成分空间中彼此混杂、无明显分离，说明细胞周期不是该数据的主要变异来源，无需回归；若不同阶段沿某个主成分明显分开，则细胞周期正在驱动降维结构，需考虑回归处理。"</span></span>
-<span id="cb26-3"><a href="#cb26-3" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(Seurat)</span>
-<span id="cb26-4"><a href="#cb26-4" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb26-5"><a href="#cb26-5" aria-hidden="true" tabindex="-1"></a><span class="fu">DimPlot</span>(pbmc, <span class="at">reduction =</span> <span class="st">"pca"</span>, <span class="at">group.by =</span> <span class="st">"Phase"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-<p>是否要回归掉细胞周期，取决于它是噪声还是信号：</p>
+<p>如 <a href="#fig-cell-cycle" class="quarto-xref">图&nbsp;<span>1</span></a> 所示，细胞周期是一个循环过程。Seurat 内置了基于经典周期基因集的评分函数 <code>CellCycleScoring()</code>，可为每个细胞打出 S 期与 G2M 期得分并指派周期阶段。它由三个部分构成：一份预先整理的基因集、一个通用的模块评分算法、一条简单的阶段判定规则。理解这三部分，才能正确解读它的输出。</p>
+<section id="周期基因集的来源" class="level3" data-number="38.2.1">
+<h3 data-number="38.2.1" class="anchored" data-anchor-id="周期基因集的来源"><span class="header-section-number">38.2.1</span> 周期基因集的来源</h3>
+<p>Seurat 自带的 <code>cc.genes</code> 对象包含两组人类基因：43 个 S 期基因与 54 个 G2M 期基因。它们来自 Tirosh 等人在黑色素瘤单细胞研究中整理的周期标志基因集（Tirosh et al., 2016）。S 期基因以 DNA 复制机器为主，如 <em>MCM4</em>–<em>MCM7</em>（复制解旋酶组分）、<em>PCNA</em>（DNA 聚合酶滑动钳）与 <em>TYMS</em>（胸苷酸合成酶）。G2M 期基因则以有丝分裂机器为主，如 <em>CDK1</em>、<em>TOP2A</em>、<em>MKI67</em>、<em>TPX2</em> 与 <em>BIRC5</em>。这些基因的转录随周期时相呈周期性涨落，因此其集体表达水平可以指示细胞所处的时相。</p>
+<p><code>cc.genes.updated.2019</code> 是同一组基因按 HGNC 现行命名自动更新后的版本，两组的基因数保持不变。多数改动是真正的改名，例如 <em>MLF1IP</em> 改为 <em>CENPU</em>、<em>FAM64A</em> 改为 <em>PIMREG</em>、<em>HN1</em> 改为 <em>JPT1</em>。但自动的别名解析也造成了三处替换：<em>MCM2</em>、<em>RPA2</em>、<em>BRIP1</em> 被换成了 <em>MCM7</em>、<em>POLR1B</em>、<em>MRPL36</em>。这类替换通常源于别名冲突，即另一个基因的历史别名恰好与原符号相同。被移除的三个基因本是典型的 S 期基因，而 <em>POLR1B</em> 与 <em>MRPL36</em> 并非经典周期基因。这三处替换只占 S 期基因集的一小部分，对整体得分影响有限。若比对使用的是较新的参考注释，仍应选用更新版，否则改名基因会因匹配失败而被静默丢弃。</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb26"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb26-1"><a href="#cb26-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(Seurat)</span>
+<span id="cb26-2"><a href="#cb26-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb26-3"><a href="#cb26-3" aria-hidden="true" tabindex="-1"></a><span class="co"># Seurat ships with curated S-phase and G2M-phase gene sets (human symbols)</span></span>
+<span id="cb26-4"><a href="#cb26-4" aria-hidden="true" tabindex="-1"></a>s_genes   <span class="ot">&lt;-</span> cc.genes.updated<span class="fl">.2019</span><span class="sc">$</span>s.genes</span>
+<span id="cb26-5"><a href="#cb26-5" aria-hidden="true" tabindex="-1"></a>g2m_genes <span class="ot">&lt;-</span> cc.genes.updated<span class="fl">.2019</span><span class="sc">$</span>g2m.genes</span>
+<span id="cb26-6"><a href="#cb26-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb26-7"><a href="#cb26-7" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">"S genes:"</span>, <span class="fu">length</span>(s_genes), <span class="st">"  G2M genes:"</span>, <span class="fu">length</span>(g2m_genes), <span class="st">"</span><span class="sc">\n</span><span class="st">"</span>)</span>
+<span id="cb26-8"><a href="#cb26-8" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">"S examples  :"</span>, <span class="fu">paste</span>(<span class="fu">head</span>(s_genes, <span class="dv">8</span>), <span class="at">collapse =</span> <span class="st">", "</span>), <span class="st">"</span><span class="sc">\n</span><span class="st">"</span>)</span>
+<span id="cb26-9"><a href="#cb26-9" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">"G2M examples:"</span>, <span class="fu">paste</span>(<span class="fu">head</span>(g2m_genes, <span class="dv">8</span>), <span class="at">collapse =</span> <span class="st">", "</span>), <span class="st">"</span><span class="sc">\n</span><span class="st">"</span>)</span>
+<span id="cb26-10"><a href="#cb26-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb26-11"><a href="#cb26-11" aria-hidden="true" tabindex="-1"></a><span class="co"># Check how many genes are actually present in this dataset</span></span>
+<span id="cb26-12"><a href="#cb26-12" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">"S genes found  :"</span>, <span class="fu">sum</span>(s_genes <span class="sc">%in%</span> <span class="fu">rownames</span>(pbmc)), <span class="st">"</span><span class="sc">\n</span><span class="st">"</span>)</span>
+<span id="cb26-13"><a href="#cb26-13" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">"G2M genes found:"</span>, <span class="fu">sum</span>(g2m_genes <span class="sc">%in%</span> <span class="fu">rownames</span>(pbmc)), <span class="st">"</span><span class="sc">\n</span><span class="st">"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="warning">
+<p><strong>基因集只适用于人类基因符号：</strong> <code>cc.genes</code> 中均为人类基因符号（全大写）。小鼠数据的基因符号为首字母大写（如 <em>Mcm5</em>、<em>Cdk1</em>），直接使用会几乎全部匹配失败。此时需先通过同源基因映射（如 <code>biomaRt</code> 或 <code>babelgene</code> 包）转换为小鼠同源基因。上面代码块中的”found”计数就是用于发现此类问题的检查，评分前应当先确认大部分基因已被匹配。</p>
+</div>
+</section>
+<section id="评分算法与对照基因集相比较" class="level3" data-number="38.2.2">
+<h3 data-number="38.2.2" class="anchored" data-anchor-id="评分算法与对照基因集相比较"><span class="header-section-number">38.2.2</span> 评分算法：与对照基因集相比较</h3>
+<p><code>CellCycleScoring()</code> 本身并不包含独立的评分逻辑，它内部调用的是通用模块评分函数 <code>AddModuleScore()</code>（上一节的应激评分用的也是它）。该算法同样源自 Tirosh 等人的工作，其核心是<strong>减去一个表达水平匹配的随机对照基因集</strong>。具体步骤如下：</p>
+<ol type="1">
+<li>计算每个基因在全部细胞中的平均表达量，并按此将所有基因划分为 24 个等量分箱（<code>nbin = 24</code>）。</li>
+<li>对目标基因集中的每一个基因，从<strong>其所在的同一分箱</strong>中随机抽取若干对照基因。<code>CellCycleScoring()</code> 将抽取数设为两个基因集中较小者的大小，即 43 个。</li>
+<li>对每个细胞，计算目标基因集的平均表达，再减去对照基因集的平均表达，差值即为该细胞的得分。</li>
+</ol>
+<p>之所以需要对照基因集，是因为原始的平均表达会被与周期无关的因素抬高。测序深度较高或整体转录活跃的细胞，几乎所有基因的表达都偏高。按表达水平匹配的对照基因承受同样的偏移，二者相减后这部分偏移即被抵消。因此 <code>S.Score</code> 的含义是：<strong>该细胞的 S 期基因表达比同等表达水平的随机基因高出多少</strong>。得分为正表示该程序被激活，为负则表示低于背景。</p>
+<div class="note">
+<p><strong>得分具有随机性：</strong> 对照基因是随机抽取的，<code>AddModuleScore()</code> 默认以 <code>seed = 1</code> 固定随机种子，因此同一数据的结果可重复。但更换种子、基因集或细胞子集后，得分会出现小幅波动。处于判定边界附近的细胞，其周期阶段标签可能随之改变，因此不宜对单个细胞的标签作过细解读。</p>
+</div>
+</section>
+<section id="阶段判定规则" class="level3" data-number="38.2.3">
+<h3 data-number="38.2.3" class="anchored" data-anchor-id="阶段判定规则"><span class="header-section-number">38.2.3</span> 阶段判定规则</h3>
+<p>得到两个得分后，<code>CellCycleScoring()</code> 用一条很简单的规则指派周期阶段：</p>
+<ul>
+<li>若 <code>S.Score</code> 与 <code>G2M.Score</code> <strong>均小于 0</strong>，判为 <strong>G1</strong>；</li>
+<li>否则取得分较高者：<code>S.Score</code> 较大判为 <strong>S</strong>，<code>G2M.Score</code> 较大判为 <strong>G2M</strong>。</li>
+</ul>
+<p>这条规则揭示了一个容易被误读的细节：<strong>“G1”标签实际上是”未检测到 S 或 G2M 程序”的意思</strong>。它包含了真正处于 G1 期的细胞，也包含了处于 G0 期、已完全退出周期的静息细胞。在 PBMC 这类以静息、终末分化细胞为主的样本中，标为 G1 的细胞绝大多数并非”正在 G1 期等待分裂”，而是根本不在增殖。此外，得分是相对于数据内部背景计算的；即使数据中几乎没有增殖细胞，也会有部分细胞因噪声得到略大于 0 的得分而被标为 S 或 G2M。因此，应结合得分的实际大小与 <em>MKI67</em>、<em>TOP2A</em> 等增殖标志基因的表达来解读标签，而不是只看 <code>table(pbmc$Phase)</code> 的计数。</p>
+<p>下面的代码运行评分，并用判定规则手工复现 Seurat 给出的标签，以确认上述理解无误：</p>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb27"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb27-1"><a href="#cb27-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(Seurat)</span>
 <span id="cb27-2"><a href="#cb27-2" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb27-3"><a href="#cb27-3" aria-hidden="true" tabindex="-1"></a><span class="co"># Regress out cell-cycle effects ONLY if they dominate the embedding</span></span>
-<span id="cb27-4"><a href="#cb27-4" aria-hidden="true" tabindex="-1"></a><span class="co"># and proliferation is not part of the research question</span></span>
-<span id="cb27-5"><a href="#cb27-5" aria-hidden="true" tabindex="-1"></a>pbmc <span class="ot">&lt;-</span> <span class="fu">ScaleData</span>(pbmc, <span class="at">vars.to.regress =</span> <span class="fu">c</span>(<span class="st">"S.Score"</span>, <span class="st">"G2M.Score"</span>))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<span id="cb27-3"><a href="#cb27-3" aria-hidden="true" tabindex="-1"></a>pbmc <span class="ot">&lt;-</span> <span class="fu">CellCycleScoring</span>(pbmc, <span class="at">s.features =</span> s_genes,</span>
+<span id="cb27-4"><a href="#cb27-4" aria-hidden="true" tabindex="-1"></a>                         <span class="at">g2m.features =</span> g2m_genes, <span class="at">set.ident =</span> <span class="cn">FALSE</span>)</span>
+<span id="cb27-5"><a href="#cb27-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb27-6"><a href="#cb27-6" aria-hidden="true" tabindex="-1"></a><span class="fu">table</span>(pbmc<span class="sc">$</span>Phase)</span>
+<span id="cb27-7"><a href="#cb27-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb27-8"><a href="#cb27-8" aria-hidden="true" tabindex="-1"></a><span class="co"># Reproduce the phase assignment rule by hand</span></span>
+<span id="cb27-9"><a href="#cb27-9" aria-hidden="true" tabindex="-1"></a>manual_phase <span class="ot">&lt;-</span> <span class="fu">with</span>(pbmc[[]], <span class="fu">ifelse</span>(</span>
+<span id="cb27-10"><a href="#cb27-10" aria-hidden="true" tabindex="-1"></a>    S.Score <span class="sc">&lt;</span> <span class="dv">0</span> <span class="sc">&amp;</span> G2M.Score <span class="sc">&lt;</span> <span class="dv">0</span>, <span class="st">"G1"</span>,</span>
+<span id="cb27-11"><a href="#cb27-11" aria-hidden="true" tabindex="-1"></a>    <span class="fu">ifelse</span>(S.Score <span class="sc">&gt;</span> G2M.Score, <span class="st">"S"</span>, <span class="st">"G2M"</span>)))</span>
+<span id="cb27-12"><a href="#cb27-12" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">"Manual rule matches Seurat:"</span>, <span class="fu">all</span>(manual_phase <span class="sc">==</span> pbmc<span class="sc">$</span>Phase), <span class="st">"</span><span class="sc">\n</span><span class="st">"</span>)</span>
+<span id="cb27-13"><a href="#cb27-13" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb27-14"><a href="#cb27-14" aria-hidden="true" tabindex="-1"></a><span class="co"># Score distributions: how far above zero are the "S" and "G2M" cells?</span></span>
+<span id="cb27-15"><a href="#cb27-15" aria-hidden="true" tabindex="-1"></a><span class="fu">summary</span>(pbmc<span class="sc">$</span>S.Score)</span>
+<span id="cb27-16"><a href="#cb27-16" aria-hidden="true" tabindex="-1"></a><span class="fu">summary</span>(pbmc<span class="sc">$</span>G2M.Score)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><span class="quarto-unresolved-ref">?fig-cell-cycle-pca</span> 将周期阶段标签投影到主成分空间，用于判断细胞周期是否在驱动降维结构。</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb28"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb28-1"><a href="#cb28-1" aria-hidden="true" tabindex="-1"></a><span class="co">#| label: fig-cell-cycle-pca</span></span>
+<span id="cb28-2"><a href="#cb28-2" aria-hidden="true" tabindex="-1"></a><span class="co">#| fig-cap: "PBMC 3k 数据按细胞周期阶段着色的主成分分布。每个点为一个细胞，颜色表示 CellCycleScoring 指派的周期阶段（G1、S、G2M）。若各阶段细胞在主成分空间中彼此混杂、无明显分离，说明细胞周期不是该数据的主要变异来源，无需回归；若不同阶段沿某个主成分明显分开，则细胞周期正在驱动降维结构，需考虑回归处理。"</span></span>
+<span id="cb28-3"><a href="#cb28-3" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(Seurat)</span>
+<span id="cb28-4"><a href="#cb28-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb28-5"><a href="#cb28-5" aria-hidden="true" tabindex="-1"></a><span class="fu">DimPlot</span>(pbmc, <span class="at">reduction =</span> <span class="st">"pca"</span>, <span class="at">group.by =</span> <span class="st">"Phase"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</section>
+<section id="回归细胞周期效应" class="level3" data-number="38.2.4">
+<h3 data-number="38.2.4" class="anchored" data-anchor-id="回归细胞周期效应"><span class="header-section-number">38.2.4</span> 回归细胞周期效应</h3>
+<p>是否要回归掉细胞周期，取决于它是噪声还是信号：</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb29"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb29-1"><a href="#cb29-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(Seurat)</span>
+<span id="cb29-2"><a href="#cb29-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb29-3"><a href="#cb29-3" aria-hidden="true" tabindex="-1"></a><span class="co"># Regress out cell-cycle effects ONLY if they dominate the embedding</span></span>
+<span id="cb29-4"><a href="#cb29-4" aria-hidden="true" tabindex="-1"></a><span class="co"># and proliferation is not part of the research question</span></span>
+<span id="cb29-5"><a href="#cb29-5" aria-hidden="true" tabindex="-1"></a>pbmc <span class="ot">&lt;-</span> <span class="fu">ScaleData</span>(pbmc, <span class="at">vars.to.regress =</span> <span class="fu">c</span>(<span class="st">"S.Score"</span>, <span class="st">"G2M.Score"</span>))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>这一行代码在内部对<strong>每个基因单独</strong>做三件事。第一，以该基因在 <code>data</code> layer 中的归一化表达值 <span class="math inline">\(y_i\)</span> 为因变量，以两个周期得分为自变量，拟合一个普通线性回归：</p>
+<p><span class="math display">\[y_{ij} = \beta_{i0} + \beta_{i1}\,\text{S.Score}_j + \beta_{i2}\,\text{G2M.Score}_j + \varepsilon_{ij}\]</span></p>
+<p>第二，丢弃拟合值，只保留残差 <span class="math inline">\(\hat{\varepsilon}_{ij}\)</span>，即该基因表达中<strong>不能被周期得分线性解释</strong>的部分。第三，对残差做 z-score 标准化（参见下文”数据缩放”一节），并把大于 10 的值截断为 10（<code>scale.max = 10</code>）。结果写入 <code>scale.data</code> layer，供 PCA、聚类与 UMAP 使用。</p>
+<p>这一机制有两个直接推论。其一，回归只修改 <code>scale.data</code>，<code>data</code> layer 保持不变；因此它影响的是降维与聚类的结构，而不影响后续基于 <code>data</code> 的差异表达与 <code>FeaturePlot()</code>。其二，线性回归只能移除与得分<strong>成线性关系</strong>的那部分变异；若周期效应是非线性的，或周期得分本身估计不准，残余的周期信号仍会留在数据中。</p>
+<section id="一个最简单的模拟例子" class="level4" data-number="38.2.4.1">
+<h4 data-number="38.2.4.1" class="anchored" data-anchor-id="一个最简单的模拟例子"><span class="header-section-number">38.2.4.1</span> 一个最简单的模拟例子</h4>
+<p>下面用模拟数据演示这一原理。数据仅用于说明回归的数学含义，不代表真实表达分布。设想 200 个细胞分属 T、B 两种类型，每种类型中一半细胞正在增殖（G2M 得分约为 1），另一半静息（约为 0）。我们构造三个基因：只区分细胞类型的标志基因 <code>marker</code>、只受周期驱动的 <code>top2a</code>，以及二者兼有的 <code>mixed</code>。为简洁起见，这里只回归 G2M 得分一个变量，也省略了标准化步骤。</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb30"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb30-1"><a href="#cb30-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Toy data: 200 cells, two cell types (T, B); half of each type is cycling</span></span>
+<span id="cb30-2"><a href="#cb30-2" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">42</span>)</span>
+<span id="cb30-3"><a href="#cb30-3" aria-hidden="true" tabindex="-1"></a>n         <span class="ot">&lt;-</span> <span class="dv">200</span></span>
+<span id="cb30-4"><a href="#cb30-4" aria-hidden="true" tabindex="-1"></a>cell_type <span class="ot">&lt;-</span> <span class="fu">rep</span>(<span class="fu">c</span>(<span class="st">"T"</span>, <span class="st">"B"</span>), <span class="at">each =</span> n <span class="sc">/</span> <span class="dv">2</span>)</span>
+<span id="cb30-5"><a href="#cb30-5" aria-hidden="true" tabindex="-1"></a>cycling   <span class="ot">&lt;-</span> <span class="fu">rep</span>(<span class="fu">c</span>(<span class="cn">FALSE</span>, <span class="cn">TRUE</span>), <span class="at">times =</span> n <span class="sc">/</span> <span class="dv">2</span>)</span>
+<span id="cb30-6"><a href="#cb30-6" aria-hidden="true" tabindex="-1"></a>g2m_score <span class="ot">&lt;-</span> <span class="fu">ifelse</span>(cycling, <span class="fu">rnorm</span>(n, <span class="dv">1</span>, <span class="fl">0.2</span>), <span class="fu">rnorm</span>(n, <span class="dv">0</span>, <span class="fl">0.2</span>))</span>
+<span id="cb30-7"><a href="#cb30-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb30-8"><a href="#cb30-8" aria-hidden="true" tabindex="-1"></a><span class="co"># Three genes on the log-normalised scale</span></span>
+<span id="cb30-9"><a href="#cb30-9" aria-hidden="true" tabindex="-1"></a>marker <span class="ot">&lt;-</span> <span class="fu">ifelse</span>(cell_type <span class="sc">==</span> <span class="st">"T"</span>, <span class="dv">3</span>, <span class="dv">1</span>) <span class="sc">+</span> <span class="fu">rnorm</span>(n, <span class="dv">0</span>, <span class="fl">0.3</span>)   <span class="co"># cell type only</span></span>
+<span id="cb30-10"><a href="#cb30-10" aria-hidden="true" tabindex="-1"></a>top2a  <span class="ot">&lt;-</span> <span class="fl">0.5</span> <span class="sc">+</span> <span class="dv">2</span> <span class="sc">*</span> g2m_score <span class="sc">+</span> <span class="fu">rnorm</span>(n, <span class="dv">0</span>, <span class="fl">0.3</span>)               <span class="co"># cell cycle only</span></span>
+<span id="cb30-11"><a href="#cb30-11" aria-hidden="true" tabindex="-1"></a>mixed  <span class="ot">&lt;-</span> <span class="fu">ifelse</span>(cell_type <span class="sc">==</span> <span class="st">"T"</span>, <span class="dv">3</span>, <span class="dv">1</span>) <span class="sc">+</span> <span class="fl">1.5</span> <span class="sc">*</span> g2m_score <span class="sc">+</span></span>
+<span id="cb30-12"><a href="#cb30-12" aria-hidden="true" tabindex="-1"></a>          <span class="fu">rnorm</span>(n, <span class="dv">0</span>, <span class="fl">0.3</span>)                                     <span class="co"># both</span></span>
+<span id="cb30-13"><a href="#cb30-13" aria-hidden="true" tabindex="-1"></a>expr <span class="ot">&lt;-</span> <span class="fu">rbind</span>(<span class="at">marker =</span> marker, <span class="at">top2a =</span> top2a, <span class="at">mixed =</span> mixed)</span>
+<span id="cb30-14"><a href="#cb30-14" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb30-15"><a href="#cb30-15" aria-hidden="true" tabindex="-1"></a><span class="co"># The core of vars.to.regress: fit y ~ score for each gene, keep the residuals</span></span>
+<span id="cb30-16"><a href="#cb30-16" aria-hidden="true" tabindex="-1"></a>expr_reg <span class="ot">&lt;-</span> <span class="fu">t</span>(<span class="fu">apply</span>(expr, <span class="dv">1</span>, <span class="cf">function</span>(y) <span class="fu">residuals</span>(<span class="fu">lm</span>(y <span class="sc">~</span> g2m_score))))</span>
+<span id="cb30-17"><a href="#cb30-17" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb30-18"><a href="#cb30-18" aria-hidden="true" tabindex="-1"></a>summarise_genes <span class="ot">&lt;-</span> <span class="cf">function</span>(m) <span class="fu">data.frame</span>(</span>
+<span id="cb30-19"><a href="#cb30-19" aria-hidden="true" tabindex="-1"></a>    <span class="at">cor_with_G2M =</span> <span class="fu">round</span>(<span class="fu">apply</span>(m, <span class="dv">1</span>, cor, g2m_score), <span class="dv">2</span>),</span>
+<span id="cb30-20"><a href="#cb30-20" aria-hidden="true" tabindex="-1"></a>    <span class="at">T_minus_B    =</span> <span class="fu">round</span>(<span class="fu">apply</span>(m, <span class="dv">1</span>, <span class="cf">function</span>(y)</span>
+<span id="cb30-21"><a href="#cb30-21" aria-hidden="true" tabindex="-1"></a>        <span class="fu">mean</span>(y[cell_type <span class="sc">==</span> <span class="st">"T"</span>]) <span class="sc">-</span> <span class="fu">mean</span>(y[cell_type <span class="sc">==</span> <span class="st">"B"</span>])), <span class="dv">2</span>))</span>
+<span id="cb30-22"><a href="#cb30-22" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb30-23"><a href="#cb30-23" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">"Before regression:</span><span class="sc">\n</span><span class="st">"</span>); <span class="fu">print</span>(<span class="fu">summarise_genes</span>(expr))</span>
+<span id="cb30-24"><a href="#cb30-24" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">"</span><span class="sc">\n</span><span class="st">After regression:</span><span class="sc">\n</span><span class="st">"</span>);  <span class="fu">print</span>(<span class="fu">summarise_genes</span>(expr_reg))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<pre class="text"><code>Before regression:
+       cor_with_G2M T_minus_B
+marker        -0.05      1.96
+top2a          0.97     -0.02
+mixed          0.61      1.96
+
+After regression:
+       cor_with_G2M T_minus_B
+marker            0      1.96
+top2a             0      0.03
+mixed             0      1.99</code></pre>
+<p>输出中的两列分别衡量周期信号（与 G2M 得分的相关系数）与细胞类型信号（T 与 B 的均值差）。回归后，三个基因与 G2M 得分的相关系数全部归零，而 T 与 B 之间约为 2 的差异完整保留。<code>top2a</code> 的变化最能说明问题：回归前它几乎完全由周期决定（相关系数 0.97），回归后只剩噪声，不再能把增殖细胞与静息细胞分开。<code>mixed</code> 则说明回归是”按比例扣除”而非”整体删除”：它的周期成分被去掉，细胞类型成分不受影响。</p>
+<p>这个例子之所以干净，是因为模拟时增殖细胞在 T 与 B 中各占一半，周期与细胞类型互不相关。若增殖细胞全部集中在某一种类型中，周期得分就与细胞类型高度相关，回归会把一部分真实的细胞类型差异当作周期效应一并扣除。这正是下文 <code>:::note</code> 中强调”判断依据始终是研究问题”的原因。</p>
+</section>
+<section id="在真实数据上核对" class="level4" data-number="38.2.4.2">
+<h4 data-number="38.2.4.2" class="anchored" data-anchor-id="在真实数据上核对"><span class="header-section-number">38.2.4.2</span> 在真实数据上核对</h4>
+<p>模拟例子中的手工回归与 Seurat 的实现是同一回事。下面在 PBMC 3k 上手工复现 <code>ScaleData()</code> 对一个基因的输出，以确认这一点：</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb32"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb32-1"><a href="#cb32-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(Seurat)</span>
+<span id="cb32-2"><a href="#cb32-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb32-3"><a href="#cb32-3" aria-hidden="true" tabindex="-1"></a>dm  <span class="ot">&lt;-</span> <span class="fu">GetAssayData</span>(pbmc, <span class="at">layer =</span> <span class="st">"data"</span>)</span>
+<span id="cb32-4"><a href="#cb32-4" aria-hidden="true" tabindex="-1"></a>sdm <span class="ot">&lt;-</span> <span class="fu">GetAssayData</span>(pbmc, <span class="at">layer =</span> <span class="st">"scale.data"</span>)</span>
+<span id="cb32-5"><a href="#cb32-5" aria-hidden="true" tabindex="-1"></a>md  <span class="ot">&lt;-</span> pbmc[[]]</span>
+<span id="cb32-6"><a href="#cb32-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb32-7"><a href="#cb32-7" aria-hidden="true" tabindex="-1"></a>gene <span class="ot">&lt;-</span> <span class="st">"LYZ"</span></span>
+<span id="cb32-8"><a href="#cb32-8" aria-hidden="true" tabindex="-1"></a>res  <span class="ot">&lt;-</span> <span class="fu">residuals</span>(<span class="fu">lm</span>(dm[gene, ] <span class="sc">~</span> md<span class="sc">$</span>S.Score <span class="sc">+</span> md<span class="sc">$</span>G2M.Score))</span>
+<span id="cb32-9"><a href="#cb32-9" aria-hidden="true" tabindex="-1"></a>z    <span class="ot">&lt;-</span> <span class="fu">pmin</span>((res <span class="sc">-</span> <span class="fu">mean</span>(res)) <span class="sc">/</span> <span class="fu">sd</span>(res), <span class="dv">10</span>)   <span class="co"># z-score, then clip at 10</span></span>
+<span id="cb32-10"><a href="#cb32-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb32-11"><a href="#cb32-11" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">"max |manual - Seurat|:"</span>, <span class="fu">max</span>(<span class="fu">abs</span>(z <span class="sc">-</span> sdm[gene, ])), <span class="st">"</span><span class="sc">\n</span><span class="st">"</span>)</span>
+<span id="cb32-12"><a href="#cb32-12" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">"cor with G2M.Score, before:"</span>, <span class="fu">round</span>(<span class="fu">cor</span>(dm[gene, ], md<span class="sc">$</span>G2M.Score), <span class="dv">3</span>),</span>
+<span id="cb32-13"><a href="#cb32-13" aria-hidden="true" tabindex="-1"></a>    <span class="st">" after:"</span>, <span class="fu">round</span>(<span class="fu">cor</span>(sdm[gene, ], md<span class="sc">$</span>G2M.Score), <span class="dv">3</span>), <span class="st">"</span><span class="sc">\n</span><span class="st">"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>在本专题的流程中，手工结果与 Seurat 的 <code>scale.data</code> 完全一致（最大差值为 0），LYZ 与 G2M 得分的相关系数从 −0.071 变为 0。对 <em>TOP2A</em> 做同样的检查会发现，回归后的相关系数是 −0.163 而非 0。原因在于第三步的截断：<em>TOP2A</em> 在 PBMC 中极为稀疏，少数表达它的细胞残差远超 10 个标准差，被截断后线性回归”恰好消除相关”的性质随之被打破。</p>
 <div class="note">
 <p><strong>何时不该回归细胞周期：</strong> 若研究对象本身就与增殖有关——肿瘤细胞的增殖异质性、干细胞的自我更新、发育中的祖细胞扩增——那么细胞周期信号正是研究要观察的生物学，回归掉它等于删除了答案。一个折中方案是回归 <code>S.Score - G2M.Score</code> 的差值而非二者本身：这样可以消除增殖细胞内部不同周期阶段的差异，同时保留”增殖 vs 静息”这一层信息。判断依据始终是研究问题，而非某个固定流程。</p>
 </div>
 <hr>
+</section>
+</section>
 </section>
 </section>
 <section id="归一化与预处理" class="level1" data-number="39">
@@ -1434,25 +1639,25 @@ window.Quarto = {
 <li><strong>取 <span class="math inline">\(\log(1+x)\)</span></strong>：压缩高表达基因的动态范围，使数据更接近正态、方差更均匀。加 1 是为了让零值仍映射到零（<span class="math inline">\(\log(1+0)=0\)</span>），避免 <span class="math inline">\(\log 0 = -\infty\)</span>。</li>
 </ol>
 <p>这三步可以手工复现，用来确认自己理解无误：</p>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb28"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb28-1"><a href="#cb28-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(Seurat)</span>
-<span id="cb28-2"><a href="#cb28-2" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(Matrix)</span>
-<span id="cb28-3"><a href="#cb28-3" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb28-4"><a href="#cb28-4" aria-hidden="true" tabindex="-1"></a>pbmc <span class="ot">&lt;-</span> <span class="fu">NormalizeData</span>(pbmc, <span class="at">normalization.method =</span> <span class="st">"LogNormalize"</span>,</span>
-<span id="cb28-5"><a href="#cb28-5" aria-hidden="true" tabindex="-1"></a>                      <span class="at">scale.factor =</span> <span class="fl">1e4</span>, <span class="at">verbose =</span> <span class="cn">FALSE</span>)</span>
-<span id="cb28-6"><a href="#cb28-6" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb28-7"><a href="#cb28-7" aria-hidden="true" tabindex="-1"></a><span class="co"># Reproduce Seurat's value by hand for one gene in one cell</span></span>
-<span id="cb28-8"><a href="#cb28-8" aria-hidden="true" tabindex="-1"></a>cm <span class="ot">&lt;-</span> <span class="fu">GetAssayData</span>(pbmc, <span class="at">layer =</span> <span class="st">"counts"</span>)</span>
-<span id="cb28-9"><a href="#cb28-9" aria-hidden="true" tabindex="-1"></a>nm <span class="ot">&lt;-</span> <span class="fu">GetAssayData</span>(pbmc, <span class="at">layer =</span> <span class="st">"data"</span>)</span>
-<span id="cb28-10"><a href="#cb28-10" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb28-11"><a href="#cb28-11" aria-hidden="true" tabindex="-1"></a>j <span class="ot">&lt;-</span> <span class="dv">1</span>                       <span class="co"># first cell</span></span>
-<span id="cb28-12"><a href="#cb28-12" aria-hidden="true" tabindex="-1"></a>i <span class="ot">&lt;-</span> <span class="fu">which</span>(cm[, j] <span class="sc">&gt;</span> <span class="dv">0</span>)[<span class="dv">1</span>]   <span class="co"># its first expressed gene</span></span>
-<span id="cb28-13"><a href="#cb28-13" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb28-14"><a href="#cb28-14" aria-hidden="true" tabindex="-1"></a>manual <span class="ot">&lt;-</span> <span class="fu">log1p</span>(cm[i, j] <span class="sc">/</span> <span class="fu">sum</span>(cm[, j]) <span class="sc">*</span> <span class="fl">1e4</span>)</span>
-<span id="cb28-15"><a href="#cb28-15" aria-hidden="true" tabindex="-1"></a><span class="co"># Use %g rather than %d: sparse values are doubles, and some upstream</span></span>
-<span id="cb28-16"><a href="#cb28-16" aria-hidden="true" tabindex="-1"></a><span class="co"># corrections (see the SoupX note above) can leave them non-integer</span></span>
-<span id="cb28-17"><a href="#cb28-17" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="fu">sprintf</span>(<span class="st">"raw count = %g, cell total = %g</span><span class="sc">\n</span><span class="st">"</span>, cm[i, j], <span class="fu">sum</span>(cm[, j])))</span>
-<span id="cb28-18"><a href="#cb28-18" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="fu">sprintf</span>(<span class="st">"manual = %.4f   Seurat = %.4f   identical = %s</span><span class="sc">\n</span><span class="st">"</span>,</span>
-<span id="cb28-19"><a href="#cb28-19" aria-hidden="true" tabindex="-1"></a>            manual, nm[i, j], <span class="fu">isTRUE</span>(<span class="fu">all.equal</span>(manual, nm[i, j]))))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb33"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb33-1"><a href="#cb33-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(Seurat)</span>
+<span id="cb33-2"><a href="#cb33-2" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(Matrix)</span>
+<span id="cb33-3"><a href="#cb33-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb33-4"><a href="#cb33-4" aria-hidden="true" tabindex="-1"></a>pbmc <span class="ot">&lt;-</span> <span class="fu">NormalizeData</span>(pbmc, <span class="at">normalization.method =</span> <span class="st">"LogNormalize"</span>,</span>
+<span id="cb33-5"><a href="#cb33-5" aria-hidden="true" tabindex="-1"></a>                      <span class="at">scale.factor =</span> <span class="fl">1e4</span>, <span class="at">verbose =</span> <span class="cn">FALSE</span>)</span>
+<span id="cb33-6"><a href="#cb33-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb33-7"><a href="#cb33-7" aria-hidden="true" tabindex="-1"></a><span class="co"># Reproduce Seurat's value by hand for one gene in one cell</span></span>
+<span id="cb33-8"><a href="#cb33-8" aria-hidden="true" tabindex="-1"></a>cm <span class="ot">&lt;-</span> <span class="fu">GetAssayData</span>(pbmc, <span class="at">layer =</span> <span class="st">"counts"</span>)</span>
+<span id="cb33-9"><a href="#cb33-9" aria-hidden="true" tabindex="-1"></a>nm <span class="ot">&lt;-</span> <span class="fu">GetAssayData</span>(pbmc, <span class="at">layer =</span> <span class="st">"data"</span>)</span>
+<span id="cb33-10"><a href="#cb33-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb33-11"><a href="#cb33-11" aria-hidden="true" tabindex="-1"></a>j <span class="ot">&lt;-</span> <span class="dv">1</span>                       <span class="co"># first cell</span></span>
+<span id="cb33-12"><a href="#cb33-12" aria-hidden="true" tabindex="-1"></a>i <span class="ot">&lt;-</span> <span class="fu">which</span>(cm[, j] <span class="sc">&gt;</span> <span class="dv">0</span>)[<span class="dv">1</span>]   <span class="co"># its first expressed gene</span></span>
+<span id="cb33-13"><a href="#cb33-13" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb33-14"><a href="#cb33-14" aria-hidden="true" tabindex="-1"></a>manual <span class="ot">&lt;-</span> <span class="fu">log1p</span>(cm[i, j] <span class="sc">/</span> <span class="fu">sum</span>(cm[, j]) <span class="sc">*</span> <span class="fl">1e4</span>)</span>
+<span id="cb33-15"><a href="#cb33-15" aria-hidden="true" tabindex="-1"></a><span class="co"># Use %g rather than %d: sparse values are doubles, and some upstream</span></span>
+<span id="cb33-16"><a href="#cb33-16" aria-hidden="true" tabindex="-1"></a><span class="co"># corrections (see the SoupX note above) can leave them non-integer</span></span>
+<span id="cb33-17"><a href="#cb33-17" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="fu">sprintf</span>(<span class="st">"raw count = %g, cell total = %g</span><span class="sc">\n</span><span class="st">"</span>, cm[i, j], <span class="fu">sum</span>(cm[, j])))</span>
+<span id="cb33-18"><a href="#cb33-18" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="fu">sprintf</span>(<span class="st">"manual = %.4f   Seurat = %.4f   identical = %s</span><span class="sc">\n</span><span class="st">"</span>,</span>
+<span id="cb33-19"><a href="#cb33-19" aria-hidden="true" tabindex="-1"></a>            manual, nm[i, j], <span class="fu">isTRUE</span>(<span class="fu">all.equal</span>(manual, nm[i, j]))))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <p>在本专题的流程中，这个细胞的原始计数为 1、总计数为 2,286，于是 <span class="math inline">\(\log(1 + 1/2286 \times 10^4) = 1.6817\)</span>——与 Seurat 存在 <code>data</code> layer 中的值完全一致。（总计数不是专题开头那个 2,419，是因为此处的对象已经过环境 RNA 校正，每个细胞都被扣除了一部分背景计数。）</p>
 <div class="warning">
 <p><strong>LogNormalize 隐含了一个很强的假设：</strong> 第一步”除以总计数”等价于断言——<strong>细胞之间总 UMI 数的差异纯粹是技术性的</strong>（捕获效率不同），而非生物学的。这个假设在细胞大小相近时尚可接受，但在异质样本中会出问题：一个转录极活跃的大细胞（如浆细胞、巨噬细胞）本来就该有更多 mRNA，把它的计数除以总数，等于人为抹掉了”这个细胞转录更活跃”这一真实的生物学差异。SCTransform 正是为缓解这一问题而设计——它不做简单的比例化，而是对每个基因分别建模其计数与深度的关系。</p>
@@ -1465,14 +1670,14 @@ window.Quarto = {
 <p><span class="math display">\[z_{ij} = \frac{c_{ij} - \mu_{ij}}{\sqrt{\mu_{ij} + \mu_{ij}^2/\theta_i}}\]</span></p>
 <p>分子是”观测减期望”，分母是负二项分布下该期望对应的标准差。这个式子的含义很直观：<strong>残差衡量的是”这个基因在这个细胞里的表达，超出/低于深度所能解释的程度有多少个标准差”</strong>。深度高的细胞期望值本就高，因而不会仅因为测得多就获得高残差——深度的影响被建模掉了，而不是被除掉了。</p>
 <p>“正则化”（regularized）则指：单个基因的参数估计噪声很大，因此 SCTransform 先按表达水平把基因分组、拟合参数随均值变化的平滑趋势，再用这条趋势去校正每个基因的参数估计。这使低表达基因的参数不至于被少量噪声带偏。</p>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb29"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb29-1"><a href="#cb29-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(Seurat)</span>
-<span id="cb29-2"><a href="#cb29-2" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb29-3"><a href="#cb29-3" aria-hidden="true" tabindex="-1"></a><span class="co"># SCTransform: normalization + variance stabilization + HVG selection in one call.</span></span>
-<span id="cb29-4"><a href="#cb29-4" aria-hidden="true" tabindex="-1"></a><span class="co"># It writes a new assay named "SCT" and leaves the RNA assay untouched.</span></span>
-<span id="cb29-5"><a href="#cb29-5" aria-hidden="true" tabindex="-1"></a>pbmc <span class="ot">&lt;-</span> <span class="fu">SCTransform</span>(pbmc, <span class="at">vars.to.regress =</span> <span class="st">"percent.mt"</span>, <span class="at">verbose =</span> <span class="cn">FALSE</span>)</span>
-<span id="cb29-6"><a href="#cb29-6" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb29-7"><a href="#cb29-7" aria-hidden="true" tabindex="-1"></a><span class="fu">Assays</span>(pbmc)</span>
-<span id="cb29-8"><a href="#cb29-8" aria-hidden="true" tabindex="-1"></a><span class="fu">DefaultAssay</span>(pbmc)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb34"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb34-1"><a href="#cb34-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(Seurat)</span>
+<span id="cb34-2"><a href="#cb34-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb34-3"><a href="#cb34-3" aria-hidden="true" tabindex="-1"></a><span class="co"># SCTransform: normalization + variance stabilization + HVG selection in one call.</span></span>
+<span id="cb34-4"><a href="#cb34-4" aria-hidden="true" tabindex="-1"></a><span class="co"># It writes a new assay named "SCT" and leaves the RNA assay untouched.</span></span>
+<span id="cb34-5"><a href="#cb34-5" aria-hidden="true" tabindex="-1"></a>pbmc <span class="ot">&lt;-</span> <span class="fu">SCTransform</span>(pbmc, <span class="at">vars.to.regress =</span> <span class="st">"percent.mt"</span>, <span class="at">verbose =</span> <span class="cn">FALSE</span>)</span>
+<span id="cb34-6"><a href="#cb34-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb34-7"><a href="#cb34-7" aria-hidden="true" tabindex="-1"></a><span class="fu">Assays</span>(pbmc)</span>
+<span id="cb34-8"><a href="#cb34-8" aria-hidden="true" tabindex="-1"></a><span class="fu">DefaultAssay</span>(pbmc)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="note">
 <p><strong>两种方法怎么选：</strong> 没有一刀切的答案，但有几条可操作的判据。<strong>选 LogNormalize</strong> 的情形：细胞类型相对均质、测序深度差异不大、需要与既有流程或已发表结果保持可比、或计算资源受限（SCTransform 慢得多、内存占用也高）。<strong>选 SCTransform</strong> 的情形：样本高度异质（细胞大小、转录活跃度差异大）、深度差异显著、或下游要做对表达量精度敏感的分析。</p>
 <p>两点实务提醒：其一，SCTransform 会新建一个名为 <code>SCT</code> 的 assay，而不是覆盖 <code>RNA</code>——后续函数调用要留意 <code>DefaultAssay()</code> 指向哪个，这是常见的困惑来源（参见专题 6.3 中 <code>clustree</code> 的 <code>prefix</code> 参数）。其二，<strong>同一项研究内不要混用两种归一化</strong>，否则样本间不可比。</p>
@@ -1482,26 +1687,26 @@ window.Quarto = {
 <h2 data-number="39.4" class="anchored" data-anchor-id="高变基因选择的原理"><span class="header-section-number">39.4</span> 高变基因选择的原理</h2>
 <p>归一化之后，下一步是从两万多个基因里挑出最有信息量的一小部分。朴素的做法是”按方差排序取前 2000 个”，但这会直接失败——<strong>基因的方差强烈依赖于其平均表达水平</strong>，高表达基因天然方差大。若按原始方差排序，选出的将全是管家基因，而它们恰恰在所有细胞中都稳定表达、毫无区分能力。</p>
 <p><code>selection.method = "vst"</code> 解决这一问题的办法是：先拟合一条”方差 ~ 均值”的趋势曲线（在对数尺度上做局部多项式回归），再看每个基因的实际方差<strong>相对于同等表达水平所预期的方差</strong>高出多少。这个比值称为标准化方差（standardized variance），据此排序才是公平的比较。</p>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb30"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb30-1"><a href="#cb30-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(Seurat)</span>
-<span id="cb30-2"><a href="#cb30-2" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb30-3"><a href="#cb30-3" aria-hidden="true" tabindex="-1"></a><span class="fu">DefaultAssay</span>(pbmc) <span class="ot">&lt;-</span> <span class="st">"RNA"</span></span>
-<span id="cb30-4"><a href="#cb30-4" aria-hidden="true" tabindex="-1"></a>pbmc <span class="ot">&lt;-</span> <span class="fu">FindVariableFeatures</span>(pbmc, <span class="at">selection.method =</span> <span class="st">"vst"</span>,</span>
-<span id="cb30-5"><a href="#cb30-5" aria-hidden="true" tabindex="-1"></a>                             <span class="at">nfeatures =</span> <span class="dv">2000</span>, <span class="at">verbose =</span> <span class="cn">FALSE</span>)</span>
-<span id="cb30-6"><a href="#cb30-6" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb30-7"><a href="#cb30-7" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">"HVGs selected:"</span>, <span class="fu">length</span>(<span class="fu">VariableFeatures</span>(pbmc)), <span class="st">"</span><span class="sc">\n</span><span class="st">"</span>)</span>
-<span id="cb30-8"><a href="#cb30-8" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">"Top 10:"</span>, <span class="fu">paste</span>(<span class="fu">head</span>(<span class="fu">VariableFeatures</span>(pbmc), <span class="dv">10</span>), <span class="at">collapse =</span> <span class="st">", "</span>), <span class="st">"</span><span class="sc">\n</span><span class="st">"</span>)</span>
-<span id="cb30-9"><a href="#cb30-9" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb30-10"><a href="#cb30-10" aria-hidden="true" tabindex="-1"></a><span class="co"># Standardized variance of the selected genes -- all well above 1 by construction</span></span>
-<span id="cb30-11"><a href="#cb30-11" aria-hidden="true" tabindex="-1"></a>hv <span class="ot">&lt;-</span> <span class="fu">HVFInfo</span>(pbmc)[<span class="fu">VariableFeatures</span>(pbmc), ]</span>
-<span id="cb30-12"><a href="#cb30-12" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">"standardized variance range:"</span>,</span>
-<span id="cb30-13"><a href="#cb30-13" aria-hidden="true" tabindex="-1"></a>    <span class="fu">round</span>(<span class="fu">min</span>(hv<span class="sc">$</span>variance.standardized), <span class="dv">2</span>), <span class="st">"-"</span>,</span>
-<span id="cb30-14"><a href="#cb30-14" aria-hidden="true" tabindex="-1"></a>    <span class="fu">round</span>(<span class="fu">max</span>(hv<span class="sc">$</span>variance.standardized), <span class="dv">2</span>), <span class="st">"</span><span class="sc">\n</span><span class="st">"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb31"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb31-1"><a href="#cb31-1" aria-hidden="true" tabindex="-1"></a><span class="co">#| label: fig-hvg</span></span>
-<span id="cb31-2"><a href="#cb31-2" aria-hidden="true" tabindex="-1"></a><span class="co">#| fig-cap: "PBMC 3k 数据的高变基因选择结果。横轴为基因的平均表达量（对数尺度），纵轴为标准化方差。灰点为未入选基因，红点为入选的 2000 个高变基因，标注了标准化方差最高的若干基因名。可以看到入选基因分布于各个表达量区间，而非集中在高表达端——这正是方差标准化的作用：它使低表达但变异显著的基因也能被选中。"</span></span>
-<span id="cb31-3"><a href="#cb31-3" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(Seurat)</span>
-<span id="cb31-4"><a href="#cb31-4" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb31-5"><a href="#cb31-5" aria-hidden="true" tabindex="-1"></a>top10 <span class="ot">&lt;-</span> <span class="fu">head</span>(<span class="fu">VariableFeatures</span>(pbmc), <span class="dv">10</span>)</span>
-<span id="cb31-6"><a href="#cb31-6" aria-hidden="true" tabindex="-1"></a><span class="fu">LabelPoints</span>(<span class="at">plot =</span> <span class="fu">VariableFeaturePlot</span>(pbmc), <span class="at">points =</span> top10, <span class="at">repel =</span> <span class="cn">TRUE</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb35"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb35-1"><a href="#cb35-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(Seurat)</span>
+<span id="cb35-2"><a href="#cb35-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb35-3"><a href="#cb35-3" aria-hidden="true" tabindex="-1"></a><span class="fu">DefaultAssay</span>(pbmc) <span class="ot">&lt;-</span> <span class="st">"RNA"</span></span>
+<span id="cb35-4"><a href="#cb35-4" aria-hidden="true" tabindex="-1"></a>pbmc <span class="ot">&lt;-</span> <span class="fu">FindVariableFeatures</span>(pbmc, <span class="at">selection.method =</span> <span class="st">"vst"</span>,</span>
+<span id="cb35-5"><a href="#cb35-5" aria-hidden="true" tabindex="-1"></a>                             <span class="at">nfeatures =</span> <span class="dv">2000</span>, <span class="at">verbose =</span> <span class="cn">FALSE</span>)</span>
+<span id="cb35-6"><a href="#cb35-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb35-7"><a href="#cb35-7" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">"HVGs selected:"</span>, <span class="fu">length</span>(<span class="fu">VariableFeatures</span>(pbmc)), <span class="st">"</span><span class="sc">\n</span><span class="st">"</span>)</span>
+<span id="cb35-8"><a href="#cb35-8" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">"Top 10:"</span>, <span class="fu">paste</span>(<span class="fu">head</span>(<span class="fu">VariableFeatures</span>(pbmc), <span class="dv">10</span>), <span class="at">collapse =</span> <span class="st">", "</span>), <span class="st">"</span><span class="sc">\n</span><span class="st">"</span>)</span>
+<span id="cb35-9"><a href="#cb35-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb35-10"><a href="#cb35-10" aria-hidden="true" tabindex="-1"></a><span class="co"># Standardized variance of the selected genes -- all well above 1 by construction</span></span>
+<span id="cb35-11"><a href="#cb35-11" aria-hidden="true" tabindex="-1"></a>hv <span class="ot">&lt;-</span> <span class="fu">HVFInfo</span>(pbmc)[<span class="fu">VariableFeatures</span>(pbmc), ]</span>
+<span id="cb35-12"><a href="#cb35-12" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">"standardized variance range:"</span>,</span>
+<span id="cb35-13"><a href="#cb35-13" aria-hidden="true" tabindex="-1"></a>    <span class="fu">round</span>(<span class="fu">min</span>(hv<span class="sc">$</span>variance.standardized), <span class="dv">2</span>), <span class="st">"-"</span>,</span>
+<span id="cb35-14"><a href="#cb35-14" aria-hidden="true" tabindex="-1"></a>    <span class="fu">round</span>(<span class="fu">max</span>(hv<span class="sc">$</span>variance.standardized), <span class="dv">2</span>), <span class="st">"</span><span class="sc">\n</span><span class="st">"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb36"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb36-1"><a href="#cb36-1" aria-hidden="true" tabindex="-1"></a><span class="co">#| label: fig-hvg</span></span>
+<span id="cb36-2"><a href="#cb36-2" aria-hidden="true" tabindex="-1"></a><span class="co">#| fig-cap: "PBMC 3k 数据的高变基因选择结果。横轴为基因的平均表达量（对数尺度），纵轴为标准化方差。灰点为未入选基因，红点为入选的 2000 个高变基因，标注了标准化方差最高的若干基因名。可以看到入选基因分布于各个表达量区间，而非集中在高表达端——这正是方差标准化的作用：它使低表达但变异显著的基因也能被选中。"</span></span>
+<span id="cb36-3"><a href="#cb36-3" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(Seurat)</span>
+<span id="cb36-4"><a href="#cb36-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb36-5"><a href="#cb36-5" aria-hidden="true" tabindex="-1"></a>top10 <span class="ot">&lt;-</span> <span class="fu">head</span>(<span class="fu">VariableFeatures</span>(pbmc), <span class="dv">10</span>)</span>
+<span id="cb36-6"><a href="#cb36-6" aria-hidden="true" tabindex="-1"></a><span class="fu">LabelPoints</span>(<span class="at">plot =</span> <span class="fu">VariableFeaturePlot</span>(pbmc), <span class="at">points =</span> top10, <span class="at">repel =</span> <span class="cn">TRUE</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <p>在本数据上选出的前五个高变基因是 <strong>PPBP、LYZ、S100A9、IGLL5、GNLY</strong>——分别是血小板、单核细胞、单核细胞、B 细胞、NK 细胞的标志基因，标准化方差范围 1.27–11.44。这个结果本身就是一次流程正确性的验证：<strong>若选出的高变基因全是管家基因或核糖体基因，说明方差标准化没起作用</strong>，需要检查是否误用了原始方差排序。</p>
 </section>
 <section id="数据缩放" class="level2" data-number="39.5">
@@ -1510,17 +1715,17 @@ window.Quarto = {
 <p><code>ScaleData()</code> 对每个基因做 z-score 标准化：</p>
 <p><span class="math display">\[z_{ij} = \frac{x_{ij} - \bar{x}_i}{s_i}\]</span></p>
 <p>即减去该基因在所有细胞中的均值、再除以其标准差，使每个基因都变成均值 0、方差 1。这样所有基因在 PCA 中获得<strong>均等的权重</strong>，主成分方向由”变异模式”而非”绝对表达量”决定。</p>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb32"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb32-1"><a href="#cb32-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(Seurat)</span>
-<span id="cb32-2"><a href="#cb32-2" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb32-3"><a href="#cb32-3" aria-hidden="true" tabindex="-1"></a><span class="co"># Center and scale each gene; regress out technical confounders.</span></span>
-<span id="cb32-4"><a href="#cb32-4" aria-hidden="true" tabindex="-1"></a><span class="co"># (When using SCTransform, scaling is already handled and this step is skipped.)</span></span>
-<span id="cb32-5"><a href="#cb32-5" aria-hidden="true" tabindex="-1"></a>pbmc <span class="ot">&lt;-</span> <span class="fu">ScaleData</span>(pbmc, <span class="at">vars.to.regress =</span> <span class="fu">c</span>(<span class="st">"nCount_RNA"</span>, <span class="st">"percent.mt"</span>),</span>
-<span id="cb32-6"><a href="#cb32-6" aria-hidden="true" tabindex="-1"></a>                  <span class="at">verbose =</span> <span class="cn">FALSE</span>)</span>
-<span id="cb32-7"><a href="#cb32-7" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb32-8"><a href="#cb32-8" aria-hidden="true" tabindex="-1"></a><span class="co"># Verify: every scaled gene now has mean ~0 and sd ~1</span></span>
-<span id="cb32-9"><a href="#cb32-9" aria-hidden="true" tabindex="-1"></a>sd_mat <span class="ot">&lt;-</span> <span class="fu">GetAssayData</span>(pbmc, <span class="at">layer =</span> <span class="st">"scale.data"</span>)</span>
-<span id="cb32-10"><a href="#cb32-10" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">"mean of scaled values:"</span>, <span class="fu">round</span>(<span class="fu">mean</span>(<span class="fu">rowMeans</span>(sd_mat)), <span class="dv">6</span>), <span class="st">"</span><span class="sc">\n</span><span class="st">"</span>)</span>
-<span id="cb32-11"><a href="#cb32-11" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">"mean of per-gene SDs :"</span>, <span class="fu">round</span>(<span class="fu">mean</span>(<span class="fu">apply</span>(sd_mat, <span class="dv">1</span>, sd)), <span class="dv">4</span>), <span class="st">"</span><span class="sc">\n</span><span class="st">"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb37"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb37-1"><a href="#cb37-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(Seurat)</span>
+<span id="cb37-2"><a href="#cb37-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb37-3"><a href="#cb37-3" aria-hidden="true" tabindex="-1"></a><span class="co"># Center and scale each gene; regress out technical confounders.</span></span>
+<span id="cb37-4"><a href="#cb37-4" aria-hidden="true" tabindex="-1"></a><span class="co"># (When using SCTransform, scaling is already handled and this step is skipped.)</span></span>
+<span id="cb37-5"><a href="#cb37-5" aria-hidden="true" tabindex="-1"></a>pbmc <span class="ot">&lt;-</span> <span class="fu">ScaleData</span>(pbmc, <span class="at">vars.to.regress =</span> <span class="fu">c</span>(<span class="st">"nCount_RNA"</span>, <span class="st">"percent.mt"</span>),</span>
+<span id="cb37-6"><a href="#cb37-6" aria-hidden="true" tabindex="-1"></a>                  <span class="at">verbose =</span> <span class="cn">FALSE</span>)</span>
+<span id="cb37-7"><a href="#cb37-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb37-8"><a href="#cb37-8" aria-hidden="true" tabindex="-1"></a><span class="co"># Verify: every scaled gene now has mean ~0 and sd ~1</span></span>
+<span id="cb37-9"><a href="#cb37-9" aria-hidden="true" tabindex="-1"></a>sd_mat <span class="ot">&lt;-</span> <span class="fu">GetAssayData</span>(pbmc, <span class="at">layer =</span> <span class="st">"scale.data"</span>)</span>
+<span id="cb37-10"><a href="#cb37-10" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">"mean of scaled values:"</span>, <span class="fu">round</span>(<span class="fu">mean</span>(<span class="fu">rowMeans</span>(sd_mat)), <span class="dv">6</span>), <span class="st">"</span><span class="sc">\n</span><span class="st">"</span>)</span>
+<span id="cb37-11"><a href="#cb37-11" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">"mean of per-gene SDs :"</span>, <span class="fu">round</span>(<span class="fu">mean</span>(<span class="fu">apply</span>(sd_mat, <span class="dv">1</span>, sd)), <span class="dv">4</span>), <span class="st">"</span><span class="sc">\n</span><span class="st">"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <p><code>vars.to.regress</code> 则多做一件事：把指定的混淆变量（这里是总 UMI 与线粒体比例）作为自变量对每个基因做线性回归，用<strong>残差</strong>替代原值。其效果是从表达中扣除这些技术因素可解释的部分。</p>
 <div class="warning">
 <p><strong>回归混淆变量要克制：</strong> 每回归掉一个变量，都在从数据中移除信息，而移除的未必全是技术噪声。回归 <code>nCount_RNA</code> 尤其需要谨慎——如前所述，总 UMI 数并不纯粹是技术量，它也反映细胞的真实转录活跃度；把它回归掉，等于抹平了”浆细胞比静息 T 细胞转录更活跃”这类真实差异。实践中的稳妥顺序是：<strong>先不回归任何变量跑一遍</strong>，检查降维结果是否被某个技术因素主导（例如把 <code>percent.mt</code> 画在 UMAP 上，看是否存在明显梯度）；只有确认存在主导性的技术效应时，才针对性地回归该变量。使用 SCTransform 时这一步通常可省略——它已在建模阶段处理了深度效应。</p>
@@ -1538,8 +1743,91 @@ window.Quarto = {
 <h1 data-number="40"><span class="header-section-number">40</span> 方法总结与衔接说明</h1>
 <p>本专题构建了 scRNA-seq 从”上游原始细胞”到”可分析干净数据”的预处理链条。质控层面，三项核心指标需要联合判读，散点图揭示的指标间关系比边缘分布携带更多诊断信息，MAD 自适应阈值则比固定阈值更稳健。污染层面，本专题区分了三类性质不同的问题：环境 RNA 污染<strong>每一个</strong>细胞、无法靠过滤解决，需用 SoupX 等方法扣除，它是”某细胞类型意外表达另一谱系标志”这类假阳性发现的主要来源；双细胞是两个细胞的混合，会伪装成虚假的中间态细胞群；解离伪影则是实验过程本身制造的应激转录，与真实的细胞活化难以区分。归一化层面，SCTransform 以正则化负二项回归同时完成深度校正、方差稳定与高变基因选择。</p>
 <p>贯穿全篇的判断原则是：<strong>每一次”校正”都在移除信号，因此必须先确认要移除的确实是伪影</strong>。环境 RNA 校正过度会抹去真实的低表达基因，回归应激基因可能删掉真实的免疫活化，回归细胞周期则可能删掉增殖研究的答案本身。</p>
+<section id="标准预处理流程汇总" class="level2" data-number="40.1">
+<h2 data-number="40.1" class="anchored" data-anchor-id="标准预处理流程汇总"><span class="header-section-number">40.1</span> 标准预处理流程汇总</h2>
+<p>正文为了逐一讲清原理，各节的代码分散且多次重建对象。实际分析时，应把它们按下面的顺序串成一条流程。该顺序遵循两条原则：校正在前、过滤在后，使过滤只作用于校正后的计数；双细胞检测在基础质控之后、最终归一化之前，使低质量细胞不干扰双细胞模型，而最终的预处理只作用于确认保留的单细胞。</p>
+<pre class="text"><code>raw + filtered matrices
+        │
+        ▼
+[1] Ambient RNA correction (SoupX)   ← quick clustering on the filtered matrix
+        │
+        ▼
+[2] Rebuild object → QC filtering (nFeature, nCount, percent.mt)
+        │
+        ▼
+[3] Doublet detection (DoubletFinder) → keep singlets
+        │                            ← quick clustering on the filtered object
+        ▼
+[4] NormalizeData → FindVariableFeatures → CellCycleScoring → ScaleData
+        │
+        ▼
+clean object for Topic 6.3 (PCA, clustering, annotation)</code></pre>
+<p>下面的代码块把上述四步合并为一个可独立运行的脚本。它依赖 <code>SoupX</code> 与 <code>DoubletFinder</code>（安装方式见各自小节），在本机上完整运行约需一到两分钟，其中大部分时间花在 <code>paramSweep()</code> 上。为避免重复，快速聚类被封装为一个辅助函数，其参数与正文一致。</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb39"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb39-1"><a href="#cb39-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(Seurat)</span>
+<span id="cb39-2"><a href="#cb39-2" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(SoupX)</span>
+<span id="cb39-3"><a href="#cb39-3" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(DoubletFinder)</span>
+<span id="cb39-4"><a href="#cb39-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb39-5"><a href="#cb39-5" aria-hidden="true" tabindex="-1"></a>SC_DIR <span class="ot">&lt;-</span> <span class="st">"/Users/angdong/Documents/bio_example/SingleCell"</span></span>
+<span id="cb39-6"><a href="#cb39-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb39-7"><a href="#cb39-7" aria-hidden="true" tabindex="-1"></a><span class="co"># Quick clustering helper: a rough grouping used only for QC decisions</span></span>
+<span id="cb39-8"><a href="#cb39-8" aria-hidden="true" tabindex="-1"></a>quick_cluster <span class="ot">&lt;-</span> <span class="cf">function</span>(obj, <span class="at">dims =</span> <span class="dv">1</span><span class="sc">:</span><span class="dv">30</span>) {</span>
+<span id="cb39-9"><a href="#cb39-9" aria-hidden="true" tabindex="-1"></a>    <span class="fu">NormalizeData</span>(obj, <span class="at">verbose =</span> <span class="cn">FALSE</span>) <span class="sc">|&gt;</span></span>
+<span id="cb39-10"><a href="#cb39-10" aria-hidden="true" tabindex="-1"></a>        <span class="fu">FindVariableFeatures</span>(<span class="at">verbose =</span> <span class="cn">FALSE</span>) <span class="sc">|&gt;</span></span>
+<span id="cb39-11"><a href="#cb39-11" aria-hidden="true" tabindex="-1"></a>        <span class="fu">ScaleData</span>(<span class="at">verbose =</span> <span class="cn">FALSE</span>) <span class="sc">|&gt;</span></span>
+<span id="cb39-12"><a href="#cb39-12" aria-hidden="true" tabindex="-1"></a>        <span class="fu">RunPCA</span>(<span class="at">npcs =</span> <span class="fu">max</span>(dims), <span class="at">verbose =</span> <span class="cn">FALSE</span>) <span class="sc">|&gt;</span></span>
+<span id="cb39-13"><a href="#cb39-13" aria-hidden="true" tabindex="-1"></a>        <span class="fu">FindNeighbors</span>(<span class="at">dims =</span> dims, <span class="at">verbose =</span> <span class="cn">FALSE</span>) <span class="sc">|&gt;</span></span>
+<span id="cb39-14"><a href="#cb39-14" aria-hidden="true" tabindex="-1"></a>        <span class="fu">FindClusters</span>(<span class="at">resolution =</span> <span class="fl">0.5</span>, <span class="at">verbose =</span> <span class="cn">FALSE</span>)</span>
+<span id="cb39-15"><a href="#cb39-15" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb39-16"><a href="#cb39-16" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb39-17"><a href="#cb39-17" aria-hidden="true" tabindex="-1"></a><span class="co"># Step 1. Ambient RNA correction (needs raw + filtered matrices)</span></span>
+<span id="cb39-18"><a href="#cb39-18" aria-hidden="true" tabindex="-1"></a>tod <span class="ot">&lt;-</span> <span class="fu">Read10X</span>(<span class="fu">file.path</span>(SC_DIR, <span class="st">"raw_gene_bc_matrices/hg19"</span>))</span>
+<span id="cb39-19"><a href="#cb39-19" aria-hidden="true" tabindex="-1"></a>toc <span class="ot">&lt;-</span> <span class="fu">Read10X</span>(<span class="fu">file.path</span>(SC_DIR, <span class="st">"filtered_gene_bc_matrices/hg19"</span>))</span>
+<span id="cb39-20"><a href="#cb39-20" aria-hidden="true" tabindex="-1"></a>sc  <span class="ot">&lt;-</span> <span class="fu">SoupChannel</span>(tod, toc)</span>
+<span id="cb39-21"><a href="#cb39-21" aria-hidden="true" tabindex="-1"></a>quick <span class="ot">&lt;-</span> <span class="fu">quick_cluster</span>(<span class="fu">CreateSeuratObject</span>(toc), <span class="at">dims =</span> <span class="dv">1</span><span class="sc">:</span><span class="dv">20</span>)</span>
+<span id="cb39-22"><a href="#cb39-22" aria-hidden="true" tabindex="-1"></a>sc  <span class="ot">&lt;-</span> <span class="fu">setClusters</span>(sc, <span class="fu">setNames</span>(<span class="fu">as.character</span>(<span class="fu">Idents</span>(quick)), <span class="fu">colnames</span>(quick)))</span>
+<span id="cb39-23"><a href="#cb39-23" aria-hidden="true" tabindex="-1"></a>sc  <span class="ot">&lt;-</span> <span class="fu">autoEstCont</span>(sc, <span class="at">doPlot =</span> <span class="cn">FALSE</span>)</span>
+<span id="cb39-24"><a href="#cb39-24" aria-hidden="true" tabindex="-1"></a>corrected_counts <span class="ot">&lt;-</span> <span class="fu">adjustCounts</span>(sc, <span class="at">roundToInt =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb39-25"><a href="#cb39-25" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb39-26"><a href="#cb39-26" aria-hidden="true" tabindex="-1"></a><span class="co"># Step 2. Build the object on corrected counts, then filter low-quality cells</span></span>
+<span id="cb39-27"><a href="#cb39-27" aria-hidden="true" tabindex="-1"></a>pbmc <span class="ot">&lt;-</span> <span class="fu">CreateSeuratObject</span>(<span class="at">counts =</span> corrected_counts, <span class="at">project =</span> <span class="st">"pbmc3k"</span>,</span>
+<span id="cb39-28"><a href="#cb39-28" aria-hidden="true" tabindex="-1"></a>                           <span class="at">min.cells =</span> <span class="dv">3</span>, <span class="at">min.features =</span> <span class="dv">200</span>)</span>
+<span id="cb39-29"><a href="#cb39-29" aria-hidden="true" tabindex="-1"></a>pbmc[[<span class="st">"percent.mt"</span>]] <span class="ot">&lt;-</span> <span class="fu">PercentageFeatureSet</span>(pbmc, <span class="at">pattern =</span> <span class="st">"^MT-"</span>)</span>
+<span id="cb39-30"><a href="#cb39-30" aria-hidden="true" tabindex="-1"></a>pbmc <span class="ot">&lt;-</span> <span class="fu">subset</span>(pbmc, <span class="at">subset =</span> nFeature_RNA <span class="sc">&gt;</span> <span class="dv">200</span> <span class="sc">&amp;</span> nFeature_RNA <span class="sc">&lt;</span> <span class="dv">2500</span> <span class="sc">&amp;</span></span>
+<span id="cb39-31"><a href="#cb39-31" aria-hidden="true" tabindex="-1"></a>                              percent.mt <span class="sc">&lt;</span> <span class="dv">5</span>)</span>
+<span id="cb39-32"><a href="#cb39-32" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">"Cells after QC:"</span>, <span class="fu">ncol</span>(pbmc), <span class="st">"</span><span class="sc">\n</span><span class="st">"</span>)</span>
+<span id="cb39-33"><a href="#cb39-33" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb39-34"><a href="#cb39-34" aria-hidden="true" tabindex="-1"></a><span class="co"># Step 3. Doublet detection on a quick-clustered object, then remove doublets</span></span>
+<span id="cb39-35"><a href="#cb39-35" aria-hidden="true" tabindex="-1"></a>pbmc <span class="ot">&lt;-</span> <span class="fu">quick_cluster</span>(pbmc)</span>
+<span id="cb39-36"><a href="#cb39-36" aria-hidden="true" tabindex="-1"></a>sweep_stats <span class="ot">&lt;-</span> <span class="fu">summarizeSweep</span>(<span class="fu">paramSweep</span>(pbmc, <span class="at">PCs =</span> <span class="dv">1</span><span class="sc">:</span><span class="dv">30</span>, <span class="at">sct =</span> <span class="cn">FALSE</span>),</span>
+<span id="cb39-37"><a href="#cb39-37" aria-hidden="true" tabindex="-1"></a>                              <span class="at">GT =</span> <span class="cn">FALSE</span>)</span>
+<span id="cb39-38"><a href="#cb39-38" aria-hidden="true" tabindex="-1"></a>bcmvn   <span class="ot">&lt;-</span> <span class="fu">find.pK</span>(sweep_stats)</span>
+<span id="cb39-39"><a href="#cb39-39" aria-hidden="true" tabindex="-1"></a>best_pK <span class="ot">&lt;-</span> <span class="fu">as.numeric</span>(<span class="fu">as.character</span>(bcmvn<span class="sc">$</span>pK[<span class="fu">which.max</span>(bcmvn<span class="sc">$</span>BCmetric)]))</span>
+<span id="cb39-40"><a href="#cb39-40" aria-hidden="true" tabindex="-1"></a>nExp    <span class="ot">&lt;-</span> <span class="fu">round</span>(<span class="fu">ncol</span>(pbmc)<span class="sc">^</span><span class="dv">2</span> <span class="sc">/</span> <span class="dv">1000</span> <span class="sc">*</span> <span class="fl">0.008</span> <span class="sc">*</span></span>
+<span id="cb39-41"><a href="#cb39-41" aria-hidden="true" tabindex="-1"></a>                 (<span class="dv">1</span> <span class="sc">-</span> <span class="fu">modelHomotypic</span>(<span class="fu">Idents</span>(pbmc))))</span>
+<span id="cb39-42"><a href="#cb39-42" aria-hidden="true" tabindex="-1"></a>pbmc <span class="ot">&lt;-</span> <span class="fu">doubletFinder</span>(pbmc, <span class="at">PCs =</span> <span class="dv">1</span><span class="sc">:</span><span class="dv">30</span>, <span class="at">pN =</span> <span class="fl">0.25</span>, <span class="at">pK =</span> best_pK,</span>
+<span id="cb39-43"><a href="#cb39-43" aria-hidden="true" tabindex="-1"></a>                      <span class="at">nExp =</span> nExp, <span class="at">sct =</span> <span class="cn">FALSE</span>)</span>
+<span id="cb39-44"><a href="#cb39-44" aria-hidden="true" tabindex="-1"></a>df_col <span class="ot">&lt;-</span> <span class="fu">grep</span>(<span class="st">"^DF.classifications"</span>, <span class="fu">colnames</span>(pbmc[[]]), <span class="at">value =</span> <span class="cn">TRUE</span>)[<span class="dv">1</span>]</span>
+<span id="cb39-45"><a href="#cb39-45" aria-hidden="true" tabindex="-1"></a>pbmc <span class="ot">&lt;-</span> pbmc[, pbmc[[df_col]][, <span class="dv">1</span>] <span class="sc">==</span> <span class="st">"Singlet"</span>]</span>
+<span id="cb39-46"><a href="#cb39-46" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">"Cells after doublet removal:"</span>, <span class="fu">ncol</span>(pbmc), <span class="st">"</span><span class="sc">\n</span><span class="st">"</span>)</span>
+<span id="cb39-47"><a href="#cb39-47" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb39-48"><a href="#cb39-48" aria-hidden="true" tabindex="-1"></a><span class="co"># Step 4. Final normalisation, HVG selection, cell-cycle scoring and scaling</span></span>
+<span id="cb39-49"><a href="#cb39-49" aria-hidden="true" tabindex="-1"></a>pbmc <span class="ot">&lt;-</span> <span class="fu">NormalizeData</span>(pbmc, <span class="at">verbose =</span> <span class="cn">FALSE</span>) <span class="sc">|&gt;</span></span>
+<span id="cb39-50"><a href="#cb39-50" aria-hidden="true" tabindex="-1"></a>    <span class="fu">FindVariableFeatures</span>(<span class="at">selection.method =</span> <span class="st">"vst"</span>, <span class="at">nfeatures =</span> <span class="dv">2000</span>,</span>
+<span id="cb39-51"><a href="#cb39-51" aria-hidden="true" tabindex="-1"></a>                         <span class="at">verbose =</span> <span class="cn">FALSE</span>)</span>
+<span id="cb39-52"><a href="#cb39-52" aria-hidden="true" tabindex="-1"></a>pbmc <span class="ot">&lt;-</span> <span class="fu">CellCycleScoring</span>(pbmc, <span class="at">s.features =</span> cc.genes.updated<span class="fl">.2019</span><span class="sc">$</span>s.genes,</span>
+<span id="cb39-53"><a href="#cb39-53" aria-hidden="true" tabindex="-1"></a>                         <span class="at">g2m.features =</span> cc.genes.updated<span class="fl">.2019</span><span class="sc">$</span>g2m.genes)</span>
+<span id="cb39-54"><a href="#cb39-54" aria-hidden="true" tabindex="-1"></a><span class="co"># Add vars.to.regress only if a diagnostic plot shows a dominant confounder</span></span>
+<span id="cb39-55"><a href="#cb39-55" aria-hidden="true" tabindex="-1"></a>pbmc <span class="ot">&lt;-</span> <span class="fu">ScaleData</span>(pbmc, <span class="at">verbose =</span> <span class="cn">FALSE</span>)</span>
+<span id="cb39-56"><a href="#cb39-56" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb39-57"><a href="#cb39-57" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">"Final object:"</span>, <span class="fu">nrow</span>(pbmc), <span class="st">"genes x"</span>, <span class="fu">ncol</span>(pbmc), <span class="st">"cells;"</span>,</span>
+<span id="cb39-58"><a href="#cb39-58" aria-hidden="true" tabindex="-1"></a>    <span class="fu">length</span>(<span class="fu">VariableFeatures</span>(pbmc)), <span class="st">"HVGs</span><span class="sc">\n</span><span class="st">"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>在 PBMC 3k 上，这条流程的输出依次为：SoupX 估计的污染比例约 6%；校正后通过质控的细胞 2,641 个；DoubletFinder 判定并移除 41 个双细胞，最终得到 13,664 个基因 × 2,600 个细胞、2,000 个高变基因的对象。质控后的细胞数比正文未校正时的 2,638 个多出 3 个，原因是扣除背景计数后，少数细胞的线粒体比例或基因数越过了阈值边界。</p>
+<div class="tip">
+<p><strong>流程中的可选分支：</strong> 上面的脚本取了最常用的默认路径，以下三处应按数据情况调整。其一，质控阈值可换成正文中基于 MAD 的自适应阈值，并照例核验被删细胞的身份。其二，解离应激与细胞周期只做评估、默认不回归；只有诊断表明某一因素主导了降维结构时，才在 <code>ScaleData()</code> 中加入 <code>vars.to.regress</code>。其三，第 4 步可整体替换为 <code>SCTransform(pbmc)</code>，它一次完成归一化、高变基因选择与缩放；此时应在 SCTransform 之后再运行 <code>CellCycleScoring()</code>，并留意默认 assay 已切换为 <code>SCT</code>。</p>
+</div>
 <p>专题 6.3 将在这份干净数据之上进行降维、聚类与细胞类型注释，回答 scRNA-seq 最核心的问题：这些细胞各是什么类型？</p>
 <hr>
+</section>
 </section>
 <section id="课后自测-post-lesson-quiz" class="level1" data-number="41">
 <h1 data-number="41"><span class="header-section-number">41</span> 课后自测 (Post-Lesson Quiz)</h1>
@@ -1558,6 +1846,7 @@ window.Quarto = {
 <li><p>解离诱导的应激伪影表现为哪些基因的表达？为什么”发现应激信号就回归掉”是危险的做法？应如何判断其来源？</p></li>
 <li><p>细胞周期为什么会干扰聚类？在什么研究场景下<strong>不应该</strong>回归细胞周期？折中方案是什么？</p></li>
 <li><p>一位研究者为追求数据纯净，将质控阈值设为 <code>nFeature &gt; 1000</code> 且 <code>percent.mt &lt; 5%</code>，结果发现某个预期存在的静息淋巴细胞群消失了。请解释原因，并提出改进建议。</p></li>
+<li><p><code>CellCycleScoring()</code> 的 S 期得分是如何计算的？为什么要减去对照基因集的平均表达？在 PBMC 数据中，被标为 “G1” 的细胞应如何理解？</p></li>
 </ol>
 <details>
 <summary>
@@ -1578,6 +1867,7 @@ window.Quarto = {
 <li><p><em>主要是即早基因（FOS、FOSB、JUN、JUNB、EGR1）与热休克蛋白基因（HSPA1A、HSPA1B、HSPB1、DNAJB1）。“发现就回归”危险，是因为这些基因的表达也可能是真实的生物学信号——在免疫学研究中 FOS/JUN 的表达本身就是 T 细胞活化的标志，回归掉等于删除了真实结论。判断来源的方法：若高应激评分的细胞随机散布于各细胞类型，多半是解离伪影（应激是实验操作施加于所有细胞的）；若集中在特定的、生物学上确实可能被激活的细胞类型中，则更可能是真实信号。更根本的解决办法在实验端——缩短解离时间、使用冷活性蛋白酶或改做单核测序。</em></p></li>
 <li><p><em>因为同一种细胞处于 S 期与 G2M 期时表达谱差异可能大过它与另一种细胞类型的差异，导致聚类按周期阶段而非细胞类型分开。在研究对象本身与增殖有关时不应回归：肿瘤细胞的增殖异质性、干细胞自我更新、发育中祖细胞扩增——此时细胞周期信号正是要观察的生物学，回归掉等于删除答案。折中方案是回归 <code>S.Score - G2M.Score</code> 的差值而非二者本身：这样消除了增殖细胞内部不同周期阶段之间的差异，同时保留”增殖 vs 静息”这一层信息。</em></p></li>
 <li><p><em>该阈值过严。静息淋巴细胞（如静息 T/B 细胞）本身体积小、RNA 含量低、检出基因数天然偏低（常 &lt; 1000），因此被 <code>nFeature &gt; 1000</code> 整体误删；同时部分细胞类型正常线粒体比例也可能略高于 5%。改进：先可视化本数据各指标分布与被删细胞的身份（可先用宽松阈值保留、聚类后再看被删的是哪一群），改用基于 MAD 的自适应下限而非固定的 1000，并结合组织类型放宽线粒体阈值，确保删除的是噪声而非真实的稀有/低 RNA 细胞群。</em></p></li>
+<li><p><em>它调用 <code>AddModuleScore()</code>：先按平均表达量把所有基因分入 24 个分箱，再为 S 期基因集中的每个基因从同一分箱随机抽取对照基因，细胞得分等于 S 期基因的平均表达减去对照基因的平均表达。减去对照是为了抵消测序深度或整体转录活跃度造成的普遍偏移，因为表达水平匹配的对照基因承受同样的偏移。判定规则是两个得分均小于 0 即标为 G1，因此 “G1” 实际含义是”未检测到 S 或 G2M 程序”；PBMC 以静息、终末分化细胞为主，这些细胞多数处于 G0 而非真正的 G1 期。</em></p></li>
 </ol>
 </details>
 
