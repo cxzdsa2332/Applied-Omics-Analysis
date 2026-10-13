@@ -1734,7 +1734,7 @@ mixed             0      1.99</code></pre>
 <p><strong><code>ScaleData()</code> 默认只作用于高变基因：</strong> 这是一个容易被忽略的细节。默认 <code>features = VariableFeatures(object)</code>，因此 <code>scale.data</code> layer 里通常只有 2000 行而非全部基因。这对 PCA 完全够用（PCA 本就只用高变基因），但若后续要画非高变基因的热图（<code>DoHeatmap()</code> 用的正是 <code>scale.data</code>），就会报”找不到该基因”。此时需显式指定 <code>ScaleData(pbmc, features = rownames(pbmc))</code>，代价是内存占用大幅上升——全基因的 <code>scale.data</code> 是稠密矩阵，不再享有稀疏存储的优势。</p>
 </div>
 <div class="info">
-<p><strong>黄金法则：</strong> 质控的目标不是”删得越多越好”，而是在<strong>去除技术伪影</strong>与<strong>保留真实生物学信号</strong>之间求平衡。过松会让低质量细胞与双细胞污染下游、制造虚假细胞群；过严则可能误删真实的稀有细胞类型（它们往往 UMI 较低、易被当作低质量删除）。每一次过滤都应可视化前后分布、检查被删细胞的身份，确保删除的是噪声而非信号。</p>
+<p><strong>黄金法则：</strong> 质控的目标不是”删得越多越好”，而是在<strong>去除技术伪影</strong>与<strong>保留真实生物学信号</strong>之间求平衡。过松会让低质量细胞与双细胞污染下游、制造虚假细胞群；过严则可能误删真实的稀有细胞类型（它们往往 UMI 较低、易被当作低质量删除）。每一次过滤 都应可视化前后分布、检查被删细胞的身份，确保删除的是噪声而非信号。</p>
 </div>
 <hr>
 </section>

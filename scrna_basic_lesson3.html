@@ -718,7 +718,10 @@ window.Quarto = {
   <li><a href="#注释的三类陷阱" id="toc-注释的三类陷阱" class="nav-link" data-scroll-target="#注释的三类陷阱"><span class="header-section-number">38.7</span> 注释的三类陷阱</a></li>
   <li><a href="#层级注释先粗后细" id="toc-层级注释先粗后细" class="nav-link" data-scroll-target="#层级注释先粗后细"><span class="header-section-number">38.8</span> 层级注释：先粗后细</a></li>
   </ul></li>
-  <li><a href="#方法总结与衔接说明" id="toc-方法总结与衔接说明" class="nav-link" data-scroll-target="#方法总结与衔接说明"><span class="header-section-number">39</span> 方法总结与衔接说明</a></li>
+  <li><a href="#方法总结与衔接说明" id="toc-方法总结与衔接说明" class="nav-link" data-scroll-target="#方法总结与衔接说明"><span class="header-section-number">39</span> 方法总结与衔接说明</a>
+  <ul class="collapse">
+  <li><a href="#标准分析流程汇总" id="toc-标准分析流程汇总" class="nav-link" data-scroll-target="#标准分析流程汇总"><span class="header-section-number">39.1</span> 标准分析流程汇总</a></li>
+  </ul></li>
   <li><a href="#课后自测-post-lesson-quiz" id="toc-课后自测-post-lesson-quiz" class="nav-link" data-scroll-target="#课后自测-post-lesson-quiz"><span class="header-section-number">40</span> 课后自测 (Post-Lesson Quiz)</a></li>
   </ul>
 <div class="toc-actions"><ul><li><a href="https://github.com/cxzdsa2332/Applied-Omics-Analysis/edit/main/scrna_basic_lesson3.qmd" class="toc-action"><i class="bi bi-github"></i>Edit this page</a></li><li><a href="https://github.com/cxzdsa2332/Applied-Omics-Analysis/issues/new" class="toc-action"><i class="bi empty"></i>Report an issue</a></li><li><a href="https://github.com/cxzdsa2332/Applied-Omics-Analysis/blob/main/scrna_basic_lesson3.qmd" class="toc-action"><i class="bi empty"></i>View source</a></li></ul></div></nav>
@@ -776,12 +779,15 @@ window.Quarto = {
 <div class="note">
 <p><strong>运行环境说明：</strong> 本专题延续 PBMC 3k 数据。下面第一个代码块从本地矩阵重建对象并完成专题 6.2 的预处理，因此本专题可独立运行。基础流程仅需 <code>Seurat</code>；<code>clustree</code> 与 <code>SingleR</code>/<code>celldex</code> 小节会各自标注依赖。</p>
 </div>
+<div class="note">
+<p><strong>与专题 6.2 的衔接：</strong> 专题 6.2 末尾的”标准预处理流程汇总”给出了完整路径：环境 RNA 校正、质控过滤、双细胞剔除，最后归一化、选高变基因与缩放。本专题正文却采用一条<strong>简化路径</strong>：只做固定阈值质控（<code>nFeature 200–2500</code>、<code>percent.mt &lt; 5</code>），不做 SoupX 校正与双细胞剔除。这样做有两个理由。其一，本专题聚焦于降维、聚类与注释的原理，简化路径运行快、依赖少。其二，正文引用的全部数值（2,638 个细胞、9 个聚类、各主成分标准差等）都在这条路径上核验过，读者可逐一复现。两条路径的输出对象结构完全相同：<code>data</code> 与 <code>scale.data</code> layer 齐全，2,000 个高变基因已选定。因此，若读者已在当前会话中运行了专题 6.2 的汇总流程，可以跳过下面的重建代码块，直接从 <code>RunPCA()</code> 开始。此时细胞数为 2,600，下游的聚类数与细胞数会与正文略有差异，具体见本专题末尾的流程汇总。</p>
+</div>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb1"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(Seurat)</span>
 <span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a>SC_DIR <span class="ot">&lt;-</span> <span class="st">"/Users/angdong/Documents/bio_example/SingleCell"</span></span>
 <span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">42</span>)</span>
 <span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a><span class="co"># Rebuild and preprocess so this topic runs standalone (see 专题 6.2)</span></span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a><span class="co"># Rebuild and preprocess so this topic runs standalone (see Topic 6.2)</span></span>
 <span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a>pbmc <span class="ot">&lt;-</span> <span class="fu">CreateSeuratObject</span>(</span>
 <span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a>    <span class="at">counts =</span> <span class="fu">Read10X</span>(<span class="fu">file.path</span>(SC_DIR, <span class="st">"filtered_gene_bc_matrices/hg19"</span>)),</span>
 <span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a>    <span class="at">project =</span> <span class="st">"pbmc3k"</span>, <span class="at">min.cells =</span> <span class="dv">3</span>, <span class="at">min.features =</span> <span class="dv">200</span></span>
@@ -1645,7 +1651,148 @@ window.Quarto = {
 <section id="方法总结与衔接说明" class="level1" data-number="39">
 <h1 data-number="39"><span class="header-section-number">39</span> 方法总结与衔接说明</h1>
 <p>本专题完成了 scRNA-seq 基础分析的核心闭环：PCA 降维去噪 → KNN 图 + Leiden 聚类 → UMAP 可视化 → 标志基因 + SingleR 双重注释 → 层级二次聚类解析亚型。其中有四个判断点值得单独记住：主成分数量可用肘部图或置换检验确定，但后者不适用于 SCTransform 的残差；聚类应显式选用 Leiden 而非默认的 Louvain，因为只有前者保证社区连通；分辨率不应靠单次试凑，而应用多分辨率树找出数据能稳定支持的粒度；自动注释必须检查 delta 与 pruned 标签，大量细胞无法自信归类通常意味着参考数据集缺少该类型。至此，模块 A 实现了从原始读段到带细胞类型标签的注释图谱的完整流程。这份注释图谱不仅是单细胞分析的终点，更是众多高级分析的起点——它是第 7 章拟时序、细胞通讯、调控网络推断的共同输入，也是第 9 章空间细胞解卷积不可或缺的参考（参见第 9 章）。第 7 章将在此基础上展开多样本整合、动态推断、调控网络与多组学等高级分析。</p>
+<section id="标准分析流程汇总" class="level2" data-number="39.1">
+<h2 data-number="39.1" class="anchored" data-anchor-id="标准分析流程汇总"><span class="header-section-number">39.1</span> 标准分析流程汇总</h2>
+<p>与专题 6.2 一样，正文为讲清原理而把代码拆散，并穿插了多种参数对比。实际分析时，可把本专题的步骤串成下面这条流程。它直接接续专题 6.2 汇总流程的输出对象，覆盖从主成分分析到细胞类型标签的全部步骤。</p>
+<pre class="text"><code>clean object from Topic 6.2 (normalised, HVGs selected, scaled)
+        │
+        ▼
+[1] RunPCA → choose dims (ElbowPlot)
+        │
+        ▼
+[2] FindNeighbors → FindClusters (resolution) → RunUMAP   ← same dims
+        │
+        ▼
+[3] FindAllMarkers                ─┐
+[4] SingleR (reference labels)    ─┴→ cross-check → RenameIdents
+        │
+        ▼
+annotated object for Chapter 7 / Chapter 9</code></pre>
+<p>下面的代码块假定当前会话中的 <code>pbmc</code> 来自专题 6.2 末尾的汇总流程。它依赖 <code>SingleR</code>、<code>celldex</code> 与 <code>dplyr</code>；<code>celldex</code> 首次调用时需联网下载参考数据集。若只想跑通流程而不关心环境 RNA 与双细胞，也可以用本专题开头的重建代码块代替专题 6.2 的汇总流程。</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb32"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb32-1"><a href="#cb32-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(Seurat)</span>
+<span id="cb32-2"><a href="#cb32-2" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(SingleR)</span>
+<span id="cb32-3"><a href="#cb32-3" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(celldex)</span>
+<span id="cb32-4"><a href="#cb32-4" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(dplyr)</span>
+<span id="cb32-5"><a href="#cb32-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb32-6"><a href="#cb32-6" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">42</span>)</span>
+<span id="cb32-7"><a href="#cb32-7" aria-hidden="true" tabindex="-1"></a>n_dims <span class="ot">&lt;-</span> <span class="dv">15</span>   <span class="co"># chosen from the ElbowPlot; keep it identical in every step</span></span>
+<span id="cb32-8"><a href="#cb32-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb32-9"><a href="#cb32-9" aria-hidden="true" tabindex="-1"></a><span class="co"># Step 1. PCA on the scaled highly variable genes</span></span>
+<span id="cb32-10"><a href="#cb32-10" aria-hidden="true" tabindex="-1"></a>pbmc <span class="ot">&lt;-</span> <span class="fu">RunPCA</span>(pbmc, <span class="at">npcs =</span> <span class="dv">50</span>, <span class="at">verbose =</span> <span class="cn">FALSE</span>)</span>
+<span id="cb32-11"><a href="#cb32-11" aria-hidden="true" tabindex="-1"></a><span class="fu">ElbowPlot</span>(pbmc, <span class="at">ndims =</span> <span class="dv">50</span>)</span>
+<span id="cb32-12"><a href="#cb32-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb32-13"><a href="#cb32-13" aria-hidden="true" tabindex="-1"></a><span class="co"># Step 2. Graph-based clustering and UMAP, both on the same PCs</span></span>
+<span id="cb32-14"><a href="#cb32-14" aria-hidden="true" tabindex="-1"></a>pbmc <span class="ot">&lt;-</span> <span class="fu">FindNeighbors</span>(pbmc, <span class="at">dims =</span> <span class="dv">1</span><span class="sc">:</span>n_dims, <span class="at">verbose =</span> <span class="cn">FALSE</span>) <span class="sc">|&gt;</span></span>
+<span id="cb32-15"><a href="#cb32-15" aria-hidden="true" tabindex="-1"></a>    <span class="fu">FindClusters</span>(<span class="at">resolution =</span> <span class="fl">0.5</span>, <span class="at">verbose =</span> <span class="cn">FALSE</span>) <span class="sc">|&gt;</span></span>
+<span id="cb32-16"><a href="#cb32-16" aria-hidden="true" tabindex="-1"></a>    <span class="fu">RunUMAP</span>(<span class="at">dims =</span> <span class="dv">1</span><span class="sc">:</span>n_dims, <span class="at">verbose =</span> <span class="cn">FALSE</span>)</span>
+<span id="cb32-17"><a href="#cb32-17" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(<span class="fu">table</span>(<span class="fu">Idents</span>(pbmc)))</span>
+<span id="cb32-18"><a href="#cb32-18" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb32-19"><a href="#cb32-19" aria-hidden="true" tabindex="-1"></a><span class="co"># Step 3. Marker genes: rank by effect size, not by p-value (double dipping)</span></span>
+<span id="cb32-20"><a href="#cb32-20" aria-hidden="true" tabindex="-1"></a>markers <span class="ot">&lt;-</span> <span class="fu">FindAllMarkers</span>(pbmc, <span class="at">only.pos =</span> <span class="cn">TRUE</span>, <span class="at">min.pct =</span> <span class="fl">0.25</span>,</span>
+<span id="cb32-21"><a href="#cb32-21" aria-hidden="true" tabindex="-1"></a>                          <span class="at">logfc.threshold =</span> <span class="fl">0.25</span>, <span class="at">verbose =</span> <span class="cn">FALSE</span>)</span>
+<span id="cb32-22"><a href="#cb32-22" aria-hidden="true" tabindex="-1"></a>markers <span class="sc">|&gt;</span></span>
+<span id="cb32-23"><a href="#cb32-23" aria-hidden="true" tabindex="-1"></a>    <span class="fu">group_by</span>(cluster) <span class="sc">|&gt;</span></span>
+<span id="cb32-24"><a href="#cb32-24" aria-hidden="true" tabindex="-1"></a>    <span class="fu">slice_max</span>(avg_log2FC, <span class="at">n =</span> <span class="dv">5</span>)</span>
+<span id="cb32-25"><a href="#cb32-25" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb32-26"><a href="#cb32-26" aria-hidden="true" tabindex="-1"></a><span class="co"># Step 4. Reference-based labels, then cross-check against the clusters</span></span>
+<span id="cb32-27"><a href="#cb32-27" aria-hidden="true" tabindex="-1"></a>ref  <span class="ot">&lt;-</span> celldex<span class="sc">::</span><span class="fu">HumanPrimaryCellAtlasData</span>()</span>
+<span id="cb32-28"><a href="#cb32-28" aria-hidden="true" tabindex="-1"></a>pred <span class="ot">&lt;-</span> <span class="fu">SingleR</span>(<span class="at">test =</span> <span class="fu">as.SingleCellExperiment</span>(pbmc), <span class="at">ref =</span> ref,</span>
+<span id="cb32-29"><a href="#cb32-29" aria-hidden="true" tabindex="-1"></a>                <span class="at">labels =</span> ref<span class="sc">$</span>label.main)</span>
+<span id="cb32-30"><a href="#cb32-30" aria-hidden="true" tabindex="-1"></a>pbmc<span class="sc">$</span>SingleR_pruned <span class="ot">&lt;-</span> pred<span class="sc">$</span>pruned.labels</span>
+<span id="cb32-31"><a href="#cb32-31" aria-hidden="true" tabindex="-1"></a><span class="fu">table</span>(<span class="at">Cluster =</span> <span class="fu">Idents</span>(pbmc), <span class="at">SingleR =</span> pbmc<span class="sc">$</span>SingleR_pruned, <span class="at">useNA =</span> <span class="st">"ifany"</span>)</span>
+<span id="cb32-32"><a href="#cb32-32" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb32-33"><a href="#cb32-33" aria-hidden="true" tabindex="-1"></a><span class="co"># Step 5. Assign labels. The mapping below matches THIS run's clusters only;</span></span>
+<span id="cb32-34"><a href="#cb32-34" aria-hidden="true" tabindex="-1"></a><span class="co"># re-derive it from the markers and the cross-table whenever upstream changes.</span></span>
+<span id="cb32-35"><a href="#cb32-35" aria-hidden="true" tabindex="-1"></a>new_ids <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="st">"0"</span> <span class="ot">=</span> <span class="st">"Naive CD4 T"</span>, <span class="st">"1"</span> <span class="ot">=</span> <span class="st">"Memory CD4 T"</span>, <span class="st">"2"</span> <span class="ot">=</span> <span class="st">"CD14+ Mono"</span>,</span>
+<span id="cb32-36"><a href="#cb32-36" aria-hidden="true" tabindex="-1"></a>             <span class="st">"3"</span> <span class="ot">=</span> <span class="st">"B"</span>, <span class="st">"4"</span> <span class="ot">=</span> <span class="st">"CD8 T"</span>, <span class="st">"5"</span> <span class="ot">=</span> <span class="st">"NK"</span>,</span>
+<span id="cb32-37"><a href="#cb32-37" aria-hidden="true" tabindex="-1"></a>             <span class="st">"6"</span> <span class="ot">=</span> <span class="st">"FCGR3A+ Mono"</span>, <span class="st">"7"</span> <span class="ot">=</span> <span class="st">"Platelet"</span>)</span>
+<span id="cb32-38"><a href="#cb32-38" aria-hidden="true" tabindex="-1"></a>pbmc <span class="ot">&lt;-</span> <span class="fu">RenameIdents</span>(pbmc, new_ids)</span>
+<span id="cb32-39"><a href="#cb32-39" aria-hidden="true" tabindex="-1"></a><span class="fu">DimPlot</span>(pbmc, <span class="at">reduction =</span> <span class="st">"umap"</span>, <span class="at">label =</span> <span class="cn">TRUE</span>) <span class="sc">+</span> <span class="fu">NoLegend</span>()</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>在专题 6.2 汇总流程输出的 2,600 个细胞上，这条流程得到 8 个聚类，其注释与证据见 <a href="#tbl-pipeline-clusters" class="quarto-xref">表&nbsp;<span>9</span></a>。</p>
+<div id="tbl-pipeline-clusters" class="quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-tbl figure">
+<figcaption class="quarto-float-caption-top quarto-float-caption quarto-float-tbl" id="tbl-pipeline-clusters-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+表&nbsp;9: 专题 6.2 完整预处理流程输出对象上的聚类与注释（15 个主成分，resolution = 0.5）
+</figcaption>
+<div aria-describedby="tbl-pipeline-clusters-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<table class="caption-top table">
+<thead>
+<tr class="header">
+<th>聚类</th>
+<th>细胞数</th>
+<th>顶部标志基因</th>
+<th>SingleR 主要标签</th>
+<th>判定类型</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>0</td>
+<td>611</td>
+<td>CCR7, LEF1, MAL</td>
+<td>T_cells</td>
+<td>幼稚 CD4 T</td>
+</tr>
+<tr class="even">
+<td>1</td>
+<td>540</td>
+<td>AQP3, CD40LG, TRADD</td>
+<td>T_cells</td>
+<td>记忆 CD4 T</td>
+</tr>
+<tr class="odd">
+<td>2</td>
+<td>496</td>
+<td>FOLR3, S100A12, S100A8, CD14</td>
+<td>Monocyte</td>
+<td>CD14+ 单核</td>
+</tr>
+<tr class="even">
+<td>3</td>
+<td>338</td>
+<td>TCL1A, CD79A, VPREB3</td>
+<td>B_cell</td>
+<td>B 细胞</td>
+</tr>
+<tr class="odd">
+<td>4</td>
+<td>289</td>
+<td>GZMK, GZMH, CCL5, CD8A</td>
+<td>T_cells</td>
+<td>CD8 T</td>
+</tr>
+<tr class="even">
+<td>5</td>
+<td>158</td>
+<td>GNLY, GZMB, SH2D1B</td>
+<td>NK_cell</td>
+<td>NK 细胞</td>
+</tr>
+<tr class="odd">
+<td>6</td>
+<td>156</td>
+<td>CKB, MS4A4A, CDKN1C, MS4A7</td>
+<td>Monocyte</td>
+<td>FCGR3A+ 单核</td>
+</tr>
+<tr class="even">
+<td>7</td>
+<td>12</td>
+<td>LY6G6F, ITGB3, TREML1</td>
+<td>Platelets</td>
+<td>血小板</td>
+</tr>
+</tbody>
+</table>
+</div>
+</figure>
+</div>
+<p>与正文简化路径的 9 个聚类（<a href="#tbl-pbmc3k-observed" class="quarto-xref">表&nbsp;<span>8</span></a>）相比，主要细胞类型的划分与标志基因高度一致。差别在于少了一个独立的树突状细胞簇：在这个对象上，<em>FCER1A</em> 阳性的细胞散布在多个簇中，即使把分辨率提高到 1.0 也没有单独成簇。这提醒我们，上游预处理的选择（环境 RNA 校正、双细胞剔除）会改变下游的聚类结构，而<strong>小细胞群对这些改变最敏感</strong>。若研究关心树突状细胞这类稀有群体，应按”层级注释”一节的做法对相关大类做二次聚类，而不是只依赖一次全局聚类。SingleR 在该对象上有 28 个细胞被 pruned（置为 <code>NA</code>），其中 19 个位于幼稚 CD4 T 簇；聚类 2 中另有 21 个细胞被标为 <code>Pre-B_cell_CD34-</code>，属于需要对照标志基因复核的少数分歧。</p>
+<div class="tip">
+<p><strong>流程中的可选分支：</strong> 上面的脚本取了最常用的默认路径，以下三处应按数据情况调整。其一，若已安装 <code>leidenbase</code>，应在 <code>FindClusters()</code> 中设 <code>algorithm = 4</code> 改用 Leiden，以保证每个聚类内部连通。其二，<code>resolution</code> 不应只试一个值；正式分析中应先用 <code>clustree</code> 在一系列分辨率上检查稳定性，再确定粒度。其三，若专题 6.2 中改用了 <code>SCTransform()</code>，此处不要运行 JackStraw，主成分数可适当多取（如 30 个），<code>clustree</code> 的前缀也应改为 <code>SCT_snn_res.</code>。</p>
+</div>
 <hr>
+</section>
 </section>
 <section id="课后自测-post-lesson-quiz" class="level1" data-number="40">
 <h1 data-number="40"><span class="header-section-number">40</span> 课后自测 (Post-Lesson Quiz)</h1>
