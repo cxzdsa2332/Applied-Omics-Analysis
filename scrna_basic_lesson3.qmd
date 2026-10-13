@@ -38,13 +38,17 @@ crossref:
 **运行环境说明：** 本专题延续 PBMC 3k 数据。下面第一个代码块从本地矩阵重建对象并完成专题 6.2 的预处理，因此本专题可独立运行。基础流程仅需 `Seurat`；`clustree` 与 `SingleR`/`celldex` 小节会各自标注依赖。
 :::
 
+:::note
+**与专题 6.2 的衔接：** 专题 6.2 末尾的"标准预处理流程汇总"给出了完整路径：环境 RNA 校正、质控过滤、双细胞剔除，最后归一化、选高变基因与缩放。本专题正文却采用一条**简化路径**：只做固定阈值质控（`nFeature 200–2500`、`percent.mt < 5`），不做 SoupX 校正与双细胞剔除。这样做有两个理由。其一，本专题聚焦于降维、聚类与注释的原理，简化路径运行快、依赖少。其二，正文引用的全部数值（2,638 个细胞、9 个聚类、各主成分标准差等）都在这条路径上核验过，读者可逐一复现。两条路径的输出对象结构完全相同：`data` 与 `scale.data` layer 齐全，2,000 个高变基因已选定。因此，若读者已在当前会话中运行了专题 6.2 的汇总流程，可以跳过下面的重建代码块，直接从 `RunPCA()` 开始。此时细胞数为 2,600，下游的聚类数与细胞数会与正文略有差异，具体见本专题末尾的流程汇总。
+:::
+
 ```r
 library(Seurat)
 
 SC_DIR <- "/Users/angdong/Documents/bio_example/SingleCell"
 set.seed(42)
 
-# Rebuild and preprocess so this topic runs standalone (see 专题 6.2)
+# Rebuild and preprocess so this topic runs standalone (see Topic 6.2)
 pbmc <- CreateSeuratObject(
     counts = Read10X(file.path(SC_DIR, "filtered_gene_bc_matrices/hg19")),
     project = "pbmc3k", min.cells = 3, min.features = 200
@@ -732,6 +736,92 @@ FeaturePlot(t_cells, features = c("CCR7", "SELL", "IL7R", "GZMK", "FOXP3", "MKI6
 # 方法总结与衔接说明
 
 本专题完成了 scRNA-seq 基础分析的核心闭环：PCA 降维去噪 → KNN 图 + Leiden 聚类 → UMAP 可视化 → 标志基因 + SingleR 双重注释 → 层级二次聚类解析亚型。其中有四个判断点值得单独记住：主成分数量可用肘部图或置换检验确定，但后者不适用于 SCTransform 的残差；聚类应显式选用 Leiden 而非默认的 Louvain，因为只有前者保证社区连通；分辨率不应靠单次试凑，而应用多分辨率树找出数据能稳定支持的粒度；自动注释必须检查 delta 与 pruned 标签，大量细胞无法自信归类通常意味着参考数据集缺少该类型。至此，模块 A 实现了从原始读段到带细胞类型标签的注释图谱的完整流程。这份注释图谱不仅是单细胞分析的终点，更是众多高级分析的起点——它是第 7 章拟时序、细胞通讯、调控网络推断的共同输入，也是第 9 章空间细胞解卷积不可或缺的参考（参见第 9 章）。第 7 章将在此基础上展开多样本整合、动态推断、调控网络与多组学等高级分析。
+
+## 标准分析流程汇总
+
+与专题 6.2 一样，正文为讲清原理而把代码拆散，并穿插了多种参数对比。实际分析时，可把本专题的步骤串成下面这条流程。它直接接续专题 6.2 汇总流程的输出对象，覆盖从主成分分析到细胞类型标签的全部步骤。
+
+```text
+clean object from Topic 6.2 (normalised, HVGs selected, scaled)
+        │
+        ▼
+[1] RunPCA → choose dims (ElbowPlot)
+        │
+        ▼
+[2] FindNeighbors → FindClusters (resolution) → RunUMAP   ← same dims
+        │
+        ▼
+[3] FindAllMarkers                ─┐
+[4] SingleR (reference labels)    ─┴→ cross-check → RenameIdents
+        │
+        ▼
+annotated object for Chapter 7 / Chapter 9
+```
+
+下面的代码块假定当前会话中的 `pbmc` 来自专题 6.2 末尾的汇总流程。它依赖 `SingleR`、`celldex` 与 `dplyr`；`celldex` 首次调用时需联网下载参考数据集。若只想跑通流程而不关心环境 RNA 与双细胞，也可以用本专题开头的重建代码块代替专题 6.2 的汇总流程。
+
+```r
+library(Seurat)
+library(SingleR)
+library(celldex)
+library(dplyr)
+
+set.seed(42)
+n_dims <- 15   # chosen from the ElbowPlot; keep it identical in every step
+
+# Step 1. PCA on the scaled highly variable genes
+pbmc <- RunPCA(pbmc, npcs = 50, verbose = FALSE)
+ElbowPlot(pbmc, ndims = 50)
+
+# Step 2. Graph-based clustering and UMAP, both on the same PCs
+pbmc <- FindNeighbors(pbmc, dims = 1:n_dims, verbose = FALSE) |>
+    FindClusters(resolution = 0.5, verbose = FALSE) |>
+    RunUMAP(dims = 1:n_dims, verbose = FALSE)
+print(table(Idents(pbmc)))
+
+# Step 3. Marker genes: rank by effect size, not by p-value (double dipping)
+markers <- FindAllMarkers(pbmc, only.pos = TRUE, min.pct = 0.25,
+                          logfc.threshold = 0.25, verbose = FALSE)
+markers |>
+    group_by(cluster) |>
+    slice_max(avg_log2FC, n = 5)
+
+# Step 4. Reference-based labels, then cross-check against the clusters
+ref  <- celldex::HumanPrimaryCellAtlasData()
+pred <- SingleR(test = as.SingleCellExperiment(pbmc), ref = ref,
+                labels = ref$label.main)
+pbmc$SingleR_pruned <- pred$pruned.labels
+table(Cluster = Idents(pbmc), SingleR = pbmc$SingleR_pruned, useNA = "ifany")
+
+# Step 5. Assign labels. The mapping below matches THIS run's clusters only;
+# re-derive it from the markers and the cross-table whenever upstream changes.
+new_ids <- c("0" = "Naive CD4 T", "1" = "Memory CD4 T", "2" = "CD14+ Mono",
+             "3" = "B", "4" = "CD8 T", "5" = "NK",
+             "6" = "FCGR3A+ Mono", "7" = "Platelet")
+pbmc <- RenameIdents(pbmc, new_ids)
+DimPlot(pbmc, reduction = "umap", label = TRUE) + NoLegend()
+```
+
+在专题 6.2 汇总流程输出的 2,600 个细胞上，这条流程得到 8 个聚类，其注释与证据见 @tbl-pipeline-clusters。
+
+| 聚类 | 细胞数 | 顶部标志基因 | SingleR 主要标签 | 判定类型 |
+|---|---|---|---|---|
+| 0 | 611 | CCR7, LEF1, MAL | T_cells | 幼稚 CD4 T |
+| 1 | 540 | AQP3, CD40LG, TRADD | T_cells | 记忆 CD4 T |
+| 2 | 496 | FOLR3, S100A12, S100A8, CD14 | Monocyte | CD14+ 单核 |
+| 3 | 338 | TCL1A, CD79A, VPREB3 | B_cell | B 细胞 |
+| 4 | 289 | GZMK, GZMH, CCL5, CD8A | T_cells | CD8 T |
+| 5 | 158 | GNLY, GZMB, SH2D1B | NK_cell | NK 细胞 |
+| 6 | 156 | CKB, MS4A4A, CDKN1C, MS4A7 | Monocyte | FCGR3A+ 单核 |
+| 7 | 12 | LY6G6F, ITGB3, TREML1 | Platelets | 血小板 |
+
+: 专题 6.2 完整预处理流程输出对象上的聚类与注释（15 个主成分，resolution = 0.5） {#tbl-pipeline-clusters}
+
+与正文简化路径的 9 个聚类（@tbl-pbmc3k-observed）相比，主要细胞类型的划分与标志基因高度一致。差别在于少了一个独立的树突状细胞簇：在这个对象上，*FCER1A* 阳性的细胞散布在多个簇中，即使把分辨率提高到 1.0 也没有单独成簇。这提醒我们，上游预处理的选择（环境 RNA 校正、双细胞剔除）会改变下游的聚类结构，而**小细胞群对这些改变最敏感**。若研究关心树突状细胞这类稀有群体，应按"层级注释"一节的做法对相关大类做二次聚类，而不是只依赖一次全局聚类。SingleR 在该对象上有 28 个细胞被 pruned（置为 `NA`），其中 19 个位于幼稚 CD4 T 簇；聚类 2 中另有 21 个细胞被标为 `Pre-B_cell_CD34-`，属于需要对照标志基因复核的少数分歧。
+
+:::tip
+**流程中的可选分支：** 上面的脚本取了最常用的默认路径，以下三处应按数据情况调整。其一，若已安装 `leidenbase`，应在 `FindClusters()` 中设 `algorithm = 4` 改用 Leiden，以保证每个聚类内部连通。其二，`resolution` 不应只试一个值；正式分析中应先用 `clustree` 在一系列分辨率上检查稳定性，再确定粒度。其三，若专题 6.2 中改用了 `SCTransform()`，此处不要运行 JackStraw，主成分数可适当多取（如 30 个），`clustree` 的前缀也应改为 `SCT_snn_res.`。
+:::
 
 ---
 
