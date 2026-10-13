@@ -229,6 +229,10 @@ cat("Cells after QC:", ncol(pbmc), "\n")
 
 做法是：先用宽松条件保留全部细胞、跑一遍快速聚类，再看被标记为"待删"的细胞落在哪些聚类里。若它们**零散分布**于各个聚类，说明删的是各处的低质量细胞，符合预期；若它们**高度集中**在某一两个聚类，那就危险了——很可能整个细胞类型正在被系统性地删除。
 
+:::note
+**关于本专题中的"快速聚类"：** 聚类的原理与调参是专题 6.3 的内容，但质控阶段已经离不开它。本专题有四处需要细胞分组：此处的过滤核验、SoupX 估计污染比例、DoubletFinder 估计同源双细胞比例，以及解离应激的按簇比较。这些场景只需要一个粗略的分组，因此统一采用"快速聚类"：以默认参数依次运行 `NormalizeData()` → `FindVariableFeatures()` → `ScaleData()` → `RunPCA()` → `FindNeighbors()` → `FindClusters()`。读者此时可将它视为一个黑箱工具，不必深究参数（参见专题 6.3）。快速聚类的结果只服务于质控判断，不是最终的细胞分群；后文再用到时只作简要说明。
+:::
+
 ```r
 library(Seurat)
 
@@ -570,20 +574,18 @@ table(pbmc[[df_col[1]]][, 1])
 后果是一类隐蔽的错误：分析者可能得到一群"高表达 FOS/JUN 的激活态细胞"，并赋予其生物学意义，而它实际上只反映该批细胞在解离时承受了更多应激。由于不同样本的解离时长与操作手法常有差异，这种伪影还会伪装成组间差异。
 
 :::warning
-**本节的评分函数需要先完成归一化与降维：** `AddModuleScore()` 与 `CellCycleScoring()` 都在归一化后的表达值上计算，`DimPlot(reduction = "pca")` 还需要先跑 PCA。本专题把这两节放在归一化小节之前，是为了保持"先识别伪影、再决定如何处理"的叙述顺序；但在实际执行时，必须先做一遍归一化与降维。下面的代码块显式包含了这些前置步骤，可直接运行。
+**本节的评分函数需要先完成归一化与降维：** `AddModuleScore()` 与 `CellCycleScoring()` 都在归一化后的表达值上计算，`DimPlot(reduction = "pca")` 还需要先跑 PCA。本专题把这两节放在归一化小节之前，是为了保持"先识别伪影、再决定如何处理"的叙述顺序。实际执行时无需重做：上一节为 DoubletFinder 运行的快速聚类已完成归一化、PCA 与聚类，本节直接沿用该对象。下面的代码块只检查这些前置状态是否存在；若单独运行本节而检查失败，应先回到双细胞检测一节运行其预处理代码。
 :::
 
 ```r
 library(Seurat)
 
-# Prerequisite: these scores are computed on normalised data, and the PCA plot
-# below needs a reduction. Run a minimal pipeline first.
-pbmc <- NormalizeData(pbmc, verbose = FALSE) |>
-    FindVariableFeatures(verbose = FALSE) |>
-    ScaleData(verbose = FALSE) |>
-    RunPCA(npcs = 30, verbose = FALSE) |>
-    FindNeighbors(dims = 1:15, verbose = FALSE) |>
-    FindClusters(resolution = 0.5, verbose = FALSE)
+# Reuse the quick-clustering state from the DoubletFinder section:
+# normalised data, PCA and cluster labels must all be present.
+stopifnot("Run the DoubletFinder preprocessing block first" =
+              "data" %in% Layers(pbmc) &&
+              "pca" %in% Reductions(pbmc) &&
+              "seurat_clusters" %in% colnames(pbmc[[]]))
 ```
 
 ```r
@@ -597,10 +599,37 @@ stress_genes <- intersect(stress_genes, rownames(pbmc))
 cat("Stress genes found in this dataset:", length(stress_genes), "\n")
 
 pbmc <- AddModuleScore(pbmc, features = list(stress_genes), name = "stress")
+```
+
+```r
+#| label: fig-stress-vln
+#| fig-cap: "PBMC 3k 各簇的解离应激评分分布。横轴为聚类编号，纵轴为 AddModuleScore 计算的 stress1 得分（目标基因集平均表达减去表达水平匹配的对照基因集平均表达）。除血小板簇外，各簇得分普遍略高于 0 且分布大幅重叠，没有单独抬升的离群簇。"
+library(Seurat)
 
 # If one cluster stands out on this score, suspect a dissociation artefact
 VlnPlot(pbmc, features = "stress1", group.by = "seurat_clusters", pt.size = 0)
 ```
+
+在本专题的流程中，此处的对象是环境 RNA 校正后重建的 2,700 个细胞，沿用的快速聚类在分辨率 0.5 下得到 8 个簇。依据经典标志基因（如 *IL7R*、*LYZ*、*MS4A1*、*GNLY*、*PPBP*）初步判断，它们依次为 CD4 T（簇 0）、CD14+ 单核（簇 1）、B（簇 2）、CD8 T（簇 3）、FCGR3A+ 单核（簇 4）、NK（簇 5）、DC（簇 6）与血小板（簇 7）。这里的细胞类型名称只是为了便于解读应激信号，系统的细胞类型注释方法见专题 6.3。下表汇总了 @fig-stress-vln 中各簇的评分。
+
+| 簇 | 细胞类型 | 细胞数 | stress1 中位数 | 得分 > 0.5 的比例 |
+|---|---|---|---|---|
+| 0 | CD4 T | 1,187 | 0.50 | 50% |
+| 1 | CD14+ 单核 | 489 | 0.30 | 23% |
+| 2 | B | 353 | 0.21 | 23% |
+| 3 | CD8 T | 322 | 0.23 | 26% |
+| 4 | FCGR3A+ 单核 | 162 | 0.17 | 10% |
+| 5 | NK | 140 | −0.07 | 9% |
+| 6 | DC | 33 | 0.31 | 15% |
+| 7 | 血小板 | 14 | −0.07 | 0% |
+
+**主要结果。** 第一，应激评分在各细胞类型中普遍偏高，没有离群簇。除血小板外，各簇中位数均在 0 附近或以上，分布大幅重叠，符合"随机散布于各细胞类型"的模式。第二，信号几乎全部来自即早基因。*FOS*、*JUNB*、*JUN* 在多数簇中有 65%–100% 的细胞检出；热休克基因则很少，*HSPA1A* 检出率仅 3%–15%，*HSPA1B* 多在 1% 左右，*EGR1* 不超过 5%。第三，CD4 T 簇得分最高，但其分布是连续的单峰，表现为整个簇的平移，而非簇内分出一个"高应激亚群"。第四，评分与质量指标无关：stress1 与 nCount_RNA、percent.mt 的 Spearman 相关系数分别为 0.08 与 −0.10。
+
+**结论。** PBMC 3k 中没有证据表明存在解离伪影驱动的细胞群，因此本数据不需要回归应激基因。这与样本来源相符：PBMC 经密度梯度离心分离，不经过酶解，因此缺少酶解应激常伴随的热休克反应。普遍存在的 *FOS*/*JUN* 表达更可能来自离体处理与等待时间，或是血细胞的基线表达。T 细胞中 *JUN*、*JUNB* 的基线表达较高，这可能部分解释了 CD4 T 簇的整体平移。NK 与血小板簇得分偏低，主要是这些基因在两类细胞中表达本就较低；血小板簇仅 14 个细胞，不宜过度解读。
+
+:::tip
+**小提琴图的局限：** 小提琴图只能比较已有的簇，无法回答"应激是否制造了某个簇"。更直接的检查是 `FeaturePlot(pbmc, features = "stress1")`：观察高分细胞是否在 UMAP 上自成一团。若它们形成独立的岛屿，就提示存在一个由应激驱动的伪簇。此外，模块得分是相对于对照基因集计算的，0.5 这类绝对数值本身没有独立含义，只有簇间的相对高低可以比较。
+:::
 
 :::warning
 **不要急着把应激基因回归掉：** 发现应激信号后的第一反应常是"回归掉它"，但这可能抹去真实信号——在免疫学研究中，*FOS*/*JUN* 的表达本身就是 T 细胞活化的真实标志。正确的顺序是先**判断来源**：若高应激评分的细胞随机散布于各细胞类型，多半是解离伪影；若它集中在特定的、生物学上确实可能被激活的细胞类型中，则可能是真实信号。只有确认为伪影时才考虑回归或剔除，并在方法部分明确说明。从实验端缩短解离时间、使用冷活性蛋白酶或改做单核测序（snRNA-seq），比任何事后校正都更有效。
@@ -612,7 +641,13 @@ VlnPlot(pbmc, features = "stress1", group.by = "seurat_clusters", pt.size = 0)
 
 ![真核细胞周期各时相示意图。G1、S、G2、M 四个时相依次循环，S 期与 G2M 期细胞的转录谱差异显著，是单细胞聚类中常见的混杂因素。](https://upload.wikimedia.org/wikipedia/commons/a/a4/Normal_Cell_Life_Cycle.png){#fig-cell-cycle width=85%}
 
-Seurat 内置了基于经典周期基因集的评分函数，可为每个细胞打出 S 期与 G2M 期得分并指派周期阶段。
+如 @fig-cell-cycle 所示，细胞周期是一个循环过程。Seurat 内置了基于经典周期基因集的评分函数 `CellCycleScoring()`，可为每个细胞打出 S 期与 G2M 期得分并指派周期阶段。它由三个部分构成：一份预先整理的基因集、一个通用的模块评分算法、一条简单的阶段判定规则。理解这三部分，才能正确解读它的输出。
+
+### 周期基因集的来源
+
+Seurat 自带的 `cc.genes` 对象包含两组人类基因：43 个 S 期基因与 54 个 G2M 期基因。它们来自 Tirosh 等人在黑色素瘤单细胞研究中整理的周期标志基因集（Tirosh et al., 2016）。S 期基因以 DNA 复制机器为主，如 *MCM4*–*MCM7*（复制解旋酶组分）、*PCNA*（DNA 聚合酶滑动钳）与 *TYMS*（胸苷酸合成酶）。G2M 期基因则以有丝分裂机器为主，如 *CDK1*、*TOP2A*、*MKI67*、*TPX2* 与 *BIRC5*。这些基因的转录随周期时相呈周期性涨落，因此其集体表达水平可以指示细胞所处的时相。
+
+`cc.genes.updated.2019` 是同一组基因按 HGNC 现行命名自动更新后的版本，两组的基因数保持不变。多数改动是真正的改名，例如 *MLF1IP* 改为 *CENPU*、*FAM64A* 改为 *PIMREG*、*HN1* 改为 *JPT1*。但自动的别名解析也造成了三处替换：*MCM2*、*RPA2*、*BRIP1* 被换成了 *MCM7*、*POLR1B*、*MRPL36*。这类替换通常源于别名冲突，即另一个基因的历史别名恰好与原符号相同。被移除的三个基因本是典型的 S 期基因，而 *POLR1B* 与 *MRPL36* 并非经典周期基因。这三处替换只占 S 期基因集的一小部分，对整体得分影响有限。若比对使用的是较新的参考注释，仍应选用更新版，否则改名基因会因匹配失败而被静默丢弃。
 
 ```r
 library(Seurat)
@@ -621,19 +656,74 @@ library(Seurat)
 s_genes   <- cc.genes.updated.2019$s.genes
 g2m_genes <- cc.genes.updated.2019$g2m.genes
 
+cat("S genes:", length(s_genes), "  G2M genes:", length(g2m_genes), "\n")
+cat("S examples  :", paste(head(s_genes, 8), collapse = ", "), "\n")
+cat("G2M examples:", paste(head(g2m_genes, 8), collapse = ", "), "\n")
+
+# Check how many genes are actually present in this dataset
+cat("S genes found  :", sum(s_genes %in% rownames(pbmc)), "\n")
+cat("G2M genes found:", sum(g2m_genes %in% rownames(pbmc)), "\n")
+```
+
+:::warning
+**基因集只适用于人类基因符号：** `cc.genes` 中均为人类基因符号（全大写）。小鼠数据的基因符号为首字母大写（如 *Mcm5*、*Cdk1*），直接使用会几乎全部匹配失败。此时需先通过同源基因映射（如 `biomaRt` 或 `babelgene` 包）转换为小鼠同源基因。上面代码块中的"found"计数就是用于发现此类问题的检查，评分前应当先确认大部分基因已被匹配。
+:::
+
+### 评分算法：与对照基因集相比较
+
+`CellCycleScoring()` 本身并不包含独立的评分逻辑，它内部调用的是通用模块评分函数 `AddModuleScore()`（上一节的应激评分用的也是它）。该算法同样源自 Tirosh 等人的工作，其核心是**减去一个表达水平匹配的随机对照基因集**。具体步骤如下：
+
+1. 计算每个基因在全部细胞中的平均表达量，并按此将所有基因划分为 24 个等量分箱（`nbin = 24`）。
+2. 对目标基因集中的每一个基因，从**其所在的同一分箱**中随机抽取若干对照基因。`CellCycleScoring()` 将抽取数设为两个基因集中较小者的大小，即 43 个。
+3. 对每个细胞，计算目标基因集的平均表达，再减去对照基因集的平均表达，差值即为该细胞的得分。
+
+之所以需要对照基因集，是因为原始的平均表达会被与周期无关的因素抬高。测序深度较高或整体转录活跃的细胞，几乎所有基因的表达都偏高。按表达水平匹配的对照基因承受同样的偏移，二者相减后这部分偏移即被抵消。因此 `S.Score` 的含义是：**该细胞的 S 期基因表达比同等表达水平的随机基因高出多少**。得分为正表示该程序被激活，为负则表示低于背景。
+
+:::note
+**得分具有随机性：** 对照基因是随机抽取的，`AddModuleScore()` 默认以 `seed = 1` 固定随机种子，因此同一数据的结果可重复。但更换种子、基因集或细胞子集后，得分会出现小幅波动。处于判定边界附近的细胞，其周期阶段标签可能随之改变，因此不宜对单个细胞的标签作过细解读。
+:::
+
+### 阶段判定规则
+
+得到两个得分后，`CellCycleScoring()` 用一条很简单的规则指派周期阶段：
+
+- 若 `S.Score` 与 `G2M.Score` **均小于 0**，判为 **G1**；
+- 否则取得分较高者：`S.Score` 较大判为 **S**，`G2M.Score` 较大判为 **G2M**。
+
+这条规则揭示了一个容易被误读的细节：**"G1"标签实际上是"未检测到 S 或 G2M 程序"的意思**。它包含了真正处于 G1 期的细胞，也包含了处于 G0 期、已完全退出周期的静息细胞。在 PBMC 这类以静息、终末分化细胞为主的样本中，标为 G1 的细胞绝大多数并非"正在 G1 期等待分裂"，而是根本不在增殖。此外，得分是相对于数据内部背景计算的；即使数据中几乎没有增殖细胞，也会有部分细胞因噪声得到略大于 0 的得分而被标为 S 或 G2M。因此，应结合得分的实际大小与 *MKI67*、*TOP2A* 等增殖标志基因的表达来解读标签，而不是只看 `table(pbmc$Phase)` 的计数。
+
+下面的代码运行评分，并用判定规则手工复现 Seurat 给出的标签，以确认上述理解无误：
+
+```r
+library(Seurat)
+
 pbmc <- CellCycleScoring(pbmc, s.features = s_genes,
                          g2m.features = g2m_genes, set.ident = FALSE)
 
 table(pbmc$Phase)
+
+# Reproduce the phase assignment rule by hand
+manual_phase <- with(pbmc[[]], ifelse(
+    S.Score < 0 & G2M.Score < 0, "G1",
+    ifelse(S.Score > G2M.Score, "S", "G2M")))
+cat("Manual rule matches Seurat:", all(manual_phase == pbmc$Phase), "\n")
+
+# Score distributions: how far above zero are the "S" and "G2M" cells?
+summary(pbmc$S.Score)
+summary(pbmc$G2M.Score)
 ```
 
+@fig-cell-cycle-pca 将周期阶段标签投影到主成分空间，用于判断细胞周期是否在驱动降维结构。
+
 ```r
-#| label: fig-cell-cycle
+#| label: fig-cell-cycle-pca
 #| fig-cap: "PBMC 3k 数据按细胞周期阶段着色的主成分分布。每个点为一个细胞，颜色表示 CellCycleScoring 指派的周期阶段（G1、S、G2M）。若各阶段细胞在主成分空间中彼此混杂、无明显分离，说明细胞周期不是该数据的主要变异来源，无需回归；若不同阶段沿某个主成分明显分开，则细胞周期正在驱动降维结构，需考虑回归处理。"
 library(Seurat)
 
 DimPlot(pbmc, reduction = "pca", group.by = "Phase")
 ```
+
+### 回归细胞周期效应
 
 是否要回归掉细胞周期，取决于它是噪声还是信号：
 
@@ -644,6 +734,85 @@ library(Seurat)
 # and proliferation is not part of the research question
 pbmc <- ScaleData(pbmc, vars.to.regress = c("S.Score", "G2M.Score"))
 ```
+
+这一行代码在内部对**每个基因单独**做三件事。第一，以该基因在 `data` layer 中的归一化表达值 $y_i$ 为因变量，以两个周期得分为自变量，拟合一个普通线性回归：
+
+$$y_{ij} = \beta_{i0} + \beta_{i1}\,\text{S.Score}_j + \beta_{i2}\,\text{G2M.Score}_j + \varepsilon_{ij}$$
+
+第二，丢弃拟合值，只保留残差 $\hat{\varepsilon}_{ij}$，即该基因表达中**不能被周期得分线性解释**的部分。第三，对残差做 z-score 标准化（参见下文"数据缩放"一节），并把大于 10 的值截断为 10（`scale.max = 10`）。结果写入 `scale.data` layer，供 PCA、聚类与 UMAP 使用。
+
+这一机制有两个直接推论。其一，回归只修改 `scale.data`，`data` layer 保持不变；因此它影响的是降维与聚类的结构，而不影响后续基于 `data` 的差异表达与 `FeaturePlot()`。其二，线性回归只能移除与得分**成线性关系**的那部分变异；若周期效应是非线性的，或周期得分本身估计不准，残余的周期信号仍会留在数据中。
+
+#### 一个最简单的模拟例子
+
+下面用模拟数据演示这一原理。数据仅用于说明回归的数学含义，不代表真实表达分布。设想 200 个细胞分属 T、B 两种类型，每种类型中一半细胞正在增殖（G2M 得分约为 1），另一半静息（约为 0）。我们构造三个基因：只区分细胞类型的标志基因 `marker`、只受周期驱动的 `top2a`，以及二者兼有的 `mixed`。为简洁起见，这里只回归 G2M 得分一个变量，也省略了标准化步骤。
+
+```r
+# Toy data: 200 cells, two cell types (T, B); half of each type is cycling
+set.seed(42)
+n         <- 200
+cell_type <- rep(c("T", "B"), each = n / 2)
+cycling   <- rep(c(FALSE, TRUE), times = n / 2)
+g2m_score <- ifelse(cycling, rnorm(n, 1, 0.2), rnorm(n, 0, 0.2))
+
+# Three genes on the log-normalised scale
+marker <- ifelse(cell_type == "T", 3, 1) + rnorm(n, 0, 0.3)   # cell type only
+top2a  <- 0.5 + 2 * g2m_score + rnorm(n, 0, 0.3)               # cell cycle only
+mixed  <- ifelse(cell_type == "T", 3, 1) + 1.5 * g2m_score +
+          rnorm(n, 0, 0.3)                                     # both
+expr <- rbind(marker = marker, top2a = top2a, mixed = mixed)
+
+# The core of vars.to.regress: fit y ~ score for each gene, keep the residuals
+expr_reg <- t(apply(expr, 1, function(y) residuals(lm(y ~ g2m_score))))
+
+summarise_genes <- function(m) data.frame(
+    cor_with_G2M = round(apply(m, 1, cor, g2m_score), 2),
+    T_minus_B    = round(apply(m, 1, function(y)
+        mean(y[cell_type == "T"]) - mean(y[cell_type == "B"])), 2))
+
+cat("Before regression:\n"); print(summarise_genes(expr))
+cat("\nAfter regression:\n");  print(summarise_genes(expr_reg))
+```
+
+```text
+Before regression:
+       cor_with_G2M T_minus_B
+marker        -0.05      1.96
+top2a          0.97     -0.02
+mixed          0.61      1.96
+
+After regression:
+       cor_with_G2M T_minus_B
+marker            0      1.96
+top2a             0      0.03
+mixed             0      1.99
+```
+
+输出中的两列分别衡量周期信号（与 G2M 得分的相关系数）与细胞类型信号（T 与 B 的均值差）。回归后，三个基因与 G2M 得分的相关系数全部归零，而 T 与 B 之间约为 2 的差异完整保留。`top2a` 的变化最能说明问题：回归前它几乎完全由周期决定（相关系数 0.97），回归后只剩噪声，不再能把增殖细胞与静息细胞分开。`mixed` 则说明回归是"按比例扣除"而非"整体删除"：它的周期成分被去掉，细胞类型成分不受影响。
+
+这个例子之所以干净，是因为模拟时增殖细胞在 T 与 B 中各占一半，周期与细胞类型互不相关。若增殖细胞全部集中在某一种类型中，周期得分就与细胞类型高度相关，回归会把一部分真实的细胞类型差异当作周期效应一并扣除。这正是下文 `:::note` 中强调"判断依据始终是研究问题"的原因。
+
+#### 在真实数据上核对
+
+模拟例子中的手工回归与 Seurat 的实现是同一回事。下面在 PBMC 3k 上手工复现 `ScaleData()` 对一个基因的输出，以确认这一点：
+
+```r
+library(Seurat)
+
+dm  <- GetAssayData(pbmc, layer = "data")
+sdm <- GetAssayData(pbmc, layer = "scale.data")
+md  <- pbmc[[]]
+
+gene <- "LYZ"
+res  <- residuals(lm(dm[gene, ] ~ md$S.Score + md$G2M.Score))
+z    <- pmin((res - mean(res)) / sd(res), 10)   # z-score, then clip at 10
+
+cat("max |manual - Seurat|:", max(abs(z - sdm[gene, ])), "\n")
+cat("cor with G2M.Score, before:", round(cor(dm[gene, ], md$G2M.Score), 3),
+    " after:", round(cor(sdm[gene, ], md$G2M.Score), 3), "\n")
+```
+
+在本专题的流程中，手工结果与 Seurat 的 `scale.data` 完全一致（最大差值为 0），LYZ 与 G2M 得分的相关系数从 −0.071 变为 0。对 *TOP2A* 做同样的检查会发现，回归后的相关系数是 −0.163 而非 0。原因在于第三步的截断：*TOP2A* 在 PBMC 中极为稀疏，少数表达它的细胞残差远超 10 个标准差，被截断后线性回归"恰好消除相关"的性质随之被打破。
 
 :::note
 **何时不该回归细胞周期：** 若研究对象本身就与增殖有关——肿瘤细胞的增殖异质性、干细胞的自我更新、发育中的祖细胞扩增——那么细胞周期信号正是研究要观察的生物学，回归掉它等于删除了答案。一个折中方案是回归 `S.Score - G2M.Score` 的差值而非二者本身：这样可以消除增殖细胞内部不同周期阶段的差异，同时保留"增殖 vs 静息"这一层信息。判断依据始终是研究问题，而非某个固定流程。
@@ -813,6 +982,98 @@ cat("mean of per-gene SDs :", round(mean(apply(sd_mat, 1, sd)), 4), "\n")
 
 贯穿全篇的判断原则是：**每一次"校正"都在移除信号，因此必须先确认要移除的确实是伪影**。环境 RNA 校正过度会抹去真实的低表达基因，回归应激基因可能删掉真实的免疫活化，回归细胞周期则可能删掉增殖研究的答案本身。
 
+## 标准预处理流程汇总
+
+正文为了逐一讲清原理，各节的代码分散且多次重建对象。实际分析时，应把它们按下面的顺序串成一条流程。该顺序遵循两条原则：校正在前、过滤在后，使过滤只作用于校正后的计数；双细胞检测在基础质控之后、最终归一化之前，使低质量细胞不干扰双细胞模型，而最终的预处理只作用于确认保留的单细胞。
+
+```text
+raw + filtered matrices
+        │
+        ▼
+[1] Ambient RNA correction (SoupX)   ← quick clustering on the filtered matrix
+        │
+        ▼
+[2] Rebuild object → QC filtering (nFeature, nCount, percent.mt)
+        │
+        ▼
+[3] Doublet detection (DoubletFinder) → keep singlets
+        │                            ← quick clustering on the filtered object
+        ▼
+[4] NormalizeData → FindVariableFeatures → CellCycleScoring → ScaleData
+        │
+        ▼
+clean object for Topic 6.3 (PCA, clustering, annotation)
+```
+
+下面的代码块把上述四步合并为一个可独立运行的脚本。它依赖 `SoupX` 与 `DoubletFinder`（安装方式见各自小节），在本机上完整运行约需一到两分钟，其中大部分时间花在 `paramSweep()` 上。为避免重复，快速聚类被封装为一个辅助函数，其参数与正文一致。
+
+```r
+library(Seurat)
+library(SoupX)
+library(DoubletFinder)
+
+SC_DIR <- "/Users/angdong/Documents/bio_example/SingleCell"
+
+# Quick clustering helper: a rough grouping used only for QC decisions
+quick_cluster <- function(obj, dims = 1:30) {
+    NormalizeData(obj, verbose = FALSE) |>
+        FindVariableFeatures(verbose = FALSE) |>
+        ScaleData(verbose = FALSE) |>
+        RunPCA(npcs = max(dims), verbose = FALSE) |>
+        FindNeighbors(dims = dims, verbose = FALSE) |>
+        FindClusters(resolution = 0.5, verbose = FALSE)
+}
+
+# Step 1. Ambient RNA correction (needs raw + filtered matrices)
+tod <- Read10X(file.path(SC_DIR, "raw_gene_bc_matrices/hg19"))
+toc <- Read10X(file.path(SC_DIR, "filtered_gene_bc_matrices/hg19"))
+sc  <- SoupChannel(tod, toc)
+quick <- quick_cluster(CreateSeuratObject(toc), dims = 1:20)
+sc  <- setClusters(sc, setNames(as.character(Idents(quick)), colnames(quick)))
+sc  <- autoEstCont(sc, doPlot = FALSE)
+corrected_counts <- adjustCounts(sc, roundToInt = TRUE)
+
+# Step 2. Build the object on corrected counts, then filter low-quality cells
+pbmc <- CreateSeuratObject(counts = corrected_counts, project = "pbmc3k",
+                           min.cells = 3, min.features = 200)
+pbmc[["percent.mt"]] <- PercentageFeatureSet(pbmc, pattern = "^MT-")
+pbmc <- subset(pbmc, subset = nFeature_RNA > 200 & nFeature_RNA < 2500 &
+                              percent.mt < 5)
+cat("Cells after QC:", ncol(pbmc), "\n")
+
+# Step 3. Doublet detection on a quick-clustered object, then remove doublets
+pbmc <- quick_cluster(pbmc)
+sweep_stats <- summarizeSweep(paramSweep(pbmc, PCs = 1:30, sct = FALSE),
+                              GT = FALSE)
+bcmvn   <- find.pK(sweep_stats)
+best_pK <- as.numeric(as.character(bcmvn$pK[which.max(bcmvn$BCmetric)]))
+nExp    <- round(ncol(pbmc)^2 / 1000 * 0.008 *
+                 (1 - modelHomotypic(Idents(pbmc))))
+pbmc <- doubletFinder(pbmc, PCs = 1:30, pN = 0.25, pK = best_pK,
+                      nExp = nExp, sct = FALSE)
+df_col <- grep("^DF.classifications", colnames(pbmc[[]]), value = TRUE)[1]
+pbmc <- pbmc[, pbmc[[df_col]][, 1] == "Singlet"]
+cat("Cells after doublet removal:", ncol(pbmc), "\n")
+
+# Step 4. Final normalisation, HVG selection, cell-cycle scoring and scaling
+pbmc <- NormalizeData(pbmc, verbose = FALSE) |>
+    FindVariableFeatures(selection.method = "vst", nfeatures = 2000,
+                         verbose = FALSE)
+pbmc <- CellCycleScoring(pbmc, s.features = cc.genes.updated.2019$s.genes,
+                         g2m.features = cc.genes.updated.2019$g2m.genes)
+# Add vars.to.regress only if a diagnostic plot shows a dominant confounder
+pbmc <- ScaleData(pbmc, verbose = FALSE)
+
+cat("Final object:", nrow(pbmc), "genes x", ncol(pbmc), "cells;",
+    length(VariableFeatures(pbmc)), "HVGs\n")
+```
+
+在 PBMC 3k 上，这条流程的输出依次为：SoupX 估计的污染比例约 6%；校正后通过质控的细胞 2,641 个；DoubletFinder 判定并移除 41 个双细胞，最终得到 13,664 个基因 × 2,600 个细胞、2,000 个高变基因的对象。质控后的细胞数比正文未校正时的 2,638 个多出 3 个，原因是扣除背景计数后，少数细胞的线粒体比例或基因数越过了阈值边界。
+
+:::tip
+**流程中的可选分支：** 上面的脚本取了最常用的默认路径，以下三处应按数据情况调整。其一，质控阈值可换成正文中基于 MAD 的自适应阈值，并照例核验被删细胞的身份。其二，解离应激与细胞周期只做评估、默认不回归；只有诊断表明某一因素主导了降维结构时，才在 `ScaleData()` 中加入 `vars.to.regress`。其三，第 4 步可整体替换为 `SCTransform(pbmc)`，它一次完成归一化、高变基因选择与缩放；此时应在 SCTransform 之后再运行 `CellCycleScoring()`，并留意默认 assay 已切换为 `SCT`。
+:::
+
 专题 6.3 将在这份干净数据之上进行降维、聚类与细胞类型注释，回答 scRNA-seq 最核心的问题：这些细胞各是什么类型？
 
 ---
@@ -847,6 +1108,8 @@ cat("mean of per-gene SDs :", round(mean(apply(sd_mat, 1, sd)), 4), "\n")
 
 14. 一位研究者为追求数据纯净，将质控阈值设为 `nFeature > 1000` 且 `percent.mt < 5%`，结果发现某个预期存在的静息淋巴细胞群消失了。请解释原因，并提出改进建议。
 
+15. `CellCycleScoring()` 的 S 期得分是如何计算的？为什么要减去对照基因集的平均表达？在 PBMC 数据中，被标为 "G1" 的细胞应如何理解？
+
 <details>
 <summary><strong>参考答案 (Reference Answers)</strong></summary>
 
@@ -877,5 +1140,7 @@ cat("mean of per-gene SDs :", round(mean(apply(sd_mat, 1, sd)), 4), "\n")
 13. *因为同一种细胞处于 S 期与 G2M 期时表达谱差异可能大过它与另一种细胞类型的差异，导致聚类按周期阶段而非细胞类型分开。在研究对象本身与增殖有关时不应回归：肿瘤细胞的增殖异质性、干细胞自我更新、发育中祖细胞扩增——此时细胞周期信号正是要观察的生物学，回归掉等于删除答案。折中方案是回归 `S.Score - G2M.Score` 的差值而非二者本身：这样消除了增殖细胞内部不同周期阶段之间的差异，同时保留"增殖 vs 静息"这一层信息。*
 
 14. *该阈值过严。静息淋巴细胞（如静息 T/B 细胞）本身体积小、RNA 含量低、检出基因数天然偏低（常 < 1000），因此被 `nFeature > 1000` 整体误删；同时部分细胞类型正常线粒体比例也可能略高于 5%。改进：先可视化本数据各指标分布与被删细胞的身份（可先用宽松阈值保留、聚类后再看被删的是哪一群），改用基于 MAD 的自适应下限而非固定的 1000，并结合组织类型放宽线粒体阈值，确保删除的是噪声而非真实的稀有/低 RNA 细胞群。*
+
+15. *它调用 `AddModuleScore()`：先按平均表达量把所有基因分入 24 个分箱，再为 S 期基因集中的每个基因从同一分箱随机抽取对照基因，细胞得分等于 S 期基因的平均表达减去对照基因的平均表达。减去对照是为了抵消测序深度或整体转录活跃度造成的普遍偏移，因为表达水平匹配的对照基因承受同样的偏移。判定规则是两个得分均小于 0 即标为 G1，因此 "G1" 实际含义是"未检测到 S 或 G2M 程序"；PBMC 以静息、终末分化细胞为主，这些细胞多数处于 G0 而非真正的 G1 期。*
 
 </details>
