@@ -6,7 +6,7 @@
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
-<meta name="dcterms.date" content="2026-10-12">
+<meta name="dcterms.date" content="2026-10-18">
 
 <title>31&nbsp; 单细胞转录组基础：上游处理、质量控制与标准分析流程 – Introduction to Applied High-throughput Biological Data Analysis</title>
 <style>
@@ -646,7 +646,7 @@ ul.task-list li input[type="checkbox"] {
     <div>
     <div class="quarto-title-meta-heading">Published</div>
     <div class="quarto-title-meta-contents">
-      <p class="date">October 12, 2026</p>
+      <p class="date">October 18, 2026</p>
     </div>
   </div>
   
@@ -740,12 +740,14 @@ ul.task-list li input[type="checkbox"] {
 <li>PCA 在 scRNA-seq 中的作用：消除基因空间的冗余；<code>ElbowPlot()</code> 选择主成分数量；HVG 仅用于 PCA 输入而非全基因组</li>
 <li>KNN 图构建：<code>FindNeighbors()</code> 中 <code>dims</code> 参数（使用的 PC 数）和 <code>k.param</code>（邻居数）的影响</li>
 <li>Leiden 聚类（<code>FindClusters()</code>）：分辨率（<code>resolution</code>）参数对聚类粒度的控制；0.3–0.8 为常用范围</li>
+<li>聚类质量评估：clustree 多分辨率树；轮廓系数（silhouette width）定位薄弱边界；子抽样重聚类的 ARI 与逐簇 Jaccard 稳定性</li>
 <li>UMAP vs t-SNE：UMAP 保留全局结构的优势；t-SNE 参数（perplexity）对局部结构的影响；两者均不保留定量距离意义</li>
-<li>Marker 基因鉴定：<code>FindAllMarkers()</code> 的 Wilcoxon 秩和检验；<code>min.pct</code> 和 <code>logfc.threshold</code> 参数</li>
-<li>自动细胞类型注释：SingleR 的参考数据库匹配策略（ENCODE, HCA）；CellTypist 的机器学习分类器</li>
+<li>Marker 基因鉴定：<code>FindAllMarkers()</code> 的 Wilcoxon 秩和检验；<code>min.pct</code> 和 <code>logfc.threshold</code> 参数；近缘细胞群的一对一比较（<code>FindMarkers()</code>）与基于 AUC 的区分能力评估</li>
+<li>自动细胞类型注释的六类策略：参考相关性（SingleR）、标志基因打分（scType）、参考映射（Seurat 标签传递 / Azimuth）、机器学习分类器（CellTypist）、深度生成模型（scANVI）、大语言模型（GPTCelltype）</li>
+<li>参考数据集（HPCA vs MonacoImmuneData）与标志基因库的质量对注释结果的影响；多工具结果的综合判读</li>
 <li>注释验证：<code>FeaturePlot()</code> 可视化已知 Marker；<code>DotPlot()</code> 展示跨聚类 Marker 表达模式</li>
 </ul>
-<p><strong>实践内容</strong>：PBMC 3k 数据完整运行 PCA → KNN → Leiden 聚类 → UMAP；<code>FindAllMarkers()</code> 识别各聚类 Marker；结合 PanglaoDB 手动注释；运行 SingleR（ENCODE 参考）自动注释；对比手动与自动注释的一致性。</p>
+<p><strong>实践内容</strong>：PBMC 3k 数据完整运行 PCA → KNN → Leiden 聚类 → UMAP；<code>FindAllMarkers()</code> 识别各聚类 Marker；结合 PanglaoDB 手动注释；用轮廓系数与子抽样稳定性评估聚类质量；运行 SingleR（HPCA 与 Monaco 两个参考）、scType、Seurat 标签传递（Kang18 对照组 PBMC 为参考）与 CellTypist 自动注释；综合对比各工具与手动注释的一致性。</p>
 <hr>
 
 

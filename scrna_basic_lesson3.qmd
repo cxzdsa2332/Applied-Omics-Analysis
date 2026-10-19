@@ -20,7 +20,7 @@ crossref:
 
 质控与归一化产出了一份干净的细胞×基因矩阵，但它仍是高维（数千个高变基因）、难以直接解读的。scRNA-seq 分析的核心目标——识别数据中存在哪些细胞类型——通过三步串联实现：先用 PCA 把高维表达压缩到几十个主成分以去噪，再在主成分空间构建近邻图并用图聚类算法将细胞划分为社区，最后用 UMAP 将结果嵌入二维以供可视化。聚类只给出"第几群"这样的匿名标签，还需通过标志基因把每个聚类对应到真实的细胞类型。本专题讲解这条从降维到注释的标准流程。
 
-**学习目标**：理解 PCA 在 scRNA-seq 中的去噪作用，掌握肘部图与置换检验两类主成分数量选择方法；理解 KNN 图构建的逻辑与 Louvain、Leiden 两种社区检测算法的关键差异；掌握分辨率参数的影响并能用多分辨率树评估聚类稳定性；理解 UMAP 与 t-SNE 的特点与共同局限；掌握基于标志基因的手动注释与 SingleR 自动注释，能评估自动注释的置信度并交叉验证；理解层级注释（二次聚类）的必要性与操作。
+**学习目标**：理解 PCA 在 scRNA-seq 中的去噪作用，掌握肘部图与置换检验两类主成分数量选择方法；理解 KNN 图构建的逻辑与 Louvain、Leiden 两种社区检测算法的关键差异；掌握分辨率参数的影响，能用多分辨率树、轮廓系数与子抽样稳定性评估聚类质量；理解 UMAP 与 t-SNE 的特点与共同局限；掌握基于标志基因的手动注释，能用一对一比较与 AUC 判断近缘细胞群的可区分程度；理解自动注释的六类策略（参考相关性、标志基因打分、参考映射、机器学习分类器、深度生成模型、大语言模型）及其原理差异，能运行 SingleR、scType、Seurat 标签传递与 CellTypist；能评估自动注释的置信度、理解参考数据集与标志基因库对注释结果的决定性影响，并综合多工具结果与手动注释交叉验证；理解层级注释（二次聚类）的必要性与操作。
 
 ---
 
@@ -220,7 +220,121 @@ cat("SNN: mean neighbours per cell =",
 - **KNN 图**：每个细胞连向距离最近的 `k.param` 个细胞（默认 20），边**无权重**——是邻居就连，不是就不连。在本数据上每行恰好 20 个非零元。
 - **SNN 图**（Shared Nearest Neighbor，共享近邻图）：两个细胞之间的边权重，取决于它们**共享多少个共同邻居**。若两个细胞的 20 个邻居里有 18 个重合，说明它们处于同一个稠密区域，权重高；若只重合 2 个，则可能只是恰好挨着，权重低。本数据上 SNN 图平均每行 81.5 个非零元，权重分布在 0.081–1.000 之间。
 
-为什么要多绕这一道？因为**"互为近邻"是一个脆弱的信号，而"共享大量邻居"是一个稳健的信号**。高维空间中距离度量本就不可靠（维数灾难），个别近邻关系很容易由噪声产生；但若两个细胞共享大量邻居，它们几乎必定属于同一个真实的细胞群。SNN 相当于对邻接关系做了一次去噪，这也是 Seurat 把聚类建在 SNN 而非 KNN 上的原因。
+为什么要多绕这一道？因为**"互为近邻"是一个脆弱的信号，而"共享大量邻居"是一个稳健的信号**。高维空间中距离度量本就不可靠（维数灾难，curse of dimensionality），个别近邻关系很容易由噪声产生；但若两个细胞共享大量邻居，它们几乎必定属于同一个真实的细胞群。SNN 相当于对邻接关系做了一次去噪，这也是 Seurat 把聚类建在 SNN 而非 KNN 上的原因。下面先用几何与模拟说明"高维空间中距离不可靠"的确切含义，再在 PBMC 3k 上直接检验 SNN 权重是否真能分辨稳健与脆弱的近邻关系。
+
+### 维数灾难：高维空间里的距离为何不可靠
+
+"维数灾难"一词由美国数学家 Richard Bellman 在 20 世纪 50 年代研究动态规划时提出。他当时面对的问题是：每增加一个维度，需要搜索的网格点数就成倍增长，计算量很快失控。这个词后来被用来泛指高维空间中一切违反低维直觉的现象。对 scRNA-seq 而言，最要紧的一个后果是**距离集中**：维数越高，任意两点之间的距离越趋于相同，"最近的邻居"与"随便一个细胞"之间的差别越来越小。理解这一点，最直观的入口是高维球的体积。
+
+#### 高维橘子：体积几乎都在果皮里
+
+$d$ 维空间中半径为 $r$ 的球，体积为
+
+$$V_d(r) = \frac{\pi^{d/2}}{\Gamma\left(d/2 + 1\right)}\, r^d$$
+
+关键在于体积与 $r^d$ 成正比。把一个 $d$ 维"橘子"最外层厚度为半径 5% 的部分当作果皮，果肉就是一个半径为 $0.95r$ 的小球，其体积占比为 $0.95^d$。因此果皮所占的体积比例为 $1 - 0.95^d$。在二维平面上，这层皮只占 9.75%；到 15 维，皮已经超过一半；到 50 维，皮占 92.3%；到 2,000 维，即本专题高变基因空间的维数，果肉所剩的比例约为 $10^{-45}$，几乎整个橘子都是皮。
+
+第二个事实更反直觉。把一个球内切于边长为 1 的立方体（球半径 0.5），球占立方体体积的比例在二维为 78.5%，三维为 52.4%，十维只剩 0.25%，15 维为 $1.16\times10^{-5}$，50 维为 $1.5\times10^{-28}$。换言之，高维立方体的体积几乎全部集中在远离中心的"角落"里。两个事实的共同根源，是体积对半径的 $d$ 次方依赖。@fig-nball-volume 展示了这种依赖的后果：单位球的体积在 5 维附近达到最大，此后迅速趋于零；半径只差 10% 的球，体积曲线在高维处便相差悬殊。
+
+![半径 $R$ = 0.9、1.0、1.1 的 $n$ 维球体积随维数 $n$（0–25）的变化。单位球（$R$ = 1.0）的体积在 5 维附近达到最大，随后迅速趋于零。由于体积与 $R^n$ 成正比，半径的微小差别在高维处被急剧放大，这正是"高维橘子的体积几乎都在果皮里"的来源。](https://upload.wikimedia.org/wikipedia/commons/thumb/d/d9/Volumes_of_unit_balls.svg/960px-Volumes_of_unit_balls.svg.png){#fig-nball-volume width=70%}
+
+```r
+# Two facts about a d-dimensional ball (the "high-dimensional orange")
+dims <- c(2, 3, 10, 15, 50, 2000)
+
+# (1) Share of the volume lying in the outer 5% of the radius (the "peel")
+peel <- 1 - (1 - 0.05)^dims
+
+# (2) Volume of the ball inscribed in the unit cube (radius 0.5).
+#     Work on the log scale: pi^(d/2) and gamma() overflow for large d.
+log_ball <- dims / 2 * log(pi) - lgamma(dims / 2 + 1) + dims * log(0.5)
+
+data.frame(d = dims,
+           peel_percent       = signif(100 * peel, 4),
+           ball_share_of_cube = signif(exp(log_ball), 3))
+```
+
+这两个事实合起来说明：在高维空间中随机散布的点，几乎都位于"表层"，彼此相距很远，而且相距得差不多远。橘子里没有"靠近中心的果肉"可以让某些点彼此特别接近。
+
+#### 距离集中：最近邻与普通细胞难以区分
+
+几何直觉可以直接用模拟检验。在每个维数下随机生成 1,000 个标准正态分布的点，对每个点计算"到最近邻的距离"与"到所有其他点距离的中位数"之比。这个比值越接近 1，说明最近邻就越不比一个随手挑出的点更近。
+
+```r
+# Distance concentration: 1,000 random Gaussian points per dimension.
+# For each point: distance to its nearest neighbour / median distance to all others.
+set.seed(1)
+sapply(dims, function(d) {
+    x  <- matrix(rnorm(1000 * d), nrow = 1000, ncol = d)
+    dd <- as.matrix(dist(x))
+    diag(dd) <- NA
+    median(apply(dd, 1, min, na.rm = TRUE) / apply(dd, 1, median, na.rm = TRUE))
+}) |> setNames(paste0("d=", dims)) |> round(3)
+```
+
+| 维数 $d$ | 2 | 3 | 10 | 15 | 50 | 2,000 |
+|---|---|---|---|---|---|---|
+| 最近邻距离 / 距离中位数 | 0.038 | 0.103 | 0.419 | 0.521 | 0.732 | 0.956 |
+
+: 随机高斯点云中的距离集中现象（每个维数 1,000 个点） {#tbl-distance-concentration}
+
+在二维平面上，最近邻的距离只有典型距离的 4%，一眼就能认出谁是邻居。到 2,000 维，最近邻的距离已达典型距离的 95.6%，它只比一个随机细胞近了一点点。此时任何微小的测量噪声都足以改变近邻的排序，"谁是我的 20 个最近邻"在很大程度上变成了一个由噪声决定的问题。
+
+真实数据不像随机点云那样极端，因为基因之间高度相关，数据的"内在维数"远低于基因数。但同样的诊断在 PBMC 3k 上仍然给出了清晰的结论。
+
+```r
+library(Seurat)
+
+# The same diagnostic on PBMC 3k: 2,000 scaled HVGs vs the first 15 PCs
+nn_ratio <- function(m) {
+    dd <- as.matrix(dist(m))
+    diag(dd) <- NA
+    median(apply(dd, 1, min, na.rm = TRUE) / apply(dd, 1, median, na.rm = TRUE))
+}
+c(HVG_2000 = nn_ratio(t(GetAssayData(pbmc, layer = "scale.data")[VariableFeatures(pbmc), ])),
+  PC_15    = nn_ratio(Embeddings(pbmc, "pca")[, 1:15])) |> round(3)
+```
+
+在 2,000 个缩放后的高变基因构成的空间里，这一比值为 0.849；在前 15 个主成分构成的空间里，降到 0.256。也就是说，直接在基因空间里找近邻，最近邻只比普通细胞近 15% 左右；先做 PCA，近邻结构才重新变得清晰。这就是 `FindNeighbors()` 在主成分而非基因上建图的定量理由，后文"UMAP 跑在主成分上"一节还会从可视化的角度回到这一点。
+
+### 回到 SNN：共享邻居如何过滤脆弱的近邻
+
+降到 15 维后，距离虽然重新有了区分力，个别近邻关系仍然可能来自噪声。Seurat 计算 SNN 权重的方式是 Jaccard 系数：设 $N(i)$ 为细胞 $i$ 的近邻集合，则边权重为 $|N(i) \cap N(j)| \,/\, |N(i) \cup N(j)|$，即两个细胞近邻集合的交集占并集的比例。权重低于 1/15 的边会被剪除（`FindNeighbors()` 的 `prune.SNN` 参数），这也是本数据中 SNN 权重的最小值为 0.081 而非 0 的原因。
+
+要检验 SNN 权重是否真能分辨稳健与脆弱的近邻关系，可以做一个不依赖聚类结果的实验：只用随机一半的高变基因重新做 PCA 并建图，看原来的每一条 KNN 边是否还在，再按这条边原来的 SNN 权重分组统计。
+
+```r
+library(Seurat)
+library(Matrix)
+
+# Rebuild the KNN graph from a random half of the HVGs and ask which of the
+# original KNN edges reappear, grouped by each edge's original SNN weight
+set.seed(7)
+half <- sample(VariableFeatures(pbmc), 1000)
+tmp  <- RunPCA(pbmc, features = half, npcs = 15, reduction.name = "pca_half",
+               reduction.key = "PChalf_", verbose = FALSE)
+tmp  <- FindNeighbors(tmp, reduction = "pca_half", dims = 1:15, k.param = 20,
+                      graph.name = c("half_nn", "half_snn"), verbose = FALSE)
+
+edges <- summary(as(pbmc@graphs$RNA_nn, "dgCMatrix"))
+edges <- edges[edges$i != edges$j, ]          # drop self-edges
+snn_w <- pbmc@graphs$RNA_snn[cbind(edges$i, edges$j)]
+kept  <- tmp@graphs$half_nn[cbind(edges$i, edges$j)] > 0
+
+bin <- cut(snn_w, c(-Inf, 0, 0.2, 0.4, 0.6, Inf),
+           labels = c("pruned (0)", "(0, 0.2]", "(0.2, 0.4]", "(0.4, 0.6]", "> 0.6"))
+data.frame(n_edges        = as.vector(table(bin)),
+           reproduced_pct = round(100 * tapply(kept, bin, mean), 1))
+```
+
+| 原 SNN 权重 | 被剪除（0） | (0, 0.2] | (0.2, 0.4] | (0.4, 0.6] | > 0.6 |
+|---|---|---|---|---|---|
+| KNN 边数 | 1,816 | 20,475 | 23,971 | 3,288 | 572 |
+| 用一半基因重建后仍存在的比例 | 13.2% | 14.0% | 19.7% | 33.0% | 72.4% |
+
+: KNN 边在半数基因重建图中的可重复性，按原 SNN 权重分组 {#tbl-snn-reproducibility}
+
+结果有两层含义。第一，单条近邻关系确实很脆弱：50,122 条 KNN 边中，换用一半的基因后只有 18.6% 重新出现。这正是"互为近邻是一个脆弱的信号"的定量表述。第二，SNN 权重准确地预示了哪些边更可靠：可重复比例随权重单调上升，权重最低的边只有 13.2% 能重现，权重超过 0.6 的边则有 72.4%。SNN 把信任集中在了经得起扰动的连接上。还需要指出，单条边的低重复率并不意味着聚类结果同样不稳定：社区检测依赖的是成千上万条边构成的整体结构，后文"聚类质量的定量评估"一节会看到，子抽样后整体聚类的一致性仍然相当高。
 
 ## `k.param` 的影响
 
@@ -243,14 +357,12 @@ for (k in c(5, 20, 50)) {
 在本数据上固定 `resolution = 0.5`、只改 `k.param`，聚类数从 10（k=5）降到 9（k=20）再降到 6（k=50）——**同一个分辨率下，仅仅改变建图的邻域大小就能让聚类数少掉四成**。这说明报告聚类结果时只写 `resolution` 是不够的，`k.param` 与所用主成分数同样必须交代。
 
 :::tip
-**`k.param` 的经验取值：** 默认 20 在数千细胞的数据上通常合适。一个常用的启发式是让 `k.param` 随细胞数增长，如 $k \approx \sqrt{N}$——2,600 个细胞对应约 50。但更重要的是理解它的方向性影响：**若怀疑稀有细胞群被淹没，应调小 `k.param`**（让图更局部，小群才有机会自成社区）；若聚类结果零碎、充满小簇，可调大它。与 `resolution` 不同，`k.param` 改变的是图本身，因此改动后必须重跑 `FindNeighbors()` 而不只是 `FindClusters()`。
+**`k.param` 的经验取值：** 默认 20 在数千细胞的数据上通常合适。一个常用的启发式是让 `k.param` 随细胞数增长，如 $k \approx \sqrt{N}$——本数据 2,638 个细胞对应约 51。但更重要的是理解它的方向性影响：**若怀疑稀有细胞群被淹没，应调小 `k.param`**（让图更局部，小群才有机会自成社区）；若聚类结果零碎、充满小簇，可调大它。与 `resolution` 不同，`k.param` 改变的是图本身，因此改动后必须重跑 `FindNeighbors()` 而不只是 `FindClusters()`。
 :::
 
 ## Louvain 与 Leiden 的差别
 
-`FindClusters()` 的 `algorithm` 参数默认是 1（Louvain），而上面的代码指定了 4（Leiden）。这不是一个无关紧要的选择。
-
-两种算法都通过优化**模块度**（Modularity）来划分社区——模块度衡量"社区内部的边比随机情况下多出多少"。Louvain 算法迭代地把节点移动到能最大提升模块度的社区中，效率很高，长期是图聚类的事实标准。
+`FindClusters()` 的 `algorithm` 参数默认是 1（Louvain），上面的代码沿用了这一默认值；设为 4 则改用 Leiden。这不是一个无关紧要的选择。
 
 两种算法优化的都是**模块度**（Modularity）——一个衡量"社区内部的边比随机情况下多出多少"的指标。记 $m$ 为总边权、$A_{ij}$ 为边权、$k_i$ 为节点 $i$ 的度，则：
 
@@ -258,11 +370,10 @@ $$Q = \frac{1}{2m}\sum_{i,j}\left(A_{ij} - \frac{k_i k_j}{2m}\right)\delta(c_i, 
 
 括号里的第一项是**实际**连接，第二项 $k_i k_j/(2m)$ 是在保持各节点度数不变的随机图中该对节点**期望**的连接强度；$\delta(c_i,c_j)$ 则只在 $i$ 与 $j$ 同属一个社区时取 1。所以 $Q$ 度量的是"同社区节点之间实际连接超出随机期望的总量"——$Q$ 越大，社区划分越有意义。`resolution` 参数实际上就是调节第二项的权重：调高它相当于抬高"随机期望"的基准，于是需要更紧密的连接才够格算一个社区，切出的社区自然更多更小。
 
-
-但 Louvain 有一个被长期忽视的缺陷：它**不保证社区内部是连通的**。在优化过程中，某个节点被移走后可能把原社区切成两个互不相连的部分，而算法不会检查这一点。结果是一个"聚类"在图上实际可能由两块毫无连接的细胞组成——对 scRNA-seq 而言，这意味着一个细胞类型标签下混着两群彼此不相似的细胞。Leiden 算法在每轮迭代后增加了一个精炼（refinement）步骤，**保证每个社区都是连通的**，从而消除了这一问题（Traag et al., 2019）。
+Louvain 算法迭代地把节点移动到能最大提升模块度的社区中，效率很高，长期是图聚类的事实标准。但 Louvain 有一个被长期忽视的缺陷：它**不保证社区内部是连通的**。在优化过程中，某个节点被移走后可能把原社区切成两个互不相连的部分，而算法不会检查这一点。结果是一个"聚类"在图上实际可能由两块毫无连接的细胞组成——对 scRNA-seq 而言，这意味着一个细胞类型标签下混着两群彼此不相似的细胞。Leiden 算法在每轮迭代后增加了一个精炼（refinement）步骤，**保证每个社区都是连通的**，从而消除了这一问题（Traag et al., 2019）。
 
 :::warning
-**Leiden 需要 Python 依赖，默认环境跑不了：** Seurat 出于历史兼容性把 Louvain（`algorithm = 1`）保留为默认值。要用 Leiden 必须额外安装依赖，否则 `algorithm = 4` 会直接报错——这也是它未被设为默认的实际原因。**注意 Seurat 版本之间的差异**：Seurat 4 通过 `reticulate` 调用 Python 的 `leidenalg`，而 Seurat 5 改走 R 包 `leidenbase`（`install.packages("leidenbase")`）。照抄旧教程里的 `leidenalg` 安装说明，在 Seurat 5 下仍会报 `Package 'leidenbase' is required`。本章后续代码为保证可直接运行而使用默认的 Louvain；在正式分析中若能配置好 Python 环境，应优先使用 Leiden。只能用 Louvain 时，至少应检查是否存在在 UMAP 上明显分成互不相邻两块的聚类——那往往就是连通性缺陷的表现。
+**Leiden 需要额外依赖，默认环境跑不了：** Seurat 出于历史兼容性把 Louvain（`algorithm = 1`）保留为默认值。要用 Leiden 必须额外安装依赖，否则 `algorithm = 4` 会直接报错——这也是它未被设为默认的实际原因。**注意 Seurat 版本之间的差异**：Seurat 4 通过 `reticulate` 调用 Python 的 `leidenalg`，而 Seurat 5 改走 R 包 `leidenbase`（`install.packages("leidenbase")`）。照抄旧教程里的 `leidenalg` 安装说明，在 Seurat 5 下仍会报 `Package 'leidenbase' is required`。本章后续代码为保证可直接运行而使用默认的 Louvain；在正式分析中若能安装好 `leidenbase`，应优先使用 Leiden。只能用 Louvain 时，至少应检查是否存在在 UMAP 上明显分成互不相邻两块的聚类——那往往就是连通性缺陷的表现。
 :::
 
 ```r
@@ -334,11 +445,173 @@ clustree(pbmc, prefix = "RNA_snn_res.")
 **一个实用的读图策略：** 从树的顶端（低分辨率）向下看，找到"再往下分就开始出现交叉边"的那一层，它通常就是该数据能够稳定支持的最细粒度。需要更细的亚型时，正确做法不是继续调高全局分辨率（那会把所有聚类都过度切分），而是对感兴趣的聚类单独做二次聚类——这一点在本专题最后讨论。
 :::
 
+:::warning
+**`FindClusters()` 会覆盖当前的聚类身份：** 每调用一次 `FindClusters()`，Seurat 都会把结果同时写入三处：一个新的元数据列（如 `RNA_snn_res.0.8`）、`seurat_clusters` 列，以及活动身份 `Idents()`。上面的循环最后一次用的是 `resolution = 1.0`，因此循环结束后对象的活动身份是 11 个聚类，而不是前文的 9 个。若不加处理，后续的 `FindAllMarkers()`、`DimPlot()` 与注释都会在 11 个聚类上进行，与正文的表格对不上。探索完多个分辨率之后，应显式切回选定的分辨率。
+:::
+
+```r
+library(Seurat)
+
+# The loop above left resolution 1.0 as the active identity.
+# Switch back to the chosen resolution before any downstream step.
+Idents(pbmc) <- "RNA_snn_res.0.5"
+pbmc$seurat_clusters <- Idents(pbmc)
+table(Idents(pbmc))
+```
+
+## 聚类质量的定量评估
+
+clustree 提供的是视觉判断。本节再引入两个可计算的指标，从不同角度回答"这个聚类可信吗"。轮廓系数衡量聚类在主成分空间中是否**紧密且彼此分离**。子抽样稳定性衡量聚类在数据扰动下能否被**重复找到**。两者都不能单独决定"正确"的分辨率。它们的价值在于指出哪些聚类的边界最脆弱。
+
+### 轮廓系数：簇内紧密与簇间分离
+
+轮廓系数（silhouette width）为每个细胞计算一个介于 −1 与 1 之间的分数。记 $a(i)$ 为细胞 $i$ 到同簇其他细胞的平均距离，$b(i)$ 为它到最近的另一个簇中各细胞的平均距离，则：
+
+$$s(i) = \frac{b(i) - a(i)}{\max\{a(i),\ b(i)\}}$$
+
+$s(i)$ 接近 1，表示该细胞离本簇近、离邻簇远。接近 0，表示它恰好处在两簇的交界。为负，则表示它离邻簇反而更近，很可能被分错了簇。对一个簇内所有细胞取平均，就得到该簇的轮廓系数。把每个样本的 $s(i)$ 按组排序画成横条，就得到轮廓图（@fig-silhouette-plot），取负值的样本在图上一目了然。这一指标在第 9 章评估空间域时还会再次出现。
+
+![轮廓图示例（Orange 数据挖掘软件绘制）。动物园数据集中的鱼类（13 种）、昆虫（8 种）与哺乳类（41 种）按类别分组，每条横条为一个物种的轮廓系数。哺乳类底部的海豚与鼠海豚取负值，说明它们在特征空间中离其他类别反而更近，这正是"被分错组"的样本在轮廓图上的典型表现。](https://upload.wikimedia.org/wikipedia/commons/thumb/f/fd/Silhouette-plot-orange.png/960px-Silhouette-plot-orange.png){#fig-silhouette-plot width=60%}
+
+```r
+library(Seurat)
+library(cluster)
+
+# Silhouette is computed in the same PC space used for clustering (PCs 1-15)
+pc_emb  <- Embeddings(pbmc, "pca")[, 1:15]
+pc_dist <- dist(pc_emb)    # all pairwise distances: O(N^2) memory, fine for 2,638 cells
+
+sil <- silhouette(as.integer(as.character(Idents(pbmc))), pc_dist)
+data.frame(
+    mean_sil     = round(tapply(sil[, "sil_width"], Idents(pbmc), mean), 3),
+    frac_neg     = round(tapply(sil[, "sil_width"] < 0, Idents(pbmc), mean), 3),
+    nearest_clus = tapply(sil[, "neighbor"], Idents(pbmc),
+                          function(x) names(which.max(table(x))))
+)
+```
+
+`cluster` 是 R 自带的推荐包，无需额外安装。在 PBMC 3k 上，各聚类的结果如 @tbl-silhouette 所示。
+
+| 聚类 | 判定类型 | 平均轮廓系数 | 负值细胞比例 | 最近邻簇 |
+|---|---|---|---|---|
+| 0 | 幼稚 CD4 T | 0.234 | 0.7% | 1 |
+| 1 | 记忆 CD4 T | 0.089 | 19.9% | 0 |
+| 2 | CD14+ 单核 | 0.327 | 3.6% | 5 |
+| 3 | B 细胞 | 0.399 | 1.8% | 0 |
+| 4 | CD8 T | 0.100 | 23.2% | 1 |
+| 5 | FCGR3A+ 单核 | 0.339 | 3.4% | 2 |
+| 6 | NK 细胞 | 0.264 | 5.7% | 4 |
+| 7 | 树突状细胞 | 0.353 | 0.0% | 2 |
+| 8 | 血小板 | 0.511 | 0.0% | 0 |
+
+: PBMC 3k 各聚类的轮廓系数（15 个主成分，resolution = 0.5） {#tbl-silhouette}
+
+这张表把 T 细胞区室标记为全数据中最薄弱的部分。记忆 CD4 T（0.089）与 CD8 T（0.100）的轮廓系数最低，各有约五分之一的细胞取负值。它们的最近邻簇又彼此指向：记忆 CD4 T 指向幼稚 CD4 T，CD8 T 指向记忆 CD4 T。这说明在主成分空间里，幼稚 CD4 T、记忆 CD4 T 与 CD8 T 更像一条连续的表达梯度，而不是三座界限分明的孤岛。图聚类在这条梯度上切了两刀，但切口两侧的细胞其实相差不大。与之形成对照的是 B 细胞、单核细胞与血小板，它们的轮廓系数都在 0.3 以上，几乎没有负值细胞。
+
+把同样的计算推广到一系列分辨率，可以看到一个值得警惕的规律。
+
+```r
+library(Seurat)
+library(cluster)
+
+# Mean silhouette across resolutions. Clustering the SNN graph directly
+# returns labels without overwriting Idents(pbmc).
+for (res in c(0.1, 0.3, 0.5, 0.8, 1.0)) {
+    cl <- FindClusters(pbmc@graphs$RNA_snn, resolution = res, verbose = FALSE)[, 1]
+    s  <- silhouette(as.integer(as.character(cl)), pc_dist)[, "sil_width"]
+    cat(sprintf("resolution %.1f  clusters = %2d  mean silhouette = %.3f\n",
+                res, nlevels(cl), mean(s)))
+}
+```
+
+平均轮廓系数随分辨率单调下降：resolution 0.1（4 个聚类）为 0.344，0.3（8 个）为 0.320，0.5 与 0.8（各 9 个）分别为 0.238 与 0.237，1.0（11 个）降至 0.193。若以"轮廓系数最大"为准则选分辨率，就会选中 0.1，把 CD4 T、CD8 T 与 NK 细胞并为一群。这显然不符合研究需要。原因在于，只要数据中存在连续梯度，任何切开梯度的划分都会降低轮廓系数。因此轮廓系数天然偏爱粗粒度划分。**它适合定位薄弱的边界，而不适合选择分辨率。**
+
+:::warning
+**轮廓系数的两个前提：** 其一，它用的是主成分空间中的欧氏距离，而聚类是在 SNN 图上完成的，两者衡量"相近"的方式并不相同。图聚类正确识别出的一条细长或弯曲的结构，也可能得到很低的轮廓系数。其二，它需要计算全部细胞两两之间的距离，内存开销为 $O(N^2)$。2,638 个细胞没有问题，但数万细胞时应改用近似算法，例如 Bioconductor 包 `bluster` 中的 `approxSilhouette()`。
+:::
+
+### 子抽样稳定性：聚类能否被重复找到
+
+第二个视角是可重复性。如果某个细胞群真实存在，那么随机去掉一部分细胞再重新聚类，它应当依然出现。具体做法是：反复抽取 80% 的细胞，在其上重新建图和聚类，再与全数据的聚类结果比较。整体一致性用调整兰德指数（Adjusted Rand Index, ARI）衡量。它统计两种划分中"同属一簇"与"分属不同簇"的细胞对是否一致，并扣除随机期望；1 表示完全一致，0 相当于随机。单个聚类的稳定性则用 Jaccard 系数衡量：对全数据中的每个聚类，在子抽样结果中找出与它重叠最大的聚类，计算两者交集与并集之比。这种逐簇评估稳定性的思路来自 Hennig 提出的 cluster-wise 重抽样框架（Hennig, 2007）。
+
+```r
+library(Seurat)
+library(mclust)
+
+# Draw ALL subsamples up front: FindClusters() calls set.seed() internally,
+# so sampling inside the loop would return the same subset every time.
+set.seed(42)
+n_boot  <- 20
+subsets <- replicate(n_boot, sample(colnames(pbmc), round(0.8 * ncol(pbmc))),
+                     simplify = FALSE)
+full_cl <- setNames(as.character(Idents(pbmc)), colnames(pbmc))
+
+ari <- numeric(n_boot)
+jaccard <- matrix(NA, n_boot, nlevels(Idents(pbmc)),
+                  dimnames = list(NULL, levels(Idents(pbmc))))
+for (b in seq_len(n_boot)) {
+    sub <- subset(pbmc, cells = subsets[[b]])
+    sub <- FindNeighbors(sub, reduction = "pca", dims = 1:15, verbose = FALSE)
+    sub <- FindClusters(sub, resolution = 0.5, verbose = FALSE)
+    # subset() keeps the object's own cell order, so align labels by cell name
+    sub_cl <- setNames(as.character(Idents(sub)), colnames(sub))
+    ref_cl <- full_cl[names(sub_cl)]
+    ari[b] <- adjustedRandIndex(ref_cl, sub_cl)
+    tab <- table(ref_cl, sub_cl)
+    jaccard[b, rownames(tab)] <- apply(tab, 1, function(n)
+        max(n / (sum(n) + colSums(tab) - n)))
+}
+cat(sprintf("ARI: mean = %.3f, min = %.3f\n", mean(ari), min(ari)))
+round(rbind(mean = colMeans(jaccard), worst = apply(jaccard, 2, min)), 3)
+```
+
+:::note
+**运行环境说明：** `mclust` 为 CRAN 包（`install.packages("mclust")`），这里只用它的 `adjustedRandIndex()`。20 次重抽样共需重建 20 次图并重新聚类，在普通笔记本上约需 10 秒；细胞数达到数万时耗时会显著增加。
+:::
+
+代码注释里的两处细节都是真实的陷阱。第一，`FindClusters()` 内部会调用 `set.seed()`（默认 `random.seed = 0`）。若在循环内部抽样，从第二轮起每次抽到的都是同一批细胞，20 次"重复"实际上只有一次，结果会呈现出虚假的完美稳定。第二，`subset()` 返回的对象保持原对象的细胞顺序，而不是抽样向量的顺序。若不按细胞名对齐两组标签，ARI 会接近 0，看起来就像聚类完全不可重复。两个错误一个虚高、一个虚低，都不会报错。
+
+把 `resolution` 换成其他取值重复上述过程，得到 @tbl-subsample-ari；resolution 0.5 下各聚类的 Jaccard 系数见 @tbl-subsample-jaccard。
+
+| resolution | 聚类数 | 平均 ARI | 最低 ARI |
+|---|---|---|---|
+| 0.1 | 4 | 0.967 | 0.850 |
+| 0.3 | 8 | 0.949 | 0.906 |
+| 0.5 | 9 | 0.874 | 0.704 |
+| 0.8 | 9 | 0.910 | 0.840 |
+| 1.0 | 11 | 0.866 | 0.794 |
+
+: 80% 子抽样重聚类与全数据聚类的一致性（20 次重复，15 个主成分） {#tbl-subsample-ari}
+
+| 聚类 | 判定类型 | 平均 Jaccard | 最差 Jaccard |
+|---|---|---|---|
+| 0 | 幼稚 CD4 T | 0.838 | 0.526 |
+| 1 | 记忆 CD4 T | 0.812 | 0.454 |
+| 2 | CD14+ 单核 | 0.985 | 0.956 |
+| 3 | B 细胞 | 0.995 | 0.989 |
+| 4 | CD8 T | 0.906 | 0.842 |
+| 5 | FCGR3A+ 单核 | 0.961 | 0.865 |
+| 6 | NK 细胞 | 0.972 | 0.893 |
+| 7 | 树突状细胞 | 0.942 | 0.833 |
+| 8 | 血小板 | 0.948 | 0.052 |
+
+: resolution = 0.5 下各聚类的子抽样稳定性（20 次重复） {#tbl-subsample-jaccard}
+
+解读 Jaccard 系数时，可参考该方法作者在 R 包 `fpc` 的 `clusterboot()` 文档中给出的经验阈值：平均值低于 0.6 的聚类不可信；0.6–0.75 说明数据中存在某种模式，但哪些细胞属于它并不确定；0.75 以上为有效的稳定聚类；0.85 以上为高度稳定。按此标准，B 细胞、单核细胞与 NK 细胞都高度稳定。两个 CD4 T 聚类的平均值落在 0.8 出头，但最差一次只有 0.53 与 0.45。也就是说，在个别子样本中，幼稚与记忆 CD4 T 之间的分界发生了大幅移动。这与轮廓系数的诊断完全吻合。
+
+血小板聚类揭示了另一种脆弱性。它的平均 Jaccard 高达 0.948，最差一次却只有 0.052。全数据中只有 13 个血小板，每次子抽样只剩 10 个左右；在那一次重抽样中，它们没能形成独立的社区，而被并入了其他聚类。**小细胞群的稳定性取决于抽样后是否还剩下足够的细胞来构成社区**，其不稳定并不意味着它不真实。对稀有细胞群，应以标志基因的特异性为主要证据，稳定性指标只作参考。
+
+整体 ARI 还给出了一个与直觉相左的结果：resolution 0.8 的子抽样一致性（0.910）高于 0.5（0.874），尽管两者都给出 9 个聚类。不同指标的"最优"分辨率并不一致：轮廓系数偏爱 0.1，子抽样 ARI 在 0.1–0.3 最高，clustree 则在 0.5–0.8 之间显示稳定。这正是本节的核心结论：这些指标无法替研究者选出唯一正确的分辨率，但它们能一致地指出**哪里的边界值得怀疑**。
+
+:::tip
+**三类证据的合流：** 在 PBMC 3k 上，clustree、轮廓系数与子抽样 Jaccard 三种互相独立的诊断，都把矛头指向同一处：CD4 T 细胞内部的幼稚与记忆之分。遇到这种情况，正确的反应不是调参把它"调稳"，而是带着这个疑问进入注释阶段：用一对一比较检查两群之间究竟有哪些差异基因（见本专题"一对一比较"一节），并在层级注释中单独处理 T 细胞区室。
+:::
+
 ## 为什么不用 K-means 或层次聚类
 
 前面一笔带过"图聚类对不均衡结构更稳健"，值得展开说清楚，因为这解释了整个流程的设计动机。
 
-**K-means 的问题在于它的隐含假设**：它通过最小化各点到簇中心的平方距离来划分，这等价于假设每个簇是**大小相近的球形**。而真实的细胞类型完全不满足这一点——PBMC 中 T 细胞可能有上千个、血小板只有十几个，且各类细胞在表达空间中的弥散程度差异巨大。用 K-means 处理这种数据，结果往往是大簇被硬切成几块、而小簇被并入邻近的大簇。本数据中只有 14 个细胞的血小板群，在 K-means 下几乎必然消失。
+**K-means 的问题在于它的隐含假设**：它通过最小化各点到簇中心的平方距离来划分，这等价于假设每个簇是**大小相近的球形**。而真实的细胞类型完全不满足这一点——PBMC 中 T 细胞可能有上千个、血小板只有十几个，且各类细胞在表达空间中的弥散程度差异巨大。用 K-means 处理这种数据，结果往往是大簇被硬切成几块、而小簇被并入邻近的大簇。本数据中只有 13 个细胞的血小板群，在 K-means 下几乎必然消失。
 
 **层次聚类的问题在于计算量与阈值**：它需要计算所有细胞两两之间的距离，复杂度 $O(N^2)$ 的内存开销在数万细胞时就不可行；而且树在哪里切依然是一个需要人为设定的阈值，并不比 `resolution` 更客观。
 
@@ -356,7 +629,7 @@ clustree(pbmc, prefix = "RNA_snn_res.")
 
 一个容易被忽略但影响理解的细节：`RunUMAP(pbmc, dims = 1:15)` 里的 `dims` 参数说明 UMAP 的输入是**前 15 个主成分**，而非两万个基因的原始表达。`FindNeighbors(dims = 1:15)` 同理。
 
-这样做有三个理由。其一是**去噪**：如前所述，前若干个主成分集中了生物学信号，而噪声分散在大量低方差方向上，先做 PCA 等于先滤掉一层噪声。其二是**计算量**：UMAP 要反复计算细胞间距离，在 15 维上算比在 2000 维上算快两个数量级。其三是**距离的可靠性**：在极高维空间中，任意两点间的距离会趋于相近（维数灾难），使"最近邻"失去意义；降到几十维后距离才重新具有区分力。
+这样做有三个理由。其一是**去噪**：如前所述，前若干个主成分集中了生物学信号，而噪声分散在大量低方差方向上，先做 PCA 等于先滤掉一层噪声。其二是**计算量**：UMAP 要反复计算细胞间距离，在 15 维上算比在 2000 维上算快两个数量级。其三是**距离的可靠性**：在极高维空间中，任意两点间的距离会趋于相近，使"最近邻"失去意义；降到几十维后距离才重新具有区分力。在 PBMC 3k 上，最近邻距离与距离中位数之比从基因空间的 0.849 降到主成分空间的 0.256（参见前文"维数灾难"一节）。
 
 ```r
 library(Seurat)
@@ -409,9 +682,28 @@ pbmc <- RunUMAP(pbmc, dims = 1:15, min.dist = 0.8, reduction.name = "umap_loose"
 DimPlot(pbmc, reduction = "umap_tight") | DimPlot(pbmc, reduction = "umap_loose")
 ```
 
+t-SNE 的 `perplexity` 扮演着与 UMAP 的 `n.neighbors` 相似的角色，大致对应每个细胞在嵌入时"关注"的有效近邻数。Seurat 的默认值为 30。同样可以用对比实验直观感受它的影响。
+
+```r
+library(Seurat)
+
+# perplexity ~ the effective number of neighbours each cell attends to.
+# Each run is stored under its own name so the three can be compared.
+for (p in c(5, 30, 100)) {
+    pbmc <- RunTSNE(pbmc, dims = 1:15, perplexity = p,
+                    reduction.name = paste0("tsne_p", p),
+                    reduction.key  = paste0("tSNEp", p, "_"), verbose = FALSE)
+}
+DimPlot(pbmc, reduction = "tsne_p5", label = TRUE) |
+    DimPlot(pbmc, reduction = "tsne_p30", label = TRUE) |
+    DimPlot(pbmc, reduction = "tsne_p100", label = TRUE)
+```
+
+在 PBMC 3k 上，`perplexity = 5` 时嵌入铺成一张近乎均匀的"圆盘"，各簇彼此贴合，B 细胞与 T 细胞之间原本醒目的空白消失了。取默认值 30 时，B 细胞、髓系细胞与 T/NK 细胞三大谱系清晰分开。取 100 时各簇更加紧凑，谱系之间的空白进一步拉大。同一份数据、同一组聚类标签，三张图给人的"簇间距离"印象却截然不同。这与 UMAP 的 `min.dist` 实验说明的是同一件事：嵌入图上的间距在相当程度上由参数塑造。
+
 ```r
 #| label: fig-umap-clusters
-#| fig-cap: "PBMC 3k 数据的 UMAP 嵌入，按 Leiden 聚类结果着色。每个点为一个细胞，颜色对应其所属聚类。UMAP 将高维主成分空间的细胞关系非线性地映射到二维平面，便于直观观察各聚类的分离程度与相对关系。"
+#| fig-cap: "PBMC 3k 数据的 UMAP 嵌入，按聚类结果（Louvain，resolution = 0.5）着色。每个点为一个细胞，颜色对应其所属聚类。UMAP 将高维主成分空间的细胞关系非线性地映射到二维平面，便于直观观察各聚类的分离程度与相对关系。"
 library(Seurat)
 
 pbmc <- RunUMAP(pbmc, dims = 1:15)
@@ -534,6 +826,67 @@ VlnPlot(pbmc, features = c("CD3D", "MS4A1"), pt.size = 0)
 **`DotPlot()` 的点大小比颜色更重要：** 一个常见的误读是只看颜色（平均表达量）而忽略点的大小（检出比例）。二者可能给出相反的印象：某基因在一个簇中平均表达很高，但若点很小，说明只有少数细胞表达它、其余为零——这通常不是好的标志基因，而更可能是少数离群细胞或双细胞拉高了均值。**理想的标志基因应当点大且色深**：在该簇的绝大多数细胞中表达，且表达量高。
 :::
 
+## 一对一比较：区分近缘细胞群
+
+`FindAllMarkers()` 采用"一对其余"的策略，把每个聚类与**其余所有细胞**比较。对幼稚 CD4 T（聚类 0）而言，"其余细胞"里包括单核细胞、B 细胞、NK 细胞等大量与它差异巨大的类型。因此它的顶部标志基因回答的是"幼稚 CD4 T 与全体 PBMC 有何不同"。例如 *CCR7* 在聚类 0 中的检出比例为 48.8%，在其余细胞中为 11.0%。但这并没有直接回答注释时真正需要回答的问题：幼稚 CD4 T 与记忆 CD4 T 究竟靠什么区分？前文的轮廓系数与子抽样分析已经表明，这两群之间的边界最不牢靠。要检验这条边界，需要把两群直接放在一起比较。
+
+```r
+library(Seurat)
+
+# Pairwise test: naive CD4 T (cluster 0) vs memory CD4 T (cluster 1) only
+cd4_pair <- FindMarkers(pbmc, ident.1 = "0", ident.2 = "1",
+                        min.pct = 0.25, logfc.threshold = 0.25, verbose = FALSE)
+cat("Genes with p_val_adj < 0.05:", sum(cd4_pair$p_val_adj < 0.05), "\n")
+
+# Positive avg_log2FC = higher in ident.1 (naive); negative = higher in ident.2 (memory)
+head(cd4_pair[order(-cd4_pair$avg_log2FC), c("avg_log2FC", "pct.1", "pct.2")], 6)
+head(cd4_pair[order(cd4_pair$avg_log2FC),  c("avg_log2FC", "pct.1", "pct.2")], 6)
+```
+
+两群之间共有 132 个基因的校正后 p 值低于 0.05，代表性结果见 @tbl-cd4-pairwise。
+
+| 偏向 | 基因 | avg_log2FC | 检出比例（幼稚） | 检出比例（记忆） |
+|---|---|---|---|---|
+| 幼稚 | AIF1 | 1.56 | 29.0% | 16.5% |
+| 幼稚 | CCR7 | 1.50 | 48.8% | 24.2% |
+| 幼稚 | SELL | 0.65 | 63.2% | 50.0% |
+| 记忆 | ANXA2 | −1.94 | 14.3% | 45.7% |
+| 记忆 | LGALS1 | −1.91 | 15.2% | 42.9% |
+| 记忆 | S100A4 | −1.75 | 64.5% | 95.7% |
+| 记忆 | S100A11 | −1.74 | 25.0% | 62.5% |
+
+: 幼稚 CD4 T（聚类 0）与记忆 CD4 T（聚类 1）的一对一差异基因（节选） {#tbl-cd4-pairwise}
+
+结果在生物学上是合理的。幼稚侧是 *CCR7* 与 *SELL*（编码 CD62L），二者都是引导 T 细胞归巢淋巴结的受体。记忆侧是 *S100A4*、*ANXA2*、*LGALS1* 等在记忆与效应 T 细胞中上调的基因。但这张表同样值得批判地阅读。排在幼稚侧首位的 *AIF1* 是髓系基因，在两群中的检出比例都很低。它更可能来自环境 RNA 或残余的髓系双细胞（参见专题 6.2），而非幼稚 T 细胞的特征，不应作为区分依据。一对一比较缩小了对照组，也会放大这类混杂信号。
+
+### 用 AUC 衡量区分能力
+
+差异基因"显著"并不等于它能把两群细胞分开。更直接的问题是：**仅凭这一个基因，能在多大程度上判断一个细胞属于哪一群？**这正是受试者工作特征曲线（ROC）下面积（AUC）所度量的。`FindMarkers()` 设置 `test.use = "roc"` 时，会为每个基因报告 `myAUC` 与 `power`。其中 `power` 定义为 $2\times|\mathrm{AUC} - 0.5|$：0 表示该基因完全无法区分两群，1 表示可以完美区分。这个检验不输出 p 值，因此也就绕开了上一节讨论的双重浸入问题。@fig-roc-curve 给出了 AUC 的几何含义：对角线代表随机猜测（AUC = 0.5，`power` = 0），曲线越贴近左上角，区分能力越强。
+
+![ROC 曲线示意图。横轴为假阳性率，纵轴为真阳性率；红色虚线对角线对应随机分类器（AUC = 0.5），左上角的点对应完美分类器（AUC = 1）。三条彩色曲线代表区分能力不同的分类器，曲线下面积越大，区分能力越强。将单个基因的表达量当作分类依据，即可用同样的方法衡量它区分两群细胞的能力。](https://upload.wikimedia.org/wikipedia/commons/thumb/1/13/Roc_curve.svg/960px-Roc_curve.svg.png){#fig-roc-curve width=60%}
+
+```r
+library(Seurat)
+
+# test.use = "roc": per-gene classification AUC instead of a p-value.
+# power = 2 * |AUC - 0.5|; 0 = no separation, 1 = perfect separation.
+cd4_roc <- FindMarkers(pbmc, ident.1 = "0", ident.2 = "1", test.use = "roc",
+                       min.pct = 0.25, logfc.threshold = 0.25, verbose = FALSE)
+head(cd4_roc[order(-cd4_roc$power), c("myAUC", "power", "pct.1", "pct.2")], 5)
+cd4_roc[c("CCR7", "SELL"), c("myAUC", "power")]
+
+# For contrast: two monocyte populations with a crisp boundary
+mono_roc <- FindMarkers(pbmc, ident.1 = "2", ident.2 = "5", test.use = "roc",
+                        min.pct = 0.25, logfc.threshold = 0.25, verbose = FALSE)
+head(mono_roc[order(-mono_roc$power), c("myAUC", "power", "pct.1", "pct.2")], 5)
+```
+
+两组比较的结果形成了鲜明对照。在 CD14+ 与 FCGR3A+ 单核细胞之间，区分能力最强的 *LYZ* 与 *FCGR3A* 的 `power` 分别达到 0.954 与 0.938。*FCGR3A* 在 FCGR3A+ 单核中的检出比例为 96.0%，在 CD14+ 单核中仅为 11.5%，单凭这一个基因就几乎能把两群完全分开。而在幼稚与记忆 CD4 T 之间，区分能力最强的 *S100A4* 的 `power` 只有 0.682。经典幼稚标志 *CCR7* 仅为 0.296，在 404 个参与检验的基因中只排第 33 位。原因有二。其一，幼稚到记忆本身是一个分化连续体，不存在截然的分界。其二，在每个细胞仅检出约 800 个基因的数据中，*CCR7* 这类中等表达的受体基因常因 dropout 而缺失：聚类 0 中只有不到一半的细胞检出了它。
+
+:::info
+**黄金法则：** 近缘细胞群的注释置信度，应当与它们之间的区分能力相称。单核细胞亚群之间存在近乎二元的标志基因，可以放心地分别命名。幼稚与记忆 CD4 T 之间，最好的单个基因也只有中等区分力。此时更稳妥的表述是"偏幼稚样（naive-like）"与"偏记忆样（memory-like）"的 CD4 T 细胞，并在可能时借助蛋白层面的证据确认，例如用 CITE-seq 直接测量 CD45RA 与 CCR7 等表面蛋白（参见专题 7.4）。轮廓系数、子抽样稳定性与一对一 AUC 三类证据一致指向同一条脆弱边界，这本身就是一项值得报告的结果。
+:::
+
 ## 手动注释
 
 得到每个聚类的标志基因后，对照已知的细胞类型标志基因数据库（如 PanglaoDB、CellMarker）即可手动指派类型。@tbl-pbmc-markers 列出 PBMC 常见细胞类型的经典标志基因。
@@ -573,15 +926,32 @@ FeaturePlot(pbmc, features = c("CD3D", "MS4A1", "LYZ", "GNLY"))
 DotPlot(pbmc, features = c("IL7R", "CD8A", "MS4A1", "GNLY", "CD14", "FCGR3A")) +
     Seurat::RotatedAxis()
 
-# Assign biological labels to clusters (example mapping)
-new_ids <- c("0" = "CD4 T", "1" = "CD14+ Mono", "2" = "B",
-             "3" = "CD8 T", "4" = "NK", "5" = "FCGR3A+ Mono")
+# Assign biological labels to clusters. This mapping follows the marker table
+# above (Louvain, resolution = 0.5); re-derive it whenever upstream steps change.
+new_ids <- c("0" = "Naive CD4 T", "1" = "Memory CD4 T", "2" = "CD14+ Mono",
+             "3" = "B", "4" = "CD8 T", "5" = "FCGR3A+ Mono",
+             "6" = "NK", "7" = "DC", "8" = "Platelet")
 pbmc <- RenameIdents(pbmc, new_ids)
 ```
 
-## 自动注释：SingleR
+## 自动注释的方法谱系
 
-手动注释依赖专家知识、耗时且主观。自动注释工具用带标签的参考数据集为查询细胞快速指派类型。SingleR 对每个查询细胞，计算其表达谱与参考数据集中各细胞类型表达谱的相关性，指派相关性最高的类型，并通过迭代微调（fine-tuning）提高分辨力（Aran et al., 2019）。
+手动注释依赖专家知识，耗时且主观。自动注释工具把"已有的细胞类型知识"形式化，再批量施加到新数据上。各种工具的根本差异，在于这份先验知识以什么形式提供：一份标志基因列表、一组带标签的参考表达谱、一个带标签的单细胞参考图谱，还是一个预先训练好的分类模型。先验知识的形式决定了工具的原理，也决定了它会在什么情况下失效。@tbl-annotation-tools 按这一维度归纳了当前最常用的六类方法。本节依次讲解前四类的原理并在 PBMC 3k 上实际运行，后两类只介绍原理，最后把所有结果放在一起对照。
+
+| 策略 | 代表工具 | 先验知识的形式 | 核心原理 | 运行环境 | 主要局限 |
+|---|---|---|---|---|---|
+| 参考相关性 | SingleR | 带标签的参考表达谱（bulk 或单细胞） | 在区分性基因上计算与各参考类型的秩相关 | R | 受参考覆盖度与粒度限制 |
+| 标志基因打分 | scType | 正、负标志基因列表 | 对标志基因的加权 z 值求和打分 | R | 依赖标志基因库的质量；近缘类型标志重叠 |
+| 参考映射 | Seurat 标签传递、Azimuth | 带标签的单细胞参考图谱 | 在共享低维空间中寻找锚点，按近邻加权投票 | R | 需要与查询数据相近的高质量单细胞参考 |
+| 机器学习分类器 | CellTypist | 在大型图谱上预训练的模型 | 正则化逻辑回归给出各类型概率 | Python | 无法识别训练集之外的类型 |
+| 深度生成模型 | scANVI | 部分带标签的参考数据 | 半监督变分自编码器 | Python + GPU | 环境与计算成本高 |
+| 大语言模型 | GPTCelltype 等 | 模型在训练语料中学到的知识 | 让大语言模型根据标志基因列表推断类型 | 外部 API | 不可复现，可能虚构，需上传数据 |
+
+: 自动细胞类型注释的六类策略 {#tbl-annotation-tools}
+
+## 基于参考相关性：SingleR
+
+SingleR 对每个查询细胞，计算其表达谱与参考数据集中各细胞类型表达谱的相关性，指派相关性最高的类型（Aran et al., 2019）。它的计算分三步。第一步是选基因：对参考中的每一对标签，挑出在其中一个标签里显著高表达的基因，所有标签对的结果取并集，作为后续计算所用的区分性基因。第二步是打分：在这些基因上计算查询细胞与每个参考样本的 Spearman 秩相关，每个标签的得分取该标签下所有参考样本相关系数的 80% 分位数。用秩相关而非原始表达，使得 bulk 芯片参考也能与单细胞数据直接比较。第三步是微调（fine-tuning）：只保留得分与最高分相差不超过 0.05 的候选标签，仅用这几个候选标签之间的区分性基因重新计算相关性，如此迭代直到只剩一个标签。微调使 SingleR 能在相近类型之间做出比单轮打分更细的区分。
 
 :::note
 **运行环境说明：** `SingleR` 与 `celldex` 均为 Bioconductor 包（`BiocManager::install(c("SingleR","celldex"))`）。`celldex` 的参考数据集首次调用时需从 ExperimentHub 联网下载（约数十 MB）并缓存到本地，因此第一次运行较慢、且需要网络。
@@ -640,6 +1010,343 @@ table(Cluster = pbmc$seurat_clusters, SingleR = pbmc$SingleR_pruned)
 
 :::info
 **黄金法则：** 手动注释与自动注释应相互印证，而非二选一。自动注释快速、客观，适合提供初步框架；手动注释精确、可解释，能纠正参考数据集缺失类型或物种/组织不匹配带来的错误。当二者一致时，注释可信；当二者矛盾时，正是发现新细胞状态或识别注释陷阱（如参考缺失该类型）的契机。任何最终注释都应能用一组特异标志基因解释。
+:::
+
+## 参考数据集的选择决定注释结果
+
+SingleR 只能从参考数据集已有的标签中挑选答案。因此，换一个参考，注释结果可能截然不同。上面使用的 Human Primary Cell Atlas（HPCA）主要由芯片表达谱构成，包含 713 个样本、36 个主类标签，覆盖多种组织来源的原代细胞，适用面广，但对血液免疫细胞的刻画并不精细。`celldex` 中的 `MonacoImmuneData()` 则专为免疫细胞设计。它由流式分选的免疫细胞亚群的 bulk RNA-seq 构成，共 114 个样本，提供 10 个主类与 29 个细类标签。下面用它重新注释同一批细胞，并与 HPCA 的结果逐簇比较。
+
+```r
+library(Seurat)
+library(SingleR)
+library(celldex)
+
+# An immune-specific reference built from sorted immune populations
+monaco  <- celldex::MonacoImmuneData()
+pred_mm <- SingleR(test = sce, ref = monaco, labels = monaco$label.main)
+pred_mf <- SingleR(test = sce, ref = monaco, labels = monaco$label.fine)
+
+# Per-cluster summary: the majority label and the share of cells carrying it
+majority_label <- function(labels, clusters) {
+    sapply(split(labels, clusters), function(x) {
+        top <- sort(table(x), decreasing = TRUE)[1]
+        sprintf("%s (%.0f%%)", names(top), 100 * top / length(x))
+    })
+}
+data.frame(
+    HPCA        = majority_label(pred$pruned.labels,    pbmc$seurat_clusters),
+    Monaco_main = majority_label(pred_mm$pruned.labels, pbmc$seurat_clusters),
+    Monaco_fine = majority_label(pred_mf$pruned.labels, pbmc$seurat_clusters)
+)
+```
+
+:::note
+**运行环境说明：** `MonacoImmuneData()` 首次调用时同样需要联网下载（约数十 MB）。`SingleR()` 还提供 `clusters` 参数，可直接在聚类层面而非单细胞层面注释；但在当前版本中，该模式依赖尚未随 `SingleR` 默认安装的 Bioconductor 包 `scrapper`。上面的代码改为先逐细胞注释、再按聚类汇总多数标签，结果同样直观，也保留了每个簇内部的标签构成。
+:::
+
+| 聚类 | 标志基因判定 | HPCA | Monaco 主类 | Monaco 细类 |
+|---|---|---|---|---|
+| 0 | 幼稚 CD4 T | T_cells (96%) | CD4+ T cells (69%) | Naive CD4 T cells (41%) |
+| 1 | 记忆 CD4 T | T_cells (100%) | CD4+ T cells (87%) | Th2 cells (21%) |
+| 2 | CD14+ 单核 | Monocyte (89%) | Monocytes (96%) | Classical monocytes (70%) |
+| 3 | B 细胞 | B_cell (97%) | B cells (99%) | Naive B cells (56%) |
+| 4 | CD8 T | T_cells (87%) | T cells (57%) | Vd2 gd T cells (27%) |
+| 5 | FCGR3A+ 单核 | Monocyte (96%) | Monocytes (100%) | Intermediate monocytes (62%) |
+| 6 | NK 细胞 | NK_cell (97%) | NK cells (94%) | Natural killer cells (91%) |
+| 7 | 树突状细胞 | **Monocyte (84%)** | Dendritic cells (97%) | Myeloid dendritic cells (88%) |
+| 8 | 血小板 | Platelets (92%) | **Progenitors (85%)** | **Progenitor cells (77%)** |
+
+: 两个参考数据集在 PBMC 3k 各聚类上的多数标签（括号内为该标签在簇内所占比例） {#tbl-reference-compare}
+
+@tbl-reference-compare 中加粗的两处，恰好代表了参考数据集失效的两种方式。
+
+**第一种：参考"有"这个类型，但它不是同一种细胞。** HPCA 把聚类 7 的树突状细胞判为单核细胞，而 Monaco 将其中 28 个判为髓系树突状细胞、4 个判为浆细胞样树突状细胞。HPCA 并非没有 "DC" 标签。问题在于，查看其细类标签可以发现，HPCA 中的 DC 样本全部是体外由单核细胞诱导分化而来的（`DC:monocyte-derived` 及其各种刺激条件）。血液中天然存在的树突状细胞与这种体外产物在转录上相去甚远，反而更像单核细胞。**标签名称相同，不代表生物学实体相同。**
+
+**第二种：参考根本没有这个类型。** Monaco 不含血小板，于是聚类 8 的 13 个细胞中有 11 个被判为 "Progenitors"。更值得警惕的是，这 11 个细胞**没有一个被 pruned**。聚类 8 的 `delta.next` 中位数为 0.067，甚至略高于全体细胞的 0.058。前文说过，大量 pruned 往往提示参考缺少某种细胞类型；这里的例子说明，反过来并不成立。pruning 衡量的是候选标签之间的模棱两可，而当参考完全缺少正确答案时，细胞可能会稳定且自信地落在同一个错误标签上。此时唯一可靠的防线是标志基因：*PPBP*、*PF4* 等血小板基因在该簇中特异高表达，与任何祖细胞的身份都不相符。
+
+细类标签则暴露出另一个问题：**参考的粒度可能超过数据的分辨力。** Monaco 细类区分了 Th1、Th2、Th17、滤泡辅助 T 细胞等 CD4 T 亚型。在聚类 1 中，细胞被分散到 13 个不同的细类标签上，占比最高的 "Th2 cells" 也只有 21%。这些辅助性 T 细胞亚型主要依靠少数转录因子与细胞因子区分，在每个细胞只检出数百个基因的 3' 端数据中，大多数细胞根本不携带足以做出这种判断的信息。聚类 4 也类似：84 个细胞被判为 Vδ2 γδ T 细胞，76 个为 MAIT 细胞，61 个为终末效应 CD8 T 细胞。这提示聚类 4 并非均质的"CD8 T"，而是多种细胞毒性 T 细胞的混合，正是下文层级注释要处理的对象。
+
+:::tip
+**选择参考数据集的三条经验：** 其一，参考应与查询数据的组织来源相匹配。血液与免疫细胞优先选用 Monaco、DICE 等基于分选免疫细胞的参考，实体组织则应优先选用同组织的单细胞图谱。其二，可以同时使用多个参考，并把它们之间的分歧当作需要人工复核的线索，而不是简单地取其一。其三，细类标签只在聚类层面、且与标志基因相互印证时才可采信；若一个簇的细类标签分散、多数标签占比很低，应退回到主类标签进行报告。
+:::
+
+## 基于标志基因打分：scType
+
+scType 不需要任何参考表达数据，只需要一份标志基因数据库 ScTypeDB（Ianevski et al., 2022）。数据库按组织列出每种细胞类型的阳性标志（应当表达的基因）与阴性标志（不应表达的基因），其中免疫系统部分收录了 34 种细胞类型。这种做法本质上是把手动注释时"查标志基因表"的过程自动化了。
+
+scType 的打分分三步。第一步是标志基因的特异性加权。一个基因若只出现在少数细胞类型的标志列表中，它的特异性高，权重接近 1；若它出现在许多类型的列表中，权重被压低到接近 0。例如 *PTPRC*（编码泛白细胞标志 CD45）出现在 34 种免疫细胞类型中 17 种的阳性列表里，几乎不提供区分信息。第二步是逐细胞打分。每个标志基因的表达先在细胞间标准化为 z 值并乘以权重，对某一细胞类型的全部阳性标志求和后除以 $\sqrt{n_\text{pos}}$，再减去阴性标志按同样方式得到的加权和。第三步是聚类层面的判定。把一个聚类内所有细胞的得分相加，取总分最高的类型；若最高总分低于该聚类细胞数的四分之一，则判为 "Unknown"。
+
+:::note
+**运行环境说明：** scType 不是 R 包，而是以 R 脚本加 Excel 数据库的形式在 GitHub 上发布。为保证结果可复现，本书把两个核心脚本与数据库固定在上游的一个具体提交版本（`630e15c`），并存放在 `/Users/angdong/Documents/bio_example/SingleCell/sctype/`。脚本依赖 CRAN 包 `HGNChelper` 与 `openxlsx`（`install.packages(c("HGNChelper", "openxlsx"))`）。在其他机器上可用下面的命令获取同一版本的文件。
+:::
+
+```bash
+SCTYPE_DIR=/Users/angdong/Documents/bio_example/SingleCell/sctype
+REV=630e15cf1e51f2612eda4ad0406dfb17503fa8c9
+mkdir -p "$SCTYPE_DIR"
+for f in R/gene_sets_prepare.R R/sctype_score_.R ScTypeDB_full.xlsx; do
+    curl -L -o "$SCTYPE_DIR/$(basename "$f")" \
+        "https://raw.githubusercontent.com/IanevskiAleksandr/sc-type/$REV/$f"
+done
+```
+
+```r
+library(Seurat)
+library(HGNChelper)
+
+# scType ships as R scripts plus an Excel marker database, not as a package.
+# Local copies pinned to upstream commit 630e15c (github.com/IanevskiAleksandr/sc-type)
+SCTYPE_DIR <- "/Users/angdong/Documents/bio_example/SingleCell/sctype"
+source(file.path(SCTYPE_DIR, "gene_sets_prepare.R"))
+source(file.path(SCTYPE_DIR, "sctype_score_.R"))
+
+# Positive and negative marker sets for the immune cell types in ScTypeDB
+gs <- gene_sets_prepare(file.path(SCTYPE_DIR, "ScTypeDB_full.xlsx"), "Immune system")
+
+# z-score the marker genes across cells, clipped at 10 as Seurat's ScaleData() does.
+# Working on a separate matrix leaves the object's scale.data untouched.
+expr       <- GetAssayData(pbmc, layer = "data")
+markers_db <- unique(unlist(c(gs$gs_positive, gs$gs_negative)))
+cat("Marker genes found in data:", sum(markers_db %in% rownames(expr)), "/",
+    length(markers_db), "\n")
+z <- t(scale(t(as.matrix(expr[intersect(markers_db, rownames(expr)), ]))))
+z[z > 10] <- 10
+es <- sctype_score(z, scaled = TRUE, gs = gs$gs_positive, gs2 = gs$gs_negative)
+
+# Cluster-level call: sum per-cell scores; "Unknown" if the best score < n_cells / 4
+sctype_tbl <- do.call(rbind, lapply(levels(pbmc$seurat_clusters), function(k) {
+    s <- sort(rowSums(es[, pbmc$seurat_clusters == k, drop = FALSE]), decreasing = TRUE)
+    n <- sum(pbmc$seurat_clusters == k)
+    data.frame(cluster = k, n_cells = n,
+               sctype = if (s[1] < n / 4) "Unknown" else names(s)[1],
+               score = round(s[1]), runner_up = names(s)[2], score_2 = round(s[2]))
+}))
+sctype_tbl
+```
+
+| 聚类 | 标志基因判定 | scType 判定 | 得分 | 次高类型 | 次高得分 |
+|---|---|---|---|---|---|
+| 0 | 幼稚 CD4 T | **Naive CD8+ T cells** | 489 | Naive CD4+ T cells | 474 |
+| 1 | 记忆 CD4 T | Memory CD4+ T cells | 520 | γδ-T cells | 483 |
+| 2 | CD14+ 单核 | Classical Monocytes | 1,236 | Non-classical monocytes | 925 |
+| 3 | B 细胞 | Naive B cells | 1,150 | Memory B cells | 1,102 |
+| 4 | CD8 T | CD8+ NKT-like cells | 511 | CD4+ NKT-like cells | 415 |
+| 5 | FCGR3A+ 单核 | Non-classical monocytes | 570 | Macrophages | 371 |
+| 6 | NK 细胞 | Natural killer cells | 695 | CD8+ NKT-like cells | 626 |
+| 7 | 树突状细胞 | Myeloid Dendritic cells | 164 | Plasmacytoid Dendritic cells | 163 |
+| 8 | 血小板 | Platelets | 264 | Megakaryocyte | 145 |
+
+: scType 在 PBMC 3k 各聚类上的判定（ScTypeDB 免疫系统，提交版本 630e15c） {#tbl-sctype}
+
+scType 在谱系层面全部判对，包括 HPCA 误判的树突状细胞与 Monaco 缺失的血小板。这是标志基因方法的长处：只要数据库里有这种类型，就不受参考样本来源的限制。它对 FCGR3A+ 单核细胞的判定（非经典单核细胞）也比 Monaco 的"中间型单核细胞"更符合经典命名。
+
+但 @tbl-sctype 同样暴露了这类方法的三个弱点。第一，**结果的上限就是数据库的质量。** 聚类 0 被判为"幼稚 CD8+ T"，而非幼稚 CD4+ T。检查数据库可以发现原因：幼稚 CD4+ T 的 27 个阳性标志，是记忆 CD4+ T 的 29 个阳性标志的真子集，后者只多了 *ISG20* 与 *S100A4*；列表里还混有 *FOXP3*、*GZMB*、*CTLA4* 等与幼稚 T 细胞无关的基因，而 *IL2RA* 同时出现在幼稚 CD4+ T 的阳性与阴性列表中。用这样的列表区分近缘亚型，结果近乎随机。
+
+第二，**近缘类型之间的得分差距往往很小。** 聚类 0 的前两名相差 3%，聚类 7 的髓系与浆细胞样树突状细胞只差 1 分（164 对 163）。若不对 z 值做截断，聚类 7 的判定就会翻转为浆细胞样树突状细胞（208 对 179）。一个会被预处理细节翻转的判定，不应被当作结论。
+
+第三，**基因名称的版本差异会让标志基因悄悄丢失。** 数据库的 261 个标志基因中，只有 161 个在本数据中找到。原因之一是 `gene_sets_prepare()` 会调用 `HGNChelper` 把基因名"更新"为当前的 HGNC 官方名称。例如血小板标志 *SDPR* 已更名为 *CAVIN2*，数据库原本写的是 *SDPR*，hg19 注释的本数据中也叫 *SDPR*，但经过"更新"后反而对不上了。这类丢失不会报错，只能靠主动检查找到的标志基因数来发现。
+
+## 参考映射：Seurat 标签传递
+
+标签传递（label transfer）把一份已注释的单细胞参考图谱当作"地图"，把查询细胞逐个放到地图上，再根据它周围的参考细胞决定其身份（Stuart et al., 2019）。专题 7.4 对 scATAC 数据、专题 9.4 对 MERFISH 数据的注释，用的都是这一方法。它分四步完成。
+
+第一步是参考降维：对参考数据做常规的归一化、高变基因选择与 PCA。第二步是投影：查询数据不重新做 PCA，而是用参考的基因载荷投影到参考的主成分空间中（`reference.reduction = "pca"`），使两者处于同一坐标系。第三步是寻找锚点：在这个共同空间中，找出互为最近邻（mutual nearest neighbors）的"查询细胞–参考细胞"对，称为锚点（anchor）。每个锚点再按其两端细胞的近邻集合的重叠程度打分，思路与 SNN 权重相同（参见前文"回到 SNN"一节）。第四步是加权投票：对每个查询细胞，取离它最近的若干锚点（默认 50 个，参数 `k.weight`），按距离与锚点得分加权，把这些锚点携带的参考标签汇总为各类型的预测得分。得分最高的类型记为 `predicted.id`，最高得分本身记为 `prediction.score.max`，取值在 0 到 1 之间。Azimuth 是同一方法的"预制版"：它提供多种组织的预构建参考图谱与网页工具，用户上传数据即可完成映射（Hao et al., 2021）。
+
+这里以本书多样本 PBMC 分析的规范数据集 Kang18（8 名红斑狼疮患者的 PBMC，专题 7.1 的主要数据）中未经刺激的对照组细胞为参考。原作者已为其中的细胞标注了 8 种细胞类型。
+
+:::note
+**运行环境说明：** `muscData` 为 Bioconductor 包（`BiocManager::install("muscData")`）。`Kang18_8vs8()` 首次调用时需通过 ExperimentHub 联网下载约 39 MB 的数据及 ExperimentHub 的元数据库，在网络较慢的环境下可能耗时较长；此后从本地缓存读取。参考数据来自 10x Chromium v2 化学试剂，而 PBMC 3k 为 v1，两者的技术差异由锚点方法吸收。
+:::
+
+```r
+library(Seurat)
+library(muscData)
+library(SingleCellExperiment)
+
+# Reference: unstimulated, annotated singlets from Kang et al. 2018
+kang <- Kang18_8vs8()
+kang <- kang[, kang$stim == "ctrl" & kang$multiplets == "singlet" & !is.na(kang$cell)]
+ref <- CreateSeuratObject(counts = counts(kang),
+                          meta.data = as.data.frame(colData(kang)[, c("ind", "cell")]))
+ref <- NormalizeData(ref, verbose = FALSE) |>
+    FindVariableFeatures(nfeatures = 2000, verbose = FALSE) |>
+    ScaleData(verbose = FALSE) |>
+    RunPCA(npcs = 30, verbose = FALSE)
+
+# Project the query into the reference PCA space, find anchors, then vote
+anchors <- FindTransferAnchors(reference = ref, query = pbmc, dims = 1:30,
+                               reference.reduction = "pca", verbose = FALSE)
+pred_lt <- TransferData(anchorset = anchors, refdata = ref$cell, dims = 1:30,
+                        verbose = FALSE)
+pbmc <- AddMetaData(pbmc, pred_lt[, c("predicted.id", "prediction.score.max")])
+
+# Per-cluster summary: majority predicted label, its share, and median confidence
+lt_summary <- do.call(rbind, lapply(levels(pbmc$seurat_clusters), function(k) {
+    d   <- pbmc@meta.data[pbmc$seurat_clusters == k, ]
+    top <- sort(table(d$predicted.id), decreasing = TRUE)
+    data.frame(cluster = k, predicted = names(top)[1],
+               share = round(top[[1]] / nrow(d), 2),
+               median_score = round(median(d$prediction.score.max), 2))
+}))
+lt_summary
+```
+
+参考集包含 12,315 个细胞，与查询数据之间共找到 3,481 个锚点，整个过程在普通笔记本上约需 10 秒。各聚类的结果见 @tbl-label-transfer。
+
+| 聚类 | 标志基因判定 | 标签传递结果 | 占比 | 预测得分中位数 |
+|---|---|---|---|---|
+| 0 | 幼稚 CD4 T | CD4 T cells | 99% | 0.99 |
+| 1 | 记忆 CD4 T | CD4 T cells | 98% | 0.97 |
+| 2 | CD14+ 单核 | CD14+ Monocytes | 98% | 0.94 |
+| 3 | B 细胞 | B cells | 98% | 1.00 |
+| 4 | CD8 T | CD8 T cells | 83% | 0.83 |
+| 5 | FCGR3A+ 单核 | FCGR3A+ Monocytes | 92% | 0.97 |
+| 6 | NK 细胞 | NK cells | 97% | 1.00 |
+| 7 | 树突状细胞 | Dendritic cells | 94% | 0.74 |
+| 8 | 血小板 | Megakaryocytes | 100% | 0.95 |
+
+: 以 Kang18 对照组 PBMC 为参考的标签传递结果 {#tbl-label-transfer}
+
+在参考所能提供的粒度上，标签传递 9 个聚类全部判对。全体细胞的预测得分中位数为 0.977，得分低于 0.5 的细胞只占 0.6%。这是几种方法中与标志基因判定最吻合的一种，原因并不神秘：参考与查询同为外周血单个核细胞，同为 10x 液滴数据，参考中又恰好包含树突状细胞与巨核细胞，HPCA 与 Monaco 的两种失效模式在这里都不存在。可见，**一份与查询数据来源相近的单细胞参考，是自动注释最有力的条件。**
+
+但这张表也藏着一个容易忽略的陷阱：**高置信度不等于高分辨率。**参考里只有一个 "CD4 T cells" 标签，于是幼稚与记忆 CD4 T 两个聚类都以 0.98 左右的得分被判为 "CD4 T cells"。参考从未区分过这两者，标签传递自然也就无从回答它们的区别。预测得分衡量的是"在参考给出的选项中有多确定"，而不是"这个答案有多精细"。与之对照，CellTypist 的细粒度模型试图区分幼稚与记忆辅助 T 细胞，对记忆 CD4 T 簇给出的最大概率中位数只有 0.51（见下一节）。两种工具对同一群细胞给出了截然不同的"确定性"，差别完全来自各自标签体系的粒度。此外，参考标签本身也是原作者通过聚类与标志基因得到的；标签传递会原样继承参考注释中的任何错误与偏好。
+
+## 机器学习分类器：CellTypist
+
+CellTypist 把注释当作有监督分类问题（Domínguez Conde et al., 2022）。开发者先在大型、经过人工整理的单细胞图谱上训练模型，用户直接下载使用。本例使用的两个免疫模型均由来自 20 种组织、18 项研究的免疫细胞训练而成。`Immune_All_High` 区分 32 种粗粒度类型。`Immune_All_Low` 区分 98 种细粒度亚型，使用 6,639 个特征基因。
+
+模型本身是正则化的逻辑回归，每种细胞类型对应一组基因权重。对一个查询细胞，模型先按训练数据的均值与标准差对表达值做标准化，再为每种类型计算线性得分，并经 sigmoid 函数转化为概率，概率最高者即为预测标签。各类型的概率彼此独立计算，因此不必加和为 1。逻辑回归的优点是快且可解释：每种类型的权重向量直接给出了模型"依据哪些基因判断"。单个细胞的预测难免有噪声，CellTypist 因此提供多数投票（majority voting）：先对细胞做过度聚类，再把每个小簇内占多数的预测标签赋给簇内所有细胞。默认的过度聚类由 CellTypist 自行完成；这里通过 `over_clustering` 参数直接使用 Seurat 的聚类，便于与其他工具逐簇比较。
+
+:::note
+**运行环境说明：** CellTypist 是 Python 工具。建议为它单独建立一个 conda 环境，再用 pip 安装：`conda create -n scanno python=3.11 -y`，`conda activate scanno`，`pip install scanpy celltypist`。在中国大陆访问 PyPI 较慢时，可在 `pip install` 后加上 `-i https://pypi.tuna.tsinghua.edu.cn/simple` 使用清华镜像。模型文件首次使用时从网络下载并缓存在 `~/.celltypist/`。下面先在 R 中导出聚类标签，使 Python 端注释的恰好是同一批 2,638 个细胞；导出的 CSV 写在当前工作目录，Python 脚本需在同一目录下运行。
+:::
+
+```r
+# Export cluster labels so the Python tool annotates exactly the same cells
+write.csv(data.frame(barcode = colnames(pbmc),
+                     cluster = as.character(pbmc$seurat_clusters)),
+          "pbmc3k_clusters.csv", row.names = FALSE)
+```
+
+```python
+import pandas as pd
+import scanpy as sc
+import celltypist
+from celltypist import models
+
+SC_DIR = "/Users/angdong/Documents/bio_example/SingleCell"
+
+# Same 2,638 cells and cluster labels as the Seurat object (exported above)
+adata = sc.read_10x_mtx(f"{SC_DIR}/filtered_gene_bc_matrices/hg19",
+                        var_names="gene_symbols")
+clusters = pd.read_csv("pbmc3k_clusters.csv", index_col="barcode", dtype=str)
+adata = adata[clusters.index].copy()
+adata.obs["seurat_cluster"] = clusters["cluster"].astype("category")
+
+# CellTypist expects log1p(CP10k) expression of ALL genes, not scaled data
+sc.pp.normalize_total(adata, target_sum=1e4)
+sc.pp.log1p(adata)
+
+models.download_models(model=["Immune_All_High.pkl", "Immune_All_Low.pkl"])
+for model in ["Immune_All_High.pkl", "Immune_All_Low.pkl"]:
+    pred = celltypist.annotate(adata, model=model, majority_voting=True,
+                               over_clustering="seurat_cluster")
+    res = pred.predicted_labels.join(adata.obs["seurat_cluster"])
+    res["max_prob"] = pred.probability_matrix.max(axis=1)
+    # Both columns are categoricals with different category sets: compare as strings
+    res["agrees"] = (res["predicted_labels"].astype(str)
+                     == res["majority_voting"].astype(str))
+    summary = res.groupby("seurat_cluster", observed=True).agg(
+        majority=("majority_voting", "first"),
+        share=("agrees", "mean"),
+        median_prob=("max_prob", "median"),
+    )
+    print(model)
+    print(summary.round(2))
+```
+
+两个模型的多数投票结果见 @tbl-celltypist。其中"占比"指簇内单细胞预测与多数投票标签一致的细胞比例。
+
+| 聚类 | 标志基因判定 | High 模型 | Low 模型 | 占比 | 最大概率中位数 |
+|---|---|---|---|---|---|
+| 0 | 幼稚 CD4 T | T cells | Tcm/Naive helper T cells | 65% | 0.87 |
+| 1 | 记忆 CD4 T | T cells | **Tcm/Naive helper T cells** | 47% | 0.51 |
+| 2 | CD14+ 单核 | Monocytes | Classical monocytes | 86% | 0.93 |
+| 3 | B 细胞 | B cells | B cells | 94% | 0.94 |
+| 4 | CD8 T | T cells | Tem/Trm cytotoxic T cells | 29% | 0.49 |
+| 5 | FCGR3A+ 单核 | Monocytes | Non-classical monocytes | 97% | 0.99 |
+| 6 | NK 细胞 | ILC | CD16+ NK cells | 86% | 0.99 |
+| 7 | 树突状细胞 | DC | DC | 41% | 0.61 |
+| 8 | 血小板 | Megakaryocytes/platelets | Megakaryocytes/platelets | 85% | 0.77 |
+
+: CellTypist 两个免疫模型在 PBMC 3k 各聚类上的多数投票结果 {#tbl-celltypist}
+
+在谱系层面，CellTypist 同样全部判对。NK 细胞在 High 模型中被归入 "ILC"，这是因为该模型的粗粒度层级把 NK 细胞归为先天淋巴细胞（innate lymphoid cell）的一员，并非错误。它能正确识别血小板与树突状细胞，原因在于训练数据本身就是单细胞免疫图谱，包含这些类型。
+
+细粒度结果则再次落在前文反复出现的薄弱处。记忆 CD4 T 簇被多数投票判为"Tcm/Naive helper T cells"，但支持这一标签的细胞只有 47%，最大概率的中位数只有 0.51。聚类 4 的 315 个细胞中，判为效应记忆/组织驻留细胞毒性 T 细胞的占 29%，判为 NK 细胞的占 27%，两者几乎持平。值得玩味的是标签名本身："Tcm/Naive helper T cells" 把中央记忆与幼稚辅助 T 细胞合并成一个类型。模型的构建者在训练时就已承认，仅凭转录组难以可靠地区分这两者。多数投票会把簇内的分歧压缩成一个干净的标签，因此**必须同时报告占比与概率**，否则读者会误以为这是一个确定的判定。
+
+## 深度生成模型与大语言模型
+
+### scANVI：半监督的生成模型
+
+scANVI（Xu et al., 2021）是 scVI 的半监督扩展（scVI 的原理参见专题 7.1）。scVI 用变分自编码器把每个细胞的计数压缩为低维隐变量，并把批次作为协变量剥离出去。scANVI 在此基础上让隐变量还依赖一个离散的"细胞类型"变量。对有标签的参考细胞，这个变量是已知的；对无标签的查询细胞，模型把它当作待推断的隐变量，并输出各类型的后验概率。由于参考与查询在同一个模型中联合建模，scANVI 一步同时完成批次校正与标签传递。当参考与查询来自不同实验平台、批次效应复杂时，这一点尤其有价值。它的代价是需要 Python 与 PyTorch 环境，大数据集通常还需要 GPU。因此本书不在此给出可运行代码，相关环境的配置参见专题 7.1。
+
+### 大语言模型：把标志基因列表交给模型解读
+
+最新的一类方法直接利用大语言模型在训练语料中学到的生物学知识。以 GPTCelltype（Hou & Ji, 2024）为代表，其做法是把每个聚类的顶部标志基因列表写成提示词交给 GPT-4，让模型逐行给出细胞类型名称；作者报告其结果在多数情况下与人工注释一致。这种方法不需要任何参考数据，门槛极低。下面的代码只在本地构建提示词，不调用任何外部服务。
+
+```r
+library(dplyr)
+
+# LLM-based annotation takes each cluster's top markers as plain text.
+# This block only builds the prompt; sending it to an external API is optional
+# and transmits your marker lists to a third-party service.
+top10 <- markers |>
+    group_by(cluster) |>
+    slice_max(avg_log2FC, n = 10)
+gene_lists <- tapply(top10$gene, top10$cluster, paste, collapse = ", ")
+prompt <- paste0(
+    "Identify the cell type of each cluster of human PBMCs from its top marker ",
+    "genes. Answer with one cell type name per line, in cluster order.\n",
+    paste0("Cluster ", names(gene_lists), ": ", gene_lists, collapse = "\n")
+)
+cat(prompt)
+```
+
+:::warning
+**大语言模型注释的四个风险：** 其一，**不可复现**。模型版本会更新，同一提示词多次提交也可能得到不同答案；论文中必须记录模型名称、版本与调用日期。其二，**会自信地虚构**。模型总会给出一个听起来合理的名称，并不附带置信度，也不会说"我不知道"。其三，**输入本身就有偏差**。提示词里的标志基因来自 `FindAllMarkers()`，前文讨论的双重浸入与环境 RNA 污染同样会误导模型；例如，若把幼稚与记忆 CD4 T 的一对一比较结果交给模型，排在幼稚侧首位的髓系基因 *AIF1* 就可能把它引向错误的方向。其四，**数据外传**。调用在线服务意味着把研究数据发送给第三方，涉及未发表数据或患者数据时需要事先确认合规。比较稳妥的定位是：把大语言模型当作一位博学但不对结果负责的同行，用它提出候选假设，再用标志基因逐一核实。
+:::
+
+## 多工具结果的综合判读
+
+@tbl-annotation-consensus 把本节运行过的五种自动注释结果与标志基因判定并列。表中的标签汇总自前文各节的输出；加粗表示与标志基因判定相矛盾的结果。
+
+| 聚类 | 标志基因判定 | SingleR（HPCA） | SingleR（Monaco 主类） | scType | 标签传递（Kang18） | CellTypist（Low） |
+|---|---|---|---|---|---|---|
+| 0 | 幼稚 CD4 T | T_cells | CD4+ T cells | **Naive CD8+ T cells** | CD4 T cells | Tcm/Naive helper T cells |
+| 1 | 记忆 CD4 T | T_cells | CD4+ T cells | Memory CD4+ T cells | CD4 T cells | **Tcm/Naive helper T cells** |
+| 2 | CD14+ 单核 | Monocyte | Monocytes | Classical Monocytes | CD14+ Monocytes | Classical monocytes |
+| 3 | B 细胞 | B_cell | B cells | Naive B cells | B cells | B cells |
+| 4 | CD8 T | T_cells | T cells | CD8+ NKT-like cells | CD8 T cells | Tem/Trm cytotoxic T cells |
+| 5 | FCGR3A+ 单核 | Monocyte | Monocytes | Non-classical monocytes | FCGR3A+ Monocytes | Non-classical monocytes |
+| 6 | NK 细胞 | NK_cell | NK cells | Natural killer cells | NK cells | CD16+ NK cells |
+| 7 | 树突状细胞 | **Monocyte** | Dendritic cells | Myeloid Dendritic cells | Dendritic cells | DC |
+| 8 | 血小板 | Platelets | **Progenitors** | Platelets | Megakaryocytes | Megakaryocytes/platelets |
+
+: 五种自动注释结果与标志基因判定的逐簇对照（PBMC 3k，resolution = 0.5） {#tbl-annotation-consensus}
+
+从这张表可以归纳出综合判读的四条原则。
+
+**第一，先在谱系层面看一致性。** 45 个"工具 × 聚类"判定中，谱系层面的错误只有两处：HPCA 把树突状细胞判为单核细胞，Monaco 把血小板判为祖细胞。两处错误都源于参考中缺少正确的生物学实体，也都被其余工具一致纠正。谱系层面的多工具一致，可以作为注释可信的有力支持。
+
+**第二，分歧的位置就是需要人工判断的位置。** 细粒度上的分歧集中在三处：幼稚与记忆 CD4 T 之分、聚类 4 究竟是 CD8 T 还是混合的细胞毒性群体、树突状细胞的亚型。这三处与轮廓系数、子抽样稳定性和一对一 AUC 标出的薄弱边界完全重合。自动注释的分歧不是噪声，而是数据本身分辨力不足的又一个信号。
+
+**第三，工具之间并不独立，多数票不等于证据叠加。** 五个工具读入的是同一份经过同样预处理的数据，环境 RNA 或双细胞造成的偏差会同时影响所有工具。它们的先验知识也有共同来源：标志基因库、参考图谱与训练集都建立在相近的文献与分选实验之上，因而可能共享同样的盲点。五个工具一致，比一个工具更可信，但仍不能代替对标志基因的直接核查。
+
+**第四，报告时写清工具的"版本化先验"。** 自动注释的结果由工具、参考或模型共同决定，因此方法部分至少应写明：工具名称与版本；参考数据集或模型的名称与版本，例如 `celldex` 的 HPCA、scType 的提交版本 `630e15c`、CellTypist 的 `Immune_All_Low`（v2）；以及判定所用的置信度阈值。缺少这些信息，注释结果就无法复现。
+
+:::info
+**黄金法则：** 自动注释工具回答的永远是"在我所知的类型中，这群细胞最像哪一种"，而不是"这群细胞是什么"。前者的答案受限于参考或模型的覆盖范围与粒度，后者只能由标志基因与生物学知识来回答。把多工具结果当作一组彼此独立程度有限的"专家意见"，在一致处采信，在分歧处深究，最终以标志基因定论。
 :::
 
 ## 注释的三类陷阱
@@ -705,7 +1412,7 @@ FeaturePlot(pbmc, features = c("CD3D", "LYZ"), blend = TRUE)
 library(Seurat)
 
 # Step 1: pull out one major cell type
-t_cells <- subset(pbmc, idents = c("CD4 T", "CD8 T"))
+t_cells <- subset(pbmc, idents = c("Naive CD4 T", "Memory CD4 T", "CD8 T"))
 
 # Step 2: re-run the full pipeline INSIDE the subset.
 # Re-selecting variable features is the essential step: genes that separated
@@ -735,7 +1442,7 @@ FeaturePlot(t_cells, features = c("CCR7", "SELL", "IL7R", "GZMK", "FOXP3", "MKI6
 
 # 方法总结与衔接说明
 
-本专题完成了 scRNA-seq 基础分析的核心闭环：PCA 降维去噪 → KNN 图 + Leiden 聚类 → UMAP 可视化 → 标志基因 + SingleR 双重注释 → 层级二次聚类解析亚型。其中有四个判断点值得单独记住：主成分数量可用肘部图或置换检验确定，但后者不适用于 SCTransform 的残差；聚类应显式选用 Leiden 而非默认的 Louvain，因为只有前者保证社区连通；分辨率不应靠单次试凑，而应用多分辨率树找出数据能稳定支持的粒度；自动注释必须检查 delta 与 pruned 标签，大量细胞无法自信归类通常意味着参考数据集缺少该类型。至此，模块 A 实现了从原始读段到带细胞类型标签的注释图谱的完整流程。这份注释图谱不仅是单细胞分析的终点，更是众多高级分析的起点——它是第 7 章拟时序、细胞通讯、调控网络推断的共同输入，也是第 9 章空间细胞解卷积不可或缺的参考（参见第 9 章）。第 7 章将在此基础上展开多样本整合、动态推断、调控网络与多组学等高级分析。
+本专题完成了 scRNA-seq 基础分析的核心闭环：PCA 降维去噪 → KNN 图 + Leiden 聚类 → UMAP 可视化 → 标志基因 + SingleR 双重注释 → 层级二次聚类解析亚型。其中有四个判断点值得单独记住：主成分数量可用肘部图或置换检验确定，但后者不适用于 SCTransform 的残差；聚类应显式选用 Leiden 而非默认的 Louvain，因为只有前者保证社区连通；分辨率不应靠单次试凑，而应用多分辨率树找出数据能稳定支持的粒度；自动注释必须检查 delta 与 pruned 标签，大量细胞无法自信归类通常意味着参考数据集缺少该类型。在此之上，本专题还补充了三类定量证据。轮廓系数与子抽样稳定性能定位最脆弱的聚类边界，但不能替研究者选出唯一正确的分辨率。一对一比较与 AUC 能衡量近缘细胞群之间的真实区分能力，注释的置信度应与之相称。参考数据集的组织来源与粒度则决定了 SingleR 能给出什么答案；参考缺失某种类型时，细胞可能被自信地注释为错误类型，而不会被 pruned。自动注释工具的差异，归根结底在于先验知识的形式：标志基因列表、参考表达谱、单细胞参考图谱还是预训练模型。在 PBMC 3k 上，SingleR、scType、标签传递与 CellTypist 在谱系层面基本一致，而分歧集中在幼稚与记忆 CD4 T 之分、聚类 4 的细胞毒性 T 细胞混合群以及树突状细胞亚型上，恰好与轮廓系数、子抽样稳定性和一对一 AUC 标出的薄弱边界重合。至此，模块 A 实现了从原始读段到带细胞类型标签的注释图谱的完整流程。这份注释图谱不仅是单细胞分析的终点，更是众多高级分析的起点——它是第 7 章拟时序、细胞通讯、调控网络推断的共同输入，也是第 9 章空间细胞解卷积不可或缺的参考（参见第 9 章）。第 7 章将在此基础上展开多样本整合、动态推断、调控网络与多组学等高级分析。
 
 ## 标准分析流程汇总
 
@@ -857,6 +1564,30 @@ DimPlot(pbmc, reduction = "umap", label = TRUE) + NoLegend()
 
 15. SingleR 自动注释的原理是什么？为什么说自动注释与手动注释应相互印证而非二选一？请举一个二者矛盾时反而有价值的情形。
 
+16. 轮廓系数如何定义？在 PBMC 3k 上，平均轮廓系数随分辨率升高而单调下降。为什么不能据此选择轮廓系数最大的分辨率？轮廓系数更适合用来做什么？
+
+17. 在子抽样稳定性分析中，为什么必须在循环开始前一次性生成全部子样本？为什么比较标签前必须按细胞名对齐？这两个错误分别会让结果偏向什么方向？
+
+18. 血小板聚类的平均 Jaccard 系数为 0.948，最差一次却只有 0.052。这说明了什么？能否据此判定血小板聚类是虚假的？
+
+19. 为什么区分幼稚与记忆 CD4 T 细胞时应使用一对一比较，而不是 `FindAllMarkers()` 的结果？`test.use = "roc"` 报告的 `power` 是什么？在 CD14+/FCGR3A+ 单核细胞与幼稚/记忆 CD4 T 两组比较中，`power` 的差异对注释表述有何启示？
+
+20. 用 HPCA 与 Monaco 两个参考注释同一批 PBMC 时，树突状细胞与血小板分别出现了什么错误？两种错误的成因有何不同？为什么说"没有被 pruned"并不能保证注释正确？
+
+21. 用"高维橘子"说明维数灾难：在 $d$ 维空间中，半径最外层 5% 的"果皮"占球体积的比例如何随 $d$ 变化？这与"最近邻距离与距离中位数之比"随维数升高而趋近 1 有什么联系？
+
+22. 在 PBMC 3k 上，用一半高变基因重建近邻图后，只有 18.6% 的原 KNN 边重新出现，而重现比例随原 SNN 权重从 13.2% 升至 72.4%。这一实验分别说明了什么？为什么单条边的低重复率并不意味着聚类结果不可靠？
+
+23. 自动注释工具按"先验知识的形式"可分为哪几类？分别举出一个代表工具，并说明各自最典型的失效情形。
+
+24. scType 如何为标志基因加权并计算细胞类型得分？在 PBMC 3k 上，它暴露出哪三个弱点？
+
+25. 简述 Seurat 标签传递的四个步骤。为什么标签传递对幼稚与记忆 CD4 T 两个聚类都给出了约 0.98 的高预测得分，而 CellTypist 细粒度模型对记忆 CD4 T 簇的最大概率中位数只有 0.51？这说明预测得分衡量的究竟是什么？
+
+26. CellTypist 的分类原理是什么？多数投票（majority voting）有什么好处，又可能掩盖什么问题？"Tcm/Naive helper T cells" 这一标签名本身传递了什么信息？
+
+27. 五种自动注释工具在 PBMC 3k 上谱系层面高度一致，为什么仍不能把"多数工具一致"当作独立证据的叠加？使用大语言模型注释时需要警惕哪些风险？
+
 <details>
 <summary><strong>参考答案 (Reference Answers)</strong></summary>
 
@@ -889,5 +1620,29 @@ DimPlot(pbmc, reduction = "umap", label = TRUE) + NoLegend()
 14. *因为对任何一群细胞重新聚类，算法都必然返回若干个子簇，哪怕这群细胞在生物学上完全均质——"能分出来"本身不构成任何证据。这使得二次聚类很容易成为虚假发现的来源：研究者对每个聚类都再分一次，总能得到一批"新亚型"。验证要求应比一次聚类更严格：每个亚群必须有特异且**可解释**的标志基因（而非仅仅统计显著的差异基因——在足够多的细胞下任何划分都能产生显著差异），并且最好能在独立样本或已发表数据中被重复检出。*
 
 15. *SingleR 对每个查询细胞计算其表达谱与参考数据集中各细胞类型表达谱的相关性，指派相关性最高的类型并迭代微调。二者应相互印证是因为自动注释快速客观但受参考数据集覆盖度限制、手动注释精确可解释但主观耗时；互补可提高可靠性。矛盾有价值的情形：当参考数据集缺失某种细胞类型时，SingleR 会把该类型误派为最相似的已有类型，而手动注释通过其独特标志基因发现这是参考未覆盖的新类型/新状态——矛盾正好揭示了潜在的新发现或注释陷阱。*
+
+16. *记 $a(i)$ 为细胞到同簇其他细胞的平均距离、$b(i)$ 为它到最近邻簇各细胞的平均距离，则 $s(i) = (b(i) - a(i)) / \max\{a(i), b(i)\}$，取值在 −1 到 1 之间；接近 1 表示分得好，接近 0 表示处于交界，为负表示更靠近邻簇。不能以它选分辨率，是因为只要数据中存在连续梯度（如幼稚 CD4 T → 记忆 CD4 T → CD8 T），任何切开梯度的划分都会降低轮廓系数，因此它天然偏爱粗粒度划分：在 PBMC 3k 上最大值出现在 resolution 0.1，会把 CD4 T、CD8 T 与 NK 细胞并为一群。此外它用的是主成分空间的欧氏距离，与基于 SNN 图的聚类并不一致。轮廓系数更适合逐簇定位薄弱边界，例如本例中记忆 CD4 T（0.089）与 CD8 T（0.100）约五分之一的细胞取负值。*
+
+17. *因为 `FindClusters()` 内部会调用 `set.seed()`，若在循环内抽样，从第二轮起每次都会抽到同一批细胞，20 次重复实际上只有一次，结果会呈现虚假的完美稳定（偏高）。必须按细胞名对齐，是因为 `subset()` 返回的对象保持原对象的细胞顺序而非抽样向量的顺序；若直接按位置比较，两组标签错位，ARI 会接近 0，使聚类看起来完全不可重复（偏低）。两个错误都不会报错，只能靠理解函数行为来避免。*
+
+18. *这说明小细胞群的稳定性高度依赖抽样后剩余的细胞数：全数据只有 13 个血小板，子抽样后仅剩 10 个左右，在个别子样本中不足以形成独立社区而被并入其他聚类。这种不稳定反映的是细胞数太少，而不是该群体不真实，因此不能据此判定血小板聚类是虚假的。对稀有细胞群，应以标志基因的特异性（如 PPBP、PF4）为主要证据，稳定性指标只作参考；这与"调小 `k.param` 以保护稀有细胞群"是同一类问题。*
+
+19. *`FindAllMarkers()` 把每个聚类与其余所有细胞比较，"其余细胞"中包含单核细胞、B 细胞等差异巨大的类型，因此它回答的是"该群与全体 PBMC 有何不同"，而非"幼稚与记忆 CD4 T 有何不同"；后者需要 `FindMarkers(ident.1 = "0", ident.2 = "1")` 直接比较两群。`power` 定义为 $2\times|\mathrm{AUC} - 0.5|$，衡量单个基因区分两群细胞的能力，0 为无区分力，1 为完美区分，且不依赖 p 值，因此不受双重浸入影响。单核细胞之间最好的基因 `power` 达 0.95 左右（如 FCGR3A 检出比例 96.0% 对 11.5%），可以放心地分别命名；幼稚与记忆 CD4 T 之间最好的基因只有 0.68，经典的 CCR7 仅 0.30，说明二者是分化连续体且受 dropout 影响严重，注释应相应保守，例如表述为"偏幼稚样/偏记忆样 CD4 T"，并尽可能用蛋白层面的证据确认。*
+
+20. *HPCA 把树突状细胞判为单核细胞：HPCA 虽有 "DC" 标签，但其 DC 样本全部由单核细胞体外诱导分化而来，与血液中天然的树突状细胞是不同的生物学实体，于是血液 DC 反而更像单核细胞——这是"标签同名但实体不同"。Monaco 把血小板判为祖细胞：Monaco 根本不含血小板这一类型，细胞只能落到最相似的已有标签上——这是"参考缺失该类型"。"没有被 pruned"不能保证正确，是因为 pruning 衡量的是候选标签之间的模棱两可（delta 过小）；当正确答案根本不在参考中时，细胞可能稳定地、以正常甚至偏高的 delta 落在同一个错误标签上（本例中聚类 8 的 11 个"祖细胞"无一被 pruned）。因此必须用标志基因独立核验自动注释。*
+
+21. *$d$ 维球的体积与半径的 $d$ 次方成正比，因此果肉（半径 $0.95r$ 的内球）占比为 $0.95^d$，果皮占比为 $1 - 0.95^d$：二维时只有 9.75%，15 维超过一半，50 维为 92.3%，2,000 维时几乎为 100%。这意味着高维空间中随机散布的点几乎都位于"表层"，彼此相距很远且距离相差无几，没有哪些点能彼此特别接近。模拟中的距离比正是这一几何事实的体现：二维时最近邻距离只有典型距离的 4%，2,000 维时达到 95.6%，最近邻与随机一个点几乎一样远，近邻排序很容易被噪声改变。在 PBMC 3k 上，这一比值从 2,000 个高变基因空间的 0.849 降到 15 个主成分空间的 0.256，这正是先做 PCA 再建近邻图的定量理由。*
+
+22. *第一，单条近邻关系很脆弱：仅仅换用一半基因，八成以上的 KNN 边就消失了，说明"谁是我的 20 个最近邻"在相当程度上受噪声支配，这就是"互为近邻是一个脆弱的信号"的定量证据。第二，SNN 权重能预示哪些边可靠：两个细胞共享的邻居越多，这条边在扰动后越可能重现，权重超过 0.6 的边有 72.4% 能重现。因此 SNN 把信任集中在了稳健的连接上，起到了去噪作用。单条边的低重复率不等于聚类不可靠，是因为社区检测依赖的是大量边构成的整体连接模式，个别边的增减很少改变社区划分；子抽样实验中 resolution 0.5 的平均 ARI 仍达 0.874。*
+
+23. *六类：（1）参考相关性，如 SingleR，参考缺少某种类型或"同名不同实体"时会误判，如 HPCA 把血液树突状细胞判为单核细胞；（2）标志基因打分，如 scType，受标志基因库质量限制，近缘类型的标志列表重叠时近乎随机；（3）参考映射，如 Seurat 标签传递或 Azimuth，结果的粒度与正确性完全继承自参考图谱；（4）机器学习分类器，如 CellTypist，无法识别训练集之外的类型；（5）深度生成模型，如 scANVI，需要 Python、PyTorch 与较高的计算成本；（6）大语言模型，如 GPTCelltype，不可复现、可能虚构且需要外传数据。*
+
+24. *scType 先按特异性为标志基因加权：一个基因出现在越少的细胞类型标志列表中，权重越接近 1，出现在许多类型中则权重接近 0（如 PTPRC 出现在 34 种免疫类型中的 17 种）。随后把标志基因表达在细胞间标准化为 z 值并乘以权重，阳性标志加权和除以 $\sqrt{n_\text{pos}}$，再减去阴性标志的同样加权和，得到逐细胞得分；聚类内求和取最高者，若低于细胞数的四分之一则判为 Unknown。三个弱点：（1）结果上限是数据库质量，幼稚 CD4+ T 的阳性标志是记忆 CD4+ T 的真子集，IL2RA 同时出现在幼稚 CD4+ T 的阳性与阴性列表中，导致聚类 0 被判为幼稚 CD8+ T；（2）近缘类型得分差距极小，树突状细胞簇两种亚型只差 1 分，且判定会随 z 值是否截断而翻转；（3）HGNChelper 的基因名"更新"会让标志基因悄悄丢失，如 SDPR 被改为 CAVIN2 后在 hg19 数据中找不到，261 个标志基因只找到 161 个。*
+
+25. *四步：（1）对参考做归一化、高变基因选择与 PCA；（2）把查询数据投影到参考的主成分空间；（3）寻找互为最近邻的查询–参考细胞对作为锚点，并按两端细胞近邻集合的重叠程度为锚点打分；（4）对每个查询细胞取最近的若干锚点，按距离与锚点得分加权汇总参考标签，得到 predicted.id 与 prediction.score.max。得分差异的原因是标签体系的粒度不同：Kang18 参考只有一个 "CD4 T cells" 标签，两个 CD4 聚类在这个唯一选项上当然高度确定；CellTypist 细粒度模型试图区分幼稚与记忆辅助 T 细胞，而转录组难以可靠区分二者，概率自然偏低。因此预测得分衡量的是"在给定的标签选项中有多确定"，而不是答案有多精细；高置信度不等于高分辨率。*
+
+26. *CellTypist 是在大型人工整理的单细胞图谱上训练好的正则化逻辑回归模型：查询细胞的表达按训练数据的均值与标准差标准化后，为每种类型计算线性得分并经 sigmoid 转为概率，概率最高者为预测标签。多数投票先过度聚类，再把小簇内占多数的标签赋给全簇，能平滑单细胞预测的噪声；但它会把簇内的分歧压缩成一个干净的标签，例如记忆 CD4 T 簇只有 47% 的细胞支持多数标签，若不同时报告占比与概率，读者会误以为判定确定。"Tcm/Naive helper T cells" 把中央记忆与幼稚辅助 T 细胞合并为一类，说明模型构建者在训练时就承认仅凭转录组难以可靠区分二者。*
+
+27. *因为五个工具并不独立：它们读入同一份经过同样预处理的数据，环境 RNA、双细胞等偏差会同时影响所有工具；它们的先验知识（标志基因库、参考图谱、训练集）也建立在相近的文献与分选实验之上，可能共享同样的盲点。多工具一致可以提高可信度，但不能代替标志基因的直接核查。大语言模型注释的风险包括：结果不可复现（模型版本更新、输出随机）；会自信地虚构且不提供置信度；输入的标志基因本身受双重浸入与环境 RNA 污染影响；调用在线服务意味着把研究数据外传给第三方。合理的定位是用它提出候选假设，再用标志基因核实。*
 
 </details>
