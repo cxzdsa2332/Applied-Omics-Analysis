@@ -20,7 +20,7 @@ crossref:
 
 质控与归一化产出了一份干净的细胞×基因矩阵，但它仍是高维（数千个高变基因）、难以直接解读的。scRNA-seq 分析的核心目标——识别数据中存在哪些细胞类型——通过三步串联实现：先用 PCA 把高维表达压缩到几十个主成分以去噪，再在主成分空间构建近邻图并用图聚类算法将细胞划分为社区，最后用 UMAP 将结果嵌入二维以供可视化。聚类只给出"第几群"这样的匿名标签，还需通过标志基因把每个聚类对应到真实的细胞类型。本专题讲解这条从降维到注释的标准流程。
 
-**学习目标**：理解 PCA 在 scRNA-seq 中的去噪作用，掌握肘部图与置换检验两类主成分数量选择方法；理解 KNN 图构建的逻辑与 Louvain、Leiden 两种社区检测算法的关键差异；掌握分辨率参数的影响，能用多分辨率树、轮廓系数与子抽样稳定性评估聚类质量；理解 UMAP 与 t-SNE 的特点与共同局限；掌握基于标志基因的手动注释，能用一对一比较与 AUC 判断近缘细胞群的可区分程度；理解自动注释的六类策略（参考相关性、标志基因打分、参考映射、机器学习分类器、深度生成模型、大语言模型）及其原理差异，能运行 SingleR、scType、Seurat 标签传递与 CellTypist；能评估自动注释的置信度、理解参考数据集与标志基因库对注释结果的决定性影响，并综合多工具结果与手动注释交叉验证；理解层级注释（二次聚类）的必要性与操作。
+**学习目标**：理解 PCA 在 scRNA-seq 中的去噪作用，掌握肘部图与置换检验两类主成分数量选择方法；理解 KNN 图构建的逻辑与 Louvain、Leiden 两种社区检测算法的关键差异；掌握分辨率参数的影响，能用多分辨率树、轮廓系数与子抽样稳定性评估聚类质量；理解 UMAP 与 t-SNE 的特点与共同局限；掌握基于标志基因的手动注释，能用一对一比较与 AUC 判断近缘细胞群的可区分程度；理解自动注释的六类策略（参考相关性、标志基因打分、参考映射、机器学习分类器、深度生成模型、大语言模型）及其原理差异，能在答案已知的玩具数据上手写各方法的核心计算，并在真实数据上运行 SingleR、scType、Seurat 标签传递与 CellTypist；能评估自动注释的置信度、理解参考数据集与标志基因库对注释结果的决定性影响，并综合多工具结果与手动注释交叉验证；理解层级注释（二次聚类）的必要性与操作。
 
 ---
 
@@ -889,11 +889,11 @@ head(mono_roc[order(-mono_roc$power), c("myAUC", "power", "pct.1", "pct.2")], 5)
 
 ## 手动注释
 
-得到每个聚类的标志基因后，对照已知的细胞类型标志基因数据库（如 PanglaoDB、CellMarker）即可手动指派类型。@tbl-pbmc-markers 列出 PBMC 常见细胞类型的经典标志基因。
+得到每个聚类的标志基因后，下一步是把匿名的聚类编号对应到细胞类型。手动注释依靠已有的生物学知识：对照经典标志基因与标志基因数据库（如 PanglaoDB、CellMarker），逐个判定每个聚类的身份。@tbl-pbmc-markers 列出 PBMC 常见细胞类型的经典标志基因。但这张表只是起点，不能当作查找表使用。单个基因可能因 dropout 而在部分细胞中缺失，也可能同时出现在多种细胞类型中。可靠的判定来自一组基因的组合证据，并遵循"先谱系、后亚型"的顺序。下面分五步完成 PBMC 3k 的手动注释。
 
 | 细胞类型 | 经典标志基因 |
 |----------|--------------|
-| T 细胞（CD4+） | IL7R, CD3D, CD4 |
+| T 细胞（CD4+） | IL7R, CD3D, CD4；幼稚亚型 CCR7, SELL；记忆亚型 S100A4 |
 | T 细胞（CD8+） | CD8A, CD3D, GZMK |
 | B 细胞 | MS4A1, CD79A |
 | NK 细胞 | GNLY, NKG7 |
@@ -904,9 +904,66 @@ head(mono_roc[order(-mono_roc$power), c("myAUC", "power", "pct.1", "pct.2")], 5)
 
 : PBMC 常见细胞类型及其经典标志基因 {#tbl-pbmc-markers}
 
-在 PBMC 3k 上以 `resolution = 0.5` 实际得到 9 个聚类，各聚类的 `avg_log2FC` 排名前列的标志基因与对应的细胞类型判定见 @tbl-pbmc3k-observed。可以看到判定几乎是自明的——这正是该数据集适合作为教学与流程验证基准的原因。
+@tbl-pbmc-markers 列出 8 类细胞，而本数据在 `resolution = 0.5` 下得到 9 个聚类，多出的一个来自 CD4 T 细胞：它被拆成了幼稚与记忆两个聚类。这并不矛盾。标志基因表描述的是"可能存在哪些细胞类型"，聚类数则由分辨率参数决定，二者本来就不必一一对应。聚类数多于或少于预期细胞类型数时如何处理，见下文第四步。
 
-| 聚类 | 细胞数 | 实测顶部标志基因 | 判定类型 |
+### 第一步：用标志基因面板确定谱系
+
+第一步只回答一个粗粒度的问题：每个聚类属于哪个谱系，即 T、B、NK、髓系还是血小板。做法是选一组覆盖各谱系的经典标志基因，计算每个基因在每个聚类中的检出比例。检出比例比平均表达量更适合这一步，因为它不会被少数高表达细胞拉高（参见上文"标志基因的可视化：选对图"一节）。下面的代码输出一个"基因 × 聚类"的检出比例矩阵，即 `DotPlot()` 中点的大小所代表的数值。结果见 @tbl-panel-pct。
+
+```r
+library(Seurat)
+
+# A panel covering every expected PBMC lineage and the main subtypes
+panel <- c("CD3D", "IL7R", "CCR7", "S100A4", "CD8A", "MS4A1", "CD79A",
+           "GNLY", "NKG7", "CD14", "LYZ", "FCGR3A", "MS4A7", "FCER1A",
+           "CST3", "PPBP")
+
+# Fraction of cells in each cluster with non-zero expression of each gene
+expr <- GetAssayData(pbmc, layer = "data")[panel, ]
+pct_detected <- sapply(levels(Idents(pbmc)), function(cl) {
+    rowMeans(expr[, Idents(pbmc) == cl] > 0)
+})
+round(100 * pct_detected)
+```
+
+| 基因 | 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 |
+|---|---|---|---|---|---|---|---|---|---|
+| CD3D | 85 | 90 | 10 | 6 | 88 | 8 | 11 | 16 | 0 |
+| IL7R | 59 | 75 | 12 | 11 | 47 | 15 | 15 | 34 | 15 |
+| CCR7 | 49 | 24 | 3 | 15 | 5 | 5 | 3 | 9 | 0 |
+| S100A4 | 64 | 96 | 100 | 36 | 95 | 100 | 93 | 94 | 31 |
+| CD8A | 14 | 7 | 2 | 3 | 48 | 4 | 9 | 3 | 0 |
+| MS4A1 | 4 | 6 | 6 | 86 | 4 | 8 | 6 | 3 | 0 |
+| CD79A | 4 | 6 | 4 | 94 | 3 | 5 | 1 | 16 | 8 |
+| GNLY | 8 | 12 | 13 | 8 | 29 | 14 | 96 | 25 | 0 |
+| NKG7 | 10 | 17 | 19 | 8 | 92 | 33 | 100 | 28 | 15 |
+| CD14 | 2 | 2 | 68 | 0 | 2 | 16 | 1 | 22 | 0 |
+| LYZ | 47 | 54 | 100 | 42 | 43 | 99 | 40 | 97 | 46 |
+| FCGR3A | 4 | 5 | 12 | 4 | 22 | 96 | 82 | 16 | 8 |
+| MS4A7 | 2 | 2 | 25 | 6 | 2 | 79 | 1 | 19 | 8 |
+| FCER1A | 2 | 0 | 2 | 0 | 1 | 1 | 2 | 81 | 0 |
+| CST3 | 18 | 22 | 99 | 18 | 17 | 100 | 23 | 100 | 62 |
+| PPBP | 1 | 2 | 5 | 1 | 1 | 7 | 0 | 3 | 100 |
+
+: 经典标志基因在各聚类中的检出比例（%） {#tbl-panel-pct}
+
+按谱系阅读 @tbl-panel-pct，大部分聚类的归属都很清楚。聚类 0、1、4 中 *CD3D* 的检出比例都在 85% 以上，属于 T 细胞。聚类 3 中 *MS4A1* 与 *CD79A* 分别为 86% 与 94%，属于 B 细胞。聚类 2、5、7 中 *CST3* 均在 99% 以上，属于髓系细胞。聚类 8 中 *PPBP* 的检出比例为 100%，属于血小板。聚类 6 中 *GNLY* 与 *NKG7* 几乎全部检出，但 *NKG7* 在聚类 4 中同样高达 92%。区分二者的是阴性证据：聚类 6 中 *CD3D* 只有 11%，因此是 NK 细胞而非细胞毒性 T 细胞。
+
+:::warning
+**读检出比例矩阵的两个陷阱：** 第一，*LYZ* 在 T、B、NK 等非髓系聚类中也有 40%–54% 的检出比例。这不是真实表达，而是单核细胞释放到环境中的转录本（参见专题 6.2）。判断时应看聚类之间的相对差异，而不是某个基因"有没有检出"。第二，同一个基因可能标记多种细胞类型。*FCGR3A*（CD16）在聚类 5 中检出 96%，在 NK 细胞（聚类 6）中也达到 82%。因此单个基因不能决定身份，必须结合谱系背景：*FCGR3A* 与 *CST3* 同时阳性，才指向 FCGR3A+ 单核。
+:::
+
+### 第二步：在谱系内部区分亚型
+
+确定谱系之后，再用亚型标志在谱系内部细分。髓系的三个聚类区分得很清楚。聚类 2 中 *CD14* 检出 68%，*FCGR3A* 只有 12%，为 CD14+ 单核。聚类 5 的情况相反：*FCGR3A* 与 *MS4A7* 分别为 96% 与 79%，*CD14* 只有 16%，为 FCGR3A+ 单核。聚类 7 中 *FCER1A* 检出 81%，在其他聚类中都不超过 2%，为树突状细胞。
+
+T 细胞内部的区分要困难得多。聚类 4 中 *CD8A* 的检出比例只有 48%，仅凭这一个数字不足以判定。但该聚类同时检出 *NKG7*（92%），而聚类 0 与 1 中只有 10%–17%。两条证据合起来，指向细胞毒性的 CD8 T。聚类 0 与 1 之间，*CCR7* 为 49% 对 24%，*S100A4* 为 64% 对 96%。差异的方向符合幼稚与记忆之分，但远不如单核亚群之间悬殊。上一节的 AUC 分析已经表明，这是本数据中最薄弱的一条边界，命名时应保留相应的不确定性。
+
+### 第三步：用数据驱动的标志基因交叉验证
+
+经典面板只能确认预先想到的细胞类型。若某个聚类是面板未覆盖的类型，面板中的基因不会呈现任何特异模式，研究者也就无从察觉。因此还要反过来检查 `FindAllMarkers()` 的数据驱动结果，看它是否与前两步的判定一致。@tbl-pbmc3k-observed 列出了各聚类按 `avg_log2FC` 排名前三的标志基因，以及前两步得到的判定类型。
+
+| 聚类 | 细胞数 | `avg_log2FC` 前三的标志基因 | 判定类型 |
 |---|---|---|---|
 | 0 | 600 | CCR7, LDLRAP1, LEF1 | 幼稚 CD4 T |
 | 1 | 534 | AQP3, CD40LG, TRADD | 记忆 CD4 T |
@@ -916,27 +973,129 @@ head(mono_roc[order(-mono_roc$power), c("myAUC", "power", "pct.1", "pct.2")], 5)
 | 5 | 174 | CKB, CDKN1C, MS4A4A | FCGR3A+ 单核 |
 | 6 | 159 | AKR1C3, SH2D1B, GNLY | NK 细胞 |
 | 7 | 32 | SERPINF1, FCER1A, CLIC2 | 树突状细胞 |
-| 8 | 13 | LY6G6F, CLDN5, PPBP | 血小板 |
+| 8 | 13 | LY6G6F, RP11-879F14.2, CLDN5 | 血小板 |
 
 : PBMC 3k 实测聚类结果与标志基因（15 个主成分，resolution = 0.5） {#tbl-pbmc3k-observed}
 
-```r
-# Visualize known markers to confirm cluster identities
-FeaturePlot(pbmc, features = c("CD3D", "MS4A1", "LYZ", "GNLY"))
-DotPlot(pbmc, features = c("IL7R", "CD8A", "MS4A1", "GNLY", "CD14", "FCGR3A")) +
-    Seurat::RotatedAxis()
+这张表远不如 @tbl-panel-pct 直观。聚类 2 的 *FOLR3*、聚类 5 的 *CKB*、聚类 8 的 *LY6G6F* 都不是教科书上的标志基因。原因在于排序方式：背景表达接近零时，`avg_log2FC` 会变得极大，因此它偏爱高度特异、但只在少数细胞中检出的基因。*FOLR3* 在聚类 2 中的检出比例只有 30.7%，*CKB* 在聚类 5 中只有 34.5%。手动注释更需要的，是在本群大多数细胞中检出、在其他细胞中很少检出的基因。下面的代码沿用上文 `FindAllMarkers()` 得到的 `markers` 对象，先要求 `pct.1` 不低于 0.5，再按检出比例之差排序。
 
-# Assign biological labels to clusters. This mapping follows the marker table
-# above (Louvain, resolution = 0.5); re-derive it whenever upstream steps change.
+```r
+library(dplyr)
+
+# Rank by coverage contrast instead of fold change: a useful annotation marker
+# is detected in most cells of its cluster and in few cells elsewhere
+markers |>
+    filter(pct.1 >= 0.5) |>
+    mutate(pct_diff = pct.1 - pct.2) |>
+    group_by(cluster) |>
+    slice_max(pct_diff, n = 3, with_ties = FALSE) |>
+    select(cluster, gene, pct.1, pct.2, pct_diff)
+```
+
+换用这种排序后，经典标志基因重新回到前列。B 细胞是 *CD79A*、*MS4A1* 与 *CD79B*，NK 细胞是 *GZMB*、*PRF1* 与 *GNLY*。聚类 5 排在首位的是 *FCGR3A*，聚类 7 是 *FCER1A*，聚类 8 则是 *SPARC*、*GNG11* 与 *PF4* 等血小板基因。两种排序互为补充：按检出比例之差排序提供可靠的身份证据，按 `avg_log2FC` 排序更容易发现高度特异的稀有标志。聚类 0 与 1 的结果同样值得注意，它们的前三名主要是 *CD3D*、*CD3E*、*IL7R* 等泛 T 细胞基因。这说明一对其余的比较只能确认它们是 T 细胞，幼稚与记忆之分必须依靠一对一比较（见上一节）。
+
+### 第四步：处理聚类数与细胞类型数的不一致
+
+聚类数由分辨率参数决定，而不是由样本中实际有多少种细胞类型决定（参见上文"分辨率参数"一节）。同一份数据在不同分辨率下会得到不同数目的聚类。上文 clustree 循环已经把各分辨率的结果写入元数据，下面的代码把它们与 `resolution = 0.5` 的 9 个聚类做交叉表，结果汇总于 @tbl-res-crosstab。在 `resolution = 0.4` 下只有 8 个聚类，恰好与 @tbl-pbmc-markers 的 8 类对应，因为幼稚与记忆 CD4 T 合成了一簇。可见聚类数与预期细胞类型数不一致是常态，而不是错误。注释的任务不是让二者对齐，而是逐个判断每个聚类代表什么。
+
+```r
+library(Seurat)
+
+# Columns written by the clustree loop above; Idents() stays at resolution 0.5
+table(res_0.5 = pbmc$RNA_snn_res.0.5, res_0.4 = pbmc$RNA_snn_res.0.4)
+table(res_0.5 = pbmc$RNA_snn_res.0.5, res_0.1 = pbmc$RNA_snn_res.0.1)
+table(res_0.5 = pbmc$RNA_snn_res.0.5, res_1.0 = pbmc$RNA_snn_res.1)
+```
+
+| 分辨率 | 聚类数 | 相对于 `resolution = 0.5` 的变化 |
+|---|---|---|
+| 0.1 | 4 | 单核、树突状细胞与血小板合为一簇；CD8 T 与 NK 合为一簇 |
+| 0.2 | 6 | 幼稚与记忆 CD4 T 合并；两类单核合并；CD8 T 与 NK 合并 |
+| 0.4 | 8 | 幼稚与记忆 CD4 T 合并 |
+| 0.5 | 9 | 正文采用的划分 |
+| 0.6、0.8 | 9 | 聚类数不变 |
+| 1.0 | 11 | CD14+ 单核拆为两簇（236 与 232 个细胞）；新增一个 110 个细胞的 T 细胞簇（78 个来自聚类 0，32 个来自聚类 4） |
+
+: 不同分辨率下的聚类与 `resolution = 0.5` 聚类的对应关系 {#tbl-res-crosstab}
+
+#### 聚类多于细胞类型：一个类型被拆成多个簇
+
+同一类细胞被拆成多个簇，有三种可能的解释。第一种是真实的亚型，如 `resolution = 0.5` 下的幼稚与记忆 CD4 T。第二种是连续变化的细胞状态，被算法切成了两段。第三种是技术伪影，如低质量细胞或双细胞自成一簇。三者的处理方式完全不同，因此需要逐一排查。判别时依次检查三项证据：是否存在检出比例差异大、方向可解释的特异标志基因；各簇的 `nFeature_RNA`、`percent.mt` 是否明显偏离；该拆分能否在多个分辨率和子抽样中稳定重现（参见上文"聚类质量的定量评估"一节）。下面以 `resolution = 1.0` 新增的两处拆分为例。
+
+```r
+library(Seurat)
+
+# Split 1: CD14+ monocytes divided into clusters 4 and 5 at resolution 1.0
+mono_split <- FindMarkers(pbmc, group.by = "RNA_snn_res.1", ident.1 = "4",
+                          ident.2 = "5", verbose = FALSE)
+cat("DE genes (p_val_adj < 0.05):", sum(mono_split$p_val_adj < 0.05), "\n")
+head(mono_split[order(mono_split$p_val_adj), c("avg_log2FC", "pct.1", "pct.2")], 6)
+
+# Split 2: the new 110-cell cluster 8 against all other cells
+new8 <- FindMarkers(pbmc, group.by = "RNA_snn_res.1", ident.1 = "8",
+                    only.pos = TRUE, verbose = FALSE)
+new8$pct_diff <- new8$pct.1 - new8$pct.2
+head(new8[order(-new8$pct_diff), c("avg_log2FC", "pct.1", "pct.2", "pct_diff")], 3)
+
+# Library complexity and mitochondrial fraction per resolution-1.0 cluster
+round(tapply(pbmc$nFeature_RNA, pbmc$RNA_snn_res.1, median))
+round(tapply(pbmc$percent.mt, pbmc$RNA_snn_res.1, median), 2)
+```
+
+CD14+ 单核的拆分属于第二种情况。两簇之间有 122 个基因的校正后 p 值低于 0.05，数量并不少。但排在前列的是 *CD74*、*HLA-DRB1* 等 MHC-II 类基因，它们在两簇中都高比例检出，例如 *HLA-DRB1* 为 97.0% 对 68.1%，只是程度不同。两簇之间找不到"一边有、一边无"的标志基因。两簇每个细胞检出基因数的中位数也相差悬殊（1,061 对 678），说明拆分有一部分可能来自文库复杂度的差异。这更符合一个连续梯度被切成两段，而非两种细胞类型。合理的做法是把二者合并为 CD14+ 单核。若研究确实关心 MHC-II 表达水平，可以在类型名后附加状态描述，而不是另立一种类型。
+
+新增的 110 个细胞的簇属于第三种情况。它最特异的基因只是泛 T 细胞基因 *CD3D*，检出比例之差仅 0.197，没有任何能定义新类型的标志。它每个细胞检出基因数的中位数只有 467，远低于全体细胞的 819，而线粒体比例的中位数为 2.22%，并不偏高。因此这群细胞不是濒死细胞，而是捕获效率偏低的 T 细胞，因"测得少"而彼此相似。另一个警示信号是它的来源：这些细胞分别来自幼稚 CD4 T 与 CD8 T 两个聚类，真实的亚型通常只来自一个亲本类型。处理方式是并回原来的类型，或在质控阶段收紧阈值后重新聚类。需要强调的是，低基因数本身不足以判定伪影：血小板簇的中位数只有 345，却有 *PPBP* 这类 100% 检出的特异标志，因此是真实的细胞类型。
+
+:::tip
+**多个聚类合并为同一类型的写法：** `RenameIdents()` 允许多个聚类编号映射到同一个标签，标签相同的聚类会自动合并。例如在 `resolution = 1.0` 下，可写作 `c("4" = "CD14+ Mono", "5" = "CD14+ Mono", ...)`。合并应在第五步写入标签时完成，并在注释记录表中注明合并的理由，而不是回头把分辨率调低到"刚好"等于预期的类型数。后一种做法会同时改变其他所有聚类的边界。
+:::
+
+#### 聚类少于细胞类型：一个簇混有多种类型
+
+反过来，分辨率过低时，一个簇里会混有多种细胞类型。在 `resolution = 0.1` 下，聚类 2 的 429 个细胞由 270 个 CD8 T 和 159 个 NK 细胞组成。这种簇在检出比例矩阵上有一个典型特征：两组互斥的标志基因各自只在一部分细胞中检出。下面的代码检查这一点。
+
+```r
+library(Seurat)
+
+# Mixed-cluster check: are two mutually exclusive lineage markers each
+# detected in only part of the cluster?
+in_c2 <- pbmc$RNA_snn_res.0.1 == "2"
+lineage <- GetAssayData(pbmc, layer = "data")[c("CD3D", "GNLY", "NKG7"), in_c2]
+round(100 * rowMeans(lineage > 0))
+table(CD3D = lineage["CD3D", ] > 0, GNLY = lineage["GNLY", ] > 0)
+```
+
+在这个簇中，共有的细胞毒性基因 *NKG7* 检出 98%，但 T 细胞标志 *CD3D* 只有 61%，*GNLY* 只有 55%。按细胞拆开看，174 个细胞只检出 *CD3D*，149 个只检出 *GNLY*，另有 87 个两者都检出。两者都检出并不奇怪，因为部分效应 CD8 T 细胞同样表达 *GNLY*。整簇共享的细胞毒性程序掩盖了 T 与 NK 的谱系差异，若直接命名为一种类型，就会丢失这一区分。正确做法是提高分辨率，或者把这个簇单独取出重新聚类（参见下文"层级注释：先粗后细"一节）。即使在 `resolution = 0.5` 下，这个问题也没有完全消失：32 个细胞的树突状细胞簇可能仍混有不同亚型，后文多种注释工具的分歧正集中在这里。
+
+### 第五步：写入标签并记录证据
+
+前四步的证据一致之后，才把聚类编号替换为细胞类型名称。下面的代码有两点需要注意。其一，映射表是按当前聚类编号手工写定的。主成分数、分辨率乃至软件版本的改变，都可能改变编号，此时必须重做前四步。`stopifnot()` 能拦住聚类数目变化的情况，但拦不住编号对调。其二，`RenameIdents()` 只修改活动身份，之后再调用 `FindClusters()` 会将其覆盖（参见上文"用多分辨率树评估稳定性"一节）。因此应把标签另存为一个元数据列。
+
+```r
+library(Seurat)
+
+# Map cluster IDs to labels. The mapping is tied to THIS clustering
+# (Louvain, 15 PCs, resolution = 0.5); re-derive it whenever upstream steps change.
 new_ids <- c("0" = "Naive CD4 T", "1" = "Memory CD4 T", "2" = "CD14+ Mono",
              "3" = "B", "4" = "CD8 T", "5" = "FCGR3A+ Mono",
              "6" = "NK", "7" = "DC", "8" = "Platelet")
+
+# Catches a changed number of clusters, but not swapped cluster IDs
+stopifnot(setequal(names(new_ids), levels(Idents(pbmc))))
 pbmc <- RenameIdents(pbmc, new_ids)
+
+# Keep the labels in metadata: a later FindClusters() call overwrites Idents()
+pbmc$cell_type <- Idents(pbmc)
+table(pbmc$cell_type)
 ```
+
+:::tip
+**为每个聚类留一份注释证据：** 手动注释的结论应当能被他人复核。实用的做法是维护一张注释记录表，每个聚类一行。表中写明判定类型、支持判定的阳性与阴性标志基因及其检出比例，以及置信度。证据不足的聚类应标为"Unknown"或带问号的暂定名称，不要硬套一个最接近的类型。在本数据中，聚类 0 与 1 的置信度应明显低于单核细胞与 B 细胞。这张表也是后文对照自动注释结果的基准（见"多工具结果的综合判读"一节）。
+:::
 
 ## 自动注释的方法谱系
 
-手动注释依赖专家知识，耗时且主观。自动注释工具把"已有的细胞类型知识"形式化，再批量施加到新数据上。各种工具的根本差异，在于这份先验知识以什么形式提供：一份标志基因列表、一组带标签的参考表达谱、一个带标签的单细胞参考图谱，还是一个预先训练好的分类模型。先验知识的形式决定了工具的原理，也决定了它会在什么情况下失效。@tbl-annotation-tools 按这一维度归纳了当前最常用的六类方法。本节依次讲解前四类的原理并在 PBMC 3k 上实际运行，后两类只介绍原理，最后把所有结果放在一起对照。
+手动注释依赖专家知识，耗时且主观。自动注释工具把"已有的细胞类型知识"形式化，再批量施加到新数据上。各种工具的根本差异，在于这份先验知识以什么形式提供：一份标志基因列表、一组带标签的参考表达谱、一个带标签的单细胞参考图谱，还是一个预先训练好的分类模型。先验知识的形式决定了工具的原理，也决定了它会在什么情况下失效。@tbl-annotation-tools 按这一维度归纳了当前最常用的六类方法。本节依次讲解每一类的算法细节，并用一个答案已知的玩具数据集手写其核心计算；前四类随后在 PBMC 3k 上实际运行，最后把所有结果放在一起对照。
 
 | 策略 | 代表工具 | 先验知识的形式 | 核心原理 | 运行环境 | 主要局限 |
 |---|---|---|---|---|---|
@@ -949,9 +1108,152 @@ pbmc <- RenameIdents(pbmc, new_ids)
 
 : 自动细胞类型注释的六类策略 {#tbl-annotation-tools}
 
+### 三个部件：先验知识、打分函数与判定规则
+
+六类方法表面上差别很大，拆开来看却都由三个部件组成。第一个部件是先验知识的表示，即 @tbl-annotation-tools 中"先验知识的形式"一列。第二个部件是打分函数 $s(c, t)$，它度量细胞 $c$ 与类型 $t$ 的匹配程度。第三个部件是判定规则：通常取得分最高的类型，再加上一条拒绝判定的条件。前两个部件决定了工具能分辨什么，第三个部件决定了它没有把握时如何表态。@tbl-annotation-anatomy 按这三个部件重新整理了六类方法。阅读后文每一种工具时，都可以先回答这三个问题。
+
+| 工具 | 打分单位 | 打分函数 $s(c, t)$ | 判定规则 | 拒绝判定机制 |
+|---|---|---|---|---|
+| SingleR | 单个细胞 | 区分性基因上的 Spearman 相关，取 80% 分位数 | 微调后得分最高的标签 | `pruned.labels`：delta 低于同标签中位数 3 个 MAD |
+| scType | 聚类 | 加权 z 值之和，阳性标志加分、阴性标志扣分 | 聚类内得分总和最高的类型 | 最高总分低于细胞数的 1/4 时判为 Unknown |
+| Seurat 标签传递 | 单个细胞 | 近邻锚点的加权投票比例 | 投票比例最高的标签 | 无内置机制；常按 `prediction.score.max` 人工设阈值 |
+| CellTypist | 单个细胞，可按聚类多数投票 | 逻辑回归线性得分的 sigmoid | 概率最高的类型（best match） | 设 `mode = "prob match"` 时，概率均低于 0.5 判为 Unassigned |
+| scANVI | 单个细胞 | 隐变量上的分类器给出的后验概率 | 后验概率最高的类型 | 无内置机制；可对后验概率设阈值 |
+| 大语言模型 | 聚类 | 模型对候选名称的生成概率，用户不可见 | 生成的一段文字 | 无 |
+
+: 六类自动注释方法的三个部件 {#tbl-annotation-anatomy}
+
+### 一个答案已知的玩具数据集
+
+真实数据没有标准答案，因此很难看清一个算法在哪一步起作用、又在哪一步失效。下面先构造一个答案已知的玩具 PBMC，后文每种方法的原理演示都在它上面运行。它包含 T、NK、B 与单核细胞四种类型，共 22 个基因。T 与 NK 共享一组淋巴细胞基因，彼此只靠两个低表达基因区分，模拟真实数据中最难分的近缘类型。另有一种"血小板"细胞，它从不进入任何参考或训练集，用来观察各方法如何对待一种从未见过的细胞类型。计数由泊松分布生成，均值低的基因会自然出现 dropout。下面的代码块定义了均值矩阵 `toy_mu` 与模拟函数 `simulate_toy()`，后文 SingleR、scType 与标签传递三段 R 演示都依赖它们，因此必须先运行这一块。
+
+:::note
+**运行环境说明：** 本节的 R 原理演示只依赖 base R，CellTypist 的演示只依赖随 `scanpy` 一同安装的 `scikit-learn`，每段代码都在 1 秒内完成。玩具数据仅用于展示算法内部的计算步骤，不用来评价工具；各工具在真实数据上的表现，以紧随其后的 PBMC 3k 实操为准。演示代码一律使用独立的变量名（如 `toy_mu`、`bulk_ref`），不会覆盖本专题的 `pbmc`、`ref`、`pred` 等对象。
+:::
+
+```r
+# A toy PBMC with a known answer, shared by every principle demo in this section.
+# T and NK share a lymphoid programme and differ by only two weak genes each.
+# "Platelet" is never put into any reference: it shows how each method treats
+# a cell type it has never seen.
+toy_types <- c("T", "NK", "B", "Mono")
+toy_mu <- matrix(0.1, nrow = 22, ncol = 5, dimnames = list(
+    c("CD3D", "CD3E",                                 # T only (weak)
+      "GNLY", "KLRD1",                                # NK only (weak)
+      "CD2", "CD247", "CCL5", "IL32",                 # shared by T and NK
+      "MS4A1", "CD79A", "CD79B", "CD74", "HLA-DRA",   # B
+      "LYZ", "CST3", "S100A8", "FCN1", "TYROBP",      # monocyte
+      "PPBP", "PF4",                                  # platelet
+      "PTPRC", "B2M"),                                # broadly expressed
+    c(toy_types, "Platelet")))
+toy_mu[c("CD3D", "CD3E"), "T"]                                <- 1
+toy_mu[c("GNLY", "KLRD1"), "NK"]                              <- 1
+toy_mu[c("CD2", "CD247", "CCL5", "IL32"), c("T", "NK")]       <- 3
+toy_mu[c("MS4A1", "CD79A", "CD79B", "CD74", "HLA-DRA"), "B"]  <- 3
+toy_mu[c("LYZ", "CST3", "S100A8", "FCN1", "TYROBP"), "Mono"]  <- 6
+toy_mu[c("PPBP", "PF4"), "Platelet"]                          <- 5
+toy_mu["PTPRC", toy_types]                                    <- 5
+toy_mu["B2M", ]                                               <- 5
+
+# Poisson counts around the mean profile, then log1p. Low means give dropouts.
+simulate_toy <- function(n, mu = toy_mu) {
+    lab <- rep(names(n), times = n)
+    counts <- sapply(lab, function(t) rpois(nrow(mu), mu[, t]))
+    dimnames(counts) <- list(rownames(mu), paste0("cell", seq_along(lab)))
+    list(logexpr = log1p(counts), label = lab)
+}
+```
+
 ## 基于参考相关性：SingleR
 
-SingleR 对每个查询细胞，计算其表达谱与参考数据集中各细胞类型表达谱的相关性，指派相关性最高的类型（Aran et al., 2019）。它的计算分三步。第一步是选基因：对参考中的每一对标签，挑出在其中一个标签里显著高表达的基因，所有标签对的结果取并集，作为后续计算所用的区分性基因。第二步是打分：在这些基因上计算查询细胞与每个参考样本的 Spearman 秩相关，每个标签的得分取该标签下所有参考样本相关系数的 80% 分位数。用秩相关而非原始表达，使得 bulk 芯片参考也能与单细胞数据直接比较。第三步是微调（fine-tuning）：只保留得分与最高分相差不超过 0.05 的候选标签，仅用这几个候选标签之间的区分性基因重新计算相关性，如此迭代直到只剩一个标签。微调使 SingleR 能在相近类型之间做出比单轮打分更细的区分。
+SingleR 的思路最接近人工注释时"拿查询细胞与图谱逐一比对"的做法（Aran et al., 2019）。对每个查询细胞，它计算其表达谱与参考中各细胞类型表达谱的相关性，指派最相似的类型。参考可以是 bulk 芯片、bulk RNA-seq，也可以是单细胞数据。这种灵活性来自它只比较基因的排序，而不比较表达量的绝对值。算法分为选基因、打分与微调三步。下面先逐步说明，再在玩具数据上手写一个迷你版本。
+
+### 算法细节
+
+**第一步：选区分性基因。** 默认的 `de.method = "classic"` 先计算每个标签在参考样本中的表达中位数。对每一对有序标签 $(a, b)$，按中位数之差 $\tilde{x}_a - \tilde{x}_b$ 从大到小取前 $n$ 个基因，作为"$a$ 相对于 $b$ 的标志"。所有标签对的结果取并集，就是第一轮打分所用的基因集。$n$ 默认为 $500 \times (2/3)^{\log_2 N}$，$N$ 为标签数；标签越多，每对取的基因越少，以控制并集的规模。HPCA 有 36 个主类标签，每对取 61 个基因，并集共 3,307 个基因。参考为单细胞数据时，通常改用 `de.method = "wilcox"`，以秩和检验代替中位数之差。
+
+**第二步：秩相关打分。** 在选出的基因上，计算查询细胞与每个参考样本的 Spearman 相关系数。Spearman 相关就是先对两组数值分别排秩，再计算 Pearson 相关。它只关心哪些基因高、哪些基因低，不关心测量尺度，因此芯片荧光强度、bulk 计数与单细胞 UMI 可以直接比较。一个标签通常有多个参考样本，SingleR 取该标签下全部相关系数的 80% 分位数作为标签得分（参数 `quantile = 0.8`）。用高分位数而不用最大值，可以避免单个异常参考样本左右结果；不用均值，则是为了容忍标签内部的异质性。
+
+**第三步：微调。** 第一轮的基因集是为区分**全部**标签而选的，近缘类型之间的区分基因在其中只占很小一部分。以 HPCA 为例，3,307 个基因里直接区分 T 细胞与 NK 细胞的只有 122 个，不足 4%。微调（fine-tuning）因此只保留得分与最高分相差不超过 0.05 的候选标签（参数 `tune.thresh`），再只用这些候选标签两两之间的标志基因重新打分。如此迭代，直到只剩一个标签，或候选集不再缩小。SingleR 输出的 `delta.next` 正是微调末轮最高分与次高分之差，后文的 pruning 也以此为基础。
+
+### 原理演示：手写一个迷你 SingleR
+
+下面的代码在玩具数据上逐步实现上述三步。参考由每种类型 3 个"bulk 样本"组成，每个样本是 100 个模拟细胞的平均表达；查询是 200 个 T 细胞与 200 个 NK 细胞。为了让每一步的输出都看得清，每对标签只取 2 个基因（$n = 2$）。运行前需先执行本节开头"一个答案已知的玩具数据集"中的代码块。
+
+```r
+# Needs toy_mu and simulate_toy() from the toy-dataset block at the start of this section
+stopifnot(exists("toy_mu"), exists("simulate_toy"))
+
+set.seed(1)
+# Reference: 3 bulk-like samples per type, each the mean of 100 simulated cells
+bulk_label <- rep(toy_types, each = 3)
+bulk_ref <- sapply(bulk_label, function(t)
+    rowMeans(simulate_toy(setNames(100, t))$logexpr))
+
+# Step 1: classic markers. For every ordered pair (a, b), take the n genes with
+# the largest positive median(a) - median(b); the union is the gene set.
+bulk_med <- sapply(toy_types, function(t) apply(bulk_ref[, bulk_label == t], 1, median))
+pair_markers <- function(labs, n = 2) {
+    unique(unlist(lapply(labs, function(a) lapply(setdiff(labs, a), function(b) {
+        d <- bulk_med[, a] - bulk_med[, b]
+        head(names(sort(d[d > 0], decreasing = TRUE)), n)
+    }))))
+}
+
+# Step 2: per label, the 80% quantile of Spearman correlations with its samples
+score_cell <- function(x, labs) {
+    g   <- pair_markers(labs)
+    use <- bulk_label %in% labs
+    r   <- suppressWarnings(cor(x[g], bulk_ref[g, use], method = "spearman")[1, ])
+    sapply(labs, function(t) unname(quantile(r[bulk_label[use] == t], 0.8, na.rm = TRUE)))
+}
+
+# Step 3: fine-tuning. Keep labels within 0.05 of the best score, then rescore
+# with only the markers that separate the remaining labels.
+singler_toy <- function(x, thresh = 0.05, verbose = FALSE) {
+    labs <- toy_types
+    best <- NA
+    repeat {
+        s <- score_cell(x, labs)
+        if (anyNA(s)) return(best)    # every marker is zero: nothing left to compare
+        if (verbose) print(round(s, 3))
+        best <- names(which.max(s))
+        keep <- names(s)[s >= max(s) - thresh]
+        if (length(keep) == 1 || setequal(keep, labs)) return(best)
+        labs <- keep
+    }
+}
+
+cat("Genes, all four labels:", pair_markers(toy_types), "\n")
+cat("Genes, T vs NK only   :", pair_markers(c("T", "NK")), "\n")
+
+set.seed(3)
+tq <- simulate_toy(c(T = 200, NK = 200))
+s_all <- apply(tq$logexpr, 2, score_cell, labs = toy_types)
+s_tnk <- apply(tq$logexpr, 2, score_cell, labs = c("T", "NK"))
+cat("Median |T - NK| gap, all-label genes:",
+    round(median(abs(s_all["T", ] - s_all["NK", ])), 3), "\n")
+cat("Median |T - NK| gap, T/NK genes only:",
+    round(median(abs(s_tnk["T", ] - s_tnk["NK", ]), na.rm = TRUE), 3), "\n")
+
+sr_round1 <- toy_types[apply(s_all, 2, which.max)]
+sr_final  <- apply(tq$logexpr, 2, singler_toy)
+cat("Accuracy, round 1 only:", mean(sr_round1 == tq$label), "\n")
+cat("Accuracy, fine-tuned  :", mean(sr_final == tq$label), "\n")
+
+# Fine-tuning changes very few calls; about half of the remaining errors are
+# cells with no T- or NK-specific read left at all
+c(fixed  = sum(sr_round1 != tq$label & sr_final == tq$label),
+  broken = sum(sr_round1 == tq$label & sr_final != tq$label))
+no_info <- colSums(tq$logexpr[c("CD3D", "CD3E", "GNLY", "KLRD1"), ]) == 0
+table(error = sr_final != tq$label, no_info)
+```
+
+输出包含三层信息。第一，第一轮共用 16 个基因，真正区分 T 与 NK 的 4 个基因（*CD3D*、*CD3E*、*GNLY*、*KLRD1*）只占四分之一，其余基因上 T 与 NK 的参考谱几乎相同；微调时，基因集只剩下这 4 个。第二，T 与 NK 两个得分之差的中位数从第一轮的 0.155 扩大到 1.239，约为原来的 8 倍。被稀释的信号重新集中，模棱两可的判定变成了明确的判定，`delta.next` 反映的正是这一差距。第三，准确率几乎没有变化：第一轮为 86.0%，微调后为 86.25%；微调纠正了 3 个细胞，又改错了 2 个。原因在于这 4 个基因在第一轮已经参与打分，微调并没有带来新的信息。剩余的 55 个错误中，有 24 个细胞的 4 个区分基因全部为零，任何方法都无从判断。
+
+这个结果值得记住：**微调改变的是"用哪些基因比较"，它不能创造数据中不存在的信息。** 真实参考的第一轮基因集比玩具数据大得多，近缘类型的区分基因被稀释得更厉害，微调的作用也更明显。但它的上限始终取决于查询细胞实际检出了多少区分基因。这与前文 *CCR7* 因 dropout 而难以区分幼稚与记忆 CD4 T 细胞，是同一个问题。
+
+### 在 PBMC 3k 上运行
 
 :::note
 **运行环境说明：** `SingleR` 与 `celldex` 均为 Bioconductor 包（`BiocManager::install(c("SingleR","celldex"))`）。`celldex` 的参考数据集首次调用时需从 ExperimentHub 联网下载（约数十 MB）并缓存到本地，因此第一次运行较慢、且需要网络。
@@ -974,12 +1276,12 @@ pbmc$SingleR_label <- pred$labels
 
 SingleR 对每个细胞都会给出一个标签，但标签的可信度差异很大——一个转录谱与参考中所有类型都不太像的细胞，仍然会被指派给"相对最像"的那个。因此**必须检查置信度，而不是直接采用标签**。
 
-SingleR 提供两个诊断量：`delta`（最佳匹配得分与次佳的差距，差距小说明模棱两可）与 `pruned.labels`（对 delta 过低的细胞置为 `NA`，即拒绝判定）。
+SingleR 提供两类诊断信息。第一类是 delta，即指派标签相对其他标签领先多少。`pred$delta.next` 是最佳与次佳标签的得分差，差距小说明判定模棱两可。`plotDeltaDistribution()` 默认展示的则是另一种 delta：最佳得分减去该细胞在全部标签上得分的中位数。第二类是 `pruned.labels`，它在每个标签内部比较被指派细胞的 delta，把明显低于同标签其他细胞的细胞（低于该标签 delta 中位数 3 个 MAD）置为 `NA`，即拒绝判定。
 
 ```r
 library(SingleR)
 
-# Cells whose best match is not clearly better than the runner-up get pruned
+# Cells whose delta is an outlier within their assigned label get pruned
 pbmc$SingleR_pruned <- pred$pruned.labels
 
 cat("Cells with no confident label:",
@@ -989,6 +1291,12 @@ cat("Cells with no confident label:",
 plotScoreHeatmap(pred)
 ```
 
+得分热图的每一列是一个查询细胞，每一行是一个参考标签，颜色表示该细胞对该标签的得分。默认设置 `normalize = TRUE` 会在每个细胞内部把得分线性缩放到 0–1，再取三次方以拉开接近最高分的差异。因此颜色只能在同一列内比较，不能跨列比较细胞与参考的绝对相似度。顶部的注释条标出每个细胞最终获得的标签，列按该标签分组排列。阅读时应逐个标签分组观察：自信的细胞在对应行上呈一条清晰的亮带，其余行均暗；模棱两可的细胞则有两三行同样明亮，这在近缘类型之间（如 T 细胞与 NK 细胞）最为常见。若某个标签分组整体没有明显亮带，说明这批细胞与参考中任何类型都不够贴近。
+
+:::note
+**阅读提示：** 热图显示的是微调前的初始得分，而最终标签由微调决定。因此少数细胞的最亮行可能与顶部标签不一致，这属于正常现象而非错误。若希望把热图与聚类结果对照，可加参数 `clusters = pbmc$seurat_clusters`，在顶部增加一条聚类注释。
+:::
+
 ```r
 library(SingleR)
 
@@ -997,16 +1305,36 @@ library(SingleR)
 plotDeltaDistribution(pred, ncol = 4)
 ```
 
+delta 分布图为每个标签绘制一个分面，横向排列，每行 4 个（`ncol = 4`）。分面中的每个点是被指派该标签的一个细胞，纵轴是其 delta，点的颜色标出该细胞是否被 pruned。读图要分两层。第一层看分布内部的离群点：被 pruned 的细胞位于分布底部，表示它们比同标签的其他细胞更不确定。第二层看整个分布的高低：若某个标签的 delta 普遍贴近 0，则该标签整体都值得怀疑。由于 pruning 的阈值是相对于同标签细胞而定的，一个整体偏低的分布反而可能很少有细胞被 pruned，所以不能只看颜色而忽略纵轴位置。此外，只包含零星几个细胞的分面（例如 PBMC 中出现某种非血液来源的标签）通常是错配，应结合标志基因核实。
+
 被大量 `pruned` 的细胞是一个有价值的信号而非麻烦：它往往意味着**参考数据集缺少该细胞类型**。这与第 9 章解卷积中参考不完备的失效模式是同一个问题（参见第 9 章）——算法不会告诉你参考错了，只会给出一个"相对最像"的答案。
 
 ```r
 library(Seurat)
 
 # Cross-tabulate manual clusters against automatic labels.
-# A clean block-diagonal pattern means the two agree; off-diagonal mass is where
-# you need to look more carefully.
-table(Cluster = pbmc$seurat_clusters, SingleR = pbmc$SingleR_pruned)
+# useNA = "ifany" keeps pruned cells as an explicit <NA> column;
+# table() would otherwise drop them silently.
+tab <- table(Cluster = pbmc$seurat_clusters,
+             SingleR = pbmc$SingleR_pruned,
+             useNA = "ifany")
+tab
+
+# Row-wise fractions: how each cluster is split across reference labels
+round(prop.table(tab, margin = 1), 2)
 ```
+
+交叉表的每一行是一个聚类，每一列是一个 SingleR 标签，格子中的数字是同时属于该聚类和该标签的细胞数。`<NA>` 列统计的是被 pruned 的细胞，注意 `table()` 默认会丢弃 `NA`，必须显式设置 `useNA = "ifany"` 才能看到它。列按标签名的字母顺序排列，与聚类编号无关，因此不要期待表格呈现整齐的对角线。正确的读法是逐行检查：每个聚类的细胞主要落在哪一列、主列占该行的比例有多高。第二段代码输出的行比例正好回答这个问题，它比原始计数更便于在大小差异悬殊的聚类之间比较。读完每一行后，再纵向检查每一列被分到了哪些聚类。常见的几种模式及其含义见 @tbl-singler-crosstab-patterns。
+
+| 交叉表中的模式 | 可能的含义 | 下一步 |
+|---|---|---|
+| 一行的细胞集中在一列 | 聚类与参考标签一致 | 用标志基因确认后采纳 |
+| 多行集中在同一列 | 参考的标签粒度比聚类粗（如主类 T 细胞不区分 CD4/CD8） | 属正常现象；换用更细的参考或依靠标志基因细分 |
+| 一行分散在两三列 | 聚类本身混杂，或近缘类型在该参考中难以区分 | 对照得分热图看是否多行同亮；考虑亚聚类 |
+| 一行中 `<NA>` 占比高 | 参考可能缺少该类型，或该簇为低质量细胞/双细胞 | 检查标志基因与 QC 指标 |
+| 一列只有零星细胞且散布于多个聚类 | 个别细胞的偶然错配 | 通常可忽略 |
+
+: 聚类–SingleR 交叉表中的常见模式及解读 {#tbl-singler-crosstab-patterns}
 
 :::info
 **黄金法则：** 手动注释与自动注释应相互印证，而非二选一。自动注释快速、客观，适合提供初步框架；手动注释精确、可解释，能纠正参考数据集缺失类型或物种/组织不匹配带来的错误。当二者一致时，注释可信；当二者矛盾时，正是发现新细胞状态或识别注释陷阱（如参考缺失该类型）的契机。任何最终注释都应能用一组特异标志基因解释。
@@ -1074,7 +1402,21 @@ data.frame(
 
 scType 不需要任何参考表达数据，只需要一份标志基因数据库 ScTypeDB（Ianevski et al., 2022）。数据库按组织列出每种细胞类型的阳性标志（应当表达的基因）与阴性标志（不应表达的基因），其中免疫系统部分收录了 34 种细胞类型。这种做法本质上是把手动注释时"查标志基因表"的过程自动化了。
 
-scType 的打分分三步。第一步是标志基因的特异性加权。一个基因若只出现在少数细胞类型的标志列表中，它的特异性高，权重接近 1；若它出现在许多类型的列表中，权重被压低到接近 0。例如 *PTPRC*（编码泛白细胞标志 CD45）出现在 34 种免疫细胞类型中 17 种的阳性列表里，几乎不提供区分信息。第二步是逐细胞打分。每个标志基因的表达先在细胞间标准化为 z 值并乘以权重，对某一细胞类型的全部阳性标志求和后除以 $\sqrt{n_\text{pos}}$，再减去阴性标志按同样方式得到的加权和。第三步是聚类层面的判定。把一个聚类内所有细胞的得分相加，取总分最高的类型；若最高总分低于该聚类细胞数的四分之一，则判为 "Unknown"。
+### 算法细节
+
+**第一步：标志基因的特异性加权。** 设数据库中某组织共有 $N$ 种细胞类型，基因 $g$ 出现在其中 $n_g$ 种类型的阳性列表里，则它的权重为
+
+$$w_g = \frac{N - n_g}{N - 1}$$
+
+只出现在一种类型中的基因权重为 1，出现在全部 $N$ 种类型中的基因权重为 0，中间线性递减。权重只按阳性列表统计；只出现在阴性列表中的基因不加权，相当于权重为 1。在 ScTypeDB 免疫系统部分，$N = 34$。出现次数最多的 *PTPRC*（编码泛白细胞标志 CD45）与 *ITGAM* 各出现在 17 个阳性列表中，权重为 0.515；*CD3D*、*CD3E* 出现在 12 个列表中，权重为 0.667。259 个阳性标志中有 81% 的权重不低于 0.9。可见这一加权只是削弱、而非消除泛表达基因的影响：*PTPRC* 几乎不提供区分信息，权重却仍有一半以上。
+
+**第二步：逐细胞打分。** 每个标志基因的表达先在全部细胞间标准化为 z 值 $z_{g,c}$，再乘以权重。细胞 $c$ 在类型 $t$ 上的得分为
+
+$$S_{t,c} = \frac{\sum_{g \in P_t} w_g\, z_{g,c}}{\sqrt{|P_t|}} - \frac{\sum_{g \in N_t} w_g\, z_{g,c}}{\sqrt{|N_t|}}$$
+
+其中 $P_t$ 与 $N_t$ 分别是类型 $t$ 的阳性与阴性标志集合。除以 $\sqrt{|P_t|}$ 而不是 $|P_t|$，是因为 $n$ 个相互独立的 z 值求和后，标准差按 $\sqrt{n}$ 增长；这样处理后，标志数目不同的类型得分处在可比的尺度上。阴性标志的作用是扣分：一个表达 *CD3D* 的细胞，在"NK 细胞"上会被扣分。这把"不应表达什么"也变成了证据。
+
+**第三步：聚类层面的判定。** 把一个聚类内所有细胞的得分相加，取总分最高的类型。若最高总分低于该聚类细胞数的四分之一，则判为 "Unknown"，相当于要求簇内细胞的平均得分不低于 0.25。这是一条绝对阈值，不依赖与其他类型的比较。因此当数据库中没有任何类型与之匹配时，scType 能够拒绝判定。
 
 :::note
 **运行环境说明：** scType 不是 R 包，而是以 R 脚本加 Excel 数据库的形式在 GitHub 上发布。为保证结果可复现，本书把两个核心脚本与数据库固定在上游的一个具体提交版本（`630e15c`），并存放在 `/Users/angdong/Documents/bio_example/SingleCell/sctype/`。脚本依赖 CRAN 包 `HGNChelper` 与 `openxlsx`（`install.packages(c("HGNChelper", "openxlsx"))`）。在其他机器上可用下面的命令获取同一版本的文件。
@@ -1089,6 +1431,77 @@ for f in R/gene_sets_prepare.R R/sctype_score_.R ScTypeDB_full.xlsx; do
         "https://raw.githubusercontent.com/IanevskiAleksandr/sc-type/$REV/$f"
 done
 ```
+
+### 原理演示：手写 scType 打分
+
+下面在玩具数据上手写三步打分。迷你数据库为四种类型各列出 4 个阳性标志，其中 *PTPRC* 出现在全部 4 个列表中，*CD2* 由 T 与 NK 共享。NK 细胞另有 *CD3D*、*CD3E* 两个阴性标志。查询数据含 400 个已知类型的细胞与 20 个血小板，聚类直接取真实类型，以便单独观察打分规则本身。代码最后用固定版本的官方 `sctype_score()` 重算一遍，核对手写版本。与上一段演示一样，`simulate_toy()` 与 `toy_mu` 来自本节开头"一个答案已知的玩具数据集"中的代码块，须先运行该块。
+
+```r
+# Needs toy_mu and simulate_toy() from the toy-dataset block at the start of this section
+stopifnot(exists("toy_mu"), exists("simulate_toy"))
+
+set.seed(4)
+toy_q <- simulate_toy(c(T = 100, NK = 100, B = 100, Mono = 100, Platelet = 20))
+
+# A miniature marker database: positive and negative markers per type
+toy_pos <- list(T    = c("CD3D", "CD3E", "CD2", "PTPRC"),
+                NK   = c("GNLY", "KLRD1", "CD2", "PTPRC"),
+                B    = c("MS4A1", "CD79A", "CD79B", "PTPRC"),
+                Mono = c("LYZ", "CST3", "S100A8", "PTPRC"))
+toy_neg <- list(T = character(0), NK = c("CD3D", "CD3E"),
+                B = character(0), Mono = character(0))
+
+# Step 1: specificity weight (N - n_lists) / (N - 1): 1 if in one list, 0 if in all
+n_lists <- table(unlist(toy_pos))
+toy_w <- (length(toy_pos) - n_lists) / (length(toy_pos) - 1)
+round(toy_w[c("CD3D", "CD2", "PTPRC")], 3)
+
+# Step 2: z-score each marker across cells, multiply by its weight, then
+# score = sum(positive z) / sqrt(n_pos) - sum(negative z) / sqrt(n_neg)
+db_genes <- unique(unlist(c(toy_pos, toy_neg)))
+toy_z <- t(scale(t(toy_q$logexpr[db_genes, ])))
+toy_z[names(toy_w), ] <- toy_z[names(toy_w), ] * as.vector(toy_w)
+type_score <- function(t, use_neg = TRUE) {
+    pos <- colSums(toy_z[toy_pos[[t]], , drop = FALSE]) / sqrt(length(toy_pos[[t]]))
+    if (!use_neg || length(toy_neg[[t]]) == 0) return(pos)
+    pos - colSums(toy_z[toy_neg[[t]], , drop = FALSE]) / sqrt(length(toy_neg[[t]]))
+}
+toy_es <- t(sapply(names(toy_pos), type_score))
+
+# Step 3: cluster-level call (clusters = true types here): sum the cell scores;
+# "Unknown" if the best sum is below n_cells / 4
+t(sapply(split(seq_along(toy_q$label), toy_q$label), function(idx) {
+    s <- sort(rowSums(toy_es[, idx, drop = FALSE]), decreasing = TRUE)
+    c(call   = if (s[[1]] < length(idx) / 4) "Unknown" else names(s)[1],
+      best   = round(s[[1]], 1), runner_up = names(s)[2],
+      second = round(s[[2]], 1), cutoff = length(idx) / 4)
+}))
+
+# What the negative markers do: the NK score summed over the T cells
+is_t <- toy_q$label == "T"
+c(with_negative    = sum(toy_es["NK", is_t]),
+  without_negative = sum(type_score("NK", use_neg = FALSE)[is_t])) |> round(1)
+
+# Cross-check against the official function (pinned copy, see the note above)
+source("/Users/angdong/Documents/bio_example/SingleCell/sctype/sctype_score_.R")
+official <- sctype_score(t(scale(t(toy_q$logexpr[db_genes, ]))), scaled = TRUE,
+                         gs = toy_pos, gs2 = toy_neg)
+all.equal(toy_es, official[rownames(toy_es), ], check.attributes = FALSE)
+```
+
+| 聚类（真实类型） | scType 判定 | 最高总分 | 次高类型 | 次高总分 | Unknown 阈值 |
+|---|---|---|---|---|---|
+| T | T | 128.6 | B | −71.7 | 25 |
+| NK | NK | 181.0 | T | −2.8 | 25 |
+| B | B | 232.8 | NK | −22.8 | 25 |
+| Mono | Mono | 253.7 | NK | −23.9 | 25 |
+| Platelet | **Unknown** | −2.6 | T | −11.4 | 5 |
+
+: 手写 scType 在玩具数据上的聚类判定 {#tbl-sctype-toy}
+
+权重一行先验证了公式：*CD3D* 只属于一个列表，权重为 1；*CD2* 属于两个列表，权重为 0.667；*PTPRC* 属于全部四个列表，权重为 0，从打分中完全消失。@tbl-sctype-toy 显示，四种已知类型的最高总分都远高于各自的阈值 25。血小板簇的最高总分只有 −2.6，低于阈值 5，被判为 Unknown。原因是它不表达数据库中的任何阳性标志，所有 z 值都低于均值。阴性标志的作用同样清楚：T 细胞在"NK"上的总得分为 −131.6，去掉两个阴性标志后升至 3.7。最后一行返回 `TRUE`，说明手写版本与官方函数逐值一致。
+
+### 在 PBMC 3k 上运行
 
 ```r
 library(Seurat)
@@ -1138,7 +1551,7 @@ sctype_tbl
 
 : scType 在 PBMC 3k 各聚类上的判定（ScTypeDB 免疫系统，提交版本 630e15c） {#tbl-sctype}
 
-scType 在谱系层面全部判对，包括 HPCA 误判的树突状细胞与 Monaco 缺失的血小板。这是标志基因方法的长处：只要数据库里有这种类型，就不受参考样本来源的限制。它对 FCGR3A+ 单核细胞的判定（非经典单核细胞）也比 Monaco 的"中间型单核细胞"更符合经典命名。
+scType 在谱系层面全部判对，包括 HPCA 误判的树突状细胞与 Monaco 缺失的血小板。这是标志基因方法的长处：只要数据库里有这种类型，就不受参考样本来源的限制。与玩具演示相比，真实数据库的权重要"温和"得多：*PTPRC* 的权重仍有 0.515，泛表达基因对各类型得分的贡献并没有被消除。它对 FCGR3A+ 单核细胞的判定（非经典单核细胞）也比 Monaco 的"中间型单核细胞"更符合经典命名。
 
 但 @tbl-sctype 同样暴露了这类方法的三个弱点。第一，**结果的上限就是数据库的质量。** 聚类 0 被判为"幼稚 CD8+ T"，而非幼稚 CD4+ T。检查数据库可以发现原因：幼稚 CD4+ T 的 27 个阳性标志，是记忆 CD4+ T 的 29 个阳性标志的真子集，后者只多了 *ISG20* 与 *S100A4*；列表里还混有 *FOXP3*、*GZMB*、*CTLA4* 等与幼稚 T 细胞无关的基因，而 *IL2RA* 同时出现在幼稚 CD4+ T 的阳性与阴性列表中。用这样的列表区分近缘亚型，结果近乎随机。
 
@@ -1148,9 +1561,90 @@ scType 在谱系层面全部判对，包括 HPCA 误判的树突状细胞与 Mon
 
 ## 参考映射：Seurat 标签传递
 
-标签传递（label transfer）把一份已注释的单细胞参考图谱当作"地图"，把查询细胞逐个放到地图上，再根据它周围的参考细胞决定其身份（Stuart et al., 2019）。专题 7.4 对 scATAC 数据、专题 9.4 对 MERFISH 数据的注释，用的都是这一方法。它分四步完成。
+标签传递（label transfer）把一份已注释的单细胞参考图谱当作"地图"，把查询细胞逐个放到地图上，再根据它周围的参考细胞决定其身份（Stuart et al., 2019）。专题 7.4 对 scATAC 数据、专题 9.4 对 MERFISH 数据的注释，用的都是这一方法。Azimuth 是同一方法的"预制版"：它提供多种组织的预构建参考图谱与网页工具，用户上传数据即可完成映射（Hao et al., 2021）。
 
-第一步是参考降维：对参考数据做常规的归一化、高变基因选择与 PCA。第二步是投影：查询数据不重新做 PCA，而是用参考的基因载荷投影到参考的主成分空间中（`reference.reduction = "pca"`），使两者处于同一坐标系。第三步是寻找锚点：在这个共同空间中，找出互为最近邻（mutual nearest neighbors）的"查询细胞–参考细胞"对，称为锚点（anchor）。每个锚点再按其两端细胞的近邻集合的重叠程度打分，思路与 SNN 权重相同（参见前文"回到 SNN"一节）。第四步是加权投票：对每个查询细胞，取离它最近的若干锚点（默认 50 个，参数 `k.weight`），按距离与锚点得分加权，把这些锚点携带的参考标签汇总为各类型的预测得分。得分最高的类型记为 `predicted.id`，最高得分本身记为 `prediction.score.max`，取值在 0 到 1 之间。Azimuth 是同一方法的"预制版"：它提供多种组织的预构建参考图谱与网页工具，用户上传数据即可完成映射（Hao et al., 2021）。
+### 算法细节
+
+**第一步：参考降维。** 对参考数据做常规的归一化、高变基因选择、缩放与 PCA。
+
+**第二步：投影。** 查询数据不单独做 PCA。它先用**参考**的基因均值与标准差缩放，再乘以参考的基因载荷，得到它在参考主成分空间中的坐标（`reference.reduction = "pca"`）。这样两者处于同一坐标系，参考细胞的坐标也不会因为查询数据的加入而改变。需要注意，这一步并没有消除批次效应，查询细胞整体上仍会偏离参考细胞。
+
+**第三步：寻找并评价锚点。** 对每个查询细胞，找出离它最近的 5 个参考细胞；对每个参考细胞，也找出离它最近的 5 个查询细胞（参数 `k.anchor = 5`）。互相出现在对方近邻名单里的"查询–参考"细胞对，称为锚点（anchor）。这种互为最近邻（mutual nearest neighbors, MNN）的要求比单向最近邻严格得多。批次效应会让查询细胞整体偏移，从而改变"谁离我最近"；但同一类型的细胞通常仍是彼此最近的那一批，因此真正的同类细胞依然能够互相找到。随后，每个锚点按其两端细胞近邻集合的重叠程度打分（参数 `k.score = 30`），思路与 SNN 权重相同（参见前文"回到 SNN"一节）。得分再按分位数线性缩放：低于 0.01 分位数记为 0，高于 0.9 分位数记为 1。
+
+**第四步：加权投票。** 对查询细胞 $c$，在投影后的空间中取离它最近的 $k$ 个锚点（参数 `k.weight = 50`，距离按锚点的查询端细胞计算）。记 $d_{c,a}$ 为细胞到锚点 $a$ 的距离，$d_{c,(k)}$ 为到第 $k$ 个锚点的距离，$S_a$ 为锚点得分，则
+
+$$\tilde{w}_{c,a} = 1 - \exp\left(-\frac{\left(1 - d_{c,a}/d_{c,(k)}\right) S_a}{(2/\sigma)^2}\right)$$
+
+其中 $\sigma$ 为参数 `sd.weight`，默认为 1。锚点越近、得分越高，权重越大；第 $k$ 个锚点的权重恰好为 0。把权重归一化使其和为 1，再按锚点携带的参考标签分别求和，就得到细胞在每种类型上的预测得分。得分最高的类型记为 `predicted.id`，最高得分记为 `prediction.score.max`。由于各类型得分之和为 1，预测得分的本质是"近邻锚点中投给该类型的加权比例"，而不是细胞与该类型的绝对相似度。
+
+### 原理演示：手写标签传递
+
+下面在玩具数据上实现四个步骤。参考为 600 个细胞。查询为另外 420 个细胞，模拟另一种化学试剂：测序深度降为 60%，且每个基因有不同的捕获偏差。查询中还混入了 20 个参考里没有的血小板。为便于阅读，锚点得分做了简化：只比较锚点两端细胞的 30 个最近参考细胞，而 Seurat 同时比较两侧数据集中的近邻。这段代码同样依赖本节开头"一个答案已知的玩具数据集"中定义的 `simulate_toy()` 与 `toy_mu`。
+
+```r
+# Needs toy_mu and simulate_toy() from the toy-dataset block at the start of this section
+stopifnot(exists("toy_mu"), exists("simulate_toy"))
+
+set.seed(5)
+lt_ref <- simulate_toy(c(T = 150, NK = 150, B = 150, Mono = 150))
+# Query from another "chemistry": lower depth plus a gene-specific capture bias
+capture <- exp(rnorm(nrow(toy_mu), mean = log(0.6), sd = 0.4))
+lt_qry <- simulate_toy(c(T = 100, NK = 100, B = 100, Mono = 100, Platelet = 20),
+                       mu = toy_mu * capture)
+
+# Steps 1-2: PCA on the reference only; project the query with the reference's
+# gene means, SDs and loadings instead of running a separate PCA on it
+ctr <- rowMeans(lt_ref$logexpr)
+sds <- apply(lt_ref$logexpr, 1, sd)
+pca <- prcomp(t((lt_ref$logexpr - ctr) / sds), center = FALSE)
+R <- pca$x[, 1:6]
+Q <- t((lt_qry$logexpr - ctr) / sds) %*% pca$rotation[, 1:6]
+
+# Step 3: anchors = mutual nearest neighbours between query and reference cells
+cross <- as.matrix(dist(rbind(Q, R)))[1:nrow(Q), nrow(Q) + 1:nrow(R)]
+q_nn <- t(apply(cross, 1, order))     # for each query cell: refs, nearest first
+r_nn <- t(apply(cross, 2, order))     # for each ref cell: queries, nearest first
+toy_anchors <- do.call(rbind, lapply(1:nrow(Q), function(i) {
+    r <- Filter(function(j) i %in% r_nn[j, 1:5], q_nn[i, 1:5])   # k.anchor = 5
+    if (length(r)) data.frame(q = i, r = r)
+}))
+table(query_type = lt_qry$label[toy_anchors$q], ref_type = lt_ref$label[toy_anchors$r])
+
+# Anchor score (simplified): overlap of the two ends' 30 nearest reference cells,
+# rescaled so that the 90th percentile maps to 1
+r_self <- t(apply(as.matrix(dist(R)), 1, order))
+toy_anchors$score <- mapply(function(i, j)
+    length(intersect(q_nn[i, 1:30], r_self[j, 1:30])) / 30, toy_anchors$q, toy_anchors$r)
+toy_anchors$score <- pmin(toy_anchors$score / quantile(toy_anchors$score, 0.9), 1)
+
+# Step 4: each query cell votes with its k.weight nearest anchors (query side)
+k_weight <- 20
+dq <- as.matrix(dist(Q))[, toy_anchors$q]
+lt_pred <- t(sapply(1:nrow(Q), function(i) {
+    o <- order(dq[i, ])[1:k_weight]
+    w <- (1 - dq[i, o] / dq[i, o[k_weight]]) * toy_anchors$score[o]   # distance x score
+    w <- 1 - exp(-w / (2 / 1)^2)                                      # sd.weight = 1
+    w <- w / sum(w)
+    tapply(c(w, rep(0, 4)), c(lt_ref$label[toy_anchors$r[o]], toy_types), sum)[toy_types]
+}))
+lt_id <- toy_types[apply(lt_pred, 1, which.max)]
+table(truth = lt_qry$label, predicted = lt_id)
+round(tapply(apply(lt_pred, 1, max), lt_qry$label, median), 2)
+```
+
+| 查询细胞真实类型 | 形成的锚点数 | 预测结果 | 预测得分中位数 |
+|---|---|---|---|
+| T（100） | 260（52 个连到 NK） | T 84，NK 16 | 0.92 |
+| NK（100） | 251（44 个连到 T） | NK 77，T 23 | 0.93 |
+| B（100） | 273（全部连到 B） | B 100 | 1.00 |
+| Mono（100） | 190（全部连到 Mono） | Mono 100 | 1.00 |
+| Platelet（20，参考中没有） | 2（连到 NK） | B 9，NK 9，T 2 | 0.53 |
+
+: 手写标签传递在玩具数据上的结果 {#tbl-transfer-toy}
+
+@tbl-transfer-toy 说明了三件事。第一，尽管查询的测序深度与基因捕获效率都与参考不同，976 个锚点中仍有 90% 连接的是同类细胞。错连全部发生在 T 与 NK 之间，B 与单核细胞没有一个错连。这就是互为最近邻对批次偏移的容忍。第二，锚点的质量直接决定投票的质量：T 与 NK 的错连锚点占一成多，两者的预测准确率也相应降到 77%–84%。第三，20 个血小板只形成了 2 个锚点，因为参考中没有能与它们互为近邻的细胞。但它们照样全部得到了标签，因为投票用的是它们附近的锚点，而那些锚点属于 B 与 NK。它们的预测得分中位数为 0.53，明显低于已知类型的 0.92 以上，却远非零。标签传递没有"未知"这一选项。实践中常把 `prediction.score.max` 低于 0.5 的细胞视为不可靠，但这只是经验阈值，不能保证拦住所有未知类型。
+
+### 在 PBMC 3k 上运行
 
 这里以本书多样本 PBMC 分析的规范数据集 Kang18（8 名红斑狼疮患者的 PBMC，专题 7.1 的主要数据）中未经刺激的对照组细胞为参考。原作者已为其中的细胞标注了 8 种细胞类型。
 
@@ -1215,7 +1709,98 @@ lt_summary
 
 CellTypist 把注释当作有监督分类问题（Domínguez Conde et al., 2022）。开发者先在大型、经过人工整理的单细胞图谱上训练模型，用户直接下载使用。本例使用的两个免疫模型均由来自 20 种组织、18 项研究的免疫细胞训练而成。`Immune_All_High` 区分 32 种粗粒度类型。`Immune_All_Low` 区分 98 种细粒度亚型，使用 6,639 个特征基因。
 
-模型本身是正则化的逻辑回归，每种细胞类型对应一组基因权重。对一个查询细胞，模型先按训练数据的均值与标准差对表达值做标准化，再为每种类型计算线性得分，并经 sigmoid 函数转化为概率，概率最高者即为预测标签。各类型的概率彼此独立计算，因此不必加和为 1。逻辑回归的优点是快且可解释：每种类型的权重向量直接给出了模型"依据哪些基因判断"。单个细胞的预测难免有噪声，CellTypist 因此提供多数投票（majority voting）：先对细胞做过度聚类，再把每个小簇内占多数的预测标签赋给簇内所有细胞。默认的过度聚类由 CellTypist 自行完成；这里通过 `over_clustering` 参数直接使用 Seurat 的聚类，便于与其他工具逐簇比较。
+### 算法细节
+
+**训练。** 训练数据为 log1p(CP10k) 归一化的表达矩阵。每个基因先按训练集的均值与标准差标准化，大于 10 的值截断为 10。随后采用"一对其余"（one-vs-rest）策略：对每种细胞类型单独训练一个二分类逻辑回归，区分"是这种类型"与"不是这种类型"，并加 L2 正则化以防过拟合。训练集很大时，改用小批量随机梯度下降（`SGDClassifier`）完成同样的优化。训练完成后，可以做一轮特征选择：每种类型取权重绝对值最大的 300 个基因（参数 `top_genes`），取并集后重新训练。这就是模型只使用数千个特征基因的原因。
+
+**预测。** 查询细胞用训练集保存的均值与标准差做同样的标准化，再为每种类型计算线性得分 $f_t(x) = \beta_{t,0} + \sum_g \beta_{t,g} z_g$，经 sigmoid 函数 $p_t = 1/(1 + e^{-f_t})$ 转为概率。各类型的概率由各自的分类器独立给出，因此不必加和为 1。默认的 `mode = "best match"` 直接取概率最高的类型。`mode = "prob match"` 则保留所有概率超过 0.5 的类型（参数 `p_thres`）：没有类型超过阈值时判为 "Unassigned"，有多种类型超过阈值时返回 "A|B" 形式的多重标签。逻辑回归的优点是快且可解释：每种类型的权重向量直接给出了模型"依据哪些基因判断"。
+
+**多数投票。** 单个细胞的预测难免有噪声，CellTypist 因此提供多数投票（majority voting）。它先在近邻图上做 Leiden 过度聚类，分辨率随细胞数在 5 到 30 之间自动选取，远高于常规聚类。然后把每个小簇内占比最高的预测标签赋给簇内所有细胞。参数 `min_prop` 可以设定最低占比，未达到的小簇标为 "Heterogeneous"，默认值 0 即不做此检查。这里通过 `over_clustering` 参数直接使用 Seurat 的聚类，便于与其他工具逐簇比较。
+
+### 原理演示：训练一个迷你 CellTypist
+
+下面用 scikit-learn 在玩具数据上复现 CellTypist 的训练与预测：标准化、截断、一对其余的 L2 逻辑回归，以及 sigmoid 概率。CellTypist 内部调用 `LogisticRegression(multi_class = "ovr")`；新版 scikit-learn 已移除该参数，这里改用等价的 `OneVsRestClassifier`。训练集只含四种已知类型，查询中另有 20 个血小板。
+
+:::note
+**运行环境说明：** 这段 Python 代码在前文建立的 `scanno` 环境中运行（`conda activate scanno`）。它只依赖 `numpy`、`pandas`、`scipy` 与 `scikit-learn`，均已随 `scanpy` 安装，不需要下载任何模型。
+:::
+
+```python
+import numpy as np
+import pandas as pd
+from scipy.special import expit
+from sklearn.linear_model import LogisticRegression
+from sklearn.multiclass import OneVsRestClassifier
+from sklearn.preprocessing import StandardScaler
+
+# The same toy PBMC design as the R principle demos
+genes = ["CD3D", "CD3E", "GNLY", "KLRD1", "CD2", "CD247", "CCL5", "IL32",
+         "MS4A1", "CD79A", "CD79B", "CD74", "HLA-DRA",
+         "LYZ", "CST3", "S100A8", "FCN1", "TYROBP", "PPBP", "PF4", "PTPRC", "B2M"]
+types = ["T", "NK", "B", "Mono"]
+mu = pd.DataFrame(0.1, index=genes, columns=types + ["Platelet"])
+mu.loc[["CD3D", "CD3E"], "T"] = 1
+mu.loc[["GNLY", "KLRD1"], "NK"] = 1
+mu.loc[["CD2", "CD247", "CCL5", "IL32"], ["T", "NK"]] = 3
+mu.loc[["MS4A1", "CD79A", "CD79B", "CD74", "HLA-DRA"], "B"] = 3
+mu.loc[["LYZ", "CST3", "S100A8", "FCN1", "TYROBP"], "Mono"] = 6
+mu.loc[["PPBP", "PF4"], "Platelet"] = 5
+mu.loc["PTPRC", types] = 5
+mu.loc["B2M"] = 5
+
+rng = np.random.default_rng(7)
+def simulate_toy(n):
+    labels = np.repeat(list(n), list(n.values()))
+    return np.log1p(rng.poisson(mu[labels].T.values)), labels
+
+# Training: standardise each gene, clip at 10, fit one L2 logistic regression per type
+X_train, y_train = simulate_toy({"T": 300, "NK": 300, "B": 300, "Mono": 300})
+scaler = StandardScaler().fit(X_train)
+clf = OneVsRestClassifier(LogisticRegression(C=1.0, max_iter=1000))
+clf.fit(np.minimum(scaler.transform(X_train), 10), y_train)
+
+# Every type has its own readable weight vector
+coef = pd.DataFrame(np.vstack([est.coef_[0] for est in clf.estimators_]),
+                    index=clf.classes_, columns=genes)
+for t in clf.classes_:
+    w = coef.loc[t].sort_values()
+    print(f"{t:5s} most positive: {', '.join(w.index[-3:][::-1])}"
+          f" | most negative: {', '.join(w.index[:2])}")
+
+# Prediction: a sigmoid of each type's linear score, each computed independently
+X_q, y_q = simulate_toy({"T": 100, "NK": 100, "B": 100, "Mono": 100, "Platelet": 20})
+Z_q = np.minimum(scaler.transform(X_q), 10)
+prob = pd.DataFrame(expit(clf.decision_function(Z_q)), columns=clf.classes_)
+best = prob.idxmax(axis=1)
+print(pd.crosstab(pd.Series(y_q, name="truth"), best.rename("best match")))
+print(pd.DataFrame({"median max prob": prob.max(axis=1),
+                    "median row sum": prob.sum(axis=1)}).groupby(y_q).median().round(2))
+
+# "prob match": keep every type above 0.5; none -> Unassigned, several -> "A|B"
+prob_match = prob.gt(0.5).apply(lambda r: "|".join(r.index[r]) or "Unassigned", axis=1)
+print(pd.crosstab(pd.Series(y_q, name="truth"), prob_match.rename("prob match")))
+
+# Why do unseen platelets look like T cells? Mean contribution weight x z per gene
+contrib = pd.Series((Z_q[y_q == "Platelet"] * coef.loc["T"].values).mean(axis=0),
+                    index=genes).sort_values(ascending=False)
+print(contrib.head(5).round(2))
+```
+
+| 真实类型 | best match | 最大概率中位数 | prob match（阈值 0.5） |
+|---|---|---|---|
+| T（100） | T 85，NK 15 | 0.95 | T 75，NK 10，NK\|T 5，Unassigned 10 |
+| NK（100） | NK 87，T 13 | 0.97 | NK 82，T 11，NK\|T 1，Unassigned 6 |
+| B（100） | B 100 | 1.00 | B 99，B\|T 1 |
+| Mono（100） | Mono 100 | 1.00 | Mono 100 |
+| Platelet（20，训练集中没有） | **T 19**，B 1 | 0.73 | **T 17**，B\|T 1，Unassigned 2 |
+
+: 迷你 CellTypist 在玩具数据上的预测结果 {#tbl-celltypist-toy}
+
+首先看权重。T 细胞分类器权重最大的基因是 *CD3D*、*CD3E* 与 *CCL5*，最负的是 *KLRD1* 与 *GNLY*；NK 细胞分类器恰好相反。模型没有被告知任何标志基因，却自动学到了"T 与 NK 靠什么区分"，而且这种依据可以直接读出来。
+
+再看 @tbl-celltypist-toy 中的血小板，这是本演示最重要的结果。20 个从未在训练集中出现过的细胞，有 19 个被判为 T 细胞，最大概率中位数高达 0.73。即使改用 prob match，也只有 2 个被判为 Unassigned。最后一段代码揭示了原因。对 T 分类器得分贡献最大的基因依次是 *PTPRC*（1.42）、*KLRD1*（0.82）、*CST3*（0.65）、*GNLY*（0.60）与 *S100A8*（0.44），血小板恰恰都不表达它们。在一对其余的训练中，T 分类器要把 T 细胞与 NK、B、单核细胞分开，于是给这些"其他类型的基因"赋予了负权重。一个什么都不表达的细胞，在这些基因上的 z 值都为负，乘以负权重后反而为 T 分类器贡献了正分。换言之，**T 分类器学到的有一部分是"不是 NK、不是 B、不是单核"，而不只是"是 T"。** 线性模型会把这种规则外推到训练数据之外，于是陌生细胞也可能获得很高的概率。前文 Monaco 参考把血小板自信地判为祖细胞，是同一类失效在参考相关方法中的表现。
+
+### 在 PBMC 3k 上运行
 
 :::note
 **运行环境说明：** CellTypist 是 Python 工具。建议为它单独建立一个 conda 环境，再用 pip 安装：`conda create -n scanno python=3.11 -y`，`conda activate scanno`，`pip install scanpy celltypist`。在中国大陆访问 PyPI 较慢时，可在 `pip install` 后加上 `-i https://pypi.tuna.tsinghua.edu.cn/simple` 使用清华镜像。模型文件首次使用时从网络下载并缓存在 `~/.celltypist/`。下面先在 R 中导出聚类标签，使 Python 端注释的恰好是同一批 2,638 个细胞；导出的 CSV 写在当前工作目录，Python 脚本需在同一目录下运行。
